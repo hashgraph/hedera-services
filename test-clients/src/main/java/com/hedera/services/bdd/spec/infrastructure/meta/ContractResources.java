@@ -87,6 +87,7 @@ public class ContractResources {
 	public static final String DISTRIBUTOR_CONTRACT = bytecodePath("FeeDistributor");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
+	public static final String TOKEN_CREATE_CONTRACT = bytecodePath("TokenCreateContract");
 	public static final String SAFE_OPERATIONS_CONTRACT = bytecodePath("SafeOperationsContract");
 	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("NestedAssociateDissociateContract");
 	public static final String MINT_CONTRACT = bytecodePath("MintContract");
@@ -870,6 +871,27 @@ public class ContractResources {
 			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\", " +
 			"\"type\": \"address\" } ], \"name\": \"tokenAssociate\", \"outputs\": [], \"stateMutability\": " +
 			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String CREATE_FUNGIBLE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"contractKey\", \"type\": \"address\" } ], \"name\": \"createFungible\", " +
+			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
+			"\"type\": \"address\" }], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String CREATE_FUNGIBLE_WITH_FEES_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"contractKey\", \"type\": \"address\" } ], \"name\": \"createFungibleWithFees\", " +
+			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
+			"\"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String CREATE_NON_FUNGIBLE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"feeCollector\", \"type\": \"address\" } ], \"name\": \"createNonFungible\", " +
+			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
+			"\"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String UPDATE_TOKEN_WITH_THRESHOLD_KEYS_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"token\", \"type\": \"address\" }, { \"internalType\": \"bytes\", \"name\": \"ed25519\", " +
+			"\"type\": \"bytes\" }, { \"internalType\": \"bytes\", \"name\": \"ECDSA_secp256k1\", " +
+			"\"type\": \"bytes\" } ], \"name\": \"updateTokenWithThresholdKeys\", " +
+			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 	public static final String SAFE_MINT_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"token\"," +
 			" \"type\": \"address\" }, { \"internalType\": \"uint64\", \"name\": \"amount\", \"type\": \"uint64\" }, " +

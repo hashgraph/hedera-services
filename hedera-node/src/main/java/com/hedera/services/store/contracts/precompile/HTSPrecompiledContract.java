@@ -191,8 +191,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
 	//dissociateToken(address account, address token)
 	protected static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
-	//TODO: add tokenCreate address to contract library and put correct 0xaddress
-	protected static final int ABI_ID_TOKEN_CREATE = 0x099794e1;
+	//createFungible(address contractKey)
+	protected static final int ABI_ID_CREATE_FUNGIBLE_TOKEN = 0x7812a04b;
+	//createFungibleWithFees(address contractKey)
+	protected static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES = 0x4b37e995;
+	//createNonFungible(address feeCollector)
+	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN = -0x21abcac2;
+	//updateTokenWithThresholdKeys(address token, bytes memory ed25519, bytes memory ECDSA_secp256k1)
+	protected static final int ABI_ID_UPDATE_TOKEN_WITH_THRESHOLD_KEYS = 0x3ff927f;
 
 	private int functionId;
 	private Precompile precompile;
@@ -305,7 +311,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case ABI_ID_ASSOCIATE_TOKEN -> new AssociatePrecompile();
 					case ABI_ID_DISSOCIATE_TOKENS -> new MultiDissociatePrecompile();
 					case ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile();
-					case ABI_ID_TOKEN_CREATE -> new TokenCreatePrecompile();
+					case ABI_ID_CREATE_FUNGIBLE_TOKEN -> new FungibleTokenCreatePrecompile();
+					case ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> new FungibleTokenCreateWithFeesPrecompile();
+					case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> new NonFungibleTokenCreatePrecompile();
+					case ABI_ID_UPDATE_TOKEN_WITH_THRESHOLD_KEYS -> new UpdateTokenWithThresholdKeysPrecompile();
 					default -> null;
 				};
 		if (precompile != null) {
@@ -664,7 +673,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	protected class TokenCreatePrecompile implements Precompile {
+	protected class FungibleTokenCreatePrecompile implements Precompile {
 		private TokenCreateWrapper tokenCreateOp;
 
 		@Override
@@ -727,6 +736,105 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
 			return encoder.encodeMintFailure(status);
+		}
+	}
+
+	protected class FungibleTokenCreateWithFeesPrecompile implements Precompile {
+
+		@Override
+		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+			return null;
+		}
+
+		@Override
+		public ExpirableTxnRecord.Builder run(MessageFrame frame, WorldLedgers ledgers) {
+			return null;
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			return 0;
+		}
+
+		@Override
+		public void addImplicitCostsIn(TxnAccessor accessor) {
+			Precompile.super.addImplicitCostsIn(accessor);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			return Precompile.super.getSuccessResultFor(childRecord);
+		}
+
+		@Override
+		public Bytes getFailureResultFor(ResponseCodeEnum status) {
+			return Precompile.super.getFailureResultFor(status);
+		}
+	}
+
+	protected class NonFungibleTokenCreatePrecompile implements Precompile {
+
+		@Override
+		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+			return null;
+		}
+
+		@Override
+		public ExpirableTxnRecord.Builder run(MessageFrame frame, WorldLedgers ledgers) {
+			return null;
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			return 0;
+		}
+
+		@Override
+		public void addImplicitCostsIn(TxnAccessor accessor) {
+			Precompile.super.addImplicitCostsIn(accessor);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			return Precompile.super.getSuccessResultFor(childRecord);
+		}
+
+		@Override
+		public Bytes getFailureResultFor(ResponseCodeEnum status) {
+			return Precompile.super.getFailureResultFor(status);
+		}
+	}
+
+	protected class UpdateTokenWithThresholdKeysPrecompile implements Precompile {
+
+		@Override
+		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+			return null;
+		}
+
+		@Override
+		public ExpirableTxnRecord.Builder run(MessageFrame frame, WorldLedgers ledgers) {
+			return null;
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			return 0;
+		}
+
+		@Override
+		public void addImplicitCostsIn(TxnAccessor accessor) {
+			Precompile.super.addImplicitCostsIn(accessor);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			return Precompile.super.getSuccessResultFor(childRecord);
+		}
+
+		@Override
+		public Bytes getFailureResultFor(ResponseCodeEnum status) {
+			return Precompile.super.getFailureResultFor(status);
 		}
 	}
 
