@@ -117,7 +117,27 @@ public class ContractResources {
 	public static final String NESTED_TRANSFER_CONTRACT_1_PATH = bytecodePath("NestedTransferContract1");
 	public static final String NESTED_TRANSFER_CONTRACT_2_PATH = bytecodePath("NestedTransferContract2");
 	public static final String OUTER_CREATOR_PATH = bytecodePath("OuterCreator");
+	public static final String CREATE_DONOR_PATH = bytecodePath("CreateDonor");
 
+	public static final String BUILD_THEN_REVERT_THEN_BUILD_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"buildThenRevertThenBuild\",\"outputs\":[]," +
+			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String RELINQUISH_FUNDS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"beneficiary\",\"type\":\"address\"}],\"name\":\"relinquishFundsTo\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String CREATE_DONOR_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
+			"\"type\":\"bytes32\"}],\"name\":\"buildDonor\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String CREATE_AND_RECREATE_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
+			"\"type\":\"bytes32\"}],\"name\":\"createAndRecreateTest\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String WRONG_REPEATED_CREATE2_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
+			"\"name\":\"bytecode\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_salt\"," +
+			"\"type\":\"uint256\"}],\"name\":\"wronglyDeployTwice\",\"outputs\":[],\"stateMutability\":\"payable\"," +
+			"\"type\":\"function\"}";
+	public static final String WHAT_IS_FOO_ABI = "{\"inputs\":[],\"name\":\"whatTheFoo\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
 	public static final String START_CHAIN_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"logMessage\"," +
 			"\"type\":\"bytes\"}],\"name\":\"startChain\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
