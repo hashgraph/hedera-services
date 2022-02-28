@@ -139,6 +139,7 @@ import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABL
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
@@ -197,16 +198,17 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-						create2FactoryWorksAsExpected(),
-						canDeleteViaAlias(),
-						cannotSelfDestructToMirrorAddress(),
-						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
-						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-						canUseAliasesInPrecompilesAndContractKeys(),
-						inlineCreateCanFailSafely(),
-						inlineCreate2CanFailSafely(),
-						allLogOpcodesResolveExpectedContractId(),
+						canUseMirrorAliasesForNormalCryptoTransfers(),
+//						create2FactoryWorksAsExpected(),
+//						canDeleteViaAlias(),
+//						cannotSelfDestructToMirrorAddress(),
+//						priorityAddressIsCreate2ForStaticHapiCalls(),
+//						priorityAddressIsCreate2ForInternalMessages(),
+//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+//						canUseAliasesInPrecompilesAndContractKeys(),
+//						inlineCreateCanFailSafely(),
+//						inlineCreate2CanFailSafely(),
+//						allLogOpcodesResolveExpectedContractId(),
 				}
 		);
 	}
@@ -666,8 +668,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								recordWith().status(ACCOUNT_STILL_OWNS_NFTS)),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
 
-						// https://github.com/hashgraph/hedera-services/issues/2876 (mint via delegatable_contract_id
-						//key)
+						// https://github.com/hashgraph/hedera-services/issues/2876 (mint via delegatable_contract_id)
 						tokenUpdate(nft).supplyKey(() -> aliasDelegateContractKey(userAliasAddr.get())),
 						sourcing(() -> contractCall(
 								userAliasAddr.get(),
@@ -696,9 +697,103 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 											.addNftTransfers(NftTransfer.newBuilder()
 													.setSerialNumber(2L)
 													.setSenderAccountID(tt)
-													.setReceiverAccountID(aa(userMirrorAddr.get()))));
+													.setReceiverAccountID(accountId(userMirrorAddr.get()))));
 						}).signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
 						sourcing(() -> getContractInfo(userLiteralId.get()).logged())
+				);
+	}
+
+	// https://github.com/hashgraph/hedera-services/issues/2875
+	private HapiApiSpec canUseMirrorAliasesForNormalCryptoTransfers() {
+		final var party = "party";
+		final var counterparty = "counterparty";
+		final var fungibleToken = "fungibleToken";
+		final var nonFungibleToken = "nonFungibleToken";
+		final var supplyKey = "multi";
+		final AtomicReference<TokenID> ftId = new AtomicReference<>();
+		final AtomicReference<TokenID> nftId = new AtomicReference<>();
+		final AtomicReference<AccountID> partyId = new AtomicReference<>();
+		final AtomicReference<AccountID> counterId = new AtomicReference<>();
+		final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
+		final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
+		final var hbarXfer = "hbarXfer";
+		final var nftXfer = "nftXfer";
+		final var ftXfer = "ftXfer";
+
+		return defaultHapiSpec("CanUseMirrorAliasesForNormalCryptoTransfers")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(party).maxAutomaticTokenAssociations(2),
+						cryptoCreate(counterparty).maxAutomaticTokenAssociations(2),
+						tokenCreate(fungibleToken)
+								.treasury(party)
+								.initialSupply(1_000_000),
+						tokenCreate(nonFungibleToken)
+								.initialSupply(0)
+								.treasury(party)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey(supplyKey),
+						mintToken(nonFungibleToken, List.of(
+								ByteString.copyFromUtf8("Please mind the vase.")
+						)),
+						withOpContext((spec, opLog) -> {
+							final var registry = spec.registry();
+							ftId.set(registry.getTokenID(fungibleToken));
+							nftId.set(registry.getTokenID(nonFungibleToken));
+							partyId.set(registry.getAccountID(party));
+							counterId.set(registry.getAccountID(counterparty));
+							partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+							counterAlias.set(ByteString.copyFrom(asSolidityAddress(counterId.get())));
+						})
+				).when(
+						cryptoTransfer((spec, b) -> b.setTransfers(TransferList.newBuilder()
+								.addAccountAmounts(aaWith(partyAlias.get(), -1))
+								.addAccountAmounts(aaWith(partyId.get(), -1))
+								.addAccountAmounts(aaWith(counterId.get(), +2)))
+						)
+								.signedBy(DEFAULT_PAYER, party)
+								.hasKnownStatus(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS),
+						// Check signing requirements aren't distorted by aliases
+						cryptoTransfer((spec, b) -> {
+							b.setTransfers(TransferList.newBuilder()
+									.addAccountAmounts(aaWith(partyAlias.get(), -2))
+									.addAccountAmounts(aaWith(counterId.get(), +2)));
+						}).signedBy(DEFAULT_PAYER).hasKnownStatus(INVALID_SIGNATURE),
+						cryptoTransfer((spec, b) ->
+							b.addTokenTransfers(TokenTransferList.newBuilder()
+									.setToken(nftId.get())
+									.addNftTransfers(ocWith(accountId(partyAlias.get()), counterId.get(), 1L)))
+						).signedBy(DEFAULT_PAYER).hasKnownStatus(INVALID_SIGNATURE),
+						cryptoTransfer((spec, b) ->
+								b.addTokenTransfers(TokenTransferList.newBuilder()
+										.setToken(ftId.get())
+										.addTransfers(aaWith(partyAlias.get(), -500))
+										.addTransfers(aaWith(counterAlias.get(), +500)))
+						).signedBy(DEFAULT_PAYER).hasKnownStatus(INVALID_SIGNATURE),
+						// Now do the actual transfers
+						cryptoTransfer((spec, b) ->
+							b.setTransfers(TransferList.newBuilder()
+									.addAccountAmounts(aaWith(partyAlias.get(), -2))
+									.addAccountAmounts(aaWith(counterAlias.get(), +2)))
+						).signedBy(DEFAULT_PAYER, party).via(hbarXfer),
+						cryptoTransfer((spec, b) ->
+								b.addTokenTransfers(TokenTransferList.newBuilder()
+										.setToken(nftId.get())
+										.addNftTransfers(ocWith(
+												accountId(partyAlias.get()),
+												accountId(counterAlias.get()),
+												1L)))
+						).signedBy(DEFAULT_PAYER, party).via(nftXfer),
+						cryptoTransfer((spec, b) ->
+								b.addTokenTransfers(TokenTransferList.newBuilder()
+										.setToken(ftId.get())
+										.addTransfers(aaWith(partyAlias.get(), -500))
+										.addTransfers(aaWith(counterAlias.get(), +500)))
+						).signedBy(DEFAULT_PAYER, party).via(ftXfer)
+				).then(
+						getTxnRecord(hbarXfer).logged(),
+						getTxnRecord(nftXfer).logged(),
+						getTxnRecord(ftXfer).logged()
 				);
 	}
 
@@ -791,7 +886,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								saltingCreatorLiteralId.set(
 										asContractString(
 												contractIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get())))),
-						// https://github.com/hashgraph/hedera-services/issues/2867 (can't re-create2 after selfdestruct)
+						// https://github.com/hashgraph/hedera-services/issues/2867 (can't re-create2 after
+						//selfdestruct)
 						sourcing(() -> contractCall(saltingCreatorAliasAddr.get(), CREATE_AND_RECREATE_ABI, otherSalt)
 								.payingWith(GENESIS)
 								.gas(2_000_000L)
@@ -1827,15 +1923,34 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.build();
 	}
 
-	private AccountAmount aaWith(final String hexedEvmAddress, final long amount) {
+	private AccountAmount aaWith(final ByteString evmAddress, final long amount) {
 		return AccountAmount.newBuilder()
-				.setAccountID(aa(hexedEvmAddress))
+				.setAccountID(accountId(evmAddress))
 				.setAmount(amount)
 				.build();
 	}
 
-	private AccountID aa(final String hexedEvmAddress) {
+	private AccountAmount aaWith(final String hexedEvmAddress, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(accountId(hexedEvmAddress))
+				.setAmount(amount)
+				.build();
+	}
+
+	private NftTransfer ocWith(final AccountID from, final AccountID to, final long serialNo) {
+		return NftTransfer.newBuilder()
+				.setSenderAccountID(from)
+				.setReceiverAccountID(to)
+				.setSerialNumber(serialNo)
+				.build();
+	}
+
+	private AccountID accountId(final String hexedEvmAddress) {
 		return AccountID.newBuilder().setAlias(ByteString.copyFrom(unhex(hexedEvmAddress))).build();
+	}
+
+	private AccountID accountId(final ByteString evmAddress) {
+		return AccountID.newBuilder().setAlias(evmAddress).build();
 	}
 
 	private Key aliasContractIdKey(final String hexedEvmAddress) {
