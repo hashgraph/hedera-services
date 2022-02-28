@@ -117,7 +117,20 @@ public class ContractResources {
 	public static final String NESTED_TRANSFER_CONTRACT_1_PATH = bytecodePath("NestedTransferContract1");
 	public static final String NESTED_TRANSFER_CONTRACT_2_PATH = bytecodePath("NestedTransferContract2");
 	public static final String OUTER_CREATOR_PATH = bytecodePath("OuterCreator");
+	public static final String VARIOUS_CREATE2_CALLS_PATH = bytecodePath("VariousCreate2Calls");
 
+	public static final String VARIOUS_CALLS_NORMAL_ABI = "{\"inputs\":[],\"name\":\"makeNormalCall\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"" +
+			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_STATIC_ABI = "{\"inputs\":[],\"name\":\"makeStaticCall\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateM" +
+			"utability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_DELEGATE_ABI = "{\"inputs\":[],\"name\":\"makeDelegateCall\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_CODE_ABI = "{\"inputs\":[],\"name\":\"makeCallCode\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String START_CHAIN_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"logMessage\"," +
 			"\"type\":\"bytes\"}],\"name\":\"startChain\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
