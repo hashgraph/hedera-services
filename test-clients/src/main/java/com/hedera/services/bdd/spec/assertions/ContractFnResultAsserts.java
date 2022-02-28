@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -40,6 +41,7 @@ import java.util.Random;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 
 public class ContractFnResultAsserts extends BaseErroringAssertsProvider<ContractFunctionResult> {
 	static final Logger log = LogManager.getLogger(ContractFnResultAsserts.class);
@@ -51,10 +53,26 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 		return new ContractFnResultAsserts();
 	}
 
-	//  TODO: If refactor approved: refactor this method to depend on the Utils.getABIFor() logic in order to achieve
-	//   complete decoupling from the ContractResources file
 	public ContractFnResultAsserts resultThruAbi(
 			String abi, Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
+		registerProvider((spec, o) -> {
+			Object[] actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
+			Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
+			if (error.isPresent()) {
+				throw error.get();
+			}
+		});
+		return this;
+	}
+
+	/*  Note:
+	    This method utilizes algorithmic extraction of a function ABI by the name of the function and the contract
+	    and should replace the "resultThruAbi" method, which depends on function ABI, passed as String literal.
+    */
+	public ContractFnResultAsserts resultViaFunctionName(final String functionName,
+														 final String contractName,
+														 final Function<HapiApiSpec, Function<Object[], Optional<Throwable>>> provider) {
+		final var abi = Utils.getABIFor(FUNCTION, functionName, contractName);
 		registerProvider((spec, o) -> {
 			Object[] actualObjs = viaAbi(abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
 			Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
@@ -81,7 +99,7 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 
 	public ContractFnResultAsserts evmAddress(ByteString expected) {
 		registerProvider((spec, o) -> {
-			final var result = (ContractFunctionResult)	o;
+			final var result = (ContractFunctionResult) o;
 			Assertions.assertTrue(result.hasEvmAddress(), "Missing EVM address, expected " + expected);
 			final var actual = result.getEvmAddress().getValue();
 			Assertions.assertEquals(expected, actual, "Bad EVM address");

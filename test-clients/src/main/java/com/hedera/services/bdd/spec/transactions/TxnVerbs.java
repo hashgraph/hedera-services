@@ -89,7 +89,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class TxnVerbs {
-	// TODO: After refactor: remove the temporary new structure folder and refactor the bellow path
 
 	/* CRYPTO */
 	public static HapiCryptoCreate cryptoCreate(String account) {
@@ -322,17 +321,8 @@ public class TxnVerbs {
 		return new HapiContractCall(contract);
 	}
 
-	/*  TODO: remove the ternary operator after complete EETs refactor
-		Note to the reviewer:
-		the bellow implementation of the contractCall() method with ternary operator provides for backward compatibility
-		and interoperability with the EETs, which call the method with a direct String ABI.
-		The " functionName.charAt(0) == '{' " will be removed when all the EETs are refactored to depend on the new Utils.getABIFor()
-		logic.
-	*/
 	public static HapiContractCall contractCall(String contract, String functionName, Object... params) {
-		return functionName.charAt(0) == '{'
-				? new HapiContractCall(functionName, contract, params)
-				: new HapiContractCall(getABIFor(FUNCTION, functionName, contract), contract, params);
+		return new HapiContractCall(getABIFor(FUNCTION, functionName, contract), contract, params);
 	}
 
 	public static HapiContractCall contractCall(String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
@@ -364,7 +354,7 @@ public class TxnVerbs {
 			List<HapiSpecOperation> ops = new ArrayList<>();
 			for (String contractName : contractsNames) {
 				final var path = getResourcePath(contractName, ".bin");
-				final var file = fileCreate(contractName);
+				final var file = new HapiFileCreate(contractName);
 				final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
 				ops.add(file);
 				ops.add(updatedFile);
@@ -386,8 +376,7 @@ public class TxnVerbs {
 		}
 	}
 
-	/*	Note to the reviewer:
-		This method enables the developer to create a file and deploy a contract with a single method call.
+	/*	This method enables the developer to create a file and deploy a contract with a single method call.
 		The execution of the method requires the spec context, therefore the invocation is not straightforward:
 		"withOpContext((spec, log) -> contractDeploy(contractName, spec).execFor(spec));"
 		It can be convenient when the developer deploys a nested contract, since both the creation of the outer and the inner contract
@@ -395,9 +384,11 @@ public class TxnVerbs {
 		"withOpContext((spec, log) -> contractDeploy(INNER_CONTRACT, spec).execFor(spec)),
 		 withOpContext((spec, log) -> contractDeploy(OUTER_CONTRACT, spec, getNestedContractAddress(INNER_CONTRACT, spec)).execFor(spec))"
 	*/
-	public static HapiContractCreate contractDeploy(final String contractName, final HapiApiSpec spec, final Object... constructorParams) {
+	public static HapiContractCreate contractDeploy(final String contractName,
+													final HapiApiSpec spec,
+													final Object... constructorParams) {
 		final var path = getResourcePath(contractName, ".bin");
-		sourcing(() -> fileCreate(contractName)).execFor(spec);
+		sourcing(() -> new HapiFileCreate(contractName)).execFor(spec);
 		sourcing(() -> updateLargeFile(GENESIS, contractName, extractByteCode(path))).execFor(spec);
 
 		HapiContractCreate contract;
@@ -418,5 +409,4 @@ public class TxnVerbs {
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
 		return new HapiFreeze().startingAt(freezeStartTime);
 	}
-
 }

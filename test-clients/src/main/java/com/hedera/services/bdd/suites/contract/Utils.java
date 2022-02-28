@@ -44,9 +44,7 @@ import static java.lang.System.arraycopy;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class Utils {
-
-	public static final String RESOURCE_PATH = "src/main/resource/contract/newstructure/%1$s/%1$s";
-
+	public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s";
 
 	public static ByteString eventSignatureOf(String event) {
 		return ByteString.copyFrom(Hash.keccak256(

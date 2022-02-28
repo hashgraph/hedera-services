@@ -108,21 +108,21 @@ public class QueryVerbs {
 		return new HapiGetContractRecords(contract);
 	}
 
-	/*  TODO: remove the ternary operator after complete EETs refactor
-		Note to the reviewer:
-		the bellow implementation of the contractCall() method with ternary operator provides for backward compatibility
-		and interoperability with the EETs, which call the method with a direct String ABI.
-		The " functionName.charAt(0) == '{' " will be removed when all the EETs are refactored to depend on the new Utils.getABIFor()
-		logic.
-	*/
 	public static HapiContractCallLocal contractCallLocal(
 			final String contract,
 			final String functionName,
-			final Object... params
-	) {
-		return functionName.charAt(0) == '{'
-				? new HapiContractCallLocal(functionName, contract, params)
-				: new HapiContractCallLocal(getABIFor(FUNCTION, functionName, contract), contract, params);
+			final Object... params) {
+		return new HapiContractCallLocal(getABIFor(FUNCTION, functionName, contract), contract, params);
+	}
+
+	/*  Note:
+		This function provides for the proper execution of an isolated spec, which is validating proper handling of
+		INVALID_CONTRACT_ID response code
+	*/
+	public static HapiContractCallLocal contractCallLocalWithFunctionAbi(final String contract,
+																		 final String abi,
+																		 final Object... params) {
+		return new HapiContractCallLocal(abi, contract, params);
 	}
 
 	public static HapiContractCallLocal contractCallLocalFrom(final String details) {

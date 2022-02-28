@@ -151,7 +151,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	/* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-	// TODO: Is "List.of(token, token)" valid scenario and can we pass list of identical token addresses, or this is unhandled edge case
 	private HapiApiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
 		return defaultHapiSpec("InvalidAbiCallGracefullyFailsWithinSingleContractCall")
 				.given(
