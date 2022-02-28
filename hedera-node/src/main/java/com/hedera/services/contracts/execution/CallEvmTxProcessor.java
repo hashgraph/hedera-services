@@ -86,7 +86,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				false,
 				consensusTime,
 				false,
-				OptionalLong.empty());
+				OptionalLong.empty(),
+				aliasManager.resolveForEvm(receiver));
 	}
 
 	@Override
