@@ -88,8 +88,25 @@ contract TokenCreateContract is HederaTokenService {
         createdTokenAddress = token;
     }
 
+    function createNonFungibleToken() external returns (address createdTokenAddress){
+        IHederaTokenService.HederaToken memory myToken;
+        myToken.name = "MyNFT";
+        myToken.symbol = "MNFT";
+        myToken.treasury = address(this);
+
+        // create the token through HTS with default expiry and royalty fees;
+        (bool success, address token, bytes memory errorMessage) =
+        HederaTokenService.createNonFungibleToken(myToken);
+
+        if (!success) {
+            revert (abi.decode(errorMessage, (string)));
+        }
+
+        createdTokenAddress = token;
+    }
+
     // Create NFT with a royalty fee, contract has the mint and admin key.
-    function createNonFungible(address feeCollector) external returns (address createdTokenAddress){
+    function createNonFungibleTokenWithCustomFees(address feeCollector) external returns (address createdTokenAddress){
 
         // TokenKey of type adminKey and supplyKey with value this contract id
         uint adminSupplyKeyType;

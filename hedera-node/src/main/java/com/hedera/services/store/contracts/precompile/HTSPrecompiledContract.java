@@ -191,13 +191,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected static final int ABI_ID_DISSOCIATE_TOKENS = 0x78b63918;
 	//dissociateToken(address account, address token)
 	protected static final int ABI_ID_DISSOCIATE_TOKEN = 0x099794e8;
-	//createFungible(address contractKey)
+	//createFungibleToken(HederaToken memory token, uint initialTotalSupply, uint decimals)
 	protected static final int ABI_ID_CREATE_FUNGIBLE_TOKEN = 0x7812a04b;
-	//createFungibleWithFees(address contractKey)
+	//createFungibleTokenWithCustomFees(HederaToken memory token, uint initialTotalSupply, uint decimals, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees)
 	protected static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES = 0x4b37e995;
-	//createNonFungible(address feeCollector)
-	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN = -0x21abcac2;
-	//updateTokenWithThresholdKeys(address token, bytes memory ed25519, bytes memory ECDSA_secp256k1)
+	//createNonFungibleToken(HederaToken memory token)
+	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN = -0x6238ee20;
+	//createNonFungibleTokenWithCustomFees(HederaToken memory token, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees, RoyaltyFee[] memory royaltyFees)
+	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES = -0x21abcac2;
+	//setTokenThresholdKeys (address token, TresholdTokenKey[] memory tokenKeys)
 	protected static final int ABI_ID_UPDATE_TOKEN_WITH_THRESHOLD_KEYS = 0x3ff927f;
 
 	private int functionId;
@@ -314,6 +316,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case ABI_ID_CREATE_FUNGIBLE_TOKEN -> new FungibleTokenCreatePrecompile();
 					case ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> new FungibleTokenCreateWithFeesPrecompile();
 					case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> new NonFungibleTokenCreatePrecompile();
+					case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> new NonFungibleTokenCreateWithFeesPrecompile();
 					case ABI_ID_UPDATE_TOKEN_WITH_THRESHOLD_KEYS -> new UpdateTokenWithThresholdKeysPrecompile();
 					default -> null;
 				};
@@ -773,6 +776,39 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class NonFungibleTokenCreatePrecompile implements Precompile {
+
+		@Override
+		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+			return null;
+		}
+
+		@Override
+		public ExpirableTxnRecord.Builder run(MessageFrame frame, WorldLedgers ledgers) {
+			return null;
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			return 0;
+		}
+
+		@Override
+		public void addImplicitCostsIn(TxnAccessor accessor) {
+			Precompile.super.addImplicitCostsIn(accessor);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+			return Precompile.super.getSuccessResultFor(childRecord);
+		}
+
+		@Override
+		public Bytes getFailureResultFor(ResponseCodeEnum status) {
+			return Precompile.super.getFailureResultFor(status);
+		}
+	}
+
+	protected class NonFungibleTokenCreateWithFeesPrecompile implements Precompile {
 
 		@Override
 		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {

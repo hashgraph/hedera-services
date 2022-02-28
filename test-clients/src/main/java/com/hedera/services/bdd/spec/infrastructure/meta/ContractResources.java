@@ -882,8 +882,12 @@ public class ContractResources {
 			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
 			"\"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
-	public static final String CREATE_NON_FUNGIBLE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
-			"\"name\": \"feeCollector\", \"type\": \"address\" } ], \"name\": \"createNonFungible\", " +
+	public static final String CREATE_NON_FUNGIBLE_ABI = "{ \"inputs\": [], \"name\": \"createNonFungibleToken\", " +
+			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
+			"\"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+
+	public static final String CREATE_NON_FUNGIBLE_WITH_FEES_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
+			"\"name\": \"feeCollector\", \"type\": \"address\" } ], \"name\": \"createNonFungibleTokenWithCustomFees\", " +
 			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
 			"\"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
