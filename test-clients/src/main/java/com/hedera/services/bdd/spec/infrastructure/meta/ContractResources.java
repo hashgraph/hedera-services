@@ -119,6 +119,9 @@ public class ContractResources {
 	public static final String OUTER_CREATOR_PATH = bytecodePath("OuterCreator");
 	public static final String CREATE_DONOR_PATH = bytecodePath("CreateDonor");
 
+	public static final String BUILD_THEN_REVERT_THEN_BUILD_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"buildThenRevertThenBuild\",\"outputs\":[]," +
+			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
 	public static final String RELINQUISH_FUNDS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"beneficiary\",\"type\":\"address\"}],\"name\":\"relinquishFundsTo\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";

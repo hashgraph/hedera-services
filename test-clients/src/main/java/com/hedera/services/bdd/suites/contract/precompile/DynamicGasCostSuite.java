@@ -61,6 +61,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CALL_RETURNER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CREATE_RETURNER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_RETURNER_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BUILD_THEN_REVERT_THEN_BUILD_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_DEPLOY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_ADDRESS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_BYTECODE_ABI;
@@ -196,16 +197,16 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-//						create2FactoryWorksAsExpected(),
-//						canDeleteViaAlias(),
+						create2FactoryWorksAsExpected(),
+						canDeleteViaAlias(),
 						cannotSelfDestructToMirrorAddress(),
-//						priorityAddressIsCreate2ForStaticHapiCalls(),
-//						priorityAddressIsCreate2ForInternalMessages(),
-//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-//						canUseAliasesInPrecompilesAndContractKeys(),
-//						inlineCreateCanFailSafely(),
-//						inlineCreate2CanFailSafely(),
-//						allLogOpcodesResolveExpectedContractId(),
+						priorityAddressIsCreate2ForStaticHapiCalls(),
+						priorityAddressIsCreate2ForInternalMessages(),
+						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+						canUseAliasesInPrecompilesAndContractKeys(),
+						inlineCreateCanFailSafely(),
+						inlineCreate2CanFailSafely(),
+						allLogOpcodesResolveExpectedContractId(),
 				}
 		);
 	}
@@ -702,16 +703,20 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	}
 
 	// https://github.com/hashgraph/hedera-services/issues/2874
+	// https://github.com/hashgraph/hedera-services/issues/2925
 	private HapiApiSpec cannotSelfDestructToMirrorAddress() {
 		final var creation2 = "create2Txn";
+		final var messyCreation2 = "messyCreate2Txn";
 		final var initcode = "initcode";
-		final var selfdestruction = "selfdestruction";
 		final var createDonor = "createDonor";
 
 		final AtomicReference<String> donorAliasAddr = new AtomicReference<>();
 		final AtomicReference<String> donorMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> mDonorAliasAddr = new AtomicReference<>();
+		final AtomicReference<String> mDonorMirrorAddr = new AtomicReference<>();
 
 		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+		final byte[] otherSalt = unhex("aabbccddee880011aabbccddee880011aabbccddee880011aabbccddee880011");
 
 		return defaultHapiSpec("CannotSelfDestructToMirrorAddress")
 				.given(
@@ -728,7 +733,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.via(creation2),
 						captureOneChildCreate2MetaFor(
 								"donor", creation2, donorMirrorAddr, donorAliasAddr)
-				).when().then(
+				).when(
 						sourcing(() -> contractCall(
 								donorAliasAddr.get(),
 								RELINQUISH_FUNDS_ABI,
@@ -737,6 +742,17 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								donorAliasAddr.get(),
 								RELINQUISH_FUNDS_ABI,
 								donorMirrorAddr.get()).hasKnownStatus(OBTAINER_SAME_CONTRACT_ID))
+				).then(
+						contractCall(createDonor, BUILD_THEN_REVERT_THEN_BUILD_ABI, otherSalt)
+								.sending(1_000)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(messyCreation2),
+						captureOneChildCreate2MetaFor(
+								"questionableDonor", messyCreation2, mDonorMirrorAddr, mDonorAliasAddr),
+						sourcing(() -> getContractInfo(mDonorAliasAddr.get())
+								.has(contractWith().balance(100))
+								.logged())
 				);
 	}
 
@@ -775,10 +791,11 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								saltingCreatorLiteralId.set(
 										asContractString(
 												contractIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get())))),
-						// https://github.com/hashgraph/hedera-services/issues/2867 (re-create2 after selfdestruct)
+						// https://github.com/hashgraph/hedera-services/issues/2867 (can't re-create2 after selfdestruct)
 						sourcing(() -> contractCall(saltingCreatorAliasAddr.get(), CREATE_AND_RECREATE_ABI, otherSalt)
 								.payingWith(GENESIS)
-								.gas(4_000_000L))
+								.gas(2_000_000L)
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED))
 				).when(
 						sourcing(() -> contractUpdate(saltingCreatorAliasAddr.get())
 								.signedBy(DEFAULT_PAYER, adminKey)

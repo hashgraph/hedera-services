@@ -15,6 +15,19 @@ contract CreateDonor {
         Donor donor = new Donor{salt: salt, value: 100}();
         require(address(donor) == predictedAddress);
     }
+
+    function buildThenRevert(bytes32 salt) public payable {
+        new Donor{salt: salt, value: 100}();
+        revert("NOPE");
+    }
+
+    function buildThenRevertThenBuild(bytes32 salt) public payable {
+        try this.buildThenRevert{value: 100}(salt) {
+          /* No-op */
+        } catch Error(string memory) {
+        }
+        new Donor{salt: salt, value: 100}();
+    }
 }
 
 contract Donor {

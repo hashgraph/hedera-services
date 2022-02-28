@@ -78,6 +78,16 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		return this;
 	}
 
+	public ContractInfoAsserts balance(final long amount) {
+		registerProvider((spec, o) -> {
+			assertEquals(
+					amount,
+					object2ContractInfo(o).getBalance(),
+					"Bad balance");
+		});
+		return this;
+	}
+
 	public ContractInfoAsserts solidityAddress(String contract) {
 		registerProvider((spec, o) -> {
 			assertEquals(
