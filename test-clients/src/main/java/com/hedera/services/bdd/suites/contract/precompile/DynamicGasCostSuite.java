@@ -886,8 +886,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								saltingCreatorLiteralId.set(
 										asContractString(
 												contractIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get())))),
-						// https://github.com/hashgraph/hedera-services/issues/2867 (can't re-create2 after
-						//selfdestruct)
+						// https://github.com/hashgraph/hedera-services/issues/2867 (can't re-create2 after selfdestruct)
 						sourcing(() -> contractCall(saltingCreatorAliasAddr.get(), CREATE_AND_RECREATE_ABI, otherSalt)
 								.payingWith(GENESIS)
 								.gas(2_000_000L)
