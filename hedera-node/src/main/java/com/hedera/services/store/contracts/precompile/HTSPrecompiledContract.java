@@ -350,11 +350,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
-			childRecord = precompile.run(frame, ledgers);
+			final List<FcAssessedCustomFee> assessedCustomFees = precompile.run(frame, ledgers);
+			/*We need to first commit the ledgers before creating any synthetic records, since the sideEffectsTracker
+			is populated during commit*/
+			ledgers.commit();
+
+			childRecord = creator.createSuccessfulSyntheticRecord(
+					assessedCustomFees, sideEffectsTracker, EMPTY_MEMO);
 			result = precompile.getSuccessResultFor(childRecord);
 			addContractCallResultToRecord(childRecord, result, Optional.empty());
-
-			ledgers.commit();
 		} catch (InvalidTransactionException e) {
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
@@ -474,7 +478,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	interface Precompile {
 		TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver);
 
-		ExpirableTxnRecord.Builder run(MessageFrame frame, WorldLedgers ledgers);
+		List<FcAssessedCustomFee> run(MessageFrame frame, WorldLedgers ledgers);
 
 		long getMinimumFeeInTinybars(Timestamp consensusTime);
 
@@ -495,7 +499,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		protected Association associateOp;
 
 		@Override
-		public ExpirableTxnRecord.Builder run(
+		public List<FcAssessedCustomFee> run(
 				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
@@ -515,7 +519,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var associateLogic = associateLogicFactory.newAssociateLogic(
 					tokenStore, accountStore, dynamicProperties);
 			associateLogic.associate(accountId, associateOp.tokenIds());
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffectsTracker, EMPTY_MEMO);
+			return NO_CUSTOM_FEES;
 		}
 
 		@Override
@@ -544,7 +548,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		protected Dissociation dissociateOp;
 
 		@Override
-		public ExpirableTxnRecord.Builder run(
+		public List<FcAssessedCustomFee> run(
 				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
@@ -563,7 +567,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var dissociateLogic = dissociateLogicFactory.newDissociateLogic(
 					validator, tokenStore, accountStore, dissociationFactory);
 			dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffectsTracker, EMPTY_MEMO);
+			return NO_CUSTOM_FEES;
 		}
 
 		@Override
@@ -598,7 +602,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public ExpirableTxnRecord.Builder run(
+		public List<FcAssessedCustomFee> run(
 				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
@@ -622,7 +626,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			} else {
 				mintLogic.mint(tokenId, 0, mintOp.amount(), NO_METADATA, Instant.EPOCH);
 			}
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffectsTracker, EMPTY_MEMO);
+			return NO_CUSTOM_FEES;
 		}
 
 		@Override
@@ -680,7 +684,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public ExpirableTxnRecord.Builder run(
+		public List<FcAssessedCustomFee> run(
 				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
@@ -741,8 +745,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			transferLogic.doZeroSum(changes);
 
-			return creator.createSuccessfulSyntheticRecord(
-					impliedTransfers.getAssessedCustomFees(), sideEffectsTracker, EMPTY_MEMO);
+			return impliedTransfers.getAssessedCustomFees();
 		}
 
 		private void extrapolateDetailsFromSyntheticTxn() {
@@ -848,7 +851,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public ExpirableTxnRecord.Builder run(
+		public List<FcAssessedCustomFee> run(
 				final MessageFrame frame,
 				final WorldLedgers ledgers
 		) {
@@ -872,7 +875,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			} else {
 				burnLogic.burn(tokenId, burnOp.amount(), NO_SERIAL_NOS);
 			}
-			return creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffectsTracker, EMPTY_MEMO);
+			return NO_CUSTOM_FEES;
 		}
 
 		@Override
