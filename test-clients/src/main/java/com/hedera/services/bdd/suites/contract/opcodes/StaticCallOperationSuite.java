@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,7 +37,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -72,7 +72,7 @@ public class StaticCallOperationSuite extends HapiApiSuite {
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
 							AccountID id = spec.registry().getAccountID(DEFAULT_PAYER);
-							String solidityAddress = calculateSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
+							String solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
 
 							final var contractCall = contractCall(CONTRACT,
 									ContractResources.STATIC_CALL_OP_CHECKER_ABI,
