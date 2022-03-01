@@ -52,7 +52,9 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeNftAllowances;
-import static com.hedera.services.utils.SerializationUtils.serializeAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeCryptoAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeNftAllowance;
+import static com.hedera.services.utils.SerializationUtils.serializeTokenAllowances;
 
 public class MerkleAccountState extends AbstractMerkleLeaf {
 	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
@@ -201,7 +203,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(number);
 		out.writeByteArray(alias.toByteArray());
 		out.writeInt(numContractKvPairs);
-		serializeAllowances(out, cryptoAllowances, fungibleTokenAllowances, nftAllowances);
+		serializeCryptoAllowances(out, cryptoAllowances);
+		serializeTokenAllowances(out, fungibleTokenAllowances);
+		serializeNftAllowance(out, nftAllowances);
 		out.writeLong(lastAssociatedToken);
 	}
 

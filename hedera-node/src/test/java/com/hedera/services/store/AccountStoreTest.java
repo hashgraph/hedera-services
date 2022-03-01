@@ -44,6 +44,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -132,6 +133,9 @@ class AccountStoreTest {
 	void canAlwaysLoadWithNonzeroBalance() {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		miscAccount.setCryptoAllowances(Collections.emptyMap());
+		miscAccount.setFungibleTokenAllowances(Collections.emptyMap());
+		miscAccount.setNftAllowances(Collections.emptyMap());
 		given(tokenRels.getImmutableRef(firstRelKey.asAccountTokenRel())).willReturn(firstRel);
 		given(tokenRels.getImmutableRef(secondRelKey.asAccountTokenRel())).willReturn(secondRel);
 

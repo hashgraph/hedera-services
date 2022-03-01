@@ -42,6 +42,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
@@ -89,9 +90,15 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 	Optional<LongConsumer> newNumObserver = Optional.empty();
 	private Optional<String> proxy = Optional.empty();
+	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 
 	public HapiContractCreate exposingNumTo(LongConsumer obs) {
 		newNumObserver = Optional.of(obs);
+		return this;
+	}
+
+	public HapiContractCreate withExplicitParams(final Supplier<String> supplier) {
+		explicitHexedParams = Optional.of(supplier);
 		return this;
 	}
 
@@ -258,9 +265,14 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		if (!bytecodeFile.isPresent()) {
 			setBytecodeToDefaultContract(spec);
 		}
-		Optional<byte[]> params = abi.isPresent()
-				? Optional.of(CallTransaction.Function.fromJsonInterface(abi.get()).encodeArguments(args.get()))
-				: Optional.empty();
+		Optional<byte[]> params;
+		if (explicitHexedParams.isPresent()) {
+			params = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex);
+		} else {
+			params = abi.isPresent()
+					? Optional.of(CallTransaction.Function.fromJsonInterface(abi.get()).encodeArguments(args.get()))
+					: Optional.empty();
+		}
 		FileID bytecodeFileId = TxnUtils.asFileId(bytecodeFile.get(), spec);
 		ContractCreateTransactionBody opBody = spec
 				.txns()

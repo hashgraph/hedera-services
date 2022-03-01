@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -82,9 +83,9 @@ public class Account {
 	private String memo = "";
 	private Id proxy;
 	private int autoAssociationMetadata;
-	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
-	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
-	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
+	private TreeMap<EntityNum, Long> cryptoAllowances;
+	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
+	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
 	private EntityNumPair lastAssociatedToken;
 
 	public Account(Id id) {
@@ -394,6 +395,13 @@ public class Account {
 	}
 
 	public Map<EntityNum, Long> getCryptoAllowances() {
+		return cryptoAllowances == null ? Collections.emptyMap() : cryptoAllowances;
+	}
+
+	public SortedMap<EntityNum, Long> getMutableCryptoAllowances() {
+		if (cryptoAllowances == null) {
+			cryptoAllowances = new TreeMap<>();
+		}
 		return cryptoAllowances;
 	}
 
@@ -402,6 +410,13 @@ public class Account {
 	}
 
 	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+		return fungibleTokenAllowances == null ? Collections.emptyMap() : fungibleTokenAllowances;
+	}
+
+	public SortedMap<FcTokenAllowanceId, Long> getMutableFungibleTokenAllowances() {
+		if (fungibleTokenAllowances == null) {
+			fungibleTokenAllowances = new TreeMap<>();
+		}
 		return fungibleTokenAllowances;
 	}
 
@@ -411,6 +426,13 @@ public class Account {
 	}
 
 	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+		return nftAllowances == null ? Collections.emptyMap() : nftAllowances;
+	}
+
+	public SortedMap<FcTokenAllowanceId, FcTokenAllowance> getMutableNftAllowances() {
+		if (nftAllowances == null) {
+			nftAllowances = new TreeMap<>();
+		}
 		return nftAllowances;
 	}
 

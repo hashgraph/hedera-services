@@ -161,7 +161,7 @@ class AccountTest {
 		// given:
 		final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, " +
 				"tokens=[0.0.666, 0.0.777, 0.0.555], ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, " +
-				"alias=, cryptoAllowances={}, fungibleTokenAllowances={}, nftAllowances={}" +
+				"alias=, cryptoAllowances=null, fungibleTokenAllowances=null, nftAllowances=null" +
 				subject.getAlias().toStringUtf8() + ", lastAssociatedToken=PermHashLong(12345, 666)}";
 
 		// expect:

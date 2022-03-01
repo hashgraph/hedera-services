@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.common.CommonUtils;
 import org.ethereum.core.CallTransaction;
 import org.ethereum.util.ByteUtil;
 
@@ -50,6 +51,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
+import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -77,6 +79,7 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 	private Optional<String> details = Optional.empty();
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
 	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
+	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 
 	private Consumer<Object[]> resultObserver = null;
 
@@ -87,6 +90,11 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 
 	@Override
 	protected HapiContractCall self() {
+		return this;
+	}
+
+	public HapiContractCall withExplicitParams(final Supplier<String> supplier) {
+		explicitHexedParams = Optional.of(supplier);
 		return this;
 	}
 
@@ -169,13 +177,17 @@ public class HapiContractCall extends HapiTxnOp<HapiContractCall> {
 		}
 
 		byte[] callData;
-		final var paramsList = Arrays.asList(params);
-		final var tupleExist = paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
-		if (tupleExist) {
-			callData = encodeParametersWithTuple(params);
+		if (explicitHexedParams.isPresent()) {
+			callData = explicitHexedParams.map(Supplier::get).map(CommonUtils::unhex).get();
 		} else {
-			callData = (!abi.equals(FALLBACK_ABI))
-					? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
+			final var paramsList = Arrays.asList(params);
+			final var tupleExist = paramsList.stream().anyMatch(p -> p instanceof Tuple || p instanceof Tuple[]);
+			if (tupleExist) {
+				callData = encodeParametersWithTuple(params);
+			} else {
+				callData = (!abi.equals(FALLBACK_ABI))
+						? CallTransaction.Function.fromJsonInterface(abi).encode(params) : new byte[] { };
+			}
 		}
 
 		ContractCallTransactionBody opBody = spec

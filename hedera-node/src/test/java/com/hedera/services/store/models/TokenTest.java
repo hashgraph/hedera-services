@@ -608,8 +608,8 @@ class TokenTest {
 	void toStringWorks() {
 		final var desired = "Token{id=1.2.3, type=null, deleted=false, autoRemoved=false, " +
 				"treasury=Account{id=0.0.0, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
-				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=, cryptoAllowances={}, " +
-				"fungibleTokenAllowances={}, nftAllowances={}, lastAssociatedToken=null}, autoRenewAccount=null, " +
+				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=, cryptoAllowances=null, " +
+				"fungibleTokenAllowances=null, nftAllowances=null, lastAssociatedToken=null}, autoRenewAccount=null, " +
 				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, " +
 				"pauseKey=<N/A>, paused=false}";
 

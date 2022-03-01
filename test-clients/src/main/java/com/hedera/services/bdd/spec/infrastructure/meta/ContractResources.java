@@ -20,7 +20,13 @@ package com.hedera.services.bdd.spec.infrastructure.meta;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class ContractResources {
 	public static final String HW_MINT_PATH = bytecodePath("HelloWorldMint");
@@ -113,7 +119,34 @@ public class ContractResources {
 	public static final String PRECOMPILE_CREATE2_USER_PATH = bytecodePath("Create2PrecompileUser");
 	public static final String REVERTING_CREATE_FACTORY_PATH = bytecodePath("RevertingCreateFactory");
 	public static final String REVERTING_CREATE2_FACTORY_PATH = bytecodePath("RevertingCreate2Factory");
+	public static final String NESTED_TRANSFERRING_CONTRACT_PATH = bytecodePath("NestedTransferringContract");
+	public static final String NESTED_TRANSFER_CONTRACT_1_PATH = bytecodePath("NestedTransferContract1");
+	public static final String NESTED_TRANSFER_CONTRACT_2_PATH = bytecodePath("NestedTransferContract2");
+	public static final String OUTER_CREATOR_PATH = bytecodePath("OuterCreator");
+	public static final String CREATE_DONOR_PATH = bytecodePath("CreateDonor");
 
+	public static final String BUILD_THEN_REVERT_THEN_BUILD_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"buildThenRevertThenBuild\",\"outputs\":[]," +
+			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String RELINQUISH_FUNDS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"beneficiary\",\"type\":\"address\"}],\"name\":\"relinquishFundsTo\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String CREATE_DONOR_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
+			"\"type\":\"bytes32\"}],\"name\":\"buildDonor\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String CREATE_AND_RECREATE_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
+			"\"type\":\"bytes32\"}],\"name\":\"createAndRecreateTest\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String WRONG_REPEATED_CREATE2_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
+			"\"name\":\"bytecode\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_salt\"," +
+			"\"type\":\"uint256\"}],\"name\":\"wronglyDeployTwice\",\"outputs\":[],\"stateMutability\":\"payable\"," +
+			"\"type\":\"function\"}";
+	public static final String WHAT_IS_FOO_ABI = "{\"inputs\":[],\"name\":\"whatTheFoo\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String START_CHAIN_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"logMessage\"," +
+			"\"type\":\"bytes\"}],\"name\":\"startChain\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
 	public static final String NORMAL_DEPLOY_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"bytecode\"," +
 			"\"type\":\"bytes\"}],\"name\":\"deploy\",\"outputs\":[],\"stateMutability\":\"payable\"," +
 			"\"type\":\"function\"}";
@@ -657,10 +690,6 @@ public class ContractResources {
 			"{\"name\":\"jurisdiction\",\"type\":\"bytes32\"}],\"name\":\"add\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String MINT_ISVALID_ABI = "{\"constant\":true," +
-			"\"inputs\":[{\"name\":\"minter\",\"type\":\"address\"}],\"name\":\"isValid\"," +
-			"\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 	public static final String MINT_SEVEN_ABI = "{\"constant\":true," +
 			"\"inputs\":[],\"name\":\"seven\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
@@ -1056,5 +1085,13 @@ public class ContractResources {
 
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
+	}
+
+	public static ByteString literalInitcodeFor(final String contract) {
+		try {
+			return ByteString.copyFrom(Files.readAllBytes(Paths.get(bytecodePath(contract))));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }

@@ -205,9 +205,9 @@ public class AccountStore {
 		mutableAccount.setDeleted(model.isDeleted());
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
 		mutableAccount.setSmartContract(model.isSmartContract());
-		mutableAccount.setCryptoAllowances(new TreeMap<>(model.getCryptoAllowances()));
-		mutableAccount.setFungibleTokenAllowances(new TreeMap<>(model.getFungibleTokenAllowances()));
-		mutableAccount.setNftAllowances(new TreeMap<>(model.getNftAllowances()));
+		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
+		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
+		mutableAccount.setNftAllowances(model.getMutableNftAllowances());
 		mutableAccount.setLastAssociatedToken(model.getLastAssociatedToken());
 	}
 
