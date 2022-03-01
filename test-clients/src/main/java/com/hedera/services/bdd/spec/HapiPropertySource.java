@@ -308,6 +308,13 @@ public interface HapiPropertySource {
 				)).build();
 	}
 
+	static AccountID accountIdFromHexedMirrorAddress(final String hexedEvm) {
+		return AccountID.newBuilder()
+				.setAccountNum(Longs.fromByteArray(
+						Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)
+				)).build();
+	}
+
 	static String literalIdFromHexedMirrorAddress(final String hexedEvm) {
 		return HapiPropertySource.asContractString(ContractID.newBuilder()
 				.setContractNum(Longs.fromByteArray(

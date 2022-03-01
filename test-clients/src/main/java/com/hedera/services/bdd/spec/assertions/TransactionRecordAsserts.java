@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.assertions;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -35,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -163,6 +165,62 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 	public TransactionRecordAsserts tokenTransfers(BaseErroringAssertsProvider<List<TokenTransferList>> provider) {
 		registerTypedProvider("tokenTransferListsList", provider);
 		return this;
+	}
+
+	public static ErroringAssertsProvider<List<TokenTransferList>> includingFungibleMovement(
+			final TokenMovement movement
+	) {
+		return includingMovement(movement, true);
+	}
+
+	public static ErroringAssertsProvider<List<TokenTransferList>> includingNonfungibleMovement(
+			final TokenMovement movement
+	) {
+		return includingMovement(movement, false);
+	}
+
+	private static ErroringAssertsProvider<List<TokenTransferList>> includingMovement(
+			final TokenMovement movement,
+			final boolean fungible
+	) {
+		return spec -> {
+			final var tokenXfer = fungible
+					? movement.specializedFor(spec)
+					: movement.specializedForNft(spec);
+			final var tokenId = tokenXfer.getToken();
+			return (ErroringAsserts<List<TokenTransferList>>) allXfers -> {
+				List<Throwable> errs = Collections.emptyList();
+				var found = false;
+				try {
+					for (final var scopedXfers : allXfers) {
+						if (tokenId.equals(scopedXfers.getToken())) {
+							found = true;
+							if (tokenXfer.getNftTransfersCount() > 0) {
+								for (final var xfer : tokenXfer.getNftTransfersList()) {
+									if (!scopedXfers.getNftTransfersList().contains(xfer)) {
+										found = false;
+										break;
+									}
+								}
+							} else {
+								for (final var xfer : tokenXfer.getTransfersList()) {
+									if (!scopedXfers.getTransfersList().contains(xfer)) {
+										found = false;
+										break;
+									}
+								}
+							}
+						}
+					}
+					if (!found) {
+						Assertions.fail("Expected token transfers " + tokenXfer + " but not present in " + allXfers);
+					}
+				} catch (Throwable t) {
+					errs = List.of(t);
+				}
+				return errs;
+			};
+		};
 	}
 
 	public TransactionRecordAsserts fee(Long amount) {
