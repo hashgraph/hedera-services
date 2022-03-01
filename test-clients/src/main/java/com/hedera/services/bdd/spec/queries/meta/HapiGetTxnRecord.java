@@ -132,7 +132,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Predicate<Abi.Event> eventMatcher;
 	private String contractResultAbi = null;
 
-	public static ByteString sha384HashOf(Transaction transaction) {
+	public static ByteString sha384HashOf(final Transaction transaction) {
 		if (transaction.getSignedTransactionBytes().isEmpty()) {
 			return ByteString.copyFrom(noThrowSha384HashOf(transaction.toByteArray()));
 		}

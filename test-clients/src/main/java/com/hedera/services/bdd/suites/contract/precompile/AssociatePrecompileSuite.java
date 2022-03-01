@@ -542,7 +542,6 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	/* --- Helpers --- */
-
 	private static TokenID asToken(String v) {
 		long[] nativeParts = asDotDelimitedLongArray(v);
 		return TokenID.newBuilder()
@@ -553,7 +552,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	@NotNull
-	public static String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
+	public static String getNestedContractAddress(final String outerContract, final HapiApiSpec spec) {
 		return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
 	}
 }

@@ -65,7 +65,7 @@ public class FreezeSuite extends HapiApiSuite {
 		String uploadFile = UPDATE_NEW_FILE;
 		if (uploadPath != null) {
 			log.info("Creating zip file from " + uploadPath);
-			String zipFile = "Archive.zip";
+			final var zipFile = "Archive.zip";
 			createZip(UPLOAD_PATH_PREFIX + uploadPath, zipFile, null);
 			uploadFile = zipFile;
 		}
@@ -81,7 +81,7 @@ public class FreezeSuite extends HapiApiSuite {
 		final byte[] hash = CommonUtils.noThrowSha384HashOf(bytes);
 
 		// mnemonic for file 0.0.150
-		String fileIDString = "UPDATE_FEATURE";
+		final var fileIDString = "UPDATE_FEATURE";
 		return defaultHapiSpec("uploadFileAndUpdate")
 				.given(
 						fileUpdate(fileIDString).path(uploadFile)
