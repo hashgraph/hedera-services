@@ -241,15 +241,6 @@ public class TxnUtils {
 		return null;
 	}
 
-	public static String getTxnIDandType(Transaction txn) {
-		try {
-			return com.hedera.services.legacy.proto.utils.CommonUtils.toReadableTransactionID(txn);
-		} catch (InvalidProtocolBufferException e) {
-			log.error("Got Grpc protocol buffer error: ", e);
-		}
-		return null;
-	}
-
 	public static boolean inConsensusOrder(Timestamp t1, Timestamp t2) {
 		if (t1.getSeconds() < t2.getSeconds()) {
 			return true;

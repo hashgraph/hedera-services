@@ -110,8 +110,10 @@ class CallLocalEvmTxProcessorTest {
 	@Test
 	void assertSuccessExecutе() {
 		givenValidMock();
+		final var receiverAddress = receiver.getId().asEvmAddress();
+		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		var result = callLocalEvmTxProcessor.execute(
-				sender, receiver.getId().asEvmAddress(), 33_333L, 1234L, Bytes.EMPTY, consensusTime);
+				sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime);
 		assertTrue(result.isSuccessful());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
 	}

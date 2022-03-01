@@ -469,9 +469,9 @@ public class StateView {
 
 	private void setAllowancesIfAny(final CryptoGetInfoResponse.AccountInfo.Builder info,
 			final MerkleAccount account) {
-		info.addAllCryptoAllowances(getCryptoAllowancesList(account));
-		info.addAllTokenAllowances(getFungibleTokenAllowancesList(account));
-		info.addAllNftAllowances(getNftAllowancesList(account));
+		info.addAllGrantedCryptoAllowances(getCryptoAllowancesList(account));
+		info.addAllGrantedTokenAllowances(getFungibleTokenAllowancesList(account));
+		info.addAllGrantedNftAllowances(getNftAllowancesList(account));
 	}
 
 	public long numNftsOwnedBy(AccountID target) {

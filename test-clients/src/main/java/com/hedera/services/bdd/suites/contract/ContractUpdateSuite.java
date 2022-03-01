@@ -30,12 +30,23 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VARIOUS_CALLS_CODE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VARIOUS_CALLS_DELEGATE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VARIOUS_CALLS_NORMAL_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VARIOUS_CALLS_STATIC_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VARIOUS_CREATE2_CALLS_PATH;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
@@ -43,7 +54,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -51,6 +66,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.swirlds.common.CommonUtils.unhex;
 
 public class ContractUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractUpdateSuite.class);
@@ -80,9 +96,56 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						canMakeContractImmutableWithEmptyKeyList(),
 						givenAdminKeyMustBeValid(),
 						fridayThe13thSpec(),
-						updateDoesNotChangeBytecode()
+						updateDoesNotChangeBytecode(),
+						eip1014AddressAlwaysHasPriority(),
 				}
 		);
+	}
+
+	// https://github.com/hashgraph/hedera-services/issues/2877
+	private HapiApiSpec eip1014AddressAlwaysHasPriority() {
+		final var contract = "VariousCreate2Calls";
+		final var creationTxn = "creationTxn";
+		final var initcode = "initcode";
+		final var callTxn = "callTxn";
+		final var callcodeTxn = "callcodeTxn";
+		final var staticcallTxn = "staticcallTxn";
+		final var delegatecallTxn = "delegatecallTxn";
+
+		final AtomicReference<String> childMirror = new AtomicReference<>();
+		final AtomicReference<String> childEip1014 = new AtomicReference<>();
+
+		return defaultHapiSpec("Eip1014AddressAlwaysHasPriority")
+				.given(
+						fileCreate(initcode).contents(""),
+						updateLargeFile(DEFAULT_PAYER, initcode, extractByteCode(VARIOUS_CREATE2_CALLS_PATH)),
+						contractCreate(contract).bytecode(initcode).via(creationTxn)
+				).when(
+						captureChildCreate2MetaFor(
+								2, 0,
+								"setup", creationTxn, childMirror, childEip1014)
+				).then(
+						contractCall(contract, VARIOUS_CALLS_NORMAL_ABI).via(callTxn),
+						sourcing(() -> getTxnRecord(callTxn).logged().hasPriority(recordWith().contractCallResult(
+								resultWith().resultThruAbi(
+										VARIOUS_CALLS_NORMAL_ABI,
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
+						contractCall(contract, VARIOUS_CALLS_STATIC_ABI).via(staticcallTxn),
+						sourcing(() -> getTxnRecord(staticcallTxn).logged().hasPriority(recordWith().contractCallResult(
+								resultWith().resultThruAbi(
+										VARIOUS_CALLS_STATIC_ABI,
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
+						contractCall(contract, VARIOUS_CALLS_DELEGATE_ABI).via(delegatecallTxn),
+						sourcing(() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
+								resultWith().resultThruAbi(
+										VARIOUS_CALLS_DELEGATE_ABI,
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
+						contractCall(contract, VARIOUS_CALLS_CODE_ABI).via(callcodeTxn),
+						sourcing(() -> getTxnRecord(callcodeTxn).logged().hasPriority(recordWith().contractCallResult(
+								resultWith().resultThruAbi(
+										VARIOUS_CALLS_CODE_ABI,
+										isLiteralResult(new Object[] { unhex(childEip1014.get()) })))))
+				);
 	}
 
 	private HapiApiSpec updateWithBothMemoSettersWorks() {
