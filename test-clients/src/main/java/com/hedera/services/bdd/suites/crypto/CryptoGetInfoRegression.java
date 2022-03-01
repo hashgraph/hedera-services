@@ -72,31 +72,16 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//					failsForDeletedAccount(),
-//					failsForMissingAccount(),
-//					failsForMissingPayment(),
-//					failsForInsufficientPayment(),
-//					failsForMalformedPayment(),
-//					failsForUnfundablePayment(),
-//					succeedsNormally(),
-					fetchesOnlyALimitedTokenAssociations(),
-					getInfo()
+					failsForDeletedAccount(),
+					failsForMissingAccount(),
+					failsForMissingPayment(),
+					failsForInsufficientPayment(),
+					failsForMalformedPayment(),
+					failsForUnfundablePayment(),
+					succeedsNormally(),
+					fetchesOnlyALimitedTokenAssociations()
 				}
 		);
-	}
-
-	private HapiApiSpec getInfo() {
-		return defaultHapiSpec("JustGetInfo")
-				.given()
-				.when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + 3))
-				)
-				.then(
-						getAccountInfo("0.0.1001")
-								.logged()
-				);
 	}
 
 	/**
@@ -104,6 +89,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 	 * The limit on each account info and account balance queries is set to 5
 	 */
 	private HapiApiSpec fetchesOnlyALimitedTokenAssociations() {
+		final int infoLimit = 3;
 		final var account = "test";
 		final var aKey = "tokenKey";
 		final var token1 = "token1";
@@ -210,8 +196,12 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 								movingUnique(token8, 1).between(TOKEN_TREASURY, account))
 				)
 				.then(
-//						getAccountInfo(account)
-//								.logged()
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + infoLimit)),
+						getAccountInfo(account)
+								.hasTokenRelationShipCount(infoLimit)
+								.logged()
 				);
 	}
 

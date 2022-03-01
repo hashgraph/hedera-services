@@ -70,12 +70,12 @@ class AssociateLogicTest {
 		given(accountStore.loadAccount(accountId)).willReturn(modelAccount);
 		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
 		given(tokenStore.loadToken(secondTokenId)).willReturn(secondModelToken);
-		given(modelAccount.associateWith(tokens, tokenStore, false, true))
+		given(modelAccount.associateWith(tokens, tokenStore, false, false))
 				.willReturn(List.of(firstModelTokenRel, secondModelTokenRel));
 
 		subject.associate(accountId, tokenIds);
 
-		verify(modelAccount).associateWith(tokens, tokenStore, false, true);
+		verify(modelAccount).associateWith(tokens, tokenStore, false, false);
 		verify(accountStore).commitAccount(modelAccount);
 		verify(tokenStore).commitTokenRelationships(List.of(firstModelTokenRel, secondModelTokenRel));
 	}
