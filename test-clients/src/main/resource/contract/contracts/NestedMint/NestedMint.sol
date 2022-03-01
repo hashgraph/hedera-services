@@ -2,7 +2,8 @@
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./hip-206/HederaTokenService.sol";
+import "./HederaTokenService.sol";
+import "./MintNFTContract.sol";
 
 contract NestedMintContract is HederaTokenService {
 
@@ -29,16 +30,6 @@ contract NestedMintContract is HederaTokenService {
         int response = HederaTokenService.associateToken(accountToAssociate, accountToAssociate);
         if (response != HederaResponseCodes.SUCCESS) {
             revert ("Associate of NFT failed!");
-        }
-    }
-}
-
-contract MintNFTContract is HederaTokenService {
-
-    function mintNonFungibleTokenWithAddress(address tokenAddress, bytes[] memory metadata) external {
-        (int response, uint64 newTotalSupply, int[] memory serialNumbers) = HederaTokenService.mintToken(tokenAddress, 0, metadata);
-        if (response != HederaResponseCodes.SUCCESS) {
-            revert ("Non Fungible mint failed!");
         }
     }
 }

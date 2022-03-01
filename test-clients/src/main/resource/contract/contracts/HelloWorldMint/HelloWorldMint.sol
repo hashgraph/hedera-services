@@ -2,10 +2,10 @@
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./hip-206/IHederaTokenService.sol";
-import "./hip-206/HederaResponseCodes.sol";
+import "./IHederaTokenService.sol";
+import "./HederaResponseCodes.sol";
 
-contract HelloWorldMint is HederaResponseCodes {
+contract HelloWorldMint {
     address constant precompileAddress = address(0x167);
 
     address tokenAddress;
@@ -29,14 +29,14 @@ contract HelloWorldMint is HederaResponseCodes {
     }
 
     function mintToken(address token, uint64 amount, bytes[] memory metadata) internal
-        returns (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers)
+    returns (int responseCode, uint64 newTotalSupply, int[] memory serialNumbers)
     {
         (bool success, bytes memory result) = precompileAddress.delegatecall(
             abi.encodeWithSelector(IHederaTokenService.mintToken.selector,
             token, amount, metadata));
         (responseCode, newTotalSupply, serialNumbers) =
-            success
-                ? abi.decode(result, (int32, uint64, int[]))
-                : (HederaResponseCodes.UNKNOWN, 0, new int[](0));
+        success
+        ? abi.decode(result, (int32, uint64, int[]))
+        : (HederaResponseCodes.UNKNOWN, 0, new int[](0));
     }
 }
