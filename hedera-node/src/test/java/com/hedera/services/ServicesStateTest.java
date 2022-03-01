@@ -70,6 +70,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.Set;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
@@ -143,6 +144,8 @@ class ServicesStateTest {
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -408,7 +411,9 @@ class ServicesStateTest {
 	@Test
 	void doesntMigrateWhenInitializingFromRelease0220() {
 		// given:
+		given(accounts.keySet()).willReturn(Set.of());
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		// expect:
 		assertDoesNotThrow(subject::migrate);
@@ -424,6 +429,8 @@ class ServicesStateTest {
 		given(subject.getPlatformForDeferredInit()).willReturn(platform);
 		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
 		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
+		given(subject.accounts()).willReturn(accounts);
+		given(accounts.keySet()).willReturn(Set.of());
 
 		subject.migrate();
 

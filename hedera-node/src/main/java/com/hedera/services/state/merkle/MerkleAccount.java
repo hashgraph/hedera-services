@@ -77,6 +77,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public static final class ChildIndices {
 		private static final int STATE = 0;
 		private static final int RELEASE_090_RECORDS = 1;
+		private static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
 		static final int NUM_090_CHILDREN = 3;
 		static final int NUM_0240_CHILDREN = 2;
 
@@ -91,14 +92,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public MerkleAccount(final List<MerkleNode> children) {
-		super(ChildIndices.NUM_0240_CHILDREN);
+		super(ChildIndices.NUM_090_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
 	public MerkleAccount() {
 		addDeserializedChildren(List.of(
 				new MerkleAccountState(),
-				new FCQueue<ExpirableTxnRecord>()), MERKLE_VERSION);
+				new FCQueue<ExpirableTxnRecord>(),
+				new MerkleAccountTokens()), MERKLE_VERSION);
 	}
 
 	/* --- MerkleInternal --- */
@@ -114,7 +116,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	@Override
 	public int getMinimumChildCount(final int version) {
-		return ChildIndices.NUM_0240_CHILDREN;
+		return ChildIndices.NUM_090_CHILDREN;
 	}
 
 	/* --- FastCopyable --- */
@@ -134,7 +136,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		setImmutable(true);
 		return new MerkleAccount(List.of(
 				state().copy(),
-				records().copy()), this);
+				records().copy(),
+				tokens().copy()), this);
 	}
 
 	/* ---- Object ---- */
@@ -148,12 +151,13 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		}
 		final var that = (MerkleAccount) o;
 		return this.state().equals(that.state()) &&
-				this.records().equals(that.records());
+				this.records().equals(that.records()) &&
+				this.tokens().equals(that.tokens());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(state(), records());
+		return Objects.hash(state(), records(), tokens());
 	}
 
 	@Override
@@ -161,6 +165,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return MoreObjects.toStringHelper(MerkleAccount.class)
 				.add("state", state())
 				.add("# records", records().size())
+				.add("tokens", tokens().readableTokenIds())
 				.toString();
 	}
 
@@ -171,6 +176,20 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public FCQueue<ExpirableTxnRecord> records() {
 		return getChild(ChildIndices.RELEASE_090_RECORDS);
+	}
+
+	public void setRecords(final FCQueue<ExpirableTxnRecord> payerRecords) {
+		throwIfImmutable("Cannot change this account's transaction records if it's immutable.");
+		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
+	}
+
+	public MerkleAccountTokens tokens() {
+		return getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS);
+	}
+
+	public void setTokens(final MerkleAccountTokens tokens) {
+		throwIfImmutable("Cannot change this account's tokens if it's immutable.");
+		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
 	}
 
 	/* ----  Bean  ---- */

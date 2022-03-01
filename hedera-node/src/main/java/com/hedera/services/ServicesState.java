@@ -75,7 +75,9 @@ import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0240_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 
 /**
  * The Merkle tree root of the Hedera Services world state.
@@ -161,6 +163,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (deserializedVersionFromState < RELEASE_0220_VERSION) {
 			blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
+		}
+
+		if (deserializedVersionFromState <= RELEASE_0240_VERSION) {
+			// add the links to the doubly linked list of MerkleTokenRelStatus map and
+			// update each account's last associated token entityNumPair
+			updateLinks();
 		}
 	}
 
@@ -361,6 +369,35 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations() {
 		return metadata.getUniqueTreasuryOwnershipAssociations();
+	}
+
+	private void updateLinks() {
+		var accounts = accounts();
+		var tokenRels = tokenAssociations();
+
+		for (var accountId : accounts.keySet()) {
+			var merkleAccount = accounts.getForModify(accountId);
+
+			EntityNumPair prevAssociationKey = MISSING_NUM_PAIR;
+			for (var tokenId : merkleAccount.tokens().asTokenIds()) {
+				var associationKey = EntityNumPair.fromLongs(accountId.longValue(), tokenId.getTokenNum());
+				var association = tokenRels.getForModify(associationKey);
+				association.setKey(associationKey);
+				association.setNextKey(prevAssociationKey);
+
+				if (prevAssociationKey != MISSING_NUM_PAIR) {
+					var prevAssociation = tokenRels.getForModify(prevAssociationKey);
+					prevAssociation.setPrevKey(associationKey);
+					tokenRels.put(prevAssociationKey, prevAssociation);
+				}
+
+				tokenRels.put(associationKey, association);
+				prevAssociationKey = associationKey;
+			}
+
+			merkleAccount.setLastAssociatedToken(prevAssociationKey);
+			accounts.put(accountId, merkleAccount);
+		}
 	}
 
 	private void internalInit(
