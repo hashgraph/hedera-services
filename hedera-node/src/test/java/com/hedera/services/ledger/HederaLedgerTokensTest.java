@@ -81,16 +81,6 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		assertTrue(subject.allTokenBalancesVanish(deletable));
 	}
 
-//	@Test
-//	void refusesToAdjustWrongly() {
-//		given(tokenStore.adjustBalance(misc, tokenId, 555))
-//				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-//
-//		final var status = subject.adjustTokenBalance(misc, tokenId, 555);
-//
-//		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-//	}
-
 	@Test
 	void adjustsIfValid() {
 		givenOkTokenXfers(any(), any(), anyLong());
@@ -107,16 +97,6 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		verify(tokenStore).setHederaLedger(subject);
 		verify(creator).setLedger(subject);
 	}
-
-//	@Test
-//	void delegatesToGetTokens() {
-//		final var tokens = new MerkleAccountTokens();
-//		given(accountsLedger.get(genesis, AccountProperty.TOKENS)).willReturn(tokens);
-//
-//		final var actual = subject.getAssociatedTokens(genesis);
-//
-//		Assertions.assertSame(tokens, actual);
-//	}
 
 	@Test
 	void delegatesFreezeOps() {

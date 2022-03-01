@@ -37,6 +37,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -214,8 +215,8 @@ public class Account {
 	 * @return
 	 */
 	public List<TokenRelationship> dissociateUsing(List<Dissociation> dissociations, TypedTokenStore tokenStore, OptionValidator validator) {
+		final Map<EntityNumPair, TokenRelationship> unPersistedRelationships = new HashMap<>();
 		final Set<Id> dissociatedTokenIds = new HashSet<>();
-		final List<TokenRelationship> touchedRelationships = new ArrayList<>();
 		for (var dissociation : dissociations) {
 			// for each dissociation check if the entityNumPair matches the account's latestAssociatedToken
 			// if it does, then update the accounts latestAssociatedToken to its next key by getting the next Key from the tokenStore
@@ -233,41 +234,46 @@ public class Account {
 			final var associationKey = EntityNumPair.fromLongs(id.num(),tokenId.num());
 			if (lastAssociatedToken.equals(associationKey)) {
 				// removing the latest associated token from the account
-				final var latestRel = tokenStore.getLatestTokenRelationship(this);
+				final var latestRel =  unPersistedRelationships.getOrDefault(associationKey,
+						tokenStore.getLatestTokenRelationship(this));
 				final var nextKey = new EntityNumPair(latestRel.getNextKey());
 
 				if (!nextKey.equals(EntityNumPair.MISSING_NUM_PAIR)) {
 					final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 							Id.fromGrpcToken(nextKey.asAccountTokenRel().getRight()));
-					final var nextRel = tokenStore.loadTokenRelationship(nextToken, this);
+					final var nextRel = unPersistedRelationships.getOrDefault(nextKey,
+							tokenStore.loadTokenRelationship(nextToken, this));
 					lastAssociatedToken = new EntityNumPair(nextRel.getKey());
 					nextRel.setPrevKey(latestRel.getPrevKey());
-					touchedRelationships.add(nextRel);
+					unPersistedRelationships.put(nextKey, nextRel);
 				} else {
 					lastAssociatedToken = new EntityNumPair(0L);
 				}
 			} else {
 				/* get next, prev tokenRelationships and update the links by un-linking the dissociating relationship */
-				final var dissociatingRel = tokenStore.loadTokenRelationship(dissociation.dissociatingToken(), this);
+				final var dissociatingRel = unPersistedRelationships.getOrDefault(associationKey,
+						tokenStore.loadTokenRelationship(dissociation.dissociatingToken(), this));
 				final var prevKey = new EntityNumPair(dissociatingRel.getPrevKey());
 				final var prevToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 						Id.fromGrpcToken(prevKey.asAccountTokenRel().getRight()));
-				final var prevRel = tokenStore.loadTokenRelationship(prevToken, this);
+				final var prevRel = unPersistedRelationships.getOrDefault(prevKey,
+						tokenStore.loadTokenRelationship(prevToken, this));
 				// nextKey can be 0.
 				final var nextKey = new EntityNumPair(dissociatingRel.getNextKey());
 				if (!nextKey.equals(EntityNumPair.MISSING_NUM_PAIR)) {
 					final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 							Id.fromGrpcToken(nextKey.asAccountTokenRel().getRight()));
-					final var nextRel = tokenStore.loadTokenRelationship(nextToken, this);
+					final var nextRel = unPersistedRelationships.getOrDefault(nextKey,
+							tokenStore.loadTokenRelationship(nextToken, this));
 					nextRel.setPrevKey(prevKey.value());
-					touchedRelationships.add(nextRel);
+					unPersistedRelationships.put(nextKey, nextRel);
 				}
 				prevRel.setNextKey(nextKey.value());
-				touchedRelationships.add(prevRel);
+				unPersistedRelationships.put(prevKey, prevRel);
 			}
 		}
 		associatedTokenIds.removeAll(dissociatedTokenIds);
-		return touchedRelationships;
+		return unPersistedRelationships.values().stream().toList();
 	}
 
 	public Id getId() {

@@ -58,41 +58,4 @@ class HederaLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 		assertEquals(OK, outcome);
 		verify(tokenStore, never()).exists(tokenId);
 	}
-
-//	@Test
-//	void tokenTransferRevertsChangesOnFirstAdjust() {
-//		// setup
-//		given(tokenStore.adjustBalance(misc, tokenId, -555))
-//				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-//
-//		// given:
-//		var status = subject.doTokenTransfer(tokenId, misc, rand, 555);
-//
-//		// expect:
-//		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-//		// and:
-//		verify(tokenStore, times(1)).adjustBalance(any(), any(), anyLong());
-//		verify(tokenRelsLedger).rollback();
-//		verify(sideEffectsTracker).resetTrackedTokenChanges();
-//	}
-
-//	@Test
-//	void tokenTransferRevertsChangesOnSecondAdjust() {
-//		// setup
-//		given(tokenStore.adjustBalance(misc, tokenId, -555))
-//				.willReturn(OK);
-//		given(tokenStore.adjustBalance(rand, tokenId, 555))
-//				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
-//
-//		// given:
-//		var status = subject.doTokenTransfer(tokenId, misc, rand, 555);
-//
-//		// expect:
-//		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
-//		// and:
-//		verify(tokenStore).adjustBalance(misc, tokenId, -555);
-//		verify(tokenStore).adjustBalance(rand, tokenId, 555);
-//		verify(sideEffectsTracker).resetTrackedTokenChanges();
-//		verify(tokenRelsLedger).rollback();
-//	}
 }
