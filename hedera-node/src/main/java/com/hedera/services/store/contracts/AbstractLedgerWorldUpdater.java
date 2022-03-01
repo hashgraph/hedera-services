@@ -220,10 +220,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
-	public SideEffectsTracker getSideEffectsTracker() {
-		return sideEffectsTracker;
-	}
-
 	public void manageInProgressRecord(
 			final AccountRecordsHistorian recordsHistorian,
 			final ExpirableTxnRecord.Builder recordSoFar,

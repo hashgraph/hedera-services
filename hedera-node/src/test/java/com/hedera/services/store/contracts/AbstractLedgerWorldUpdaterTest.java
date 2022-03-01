@@ -338,6 +338,27 @@ class AbstractLedgerWorldUpdaterTest {
 	}
 
 	@Test
+	void commitsToWrappedTrackingLedgersWithSetSideEffectsTrackerAreRespected() {
+		final var aEntityId = EntityId.fromGrpcAccountId(aAccount);
+		setupWellKnownNfts();
+		subject.setSideEffectsTracker(sideEffectsTracker);
+		/* Get the wrapped nfts for the updater */
+		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedNfts = wrappedLedgers.nfts();
+
+		/* Make some changes to them (e.g. as part of an HTS precompile) */
+		wrappedNfts.destroy(aNft);
+		wrappedNfts.set(bNft, OWNER, aEntityId);
+
+		/* Commit the changes */
+		wrappedLedgers.commit();
+
+		/* And they should be present in the underlying ledgers */
+		assertFalse(ledgers.nfts().contains(aNft));
+		assertEquals(aEntityId, ledgers.nfts().get(bNft, OWNER));
+	}
+
+	@Test
 	void commitsToWrappedTrackingTokenRelsAreRespected() {
 		setupWellKnownTokenRels();
 

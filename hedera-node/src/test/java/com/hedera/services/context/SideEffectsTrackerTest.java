@@ -243,6 +243,27 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
+	void tracksAndClearsHbarChangesAsExpected() {
+		subject.trackHbarChange(cAccount, cOnlyBalanceChange);
+		subject.trackHbarChange(aAccount, aFirstBalanceChange);
+		subject.trackHbarChange(bAccount, bOnlyBalanceChange);
+		subject.trackHbarChange(aAccount, aSecondBalanceChange);
+		subject.trackHbarChange(bAccount, -bOnlyBalanceChange);
+
+		final var netChanges = subject.getNetTrackedHbarChanges();
+		assertEquals(2, netChanges.getAccountAmountsCount());
+		final var aChange = netChanges.getAccountAmounts(0);
+		assertEquals(aAccount, aChange.getAccountID());
+		assertEquals(aFirstBalanceChange + aSecondBalanceChange, aChange.getAmount());
+		final var cChange = netChanges.getAccountAmounts(1);
+		assertEquals(cAccount, cChange.getAccountID());
+		assertEquals(cOnlyBalanceChange, cChange.getAmount());
+
+		subject.clearNetHbarChanges();
+		assertEquals(0, subject.getNetTrackedHbarChanges().getAccountAmountsCount());
+	}
+
+	@Test
 	void tracksAndResetsAllowanceAdjusts() {
 		subject.setFungibleTokenAllowances(ownerNum, fungibleAllowance);
 		subject.setCryptoAllowances(ownerNum, cryptoAllowance);
