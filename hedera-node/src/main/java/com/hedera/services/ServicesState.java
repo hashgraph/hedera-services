@@ -165,7 +165,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
 
-		if (deserializedVersionFromState <= RELEASE_0240_VERSION) {
+		if (deserializedVersionFromState < RELEASE_0240_VERSION) {
 			// add the links to the doubly linked list of MerkleTokenRelStatus map and
 			// update each account's last associated token entityNumPair
 			updateLinks();
