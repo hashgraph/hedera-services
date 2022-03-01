@@ -10,7 +10,7 @@
   <parent>
     <groupId>com.hedera.hashgraph</groupId>
     <artifactId>hedera-services</artifactId>
-    <version>0.23.0-SNAPSHOT</version>
+    <version>0.24.0-SNAPSHOT</version>
   </parent>
 
   <properties>
@@ -18,11 +18,11 @@
 
     <bouncycastle.version>1.70</bouncycastle.version>
     <BIP39.version>2019.01.27</BIP39.version>
-    <picocli.version>4.6.2</picocli.version>
+    <picocli.version>4.6.3</picocli.version>
     <commons-collections4.version>4.4</commons-collections4.version>
     <sshj.version>0.27.0</sshj.version>
     <snakeyaml.version>1.30</snakeyaml.version>
-    <besu.version>21.10.9</besu.version>
+    <besu.version>22.1.0</besu.version>
 
     <sonar.skip>true</sonar.skip>
     <jacoco.skip>true</jacoco.skip>
@@ -278,12 +278,12 @@
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-utils</artifactId>
-      <version>0.23.0-SNAPSHOT</version>
+      <version>0.24.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.hedera.hashgraph</groupId>
       <artifactId>hapi-fees</artifactId>
-      <version>0.23.0-SNAPSHOT</version>
+      <version>0.24.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>

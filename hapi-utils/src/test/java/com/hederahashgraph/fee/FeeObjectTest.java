@@ -1,10 +1,10 @@
-package com.hedera.services.legacy.client.core;
+package com.hederahashgraph.fee;
 
 /*-
  * ‌
- * Hedera Services Test Clients
+ * Hedera Services API Utilities
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,15 @@ package com.hedera.services.legacy.client.core;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.Transaction;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-@FunctionalInterface
-public interface BuildTransaction {
-	Transaction callBuilder();
+class FeeObjectTest {
+	@Test
+	void toStringWorks() {
+		final var subject = new FeeObject(1L, 2L, 3L);
+		final var desired = "FeeObject{nodeFee=1, networkFee=2, serviceFee=3}";
+
+		Assertions.assertEquals(desired, subject.toString());
+	}
 }

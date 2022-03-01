@@ -22,6 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -60,14 +61,19 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 
 	@Override
 	public OperationResult execute(final MessageFrame frame, final EVM evm) {
-		Address recipientAddress = Words.toAddress(frame.getStackItem(0));
-		if (!addressValidator.test(recipientAddress, frame)) {
+		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+		final var beneficiaryAddressOrAlias = Words.toAddress(frame.getStackItem(0));
+		final var beneficiaryAddress = updater.priorityAddress(beneficiaryAddressOrAlias);
+		if (!addressValidator.test(beneficiaryAddress, frame)) {
 			return new OperationResult(errorGasCost(null),
 					Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 		}
-		Address address = frame.getRecipientAddress();
-		if (address.equals(recipientAddress)) {
-			Account account = frame.getWorldUpdater().get(recipientAddress);
+
+		// This address is already the EIP-1014 address if applicable; so we can compare it directly to
+		// the "priority" address we computed above for the beneficiary
+		final var address = frame.getRecipientAddress();
+		if (address.equals(beneficiaryAddress)) {
+			final var account = frame.getWorldUpdater().get(beneficiaryAddress);
 			return new OperationResult(errorGasCost(account),
 					Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
 		} else {

@@ -69,9 +69,9 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 				.setCurrentlyHasProxy(details.hasProxyAccountID())
 				.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
 				.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
-				.setCurrentCryptoAllowances(details.getCryptoAllowancesList())
-				.setCurrentTokenAllowances(details.getTokenAllowancesList())
-				.setCurrentNftAllowances(details.getNftAllowancesList())
+				.setCurrentCryptoAllowances(details.getGrantedCryptoAllowancesList())
+				.setCurrentTokenAllowances(details.getGrantedTokenAllowancesList())
+				.setCurrentNftAllowances(details.getGrantedNftAllowancesList())
 				.build();
 		return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
 	}

@@ -107,14 +107,15 @@ class CallEvmTxProcessorTest {
 		CommonProcessorSetup.setup(gasCalculator);
 
 		callEvmTxProcessor = new CallEvmTxProcessor(
-				worldState, livePricesSource, codeCache, globalDynamicProperties, gasCalculator, 
-                                operations, precompiledContractMap, aliasManager);
+				worldState, livePricesSource, codeCache, globalDynamicProperties, gasCalculator,
+				operations, precompiledContractMap, aliasManager);
 	}
 
 	@Test
 	void assertSuccessExecution() {
 		givenValidMock();
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
+		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(
@@ -150,8 +151,10 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		givenSenderWithBalance(350_000L);
-		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), GAS_LIMIT, 1234L, Bytes.EMPTY,
-				consensusTime);
+		final var receiverAddress = receiver.getId().asEvmAddress();
+		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+		var result = callEvmTxProcessor.execute(
+				sender, receiverAddress, GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime);
 		assertTrue(result.isSuccessful());
 		assertEquals(result.getGasUsed(), GAS_LIMIT - GAS_LIMIT * MAX_REFUND_PERCENT / 100);
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
@@ -165,8 +168,10 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 
 		givenSenderWithBalance(350_000L);
-		var result = callEvmTxProcessor.execute(sender, receiver.getId().asEvmAddress(), GAS_LIMIT, 1234L, Bytes.EMPTY,
-				consensusTime);
+		final var receiverAddress = receiver.getId().asEvmAddress();
+		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
+		var result = callEvmTxProcessor.execute(
+				sender, receiverAddress, GAS_LIMIT, 1234L, Bytes.EMPTY, consensusTime);
 		assertTrue(result.isSuccessful());
 		assertEquals(INTRINSIC_GAS_COST, result.getGasUsed());
 		assertEquals(receiver.getId().asGrpcContract(), result.toGrpc().getContractID());
