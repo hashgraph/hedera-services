@@ -27,6 +27,7 @@ import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -74,6 +75,7 @@ import java.util.Set;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -144,8 +146,6 @@ class ServicesStateTest {
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -438,6 +438,54 @@ class ServicesStateTest {
 				subject, StateVersions.RELEASE_0210_VERSION);
 		verify(subject).init(platform, addressBook, dualState);
 		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
+	}
+
+	@Test
+	void migratesWhenInitializingFromStateWithReleaseLessThan0240() {
+		var merkleAccount1 = mock(MerkleAccount.class);
+		var merkleAccount2 = mock(MerkleAccount.class);
+		var merkleAccountTokens1 = mock(MerkleAccountTokens.class);
+		var merkleAccountTokens2 = mock(MerkleAccountTokens.class);
+		final var account1 = new EntityNum(1001);
+		final var account2 = new EntityNum(1002);
+		final var token1 = new EntityNum(1003);
+		final var token2 = new EntityNum(1004);
+		final var associationKey1 = EntityNumPair.fromLongs(account1.longValue(), token1.longValue());
+		final var associationKey2 = EntityNumPair.fromLongs(account2.longValue(), token1.longValue());
+		final var associationKey3 = EntityNumPair.fromLongs(account2.longValue(), token2.longValue());
+		final var association1 = new MerkleTokenRelStatus(1000L, false, true, false);
+		final var association2 = new MerkleTokenRelStatus(1000L, true, true, false);
+		final var association3 = new MerkleTokenRelStatus(1000L, false, false, true);
+
+		MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations = new MerkleMap<>();
+		tokenAssociations.put(associationKey1, association1);
+		tokenAssociations.put(associationKey2, association2);
+		tokenAssociations.put(associationKey3, association3);
+
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0230_VERSION);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
+		given(accounts.keySet()).willReturn(Set.of(account1, account2));
+		given(accounts.getForModify(account1)).willReturn(merkleAccount1);
+		given(accounts.getForModify(account2)).willReturn(merkleAccount2);
+		given(merkleAccount1.tokens()).willReturn(merkleAccountTokens1);
+		given(merkleAccount2.tokens()).willReturn(merkleAccountTokens2);
+		given(merkleAccountTokens1.asTokenIds()).willReturn(List.of(token1.toGrpcTokenId()));
+		given(merkleAccountTokens2.asTokenIds()).willReturn(List.of(token1.toGrpcTokenId(), token2.toGrpcTokenId()));
+
+		subject.migrate();
+
+		verify(merkleAccount1).setLastAssociatedToken(associationKey1);
+		verify(merkleAccount2).setLastAssociatedToken(associationKey3);
+		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey1).nextKey());
+		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey1).prevKey());
+		assertEquals(associationKey1, tokenAssociations.get(associationKey1).getKey());
+		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey2).nextKey());
+		assertEquals(associationKey3, tokenAssociations.get(associationKey2).prevKey());
+		assertEquals(associationKey2, tokenAssociations.get(associationKey2).getKey());
+		assertEquals(associationKey2, tokenAssociations.get(associationKey3).nextKey());
+		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey3).prevKey());
+		assertEquals(associationKey3, tokenAssociations.get(associationKey3).getKey());
 	}
 
 	@Test
