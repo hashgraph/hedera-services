@@ -116,7 +116,11 @@ public class MerkleAccountTokens extends AbstractMerkleLeaf {
 	}
 
 	public List<TokenID> asTokenIds() {
-		return ids.getAsIds();
+		return ids.getAsIds(ids.size());
+	}
+
+	public List<TokenID> asTokenIds(int count) {
+		return ids.getAsIds(count);
 	}
 
 	public CopyOnWriteIds getIds() {

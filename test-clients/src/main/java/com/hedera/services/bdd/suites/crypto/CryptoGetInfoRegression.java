@@ -20,14 +20,18 @@ package com.hedera.services.bdd.suites.crypto;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -36,6 +40,14 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -43,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class CryptoGetInfoRegression extends HapiApiSuite {
 	static final Logger log = LogManager.getLogger(CryptoGetInfoRegression.class);
@@ -59,15 +72,147 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 	@Override
 	protected List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-					failsForDeletedAccount(),
-					failsForMissingAccount(),
-					failsForMissingPayment(),
-					failsForInsufficientPayment(),
-					failsForMalformedPayment(),
-					failsForUnfundablePayment(),
-					succeedsNormally(),
+//					failsForDeletedAccount(),
+//					failsForMissingAccount(),
+//					failsForMissingPayment(),
+//					failsForInsufficientPayment(),
+//					failsForMalformedPayment(),
+//					failsForUnfundablePayment(),
+//					succeedsNormally(),
+					fetchesOnlyALimitedTokenAssociations(),
+					getInfo()
 				}
 		);
+	}
+
+	private HapiApiSpec getInfo() {
+		return defaultHapiSpec("JustGetInfo")
+				.given()
+				.when(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + 3))
+				)
+				.then(
+						getAccountInfo("0.0.1001")
+								.logged()
+				);
+	}
+
+	/**
+	 * For Demo purpose :
+	 * The limit on each account info and account balance queries is set to 5
+	 */
+	private HapiApiSpec fetchesOnlyALimitedTokenAssociations() {
+		final var account = "test";
+		final var aKey = "tokenKey";
+		final var token1 = "token1";
+		final var token2 = "token2";
+		final var token3 = "token3";
+		final var token4 = "token4";
+		final var token5 = "token5";
+		final var token6 = "token6";
+		final var token7 = "token7";
+		final var token8 = "token8";
+		return defaultHapiSpec("FetchesOnlyALimitedTokenAssociations")
+				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
+						newKeyNamed(aKey),
+						cryptoCreate(account)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY)
+								.balance(ONE_HUNDRED_HBARS),
+						tokenCreate(token1)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.maxSupply(500)
+								.kycKey(aKey)
+								.initialSupply(100),
+						tokenCreate(token2)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.maxSupply(500)
+								.kycKey(aKey)
+								.initialSupply(100),
+						tokenCreate(token3)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.maxSupply(500)
+								.kycKey(aKey)
+								.initialSupply(100),
+						tokenCreate(token4)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.maxSupply(500)
+								.kycKey(aKey)
+								.initialSupply(100),
+						tokenCreate(token5)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.maxSupply(500)
+								.kycKey(aKey)
+								.initialSupply(100),
+						tokenCreate(token6)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.treasury(TOKEN_TREASURY)
+								.maxSupply(500)
+								.kycKey(aKey)
+								.initialSupply(100),
+						tokenCreate(token7)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.maxSupply(10L)
+								.initialSupply(0L)
+								.kycKey(aKey)
+								.supplyKey(aKey),
+						tokenCreate(token8)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.maxSupply(10L)
+								.initialSupply(0L)
+								.kycKey(aKey)
+								.supplyKey(aKey),
+						mintToken(token7, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b"))),
+						mintToken(token8, List.of(ByteString.copyFromUtf8("a")))
+				)
+				.when(
+						tokenAssociate(account, token1, token2, token3, token4, token5, token6, token7, token8),
+						grantTokenKyc(token1, account),
+						grantTokenKyc(token2, account),
+						grantTokenKyc(token3, account),
+						grantTokenKyc(token4, account),
+						grantTokenKyc(token5, account),
+						grantTokenKyc(token6, account),
+						grantTokenKyc(token7, account),
+						grantTokenKyc(token8, account),
+						cryptoTransfer(
+								moving(10L, token1).between(TOKEN_TREASURY, account),
+								moving(20L, token2).between(TOKEN_TREASURY, account),
+								moving(30L, token3).between(TOKEN_TREASURY, account)),
+						cryptoTransfer(
+								moving(40L, token4).between(TOKEN_TREASURY, account),
+								moving(50L, token5).between(TOKEN_TREASURY, account),
+								moving(60L, token6).between(TOKEN_TREASURY, account)),
+						cryptoTransfer(
+								movingUnique(token7, 1,2).between(TOKEN_TREASURY, account),
+								movingUnique(token8, 1).between(TOKEN_TREASURY, account))
+				)
+				.then(
+//						getAccountInfo(account)
+//								.logged()
+				);
 	}
 
 	private HapiApiSpec succeedsNormally() {

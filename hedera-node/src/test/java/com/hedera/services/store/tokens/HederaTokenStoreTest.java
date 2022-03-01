@@ -500,7 +500,6 @@ class HederaTokenStoreTest {
 
 		assertEquals(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, status);
 	}
-
 	@Test
 	void autoAssociatingHappyPathWorksOnEmptyExistingAssociations() {
 		final var key = asTokenRel(sponsor, misc);

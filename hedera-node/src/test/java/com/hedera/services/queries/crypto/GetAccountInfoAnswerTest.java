@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -85,6 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -110,12 +112,15 @@ class GetAccountInfoAnswerTest {
 	private NetworkInfo networkInfo;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
-	private String node = "0.0.3";
-	private String memo = "When had I my own will?";
-	private String payer = "0.0.12345";
-	private AccountID payerId = IdUtils.asAccount(payer);
+	private final int maxTokensPerAccountInfo = 10;
+	private final String node = "0.0.3";
+	private final String memo = "When had I my own will?";
+	private final String payer = "0.0.12345";
+	private final AccountID payerId = IdUtils.asAccount(payer);
 	private MerkleAccount payerAccount;
 	private String target = payer;
 	TokenID firstToken = tokenWith(555),
@@ -125,7 +130,7 @@ class GetAccountInfoAnswerTest {
 			missingToken = tokenWith(999);
 	long firstBalance = 123, secondBalance = 234, thirdBalance = 345, fourthBalance = 456, missingBalance = 567;
 
-	private long fee = 1_234L;
+	private final long fee = 1_234L;
 	private Transaction paymentTxn;
 
 	private GetAccountInfoAnswer subject;
@@ -203,7 +208,7 @@ class GetAccountInfoAnswerTest {
 				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
 				networkInfo);
 
-		subject = new GetAccountInfoAnswer(optionValidator, aliasManager);
+		subject = new GetAccountInfoAnswer(optionValidator, aliasManager, dynamicProperties);
 	}
 
 	@Test
@@ -238,12 +243,12 @@ class GetAccountInfoAnswerTest {
 
 	@Test
 	void identifiesFailInvalid() throws Throwable {
-		// setup:
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 		// and:
 		StateView view = mock(StateView.class);
 
-		given(view.infoForAccount(any(), any())).willReturn(Optional.empty());
+		given(view.infoForAccount(any(), any(), anyInt())).willReturn(Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -256,6 +261,7 @@ class GetAccountInfoAnswerTest {
 
 	@Test
 	void getsTheAccountInfo() throws Throwable {
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.decimals())

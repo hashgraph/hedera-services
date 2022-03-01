@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.utils;
 
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -64,18 +65,21 @@ public class OpUsageCtxHelper {
 	private final TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final AliasManager aliasManager;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public OpUsageCtxHelper(
 			final StateView workingView,
 			final FileNumbers fileNumbers,
 			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.tokens = tokens;
 		this.fileNumbers = fileNumbers;
 		this.workingView = workingView;
 		this.aliasManager = aliasManager;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public FileAppendMeta metaForFileAppend(TransactionBody txn) {
@@ -111,7 +115,8 @@ public class OpUsageCtxHelper {
 	public ExtantCryptoContext ctxForCryptoUpdate(TransactionBody txn) {
 		final var op = txn.getCryptoUpdateAccount();
 		ExtantCryptoContext cryptoContext;
-		var info = workingView.infoForAccount(op.getAccountIDToUpdate(), aliasManager);
+		var info = workingView.infoForAccount(
+				op.getAccountIDToUpdate(), aliasManager, dynamicProperties.maxTokensPerAccount());
 		if (info.isPresent()) {
 			var details = info.get();
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -144,7 +149,7 @@ public class OpUsageCtxHelper {
 	public ExtantCryptoContext ctxForCryptoAllowance(TransactionBody txn) {
 		ExtantCryptoContext cryptoContext;
 		var info = workingView.infoForAccount(
-				txn.getTransactionID().getAccountID(), aliasManager);
+				txn.getTransactionID().getAccountID(), aliasManager, dynamicProperties.maxTokensPerAccount());
 		if (info.isPresent()) {
 			var details = info.get();
 			cryptoContext = ExtantCryptoContext.newBuilder()

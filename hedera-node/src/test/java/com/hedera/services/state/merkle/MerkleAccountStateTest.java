@@ -82,6 +82,7 @@ class MerkleAccountStateTest {
 	private static final int alreadyUsedAutoAssociations = 123;
 	private static final int autoAssociationMetadata =
 			buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
+	private static final int tokenIdsIndex = 345;
 	private static final Key aliasKey = Key.newBuilder()
 			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
 	private static final ByteString alias = aliasKey.getECDSASecp256K1();

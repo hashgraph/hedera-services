@@ -89,7 +89,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -114,8 +113,6 @@ public class StateView {
 	/* EVM storage maps from 256-bit (32-byte) keys to 256-bit (32-byte) values */
 	public static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64L;
 	public static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
-
-	static BiFunction<StateView, EntityNum, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
 
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_FCM = new MerkleMap<>();
@@ -433,7 +430,7 @@ public class StateView {
 	}
 
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id,
-			final AliasManager aliasManager) {
+			final AliasManager aliasManager, final int maxTokensForAccountInfo) {
 		final var accountEntityNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
 				: aliasManager.lookupIdBy(id.getAlias());
@@ -460,7 +457,7 @@ public class StateView {
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
-		final var tokenRels = tokenRelsFn.apply(this, accountEntityNum);
+		final var tokenRels = tokenRels(this, accountEntityNum, maxTokensForAccountInfo);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -506,7 +503,8 @@ public class StateView {
 
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
 			final ContractID id,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final int maxTokensForAccountInfo
 	) {
 		final var contractId = unaliased(id, aliasManager);
 		final var contract = contracts().get(contractId);
@@ -531,7 +529,7 @@ public class StateView {
 		} else {
 			info.setContractAccountID(asHexedEvmAddress(mirrorId));
 		}
-		final var tokenRels = tokenRelsFn.apply(this, contractId);
+		final var tokenRels = tokenRels(this, contractId, maxTokensForAccountInfo);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -612,11 +610,11 @@ public class StateView {
 		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
-	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id) {
+	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id, final int maxTokensForAccountInfo) {
 		final var account = view.accounts().get(id);
 		final List<TokenRelationship> relationships = new ArrayList<>();
-		final var tokenIds = getAssociatedTokens(view.tokenAssociations(), account);
-		for (TokenID tId : tokenIds) {
+		final var limitedTokenIds = getAssociatedTokens(view.tokenAssociations(), account, maxTokensForAccountInfo);
+		for (TokenID tId : limitedTokenIds) {
 			final var optionalToken = view.tokenWith(tId);
 			final var effectiveToken = optionalToken.orElse(REMOVED_TOKEN);
 			final var relKey = fromAccountTokenRel(id.toGrpcAccountId(), tId);
@@ -636,14 +634,17 @@ public class StateView {
 
 	public static List<TokenID> getAssociatedTokens(
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
-			final MerkleAccount account) {
+			final MerkleAccount account,
+			final int maxTokensPerAccountInfo) {
 		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
 		var currKey = account.getLastAssociatedToken();
+		int counter = 0;
 
-		while (!currKey.equals(EntityNumPair.MISSING_NUM_PAIR)) {
+		while (!currKey.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxTokensPerAccountInfo) {
 			var currRel = allTokenAssociations.get(currKey);
 			listOfAssociatedTokens.add(currKey.asAccountTokenRel().getRight());
 			currKey = currRel.nextKey();
+			counter++;
 		}
 		return listOfAssociatedTokens;
 	}

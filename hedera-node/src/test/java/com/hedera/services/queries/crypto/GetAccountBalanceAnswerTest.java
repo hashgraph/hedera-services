@@ -23,6 +23,7 @@ package com.hedera.services.queries.crypto;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -69,6 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -77,6 +79,7 @@ class GetAccountBalanceAnswerTest {
 	private final String accountIdLit = "0.0.12345";
 	private final AccountID target = asAccount(accountIdLit);
 	private final String contractIdLit = "0.0.12346";
+	private final int maxTokenPerAccountBalanceInfo = 10;
 	private final long balance = 1_234L;
 	private final long aBalance = 345;
 	private final long bBalance = 456;
@@ -102,6 +105,7 @@ class GetAccountBalanceAnswerTest {
 	private AliasManager aliasManager;
 	private ScheduleStore scheduleStore;
 	private NodeLocalProperties nodeProps;
+	private GlobalDynamicProperties dynamicProperties;
 
 	private GetAccountBalanceAnswer subject;
 
@@ -113,6 +117,8 @@ class GetAccountBalanceAnswerTest {
 		notDeleted = mock(MerkleToken.class);
 		given(notDeleted.isDeleted()).willReturn(false);
 		given(notDeleted.decimals()).willReturn(1).willReturn(2);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokenPerAccountBalanceInfo);
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(
@@ -156,7 +162,7 @@ class GetAccountBalanceAnswerTest {
 
 		optionValidator = mock(OptionValidator.class);
 		aliasManager = mock(AliasManager.class);
-		subject = new GetAccountBalanceAnswer(aliasManager, optionValidator);
+		subject = new GetAccountBalanceAnswer(aliasManager, optionValidator, dynamicProperties);
 	}
 
 	@Test
@@ -279,7 +285,7 @@ class GetAccountBalanceAnswerTest {
 		final var wellKnownId = EntityNum.fromLong(12345L);
 		given(aliasManager.lookupIdBy(aliasId.getAlias())).willReturn(wellKnownId);
 		final var mockedStatic = mockStatic(StateView.class);
-		mockedStatic.when(() -> StateView.getAssociatedTokens(any(), any()))
+		mockedStatic.when(() -> StateView.getAssociatedTokens(any(), any(), anyInt()))
 				.thenReturn(List.of(aToken, bToken, cToken, dToken));
 
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
@@ -311,7 +317,7 @@ class GetAccountBalanceAnswerTest {
 	void answersWithAccountBalance() {
 		AccountID id = asAccount(accountIdLit);
 		final var mockedStatic = mockStatic(StateView.class);
-		mockedStatic.when(() -> StateView.getAssociatedTokens(any(), any()))
+		mockedStatic.when(() -> StateView.getAssociatedTokens(any(), any(), anyInt()))
 				.thenReturn(List.of(aToken, bToken, cToken, dToken));
 		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
@@ -346,7 +352,7 @@ class GetAccountBalanceAnswerTest {
 		// setup:
 		ContractID id = asContract(accountIdLit);
 		final var mockedStatic = mockStatic(StateView.class);
-		mockedStatic.when(() -> StateView.getAssociatedTokens(any(), any()))
+		mockedStatic.when(() -> StateView.getAssociatedTokens(any(), any(), anyInt()))
 				.thenReturn(List.of(aToken, bToken, cToken, dToken));
 		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()

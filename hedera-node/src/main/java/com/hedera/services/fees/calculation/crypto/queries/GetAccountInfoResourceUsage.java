@@ -21,6 +21,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
@@ -36,11 +37,16 @@ import java.util.Map;
 public final class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
 	private final CryptoOpsUsage cryptoOpsUsage;
 	private final AliasManager aliasManager;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public GetAccountInfoResourceUsage(final CryptoOpsUsage cryptoOpsUsage, final AliasManager aliasManager) {
+	public GetAccountInfoResourceUsage(
+			final CryptoOpsUsage cryptoOpsUsage,
+			final AliasManager aliasManager,
+			final GlobalDynamicProperties dynamicProperties) {
 		this.cryptoOpsUsage = cryptoOpsUsage;
 		this.aliasManager = aliasManager;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -53,7 +59,7 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 		final var op = query.getCryptoGetInfo();
 
 		final var account = op.getAccountID();
-		final var info = view.infoForAccount(account, aliasManager);
+		final var info = view.infoForAccount(account, aliasManager, dynamicProperties.maxTokensPerAccount());
 		/* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
 		 * under the extraordinary circumstance that the desired account expired during the query
 		 * answer flow (which will now fail downstream with an appropriate status code); so

@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.contract.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.contract.GetContractInfoAnswer;
 import com.hedera.services.usage.contract.ContractGetInfoUsage;
@@ -56,6 +57,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 class GetContractInfoResourceUsageTest {
+	private static final int maxTokensPerContractInfo = 10;
 	private static final String memo = "Stay cold...";
 	private static final ContractID target = asContract("0.0.123");
 	private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
@@ -76,6 +78,7 @@ class GetContractInfoResourceUsageTest {
 	private MockedStatic<ContractGetInfoUsage> mockedStatic;
 	private FeeData expected;
 	private AliasManager aliasManager;
+	private GlobalDynamicProperties dynamicProperties;
 
 	private GetContractInfoResourceUsage subject;
 
@@ -83,9 +86,11 @@ class GetContractInfoResourceUsageTest {
 	private void setup() {
 		expected = mock(FeeData.class);
 		aliasManager = mock(AliasManager.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
 
 		view = mock(StateView.class);
-		given(view.infoForContract(target, aliasManager)).willReturn(Optional.of(info));
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerContractInfo);
+		given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo)).willReturn(Optional.of(info));
 
 		estimator = mock(ContractGetInfoUsage.class);
 		mockedStatic = mockStatic(ContractGetInfoUsage.class);
@@ -96,7 +101,7 @@ class GetContractInfoResourceUsageTest {
 		given(estimator.givenCurrentTokenAssocs(3)).willReturn(estimator);
 		given(estimator.get()).willReturn(expected);
 
-		subject = new GetContractInfoResourceUsage(aliasManager);
+		subject = new GetContractInfoResourceUsage(aliasManager, dynamicProperties);
 	}
 
 	@AfterEach
@@ -135,7 +140,7 @@ class GetContractInfoResourceUsageTest {
 	@Test
 	void onlySetsContractInfoInQueryCxtIfFound() {
 		final var queryCtx = new HashMap<String, Object>();
-		given(view.infoForContract(target, aliasManager)).willReturn(Optional.empty());
+		given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo)).willReturn(Optional.empty());
 
 		final var actual = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 

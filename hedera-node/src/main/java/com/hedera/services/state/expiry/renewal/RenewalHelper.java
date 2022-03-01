@@ -141,7 +141,7 @@ public class RenewalHelper {
 		}
 
 		Pair<List<EntityId>, List<CurrencyAdjustments>> displacements = Pair.of(new ArrayList<>(), new ArrayList<>());
-		final var associatedTokens = getAssociatedTokens(tokenRels.get(), lastClassifiedAccount);
+		final var associatedTokens = getAssociatedTokens(tokenRels.get(), lastClassifiedAccount, Integer.MAX_VALUE);
 		if (!associatedTokens.isEmpty()) {
 			final var grpcId = lastClassifiedEntityId.toGrpcAccountId();
 			final var currentTokens = tokens.get();

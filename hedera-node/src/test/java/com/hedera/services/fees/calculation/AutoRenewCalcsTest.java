@@ -198,7 +198,7 @@ class AutoRenewCalcsTest {
 		when(tokenAssociationsSupplier.get()).thenReturn(merkleMap);
 		final var mockedStatic = mockStatic(StateView.class);
 		final var list = mock(ArrayList.class);
-		mockedStatic.when(() -> StateView.getAssociatedTokens(merkleMap, expiredAccount)).thenReturn(list);
+		mockedStatic.when(() -> StateView.getAssociatedTokens(merkleMap, expiredAccount, Integer.MAX_VALUE)).thenReturn(list);
 		when(list.size()).thenReturn(100);
 
 		// given:

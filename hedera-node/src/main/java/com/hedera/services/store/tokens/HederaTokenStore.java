@@ -104,7 +104,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -247,61 +246,57 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				}
 			}
 			var validity = OK;
-			if ((listOfAssociatedTokens.size() + tokenIds.size()) > properties.maxTokensPerAccount()) {
-				validity = TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
-			} else {
-				var maxAutomaticAssociations = (int) accountsLedger.get(aId, MAX_AUTOMATIC_ASSOCIATIONS);
-				var alreadyUsedAutomaticAssociations = (int) accountsLedger.get(aId,
-						ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
+			var maxAutomaticAssociations = (int) accountsLedger.get(aId, MAX_AUTOMATIC_ASSOCIATIONS);
+			var alreadyUsedAutomaticAssociations = (int) accountsLedger.get(aId,
+					ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
 
-				if (automaticAssociation && alreadyUsedAutomaticAssociations >= maxAutomaticAssociations) {
-					validity = NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-				}
+			if (automaticAssociation && alreadyUsedAutomaticAssociations >= maxAutomaticAssociations) {
+				validity = NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+			}
 
-				if (validity == OK) {
-					currKey = new EntityNumPair(lastAssociatedToken.value());
-					for (var id : tokenIds) {
-						final var relationship = asTokenRel(aId, id);
-						tokenRelsLedger.create(relationship);
-						final var token = get(id);
-						tokenRelsLedger.set(
-								relationship,
-								TokenRelProperty.IS_FROZEN,
-								token.hasFreezeKey() && token.accountsAreFrozenByDefault());
-						tokenRelsLedger.set(
-								relationship,
-								TokenRelProperty.IS_KYC_GRANTED,
-								!token.hasKycKey());
-						tokenRelsLedger.set(
-								relationship,
-								TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
-								automaticAssociation);
+			if (validity == OK) {
+				currKey = new EntityNumPair(lastAssociatedToken.value());
+				for (var id : tokenIds) {
+					final var relationship = asTokenRel(aId, id);
+					tokenRelsLedger.create(relationship);
+					final var token = get(id);
+					tokenRelsLedger.set(
+							relationship,
+							TokenRelProperty.IS_FROZEN,
+							token.hasFreezeKey() && token.accountsAreFrozenByDefault());
+					tokenRelsLedger.set(
+							relationship,
+							TokenRelProperty.IS_KYC_GRANTED,
+							!token.hasKycKey());
+					tokenRelsLedger.set(
+							relationship,
+							TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
+							automaticAssociation);
 
-						sideEffectsTracker.trackAutoAssociation(id, aId);
-						if (automaticAssociation) {
-							accountsLedger.set(aId, ALREADY_USED_AUTOMATIC_ASSOCIATIONS,
-									alreadyUsedAutomaticAssociations + 1);
-						}
-
-						final var newKey = EntityNumPair.fromLongs(
-								relationship.getKey().getAccountNum(),
-								relationship.getValue().getTokenNum());
-
-						if (currKey.equals(MISSING_NUM_PAIR)) {
-							tokenRelsLedger.set(relationship, PREV_KEY, MISSING_NUM_PAIR);
-							tokenRelsLedger.set(relationship, NEXT_KEY, MISSING_NUM_PAIR);
-							tokenRelsLedger.set(relationship, KEY, newKey);
-						} else {
-							final var oldPrevKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), PREV_KEY);
-							tokenRelsLedger.set(currKey.asAccountTokenRel(), PREV_KEY, newKey);
-							tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey);
-							tokenRelsLedger.set(relationship, NEXT_KEY, currKey);
-						}
-						currKey = newKey;
+					sideEffectsTracker.trackAutoAssociation(id, aId);
+					if (automaticAssociation) {
+						accountsLedger.set(aId, ALREADY_USED_AUTOMATIC_ASSOCIATIONS,
+								alreadyUsedAutomaticAssociations + 1);
 					}
-					accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, currKey);
+
+					final var newKey = EntityNumPair.fromLongs(
+							relationship.getKey().getAccountNum(),
+							relationship.getValue().getTokenNum());
+
+					if (currKey.equals(MISSING_NUM_PAIR)) {
+						tokenRelsLedger.set(relationship, PREV_KEY, MISSING_NUM_PAIR);
+						tokenRelsLedger.set(relationship, NEXT_KEY, MISSING_NUM_PAIR);
+						tokenRelsLedger.set(relationship, KEY, newKey);
+					} else {
+						final var oldPrevKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), PREV_KEY);
+						tokenRelsLedger.set(currKey.asAccountTokenRel(), PREV_KEY, newKey);
+						tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey);
+						tokenRelsLedger.set(relationship, NEXT_KEY, currKey);
+					}
+					currKey = newKey;
 				}
 			}
+			accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, currKey);
 			return validity;
 		});
 	}
