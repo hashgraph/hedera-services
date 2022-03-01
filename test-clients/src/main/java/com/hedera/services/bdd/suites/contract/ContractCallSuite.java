@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -31,7 +32,6 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
@@ -1922,10 +1922,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
-		return CommonUtils.calculateSolidityAddress(
-				(int) spec.registry().getContractId(contract).getShardNum(),
-				spec.registry().getContractId(contract).getRealmNum(),
-				spec.registry().getContractId(contract).getContractNum());
+		return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(contract));
 	}
 
 	@Override
