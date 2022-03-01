@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -46,6 +47,7 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
@@ -135,7 +137,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
-import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
@@ -285,7 +286,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.via(creation)
 								.exposingNumTo(num -> {
 									factoryEntityNum.set(num);
-									factoryEvmAddress.set(calculateSolidityAddress(0, 0, num));
+									factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num));
 								})
 				).when(
 						sourcing(() -> contractCallLocal(
@@ -340,7 +341,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.via(creation)
 								.exposingNumTo(num -> {
 									factoryEntityNum.set(num);
-									factoryEvmAddress.set(calculateSolidityAddress(0, 0, num));
+									factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num));
 								})
 				).when(
 						sourcing(() -> contractCallLocal(
@@ -407,7 +408,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
 								.via(creation2)
-								.exposingNumTo(num -> factoryEvmAddress.set(calculateSolidityAddress(0, 0, num)))
+								.exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num)))
 				).when(
 						sourcing(() -> contractCallLocal(
 								create2Factory,

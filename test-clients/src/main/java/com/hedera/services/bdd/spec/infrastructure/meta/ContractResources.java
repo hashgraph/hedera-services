@@ -20,7 +20,13 @@ package com.hedera.services.bdd.spec.infrastructure.meta;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class ContractResources {
 	public static final String HW_MINT_PATH = bytecodePath("HelloWorldMint");
@@ -684,10 +690,6 @@ public class ContractResources {
 			"{\"name\":\"jurisdiction\",\"type\":\"bytes32\"}],\"name\":\"add\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String MINT_ISVALID_ABI = "{\"constant\":true," +
-			"\"inputs\":[{\"name\":\"minter\",\"type\":\"address\"}],\"name\":\"isValid\"," +
-			"\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}]," +
-			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
 	public static final String MINT_SEVEN_ABI = "{\"constant\":true," +
 			"\"inputs\":[],\"name\":\"seven\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
@@ -1083,5 +1085,13 @@ public class ContractResources {
 
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
+	}
+
+	public static ByteString literalInitcodeFor(final String contract) {
+		try {
+			return ByteString.copyFrom(Files.readAllBytes(Paths.get(bytecodePath(contract))));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }
