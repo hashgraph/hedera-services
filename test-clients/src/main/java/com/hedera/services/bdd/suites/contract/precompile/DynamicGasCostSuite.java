@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -263,6 +262,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				);
 	}
 
+	// https://github.com/hashgraph/hedera-services/issues/2868
 	private HapiApiSpec inlineCreate2CanFailSafely() {
 		final var tcValue = 1_234L;
 		final var creation = "creation";
@@ -375,6 +375,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	}
 
 	// https://github.com/hashgraph/hedera-services/issues/2867
+	// https://github.com/hashgraph/hedera-services/issues/2868
 	private HapiApiSpec create2FactoryWorksAsExpected() {
 		final var tcValue = 1_234L;
 		final var creation2 = "create2Txn";
