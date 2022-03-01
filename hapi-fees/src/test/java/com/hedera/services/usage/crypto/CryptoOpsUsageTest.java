@@ -40,6 +40,9 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.Query;
@@ -422,11 +425,11 @@ class CryptoOpsUsageTest {
 	@Test
 	void estimatesAdjustAsExpected() {
 		givenAdjustOp();
-		CryptoAllowance existingCryptoAllowances = CryptoAllowance.newBuilder().setSpender(proxy).setAmount(
+		GrantedCryptoAllowance existingCryptoAllowances = GrantedCryptoAllowance.newBuilder().setSpender(proxy).setAmount(
 				100L).build();
-		TokenAllowance existingTokenAllowances = TokenAllowance.newBuilder()
+		GrantedTokenAllowance existingTokenAllowances = GrantedTokenAllowance.newBuilder()
 				.setSpender(proxy).setAmount(100L).setTokenId(IdUtils.asToken("0.0.1000")).build();
-		NftAllowance existingNftAllowances = NftAllowance.newBuilder().setSpender(proxy)
+		GrantedNftAllowance existingNftAllowances = GrantedNftAllowance.newBuilder().setSpender(proxy)
 				.setTokenId(IdUtils.asToken("0.0.1000"))
 				.addAllSerialNumbers(List.of()).build();
 

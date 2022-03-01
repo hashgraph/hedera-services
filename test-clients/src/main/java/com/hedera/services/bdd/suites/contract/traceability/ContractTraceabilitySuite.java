@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
@@ -582,8 +583,8 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return withOpContext(
 				(spec, opLog) -> allRunFor(spec,
 						contractCall(contractA, scenario,
-								ContractMintHTSSuite.getNestedContractAddress(contractB, spec),
-								ContractMintHTSSuite.getNestedContractAddress(contractC, spec))
+								AssociatePrecompileSuite.getNestedContractAddress(contractB, spec),
+								AssociatePrecompileSuite.getNestedContractAddress(contractC, spec))
 								.gas(1000000)
 								.via(traceabilityTxn)
 								.hasKnownStatus(expectedExecutionStatus)

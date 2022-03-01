@@ -47,6 +47,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
@@ -76,9 +77,9 @@ public class SideEffectsTracker {
 	/* Either the key-derived alias for an auto-created account, or the EVM address of a created contract */
 	private ByteString newEntityAlias = ByteString.EMPTY;
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
-	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
-	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
-	private Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
+	private Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = Collections.emptyMap();
+	private Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances = Collections.emptyMap();
+	private Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = Collections.emptyMap();
 
 	@Inject
 	public SideEffectsTracker() {
@@ -402,30 +403,51 @@ public class SideEffectsTracker {
 		return all;
 	}
 
-	public Map<EntityNum, Long> getCryptoAllowances() {
+	public Map<EntityNum, Map<EntityNum, Long>> getCryptoAllowances() {
 		return cryptoAllowances;
 	}
 
-	public void setCryptoAllowances(final Map<EntityNum, Long> cryptoAllowances) {
+	public void setCryptoAllowances(final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances) {
 		this.cryptoAllowances = cryptoAllowances;
 	}
 
-	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+	public void setCryptoAllowances(final EntityNum ownerNum, final Map<EntityNum, Long> cryptoAllowancesOfOwner) {
+		if (cryptoAllowances.equals(Collections.emptyMap())) {
+			cryptoAllowances = new TreeMap<>();
+		}
+		cryptoAllowances.put(ownerNum, cryptoAllowancesOfOwner);
+	}
+
+	public Map<EntityNum, Map<FcTokenAllowanceId, Long>> getFungibleTokenAllowances() {
 		return fungibleTokenAllowances;
 	}
 
-	public void setFungibleTokenAllowances(
-			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+	public void setFungibleTokenAllowances(Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances) {
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 	}
 
-	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
+	public void setFungibleTokenAllowances(
+			final EntityNum ownerNum, final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) {
+		if (this.fungibleTokenAllowances.equals(Collections.emptyMap())) {
+			this.fungibleTokenAllowances = new TreeMap<>();
+		}
+		this.fungibleTokenAllowances.put(ownerNum, fungibleTokenAllowances);
+	}
+
+	public Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> getNftAllowances() {
 		return nftAllowances;
 	}
 
-	public void setNftAllowances(
-			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+	public void setNftAllowances(Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances) {
 		this.nftAllowances = nftAllowances;
+	}
+
+	public void setNftAllowances(
+			final EntityNum ownerNum, final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
+		if (this.nftAllowances.equals(Collections.emptyMap())) {
+			this.nftAllowances = new TreeMap<>();
+		}
+		this.nftAllowances.put(ownerNum, nftAllowances);
 	}
 
 	/**

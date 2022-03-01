@@ -34,6 +34,7 @@ import com.hedera.services.contracts.operation.HederaExtCodeCopyOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeHashOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.operation.HederaSLoadOperation;
+import com.hedera.services.contracts.operation.HederaLogOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
@@ -116,6 +117,41 @@ public interface ContractsModule {
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
 		return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode);
+	}
+
+	@Provides
+	@Singleton
+	@IntoSet
+	static Operation provideLog0Operation(final GasCalculator gasCalculator) {
+		return new HederaLogOperation(0, gasCalculator);
+	}
+
+	@Provides
+	@Singleton
+	@IntoSet
+	static Operation provideLog1Operation(final GasCalculator gasCalculator) {
+		return new HederaLogOperation(1, gasCalculator);
+	}
+
+	@Provides
+	@Singleton
+	@IntoSet
+	static Operation provideLog2Operation(final GasCalculator gasCalculator) {
+		return new HederaLogOperation(2, gasCalculator);
+	}
+
+	@Provides
+	@Singleton
+	@IntoSet
+	static Operation provideLog3Operation(final GasCalculator gasCalculator) {
+		return new HederaLogOperation(3, gasCalculator);
+	}
+
+	@Provides
+	@Singleton
+	@IntoSet
+	static Operation provideLog4Operation(final GasCalculator gasCalculator) {
+		return new HederaLogOperation(4, gasCalculator);
 	}
 
 	@Binds

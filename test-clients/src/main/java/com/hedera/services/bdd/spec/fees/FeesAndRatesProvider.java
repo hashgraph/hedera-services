@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
 import com.hederahashgraph.api.proto.java.FileGetContentsResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -45,7 +46,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFileString;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
@@ -210,7 +211,17 @@ public class FeesAndRatesProvider {
 				.<CryptoTransferTransactionBody, CryptoTransferTransactionBody.Builder>
 						body(CryptoTransferTransactionBody.class, b -> b.setTransfers(transfers));
 		Transaction.Builder txnBuilder = txns.getReadyToSign(b -> b.setCryptoTransfer(opBody));
-		return keys.getSigned(txnBuilder, Arrays.asList(registry.getKey(setup.defaultPayerName())));
+		return keys.signWithFullPrefixEd25519Keys(
+				txnBuilder,
+				List.of(flattenedMaybeList(registry.getKey(setup.defaultPayerName()))));
+	}
+
+	private Key flattenedMaybeList(final Key k) {
+		if (k.hasKeyList()) {
+			return k.getKeyList().getKeys(0);
+		} else {
+			return k;
+		}
 	}
 
 	public ExchangeRateSet rateSetWith(int curHbarEquiv, int curCentEquiv) {

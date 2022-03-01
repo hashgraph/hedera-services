@@ -26,16 +26,17 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
-import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -81,7 +82,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class ContractMintHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractMintHTSSuite.class);
 
-	private static final long GAS_TO_OFFER = 2_000_000L;
+	private static final long GAS_TO_OFFER = 4_000_000L;
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
 	private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, KeyShape.SIMPLE,
@@ -154,6 +155,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						contractCall(hwMint, HW_BRRR_CALL_ABI, amount)
 								.via(firstMintTxn)
 								.alsoSigningWithFullPrefix(multiKey),
+						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
 						getTokenInfo(fungibleToken).hasTotalSupply(amount),
 						/* And now make the token contract-controlled so no explicit supply sig is required */
 						newKeyNamed(contractKey)
@@ -514,11 +516,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	}
 
 	@NotNull
-	public static String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
-		return CommonUtils.calculateSolidityAddress(
-				(int) spec.registry().getContractId(contract).getShardNum(),
-				spec.registry().getContractId(contract).getRealmNum(),
-				spec.registry().getContractId(contract).getContractNum());
+	private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
+		return AssociatePrecompileSuite.getNestedContractAddress(contract, spec);
 	}
 
 	@Override

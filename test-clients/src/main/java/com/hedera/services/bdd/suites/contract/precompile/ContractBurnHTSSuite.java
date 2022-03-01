@@ -21,11 +21,11 @@ package com.hedera.services.bdd.suites.contract.precompile;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -274,7 +274,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCreate(outerContract, ContractResources.NESTED_BURN_CONSTRUCTOR_ABI,
-														getNestedContractAddress(innerContract, spec))
+														AssociatePrecompileSuite.getNestedContractAddress(innerContract, spec))
 														.payingWith(ALICE)
 														.bytecode(outerContract)
 														.via("creationTx")
@@ -394,10 +394,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 
 	@NotNull
 	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
-		return CommonUtils.calculateSolidityAddress(
-				(int) spec.registry().getContractId(outerContract).getShardNum(),
-				spec.registry().getContractId(outerContract).getRealmNum(),
-				spec.registry().getContractId(outerContract).getContractNum());
+		return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(outerContract));
 	}
 
 
