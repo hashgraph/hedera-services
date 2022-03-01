@@ -206,7 +206,7 @@ public final class HederaOperationUtil {
 		var updater = frame.getMessageFrameStack().getLast().getWorldUpdater().parentUpdater().orElse(null);
 		if (updater != null) {
 			final var addressSlots =
-					((HederaWorldState.Updater) updater).getStorageChanges()
+					((HederaWorldState.Updater) updater).getStateChanges()
 							.computeIfAbsent(address, addr -> new TreeMap<>(BytesComparator.INSTANCE));
 			addressSlots.computeIfAbsent(key, slot -> new MutablePair<>(storageValue, null));
 		}

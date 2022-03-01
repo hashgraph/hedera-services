@@ -54,6 +54,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -455,7 +456,7 @@ class HederaWorldStateTest {
 		assertEquals(234L, actualSubject.getSbhRefund().toLong());
 		actualSubject.revert();
 		assertEquals(0, actualSubject.getSbhRefund().toLong());
-		assertTrue(actualSubject.getStorageChanges().isEmpty());
+		assertTrue(actualSubject.getStateChanges().isEmpty());
 	}
 
 	@Test
@@ -552,6 +553,32 @@ class HederaWorldStateTest {
 		verify(entityAccess, times(2)).putStorage(accountID, secondStorageKey, secondStorageValue);
 		// and:
 		verify(entityAccess).storeCode(accountID, code);
+	}
+
+	@Test
+	void updaterCorrectlyPopulatesStateChanges() {
+		givenNonNullWorldLedgers();
+		final var contractAddress = "0xffff";
+		final var slot = 1L;
+		final var oldSlotValue = 4L;
+		final var newSlotValue = 255L;
+		final var updatedAccount = mock(UpdateTrackingLedgerAccount.class);
+		given(updatedAccount.getAddress()).willReturn(Address.fromHexString(contractAddress));
+		given(updatedAccount.getOriginalStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(oldSlotValue));
+		given(updatedAccount.getUpdatedStorage()).willReturn(Map.of(UInt256.valueOf(slot), UInt256.valueOf(newSlotValue)));
+		given(updatedAccount.getStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(newSlotValue));
+
+		final var actualSubject = subject.updater();
+		assertEquals(0, actualSubject.getTouchedAccounts().size());
+		actualSubject.track(updatedAccount);
+
+		final var finalStateChanges = actualSubject.getFinalStateChanges();
+		assertEquals(1, finalStateChanges.size());
+		final var contractStateChange = finalStateChanges.get(Address.fromHexString(contractAddress));
+		assertEquals(1, contractStateChange.size());
+		assertNotNull(contractStateChange.get(UInt256.valueOf(slot)));
+		assertEquals(contractStateChange.get(UInt256.valueOf(slot)).getLeft(), UInt256.valueOf(oldSlotValue));
+		assertEquals(contractStateChange.get(UInt256.valueOf(slot)).getRight(), UInt256.valueOf(newSlotValue));
 	}
 
 	@Test

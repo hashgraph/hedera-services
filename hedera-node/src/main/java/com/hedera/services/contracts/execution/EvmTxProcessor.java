@@ -27,15 +27,11 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
-import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -58,13 +54,11 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
-import java.util.TreeMap;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -250,25 +244,10 @@ abstract class EvmTxProcessor {
 			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
-			stateChanges = updater.getStorageChanges();
 			if (dynamicProperties.shouldEnableTraceability()) {
-				// record storage read/write access
-
-				for (UpdateTrackingLedgerAccount<? extends Account> uta :
-						(Collection<UpdateTrackingLedgerAccount<? extends Account>>) updater.getTouchedAccounts()) {
-					final var storageUpdates = uta.getUpdatedStorage().entrySet();
-					if (!storageUpdates.isEmpty()) {
-						Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
-								stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
-						for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
-							UInt256 key = entry.getKey();
-							UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
-							UInt256 updatedStorageValue = uta.getStorageValue(key);
-							accountChanges.put(key,
-									new ImmutablePair<>(originalStorageValue, updatedStorageValue));
-						}
-					}
-				}
+				stateChanges = updater.getFinalStateChanges();
+			} else {
+				stateChanges = Map.of();
 			}
 
 			/* Commit top level Updater */

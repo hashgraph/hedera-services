@@ -368,7 +368,7 @@ class HederaOperationUtilTest {
 
 		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
 		TreeMap<Address, Map<Bytes, Pair<Bytes, Bytes>>> map = new TreeMap<>();
-		given(updater.getStorageChanges()).willReturn(map);
+		given(updater.getStateChanges()).willReturn(map);
 		given(hederaWorldUpdater.get(PRETEND_RECIPIENT_ADDR)).willReturn(worldStateAccount);
 
 		Bytes32 key = UInt256.fromBytes(messageFrame.popStackItem());
@@ -379,8 +379,8 @@ class HederaOperationUtilTest {
 				key,
 				account.getStorageValue(UInt256.fromBytes(key)));
 
-		assertTrue(updater.getStorageChanges().containsKey(PRETEND_RECIPIENT_ADDR));
-		assertTrue(updater.getStorageChanges().get(PRETEND_RECIPIENT_ADDR).containsKey(UInt256.ONE));
+		assertTrue(updater.getStateChanges().containsKey(PRETEND_RECIPIENT_ADDR));
+		assertTrue(updater.getStateChanges().get(PRETEND_RECIPIENT_ADDR).containsKey(UInt256.ONE));
 	}
 
 

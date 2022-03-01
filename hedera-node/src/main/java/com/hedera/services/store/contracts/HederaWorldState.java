@@ -33,6 +33,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,6 +53,7 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -368,9 +370,10 @@ public class HederaWorldState implements HederaMutableWorldState {
 				new HederaAccountCustomizer().isSmartContract(true);
 
 		private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
-		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> storageChanges = new TreeMap<>(BytesComparator.INSTANCE);
-		Gas sbhRefund = Gas.ZERO;
 
+		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(BytesComparator.INSTANCE);
+
+		Gas sbhRefund = Gas.ZERO;
 
 		protected Updater(final HederaWorldState world, final WorldLedgers trackingLedgers) {
 			super(world, trackingLedgers);
@@ -381,9 +384,34 @@ public class HederaWorldState implements HederaMutableWorldState {
 			return sponsorMap;
 		}
 
+		public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
+			return stateChanges;
+		}
 
-		public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStorageChanges() {
-			return storageChanges;
+		public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getFinalStateChanges() {
+			this.addAllStorageUpdatesToStateChanges();
+			return stateChanges;
+		}
+
+		private void addAllStorageUpdatesToStateChanges() {
+			// record storage read/write access
+			for (UpdateTrackingLedgerAccount<? extends com.hedera.services.store.models.Account> uta :
+					(Collection<UpdateTrackingLedgerAccount<? extends com.hedera.services.store.models.Account>>)
+							this.getTouchedAccounts()) {
+				final var storageUpdates = uta.getUpdatedStorage().entrySet();
+				if (!storageUpdates.isEmpty()) {
+					Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
+							stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE)
+							);
+					for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
+						UInt256 key = entry.getKey();
+						UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
+						UInt256 updatedStorageValue = uta.getStorageValue(key);
+						accountChanges.put(key,
+								new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+					}
+				}
+			}
 		}
 
 		@Override
