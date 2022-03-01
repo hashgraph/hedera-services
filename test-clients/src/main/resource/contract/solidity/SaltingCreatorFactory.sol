@@ -38,6 +38,16 @@ contract SaltingCreator {
         new TestContract{salt: salt}(address(this), primal_foo);
         emit Creation(primal_foo);
     }
+
+    function createAndRecreateTest(bytes32 salt) public {
+        TestContract tbd = new TestContract{salt: salt}(address(this), primal_foo);
+        tbd.vacateAddress();
+        new TestContract{salt: salt}(address(this), primal_foo);
+    }
+
+    function whatTheFoo() public view returns (uint) {
+        return primal_foo; 
+    }
 }
 
 contract TestContract {
