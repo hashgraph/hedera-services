@@ -83,10 +83,10 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 						cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(RECEIVER),
 						getAccountBalance(OWNER).logged(),
-						newFileCreate("GLDToken")
+						newFileCreate(CONTRACT)
 				).when(
 						getAccountBalance(OWNER).logged(),
-						newContractCreate("GLDToken", INITIAL_AMOUNT)
+						newContractCreate(CONTRACT, INITIAL_AMOUNT)
 								.payingWith(OWNER)
 								.hasKnownStatus(SUCCESS)
 								.via(CREATE_TX),
