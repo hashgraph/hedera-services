@@ -441,10 +441,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 										FAIL_INVALID);
 							}
 							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.senderAddress, isFungibleToken);
-						} else if (ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
-							this.isTokenReadOnlyTransaction = false;
-							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.senderAddress, isFungibleToken);
-						} else {
+						}
+//						else if (ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
+//							this.isTokenReadOnlyTransaction = false;
+//							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.senderAddress, isFungibleToken);}
+						else {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = null;
 						}
