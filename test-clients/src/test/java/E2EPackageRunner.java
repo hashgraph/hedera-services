@@ -270,7 +270,7 @@ class E2EPackageRunner {
 
 	@BeforeAll
 	static void beforeAll() {
-		final var portSystemProperty = System.getProperty("DEFAULT_PORT");
+		final var portSystemProperty = System.getProperty("defaultPort");
 		final var defaultPort = portSystemProperty != null ? portSystemProperty : "50211";
 		final var defaultProperties = JutilPropertySource.getDefaultInstance();
 		HapiApiSpec.runInCiMode(

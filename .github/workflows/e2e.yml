@@ -33,7 +33,7 @@ jobs:
         working-directory: .github/scripts
         run: bash healthcheck.sh
       - name: Run E2E Suites # run selected e2e suites
-        run: ./mvnw test -pl test-clients -Dtest=E2EPackageRunner -DDEFAULT_PORT=50213 -DfailIfNoTests=false -Dpackages=${{matrix.packages}}
+        run: ./mvnw test -pl test-clients -Dtest=E2EPackageRunner -DdefaultPort=50213 -DfailIfNoTests=false -Dpackages=${{matrix.packages}}
       - name: Upload surefire report
         if: always()
         uses: actions/upload-artifact@v2
