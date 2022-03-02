@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -93,6 +94,8 @@ class HederaWorldStateTest {
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
@@ -106,7 +109,7 @@ class HederaWorldStateTest {
 	@BeforeEach
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
-	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian);
+	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian, dynamicProperties);
 	}
 
 	@Test
@@ -408,7 +411,7 @@ class HederaWorldStateTest {
 
 	@Test
 	void failsFastIfDeletionsHappenOnStaticWorld() {
-		subject = new HederaWorldState(ids, entityAccess, new CodeCache(0, entityAccess));
+		subject = new HederaWorldState(ids, entityAccess, new CodeCache(0, entityAccess), dynamicProperties);
 		final var tbd = IdUtils.asAccount("0.0.321");
 		final var tbdAddress = EntityIdUtils.asTypedEvmAddress(tbd);
 		givenNonNullWorldLedgers();
@@ -495,6 +498,7 @@ class HederaWorldStateTest {
 		// and:
 		given(entityAccess.isExtant(zeroAddress)).willReturn(true);
 		given(entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(zeroAddress))).willReturn(true);
+		given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
 		// and:
 		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(0), 0, 0, new EntityId());
 

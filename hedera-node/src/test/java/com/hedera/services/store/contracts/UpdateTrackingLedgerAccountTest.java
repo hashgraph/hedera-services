@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -64,13 +65,15 @@ class UpdateTrackingLedgerAccountTest {
 	private EntityAccess entityAccess;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private HederaWorldState parentState;
 
 	@BeforeEach
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
-		parentState = new HederaWorldState(ids, entityAccess, codeCache);
+		parentState = new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties);
 	}
 
 	@Test

@@ -353,6 +353,7 @@ class GlobalDynamicPropertiesTest {
 				.willReturn((i + 57) % 2 == 0);
 		given(properties.getBooleanProperty("contracts.allowCreate2"))
 				.willReturn((i + 58) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.redirectTokenCalls")).willReturn((i + 59) % 2 == 0);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
