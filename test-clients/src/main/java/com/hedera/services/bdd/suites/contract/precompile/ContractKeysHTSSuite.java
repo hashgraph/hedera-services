@@ -108,7 +108,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class ContractKeysHTSSuite extends HapiApiSuite {
-    private static final long GAS_TO_OFFER = 4_000_000L;
+    private static final long GAS_TO_OFFER = 2_000_000L;
 
     private static final Logger log = LogManager.getLogger(ContractKeysHTSSuite.class);
     private static final String TOKEN_TREASURY = "treasury";
