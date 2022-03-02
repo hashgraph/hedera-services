@@ -3,6 +3,8 @@ pragma solidity ^0.6.12;
 
 import "./HederaTokenService.sol";
 import "./HederaResponseCodes.sol";
+import "./CalledContract.sol";
+
 
 contract AssociateTryCatch is HederaTokenService {
 
@@ -28,17 +30,6 @@ contract AssociateTryCatch is HederaTokenService {
             emit SuccessEvent();
         } catch Error(string memory /*reason*/) {
             emit CatchEvent();
-        }
-    }
-
-}
-
-contract CalledContract is HederaTokenService {
-    function associate(address account, address tokenAddress) external {
-        int response2 = HederaTokenService.associateToken(account, tokenAddress);
-
-        if (response2 != HederaResponseCodes.SUCCESS) {
-            revert ("Token associate failed");
         }
     }
 }

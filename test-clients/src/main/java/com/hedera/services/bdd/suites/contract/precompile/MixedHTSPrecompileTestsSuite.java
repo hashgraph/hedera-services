@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
@@ -34,18 +33,16 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -55,7 +52,6 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 
 	private static final long GAS_TO_OFFER = 4_000_000L;
 	private static final long TOTAL_SUPPLY = 1_000;
-	private static final String A_TOKEN = "TokenA";
 
 	public static void main(String... args) {
 		new MixedHTSPrecompileTestsSuite().runSuiteSync();
@@ -75,51 +71,46 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 
 	private HapiApiSpec HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile() {
 		final var theAccount = "anybody";
-		final var theContract = "associateDissociateContract";
-		final var nestedContract = "NestedBurnContract";
+		final var token = "Token";
+		final var outerContract = "AssociateTryCatch";
+		final var nestedContract = "CalledContract";
+
 		return defaultHapiSpec("HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile")
 				.given(
 						cryptoCreate(theAccount).balance(10 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
-						tokenCreate(A_TOKEN)
+						tokenCreate(token)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
-						fileCreate("associateDissociateContractByteCode").payingWith(theAccount),
-						updateLargeFile(theAccount, "associateDissociateContractByteCode",
-								extractByteCode(ContractResources.ASSOCIATE_TRY_CATCH)),
-						fileCreate(nestedContract).path(ContractResources.CALLED_CONTRACT),
-						contractCreate(nestedContract)
-								.bytecode(nestedContract)
-								.gas(GAS_TO_OFFER),
+						newFileCreate(outerContract, nestedContract),
+						newContractCreate(nestedContract),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract, ContractResources.ASSOCIATE_DISSOCIATE_CONSTRUCTOR,
-														asAddress(spec.registry().getTokenID(A_TOKEN)))
-														.payingWith(theAccount)
-														.bytecode("associateDissociateContractByteCode")
-														.via("associateTxn")
-														.gas(GAS_TO_OFFER),
-												cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
+												newContractCreate(outerContract, asAddress(spec.registry().getTokenID(token))
+												)
+														.via("associateTxn"),
+												cryptoTransfer(moving(200, token).between(TOKEN_TREASURY, theAccount))
 														.hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 										)
 						)
 				).when(
-						contractCall(theContract, ContractResources.ASSOCIATE_TRY_CATCH_ASSOCIATE_TOKEN)
+						contractCall(outerContract, "associateToken"
+						)
 								.payingWith(theAccount)
 								.gas(GAS_TO_OFFER)
-								.via("associateMethodCall"),
+								.via("associateMethodCall")
+				).then(
 						childRecordsCheck("associateMethodCall",
 								SUCCESS,
 								recordWith()
 										.status(SUCCESS),
 								recordWith()
 										.status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)),
-						getAccountInfo(theAccount).hasToken(relationshipWith(A_TOKEN))
-				).then(
-						cryptoTransfer(moving(200, A_TOKEN).between(TOKEN_TREASURY, theAccount))
+						getAccountInfo(theAccount).hasToken(relationshipWith(token)),
+						cryptoTransfer(moving(200, token).between(TOKEN_TREASURY, theAccount))
 								.hasKnownStatus(SUCCESS)
 				);
 	}
