@@ -39,10 +39,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -78,8 +78,8 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private HapiApiSpec vanillaSuccess() {
 		return defaultHapiSpec("VanillaSuccess")
 				.given(
-						fileCreate(CONTRACT),
-						contractCreate(CONTRACT).adminKey(THRESHOLD)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).adminKey(THRESHOLD)
 				).when(
 						contractCall(CONTRACT, "create").gas(785_000)
 				).then(
@@ -93,8 +93,8 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private HapiApiSpec impureCallFails() {
 		return defaultHapiSpec("ImpureCallFails")
 				.given(
-						fileCreate(CONTRACT),
-						contractCreate(CONTRACT).adminKey(THRESHOLD)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT).adminKey(THRESHOLD)
 				).when().then(
 						sleepFor(3_000L),
 						contractCallLocal(CONTRACT, "create")
@@ -106,8 +106,8 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private HapiApiSpec deletedContract() {
 		return defaultHapiSpec("InvalidDeletedContract")
 				.given(
-						fileCreate(CONTRACT),
-						contractCreate(CONTRACT)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
 						contractDelete(CONTRACT)
 				).then(
@@ -140,8 +140,8 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 		return defaultHapiSpec("InsufficientFee")
 				.given(
 						cryptoCreate("payer"),
-						fileCreate(CONTRACT),
-						contractCreate(CONTRACT)
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "create").gas(785_000)
 				).then(
@@ -159,8 +159,8 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 		return defaultHapiSpec("LowBalanceFails")
 				.given(
 						cryptoCreate("payer"),
-						fileCreate(CONTRACT),
-						contractCreate(CONTRACT),
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT),
 						cryptoCreate("payer").balance(adequateQueryPayment)
 				).when(
 						contractCall(CONTRACT, "create").gas(785_000)
