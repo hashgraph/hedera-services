@@ -1,4 +1,4 @@
-name: E2E Tests
+name: E2E
 
 on:
   pull_request:
@@ -8,7 +8,8 @@ on:
     tags: [ v* ]
 
 jobs:
-  Run-E2E-Tests:
+  run-e2e-tests:
+    name: "Run E2E Tests"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -39,3 +40,22 @@ jobs:
         with:
           name: surefire-report-(${{matrix.packages}})
           path: test-clients/target/surefire-reports/*
+
+  publish-test-results:
+    name: "Publish E2E Tests Results"
+    needs: run-e2e-tests
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: Publish E2E Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        with:
+          files: artifacts/**/*.xml
+          check_name: "E2E Tests Results"
+          comment_title: "E2E Tests Results"
