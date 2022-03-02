@@ -1114,9 +1114,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 				if(isFungible) {
 					frame.addLog(getLogForFungibleTransfer(precompileAddress));
-				} else {
-					frame.addLog(getLogForNftExchange(precompileAddress));
 				}
+//				else {
+//					frame.addLog(getLogForNftExchange(precompileAddress));
+//				}
 			}
 			return childRecord;
 		}
@@ -1143,19 +1144,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					.forDataItem(amount).build();
 		}
 
-		private Log getLogForNftExchange(final Address logger) {
-			final var nftExchanges = super.transferOp.get(0).nftExchanges();
-			final var nftExchange = nftExchanges.get(0).asGrpc();
-			final var sender = asTypedEvmAddress(nftExchange.getSenderAccountID());
-			final var receiver = asTypedEvmAddress(nftExchange.getReceiverAccountID());
-			final var serialNumber = nftExchange.getSerialNumber();
-
-			return EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
-					.forEventSignature(TRANSFER_EVENT)
-					.forIndexedArgument(sender)
-					.forIndexedArgument(receiver)
-					.forIndexedArgument(serialNumber).build();
-		}
+//		private Log getLogForNftExchange(final Address logger) {
+//			final var nftExchanges = super.transferOp.get(0).nftExchanges();
+//			final var nftExchange = nftExchanges.get(0).asGrpc();
+//			final var sender = asTypedEvmAddress(nftExchange.getSenderAccountID());
+//			final var receiver = asTypedEvmAddress(nftExchange.getReceiverAccountID());
+//			final var serialNumber = nftExchange.getSerialNumber();
+//
+//			return EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
+//					.forEventSignature(TRANSFER_EVENT)
+//					.forIndexedArgument(sender)
+//					.forIndexedArgument(receiver)
+//					.forIndexedArgument(serialNumber).build();
+//		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
