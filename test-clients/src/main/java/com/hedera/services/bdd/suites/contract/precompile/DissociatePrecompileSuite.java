@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -40,19 +39,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPLE_TOKENS_DISSOCIATE;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NESTED_TOKEN_DISSOCIATE;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SINGLE_TOKEN_DISSOCIATE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
@@ -62,10 +58,8 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.TBD_TOKEN;
@@ -80,9 +74,9 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
-	private static final String OUTER_CONTRACT = "Nested Associate/Dissociate Contract";
-	private static final String INNER_CONTRACT = "Associate/Dissociate Contract";
-	private static final String THE_CONTRACT = "Associate/Dissociate Contract";
+	private static final String OUTER_CONTRACT = "NestedAssociateDissociate";
+	private static final String NESTED_CONTRACT = "AssociateDissociate";
+	private static final String CONTRACT = "AssociateDissociate";
 	private static final String ACCOUNT = "anybody";
 	private static final String MULTI_KEY = "Multi key";
 
@@ -144,9 +138,6 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -176,15 +167,14 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(nonZeroBalanceFrozenID::set),
 						cryptoCreate(nonZeroBalanceUnfrozen)
 								.balance(10 * ONE_HUNDRED_HBARS)
-								.exposingCreatedIdTo(nonZeroBalanceUnfrozenID::set)
+								.exposingCreatedIdTo(nonZeroBalanceUnfrozenID::set),
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT)
-														.bytecode(THE_CONTRACT)
-														.gas(GAS_TO_OFFER),
 												tokenAssociate(zeroBalanceFrozen, TBD_TOKEN),
 												tokenAssociate(zeroBalanceUnfrozen, TBD_TOKEN),
 												tokenAssociate(nonZeroBalanceFrozen, TBD_TOKEN),
@@ -203,36 +193,41 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 														.hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer),
 												tokenDelete(TBD_TOKEN),
 												tokenDelete(tbdUniqToken),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
-														asAddress(zeroBalanceFrozenID.get()), asAddress(tbdTokenID.get()))
+												contractCall(CONTRACT, "tokenDissociate",
+														asAddress(zeroBalanceFrozenID.get()), asAddress(tbdTokenID.get())
+												)
 														.payingWith(zeroBalanceFrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.gas(GAS_TO_OFFER)
 														.via("dissociateZeroBalanceFrozenTxn"),
 												getTxnRecord("dissociateZeroBalanceFrozenTxn").andAllChildRecords().logged(),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
-														asAddress(zeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get()))
+												contractCall(CONTRACT, "tokenDissociate",
+														asAddress(zeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get())
+												)
 														.payingWith(zeroBalanceUnfrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.gas(GAS_TO_OFFER)
 														.via("dissociateZeroBalanceUnfrozenTxn"),
 												getTxnRecord("dissociateZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
-														asAddress(nonZeroBalanceFrozenID.get()), asAddress(tbdTokenID.get()))
+												contractCall(CONTRACT, "tokenDissociate",
+														asAddress(nonZeroBalanceFrozenID.get()), asAddress(tbdTokenID.get())
+												)
 														.payingWith(nonZeroBalanceFrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.gas(GAS_TO_OFFER)
 														.via("dissociateNonZeroBalanceFrozenTxn"),
 												getTxnRecord("dissociateNonZeroBalanceFrozenTxn").andAllChildRecords().logged(),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
-														asAddress(nonZeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get()))
+												contractCall(CONTRACT, "tokenDissociate",
+														asAddress(nonZeroBalanceUnfrozenID.get()), asAddress(tbdTokenID.get())
+												)
 														.payingWith(nonZeroBalanceUnfrozen)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.gas(GAS_TO_OFFER)
 														.via("dissociateNonZeroBalanceUnfrozenTxn"),
 												getTxnRecord("dissociateNonZeroBalanceUnfrozenTxn").andAllChildRecords().logged(),
-												contractCall(THE_CONTRACT, SINGLE_TOKEN_DISSOCIATE,
-														asAddress(treasuryID.get()), asAddress(tbdUniqueTokenID.get()))
+												contractCall(CONTRACT, "tokenDissociate",
+														asAddress(treasuryID.get()), asAddress(tbdUniqueTokenID.get())
+												)
 														.alsoSigningWithFullPrefix(MULTI_KEY)
 														.gas(GAS_TO_OFFER)
 														.payingWith(TOKEN_TREASURY)
@@ -266,32 +261,23 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
-						fileCreate(INNER_CONTRACT),
-						updateLargeFile(ACCOUNT, INNER_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
-						fileCreate(OUTER_CONTRACT),
-						updateLargeFile(ACCOUNT, OUTER_CONTRACT,
-								extractByteCode(ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT)),
-						contractCreate(INNER_CONTRACT)
-								.bytecode(INNER_CONTRACT)
-								.gas(GAS_TO_OFFER),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+						newFileCreate(OUTER_CONTRACT, NESTED_CONTRACT),
+						newContractCreate(NESTED_CONTRACT)
 				)
 				.when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(OUTER_CONTRACT, ContractResources.NESTED_ASSOCIATE_DISSOCIATE_CONTRACT_CONSTRUCTOR,
-														getNestedContractAddress(INNER_CONTRACT, spec))
-														.bytecode(OUTER_CONTRACT)
-														.gas(GAS_TO_OFFER),
+												newContractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT, spec)),
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-												contractCall(OUTER_CONTRACT, NESTED_TOKEN_DISSOCIATE,
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
+												contractCall(OUTER_CONTRACT, "dissociateAssociateContractCall",
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
+												)
 														.payingWith(ACCOUNT)
 														.via("nestedDissociateTxn")
 														.gas(GAS_TO_OFFER)
@@ -307,7 +293,6 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
-
 	/* -- HSCS-PREC-007 from HTS Precompile Test Plan -- */
 	public HapiApiSpec multiplePrecompileDissociationWithSigsForFungibleWorks() {
 		final AtomicReference<TokenID> knowableTokenTokenID = new AtomicReference<>();
@@ -320,9 +305,6 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(accountID::set),
-						fileCreate(THE_CONTRACT),
-						updateLargeFile(ACCOUNT, THE_CONTRACT,
-								extractByteCode(ContractResources.ASSOCIATE_DISSOCIATE_CONTRACT)),
 						cryptoCreate(TOKEN_TREASURY)
 								.balance(0L)
 								.exposingCreatedIdTo(treasuryID::set),
@@ -335,23 +317,23 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(TOTAL_SUPPLY)
-								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
+						newFileCreate(CONTRACT),
+						newContractCreate(CONTRACT)
 				)
 				.when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(THE_CONTRACT)
-														.bytecode(THE_CONTRACT)
-														.gas(GAS_TO_OFFER),
 												tokenAssociate(ACCOUNT, List.of(VANILLA_TOKEN, KNOWABLE_TOKEN)),
 												getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
 												getAccountInfo(ACCOUNT).hasToken(relationshipWith(KNOWABLE_TOKEN)),
-												contractCall(THE_CONTRACT, MULTIPLE_TOKENS_DISSOCIATE,
+												contractCall(CONTRACT, "tokensDissociate",
 														asAddress(accountID.get()), List.of(
 																asAddress(vanillaTokenID.get()),
-																asAddress(knowableTokenTokenID.get())))
+																asAddress(knowableTokenTokenID.get()))
+												)
 														.payingWith(ACCOUNT)
 														.via("multipleDissociationTxn")
 														.gas(GAS_TO_OFFER)
