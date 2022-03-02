@@ -29,15 +29,15 @@ contract ERC20Contract {
         IERC20(token).transfer(recipient, amount);
     }
 
-    function transferFrom(address token, address sender, address recipient, uint256 amount) public {
-        IERC20(token).transferFrom(sender, recipient, amount);
-    }
-
     function delegateTransfer(address token, address recipient, uint256 amount) public {
       (bool success, bytes memory result) = address(IERC20(token)).delegatecall(abi.encodeWithSignature("transfer(address,uint256)", recipient, amount));
     }
 
     //Not supported operations - should return a failure
+
+    function transferFrom(address token, address sender, address recipient, uint256 amount) public {
+        IERC20(token).transferFrom(sender, recipient, amount);
+    }
 
     function allowance(address token, address owner, address spender) public view {
         IERC20(token).allowance(owner, spender);

@@ -30,11 +30,11 @@ contract ERC721Contract {
         IERC721(token).ownerOf(tokenId);
     }
 
+    //Not supported operations - should return a failure
+
     function transferFrom(address token, address from, address to, uint256 tokenId) public {
         IERC721(token).transferFrom(from, to, tokenId);
     }
-
-    //Not supported operations - should return a failure
 
     function approve(address token, address to, uint256 tokenId) public {
         IERC721(token).approve(to, tokenId);
