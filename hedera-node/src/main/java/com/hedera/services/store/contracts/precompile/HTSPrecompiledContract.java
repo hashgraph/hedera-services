@@ -77,9 +77,9 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -136,8 +136,8 @@ import static com.hedera.services.store.contracts.precompile.PrecompilePricingUt
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
-import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -408,27 +408,27 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						this.isTokenReadOnlyTransaction = true;
 						final var nestedFunctionSelector = nestedInput.getInt(0);
 
-						if(ABI_ID_NAME == nestedFunctionSelector) {
+						if (ABI_ID_NAME == nestedFunctionSelector) {
 							nestedPrecompile = new NamePrecompile(tokenID);
-						} else if(ABI_ID_SYMBOL == nestedFunctionSelector) {
+						} else if (ABI_ID_SYMBOL == nestedFunctionSelector) {
 							nestedPrecompile = new SymbolPrecompile(tokenID);
-						} else if(ABI_ID_DECIMALS == nestedFunctionSelector) {
+						} else if (ABI_ID_DECIMALS == nestedFunctionSelector) {
 							if (!isFungibleToken) {
 								throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON,
 										FAIL_INVALID);
 							}
 							nestedPrecompile = new DecimalsPrecompile(tokenID);
-						} else if(ABI_ID_TOTAL_SUPPLY_TOKEN == nestedFunctionSelector) {
+						} else if (ABI_ID_TOTAL_SUPPLY_TOKEN == nestedFunctionSelector) {
 							nestedPrecompile = new TotalSupplyPrecompile(tokenID);
-						} else if(ABI_ID_BALANCE_OF_TOKEN == nestedFunctionSelector) {
+						} else if (ABI_ID_BALANCE_OF_TOKEN == nestedFunctionSelector) {
 							nestedPrecompile = new BalanceOfPrecompile(tokenID);
-						} else if(ABI_ID_OWNER_OF_NFT == nestedFunctionSelector) {
+						} else if (ABI_ID_OWNER_OF_NFT == nestedFunctionSelector) {
 							if (isFungibleToken) {
 								throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON,
 										FAIL_INVALID);
 							}
 							nestedPrecompile = new OwnerOfPrecompile(tokenID);
-						} else if(ABI_ID_TOKEN_URI_NFT == nestedFunctionSelector) {
+						} else if (ABI_ID_TOKEN_URI_NFT == nestedFunctionSelector) {
 							if (isFungibleToken) {
 								throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON,
 										FAIL_INVALID);
@@ -441,11 +441,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 										FAIL_INVALID);
 							}
 							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.senderAddress, isFungibleToken);
-						}
-//						else if (ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
-//							this.isTokenReadOnlyTransaction = false;
-//							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.senderAddress, isFungibleToken);}
-						else {
+						} else {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = null;
 						}
@@ -532,7 +528,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var contractCallResult = ContractFunctionResult.newBuilder()
 					.setContractID(HTS_PRECOMPILE_MIRROR_ID)
 					.setGasUsed(this.gasRequirement.toLong())
-			        .setContractCallResult(result != null ? ByteString.copyFrom(result.toArrayUnsafe()) : ByteString.EMPTY);
+					.setContractCallResult(result != null ? ByteString.copyFrom(result.toArrayUnsafe()) : ByteString.EMPTY);
 			errorStatus.ifPresent(status -> contractCallResult.setErrorMessage(status.name()));
 			childRecord.setContractCallResult(SolidityFnResult.fromGrpc(contractCallResult.build()));
 		}
@@ -1093,8 +1089,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
 				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID, aliasResolver);
-//				case ABI_ID_ERC_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenID,
-//						isFungible, aliasResolver);
 				default -> throw new InvalidTransactionException(
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + nestedInput + ")",
 						FAIL_INVALID);
@@ -1109,15 +1103,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final MessageFrame frame
 		) {
 			final var childRecord = super.run(frame);
-			if(SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
+			if (SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
 				final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
-				if(isFungible) {
+				if (isFungible) {
 					frame.addLog(getLogForFungibleTransfer(precompileAddress));
 				}
-//				else {
-//					frame.addLog(getLogForNftExchange(precompileAddress));
-//				}
 			}
 			return childRecord;
 		}
@@ -1127,11 +1118,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			Address sender = null;
 			Address receiver = null;
 			BigInteger amount = BigInteger.ZERO;
-			for(final var fungibleTransfer: fungibleTransfers) {
-				if(fungibleTransfer.sender!=null) {
+			for (final var fungibleTransfer : fungibleTransfers) {
+				if (fungibleTransfer.sender != null) {
 					sender = asTypedEvmAddress(fungibleTransfer.sender);
 				}
-				if(fungibleTransfer.receiver!=null) {
+				if (fungibleTransfer.receiver != null) {
 					receiver = asTypedEvmAddress(fungibleTransfer.receiver);
 					amount = BigInteger.valueOf(fungibleTransfer.amount);
 				}
@@ -1144,37 +1135,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					.forDataItem(amount).build();
 		}
 
-//		private Log getLogForNftExchange(final Address logger) {
-//			final var nftExchanges = super.transferOp.get(0).nftExchanges();
-//			final var nftExchange = nftExchanges.get(0).asGrpc();
-//			final var sender = asTypedEvmAddress(nftExchange.getSenderAccountID());
-//			final var receiver = asTypedEvmAddress(nftExchange.getReceiverAccountID());
-//			final var serialNumber = nftExchange.getSerialNumber();
-//
-//			return EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
-//					.forEventSignature(TRANSFER_EVENT)
-//					.forIndexedArgument(sender)
-//					.forIndexedArgument(receiver)
-//					.forIndexedArgument(serialNumber).build();
-//		}
-
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-//			if(isFungible) {
-				return encoder.encodeEcFungibleTransfer(true);
-//			}
-//			else {
-//				return Bytes.EMPTY;
-//			}
+			return encoder.encodeEcFungibleTransfer(true);
 		}
 
 		@Override
 		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-//			if(isFungible) {
-				return resultFrom(status);
-//			} else {
-//				return null;
-//			}
+			return resultFrom(status);
 		}
 	}
 
@@ -1257,7 +1225,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
 			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), tokenUriWrapper.tokenId());
-			var metaData =  (byte[]) nftsLedger.get(nftId, METADATA);
+			var metaData = (byte[]) nftsLedger.get(nftId, METADATA);
 
 			String metaDataString = new String(metaData);
 
@@ -1310,7 +1278,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = ledgers.tokenRels();
 			final var relationship = asTokenRel(balanceWrapper.accountId(), tokenID);
-			final var balance =  (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+			final var balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 
 			return encoder.encodeBalance(balance);
 		}
@@ -1319,7 +1287,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	/**
 	 * Checks if a key implicit in a target address is active in the current frame using a {@link
 	 * ContractActivationTest}.
-	 *
+	 * <p>
 	 * We massage the current frame a bit to ensure that a precompile being executed via delegate call is tested as
 	 * such.
 	 * There are three cases.
@@ -1332,17 +1300,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 *     <li>The precompile is being executed via a call, and the calling code is being executed as
 	 *     part of a non-delegate call.</li>
 	 * </ol>
-	 *
+	 * <p>
 	 * Note that because the {@link DecodingFacade} converts every address to its "mirror" address form
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame
-	 * 		current frame
-	 * @param target
-	 * 		the element to test for key activation, in standard form
-	 * @param activationTest
-	 * 		the function which should be invoked for key validation
+	 * @param frame          current frame
+	 * @param target         the element to test for key activation, in standard form
+	 * @param activationTest the function which should be invoked for key validation
 	 * @return whether the implied key is active
 	 */
 	private boolean validateKey(
@@ -1390,19 +1355,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 *     {@code activeContract} address should be considered active (modulo whether the recipient
 		 * 	 and contract imply a delegate call).</li>
 		 * </ul>
-		 *
+		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param target
-		 * 		an address with an implicit key understood by this implementation
-		 * @param recipient
-		 * 		the idealized account receiving the call operation
-		 * @param contract
-		 * 		the idealized account whose code is being executed
-		 * @param activeContract
-		 * 		the contract address that can activate a contract or delegatable contract key
-		 * @param aliases
-		 * 		the current contract aliases in effect
+		 * @param target         an address with an implicit key understood by this implementation
+		 * @param recipient      the idealized account receiving the call operation
+		 * @param contract       the idealized account whose code is being executed
+		 * @param activeContract the contract address that can activate a contract or delegatable contract key
+		 * @param aliases        the current contract aliases in effect
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(
