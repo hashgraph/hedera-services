@@ -198,7 +198,6 @@ class TransferLogicTest {
 		subject.doZeroSum(changes);
 
 		assertEquals(2 * autoFee, (long) accountsLedger.get(funding, AccountProperty.BALANCE));
-		verify(sideEffectsTracker).trackHbarChange(funding, 2 * autoFee);
 		assertEquals(firstAmount - autoFee, (long) accountsLedger.get(firstNewAccount, AccountProperty.BALANCE));
 		assertEquals(secondAmount - autoFee, (long) accountsLedger.get(secondNewAccount, AccountProperty.BALANCE));
 		verify(autoCreationLogic).submitRecordsTo(recordsHistorian);

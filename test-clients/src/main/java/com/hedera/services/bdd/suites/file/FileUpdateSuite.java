@@ -416,7 +416,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI).gas(1_500_000L)
 				).then(
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(300_000L)
 								.has(resultWith().gasUsed(26_451)),
