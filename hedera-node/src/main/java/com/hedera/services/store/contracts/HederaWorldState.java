@@ -216,27 +216,23 @@ public class HederaWorldState implements HederaMutableWorldState {
 		if (address == null) {
 			return null;
 		}
+
+		if (entityAccess.isTokenAccount(address) && dynamicProperties.isRedirectTokenCallsEnabled()) {
+			return new WorldStateTokenAccount(address, EntityId.fromGrpcTokenId(tokenIdFromEvmAddress(address)));
+		}
+
 		final var accountId = accountIdFromEvmAddress(address);
 
-		final boolean isToken = entityAccess.isTokenAccount(address);
-		if (!isGettable(accountId) && !isToken) {
+		if (!isGettable(accountId)) {
 			return null;
 		}
 
-		WorldStateAccount stateAccount;
-		if(!isToken) {
-			final long expiry = entityAccess.getExpiry(accountId);
-			final long balance = entityAccess.getBalance(accountId);
-			final long autoRenewPeriod = entityAccess.getAutoRenew(accountId);
-			stateAccount = new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod,
-					entityAccess.getProxy(accountId));
-		} else if (dynamicProperties.isRedirectTokenCallsEnabled()){
-			stateAccount = new WorldStateTokenAccount(address,
-					EntityId.fromGrpcTokenId(tokenIdFromEvmAddress(address)));
-		} else {
-			stateAccount = null;
-		}
-		return stateAccount;
+		final long expiry = entityAccess.getExpiry(accountId);
+		final long balance = entityAccess.getBalance(accountId);
+		final long autoRenewPeriod = entityAccess.getAutoRenew(accountId);
+
+		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod,
+				entityAccess.getProxy(accountId));
 	}
 
 	private boolean isGettable(final AccountID id) {

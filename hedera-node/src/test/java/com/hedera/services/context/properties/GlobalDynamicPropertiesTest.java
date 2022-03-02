@@ -81,6 +81,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.expandSigsFromLastSignedState());
 		assertTrue(subject.shouldExportPrecompileResults());
 		assertFalse(subject.isCreate2Enabled());
+		assertTrue(subject.isRedirectTokenCallsEnabled());
 	}
 
 	@Test
@@ -200,6 +201,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.expandSigsFromLastSignedState());
 		assertFalse(subject.shouldExportPrecompileResults());
 		assertTrue(subject.isCreate2Enabled());
+		assertFalse(subject.isRedirectTokenCallsEnabled());
 	}
 
 	@Test

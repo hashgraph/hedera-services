@@ -496,7 +496,6 @@ class HederaWorldStateTest {
 		final var zeroAddress = EntityIdUtils.accountIdFromEvmAddress(Address.ZERO.toArray());
 		final var updater = subject.updater();
 		// and:
-		given(entityAccess.isExtant(zeroAddress)).willReturn(true);
 		given(entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(zeroAddress))).willReturn(true);
 		given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
 		// and:
@@ -512,8 +511,6 @@ class HederaWorldStateTest {
 		assertEquals(expected.getExpiry(), result.getExpiry());
 		assertEquals(-1, result.getNonce());
 		assertEquals(TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS, result.getCode());
-		// and:
-		verify(entityAccess).isExtant(zeroAddress);
 	}
 
 	@Test
