@@ -19,9 +19,9 @@ public class TokenRelsCommitInterceptor implements CommitInterceptor<Pair<Accoun
 //		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
-	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
+//	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
 //		this.sideEffectsTracker = sideEffectsTracker;
-	}
+//	}
 
 	/**
 	 * Accepts a pending change set, including creations and removals.

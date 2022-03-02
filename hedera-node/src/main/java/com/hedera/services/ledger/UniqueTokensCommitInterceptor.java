@@ -17,9 +17,9 @@ public class UniqueTokensCommitInterceptor implements CommitInterceptor<NftId, M
 //		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
-	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
+//	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
 //		this.sideEffectsTracker = sideEffectsTracker;
-	}
+//	}
 
 	@Override
 	public void preview(List<MerkleLeafChanges<NftId, MerkleUniqueToken, NftProperty>> changesToCommit) {
