@@ -17,10 +17,6 @@ public class TokensCommitInterceptor implements CommitInterceptor<TokenID, Merkl
 //		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
-//	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
-//		this.sideEffectsTracker = sideEffectsTracker;
-//	}
-
 	@Override
 	public void preview(List<MerkleLeafChanges<TokenID, MerkleToken, TokenProperty>> changesToCommit) {
 		//to be implemented

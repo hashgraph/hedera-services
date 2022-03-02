@@ -24,12 +24,12 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountCommitInterceptor;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +40,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.LongStream;
 
 import static com.hedera.services.ledger.accounts.TestAccount.Allowance.INSUFFICIENT;
@@ -82,13 +81,11 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 	private final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 
 	@Mock
-	private BackingStore<Long, TestAccount> backingAccounts;
+	private BackingStore<Long, TestAccount> backingTestAccounts;
 	@Mock
-	private Function<TestAccountProperty, Object> extantProps;
+	private BackingStore<AccountID, MerkleAccount> backingAccounts;
 	@Mock
 	private PropertyChangeObserver<Long, TestAccountProperty> commitObserver;
-	@Mock
-	private SideEffectsTracker sideEffectsTracker;
 
 	private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
 	private TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
@@ -100,28 +97,41 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
-				new HashMapBackingAccounts(),
+				backingAccounts,
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(new SideEffectsTracker());
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 
 		subject = new TransactionalLedger<>(
-				TestAccountProperty.class, TestAccount::new, backingAccounts, changeManager);
-		final var testAccountCommitInterceptor = new TestAccountCommitInterceptor();
-		testAccountCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+				TestAccountProperty.class, TestAccount::new, backingTestAccounts, changeManager);
+		final var testAccountCommitInterceptor = new TestAccountCommitInterceptor(new SideEffectsTracker());
 		subject.setCommitInterceptor(testAccountCommitInterceptor);
 	}
 
 	@Test
-	void throwsOnCommittingInconsistentAdjustments() {
+	void throwsOnCommittingNegativeAdjustments() {
 		accountsLedger.begin();
 
 		accountsLedger.create(rand);
-		accountsLedger.set(rand, AccountProperty.BALANCE, 1L);
+		accountsLedger.set(rand, AccountProperty.BALANCE, -1L);
 		accountsLedger.create(deletable);
 		accountsLedger.set(deletable, AccountProperty.BALANCE, -5L);
 
-		assertThrows(IllegalArgumentException.class, () -> accountsLedger.commit());
+		assertThrows(IllegalStateException.class, () -> accountsLedger.commit());
+	}
+
+	@Test
+	void throwsOnCommittingInconsistentAdjustments() {
+		when(backingAccounts.contains(rand)).thenReturn(true);
+		when(backingAccounts.getRef(rand)).thenReturn(randMerkleAccount);
+		when(backingAccounts.contains(aliasAccountId)).thenReturn(true);
+		when(backingAccounts.getRef(aliasAccountId)).thenReturn(aliasMerkleAccount);
+
+		accountsLedger.begin();
+		accountsLedger.set(rand, AccountProperty.BALANCE, 4L);
+		accountsLedger.set(aliasAccountId, AccountProperty.BALANCE, 8L);
+
+		assertThrows(IllegalStateException.class, () -> accountsLedger.commit());
 	}
 
 	@Test
@@ -149,7 +159,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 		subject.commit();
 
-		verify(backingAccounts, never()).put(any(), any());
+		verify(backingTestAccounts, never()).put(any(), any());
 	}
 
 	@Test
@@ -159,7 +169,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void rollbackClearsChanges() {
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		// given:
 		subject.begin();
@@ -175,8 +185,8 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void getUsesMutableRefIfPendingChanges() {
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		// given:
 		var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag, account1.tokenThing,
@@ -191,7 +201,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		// then:
 		assertEquals(newAccount1, account);
 		// and:
-		verify(backingAccounts, times(2)).getRef(1L);
+		verify(backingTestAccounts, times(2)).getRef(1L);
 	}
 
 	@Test
@@ -203,14 +213,14 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.put(1L, account1);
 
 		subject.commit();
-		verify(backingAccounts).put(1L, account1);
+		verify(backingTestAccounts).put(1L, account1);
 	}
 
 	@Test
 	void putsInOrderOfChanges() {
 		// setup:
 		int M = 2, N = 100;
-		InOrder inOrder = inOrder(backingAccounts);
+		InOrder inOrder = inOrder(backingTestAccounts);
 		List<Long> ids = LongStream.range(M, N).boxed().collect(toList());
 
 		// when:
@@ -220,7 +230,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 		// then:
 		LongStream.range(M, N).boxed().forEach(id -> {
-			inOrder.verify(backingAccounts).put(argThat(id::equals), any());
+			inOrder.verify(backingTestAccounts).put(argThat(id::equals), any());
 		});
 	}
 
@@ -228,7 +238,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 	void destroysInOrder() {
 		// setup:
 		int M = 2, N = 100;
-		InOrder inOrder = inOrder(backingAccounts);
+		InOrder inOrder = inOrder(backingTestAccounts);
 		List<Long> ids = LongStream.range(M, N).boxed().collect(toList());
 
 		// when:
@@ -242,20 +252,20 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 		// then:
 		LongStream.range(M, N).boxed().forEach(id -> {
-			inOrder.verify(backingAccounts).put(argThat(id::equals), any());
+			inOrder.verify(backingTestAccounts).put(argThat(id::equals), any());
 		});
 		// and:
 		LongStream.range(M, N).boxed().forEach(id -> {
-			inOrder.verify(backingAccounts).remove(id);
+			inOrder.verify(backingTestAccounts).remove(id);
 		});
 	}
 
 	@Test
 	void requiresManualRollbackIfCommitFails() {
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
-		willThrow(IllegalStateException.class).given(backingAccounts).put(any(), any());
+		willThrow(IllegalStateException.class).given(backingTestAccounts).put(any(), any());
 
 		// when:
 		subject.begin();
@@ -290,9 +300,9 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void existsIfNotMissingAndNotDestroyed() {
-		given(backingAccounts.contains(1L)).willReturn(true);
-		given(backingAccounts.contains(2L)).willReturn(false);
-		given(backingAccounts.contains(3L)).willReturn(false);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.contains(2L)).willReturn(false);
+		given(backingTestAccounts.contains(3L)).willReturn(false);
 
 		// given:
 		subject.begin();
@@ -322,7 +332,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.commit();
 
 		// then:
-		verify(backingAccounts).remove(1L);
+		verify(backingTestAccounts).remove(1L);
 	}
 
 	@Test
@@ -350,7 +360,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void throwsOnCreationWithExistingAccountId() {
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		// given:
 		subject.begin();
@@ -367,7 +377,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void returnsPendingChangePropertiesOfExistingAccounts() {
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		// given:
 		subject.begin();
@@ -377,7 +387,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		long value = (long) subject.get(1L, LONG);
 
 		// then:
-		verify(backingAccounts, times(3)).contains(1L);
+		verify(backingTestAccounts, times(3)).contains(1L);
 		assertEquals(3L, value);
 	}
 
@@ -424,8 +434,8 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void reflectsChangeToExistingAccountIfInTransaction() {
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		final var expected = new TestAccount(account1.value, things[0], account1.flag, 667L,
 				account1.validHbarAllowances, account1.validFungibleAllowances, account1.validNftAllowances);
@@ -442,8 +452,8 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void canUndoSpecificChange() {
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 		// setup:
 		ArgumentCaptor<TestAccount> captor = ArgumentCaptor.forClass(TestAccount.class);
 		final var changesToUndo = List.of(FLAG);
@@ -462,7 +472,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.commit();
 
 		// expect:
-		verify(backingAccounts).put(longThat(l -> l == 1L), captor.capture());
+		verify(backingTestAccounts).put(longThat(l -> l == 1L), captor.capture());
 		// and:
 		final var committed = captor.getValue();
 		assertSame(things[0], committed.getThing());
@@ -492,8 +502,8 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void dropsPendingChangesAfterRollback() {
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		// given:
 		subject.begin();
@@ -513,8 +523,8 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void persistsPendingChangesAndDestroysDeadAccountsAfterCommit() {
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		// setup:
 		var expected2 = new TestAccount(2L, things[2], false);
@@ -537,25 +547,25 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		assertFalse(subject.isInTransaction());
 		assertEquals("{}", subject.changeSetSoFar());
 		// and:
-		verify(backingAccounts).put(2L, expected2);
-		verify(backingAccounts).put(1L, new TestAccount(1L, things[0], false, 667L,
+		verify(backingTestAccounts).put(2L, expected2);
+		verify(backingTestAccounts).put(1L, new TestAccount(1L, things[0], false, 667L,
 				TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK));
-		verify(backingAccounts, never()).put(3L, new TestAccount(0L, things[3], false));
-		verify(backingAccounts).remove(3L);
+		verify(backingTestAccounts, never()).put(3L, new TestAccount(0L, things[3], false));
+		verify(backingTestAccounts).remove(3L);
 	}
 
 	@Test
 	void reflectsUnchangedAccountIfNoChanges() {
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 		assertEquals(account1, subject.getFinalized(1L));
 	}
 
 	@Test
 	void validateHappyPath() {
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		subject.begin();
 		subject.set(1L, LONG, 123L);
@@ -577,12 +587,12 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		TestAccount account3 = new TestAccount(123L, things[1], true, 667L);
 		TestAccount account4 = new TestAccount(123L, "RANDOM", false, 667L);
 
-		when(backingAccounts.contains(2L)).thenReturn(true);
-		when(backingAccounts.getImmutableRef(2L)).thenReturn(account2);
-		when(backingAccounts.contains(3L)).thenReturn(true);
-		when(backingAccounts.getImmutableRef(3L)).thenReturn(account3);
-		when(backingAccounts.contains(4L)).thenReturn(true);
-		when(backingAccounts.getImmutableRef(4L)).thenReturn(account4);
+		when(backingTestAccounts.contains(2L)).thenReturn(true);
+		when(backingTestAccounts.getImmutableRef(2L)).thenReturn(account2);
+		when(backingTestAccounts.contains(3L)).thenReturn(true);
+		when(backingTestAccounts.getImmutableRef(3L)).thenReturn(account3);
+		when(backingTestAccounts.contains(4L)).thenReturn(true);
+		when(backingTestAccounts.getImmutableRef(4L)).thenReturn(account4);
 
 		assertEquals(ACCOUNT_IS_NOT_GENESIS_ACCOUNT, subject.validate(2L, scopedCheck));
 		assertEquals(ACCOUNT_IS_TREASURY, subject.validate(3L, scopedCheck));
@@ -591,9 +601,9 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void validationFailsWithMissingHbarAllowance() {
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		subject.begin();
 		subject.set(1L, LONG, 123L);
@@ -607,9 +617,9 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void validationFailsWithInsufficientHbarAllowance() {
-		given(backingAccounts.getRef(1L)).willReturn(account1);
-		given(backingAccounts.getImmutableRef(1L)).willReturn(account1);
-		given(backingAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		subject.begin();
 		subject.set(1L, LONG, 123L);
@@ -624,18 +634,18 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void idSetPropagatesCallToEntities() {
 		Set<Long> idSet = Set.of(1L, 2L, 3L);
-		given(backingAccounts.idSet()).willReturn(idSet);
+		given(backingTestAccounts.idSet()).willReturn(idSet);
 
 		assertEquals(idSet, subject.idSet());
-		verify(backingAccounts).idSet();
+		verify(backingTestAccounts).idSet();
 	}
 
 	@Test
 	void sizePropagatesCallToEntities() {
 		var size = 23L;
-		given(backingAccounts.size()).willReturn(size);
+		given(backingTestAccounts.size()).willReturn(size);
 
 		assertEquals(size, subject.size());
-		verify(backingAccounts).size();
+		verify(backingTestAccounts).size();
 	}
 }

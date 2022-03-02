@@ -13,10 +13,7 @@ public class TestAccountCommitInterceptor implements CommitInterceptor<Long, Tes
 	// responsible for calling reset() on the tracker, as that will be done by the client code.
 	private SideEffectsTracker sideEffectsTracker;
 
-	public TestAccountCommitInterceptor() {
-	}
-
-	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
+	public TestAccountCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
 		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
