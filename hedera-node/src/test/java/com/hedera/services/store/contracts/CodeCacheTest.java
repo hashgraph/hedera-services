@@ -83,7 +83,6 @@ class CodeCacheTest {
 
 		codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
-		assertEquals(1L, codeCache.size());
 		assertDoesNotThrow(() -> codeCache.invalidate(Address.fromHexString("0xabc")));
 	}
 
