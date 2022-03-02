@@ -1160,21 +1160,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			if(isFungible) {
+//			if(isFungible) {
 				return encoder.encodeEcFungibleTransfer(true);
-			}
-			else {
-				return Bytes.EMPTY;
-			}
+//			}
+//			else {
+//				return Bytes.EMPTY;
+//			}
 		}
 
 		@Override
 		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-			if(isFungible) {
+//			if(isFungible) {
 				return resultFrom(status);
-			} else {
-				return null;
-			}
+//			} else {
+//				return null;
+//			}
 		}
 	}
 
