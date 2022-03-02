@@ -95,8 +95,7 @@ public interface StoresModule {
 				MerkleUniqueToken::new,
 				backingNfts,
 				new ChangeSummaryManager<>());
-		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor();
-		uniqueTokensCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor(sideEffectsTracker);
 		uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
 		return uniqueTokensLedger;
 	}
@@ -112,8 +111,7 @@ public interface StoresModule {
 				MerkleToken::new,
 				backingTokens,
 				new ChangeSummaryManager<>());
-		final var tokensCommitInterceptor = new TokensCommitInterceptor();
-		tokensCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		final var tokensCommitInterceptor = new TokensCommitInterceptor(sideEffectsTracker);
 		tokensLedger.setCommitInterceptor(tokensCommitInterceptor);
 		return tokensLedger;
 	}
@@ -130,8 +128,7 @@ public interface StoresModule {
 				backingTokenRels,
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor();
-		tokenRelsCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor(sideEffectsTracker);
 		tokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
 		return tokenRelsLedger;
 	}
@@ -147,8 +144,7 @@ public interface StoresModule {
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor();
-		accountsCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
 	}

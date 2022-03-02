@@ -28,9 +28,8 @@ public class MockLedgerWorldUpdater
 		extends AbstractLedgerWorldUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> {
 
 
-	public MockLedgerWorldUpdater(final HederaWorldState world, final WorldLedgers trackingLedgers,
-								  final SideEffectsTracker sideEffectsTracker) {
-		super(world, trackingLedgers, sideEffectsTracker);
+	public MockLedgerWorldUpdater(final HederaWorldState world, final WorldLedgers trackingLedgers) {
+		super(world, trackingLedgers);
 	}
 
 	@Override
@@ -45,6 +44,6 @@ public class MockLedgerWorldUpdater
 
 	@Override
 	public WorldUpdater updater() {
-		return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped(sideEffectsTracker), sideEffectsTracker);
+		return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped(new SideEffectsTracker()));
 	}
 }

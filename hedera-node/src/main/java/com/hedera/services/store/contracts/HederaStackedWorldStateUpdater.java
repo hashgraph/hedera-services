@@ -48,10 +48,8 @@ public class HederaStackedWorldStateUpdater
 	public HederaStackedWorldStateUpdater(
 			final AbstractLedgerWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
 			final HederaMutableWorldState worldState,
-			final WorldLedgers trackingLedgers,
-			final SideEffectsTracker sideEffectsTracker
-			) {
-		super(updater, trackingLedgers, sideEffectsTracker);
+			final WorldLedgers trackingLedgers) {
+		super(updater, trackingLedgers);
 		this.worldState = worldState;
 	}
 
@@ -146,7 +144,7 @@ public class HederaStackedWorldStateUpdater
 		return new HederaStackedWorldStateUpdater(
 				(AbstractLedgerWorldUpdater) this,
 				worldState,
-				trackingLedgers().wrapped(sideEffectsTracker), sideEffectsTracker);
+				trackingLedgers().wrapped(new SideEffectsTracker()));
 	}
 
 	/* --- Internal helpers --- */

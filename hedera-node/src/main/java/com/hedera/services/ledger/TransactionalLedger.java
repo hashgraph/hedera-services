@@ -71,6 +71,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private final List<K> createdKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final List<K> changedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final List<K> perishedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
+
 	private final Class<P> propertyType;
 	private final Supplier<A> newEntity;
 	private final BackingStore<K, A> entities;
@@ -78,7 +79,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
-	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
+	private final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
+	private final Map<K, MerkleLeafChanges<K, A, P>> idToMerkleLeafChanges = new HashMap<>();
 
 	private boolean isInTransaction = false;
 	private PropertyChangeObserver<K, P> propertyChangeObserver = null;
@@ -149,6 +151,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 			throw new IllegalStateException("A transaction is already active!");
 		}
 		isInTransaction = true;
+		idToMerkleLeafChanges.clear();
 	}
 
 	public void undoChangesOfType(List<P> properties) {
@@ -180,6 +183,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 
 		changes.clear();
+		idToMerkleLeafChanges.clear();
 		deadEntities.clear();
 		changedKeys.clear();
 		createdKeys.clear();
@@ -194,11 +198,12 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 
 		try {
-			commitInterceptor.preview(getAccumulatedMerkleLeafChanges());
+			commitInterceptor.preview(idToMerkleLeafChanges.values().stream().toList());
 
 			flushListed(changedKeys);
 			flushListed(createdKeys);
 			changes.clear();
+			idToMerkleLeafChanges.clear();
 
 			if (!deadEntities.isEmpty()) {
 				perishedKeys.forEach(entities::remove);
@@ -237,6 +242,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 			changedKeys.add(id);
 			return changeFactory.apply(id);
 		}), property, value);
+
+		final var merkleProperties = changes.get(id);
+		final var merkleLeaf = entities.contains(id) ? entities.getRef(id) : null;
+		final var merkleLeafChanges = new MerkleLeafChanges<>(id, merkleLeaf, merkleProperties);
+		idToMerkleLeafChanges.put(id, merkleLeafChanges);
 	}
 
 	@Override
@@ -513,19 +523,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private Function<P, Object> newDefaultPropertySource() {
 		final var defaultEntity = newEntity.get();
 		return prop -> prop.getter().apply(defaultEntity);
-	}
-
-	private List<MerkleLeafChanges<K, A, P>> getAccumulatedMerkleLeafChanges() {
-		final List<MerkleLeafChanges<K, A, P>> merkleLeavesChanges = new ArrayList<>();
-		for (final var merkleLeafChangesEntry : changes.entrySet()) {
-			final var id = merkleLeafChangesEntry.getKey();
-			final var merkleProperties = merkleLeafChangesEntry.getValue();
-			final var merkleLeaf = entities.contains(id) ? entities.getRef(id) : null;
-			final var merkleLeafChanges = new MerkleLeafChanges<>(id, merkleLeaf, merkleProperties);
-			merkleLeavesChanges.add(merkleLeafChanges);
-		}
-
-		return merkleLeavesChanges;
 	}
 
 	ChangeSummaryManager<A, P> getChangeManager() {

@@ -13,6 +13,10 @@ public class UniqueTokensCommitInterceptor implements CommitInterceptor<NftId, M
 	// responsible for calling reset() on the tracker, as that will be done by the client code.
 //	private SideEffectsTracker sideEffectsTracker;
 
+	public UniqueTokensCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
+//		this.sideEffectsTracker = sideEffectsTracker;
+	}
+
 	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
 //		this.sideEffectsTracker = sideEffectsTracker;
 	}

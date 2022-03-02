@@ -107,7 +107,7 @@ class HederaWorldStateTest {
 	@BeforeEach
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
-	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian, sideEffectsTracker);
+	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian);
 	}
 
 	@Test
@@ -409,7 +409,7 @@ class HederaWorldStateTest {
 
 	@Test
 	void failsFastIfDeletionsHappenOnStaticWorld() {
-		subject = new HederaWorldState(ids, entityAccess, new CodeCache(0, entityAccess), sideEffectsTracker);
+		subject = new HederaWorldState(ids, entityAccess, new CodeCache(0, entityAccess));
 		final var tbd = IdUtils.asAccount("0.0.321");
 		final var tbdAddress = EntityIdUtils.asTypedEvmAddress(tbd);
 		givenNonNullWorldLedgers();
@@ -606,7 +606,7 @@ class HederaWorldStateTest {
 	}
 
 	private void givenNonNullWorldLedgers() {
-		given(worldLedgers.wrapped(sideEffectsTracker)).willReturn(worldLedgers);
+		given(worldLedgers.wrapped(any())).willReturn(worldLedgers);
 		given(entityAccess.worldLedgers()).willReturn(worldLedgers);
 	}
 }

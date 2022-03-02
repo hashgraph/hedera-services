@@ -76,7 +76,7 @@ class HederaStackedWorldStateUpdaterTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers, sideEffectsTracker);
+		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers);
 	}
 
 	@Test

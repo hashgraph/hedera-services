@@ -102,8 +102,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 				MerkleAccount::new,
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor();
-		accountsCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 
 		subject = new TransactionalLedger<>(
@@ -122,7 +121,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		accountsLedger.create(deletable);
 		accountsLedger.set(deletable, AccountProperty.BALANCE, -5L);
 
-		assertThrows(IllegalStateException.class, () -> accountsLedger.commit());
+		assertThrows(IllegalArgumentException.class, () -> accountsLedger.commit());
 	}
 
 	@Test
@@ -192,7 +191,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		// then:
 		assertEquals(newAccount1, account);
 		// and:
-		verify(backingAccounts).getRef(1L);
+		verify(backingAccounts, times(2)).getRef(1L);
 	}
 
 	@Test
@@ -378,8 +377,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		long value = (long) subject.get(1L, LONG);
 
 		// then:
-		verify(backingAccounts, times(2)).contains(1L);
-		verifyNoMoreInteractions(backingAccounts);
+		verify(backingAccounts, times(3)).contains(1L);
 		assertEquals(3L, value);
 	}
 

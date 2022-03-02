@@ -22,11 +22,7 @@ package com.hedera.services.store.contracts;
 
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.AccountsCommitInterceptor;
-import com.hedera.services.ledger.TokenRelsCommitInterceptor;
-import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
@@ -87,7 +83,7 @@ class AbstractStackedLedgerUpdaterTest {
 	void setUp() {
 		setupLedgers();
 
-		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped(sideEffectsTracker), sideEffectsTracker);
+		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped(sideEffectsTracker));
 
 		subject = (AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount>) wrapped.updater();
 	}

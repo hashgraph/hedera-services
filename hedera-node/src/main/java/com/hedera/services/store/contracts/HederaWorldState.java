@@ -82,7 +82,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
 	private final CodeCache codeCache;
-	private final SideEffectsTracker sideEffectsTracker;
 
 	@Inject
 	public HederaWorldState(
@@ -90,30 +89,26 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final EntityAccess entityAccess,
 			final CodeCache codeCache,
 			final SigImpactHistorian sigImpactHistorian,
-			final AccountRecordsHistorian recordsHistorian,
-			final SideEffectsTracker sideEffectsTracker
+			final AccountRecordsHistorian recordsHistorian
 	) {
 		this.ids = ids;
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.recordsHistorian = recordsHistorian;
-		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	/* Used to manage static calls. */
 	public HederaWorldState(
 			final EntityIdSource ids,
 			final EntityAccess entityAccess,
-			final CodeCache codeCache,
-			final SideEffectsTracker sideEffectsTracker
+			final CodeCache codeCache
 	) {
 		this.ids = ids;
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = null;
 		this.recordsHistorian = null;
-		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
@@ -188,7 +183,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public Updater updater() {
-		return new Updater(this, entityAccess.worldLedgers().wrapped(sideEffectsTracker), sideEffectsTracker);
+		return new Updater(this, entityAccess.worldLedgers().wrapped(new SideEffectsTracker()));
 	}
 
 	@Override
@@ -370,9 +365,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		private Gas sbhRefund = Gas.ZERO;
 
-		protected Updater(final HederaWorldState world, final WorldLedgers trackingLedgers,
-						  final SideEffectsTracker sideEffectsTracker) {
-			super(world, trackingLedgers, sideEffectsTracker);
+		protected Updater(final HederaWorldState world, final WorldLedgers trackingLedgers) {
+			super(world, trackingLedgers);
 		}
 
 		@Override
@@ -474,7 +468,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		@Override
 		public WorldUpdater updater() {
 			return new HederaStackedWorldStateUpdater(this, wrappedWorldView(),
-					trackingLedgers().wrapped(sideEffectsTracker), sideEffectsTracker);
+					trackingLedgers().wrapped(new SideEffectsTracker()));
 		}
 
 		@Override

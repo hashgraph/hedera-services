@@ -108,15 +108,13 @@ class ContractCallLocalAnswerTest {
 	private NodeLocalProperties nodeLocalProperties;
 	@Mock
 	private AliasManager aliasManager;
-	@Mock
-	private SideEffectsTracker sideEffectsTracker;
 
 	private ContractCallLocalAnswer subject;
 
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCallLocalAnswer(
-				ids, aliasManager, accountStore, validator, dynamicProperties, nodeLocalProperties, evmTxProcessor, sideEffectsTracker);
+				ids, aliasManager, accountStore, validator, dynamicProperties, nodeLocalProperties, evmTxProcessor);
 	}
 
 	@Test

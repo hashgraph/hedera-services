@@ -20,7 +20,6 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -65,15 +64,13 @@ class UpdateTrackingLedgerAccountTest {
 	private EntityAccess entityAccess;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
-	@Mock
-	private SideEffectsTracker sideEffectsTracker;
 
 	private HederaWorldState parentState;
 
 	@BeforeEach
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
-		parentState = new HederaWorldState(ids, entityAccess, codeCache, sideEffectsTracker);
+		parentState = new HederaWorldState(ids, entityAccess, codeCache);
 	}
 
 	@Test

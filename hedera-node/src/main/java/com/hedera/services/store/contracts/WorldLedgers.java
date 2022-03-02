@@ -168,17 +168,10 @@ public class WorldLedgers {
 			return staticLedgersWith(StackedContractAliases.wrapping(aliases), staticEntityAccess);
 		}
 
-		final var tokensCommitInterceptor = new TokensCommitInterceptor();
-		tokensCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
-
-		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor();
-		tokenRelsCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
-
-		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor();
-		uniqueTokensCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
-
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor();
-		accountsCommitInterceptor.setSideEffectsTracker(sideEffectsTracker);
+		final var tokensCommitInterceptor = new TokensCommitInterceptor(sideEffectsTracker);
+		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor(sideEffectsTracker);
+		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor(sideEffectsTracker);
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
 
 		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
 		wrappedTokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);

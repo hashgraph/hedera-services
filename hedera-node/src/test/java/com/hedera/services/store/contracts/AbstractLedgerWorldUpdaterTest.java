@@ -119,7 +119,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void setUp() {
 		setupLedgers();
 
-		subject = new MockLedgerWorldUpdater(worldState, ledgers, sideEffectsTracker);
+		subject = new MockLedgerWorldUpdater(worldState, ledgers);
 	}
 
 	@Test
@@ -251,7 +251,7 @@ class AbstractLedgerWorldUpdaterTest {
 	@Test
 	void commitsToWrappedTrackingAccountsRejectChangesToMissingAccountBalances() {
 		/* Get the wrapped accounts for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedAccounts = wrappedLedgers.accounts();
 
 		/* Make an illegal change to them...well-behaved HTS precompiles should not create accounts! */
@@ -272,7 +272,7 @@ class AbstractLedgerWorldUpdaterTest {
 		subject.deleteAccount(aAddress);
 
 		/* Get the wrapped accounts for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedAccounts = wrappedLedgers.accounts();
 
 		/* Make an illegal change to them---this should never happen from a well-behaved HTS
@@ -295,7 +295,7 @@ class AbstractLedgerWorldUpdaterTest {
 		subject.getAccount(bAddress).getMutable().setBalance(Wei.of(bHbarBalance - 1));
 
 		/* Get the wrapped accounts for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedAccounts = wrappedLedgers.accounts();
 
 		/* Make some changes to them (e.g. as part of an HTS precompile) */
@@ -322,7 +322,7 @@ class AbstractLedgerWorldUpdaterTest {
 		setupWellKnownNfts();
 
 		/* Get the wrapped nfts for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedNfts = wrappedLedgers.nfts();
 
 		/* Make some changes to them (e.g. as part of an HTS precompile) */
@@ -341,9 +341,8 @@ class AbstractLedgerWorldUpdaterTest {
 	void commitsToWrappedTrackingLedgersWithSetSideEffectsTrackerAreRespected() {
 		final var aEntityId = EntityId.fromGrpcAccountId(aAccount);
 		setupWellKnownNfts();
-		subject.setSideEffectsTracker(sideEffectsTracker);
 		/* Get the wrapped nfts for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedNfts = wrappedLedgers.nfts();
 
 		/* Make some changes to them (e.g. as part of an HTS precompile) */
@@ -363,7 +362,7 @@ class AbstractLedgerWorldUpdaterTest {
 		setupWellKnownTokenRels();
 
 		/* Get the wrapped token rels for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedTokenRels = wrappedLedgers.tokenRels();
 
 		/* Make some changes to them (e.g. as part of an HTS precompile) */
@@ -425,7 +424,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void noopsOnCreateWithUnusableTrackingErrorToPreserveExistingErrorHandling() {
 		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
-		subject = new MockLedgerWorldUpdater(worldState, WorldLedgers.staticLedgersWith(aliases, null), sideEffectsTracker);
+		subject = new MockLedgerWorldUpdater(worldState, WorldLedgers.staticLedgersWith(aliases, null));
 
 		assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
 	}

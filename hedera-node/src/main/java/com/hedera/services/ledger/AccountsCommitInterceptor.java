@@ -14,7 +14,11 @@ public class AccountsCommitInterceptor implements
 	// The tracker this interceptor should use for previewing changes. The interceptor is NOT
 	// responsible for calling reset() on the tracker, as that will be done by the client code.
 	private SideEffectsTracker sideEffectsTracker;
-	
+
+	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
+		this.sideEffectsTracker = sideEffectsTracker;
+	}
+
 	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
 		this.sideEffectsTracker = sideEffectsTracker;
 	}
@@ -26,23 +30,20 @@ public class AccountsCommitInterceptor implements
 	 */
 	@Override
 	public void preview(final List<MerkleLeafChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
-		long sum = 0;
-
-		sideEffectsTracker.clearNetHbarChanges();
 		for (final var changeToCommit : changesToCommit) {
 			final var account = changeToCommit.id();
 			final var merkleAccount = changeToCommit.merkleLeaf();
 			final var changedProperties = changeToCommit.changes();
 
-			sum += trackHBarTransfer(changedProperties, account, merkleAccount);
+			trackHBarTransfer(changedProperties, account, merkleAccount);
 		}
 
 		if (changesToCommit.size() > 1) {
-			checkSum(sum);
+			checkSum();
 		}
 	}
 
-	private long trackHBarTransfer(final Map<AccountProperty, Object> changedProperties,
+	private void trackHBarTransfer(final Map<AccountProperty, Object> changedProperties,
 								   final AccountID account, final MerkleAccount merkleAccount) {
 
 		if (changedProperties.containsKey(AccountProperty.BALANCE)) {
@@ -50,17 +51,12 @@ public class AccountsCommitInterceptor implements
 			final long balanceChange = merkleAccount != null ?
 					balancePropertyValue - merkleAccount.getBalance() : balancePropertyValue;
 
-			if (balanceChange != 0L) {
-				sideEffectsTracker.trackHbarChange(account, balanceChange);
-			}
-			return balanceChange;
+			sideEffectsTracker.trackHbarChange(account, balanceChange);
 		}
-
-		return 0L;
 	}
 
-	private void checkSum(long sum) {
-		if (sum != 0) {
+	private void checkSum() {
+		if (sideEffectsTracker.getNetHbarChange() != 0) {
 			throw new IllegalStateException("Invalid balance changes!");
 		}
 	}

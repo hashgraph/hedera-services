@@ -66,7 +66,6 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final NodeLocalProperties nodeProperties;
 	private final CallLocalEvmTxProcessor callLocalEvmTxProcessor;
-	private final SideEffectsTracker sideEffectsTracker;
 
 	@Inject
 	public ContractCallLocalAnswer(
@@ -76,8 +75,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			final OptionValidator validator,
 			final GlobalDynamicProperties dynamicProperties,
 			final NodeLocalProperties nodeProperties,
-			final CallLocalEvmTxProcessor callLocalEvmTxProcessor,
-			final SideEffectsTracker sideEffectsTracker
+			final CallLocalEvmTxProcessor callLocalEvmTxProcessor
 	) {
 		super(
 				ContractCallLocal,
@@ -103,7 +101,6 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 		this.dynamicProperties = dynamicProperties;
 		this.nodeProperties = nodeProperties;
 		this.callLocalEvmTxProcessor = callLocalEvmTxProcessor;
-		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
@@ -170,7 +167,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			try {
 				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator, dynamicProperties);
 				final var codeCache = new CodeCache(nodeProperties, entityAccess);
-				final var worldState = new HederaWorldState(ids, entityAccess, codeCache, sideEffectsTracker);
+				final var worldState = new HederaWorldState(ids, entityAccess, codeCache);
 				callLocalEvmTxProcessor.setWorldState(worldState);
 
 				final var opResponse =

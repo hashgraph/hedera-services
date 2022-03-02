@@ -22,7 +22,6 @@ package com.hedera.services.fees.calculation.contract.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -104,8 +103,6 @@ class ContractCallLocalResourceUsageTest {
 	private NodeLocalProperties nodeLocalProperties;
 	@Mock
 	private AliasManager aliasManager;
-	@Mock
-	private SideEffectsTracker sideEffectsTracker;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -117,7 +114,7 @@ class ContractCallLocalResourceUsageTest {
 	private void setup() {
 		subject = new ContractCallLocalResourceUsage(
 				usageEstimator, properties, nodeLocalProperties,
-				accountStore, evmTxProcessor, ids, validator, aliasManager, sideEffectsTracker);
+				accountStore, evmTxProcessor, ids, validator, aliasManager);
 	}
 
 	@Test

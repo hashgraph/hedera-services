@@ -88,7 +88,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	private final W world;
 	private final WorldLedgers trackingLedgers;
-	protected SideEffectsTracker sideEffectsTracker;
 
 	private int thisRecordSourceId = UNKNOWN_RECORD_SOURCE_ID;
 	private AccountRecordsHistorian recordsHistorian = null;
@@ -98,12 +97,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	protected AbstractLedgerWorldUpdater(
 			final W world,
-			final WorldLedgers trackingLedgers,
-			final SideEffectsTracker sideEffectsTracker
+			final WorldLedgers trackingLedgers
 	) {
 		this.world = world;
 		this.trackingLedgers = trackingLedgers;
-		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	/**
@@ -216,10 +213,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		}
 	}
 
-	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
-		this.sideEffectsTracker = sideEffectsTracker;
-	}
-
 	public void manageInProgressRecord(
 			final AccountRecordsHistorian recordsHistorian,
 			final ExpirableTxnRecord.Builder recordSoFar,
@@ -232,7 +225,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar);
 	}
 
-	public WorldLedgers wrappedTrackingLedgers() {
+	public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {
 		final var wrappedLedgers = trackingLedgers.wrapped(sideEffectsTracker);
 		wrappedLedgers.accounts().setPropertyChangeObserver(this::onAccountPropertyChange);
 		return wrappedLedgers;

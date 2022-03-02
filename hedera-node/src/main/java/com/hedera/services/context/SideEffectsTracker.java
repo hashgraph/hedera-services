@@ -64,6 +64,7 @@ public class SideEffectsTracker {
 
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
 	private final TransferList.Builder netHbarChanges = TransferList.newBuilder();
+	private long netHbarChange = 0;
 	private final List<Long> nftMints = new ArrayList<>();
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
@@ -302,6 +303,7 @@ public class SideEffectsTracker {
 	 * 		the incremental ℏ change to track
 	 */
 	public void trackHbarChange(final AccountID account, final long amount) {
+		netHbarChange += amount;
 		updateFungibleChanges(account, amount, netHbarChanges);
 	}
 
@@ -357,8 +359,8 @@ public class SideEffectsTracker {
 		return netHbarChanges.build();
 	}
 
-	public void clearNetHbarChanges() {
-		netHbarChanges.clear();
+	public long getNetHbarChange() {
+		return netHbarChange;
 	}
 
 	/**
@@ -459,6 +461,7 @@ public class SideEffectsTracker {
 	public void reset() {
 		resetTrackedTokenChanges();
 		netHbarChanges.clear();
+		netHbarChange = 0;
 		newAccountId = null;
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;

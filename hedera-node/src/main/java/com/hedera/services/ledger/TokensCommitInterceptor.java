@@ -13,6 +13,10 @@ public class TokensCommitInterceptor implements CommitInterceptor<TokenID, Merkl
 	// responsible for calling reset() on the tracker, as that will be done by the client code.
 //	private SideEffectsTracker sideEffectsTracker;
 
+	public TokensCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
+//		this.sideEffectsTracker = sideEffectsTracker;
+	}
+
 	public void setSideEffectsTracker(final SideEffectsTracker sideEffectsTracker) {
 //		this.sideEffectsTracker = sideEffectsTracker;
 	}
