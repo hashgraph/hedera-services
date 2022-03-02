@@ -29,11 +29,10 @@ jobs:
       - name: Start network # start 3 node network
         run: docker compose up -d
       - name: Healthcheck for Hedera node # wait until node is ready to serve requests
-        working-directory: github-actions-utils
+        working-directory: .github/scripts
         run: bash healthcheck.sh
       - name: Run E2E Suites # run selected e2e suites
-        working-directory: github-actions-utils
-        run: bash run-e2e-tests.sh ${{matrix.packages}}
+        run: ./mvnw test -pl test-clients -Dtest=E2EPackageRunner -DDEFAULT_PORT=50213 -DfailIfNoTests=false -Dpackages=${{matrix.packages}}
       - name: Upload surefire report
         if: always()
         uses: actions/upload-artifact@v2
