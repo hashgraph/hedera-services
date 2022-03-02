@@ -67,6 +67,9 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetAppPropertiesTo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -107,6 +110,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 
 	private static final String INDIVIDUAL_KV_LIMIT_PROP = "contracts.maxKvPairs.individual";
 	private static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
+	private static final String USE_GAS_THROTTLE_PROP = "contracts.throttle.throttleByGas";
 	private static final String CONSENSUS_GAS_THROTTLE_PROP = "contracts.consensusThrottleMaxGasLimit";
 
 	private static final long defaultMaxLifetime =
@@ -137,8 +141,8 @@ public class FileUpdateSuite extends HapiApiSuite {
 				associateHasExpectedSemantics(),
 				notTooManyFeeScheduleCanBeCreated(),
 				numAccountsAllowedIsDynamic(),
-				minChargeIsTXGasUsedByFileUpdate(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				allUnusedGasIsRefundedIfSoConfigured(),
+				maxRefundIsEnforced(),
 				gasLimitOverMaxGasLimitFailsPrecheck(),
 				autoCreationIsDynamic(),
 				kvLimitsEnforced(),
@@ -394,33 +398,37 @@ public class FileUpdateSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
-		return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
+	private HapiApiSpec maxRefundIsEnforced() {
+		return defaultHapiSpec("MaxRefundIsEnforced")
 				.given(
 						overriding("contracts.maxRefundPercentOfGasLimit", "5"),
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when(
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+								.gas(1_000_000L)
 				).then(
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(300_000L)
+						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+								.gas(300_000L)
 								.has(resultWith().gasUsed(285_000L)),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
-	private HapiApiSpec minChargeIsTXGasUsedByFileUpdate() {
-		return defaultHapiSpec("MinChargeIsTXGasUsedByFileUpdate")
+	private HapiApiSpec allUnusedGasIsRefundedIfSoConfigured() {
+		return defaultHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
 				.given(
 						overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
 						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
 				).when(
 						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+								.gas(1_000_000L)
 				).then(
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(300_000L)
+						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+								.gas(300_000L)
 								.has(resultWith().gasUsed(26_451)),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -433,7 +441,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				).when().then(
 						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(101L)
 								.hasCostAnswerPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -513,15 +521,15 @@ public class FileUpdateSuite extends HapiApiSuite {
 						cryptoCreate(civilian),
 						fileCreate(initcode)
 								.path(IMAP_USER_BYTECODE_PATH),
-						/* This contract has 0 key/value mappings at creation */
 						contractCreate(contract)
 								.bytecode(initcode),
 						contractCall(contract, IMAP_USER_INSERT, 1, 4)
 								.payingWith(civilian)
 								.gas(gasToOffer)
 								.via(unrefundedTxn),
-						/* Now we update the per-contract limit to 10 mappings */
-						overriding(CONSENSUS_GAS_THROTTLE_PROP, "1")
+						overridingTwo(
+								CONSENSUS_GAS_THROTTLE_PROP, "1",
+								USE_GAS_THROTTLE_PROP, "true")
 				).when(
 						usableTxnIdNamed(refundedTxn).payerId(civilian),
 						contractCall(contract, IMAP_USER_INSERT, 2, 4)
@@ -537,7 +545,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						)
 								.payingWith(GENESIS)
 				).then(
-						overriding(CONSENSUS_GAS_THROTTLE_PROP, defaultMaxConsGasLimit),
+						sleepFor(1_000L),
 						withOpContext((spec, opLog) -> {
 							final var unrefundedOp = getTxnRecord(unrefundedTxn);
 							final var refundedOp = getTxnRecord(refundedTxn)
@@ -552,7 +560,10 @@ public class FileUpdateSuite extends HapiApiSuite {
 									feeSansRefund < origFee,
 									"Expected service fee to be refunded, but sans fee "
 											+ feeSansRefund + " was not less than " + origFee);
-						})
+						}),
+						overridingTwo(
+								CONSENSUS_GAS_THROTTLE_PROP, defaultMaxConsGasLimit,
+								USE_GAS_THROTTLE_PROP, "false")
 				);
 	}
 

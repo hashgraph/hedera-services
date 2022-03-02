@@ -96,7 +96,6 @@ import com.hedera.services.bdd.suites.file.negative.DeleteFailuresSpec;
 import com.hedera.services.bdd.suites.file.negative.QueryFailuresSpec;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.CreateSuccessSpec;
-import com.hedera.services.bdd.suites.file.positive.IssDemoSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
 import com.hedera.services.bdd.suites.freeze.FreezeAbort;
@@ -208,7 +207,6 @@ import com.hedera.services.bdd.suites.records.CharacterizationSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
-import com.hedera.services.bdd.suites.records.FeeItemization;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.MigrationValidation;
 import com.hedera.services.bdd.suites.records.MigrationValidationPostSteps;
@@ -461,7 +459,6 @@ class E2EPackageRunner {
 	Collection<DynamicContainer> filePositive() {
 		return List.of(
 				extractSpecsFromSuite(CreateSuccessSpec::new),
-				extractSpecsFromSuite(IssDemoSpec::new),
 				extractSpecsFromSuite(SysDelSysUndelSpec::new)
 		);
 	}
@@ -700,7 +697,6 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(ContractRecordsSanityCheckSuite::new),
 				extractSpecsFromSuite(CryptoRecordsSanityCheckSuite::new),
 				extractSpecsFromSuite(DuplicateManagementTest::new),
-				extractSpecsFromSuite(FeeItemization::new),
 				extractSpecsFromSuite(FileRecordsSanityCheckSuite::new),
 				extractSpecsFromSuite(MigrationValidation::new),
 				extractSpecsFromSuite(MigrationValidationPostSteps::new),
