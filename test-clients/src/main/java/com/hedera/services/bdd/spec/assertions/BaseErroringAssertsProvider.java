@@ -21,6 +21,12 @@ package com.hedera.services.bdd.spec.assertions;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TopicID;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.ArrayList;
@@ -28,6 +34,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
 public class BaseErroringAssertsProvider<T> implements ErroringAssertsProvider<T> {
 	List<Function<HapiApiSpec, Function<T, Optional<Throwable>>>> testProviders = new ArrayList<>();
@@ -47,10 +55,27 @@ public class BaseErroringAssertsProvider<T> implements ErroringAssertsProvider<T
 	@SuppressWarnings("unchecked")
 	protected <R> void registerIdLookupAssert(String key, Function<T, R> getActual, Class<R> cls, String err) {
 		registerProvider((spec, o) -> {
-			R expected = spec.registry().getId(key, cls);
+			R expected = isIdLiteral(key) ? parseIdByType(key, cls) : spec.registry().getId(key, cls);
 			R actual = getActual.apply((T) o);
 			Assertions.assertEquals(expected, actual, err);
 		});
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <R> R parseIdByType(final String literal, Class<R> cls) {
+		if (cls.equals(AccountID.class)) {
+			return (R) HapiPropertySource.asAccount(literal);
+		} else if (cls.equals(ContractID.class)) {
+			return (R) HapiPropertySource.asContract(literal);
+		} else if (cls.equals(TokenID.class)) {
+			return (R) HapiPropertySource.asToken(literal);
+		} else if (cls.equals(FileID.class)) {
+			return (R) HapiPropertySource.asFile(literal);
+		} else if (cls.equals(TopicID.class)) {
+			return (R) HapiPropertySource.asTopic(literal);
+		} else {
+			throw new IllegalArgumentException("Cannot parse an id of type " + cls.getSimpleName());
+		}
 	}
 
 	@Override

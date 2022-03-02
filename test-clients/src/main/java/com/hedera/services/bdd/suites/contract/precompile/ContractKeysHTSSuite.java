@@ -25,7 +25,6 @@ import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -2722,10 +2721,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 
 	@NotNull
 	private String getNestedContractAddress(String contract, HapiApiSpec spec) {
-		return CommonUtils.calculateSolidityAddress(
-				(int) spec.registry().getContractId(contract).getShardNum(),
-				spec.registry().getContractId(contract).getRealmNum(),
-				spec.registry().getContractId(contract).getContractNum());
+        return AssociatePrecompileSuite.getNestedContractAddress(contract, spec);
 	}
 
 	@Override

@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -49,24 +50,31 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
+import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CALL_RETURNER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CREATE_RETURNER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_RETURNER_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BUILD_THEN_REVERT_THEN_BUILD_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_DEPLOY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_ADDRESS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_BYTECODE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_AND_RECREATE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_FACTORY_GET_BYTECODE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE2_FACTORY_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE_FACTORY_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_PLACEHOLDER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NORMAL_DEPLOY_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OUTER_CREATOR_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_ASSOCIATE_BOTH_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_CREATE_USER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_DISSOCIATE_BOTH_ABI;
@@ -75,7 +83,10 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_USER_HELPER_MINT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_USER_MINT_NFT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PRECOMPILE_CREATE2_USER_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.RELINQUISH_FUNDS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.RETURN_THIS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE2_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE_FACTORY_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_ASSOCIATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_BURN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_DISSOCIATE_ABI;
@@ -90,8 +101,11 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_CREATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_FACTORY_BUILD_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.START_CHAIN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_GET_BALANCE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_VACATE_ADDRESS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WHAT_IS_FOO_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WRONG_REPEATED_CREATE2_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
@@ -115,6 +129,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -125,7 +140,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
-import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
@@ -186,12 +200,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		return List.of(new HapiApiSpec[] {
 						create2FactoryWorksAsExpected(),
 						canDeleteViaAlias(),
+						cannotSelfDestructToMirrorAddress(),
 						priorityAddressIsCreate2ForStaticHapiCalls(),
 						priorityAddressIsCreate2ForInternalMessages(),
 						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
 						canUseAliasesInPrecompilesAndContractKeys(),
 						inlineCreateCanFailSafely(),
 						inlineCreate2CanFailSafely(),
+						allLogOpcodesResolveExpectedContractId(),
 				}
 		);
 	}
@@ -209,6 +225,45 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				tokensTransferDynamicGasCostPrecompile(),
 				nftsTransferDynamicGasCostPrecompile()
 		);
+	}
+
+	private HapiApiSpec allLogOpcodesResolveExpectedContractId() {
+		final var creation = "creation";
+		final var initcode = "initcode";
+		final var outerCreator = "outerCreator";
+
+		final AtomicLong outerCreatorNum = new AtomicLong();
+		final byte[] msg = new byte[] { (byte) 0xAB };
+		final var noisyTxn = "noisyTxn";
+
+		return defaultHapiSpec("AllLogOpcodesResolveExpectedContractId")
+				.given(
+						fileCreate(initcode).path(OUTER_CREATOR_PATH),
+						contractCreate(outerCreator)
+								.payingWith(GENESIS)
+								.bytecode(initcode)
+								.via(creation)
+								.exposingNumTo(outerCreatorNum::set)
+				).when(
+						contractCall(outerCreator, START_CHAIN_ABI, msg)
+								.gas(4_000_000)
+								.via(noisyTxn)
+				).then(
+						sourcing(() -> {
+							final var idOfFirstThreeLogs = "0.0." + (outerCreatorNum.get() + 1);
+							final var idOfLastTwoLogs = "0.0." + (outerCreatorNum.get() + 2);
+							return getTxnRecord(noisyTxn)
+									.andAllChildRecords()
+									.hasPriority(recordWith().contractCallResult(resultWith()
+											.logs(inOrder(
+													logWith().contract(idOfFirstThreeLogs),
+													logWith().contract(idOfFirstThreeLogs),
+													logWith().contract(idOfFirstThreeLogs),
+													logWith().contract(idOfLastTwoLogs),
+													logWith().contract(idOfLastTwoLogs)
+											)))).logged();
+						})
+				);
 	}
 
 	private HapiApiSpec inlineCreate2CanFailSafely() {
@@ -234,7 +289,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.via(creation)
 								.exposingNumTo(num -> {
 									factoryEntityNum.set(num);
-									factoryEvmAddress.set(calculateSolidityAddress(0, 0, num));
+									factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num));
 								})
 				).when(
 						sourcing(() -> contractCallLocal(
@@ -289,7 +344,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.via(creation)
 								.exposingNumTo(num -> {
 									factoryEntityNum.set(num);
-									factoryEvmAddress.set(calculateSolidityAddress(0, 0, num));
+									factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num));
 								})
 				).when(
 						sourcing(() -> contractCallLocal(
@@ -322,6 +377,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				);
 	}
 
+	// https://github.com/hashgraph/hedera-services/issues/2867
 	private HapiApiSpec create2FactoryWorksAsExpected() {
 		final var tcValue = 1_234L;
 		final var creation2 = "create2Txn";
@@ -355,7 +411,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
 								.via(creation2)
-								.exposingNumTo(num -> factoryEvmAddress.set(calculateSolidityAddress(0, 0, num)))
+								.exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num)))
 				).when(
 						sourcing(() -> contractCallLocal(
 								create2Factory,
@@ -393,6 +449,27 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)),
 						// Now re-enable CREATE2 and proceed
 						overriding("contracts.allowCreate2", "true"),
+						// https://github.com/hashgraph/hedera-services/issues/2867 - cannot re-create same address
+						sourcing(() -> contractCall(
+								create2Factory,
+								WRONG_REPEATED_CREATE2_ABI, testContractInitcode.get(), salt
+						)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.sending(tcValue)
+								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+						sourcing(() -> getContractInfo(expectedCreate2Address.get())
+								.hasCostAnswerPrecheck(INVALID_CONTRACT_ID)),
+						sourcing(() -> contractCall(
+								create2Factory,
+								CREATE2_FACTORY_DEPLOY_ABI, testContractInitcode.get(), salt
+						)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.sending(tcValue)),
+						sourcing(() -> contractDelete(expectedCreate2Address.get())
+								.signedBy(DEFAULT_PAYER, adminKey)),
+						logIt("Deleted the deployed CREATE2 contract using HAPI"),
 						sourcing(() -> contractCall(
 								create2Factory,
 								CREATE2_FACTORY_DEPLOY_ABI, testContractInitcode.get(), salt
@@ -401,6 +478,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.gas(4_000_000L)
 								.sending(tcValue)
 								.via(creation2)),
+						logIt("Re-deployed the CREATE2 contract"),
 						sourcing(() -> childRecordsCheck(creation2, SUCCESS,
 								recordWith()
 										.contractCreateResult(resultWith()
@@ -409,13 +487,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							final var parentId = spec.registry().getContractId(create2Factory);
 							final var childId = ContractID.newBuilder()
-									.setContractNum(parentId.getContractNum() + 1L)
+									.setContractNum(parentId.getContractNum() + 2L)
 									.build();
 							mirrorLiteralId.set("0.0." + childId.getContractNum());
 							expectedMirrorAddress.set(hex(asSolidityAddress(childId)));
 						}),
 						sourcing(() -> getContractBytecode(mirrorLiteralId.get())
 								.exposingBytecodeTo(bytecodeFromMirror::set)),
+						// https://github.com/hashgraph/hedera-services/issues/2874
 						sourcing(() -> getContractBytecode(expectedCreate2Address.get())
 								.exposingBytecodeTo(bytecodeFromAlias::set)),
 						withOpContext((spec, opLog) -> assertArrayEquals(
@@ -433,6 +512,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.gas(4_000_000L)
 								/* Cannot repeat CREATE2 with same args without destroying the existing contract */
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+						// https://github.com/hashgraph/hedera-services/issues/2874
 						sourcing(() -> getContractInfo(expectedCreate2Address.get())
 								.has(contractWith().addressOrAlias(expectedCreate2Address.get()))),
 						sourcing(() -> contractCallLocal(
@@ -528,6 +608,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									movingUnique(nft, 1L).between(TOKEN_TREASURY, pc2User)
 							);
 
+							// https://github.com/hashgraph/hedera-services/issues/2874 (alias in transfer precompile)
 							final var sendFt = contractCall(
 									pc2User, PC2_FT_SEND_ABI, hex(asSolidityAddress(ftType)), 100
 							)
@@ -549,6 +630,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									.via(nftFail)
 									.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 									.gas(4_000_000L);
+							// https://github.com/hashgraph/hedera-services/issues/2876 (mint via ContractID key)
 							final var mint = contractCall(
 									userAliasAddr.get(),
 									PC2_USER_MINT_NFT_ABI,
@@ -584,6 +666,9 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								recordWith().status(REVERTED_SUCCESS),
 								recordWith().status(ACCOUNT_STILL_OWNS_NFTS)),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
+
+						// https://github.com/hashgraph/hedera-services/issues/2876 (mint via delegatable_contract_id
+						//key)
 						tokenUpdate(nft).supplyKey(() -> aliasDelegateContractKey(userAliasAddr.get())),
 						sourcing(() -> contractCall(
 								userAliasAddr.get(),
@@ -618,40 +703,61 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				);
 	}
 
-	private AccountAmount aaWith(final AccountID account, final long amount) {
-		return AccountAmount.newBuilder()
-				.setAccountID(account)
-				.setAmount(amount)
-				.build();
+	// https://github.com/hashgraph/hedera-services/issues/2874
+	// https://github.com/hashgraph/hedera-services/issues/2925
+	private HapiApiSpec cannotSelfDestructToMirrorAddress() {
+		final var creation2 = "create2Txn";
+		final var messyCreation2 = "messyCreate2Txn";
+		final var initcode = "initcode";
+		final var createDonor = "createDonor";
+
+		final AtomicReference<String> donorAliasAddr = new AtomicReference<>();
+		final AtomicReference<String> donorMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> mDonorAliasAddr = new AtomicReference<>();
+		final AtomicReference<String> mDonorMirrorAddr = new AtomicReference<>();
+
+		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+		final byte[] otherSalt = unhex("aabbccddee880011aabbccddee880011aabbccddee880011aabbccddee880011");
+
+		return defaultHapiSpec("CannotSelfDestructToMirrorAddress")
+				.given(
+						fileCreate(initcode),
+						updateLargeFile(GENESIS, initcode, extractByteCode(CREATE_DONOR_PATH)),
+						contractCreate(createDonor)
+								.payingWith(GENESIS)
+								.proxy("0.0.3")
+								.bytecode(initcode),
+						contractCall(createDonor, CREATE_DONOR_ABI, salt)
+								.sending(1_000)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(creation2),
+						captureOneChildCreate2MetaFor(
+								"donor", creation2, donorMirrorAddr, donorAliasAddr)
+				).when(
+						sourcing(() -> contractCall(
+								donorAliasAddr.get(),
+								RELINQUISH_FUNDS_ABI,
+								donorAliasAddr.get()).hasKnownStatus(OBTAINER_SAME_CONTRACT_ID)),
+						sourcing(() -> contractCall(
+								donorAliasAddr.get(),
+								RELINQUISH_FUNDS_ABI,
+								donorMirrorAddr.get()).hasKnownStatus(OBTAINER_SAME_CONTRACT_ID))
+				).then(
+						contractCall(createDonor, BUILD_THEN_REVERT_THEN_BUILD_ABI, otherSalt)
+								.sending(1_000)
+								.payingWith(GENESIS)
+								.gas(4_000_000L)
+								.via(messyCreation2),
+						captureOneChildCreate2MetaFor(
+								"questionableDonor", messyCreation2, mDonorMirrorAddr, mDonorAliasAddr),
+						sourcing(() -> getContractInfo(mDonorAliasAddr.get())
+								.has(contractWith().balance(100))
+								.logged())
+				);
 	}
 
-	private AccountAmount aaWith(final String hexedEvmAddress, final long amount) {
-		return AccountAmount.newBuilder()
-				.setAccountID(aa(hexedEvmAddress))
-				.setAmount(amount)
-				.build();
-	}
-
-	private AccountID aa(final String hexedEvmAddress) {
-		return AccountID.newBuilder().setAlias(ByteString.copyFrom(unhex(hexedEvmAddress))).build();
-	}
-
-	private Key aliasContractIdKey(final String hexedEvmAddress) {
-		return Key.newBuilder()
-				.setContractID(ContractID.newBuilder()
-						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress)))
-				).build();
-
-	}
-
-	private Key aliasDelegateContractKey(final String hexedEvmAddress) {
-		return Key.newBuilder()
-				.setDelegatableContractId(ContractID.newBuilder()
-						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress)))
-				).build();
-
-	}
-
+	// https://github.com/hashgraph/hedera-services/issues/2874
 	private HapiApiSpec canDeleteViaAlias() {
 		final var adminKey = "adminKey";
 		final var creation2 = "create2Txn";
@@ -664,6 +770,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final AtomicReference<String> saltingCreatorLiteralId = new AtomicReference<>();
 
 		final byte[] salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
+		final byte[] otherSalt = unhex("aabbccddee330011aabbccddee330011aabbccddee330011aabbccddee330011");
 
 		return defaultHapiSpec("CanDeleteViaAlias")
 				.given(
@@ -684,8 +791,21 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						withOpContext((spec, opLog) ->
 								saltingCreatorLiteralId.set(
 										asContractString(
-												contractIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get()))))
+												contractIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get())))),
+						// https://github.com/hashgraph/hedera-services/issues/2867 (can't re-create2 after selfdestruct)
+						sourcing(() -> contractCall(saltingCreatorAliasAddr.get(), CREATE_AND_RECREATE_ABI, otherSalt)
+								.payingWith(GENESIS)
+								.gas(2_000_000L)
+								.hasKnownStatus(CONTRACT_REVERT_EXECUTED))
 				).when(
+						sourcing(() -> contractUpdate(saltingCreatorAliasAddr.get())
+								.signedBy(DEFAULT_PAYER, adminKey)
+								.memo("That's why you always leave a note")),
+						sourcing(() -> contractCallLocal(
+								saltingCreatorAliasAddr.get(), WHAT_IS_FOO_ABI
+						).has(resultWith().resultThruAbi(
+								WHAT_IS_FOO_ABI, isLiteralResult(new Object[] { BigInteger.valueOf(42) })
+						))),
 						sourcing(() -> contractDelete(saltingCreatorAliasAddr.get())
 								.signedBy(DEFAULT_PAYER, adminKey)
 								.transferContract(saltingCreatorMirrorAddr.get())
@@ -747,6 +867,16 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
 								.via(innerCreation2)),
+						sourcing(() -> {
+							final var emitterId = literalIdFromHexedMirrorAddress(saltingCreatorMirrorAddr.get());
+							return getTxnRecord(innerCreation2)
+									.hasPriority(recordWith()
+											.contractCallResult(
+													resultWith()
+															.contract(emitterId)
+															.logs(inOrder(logWith().contract(emitterId)))))
+									.andAllChildRecords().logged();
+						}),
 						captureOneChildCreate2MetaFor(
 								"Test contract create2'd via mirror address",
 								innerCreation2, tcMirrorAddr1, tcAliasAddr1),
@@ -1658,7 +1788,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	}
 
 	/* --- Internal helpers --- */
-	private HapiSpecOperation captureOneChildCreate2MetaFor(
+	public static HapiSpecOperation captureOneChildCreate2MetaFor(
+			final String desc,
+			final String creation2,
+			final AtomicReference<String> mirrorAddr,
+			final AtomicReference<String> create2Addr
+	) {
+		return captureChildCreate2MetaFor(1, 0, desc, creation2, mirrorAddr, create2Addr);
+	}
+
+	public static HapiSpecOperation captureChildCreate2MetaFor(
+			final int numExpectedChildren,
+			final int childOfInterest,
 			final String desc,
 			final String creation2,
 			final AtomicReference<String> mirrorAddr,
@@ -1668,8 +1809,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 			final var lookup = getTxnRecord(creation2).andAllChildRecords();
 			allRunFor(spec, lookup);
 			final var response = lookup.getResponse().getTransactionGetRecord();
-			assertEquals(1, response.getChildTransactionRecordsCount());
-			final var create2Record = response.getChildTransactionRecords(0);
+			assertEquals(numExpectedChildren, response.getChildTransactionRecordsCount());
+			final var create2Record = response.getChildTransactionRecords(childOfInterest);
 			final var create2Address =
 					create2Record.getContractCreateResult().getEvmAddress().getValue();
 			create2Addr.set(hex(create2Address.toByteArray()));
@@ -1689,5 +1830,39 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.setRealmNum(nativeParts[1])
 				.setTokenNum(nativeParts[2])
 				.build();
+	}
+
+	private AccountAmount aaWith(final AccountID account, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(account)
+				.setAmount(amount)
+				.build();
+	}
+
+	private AccountAmount aaWith(final String hexedEvmAddress, final long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(aa(hexedEvmAddress))
+				.setAmount(amount)
+				.build();
+	}
+
+	private AccountID aa(final String hexedEvmAddress) {
+		return AccountID.newBuilder().setAlias(ByteString.copyFrom(unhex(hexedEvmAddress))).build();
+	}
+
+	private Key aliasContractIdKey(final String hexedEvmAddress) {
+		return Key.newBuilder()
+				.setContractID(ContractID.newBuilder()
+						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress)))
+				).build();
+
+	}
+
+	private Key aliasDelegateContractKey(final String hexedEvmAddress) {
+		return Key.newBuilder()
+				.setDelegatableContractId(ContractID.newBuilder()
+						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress)))
+				).build();
+
 	}
 }

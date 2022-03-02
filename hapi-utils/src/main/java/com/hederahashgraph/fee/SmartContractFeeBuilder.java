@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.exception.InvalidTxBodyException;
 
@@ -37,7 +36,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 
 /**
  * This class includes methods for generating Fee Matrices and calculating Fee for Smart Contract
@@ -296,45 +294,6 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 	}
 
 	/**
-	 * This method returns fee matrices for contract call local
-	 *
-	 * @param funcParamSize
-	 * 		function parameter size
-	 * @return fee data
-	 */
-	public FeeData getCostContractCallLocalFeeMatrices(int funcParamSize) {
-		// get the Fee Matrices
-		long bpt = 0;
-		long vpt = 0;
-		long rbs = 0;
-		long sbs = 0;
-		long gas = 0;
-		long tv = 0;
-		long bpr = 0;
-		long sbpr = 0;
-
-		/*
-		 * ContractCallLocalQuery QueryHeader header Transaction - CryptoTransfer - (will be taken care
-		 * in Transaction processing) ResponseType - INT_SIZE ContractID contractID - BASIC_ENTITY_ID_SIZE
-		 * int64 gas - LONG_SIZE bytes functionParameters - calculated value int64 maxResultSize -
-		 * LONG_SIZE
-		 */
-
-		bpt = (long) INT_SIZE + BASIC_ENTITY_ID_SIZE + LONG_SIZE + funcParamSize + LONG_SIZE;
-		/*
-		 *
-		 * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes uint64 cost -
-		 * LONG_SIZE
-		 */
-		bpr = BASIC_QUERY_RES_HEADER;
-
-		FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-				.setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-		return getQueryFeeDataMatrices(feeMatrices);
-	}
-
-	/**
 	 * This method returns total bytes in Contract Update Transaction
 	 */
 	private int getContractUpdateBodyTxSize(TransactionBody txBody) {
@@ -435,50 +394,6 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 		bpr = BASIC_QUERY_RES_HEADER + getStateProofSize(responseType);
 
 		sbpr = byteCodeSize;
-
-		FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
-				.setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();
-
-		return getQueryFeeDataMatrices(feeMatrices);
-	}
-
-	public FeeData getContractRecordsQueryFeeMatrices(List<TransactionRecord> transRecord, ResponseType responseType) {
-		// get the Fee Matrices
-		long bpt = 0;
-		long vpt = 0;
-		long rbs = 0;
-		long sbs = 0;
-		long gas = 0;
-		long tv = 0;
-		long bpr = 0;
-		long sbpr = 0;
-
-		/*
-		 * ContractGetRecordsQuery QueryHeader Transaction - CryptoTransfer - (will be taken care in
-		 * Transaction processing) ResponseType - INT_SIZE ContractID - BASIC_ENTITY_ID_SIZE
-		 *
-		 */
-
-		bpt = calculateBPT();
-
-		/*
-		 *
-		 * Response header NodeTransactionPrecheckCode - 4 bytes ResponseType - 4 bytes
-		 *
-		 * ContractGetRecordsResponse { ResponseHeader header = 1; //standard response from node to
-		 * client, including the requested fields: cost, or state proof, or both, or neither ContractID
-		 * contractID = 2; // the smart contract instance that this record is for repeated
-		 * TransactionRecord records = 3; // list of records, each with contractCreateResult or
-		 * contractCallResult as its body }
-		 *
-		 */
-		int txRecordListsize = 0;
-		if (transRecord != null) {
-			for (TransactionRecord rec : transRecord) {
-				txRecordListsize = txRecordListsize + getTransactionRecordSize(rec);
-			}
-		}
-		bpr = BASIC_QUERY_RES_HEADER + txRecordListsize + getStateProofSize(responseType);
 
 		FeeComponents feeMatrices = FeeComponents.newBuilder().setBpt(bpt).setVpt(vpt).setRbh(rbs)
 				.setSbh(sbs).setGas(gas).setTv(tv).setBpr(bpr).setSbpr(sbpr).build();

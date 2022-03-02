@@ -24,7 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -298,11 +297,8 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 
 
     @NotNull
-    private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
-        return CommonUtils.calculateSolidityAddress(
-                (int) spec.registry().getContractId(outerContract).getShardNum(),
-                spec.registry().getContractId(outerContract).getRealmNum(),
-                spec.registry().getContractId(outerContract).getContractNum());
+    private String getNestedContractAddress(final String outerContract, final HapiApiSpec spec) {
+        return AssociatePrecompileSuite.getNestedContractAddress(outerContract, spec);
     }
 
     @Override

@@ -70,7 +70,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
 	public static void main(String... args) {
-		new CryptoUpdateSuite().runSuiteAsync();
+		new CryptoUpdateSuite().runSuiteSync();
 	}
 
 	private final SigControl TWO_LEVEL_THRESH = KeyShape.threshSigs(2,

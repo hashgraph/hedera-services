@@ -35,21 +35,29 @@ public final class SerializationUtils {
 		throw new UnsupportedOperationException("Utility Class");
 	}
 
-	public static void serializeAllowances(
+	public static void serializeCryptoAllowances(
 			SerializableDataOutputStream out,
-			final Map<EntityNum, Long> cryptoAllowances,
-			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances,
-			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) throws IOException {
+			final Map<EntityNum, Long> cryptoAllowances) throws IOException {
 		out.writeInt(cryptoAllowances.size());
 		for (Map.Entry<EntityNum, Long> entry : cryptoAllowances.entrySet()) {
 			out.writeLong(entry.getKey().longValue());
 			out.writeLong(entry.getValue());
 		}
+	}
+
+	public static void serializeTokenAllowances(
+			SerializableDataOutputStream out,
+			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) throws IOException {
 		out.writeInt(fungibleTokenAllowances.size());
 		for (Map.Entry<FcTokenAllowanceId, Long> entry : fungibleTokenAllowances.entrySet()) {
 			out.writeSerializable(entry.getKey(), true);
 			out.writeLong(entry.getValue());
 		}
+	}
+
+	public static void serializeNftAllowance(
+			SerializableDataOutputStream out,
+			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) throws IOException {
 		out.writeInt(nftAllowances.size());
 		for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> entry : nftAllowances.entrySet()) {
 			out.writeSerializable(entry.getKey(), true);
