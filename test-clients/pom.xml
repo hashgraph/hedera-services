@@ -323,11 +323,6 @@
         <artifactId>crypto</artifactId>
         <version>${besu.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.reflections</groupId>
-      <artifactId>reflections</artifactId>
-      <version>0.10.2</version>
-    </dependency>
   </dependencies>
   <profiles>
     <profile>
@@ -340,35 +335,6 @@
             <configuration>
               <skip>true</skip>
             </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>e2e-tests</id>
-      <properties>
-        <maven.test.skip>true</maven.test.skip>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <phase>test</phase>
-                <goals>
-                  <goal>java</goal>
-                </goals>
-                <configuration>
-                  <mainClass>com.hedera.services.bdd.suiterunner.PackageSuitesRunner</mainClass>
-                  <arguments>
-                    <!--suppress UnresolvedMavenProperty -->
-                    <argument>${args}</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
           </plugin>
         </plugins>
       </build>
