@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.crypto;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -52,30 +51,15 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveTests(),
-				negativeTests()
-		);
-	}
-
-	private List<HapiApiSpec> positiveTests() {
-		return Arrays.asList(
-		);
-	}
-	private List<HapiApiSpec> negativeTests() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				invalidNodeAccount(),
 				invalidTransactionBody(),
 				invalidTransactionPayerAccountNotFound(),
 				invalidTransactionMemoTooLong(),
 				invalidTransactionDuration(),
-				invalidTransactionStartTime()
-
-//				invalidSigsCountMismatchingKey(),
-//				invalidKeyPrefixMismatch()
-		);
+				invalidTransactionStartTime(),
+		});
 	}
-
 
 	private static Transaction removeTransactionBody(Transaction txn) {
 		return txn.toBuilder().setBodyBytes(Transaction.getDefaultInstance().getBodyBytes()).build();
@@ -172,33 +156,6 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
 								.hasPrecheckFrom(INVALID_TRANSACTION_START)
 				);
 	}
-
-
-	// These two scenarios still don't work.
-
-//	public static HapiApiSpec invalidSigsCountMismatchingKey() {
-//		return defaultHapiSpec("invalidSigsCountMismatchingKey")
-//				.given(
-//				).when(
-//				).then(
-//						cryptoCreate("newPayee").balance(10000L)
-//								.scrambleTxnBody(CryptoCornerCasesSuite::removeSigPairFromTransaction)
-//								.hasPrecheckFrom(INVALID_SIGNATURE_COUNT_MISMATCHING_KEY)
-//				);
-//	}
-//
-//	public static HapiApiSpec invalidKeyPrefixMismatch() {
-//		return defaultHapiSpec("invalidKeyPrefixMismatch")
-//				.given(
-//				).when(
-//				).then(
-//						cryptoCreate("newPayee").balance(10000L)
-//								.scrambleTxnBody(CryptoCornerCasesSuite::removeSigPairFromTransaction)
-//								.hasPrecheckFrom(KEY_PREFIX_MISMATCH)
-//				);
-//	}
-
-
 
 	@Override
 	protected Logger getResultsLogger() {
