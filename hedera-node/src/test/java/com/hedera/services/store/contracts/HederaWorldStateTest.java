@@ -549,8 +549,8 @@ class HederaWorldStateTest {
 
 		// then:
 		verify(entityAccess).isExtant(accountID);
-		verify(entityAccess, times(2)).putStorage(accountID, storageKey, storageValue);
-		verify(entityAccess, times(2)).putStorage(accountID, secondStorageKey, secondStorageValue);
+		verify(entityAccess).putStorage(accountID, storageKey, storageValue);
+		verify(entityAccess).putStorage(accountID, secondStorageKey, secondStorageValue);
 		// and:
 		verify(entityAccess).storeCode(accountID, code);
 	}
