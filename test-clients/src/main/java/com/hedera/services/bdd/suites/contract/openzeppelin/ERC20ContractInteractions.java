@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -102,7 +103,10 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                 .payingWith(OWNER)
                                 .bytecode(CONTRACT_FILE_NAME)
                                 .hasKnownStatus(SUCCESS)
-                                .via(CREATE_TX),
+                                .via(CREATE_TX).scrambleTxnBody(tx -> {
+                                    System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+                                    return tx;
+                                }),
                         getAccountBalance(OWNER).logged()
                 ).then(
                         getAccountInfo(OWNER).savingSnapshot(OWNER),
@@ -120,17 +124,59 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                             final var transferFromParams = new Object[]{ownerContractId, receiverContractId, AMOUNT};
                             final var transferMoreThanApprovedFromParams = new Object[]{ownerContractId, receiverContractId, AMOUNT+1};
 
-                            final var transfer = contractCall("testContract", ERC20_TRANSFER_ABI, transferParams).payingWith(OWNER).via(TRANSFER_TX);
+                            final var transfer = contractCall("testContract", ERC20_TRANSFER_ABI, transferParams)
+                                    .payingWith(OWNER)
+                                    .via(TRANSFER_TX)
+                                    .scrambleTxnBody(tx -> {
+                                        System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+                                        return tx;
+                                    });
 
-                            final var notEnoughBalanceTransfer = contractCall("testContract", ERC20_TRANSFER_ABI, notEnoughBalanceTransferParams).payingWith(OWNER).hasKnownStatus(CONTRACT_REVERT_EXECUTED).via(NOT_ENOUGH_BALANCE_TRANSFER_TX);
+                            final var notEnoughBalanceTransfer = contractCall("testContract", ERC20_TRANSFER_ABI, notEnoughBalanceTransferParams)
+                                    .payingWith(OWNER)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .via(NOT_ENOUGH_BALANCE_TRANSFER_TX)
+                                    .scrambleTxnBody(tx -> {
+                                        System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+                                        return tx;
+                                    });
 
-                            final var approve = contractCall("testContract", ERC20_APPROVE_ABI, approveParams).payingWith(OWNER).via(APPROVE_TX);
 
-                            final var transferFrom = contractCall("testContract", ERC20_TRANSFER_FROM_ABI, transferFromParams).payingWith(RECEIVER).via(TRANSFER_FROM_TX);
+                            final var approve = contractCall("testContract", ERC20_APPROVE_ABI, approveParams)
+                                    .payingWith(OWNER)
+                                    .via(APPROVE_TX)
+                                    .scrambleTxnBody(tx -> {
+                                        System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+                                        return tx;
+                                    });
 
-                            final var transferMoreThanApprovedFrom = contractCall("testContract", ERC20_TRANSFER_FROM_ABI, transferMoreThanApprovedFromParams).payingWith(RECEIVER).hasKnownStatus(CONTRACT_REVERT_EXECUTED).via(TRANSFER_MORE_THAN_APPROVED_FROM_TX);
+
+                            final var transferFrom = contractCall("testContract", ERC20_TRANSFER_FROM_ABI,
+                                    transferFromParams)
+                                    .payingWith(RECEIVER)
+                                    .via(TRANSFER_FROM_TX)
+                                    .gas(22000)
+                                    .scrambleTxnBody(
+                                            tx -> {
+                                                System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+                                                return tx;
+                                            });
+
+
+                            final var transferMoreThanApprovedFrom = contractCall("testContract",
+                                    ERC20_TRANSFER_FROM_ABI, transferMoreThanApprovedFromParams)
+                                    .payingWith(RECEIVER)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .gas(22000)
+                                    .via(TRANSFER_MORE_THAN_APPROVED_FROM_TX)
+                                    .scrambleTxnBody(tx -> {
+                                        System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+                                        return tx;
+                                    });
+
 
                             final var getCreateRecord = getTxnRecord(CREATE_TX)
+                                    .exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
                                     .hasPriority(recordWith().contractCreateResult(
                                             resultWith().logs(
                                                     inOrder(
@@ -148,6 +194,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                     ))
                                     .logged();
                             final var getTransferRecord = getTxnRecord(TRANSFER_TX)
+                                    .exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
                                     .hasPriority(recordWith().contractCallResult(
                                             resultWith().logs(
                                                     inOrder(
@@ -165,6 +212,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                     ))
                                     .logged();
                             final var getApproveRecord = getTxnRecord(APPROVE_TX)
+                                    .exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
                                     .hasPriority(recordWith().contractCallResult(
                                             resultWith().logs(
                                                     inOrder(
@@ -182,6 +230,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                     ))
                                     .logged();
                             final var getTransferFromRecord = getTxnRecord(TRANSFER_FROM_TX)
+                                    .exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
                                     .hasPriority(recordWith().contractCallResult(
                                             resultWith().logs(
                                                     inOrder(
@@ -208,8 +257,8 @@ public class ERC20ContractInteractions extends HapiApiSuite {
                                     ))
                                     .logged();
 
-                            final var getNotEnoughBalanceTransferRecord = getTxnRecord(NOT_ENOUGH_BALANCE_TRANSFER_TX).logged();
-                            final var transferMoreThanApprovedRecord = getTxnRecord(TRANSFER_MORE_THAN_APPROVED_FROM_TX).logged();
+                            final var getNotEnoughBalanceTransferRecord = getTxnRecord(NOT_ENOUGH_BALANCE_TRANSFER_TX).exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
+                            final var transferMoreThanApprovedRecord = getTxnRecord(TRANSFER_MORE_THAN_APPROVED_FROM_TX).exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
 
                             allRunFor(spec, transfer, notEnoughBalanceTransfer, approve, transferMoreThanApprovedFrom, transferFrom, getCreateRecord, getTransferRecord, getApproveRecord, getTransferFromRecord, getNotEnoughBalanceTransferRecord, transferMoreThanApprovedRecord);
                         })
