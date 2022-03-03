@@ -475,14 +475,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
 				entityAccess.adjustBalance(accountId, balanceChange);
 
-				final Map<UInt256, UInt256> updatedStorage = updatedAccount.getUpdatedStorage();
-				if (!updatedStorage.isEmpty()) {
-					final TreeSet<Map.Entry<UInt256, UInt256>> entries = new TreeSet<>(Map.Entry.comparingByKey());
-					entries.addAll(updatedStorage.entrySet());
-					for (final var entry : entries) {
-						entityAccess.putStorage(accountId, entry.getKey(), entry.getValue());
-					}
-				}
 				if (updatedAccount.codeWasUpdated()) {
 					entityAccess.storeCode(accountId, updatedAccount.getCode());
 				}

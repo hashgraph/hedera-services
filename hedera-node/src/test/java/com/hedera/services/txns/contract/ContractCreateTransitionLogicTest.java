@@ -62,6 +62,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -252,7 +253,8 @@ class ContractCreateTransitionLogicTest {
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress(), null /*//FIXME*/,
+						contractAccount.getId().asEvmAddress(),
+						Map.of(),
 						properties.shouldEnableTraceability());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
@@ -329,7 +331,8 @@ class ContractCreateTransitionLogicTest {
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress(), null /*//FIXME*/,
+						contractAccount.getId().asEvmAddress(),
+						Map.of(),
 						properties.shouldEnableTraceability());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
@@ -385,7 +388,8 @@ class ContractCreateTransitionLogicTest {
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		var result = TransactionProcessingResult.failed(1234L, 0L,
-				124L, Optional.empty(), Optional.empty(), null /*//FIXME*/,
+				124L, Optional.empty(), Optional.empty(),
+				Map.of(),
 				properties.shouldEnableTraceability());
 		given(evmTxProcessor.execute(
 				senderAccount,
@@ -426,7 +430,8 @@ class ContractCreateTransitionLogicTest {
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress(), null /*//FIXME*/,
+						contractAccount.getId().asEvmAddress(),
+						Map.of(),
 						properties.shouldEnableTraceability());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
