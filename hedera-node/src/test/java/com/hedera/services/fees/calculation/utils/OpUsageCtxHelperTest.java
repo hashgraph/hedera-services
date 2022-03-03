@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -98,12 +97,10 @@ class OpUsageCtxHelperTest {
 	private OpUsageCtxHelper subject;
 	@Mock
 	private AliasManager aliasManager;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	void setUp() {
-		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens, aliasManager, dynamicProperties);
+		subject = new OpUsageCtxHelper(workingView, fileNumbers, () -> tokens, aliasManager);
 	}
 
 	@Test

@@ -241,7 +241,7 @@ class AssociatePrecompileTest {
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress, recipientAddress,
 				aliases))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts, tokenRels))
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
@@ -288,7 +288,7 @@ class AssociatePrecompileTest {
 				contractAddress,
 				senderAddress, aliases))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts, tokenRels))
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
@@ -328,7 +328,7 @@ class AssociatePrecompileTest {
 				contractAddress,
 				senderAddress, aliases))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts, tokenRels))
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
@@ -372,7 +372,7 @@ class AssociatePrecompileTest {
 		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), contractAddress,
 				contractAddress, senderAddress, aliases))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts, tokenRels))
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
@@ -417,7 +417,7 @@ class AssociatePrecompileTest {
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
 				contractAddress, contractAddress, senderAddress, aliases))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts, tokenRels))
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))

@@ -218,9 +218,7 @@ class BurnPrecompilesTest {
 
 		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(
-				validator, dynamicProperties, accounts, tokenRels
-		)).willReturn(accountStore);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
 				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
@@ -254,9 +252,7 @@ class BurnPrecompilesTest {
 
 		given(sigsVerifier.hasActiveSupplyKey(fungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(
-				validator, dynamicProperties, accounts, tokenRels
-		)).willReturn(accountStore);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
 				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);

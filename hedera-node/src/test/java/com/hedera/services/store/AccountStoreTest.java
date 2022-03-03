@@ -76,7 +76,7 @@ class AccountStoreTest {
 	void setUp() {
 		setupAccounts();
 
-		subject = new AccountStore(validator, dynamicProperties, accounts, tokenRels);
+		subject = new AccountStore(validator, dynamicProperties, accounts);
 	}
 
 	@Test

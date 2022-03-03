@@ -224,7 +224,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
 				sabBuilder.setHbarBalance(balance).setAccountID(accountId);
 				if (dynamicProperties.shouldExportTokenBalances()) {
-					addTokenBalances(accountId, account, sabBuilder, tokens, tokenAssociations);
+					addTokenBalances(account, sabBuilder, tokens, tokenAssociations);
 				}
 				accountBalances.add(sabBuilder.build());
 			}
@@ -234,7 +234,6 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	}
 
 	private void addTokenBalances(
-			final AccountID id,
 			final MerkleAccount account,
 			final SingleAccountBalances.Builder sabBuilder,
 			final MerkleMap<EntityNum, MerkleToken> tokens,

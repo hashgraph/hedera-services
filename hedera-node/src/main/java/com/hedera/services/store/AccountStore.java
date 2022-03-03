@@ -24,25 +24,18 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -54,7 +47,6 @@ public class AccountStore {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final BackingStore<AccountID, MerkleAccount> accounts;
-	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 	// This Needs TokenRels Ledger to help use the lastAssociatedToken from the merkleAccount
 	// and build associatedTokenIds list
 	// So the field associatedTokens in Account model can by a list of TOkeIds instead of CopyOnWriteIds
@@ -63,13 +55,11 @@ public class AccountStore {
 	public AccountStore(
 			final OptionValidator validator,
 			final GlobalDynamicProperties dynamicProperties,
-			final BackingStore<AccountID, MerkleAccount> accounts,
-			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels
+			final BackingStore<AccountID, MerkleAccount> accounts
 	) {
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
 		this.accounts = accounts;
-		this.tokenRels = tokenRels;
 	}
 
 	/**
@@ -225,20 +215,6 @@ public class AccountStore {
 		} else {
 			return false;
 		}
-	}
-
-	private List<Id> getTokenIds(final EntityNumPair lastAssociatedToken) {
-		final List<Id> listOfAssociatedTokens = new ArrayList<>();
-		var currKey = new EntityNumPair(lastAssociatedToken.value());
-		// if this lastAssociatedToken == 0 then this is account has No token associations currently
-		if (!lastAssociatedToken.equals(MISSING_NUM_PAIR)) {
-			// get All the tokenIds associated by traversing the linkedList
-			while (!currKey.equals(MISSING_NUM_PAIR)) {
-				listOfAssociatedTokens.add(Id.fromGrpcToken(currKey.asAccountTokenRel().getRight()));
-				currKey = tokenRels.getImmutableRef(currKey.asAccountTokenRel()).nextKey();
-			}
-		}
-		return listOfAssociatedTokens;
 	}
 
 	public OptionValidator getValidator() {
