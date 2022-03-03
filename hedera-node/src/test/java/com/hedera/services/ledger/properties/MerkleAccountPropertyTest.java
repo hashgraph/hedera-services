@@ -49,6 +49,7 @@ import java.util.TreeMap;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.ASSOCIATED_TOKENS_COUNT;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
@@ -128,6 +129,8 @@ class MerkleAccountPropertyTest {
 		final long initialAllowance = 100L;
 		final EntityNumPair origLastAssociatedToken = new EntityNumPair(123L);
 		final EntityNumPair newLastAssociatedToken = new EntityNumPair(234L);
+		final int origAssociationCount = 10;
+		final int newAssociationCount = 12;
 		final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
 		final EntityNum payerNum = EntityNum.fromAccountId(payer);
 		final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
@@ -161,6 +164,7 @@ class MerkleAccountPropertyTest {
 		account.setNumContractKvPairs(oldNumKvPairs);
 		account.setNftsOwned(origNumNfts);
 		account.setLastAssociatedToken(origLastAssociatedToken);
+		account.setAssociatedTokensCount(origAssociationCount);
 		account.setBalance(origBalance);
 		account.records().offer(origPayerRecords.get(0));
 		account.records().offer(origPayerRecords.get(1));
@@ -199,6 +203,7 @@ class MerkleAccountPropertyTest {
 		FUNGIBLE_TOKEN_ALLOWANCES.setter().accept(account, fungibleAllowances);
 		NFT_ALLOWANCES.setter().accept(account, nftAllowances);
 		LAST_ASSOCIATED_TOKEN.setter().accept(account, newLastAssociatedToken);
+		ASSOCIATED_TOKENS_COUNT.setter().accept(account, newAssociationCount);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -218,6 +223,7 @@ class MerkleAccountPropertyTest {
 		assertEquals(fungibleAllowances, FUNGIBLE_TOKEN_ALLOWANCES.getter().apply(account));
 		assertEquals(nftAllowances, NFT_ALLOWANCES.getter().apply(account));
 		assertEquals(newLastAssociatedToken, LAST_ASSOCIATED_TOKEN.getter().apply(account));
+		assertEquals(newAssociationCount, ASSOCIATED_TOKENS_COUNT.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

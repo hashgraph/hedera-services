@@ -100,6 +100,7 @@ class MerkleAccountStateTest {
 	private static final int otherNumber = 456;
 	private static final int kvPairs = 123;
 	private static final int otherKvPairs = 456;
+	private static final int associatedTokensCount = 3;
 
 	private static final EntityNum spenderNum = EntityNum.fromLong(1000L);
 	private static final EntityNum tokenForAllowance = EntityNum.fromLong(2000L);
@@ -144,6 +145,7 @@ class MerkleAccountStateTest {
 				fungibleTokenAllowances,
 				nftAllowances);
 		subject.setLastAssociatedToken(associationKey.value());
+		subject.setAssociatedTokensCount(associatedTokensCount);
 		serdes = mock(DomainSerdes.class);
 		MerkleAccountState.serdes = serdes;
 	}
@@ -173,7 +175,8 @@ class MerkleAccountStateTest {
 						"fungibleTokenAllowances=" + fungibleTokenAllowances + ", " +
 						"nftAllowances=" + nftAllowances + ", " +
 						"lastAssociation=" + associationKey.value() + "<->" +
-						asRelationshipLiteral(associationKey.value()) + "}",
+						asRelationshipLiteral(associationKey.value()) + ", " +
+						 "associatedTokensCount=" + associatedTokensCount + "}",
 				subject.toString());
 	}
 
@@ -209,6 +212,7 @@ class MerkleAccountStateTest {
 		subject.setMaxAutomaticAssociations(0);
 		subject.setNumContractKvPairs(0);
 		subject.setLastAssociatedToken(0);
+		subject.setAssociatedTokensCount(0);
 		setEmptyAllowances();
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
 		given(in.readLong())
@@ -246,6 +250,7 @@ class MerkleAccountStateTest {
 		subject.setAlreadyUsedAutomaticAssociations(0);
 		subject.setNumContractKvPairs(0);
 		subject.setLastAssociatedToken(0);
+		subject.setAssociatedTokensCount(0);
 		setEmptyAllowances();
 		final var newSubject = new MerkleAccountState();
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
@@ -282,6 +287,7 @@ class MerkleAccountStateTest {
 		subject.setNftsOwned(nftsOwned);
 		subject.setNumContractKvPairs(0);
 		subject.setLastAssociatedToken(0);
+		subject.setAssociatedTokensCount(0);
 		setEmptyAllowances();
 		final var newSubject = new MerkleAccountState();
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
@@ -317,6 +323,7 @@ class MerkleAccountStateTest {
 		subject.setNftsOwned(nftsOwned);
 		subject.setNumContractKvPairs(0);
 		subject.setLastAssociatedToken(0);
+		subject.setAssociatedTokensCount(0);
 		setEmptyAllowances();
 		final var newSubject = new MerkleAccountState();
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
@@ -348,6 +355,7 @@ class MerkleAccountStateTest {
 		subject.setNftsOwned(nftsOwned);
 		subject.setNumContractKvPairs(0);
 		subject.setLastAssociatedToken(0);
+		subject.setAssociatedTokensCount(0);
 		setEmptyAllowances();
 		assertEquals(0, subject.getNumContractKvPairs());
 		final var newSubject = new MerkleAccountState();
@@ -377,6 +385,7 @@ class MerkleAccountStateTest {
 		final var in = mock(SerializableDataInputStream.class);
 		subject.setNftsOwned(nftsOwned);
 		subject.setLastAssociatedToken(0);
+		subject.setAssociatedTokensCount(0);
 		setEmptyAllowances();
 		final var newSubject = new MerkleAccountState();
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
@@ -408,6 +417,7 @@ class MerkleAccountStateTest {
 		final var in = mock(SerializableDataInputStream.class);
 		subject.setNftsOwned(nftsOwned);
 		subject.setLastAssociatedToken(0);
+		subject.setAssociatedTokensCount(0);
 		final var newSubject = new MerkleAccountState();
 		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
 		given(in.readLong())
@@ -473,7 +483,8 @@ class MerkleAccountStateTest {
 				.willReturn(kvPairs)
 				.willReturn(cryptoAllowances.size())
 				.willReturn(fungibleTokenAllowances.size())
-				.willReturn(nftAllowances.size());
+				.willReturn(nftAllowances.size())
+				.willReturn(associatedTokensCount);
 		given(serdes.readNullableSerializable(in)).willReturn(proxy);
 		given(in.readByteArray(Integer.MAX_VALUE)).willReturn(alias.toByteArray());
 		given(in.readSerializable())
@@ -840,6 +851,7 @@ class MerkleAccountStateTest {
 				fungibleTokenAllowances,
 				nftAllowances);
 		identicalSubject.setLastAssociatedToken(associationKey.value());
+		identicalSubject.setAssociatedTokensCount(associatedTokensCount);
 
 		final var otherSubject = new MerkleAccountState(
 				otherKey,

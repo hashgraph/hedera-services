@@ -33,7 +33,7 @@ import java.util.Map;
 
 public class TestAutoRenewCalcs extends AutoRenewCalcs {
 	public TestAutoRenewCalcs() {
-		super(null, null);
+		super(null);
 	}
 
 	@Override

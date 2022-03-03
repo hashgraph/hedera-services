@@ -116,7 +116,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	@Override
 	public int getMinimumChildCount(final int version) {
-		return ChildIndices.NUM_090_CHILDREN;
+		return ChildIndices.NUM_0240_CHILDREN;
 	}
 
 	/* --- FastCopyable --- */
@@ -192,6 +192,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
 	}
 
+	public void forgetAssociatedTokens() {
+		addDeserializedChildren(List.of(state(), records()), RELEASE_0240_VERSION);
+	}
+
 	/* ----  Bean  ---- */
 
 	public long getNftsOwned() {
@@ -240,6 +244,14 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setLastAssociatedToken(lastAssociatedToken.value());
 	}
 
+	public int getAssociatedTokensCount() {
+		return state().getAssociatedTokensCount();
+	}
+
+	public void setAssociatedTokensCount(final int associatedTokensCount) {
+		throwIfImmutable("Cannot change this account's associatedTokensCount if it is immutable");
+		state().setAssociatedTokensCount(associatedTokensCount);
+	}
 	public long getBalance() {
 		return state().balance();
 	}

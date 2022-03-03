@@ -27,6 +27,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -47,6 +48,8 @@ public class MerkleAccountFactory {
 	private Optional<Long> balance = Optional.empty();
 	private Optional<Long> receiverThreshold = Optional.empty();
 	private Optional<Long> senderThreshold = Optional.empty();
+	private Optional<EntityNumPair> lastAssociatedToken = Optional.empty();
+	private Optional<Integer> associatedTokensCount = Optional.empty();
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
 	private Optional<JKey> accountKeys = Optional.empty();
 	private Optional<Long> autoRenewPeriod = Optional.empty();
@@ -82,6 +85,8 @@ public class MerkleAccountFactory {
 		receiverSigRequired.ifPresent(value::setReceiverSigRequired);
 		maxAutoAssociations.ifPresent(value::setMaxAutomaticAssociations);
 		alreadyUsedAutoAssociations.ifPresent(value::setAlreadyUsedAutomaticAssociations);
+		associatedTokensCount.ifPresent(value::setAssociatedTokensCount);
+		lastAssociatedToken.ifPresent(value::setLastAssociatedToken);
 		value.setNumContractKvPairs(numKvPairs);
 		value.setCryptoAllowances(cryptoAllowances);
 		value.setFungibleTokenAllowances(fungibleTokenAllowances);
@@ -205,6 +210,16 @@ public class MerkleAccountFactory {
 
 	public MerkleAccountFactory nftAllowances(final TreeMap<FcTokenAllowanceId, FcTokenAllowance> allowances) {
 		nftAllowances = allowances;
+		return this;
+	}
+
+	public MerkleAccountFactory lastAssociatedToken(final long lastAssociatedToken) {
+		this.lastAssociatedToken = Optional.of(new EntityNumPair(lastAssociatedToken));
+		return this;
+	}
+
+	public MerkleAccountFactory associatedTokensCount(final int associatedTokensCount) {
+		this.associatedTokensCount = Optional.of(associatedTokensCount);
 		return this;
 	}
 }

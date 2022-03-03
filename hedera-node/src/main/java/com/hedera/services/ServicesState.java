@@ -378,25 +378,20 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		for (var accountId : accounts.keySet()) {
 			var merkleAccount = accounts.getForModify(accountId);
 
-			EntityNumPair prevAssociationKey = MISSING_NUM_PAIR;
+			EntityNumPair prevListRootKey = MISSING_NUM_PAIR;
 			for (var tokenId : merkleAccount.tokens().asTokenIds()) {
-				var associationKey = EntityNumPair.fromLongs(accountId.longValue(), tokenId.getTokenNum());
-				var association = tokenRels.getForModify(associationKey);
-				association.setKey(associationKey);
-				association.setNextKey(prevAssociationKey);
+				var newListRootKey = EntityNumPair.fromLongs(accountId.longValue(), tokenId.getTokenNum());
+				var association = tokenRels.getForModify(newListRootKey);
+				association.setNextKey(prevListRootKey);
 
-				if (prevAssociationKey != MISSING_NUM_PAIR) {
-					var prevAssociation = tokenRels.getForModify(prevAssociationKey);
-					prevAssociation.setPrevKey(associationKey);
-					tokenRels.put(prevAssociationKey, prevAssociation);
+				if (prevListRootKey != MISSING_NUM_PAIR) {
+					var prevAssociation = tokenRels.getForModify(prevListRootKey);
+					prevAssociation.setPrevKey(newListRootKey);
 				}
-
-				tokenRels.put(associationKey, association);
-				prevAssociationKey = associationKey;
+				prevListRootKey = newListRootKey;
 			}
-
-			merkleAccount.setLastAssociatedToken(prevAssociationKey);
-			accounts.put(accountId, merkleAccount);
+			merkleAccount.setLastAssociatedToken(prevListRootKey);
+			merkleAccount.forgetAssociatedTokens();
 		}
 	}
 

@@ -168,7 +168,7 @@ class MerkleAccountTest {
 	@Test
 	void merkleMethodsWork() {
 		assertEquals(
-				MerkleAccount.ChildIndices.NUM_090_CHILDREN,
+				MerkleAccount.ChildIndices.NUM_0240_CHILDREN,
 				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION));
 		assertEquals(MerkleAccount.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleAccount.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());

@@ -300,6 +300,7 @@ public class HederaLedger {
 		var currKey = (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
 		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
 		// get All the tokenIds associated by traversing the linkedList
+		// TODO
 		while (!currKey.equals(MISSING_NUM_PAIR)) {
 			listOfAssociatedTokens.add(currKey.asAccountTokenRel().getRight());
 			currKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), NEXT_KEY);

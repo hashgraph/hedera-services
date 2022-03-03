@@ -221,9 +221,9 @@ public class TypedTokenStore {
 		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
 		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
 		tokenRelationship.setAutomaticAssociation(merkleTokenRel.isAutomaticAssociation());
-		tokenRelationship.setKey(merkleTokenRel.getKey().value());
-		tokenRelationship.setNextKey(merkleTokenRel.nextKey().value());
-		tokenRelationship.setPrevKey(merkleTokenRel.prevKey().value());
+		tokenRelationship.setKey(merkleTokenRel.getKey());
+		tokenRelationship.setNextKey(merkleTokenRel.nextKey());
+		tokenRelationship.setPrevKey(merkleTokenRel.prevKey());
 		tokenRelationship.markAsPersisted();
 
 		return tokenRelationship;
@@ -241,9 +241,9 @@ public class TypedTokenStore {
 		mutableTokenRel.setFrozen(modelRel.isFrozen());
 		mutableTokenRel.setKycGranted(modelRel.isKycGranted());
 		mutableTokenRel.setAutomaticAssociation(modelRel.isAutomaticAssociation());
-		mutableTokenRel.setKey(new EntityNumPair(modelRel.getKey()));
-		mutableTokenRel.setNextKey(new EntityNumPair(modelRel.getNextKey()));
-		mutableTokenRel.setPrevKey(new EntityNumPair(modelRel.getPrevKey()));
+		mutableTokenRel.setKey(modelRel.getKey());
+		mutableTokenRel.setNextKey(modelRel.getNextKey());
+		mutableTokenRel.setPrevKey(modelRel.getPrevKey());
 		tokenRels.put(key.asAccountTokenRel(), mutableTokenRel);
 	}
 

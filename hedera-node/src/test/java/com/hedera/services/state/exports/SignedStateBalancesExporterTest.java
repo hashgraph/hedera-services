@@ -160,8 +160,16 @@ class SignedStateBalancesExporterTest {
 
 		token = mock(MerkleToken.class);
 		given(token.isDeleted()).willReturn(false);
+		given(token.decimals()).willReturn(1);
+		given(token.symbol()).willReturn("existingToken");
+		given(token.hasFreezeKey()).willReturn(true);
+		given(token.hasKycKey()).willReturn(true);
 		deletedToken = mock(MerkleToken.class);
 		given(deletedToken.isDeleted()).willReturn(true);
+		given(deletedToken.decimals()).willReturn(3);
+		given(deletedToken.symbol()).willReturn("deletedToken");
+		given(deletedToken.hasFreezeKey()).willReturn(true);
+		given(deletedToken.hasKycKey()).willReturn(true);
 		tokens.put(fromTokenId(theToken), token);
 		tokens.put(fromTokenId(theDeletedToken), deletedToken);
 

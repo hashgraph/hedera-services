@@ -63,7 +63,7 @@ public record EntityNumPair(long value) {
 	}
 
 	public static EntityNumPair fromModelRel(TokenRelationship tokenRelationship) {
-		return new EntityNumPair(tokenRelationship.getKey());
+		return tokenRelationship.getKey();
 	}
 
 	public Pair<AccountID, TokenID> asAccountTokenRel() {

@@ -212,7 +212,7 @@ class TypedTokenStoreTest {
 		expectedNewTokenRel.setKey(miscTokenRelId);
 		// given:
 		final var newTokenRel = new TokenRelationship(token, miscAccount);
-		newTokenRel.setKey(miscTokenRelId.value());
+		newTokenRel.setKey(miscTokenRelId);
 		// when:
 		newTokenRel.setKycGranted(true);
 		newTokenRel.setBalance(balance * 2);
@@ -586,9 +586,9 @@ class TypedTokenStoreTest {
 		miscTokenRel.setKycGranted(kycGranted);
 		miscTokenRel.setAutomaticAssociation(automaticAssociation);
 		miscTokenRel.markAsPersisted();
-		miscTokenRel.setKey(miscTokenRelId.value());
-		miscTokenRel.setPrevKey(0L);
-		miscTokenRel.setNextKey(0L);
+		miscTokenRel.setKey(miscTokenRelId);
+		miscTokenRel.setPrevKey(EntityNumPair.MISSING_NUM_PAIR);
+		miscTokenRel.setNextKey(EntityNumPair.MISSING_NUM_PAIR);
 	}
 
 	private final long expiry = 1_234_567L;

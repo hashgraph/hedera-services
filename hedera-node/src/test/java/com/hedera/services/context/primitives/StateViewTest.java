@@ -292,6 +292,10 @@ class StateViewTest {
 		setUpToken(nft);
 		nft.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
 
+		tokens = new MerkleMap<>();
+		tokens.put(EntityNum.fromTokenId(tokenId), token);
+		tokens.put(EntityNum.fromTokenId(nftTokenId), nft);
+
 		scheduleStore = mock(ScheduleStore.class);
 		final var scheduleMemo = "For what but eye and ear";
 		parentScheduleCreate =
@@ -327,6 +331,7 @@ class StateViewTest {
 		children = new MutableStateChildren();
 		children.setUniqueTokens(uniqueTokens);
 		children.setAccounts(contracts);
+		children.setTokens(tokens);
 		children.setTokenAssociations(tokenRels);
 		children.setUniqueTokenAssociations(nftsByType);
 		children.setUniqueTokenAssociations(nftsByOwner);
@@ -639,11 +644,7 @@ class StateViewTest {
 	@Test
 	void getTokenRelationship() {
 		final var targetId = EntityNum.fromAccountId(tokenAccountId);
-		given(tokenStore.get(tokenId)).willReturn(token);
-		given(tokenStore.get(nftTokenId)).willReturn(token);
 		given(contracts.get(targetId)).willReturn(tokenAccount);
-		given(tokenStore.exists(tokenId)).willReturn(true);
-		given(tokenStore.exists(nftTokenId)).willReturn(true);
 
 		List<TokenRelationship> expectedRels = List.of(
 				TokenRelationship.newBuilder()

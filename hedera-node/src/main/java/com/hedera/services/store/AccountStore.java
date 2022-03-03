@@ -155,7 +155,7 @@ public class AccountStore {
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
 		account.setLastAssociatedToken(merkleAccount.getLastAssociatedToken());
-		account.setAssociatedTokenIds(getTokenIds(merkleAccount.getLastAssociatedToken()));
+		account.setAssociatedTokensCount(merkleAccount.getAssociatedTokensCount());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
 		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
@@ -208,6 +208,7 @@ public class AccountStore {
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
 		mutableAccount.setNftAllowances(model.getMutableNftAllowances());
 		mutableAccount.setLastAssociatedToken(model.getLastAssociatedToken());
+		mutableAccount.setAssociatedTokensCount(model.getAssociatedTokensCount());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,

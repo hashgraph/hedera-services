@@ -23,11 +23,13 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.utils.EntityNumPair;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -58,9 +60,9 @@ public class TokenRelationship {
 	private boolean destroyed = false;
 	private boolean notYetPersisted = true;
 	private boolean automaticAssociation = false;
-	private long key;
-	private long nextKey;
-	private long prevKey;
+	private EntityNumPair key = MISSING_NUM_PAIR;
+	private EntityNumPair nextKey = MISSING_NUM_PAIR;
+	private EntityNumPair prevKey = MISSING_NUM_PAIR;
 
 
 	private long balanceChange = 0L;
@@ -212,27 +214,27 @@ public class TokenRelationship {
 		return !token.hasKycKey() || kycGranted;
 	}
 
-	public long getKey() {
+	public EntityNumPair getKey() {
 		return key;
 	}
 
-	public void setKey(final long key) {
+	public void setKey(final EntityNumPair key) {
 		this.key = key;
 	}
 
-	public long getNextKey() {
+	public EntityNumPair getNextKey() {
 		return nextKey;
 	}
 
-	public void setNextKey(final long nextKey) {
+	public void setNextKey(final EntityNumPair nextKey) {
 		this.nextKey = nextKey;
 	}
 
-	public long getPrevKey() {
+	public EntityNumPair getPrevKey() {
 		return prevKey;
 	}
 
-	public void setPrevKey(final long prevKey) {
+	public void setPrevKey(final EntityNumPair prevKey) {
 		this.prevKey = prevKey;
 	}
 

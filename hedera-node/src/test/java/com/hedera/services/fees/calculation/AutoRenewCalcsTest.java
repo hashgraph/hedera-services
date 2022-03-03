@@ -20,9 +20,7 @@ package com.hedera.services.fees.calculation;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
@@ -41,7 +39,6 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Triple;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
@@ -50,12 +47,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 
 import static com.hedera.services.fees.calculation.AutoRenewCalcs.countSerials;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
@@ -69,9 +64,6 @@ import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(LogCaptureExtension.class)
 class AutoRenewCalcsTest {
@@ -85,8 +77,7 @@ class AutoRenewCalcsTest {
 			.setHbarEquiv(1)
 			.setCentEquiv(10)
 			.build();
-
-	private Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociationsSupplier;
+	private final int associatedTokensCount = 123;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -96,9 +87,8 @@ class AutoRenewCalcsTest {
 
 	@BeforeEach
 	void setUp() throws Exception {
-		tokenAssociationsSupplier = mock(Supplier.class);
 		cryptoPrices = frozenPricesFrom("fees/feeSchedules.json", CryptoAccountAutoRenew);
-		subject = new AutoRenewCalcs(cryptoOpsUsage, tokenAssociationsSupplier);
+		subject = new AutoRenewCalcs(cryptoOpsUsage);
 		subject.setCryptoAutoRenewPriceSeq(cryptoPrices);
 	}
 
@@ -170,7 +160,7 @@ class AutoRenewCalcsTest {
 	@Test
 	void throwsIseIfUsedWithoutInitializedPrices() {
 		// given:
-		subject = new AutoRenewCalcs(cryptoOpsUsage, tokenAssociationsSupplier);
+		subject = new AutoRenewCalcs(cryptoOpsUsage);
 
 		// expect:
 		Assertions.assertThrows(IllegalStateException.class, () ->
@@ -194,20 +184,13 @@ class AutoRenewCalcsTest {
 	void knowsHowToBuildCtx() {
 		setupAccountWith(0L);
 
-		final var merkleMap = mock(MerkleMap.class);
-		when(tokenAssociationsSupplier.get()).thenReturn(merkleMap);
-		final var mockedStatic = mockStatic(StateView.class);
-		final var list = mock(ArrayList.class);
-		mockedStatic.when(() -> StateView.getAssociatedTokens(merkleMap, expiredAccount, Integer.MAX_VALUE)).thenReturn(list);
-		when(list.size()).thenReturn(100);
-
 		// given:
 		var expectedCtx = ExtantCryptoContext.newBuilder()
 				.setCurrentExpiry(0L)
 				.setCurrentKey(MiscUtils.asKeyUnchecked(expiredAccount.getAccountKey()))
 				.setCurrentlyHasProxy(true)
 				.setCurrentMemo(expiredAccount.getMemo())
-				.setCurrentNumTokenRels(100)
+				.setCurrentNumTokenRels(associatedTokensCount)
 				.setCurrentMaxAutomaticAssociations(expiredAccount.getMaxAutomaticAssociations())
 				.setCurrentCryptoAllowances(getCryptoAllowancesList(expiredAccount))
 				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(expiredAccount))
@@ -216,7 +199,6 @@ class AutoRenewCalcsTest {
 
 		// expect:
 		assertEquals(cryptoOpsUsage.cryptoAutoRenewRb(expectedCtx), subject.rbUsedBy(expiredAccount));
-		mockedStatic.close();
 	}
 
 	@Test
@@ -276,6 +258,8 @@ class AutoRenewCalcsTest {
 				.tokens(asToken("1.2.3"), asToken("2.3.4"), asToken("3.4.5"))
 				.proxy(asAccount("0.0.12345"))
 				.memo("SHOCKED, I tell you!")
+				.associatedTokensCount(associatedTokensCount)
+				.lastAssociatedToken(EntityNumPair.fromLongs(2, 5).value())
 				.get();
 	}
 

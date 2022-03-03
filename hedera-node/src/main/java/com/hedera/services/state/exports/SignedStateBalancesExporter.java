@@ -22,6 +22,7 @@ package com.hedera.services.state.exports;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -58,9 +59,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 
-import static com.hedera.services.context.primitives.StateView.getAssociatedTokens;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 
@@ -241,11 +240,10 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			final MerkleMap<EntityNum, MerkleToken> tokens,
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
 	) {
-		for (final var tokenId : getAssociatedTokens(tokenAssociations, account, Integer.MAX_VALUE)) {
-			final var token = tokens.get(fromTokenId(tokenId));
+		for (final var tokenAssociation : StateView.getAssociatedTokenRels(tokenAssociations, account, tokens, Integer.MAX_VALUE)) {
+			final var token = tokens.get(fromTokenId(tokenAssociation.getTokenId()));
 			if (token != null) {
-				var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));
-				sabBuilder.addTokenUnitBalances(tb(tokenId, relationship.getBalance()));
+				sabBuilder.addTokenUnitBalances(tb(tokenAssociation.getTokenId(), tokenAssociation.getBalance()));
 			}
 		}
 	}

@@ -21,16 +21,13 @@ package com.hedera.services.fees.calculation;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,9 +36,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
-import java.util.function.Supplier;
 
-import static com.hedera.services.context.primitives.StateView.getAssociatedTokens;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftAllowancesList;
@@ -57,7 +52,6 @@ public class AutoRenewCalcs {
 	private static final RenewAssessment NO_RENEWAL_POSSIBLE = new RenewAssessment(0L, 0L);
 
 	private final CryptoOpsUsage cryptoOpsUsage;
-	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociationsSupplier;
 
 	private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> cryptoAutoRenewPriceSeq = null;
 
@@ -67,11 +61,8 @@ public class AutoRenewCalcs {
 	private long secondServiceRbhPrice = 0L;
 
 	@Inject
-	public AutoRenewCalcs(
-			CryptoOpsUsage cryptoOpsUsage,
-			Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociationsSupplier) {
+	public AutoRenewCalcs(CryptoOpsUsage cryptoOpsUsage) {
 		this.cryptoOpsUsage = cryptoOpsUsage;
-		this.tokenAssociationsSupplier = tokenAssociationsSupplier;
 	}
 
 	public void setCryptoAutoRenewPriceSeq(
@@ -146,8 +137,7 @@ public class AutoRenewCalcs {
 				.setCurrentKey(asKeyUnchecked(account.getAccountKey()))
 				.setCurrentlyHasProxy(account.getProxy() != null)
 				.setCurrentMemo(account.getMemo())
-				.setCurrentNumTokenRels(
-						getAssociatedTokens(tokenAssociationsSupplier.get(), account, Integer.MAX_VALUE).size())
+				.setCurrentNumTokenRels(account.getAssociatedTokensCount())
 				.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
 				.setCurrentCryptoAllowances(getCryptoAllowancesList(account))
 				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))

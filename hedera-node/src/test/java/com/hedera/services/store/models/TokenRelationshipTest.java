@@ -49,6 +49,7 @@ class TokenRelationshipTest {
 	private final EntityNumPair key = new EntityNumPair(1234566);
 	private final EntityNumPair nextKey = new EntityNumPair(1234567);
 	private final EntityNumPair prevKey = new EntityNumPair(1234565);
+	private final int associatedTokensCount = 3;
 
 	private Token token;
 	private Account account;
@@ -60,12 +61,13 @@ class TokenRelationshipTest {
 		token = new Token(tokenId);
 		account = new Account(accountId);
 		account.setLastAssociatedToken(key);
+		account.setAssociatedTokensCount(associatedTokensCount);
 
 		subject = new TokenRelationship(token, account);
 		subject.initBalance(balance);
-		subject.setKey(key.value());
-		subject.setNextKey(nextKey.value());
-		subject.setPrevKey(prevKey.value());
+		subject.setKey(key);
+		subject.setNextKey(nextKey);
+		subject.setPrevKey(prevKey);
 	}
 
 	@Test
@@ -107,13 +109,14 @@ class TokenRelationshipTest {
 	void toStringAsExpected() {
 		// given:
 		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=1.0.4321," +
-				" expiry=0, balance=0, deleted=false, tokens=<N/A>, ownedNfts=0, alreadyUsedAutoAssociations=0, " +
+				" expiry=0, balance=0, deleted=false, ownedNfts=0, alreadyUsedAutoAssociations=0, " +
 				"maxAutoAssociations=0, alias=, cryptoAllowances=null, fungibleTokenAllowances=null, nftAllowances=null, " +
-				"lastAssociatedToken=PermHashLong(0, 1234566)}, " +
+				"lastAssociatedToken=PermHashLong(0, 1234566), associatedTokensCount=3}, " +
 				"token=Token{id=0.0.1234, type=null, deleted=false, autoRemoved=false, treasury=null, " +
 				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
 				"currentSerialNumber=0, pauseKey=<N/A>, paused=false}, balance=1234, balanceChange=0, frozen=false, " +
-				"kycGranted=false, isAutomaticAssociation=false, key=1234566, nextKey=1234567, prevKey=1234565}";
+				"kycGranted=false, isAutomaticAssociation=false, " +
+				"key=PermHashLong(0, 1234566), nextKey=PermHashLong(0, 1234567), prevKey=PermHashLong(0, 1234565)}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
@@ -251,9 +254,9 @@ class TokenRelationshipTest {
 	void testHashCode() {
 		var rel = new TokenRelationship(token, account);
 		rel.initBalance(balance);
-		rel.setPrevKey(prevKey.value());
-		rel.setKey(key.value());
-		rel.setNextKey(nextKey.value());
+		rel.setPrevKey(prevKey);
+		rel.setKey(key);
+		rel.setNextKey(nextKey);
 		assertEquals(rel.hashCode(), subject.hashCode());
 	}
 

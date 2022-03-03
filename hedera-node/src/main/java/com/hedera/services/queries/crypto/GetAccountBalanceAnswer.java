@@ -26,8 +26,8 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
@@ -37,15 +37,12 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 
-import static com.hedera.services.context.primitives.StateView.getAssociatedTokens;
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
@@ -99,9 +96,9 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			var key = EntityNum.fromAccountId(id);
 			var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
-			for (TokenID tId : getAssociatedTokens(view.tokenAssociations(), account, dynamicProperties.maxTokensPerAccount())) {
-				var relKey = fromAccountTokenRel(id, tId);
-				var relationship = view.tokenAssociations().get(relKey);
+			for (var relationship : StateView.getAssociatedTokenRels(
+					view.tokenAssociations(), account, view.tokens(), dynamicProperties.maxTokensPerAccount())) {
+				final var tId = relationship.getTokenId();
 				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);
 				opAnswer.addTokenBalances(TokenBalance.newBuilder()
 						.setTokenId(tId)

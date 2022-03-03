@@ -95,9 +95,9 @@ class TokenTest {
 		treasuryRel = new TokenRelationship(subject, treasuryAccount);
 		treasuryRel.initBalance(initialTreasuryBalance);
 		treasuryRel.setAutomaticAssociation(true);
-		treasuryRel.setKey(treasuryAssociationKey.value());
+		treasuryRel.setKey(treasuryAssociationKey);
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
-		nonTreasuryRel.setKey(nonTreasuryAssociationKey.value());
+		nonTreasuryRel.setKey(nonTreasuryAssociationKey);
 	}
 
 	@Test
@@ -193,7 +193,7 @@ class TokenTest {
 		assertNotNull(rel);
 		assertFalse(rel.isFrozen());
 		assertTrue(rel.isKycGranted());
-		assertEquals(treasuryAssociationKey.value(), rel.getKey());
+		assertEquals(treasuryAssociationKey, rel.getKey());
 	}
 
 	@Test
@@ -607,9 +607,9 @@ class TokenTest {
 	@Test
 	void toStringWorks() {
 		final var desired = "Token{id=1.2.3, type=null, deleted=false, autoRemoved=false, " +
-				"treasury=Account{id=0.0.0, expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
+				"treasury=Account{id=0.0.0, expiry=0, balance=0, deleted=false, " +
 				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=, cryptoAllowances=null, " +
-				"fungibleTokenAllowances=null, nftAllowances=null, lastAssociatedToken=null}, autoRenewAccount=null, " +
+				"fungibleTokenAllowances=null, nftAllowances=null, lastAssociatedToken=null, associatedTokensCount=0}, autoRenewAccount=null, " +
 				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, " +
 				"pauseKey=<N/A>, paused=false}";
 

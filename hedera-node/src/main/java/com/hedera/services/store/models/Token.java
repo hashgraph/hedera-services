@@ -340,7 +340,7 @@ public class Token {
 		}
 		newRel.setKycGranted(!hasKycKey());
 		newRel.setAutomaticAssociation(automaticAssociation);
-		newRel.setKey(EntityNumPair.fromLongs(account.getId().num(), id.num()).value());
+		newRel.setKey(EntityNumPair.fromLongs(account.getId().num(), id.num()));
 		return newRel;
 	}
 
@@ -356,7 +356,7 @@ public class Token {
 		final var rel = new TokenRelationship(this, account);
 		rel.setKycGranted(true);
 		rel.setFrozen(false);
-		rel.setKey(EntityNumPair.fromLongs(account.getId().num(), id.num()).value());
+		rel.setKey(EntityNumPair.fromLongs(account.getId().num(), id.num()));
 		return rel;
 	}
 

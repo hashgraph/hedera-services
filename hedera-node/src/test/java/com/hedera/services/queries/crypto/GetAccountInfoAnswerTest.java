@@ -103,6 +103,8 @@ class GetAccountInfoAnswerTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	@Mock
+	private MerkleMap<EntityNum, MerkleToken> tokens;
+	@Mock
 	private OptionValidator optionValidator;
 	@Mock
 	private MerkleToken token;
@@ -200,6 +202,7 @@ class GetAccountInfoAnswerTest {
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
+		children.setTokens(tokens);
 
 		view = new StateView(
 				tokenStore,
@@ -268,16 +271,12 @@ class GetAccountInfoAnswerTest {
 				.willReturn(1).willReturn(2).willReturn(3)
 				.willReturn(1).willReturn(2).willReturn(3);
 		given(deletedToken.decimals()).willReturn(4);
+		given(tokens.getOrDefault(EntityNum.fromTokenId(firstToken), REMOVED_TOKEN)).willReturn(token);
+		given(tokens.getOrDefault(EntityNum.fromTokenId(secondToken), REMOVED_TOKEN)).willReturn(token);
+		given(tokens.getOrDefault(EntityNum.fromTokenId(thirdToken), REMOVED_TOKEN)).willReturn(token);
+		given(tokens.getOrDefault(EntityNum.fromTokenId(fourthToken), REMOVED_TOKEN)).willReturn(deletedToken);
+		given(tokens.getOrDefault(EntityNum.fromTokenId(missingToken), REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
 
-		given(tokenStore.exists(firstToken)).willReturn(true);
-		given(tokenStore.exists(secondToken)).willReturn(true);
-		given(tokenStore.exists(thirdToken)).willReturn(true);
-		given(tokenStore.exists(fourthToken)).willReturn(true);
-		given(tokenStore.exists(missingToken)).willReturn(false);
-		given(tokenStore.get(firstToken)).willReturn(token);
-		given(tokenStore.get(secondToken)).willReturn(token);
-		given(tokenStore.get(thirdToken)).willReturn(token);
-		given(tokenStore.get(fourthToken)).willReturn(deletedToken);
 		given(token.symbol()).willReturn("HEYMA");
 		given(deletedToken.symbol()).willReturn("THEWAY");
 		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);

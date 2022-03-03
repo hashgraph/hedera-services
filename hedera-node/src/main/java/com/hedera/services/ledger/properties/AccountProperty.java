@@ -173,6 +173,17 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getLastAssociatedToken;
 		}
 	},
+	ASSOCIATED_TOKENS_COUNT {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setAssociatedTokensCount((int) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getAssociatedTokensCount;
+		}
+	},
 	MAX_AUTOMATIC_ASSOCIATIONS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {

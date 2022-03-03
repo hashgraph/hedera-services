@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -88,7 +89,7 @@ class FixedFeeSpecTest {
 				new Id(0, 0, otherDenom.num()),
 				INVALID_TOKEN_ID_IN_CUSTOM_FEES)).willReturn(token);
 		given(token.isFungibleCommon()).willReturn(true);
-		given(feeCollector.isAssociatedWith(otherDenom.asId())).willReturn(true);
+		given(tokenStore.getMerkleTokenRelationship(token, feeCollector)).willReturn(new MerkleTokenRelStatus());
 
 		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
 
@@ -114,7 +115,7 @@ class FixedFeeSpecTest {
 		given(tokenStore.loadTokenOrFailWith(
 				new Id(0, 0, otherDenom.num()),
 				INVALID_TOKEN_ID_IN_CUSTOM_FEES)).willReturn(token);
-		given(feeCollector.isAssociatedWith(otherDenom.asId())).willReturn(true);
+		given(tokenStore.getMerkleTokenRelationship(token, feeCollector)).willReturn(new MerkleTokenRelStatus());
 
 		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
 

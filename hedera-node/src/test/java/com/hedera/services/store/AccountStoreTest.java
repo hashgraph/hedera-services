@@ -88,8 +88,6 @@ class AccountStoreTest {
 
 	@Test
 	void loadsContractAsExpected() {
-		given(tokenRels.getImmutableRef(firstRelKey.asAccountTokenRel())).willReturn(firstRel);
-		given(tokenRels.getImmutableRef(secondRelKey.asAccountTokenRel())).willReturn(secondRel);
 		miscMerkleAccount.setSmartContract(true);
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		Account account = subject.loadContract(miscId);
@@ -99,8 +97,6 @@ class AccountStoreTest {
 
 	@Test
 	void failsLoadingContractWithInvalidId() {
-		given(tokenRels.getImmutableRef(firstRelKey.asAccountTokenRel())).willReturn(firstRel);
-		given(tokenRels.getImmutableRef(secondRelKey.asAccountTokenRel())).willReturn(secondRel);
 		miscMerkleAccount.setSmartContract(false);
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		TxnUtils.assertFailsWith(() -> subject.loadContract(miscId), INVALID_CONTRACT_ID);
@@ -136,8 +132,6 @@ class AccountStoreTest {
 		miscAccount.setCryptoAllowances(Collections.emptyMap());
 		miscAccount.setFungibleTokenAllowances(Collections.emptyMap());
 		miscAccount.setNftAllowances(Collections.emptyMap());
-		given(tokenRels.getImmutableRef(firstRelKey.asAccountTokenRel())).willReturn(firstRel);
-		given(tokenRels.getImmutableRef(secondRelKey.asAccountTokenRel())).willReturn(secondRel);
 
 		// when:
 		final var actualAccount = subject.loadAccount(miscId);
@@ -165,8 +159,7 @@ class AccountStoreTest {
 				.proxy(proxy.asGrpcAccount())
 				.get();
 		expectedReplacement.setLastAssociatedToken(thirdRelKey);
-		given(tokenRels.getImmutableRef(firstRelKey.asAccountTokenRel())).willReturn(firstRel);
-		given(tokenRels.getImmutableRef(secondRelKey.asAccountTokenRel())).willReturn(secondRel);
+		expectedReplacement.setAssociatedTokensCount(associatedTokensCount + 1);
 
 		// given:
 		final var model = subject.loadAccount(miscId);
@@ -216,9 +209,8 @@ class AccountStoreTest {
 				.proxy(proxy.asGrpcAccount())
 				.get();
 		expectedReplacement.setLastAssociatedToken(firstRelKey);
+		expectedReplacement.setAssociatedTokensCount(associatedTokensCount);
 
-		given(tokenRels.getImmutableRef(firstRelKey.asAccountTokenRel())).willReturn(firstRel);
-		given(tokenRels.getImmutableRef(secondRelKey.asAccountTokenRel())).willReturn(secondRel);
 		// given:
 		final var model = subject.loadAccount(miscId);
 
@@ -253,7 +245,6 @@ class AccountStoreTest {
 	private void setupAccounts() {
 		miscMerkleAccount = MerkleAccountFactory.newAccount()
 				.balance(balance)
-//				.assocTokens(firstAssocTokenId, secondAssocTokenId)
 				.expirationTime(expiry)
 				.maxAutomaticAssociations(maxAutoAssociations)
 				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
@@ -262,7 +253,7 @@ class AccountStoreTest {
 
 		miscAccount.setExpiry(expiry);
 		miscAccount.initBalance(balance);
-		miscAccount.setAssociatedTokenIds(List.of(firstAssocTokenId, secondAssocTokenId));
+		miscAccount.setAssociatedTokensCount(associatedTokensCount);
 		miscAccount.setMaxAutomaticAssociations(maxAutoAssociations);
 		miscAccount.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 		miscAccount.setProxy(proxy);
@@ -272,6 +263,7 @@ class AccountStoreTest {
 		secondRel.setPrevKey(firstRelKey);
 		firstRel.setNextKey(secondRelKey);
 		miscMerkleAccount.setLastAssociatedToken(firstRelKey);
+		miscMerkleAccount.setAssociatedTokensCount(associatedTokensCount);
 		miscAccount.setLastAssociatedToken(firstRelKey);
 
 		autoRenewAccount.setExpiry(expiry);
@@ -287,6 +279,7 @@ class AccountStoreTest {
 	private final long miscProxyAccount = 9_876L;
 	private final int alreadyUsedAutoAssociations = 12;
 	private final int maxAutoAssociations = 123;
+	private final int associatedTokensCount = 2;
 	private final Id miscId = new Id(0, 0, miscAccountNum);
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
 	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);

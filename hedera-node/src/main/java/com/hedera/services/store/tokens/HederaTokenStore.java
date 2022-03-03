@@ -50,7 +50,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,6 +66,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.ASSOCIATED_TOKENS_COUNT;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
@@ -228,20 +228,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	@Override
 	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation) {
 		return fullySanityChecked(true, aId, tokens, (account, tokenIds) -> {
-			final var lastAssociatedToken = (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
-			final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
-			var currKey = new EntityNumPair(lastAssociatedToken.value());
-			// if this lastAssociatedToken == 0 then this is account has No token associations currently
-			if (!lastAssociatedToken.equals(MISSING_NUM_PAIR)) {
-				// get All the tokenIds associated by traversing the linkedList
-				while (!currKey.equals(MISSING_NUM_PAIR)) {
-					listOfAssociatedTokens.add(currKey.asAccountTokenRel().getRight());
-					currKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), NEXT_KEY);
-				}
-			}
-
-			for (var id : tokenIds) {
-				if (listOfAssociatedTokens.contains(id)) {
+			for (var tId : tokenIds) {
+				if (tokenRelsLedger.contains(Pair.of(aId, tId))) {
 					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 				}
 			}
@@ -255,7 +243,9 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			if (validity == OK) {
-				currKey = new EntityNumPair(lastAssociatedToken.value());
+				final var lastAssociatedToken = (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
+				var associatedTokensCount = (int) accountsLedger.get(aId, ASSOCIATED_TOKENS_COUNT);
+				var currKey = new EntityNumPair(lastAssociatedToken.value());
 				for (var id : tokenIds) {
 					final var relationship = asTokenRel(aId, id);
 					tokenRelsLedger.create(relationship);
@@ -293,10 +283,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 						tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey);
 						tokenRelsLedger.set(relationship, NEXT_KEY, currKey);
 					}
+					associatedTokensCount++;
 					currKey = newKey;
 				}
+				accountsLedger.set(aId, ASSOCIATED_TOKENS_COUNT, associatedTokensCount);
+				accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, currKey);
 			}
-			accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, currKey);
 			return validity;
 		});
 	}

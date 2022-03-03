@@ -92,6 +92,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
 	private long lastAssociatedToken;
+	private int associatedTokensCount;
 
 	// As per the issue https://github.com/hashgraph/hedera-services/issues/2842 these maps will
 	// be modified to use MapValueLinkedList in the future
@@ -184,6 +185,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		}
 		if (version >= RELEASE_0240_VERSION) {
 			lastAssociatedToken = in.readLong();
+			associatedTokensCount = in.readInt();
 		}
 	}
 
@@ -207,6 +209,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		serializeTokenAllowances(out, fungibleTokenAllowances);
 		serializeNftAllowance(out, nftAllowances);
 		out.writeLong(lastAssociatedToken);
+		out.writeInt(associatedTokensCount);
 	}
 
 	/* --- Copyable --- */
@@ -231,6 +234,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				nftAllowances);
 		copied.setNftsOwned(nftsOwned);
 		copied.setLastAssociatedToken(lastAssociatedToken);
+		copied.setAssociatedTokensCount(associatedTokensCount);
 		return copied;
 	}
 
@@ -262,7 +266,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
 				Objects.equals(this.fungibleTokenAllowances, that.fungibleTokenAllowances) &&
 				Objects.equals(this.nftAllowances, that.nftAllowances) &&
-				this.lastAssociatedToken == that.lastAssociatedToken;
+				this.lastAssociatedToken == that.lastAssociatedToken &&
+				this.associatedTokensCount == that.associatedTokensCount;
 	}
 
 	@Override
@@ -284,7 +289,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				nftAllowances,
-				lastAssociatedToken);
+				lastAssociatedToken,
+				associatedTokensCount);
 	}
 
 	/* --- Bean --- */
@@ -310,6 +316,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("nftAllowances", nftAllowances)
 				.add("lastAssociation", lastAssociatedToken + "<->" + asRelationshipLiteral(lastAssociatedToken))
+				.add("associatedTokensCount", associatedTokensCount)
 				.toString();
 	}
 
@@ -426,6 +433,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setLastAssociatedToken(final long lastAssociatedToken) {
 		assertMutable("lastAssociatedToken");
 		this.lastAssociatedToken = lastAssociatedToken;
+	}
+
+	public int getAssociatedTokensCount() {
+		return associatedTokensCount;
+	}
+
+	public void setAssociatedTokensCount(final int associatedTokensCount) {
+		assertMutable("associatedTokensCount");
+		this.associatedTokensCount = associatedTokensCount;
 	}
 
 	public int getNumContractKvPairs() {

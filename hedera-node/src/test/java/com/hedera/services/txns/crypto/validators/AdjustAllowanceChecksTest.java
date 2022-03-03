@@ -24,6 +24,7 @@ import com.google.protobuf.BoolValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
@@ -233,10 +234,9 @@ class AdjustAllowanceChecksTest {
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
-		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(tokenStore.getMerkleTokenRelationship(token2Model, owner)).willReturn(new MerkleTokenRelStatus());
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		given(owner.getNftAllowances()).willReturn(existingNftAllowances);
-		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 
 
 		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
@@ -501,7 +501,7 @@ class AdjustAllowanceChecksTest {
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(owner.isAssociatedWith(token1Model.getId())).willReturn(false);
+		given(tokenStore.getMerkleTokenRelationship(token1Model, owner)).willReturn(null);
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, payer));
 	}
 
@@ -522,7 +522,7 @@ class AdjustAllowanceChecksTest {
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(payer.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(tokenStore.getMerkleTokenRelationship(token2Model, payer)).willReturn(new MerkleTokenRelStatus());
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
 
@@ -696,7 +696,7 @@ class AdjustAllowanceChecksTest {
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(owner);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(tokenStore.getMerkleTokenRelationship(token1Model, owner)).willReturn(new MerkleTokenRelStatus());
 		addExistingAllowancesAndSerials();
 	}
 
@@ -710,13 +710,12 @@ class AdjustAllowanceChecksTest {
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
-		given(payer.isAssociatedWith(token1Model.getId())).willReturn(true);
-		given(payer.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(tokenStore.getMerkleTokenRelationship(token2Model, payer)).willReturn(new MerkleTokenRelStatus());
+		given(tokenStore.getMerkleTokenRelationship(token1Model, payer)).willReturn(new MerkleTokenRelStatus());
 
 		given(payer.getCryptoAllowances()).willReturn(existingCryptoAllowances);
 		given(payer.getFungibleTokenAllowances()).willReturn(existingTokenAllowances);
 		given(payer.getNftAllowances()).willReturn(existingNftAllowances);
-		given(payer.isAssociatedWith(token2Model.getId())).willReturn(true);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);

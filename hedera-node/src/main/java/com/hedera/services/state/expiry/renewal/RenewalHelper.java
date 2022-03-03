@@ -45,7 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.context.primitives.StateView.getAssociatedTokens;
+import static com.hedera.services.context.primitives.StateView.getAssociatedTokenIds;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
@@ -141,7 +141,7 @@ public class RenewalHelper {
 		}
 
 		Pair<List<EntityId>, List<CurrencyAdjustments>> displacements = Pair.of(new ArrayList<>(), new ArrayList<>());
-		final var associatedTokens = getAssociatedTokens(tokenRels.get(), lastClassifiedAccount, Integer.MAX_VALUE);
+		final var associatedTokens = getAssociatedTokenIds(tokenRels.get(), lastClassifiedAccount, Integer.MAX_VALUE);
 		if (!associatedTokens.isEmpty()) {
 			final var grpcId = lastClassifiedEntityId.toGrpcAccountId();
 			final var currentTokens = tokens.get();

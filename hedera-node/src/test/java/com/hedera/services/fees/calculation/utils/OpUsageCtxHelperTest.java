@@ -29,21 +29,20 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
-import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
-import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -65,6 +64,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -73,13 +73,13 @@ import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.royaltyFee;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -167,17 +167,19 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsExpectedCtxForAccount() {
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
-		var mockInfo = mock(AccountInfo.class);
-		var mockTimeStamp = mock(Timestamp.class);
-		given(workingView.infoForAccount(any(), any(), anyInt())).willReturn(Optional.ofNullable(mockInfo));
-		given(mockInfo.getKey()).willReturn(key);
-		given(mockInfo.getMemo()).willReturn(memo);
-		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
-		given(mockTimeStamp.getSeconds()).willReturn(now);
-		given(mockInfo.getTokenRelationshipsCount()).willReturn(tokenRelationShipCount);
-		given(mockInfo.getMaxAutomaticTokenAssociations()).willReturn(maxAutomaticAssociations);
-		given(mockInfo.hasProxyAccountID()).willReturn(true);
+		var accounts = mock(MerkleMap.class);
+		var merkleAccount = mock(MerkleAccount.class);
+		given(workingView.accounts()).willReturn(accounts);
+		given(accounts.get(any())).willReturn(merkleAccount);
+		given(merkleAccount.getCryptoAllowances()).willReturn(Collections.emptyMap());
+		given(merkleAccount.getNftAllowances()).willReturn(Collections.emptyMap());
+		given(merkleAccount.getFungibleTokenAllowances()).willReturn(Collections.emptyMap());
+		given(merkleAccount.getAccountKey()).willReturn(asUsableFcKey(key).get());
+		given(merkleAccount.getMemo()).willReturn(memo);
+		given(merkleAccount.getExpiry()).willReturn(now);
+		given(merkleAccount.getAssociatedTokensCount()).willReturn(tokenRelationShipCount);
+		given(merkleAccount.getMaxAutomaticAssociations()).willReturn(maxAutomaticAssociations);
+		given(merkleAccount.getProxy()).willReturn(new EntityId());
 
 		final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
 
@@ -189,23 +191,19 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsExpectedCtxForCryptoApproveAccount() {
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
-		var mockInfo = mock(AccountInfo.class);
-		var mockTimeStamp = mock(Timestamp.class);
-		given(workingView.infoForAccount(any(), any(), anyInt())).willReturn(Optional.ofNullable(mockInfo));
-		given(mockInfo.getKey()).willReturn(key);
-		given(mockInfo.getMemo()).willReturn(memo);
-		given(mockInfo.getExpirationTime()).willReturn(mockTimeStamp);
-		given(mockTimeStamp.getSeconds()).willReturn(now);
-		given(mockInfo.getTokenRelationshipsCount()).willReturn(tokenRelationShipCount);
-		given(mockInfo.getMaxAutomaticTokenAssociations()).willReturn(maxAutomaticAssociations);
-		given(mockInfo.hasProxyAccountID()).willReturn(true);
-		given(mockInfo.getGrantedCryptoAllowancesList()).willReturn(List.of(cryptoAllowance));
-		given(mockInfo.getGrantedTokenAllowancesList()).willReturn(List.of(tokenAllowance));
-		given(mockInfo.getGrantedNftAllowancesList()).willReturn(List.of(nftAllowance));
-		given(mockInfo.getGrantedNftAllowancesList()).willReturn(List.of(GrantedNftAllowance.newBuilder()
-				.setTokenId(IdUtils.asToken("0.0.1000"))
-				.addAllSerialNumbers(List.of(1L, 2L, 3L)).build()));
+		var accounts = mock(MerkleMap.class);
+		var merkleAccount = mock(MerkleAccount.class);
+		given(workingView.accounts()).willReturn(accounts);
+		given(accounts.get(any())).willReturn(merkleAccount);
+		given(merkleAccount.getAccountKey()).willReturn(asUsableFcKey(key).get());
+		given(merkleAccount.getMemo()).willReturn(memo);
+		given(merkleAccount.getExpiry()).willReturn(now);
+		given(merkleAccount.getAssociatedTokensCount()).willReturn(tokenRelationShipCount);
+		given(merkleAccount.getMaxAutomaticAssociations()).willReturn(maxAutomaticAssociations);
+		given(merkleAccount.getProxy()).willReturn(new EntityId());
+		given(merkleAccount.getCryptoAllowances()).willReturn(cryptoAllowance);
+		given(merkleAccount.getFungibleTokenAllowances()).willReturn(tokenAllowance);
+		given(merkleAccount.getNftAllowances()).willReturn(nftAllowance);
 
 		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 
@@ -219,8 +217,9 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenAccountNotFound() {
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
-		given(workingView.infoForAccount(any(), any(), anyInt())).willReturn(Optional.empty());
+		var accounts = mock(MerkleMap.class);
+		given(workingView.accounts()).willReturn(accounts);
+		given(accounts.get(any())).willReturn(null);
 
 		final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
 
@@ -230,8 +229,9 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenApproveAccountNotFound() {
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
-		given(workingView.infoForAccount(any(), any(), anyInt())).willReturn(Optional.empty());
+		var accounts = mock(MerkleMap.class);
+		given(workingView.accounts()).willReturn(accounts);
+		given(accounts.get(any())).willReturn(null);
 
 		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 
@@ -415,10 +415,18 @@ class OpUsageCtxHelperTest {
 	private static final TokenID token1 = asToken("0.0.100");
 	private static final TokenID token2 = asToken("0.0.200");
 	private static final AccountID ownerId = asAccount("0.0.5000");
-	private final GrantedCryptoAllowance cryptoAllowance = GrantedCryptoAllowance.newBuilder().setSpender(spender1).setAmount(
-			10L).build();
-	private final GrantedTokenAllowance tokenAllowance = GrantedTokenAllowance.newBuilder().setSpender(spender1).setAmount(
-			10L).setTokenId(token1).build();
-	private final GrantedNftAllowance nftAllowance = GrantedNftAllowance.newBuilder().setSpender(spender1)
-			.setTokenId(token2).setApprovedForAll(false).addAllSerialNumbers(List.of(1L, 10L)).build();
+	private static final Map<EntityNum, Long> cryptoAllowance = new HashMap<>() {{
+		put(EntityNum.fromAccountId(spender1), 10L);
+	}};
+
+	private static final Map<FcTokenAllowanceId, Long> tokenAllowance = new HashMap<>() {{
+		put(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1),
+				EntityNum.fromAccountId(spender1)), 10L);
+	}};
+
+	private final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowance = new HashMap<>() {{
+		put(FcTokenAllowanceId.from(new EntityNum(1000),
+						EntityNum.fromAccountId(spender1)),
+				FcTokenAllowance.from(List.of(1L, 2L, 3L)));
+	}};
 }

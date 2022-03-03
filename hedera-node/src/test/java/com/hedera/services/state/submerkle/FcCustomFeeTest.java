@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -269,7 +270,6 @@ class FcCustomFeeTest {
 
 	@Test
 	void validationRequiresAssociatedCollectorAtUpdateForFractional() {
-		given(token.getId()).willReturn(tokenId);
 		given(token.isFungibleCommon()).willReturn(true);
 		given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
 				.willReturn(collectionAccount);
@@ -288,9 +288,8 @@ class FcCustomFeeTest {
 
 	@Test
 	void validationWorksAtUpdateForWellBehavedFractional() {
-		given(token.getId()).willReturn(tokenId);
 		given(token.isFungibleCommon()).willReturn(true);
-		given(collectionAccount.isAssociatedWith(tokenId)).willReturn(true);
+		given(tokenStore.getMerkleTokenRelationship(token, collectionAccount)).willReturn(new MerkleTokenRelStatus());
 		given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
 				.willReturn(collectionAccount);
 

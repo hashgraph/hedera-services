@@ -74,6 +74,7 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.ASSOCIATED_TOKENS_COUNT;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
@@ -160,6 +161,7 @@ class HederaTokenStoreTest {
 	private static final String name = "TOKENNAME";
 	private static final String newName = "NEWNAME";
 	private static final int maxCustomFees = 5;
+	private static final int associatedTokensCount = 2;
 	private static final long expiry = CONSENSUS_NOW + 1_234_567L;
 	private static final long newExpiry = CONSENSUS_NOW + 1_432_765L;
 	private static final long totalSupply = 1_000_000L;
@@ -492,9 +494,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void associatingRejectsAlreadyAssociatedTokens() {
-		given(accountsLedger.get(sponsor, LAST_ASSOCIATED_TOKEN)).willReturn(sponsorRelMiscKey);
-		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
-		given(tokenRelsLedger.get(sponsorMisc, NEXT_KEY)).willReturn(MISSING_NUM_PAIR);
+		given(tokenRelsLedger.contains(Pair.of(sponsor, misc))).willReturn(true);
 
 		final var status = subject.associate(sponsor, List.of(misc), false);
 
@@ -504,6 +504,7 @@ class HederaTokenStoreTest {
 	void autoAssociatingHappyPathWorksOnEmptyExistingAssociations() {
 		final var key = asTokenRel(sponsor, misc);
 
+		given(accountsLedger.get(sponsor, ASSOCIATED_TOKENS_COUNT)).willReturn(associatedTokensCount);
 		given(accountsLedger.get(sponsor, LAST_ASSOCIATED_TOKEN)).willReturn(MISSING_NUM_PAIR);
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
@@ -523,12 +524,14 @@ class HederaTokenStoreTest {
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
 		verify(accountsLedger).set(sponsor, LAST_ASSOCIATED_TOKEN, sponsorRelMiscKey);
+		verify(accountsLedger).set(sponsor, ASSOCIATED_TOKENS_COUNT, associatedTokensCount + 1);
 	}
 
 	@Test
 	void autoAssociatingHappyPathWorksOnAccountWithExistingAssociations() {
 		final var key = asTokenRel(sponsor, misc);
 
+		given(accountsLedger.get(sponsor, ASSOCIATED_TOKENS_COUNT)).willReturn(associatedTokensCount);
 		given(accountsLedger.get(sponsor, LAST_ASSOCIATED_TOKEN)).willReturn(sponsorRelNftKey);
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
@@ -549,6 +552,7 @@ class HederaTokenStoreTest {
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
 		verify(accountsLedger).set(sponsor, LAST_ASSOCIATED_TOKEN, sponsorRelMiscKey);
+		verify(accountsLedger).set(sponsor, ASSOCIATED_TOKENS_COUNT, associatedTokensCount + 1);
 	}
 
 	@Test
@@ -664,6 +668,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyNfts = 8;
 		final long startSponsorANfts = 4;
 		final long startCounterpartyANfts = 1;
+		given(accountsLedger.get(counterparty, ASSOCIATED_TOKENS_COUNT)).willReturn(0);
 		given(accountsLedger.get(counterparty, LAST_ASSOCIATED_TOKEN)).willReturn(MISSING_NUM_PAIR);
 		given(accountsLedger.get(counterparty, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(100);
 		given(accountsLedger.get(counterparty, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(0);
@@ -1454,6 +1459,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
 		given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(5);
 		given(accountsLedger.get(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
+		given(accountsLedger.get(anotherFeeCollector, ASSOCIATED_TOKENS_COUNT)).willReturn(0);
 		given(accountsLedger.get(anotherFeeCollector, LAST_ASSOCIATED_TOKEN)).willReturn(MISSING_NUM_PAIR);
 
 		final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
@@ -1461,6 +1467,7 @@ class HederaTokenStoreTest {
 		assertEquals(OK, status);
 		verify(tokenRelsLedger).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
 		verify(accountsLedger).set(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, 4);
+		verify(accountsLedger).set(anotherFeeCollector, ASSOCIATED_TOKENS_COUNT, 1);
 	}
 
 	@Test
