@@ -284,5 +284,17 @@ public enum TokenProperty implements BeanProperty<MerkleToken> {
 		public Function<MerkleToken, Object> getter() {
 			return MerkleToken::customFeeSchedule;
 		}
+	},
+	DECIMALS {
+		@Override
+		public BiConsumer<MerkleToken, Object> setter() {
+			return (a, l) -> a.setDecimals((int) l);
+		}
+
+		@Override
+		public Function<MerkleToken, Object> getter() {
+			return MerkleToken::decimals;
+		}
+
 	}
 }
