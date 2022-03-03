@@ -755,7 +755,7 @@ workflows:
   GCP-Daily-Services-Comp-NetError-4N-1C:
     triggers:
       - schedule:
-          cron: "00 3 * * *"
+          cron: "30 5 * * *"
           filters:
             branches:
               only:
@@ -780,7 +780,7 @@ workflows:
   GCP-Create-Large-Volume-NFTs-SavedState:
     triggers:
       - schedule:
-          cron: "00 3 * * *"
+          cron: "58 3 * * *"
           filters:
             branches:
               only:
@@ -808,7 +808,7 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "00 3 * * *"
+          cron: "45 5 * * *"
           filters:
             branches:
               only:
@@ -860,7 +860,7 @@ workflows:
   GCP-Daily-Services-Crypto-Restart-4N-1C:
     triggers:
       - schedule:
-          cron: "15 4 * * *"
+          cron: "15 6 * * *"
           filters:
             branches:
               only:
@@ -883,7 +883,7 @@ workflows:
   GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
     triggers:
       - schedule:
-          cron: "15 4 * * *"
+          cron: "0 3 * * *"
           filters:
             branches:
               only:
@@ -906,7 +906,7 @@ workflows:
   GCP-Daily-Services-Update-Rhel7-4N-2C:
     triggers:
       - schedule:
-          cron: "15 4 * * *"
+          cron: "15 3 * * *"
           filters:
             branches:
               only:
@@ -929,7 +929,7 @@ workflows:
   GCP-Daily-Services-Update-Rhel8-4N-2C:
     triggers:
       - schedule:
-          cron: "30 5 * * *"
+          cron: "30 3 * * *"
           filters:
             branches:
               only:
@@ -952,7 +952,7 @@ workflows:
   GCP-Daily-Services-Update-CentOS7-4N-2C:
     triggers:
       - schedule:
-          cron: "35 5 * * *"
+          cron: "45 3 * * *"
           filters:
             branches:
               only:
@@ -975,7 +975,7 @@ workflows:
   GCP-Daily-Services-Crypto-Invalid-Accounts-4N-4C:
     triggers:
       - schedule:
-          cron: "40 5 * * *"
+          cron: "0 4 * * *"
           filters:
             branches:
               only:
@@ -998,7 +998,7 @@ workflows:
   GCP-Daily-Services-Update-4N-2C:
     triggers:
       - schedule:
-          cron: "00 7 * * *"
+          cron: "30 22 * * *"
           filters:
             branches:
               only:
@@ -1021,7 +1021,7 @@ workflows:
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "05 7 * * *"
+          cron: "45 22 * * *"
           filters:
             branches:
               only:
@@ -1044,7 +1044,7 @@ workflows:
   GCP-Daily-Services-Update-Reconnect-4N-2C:
     triggers:
       - schedule:
-          cron: "10 7 * * *"
+          cron: "15 22 * * *"
           filters:
             branches:
               only:
@@ -1067,7 +1067,7 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
     triggers:
       - schedule:
-          cron: "15 8 * * *"
+          cron: "15 23 * * *"
           filters:
             branches:
               only:
@@ -1090,7 +1090,7 @@ workflows:
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
     triggers:
       - schedule:
-          cron: "20 8 * * *"
+          cron: "30 23 * * *"
           filters:
             branches:
               only:
@@ -1113,7 +1113,7 @@ workflows:
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
       - schedule:
-          cron: "25 8 * * *"
+          cron: "30 6 * * *"
           filters:
             branches:
               only:
@@ -1137,7 +1137,7 @@ workflows:
   GCP-Daily-Services-Reconnect-6N-4C:
     triggers:
       - schedule:
-          cron: "45 9 * * *"
+          cron: "40 5 * * *"
           filters:
             branches:
               only:
@@ -1161,7 +1161,7 @@ workflows:
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "50 9 * * *"
+          cron: "40 7 * * *"
           filters:
             branches:
               only:
@@ -1180,32 +1180,11 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-  GCP-Daily-Services-Global-3NReconnect2-15N-4C:
-    triggers:
-      - schedule:
-          cron: "55 9 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/15N_4C/Global3NReconnect
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Global-3NReconnect2-15N-4C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
+
   GCP-Weekly-Services-NetDelay-15N-1C:
     triggers:
       - schedule:
-          cron: "00 10 * * *"
+          cron: "0 5 * * *"
           filters:
             branches:
               only:
@@ -1228,7 +1207,7 @@ workflows:
   GCP-Daily-Services-Recovery-4N-1C:
     triggers:
       - schedule:
-          cron: "05 10 * * *"
+          cron: "55 6 * * *"
           filters:
             branches:
               only:
@@ -1247,72 +1226,7 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-  GCP-Daily-Services-Recovery2-4N-1C:
-    triggers:
-      - schedule:
-          cron: "10 10 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/Recovery
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Recovery2-4N-1C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-  GCP-Daily-Services-Recovery3-4N-1C:
-    triggers:
-      - schedule:
-          cron: "15 10 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/Recovery
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Recovery3-4N-1C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-  GCP-Daily-Services-Recovery4-4N-1C:
-    triggers:
-      - schedule:
-          cron: "20 10 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_1C/Recovery
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Recovery4-4N-1C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
+
   GCP-Weekly-Services-Query-Restart-Performance-7N-7C:
     triggers:
       - schedule:
@@ -1339,7 +1253,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
-          cron: "25 10 * * *"
+          cron: "35 7 * * *"
           filters:
             branches:
               only:
@@ -1362,7 +1276,7 @@ workflows:
   GCP-Daily-Services-Comp-Restart-Performance-Random-7N-7C:
     triggers:
       - schedule:
-          cron: "30 11 * * *"
+          cron: "40 4 * * *"
           filters:
             branches:
               only:
@@ -1386,7 +1300,7 @@ workflows:
   GCP-Daily-Services-HTS-Restart-Performance-7N-7C:
     triggers:
       - schedule:
-          cron: "30 12 * * *"
+          cron: "30 4 * * *"
           filters:
             branches:
               only:
@@ -1409,7 +1323,7 @@ workflows:
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
     triggers:
       - schedule:
-          cron: "35 12 * * *"
+          cron: "15 7 * * *"
           filters:
             branches:
               only:
@@ -1428,32 +1342,11 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-  GCP-Daily-Services-Comp-Reconnect2-6N-1C:
-    triggers:
-      - schedule:
-          cron: "40 12 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/Reconnect
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Reconnect2-6N-1C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
+
   GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "45 13 * * *"
+          cron: "25 7 * * *"
           filters:
             branches:
               only:
@@ -1472,32 +1365,11 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-  GCP-Daily-Services-Comp-NI-Reconnect-Correctness2-6N-1C:
-    triggers:
-      - schedule:
-          cron: "50 13 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/NIReconnectCorrectness
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-NI-Reconnect-Correctness2-6N-1C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
+
   GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C:
     triggers:
       - schedule:
-          cron: "55 13 * * *"
+          cron: "25 8 * * *"
           filters:
             branches:
               only:
@@ -1516,32 +1388,11 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-  GCP-Daily-Services-Comp-ND-Reconnect-Correctness2-6N-1C:
-    triggers:
-      - schedule:
-          cron: "0 14 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/6N_1C/NDReconnectCorrectness
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-ND-Reconnect-Correctness2-6N-1C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
+
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
     triggers:
       - schedule:
-          cron: "05 14 * * *"
+          cron: "25 8 * * *"
           filters:
             branches:
               only:
@@ -1747,7 +1598,6 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression/; git checkout -b 02051-split-ci-jobs origin/02051-split-ci-jobs; git pull; cd -          
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
