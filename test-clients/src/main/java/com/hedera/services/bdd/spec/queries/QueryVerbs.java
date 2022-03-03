@@ -115,9 +115,8 @@ public class QueryVerbs {
 		return new HapiContractCallLocal(getABIFor(FUNCTION, functionName, contract), contract, params);
 	}
 
-	/*  Note:
-		This function provides for the proper execution of an isolated spec, which is validating proper handling of
-		INVALID_CONTRACT_ID response code
+	/** This function provides for the proper execution of specs, which execute contract local calls with a function ABI
+	    instead of function name
 	*/
 	public static HapiContractCallLocal contractCallLocalWithFunctionAbi(final String contract,
 																		 final String abi,

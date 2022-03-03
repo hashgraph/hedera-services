@@ -2,7 +2,7 @@ pragma solidity ^0.8.0;
 
 import "./SubLevelTransferringContract.sol";
 
-contract TransferringContract {
+contract TopLevelTransferring {
 
     // @notice Should be able to send tinybars as initialValue
     constructor() payable {}

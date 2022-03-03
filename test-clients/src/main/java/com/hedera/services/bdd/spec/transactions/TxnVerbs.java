@@ -325,6 +325,13 @@ public class TxnVerbs {
 		return new HapiContractCall(getABIFor(FUNCTION, functionName, contract), contract, params);
 	}
 
+	/** This function provides for the proper execution of specs, which execute contract calls with a function ABI instead of
+	 function name
+	 */
+	public static HapiContractCall contractCallWithFunctionAbi(String contract, String abi, Object... params) {
+		return new HapiContractCall(abi, contract, params);
+	}
+
 	public static HapiContractCall contractCall(String contract, String abi, Function<HapiApiSpec, Object[]> fn) {
 		return new HapiContractCall(abi, contract, fn);
 	}
@@ -376,7 +383,28 @@ public class TxnVerbs {
 		}
 	}
 
-	/*	This method enables the developer to create a file and deploy a contract with a single method call.
+	/**  Note:
+		Previously - when creating contracts we were passing a name, chosen by the developer, which can differentiate
+		from the name of the contract.
+		The new implementation of the contract creation depends on the exact name of the contract, which means, that we
+		can not create multiple instances of the contract with the same name.
+		Therefore - in order to provide each contract with a unique name - the developer must attach a suffix to happily
+		create multiple instances of the same contract, but with different names.
+		Example:
+		final var contract = "TransferringContract";
+	    newContractCreate(contract).balance(10_000L).payingWith(ACCOUNT),
+	    newContractCreate(contract, to).balance(10_000L).payingWith(ACCOUNT)
+	 */
+	public static HapiContractCreate newContractCreate(final String contractName, final String suffix, final Object... constructorParams) {
+		if (constructorParams.length > 0) {
+			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
+			return new HapiContractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);
+		} else {
+			return new HapiContractCreate(contractName + suffix).bytecode(contractName);
+		}
+	}
+
+	/**	This method enables the developer to create a file and deploy a contract with a single method call.
 		The execution of the method requires the spec context, therefore the invocation is not straightforward:
 		"withOpContext((spec, log) -> contractDeploy(contractName, spec).execFor(spec));"
 		It can be convenient when the developer deploys a nested contract, since both the creation of the outer and the inner contract
