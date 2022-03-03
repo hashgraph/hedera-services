@@ -90,6 +90,22 @@ class UpdateTrackingLedgerAccountTest {
 	}
 
 	@Test
+	void missingWrappedAccountIsNotATokenProxy() {
+		final var subject = new UpdateTrackingLedgerAccount<>(targetAddress, null);
+
+		assertFalse(subject.wrappedAccountIsTokenProxy());
+	}
+
+	@Test
+	void wrappedTokenProxyIsRecognized() {
+		final var tokenProxyAccount = parentState.new WorldStateTokenAccount(targetAddress, proxyId);
+
+		final var subject = new UpdateTrackingLedgerAccount<>(tokenProxyAccount, null);
+
+		assertTrue(subject.wrappedAccountIsTokenProxy());
+	}
+
+	@Test
 	void justPropagatesBalanceChangeWithNullTrackingAccounts() {
 		final var account = parentState.new WorldStateAccount(
 				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
@@ -99,6 +115,7 @@ class UpdateTrackingLedgerAccountTest {
 		subject.setBalance(Wei.of(newBalance));
 
 		assertEquals(newBalance, subject.getBalance().toLong());
+		assertFalse(subject.wrappedAccountIsTokenProxy());
 	}
 
 	@Test

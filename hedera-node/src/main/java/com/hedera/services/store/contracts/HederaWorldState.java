@@ -67,7 +67,6 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
@@ -218,7 +217,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		if (entityAccess.isTokenAccount(address) && dynamicProperties.isRedirectTokenCallsEnabled()) {
-			return new WorldStateTokenAccount(address, EntityId.fromGrpcTokenId(tokenIdFromEvmAddress(address)));
+			return new WorldStateTokenAccount(address, EntityId.fromAddress(address));
 		}
 
 		final var accountId = accountIdFromEvmAddress(address);
@@ -375,6 +374,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 	}
 
 	public class WorldStateTokenAccount extends WorldStateAccount {
+		public static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;
 
 		public WorldStateTokenAccount(final Address address,
 									  final EntityId proxyAccount) {
@@ -389,7 +389,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public long getNonce() {
-			return -1;
+			return TOKEN_PROXY_ACCOUNT_NONCE;
 		}
 	}
 
