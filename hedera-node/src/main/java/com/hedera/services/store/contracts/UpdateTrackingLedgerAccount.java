@@ -148,10 +148,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 		this.nonce = value;
 	}
 
-	public long getWrappedAccountNonce() {
-		return account!=null ? account.getNonce() : 0;
-	}
-
 	public boolean wrappedAccountIsTokenProxy() {
 		return account != null && account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
 	}
