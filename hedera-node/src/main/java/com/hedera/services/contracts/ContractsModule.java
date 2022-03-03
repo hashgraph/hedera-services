@@ -33,6 +33,7 @@ import com.hedera.services.contracts.operation.HederaDelegateCallOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeCopyOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeHashOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
+import com.hedera.services.contracts.operation.HederaSLoadOperation;
 import com.hedera.services.contracts.operation.HederaLogOperation;
 import com.hedera.services.contracts.operation.HederaSLoadOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
