@@ -130,6 +130,7 @@ import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
@@ -643,7 +644,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(associateOp.accountId());
-			accountId.asEvmAddress();
 			final var hasRequiredSigs = validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
@@ -1335,9 +1335,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	boolean isToken(final MessageFrame frame, final Address address) {
-		var account = frame.getWorldUpdater().get(address);
+		final var account = frame.getWorldUpdater().get(address);
 		if (account != null) {
-			return account.getNonce() == -1;
+			return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
 		}
 		return false;
 	}
