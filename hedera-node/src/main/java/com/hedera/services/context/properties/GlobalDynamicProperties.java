@@ -101,6 +101,7 @@ public class GlobalDynamicProperties {
 	private int maxAllowanceLimitPerAccount;
 	private boolean exportPrecompileResults;
 	private boolean create2Enabled;
+	private boolean enableTraceability;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -184,6 +185,7 @@ public class GlobalDynamicProperties {
 		maxAllowanceLimitPerAccount = properties.getIntProperty("hedera.allowances.maxAccountLimit");
 		exportPrecompileResults = properties.getBooleanProperty("contracts.precompile.exportRecordResults");
 		create2Enabled = properties.getBooleanProperty("contracts.allowCreate2");
+		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
 	}
 
 	public int maxTokensPerAccount() {
@@ -424,6 +426,10 @@ public class GlobalDynamicProperties {
 
 	public boolean shouldExportPrecompileResults() {
 		return exportPrecompileResults;
+	}
+
+	public boolean shouldEnableTraceability() {
+		return enableTraceability;
 	}
 
 	public boolean isCreate2Enabled() {
