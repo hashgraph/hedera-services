@@ -21,6 +21,8 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
@@ -68,6 +70,18 @@ class DecodingFacadeTest {
 			"0x78b6391800000000000000000000000000000000000000000000000000000000000004940000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000004920000000000000000000000000000000000000000000000000000000000000492");
 	private static final Bytes INVALID_INPUT = Bytes.fromHexString("0x00000000");
 
+	private static final Bytes OWNER_OF_INPUT = Bytes.fromHexString("0x6352211e0000000000000000000000000000000000000000000000000000000000000001");
+
+	private static final Bytes TOKEN_URI_INPUT = Bytes.fromHexString("0xc87b56dd0000000000000000000000000000000000000000000000000000000000000001");
+
+	private static final Bytes BALANCE_INPUT = Bytes.fromHexString("0x70a08231000000000000000000000000000000000000000000000000000000000000059f");
+
+	private static final Bytes TRANSFER_INPUT = Bytes.fromHexString("0xa9059cbb00000000000000000000000000000000000000000000000000000000000005a50000000000000000000000000000000000000000000000000000000000000002");
+
+	private static final Bytes TRANSFER_FROM_FUNGIBLE_INPUT = Bytes.fromHexString("0x23b872dd00000000000000000000000000000000000000000000000000000000000005aa00000000000000000000000000000000000000000000000000000000000005ab0000000000000000000000000000000000000000000000000000000000000005");
+
+	private static final Bytes TRANSFER_FROM_NON_FUNGIBLE_INPUT = Bytes.fromHexString("0x23b872dd00000000000000000000000000000000000000000000000000000000000003e900000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
+
 	@Test
 	void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
 		final var decodedInput =
@@ -107,6 +121,57 @@ class DecodingFacadeTest {
 		assertTrue(decodedInput.tokenType().getTokenNum() > 0);
 		assertEquals(33, decodedInput.amount());
 		assertEquals(0, decodedInput.serialNos().size());
+	}
+
+	@Test
+	void decodeOwnerOfInput() {
+		final var decodedInput = subject.decodeOwnerOf(OWNER_OF_INPUT);
+
+		assertEquals(1, decodedInput.tokenId());
+	}
+
+	@Test
+	void decodeTokenUriInput() {
+		final var decodedInput = subject.decodeTokenUriNFT(TOKEN_URI_INPUT);
+
+		assertEquals(1, decodedInput.tokenId());
+	}
+
+	@Test
+	void decodeBalanceInput() {
+		final var decodedInput = subject.decodeBalanceOf(BALANCE_INPUT, a -> a);
+
+		assertTrue(decodedInput.accountId().getAccountNum() > 0);
+	}
+
+	@Test
+	void decodeTransferInput() {
+		final var decodedInput = subject.decodeErcTransfer(TRANSFER_INPUT, TokenID.getDefaultInstance(), AccountID.getDefaultInstance(), a -> a);
+		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers().get(0);
+
+		assertTrue(fungibleTransfer.receiver.getAccountNum() > 0);
+		assertEquals(2, fungibleTransfer.amount);
+	}
+
+	@Test
+	void decodeTransferFromFungibleInput() {
+		final var decodedInput = subject.decodeERCTransferFrom(TRANSFER_FROM_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),true, a -> a);
+		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers();
+
+		assertTrue(fungibleTransfer.get(0).receiver.getAccountNum() > 0);
+		assertTrue(fungibleTransfer.get(1).sender.getAccountNum() > 0);
+		assertEquals(5, fungibleTransfer.get(0).amount);
+	}
+
+	@Test
+	void decodeTransferFromNonFungibleInput() {
+		final var decodedInput = subject.decodeERCTransferFrom(TRANSFER_FROM_NON_FUNGIBLE_INPUT,
+				TokenID.getDefaultInstance(),false, a -> a);
+		final var nftTransfer = decodedInput.get(0).nftExchanges().get(0).asGrpc();
+
+		assertTrue(nftTransfer.getSenderAccountID().getAccountNum() > 0);
+		assertTrue(nftTransfer.getReceiverAccountID().getAccountNum() > 0);
+		assertEquals(1, nftTransfer.getSerialNumber());
 	}
 
 	@Test

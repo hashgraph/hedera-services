@@ -31,12 +31,16 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -95,6 +99,15 @@ class EntityIdTest {
 
 		final var actual = EntityId.fromIdentityCode((int) BitPackUtils.MAX_NUM_ALLOWED);
 
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void useEvmAddressDirectlyIfMirror() {
+		final byte[] mockAddr = unhex("000000000000000000000000000000000cdefbbb");
+		final var typedAddress = Address.wrap(Bytes.wrap(mockAddr));
+		final var expected = EntityId.fromGrpcTokenId(tokenIdFromEvmAddress(typedAddress));
+		final var actual = EntityId.fromAddress(typedAddress);
 		assertEquals(expected, actual);
 	}
 
