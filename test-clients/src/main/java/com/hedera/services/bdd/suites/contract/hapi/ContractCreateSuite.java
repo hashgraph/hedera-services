@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.contract.hapi;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -29,7 +30,6 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -42,6 +42,7 @@ import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -142,6 +143,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						gasLimitOverMaxGasLimitFailsPrecheck(),
 						vanillaSuccess(),
 						propagatesNestedCreations(),
+						blockTimestampIsConsensusTime(),
 				}
 		);
 	}
@@ -672,7 +674,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var subop01 = getTxnRecord("createTX").saveTxnRecordToRegistry("createTXRec");
-							CustomSpecAssert.allRunFor(spec, subop01);
+							allRunFor(spec, subop01);
 
 							final var gasUsed = spec.registry().getTransactionRecord("createTXRec")
 									.getContractCreateResult().getGasUsed();
@@ -692,7 +694,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var subop01 = getTxnRecord("createTX").saveTxnRecordToRegistry("createTXRec");
-							CustomSpecAssert.allRunFor(spec, subop01);
+							allRunFor(spec, subop01);
 
 							final var gasUsed = spec.registry().getTransactionRecord("createTXRec")
 									.getContractCreateResult().getGasUsed();
@@ -711,6 +713,33 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate("testContract").bytecode("contractFile").gas(101L).hasPrecheck(
 								MAX_GAS_LIMIT_EXCEEDED),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	HapiApiSpec blockTimestampIsConsensusTime() {
+		final var initcode = "initcode";
+		final var blockTimeLogger = "blockTimeLogger";
+		final var timeLoggingTxn = "timeLoggingTxn";
+
+		return defaultHapiSpec("BlockTimestampIsConsensusTime")
+				.given(
+						fileCreate(initcode).path(ContractResources.EMIT_BLOCKTIME_PATH),
+						contractCreate(blockTimeLogger).bytecode(initcode)
+				).when(
+						contractCall(blockTimeLogger, ContractResources.EMIT_TIME_ABI)
+								.via(timeLoggingTxn)
+				).then(
+						withOpContext((spec, opLog) -> {
+							final var recordOp = getTxnRecord(timeLoggingTxn);
+							allRunFor(spec, recordOp);
+							final var record = recordOp.getResponseRecord();
+							final var consensusSecond = record.getConsensusTimestamp().getSeconds();
+							final var logs = record.getContractCallResult().getLogInfoList();
+							assertEquals(1, logs.size());
+							final var blockTimestamp = Longs.fromByteArray(
+									Arrays.copyOfRange(logs.get(0).getData().toByteArray(), 24, 32));
+							assertEquals(consensusSecond, blockTimestamp);
+						})
 				);
 	}
 

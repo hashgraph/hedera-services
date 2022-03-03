@@ -124,7 +124,10 @@ public class ContractResources {
 	public static final String NESTED_TRANSFER_CONTRACT_2_PATH = bytecodePath("NestedTransferContract2");
 	public static final String OUTER_CREATOR_PATH = bytecodePath("OuterCreator");
 	public static final String VARIOUS_CREATE2_CALLS_PATH = bytecodePath("VariousCreate2Calls");
+	public static final String EMIT_BLOCKTIME_PATH = bytecodePath("EmitBlockTimestamp");
 
+	public static final String EMIT_TIME_ABI = "{\"inputs\":[],\"name\":\"logNow\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String VARIOUS_CALLS_NORMAL_ABI = "{\"inputs\":[],\"name\":\"makeNormalCall\"," +
 			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"" +
 			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";

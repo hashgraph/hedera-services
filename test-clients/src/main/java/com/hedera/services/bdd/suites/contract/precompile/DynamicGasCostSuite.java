@@ -22,21 +22,18 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,7 +46,6 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
@@ -266,6 +262,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				);
 	}
 
+	// https://github.com/hashgraph/hedera-services/issues/2868
 	private HapiApiSpec inlineCreate2CanFailSafely() {
 		final var tcValue = 1_234L;
 		final var creation = "creation";
@@ -378,6 +375,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	}
 
 	// https://github.com/hashgraph/hedera-services/issues/2867
+	// https://github.com/hashgraph/hedera-services/issues/2868
 	private HapiApiSpec create2FactoryWorksAsExpected() {
 		final var tcValue = 1_234L;
 		final var creation2 = "create2Txn";
@@ -587,7 +585,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						mintToken(nft, List.of(
 								ByteString.copyFromUtf8("PRICELESS")
 						)),
-						tokenUpdate(nft).supplyKey(() -> aliasContractIdKey(userAliasAddr.get()))
+						tokenUpdate(nft).supplyKey(() -> Utils.aliasContractIdKey(userAliasAddr.get()))
 				).when(
 						withOpContext((spec, opLog) -> {
 							final var registry = spec.registry();
@@ -667,9 +665,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								recordWith().status(ACCOUNT_STILL_OWNS_NFTS)),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nft, 1),
 
-						// https://github.com/hashgraph/hedera-services/issues/2876 (mint via delegatable_contract_id
-						//key)
-						tokenUpdate(nft).supplyKey(() -> aliasDelegateContractKey(userAliasAddr.get())),
+						// https://github.com/hashgraph/hedera-services/issues/2876 (mint via delegatable_contract_id)
+						tokenUpdate(nft).supplyKey(() -> Utils.aliasDelegateContractKey(userAliasAddr.get())),
 						sourcing(() -> contractCall(
 								userAliasAddr.get(),
 								PC2_USER_HELPER_MINT_ABI,
@@ -686,18 +683,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 							final var ftId = registry.getTokenID(ft);
 							final var nftId = registry.getTokenID(nft);
 							b.setTransfers(TransferList.newBuilder()
-									.addAccountAmounts(aaWith(tt, -666))
-									.addAccountAmounts(aaWith(userMirrorAddr.get(), +666)));
+									.addAccountAmounts(Utils.aaWith(tt, -666))
+									.addAccountAmounts(Utils.aaWith(userMirrorAddr.get(), +666)));
 							b.addTokenTransfers(TokenTransferList.newBuilder()
 									.setToken(ftId)
-									.addTransfers(aaWith(tt, -6))
-									.addTransfers(aaWith(userMirrorAddr.get(), +6)))
+									.addTransfers(Utils.aaWith(tt, -6))
+									.addTransfers(Utils.aaWith(userMirrorAddr.get(), +6)))
 									.addTokenTransfers(TokenTransferList.newBuilder()
 											.setToken(nftId)
 											.addNftTransfers(NftTransfer.newBuilder()
 													.setSerialNumber(2L)
 													.setSenderAccountID(tt)
-													.setReceiverAccountID(aa(userMirrorAddr.get()))));
+													.setReceiverAccountID(Utils.accountId(userMirrorAddr.get()))));
 						}).signedBy(DEFAULT_PAYER, TOKEN_TREASURY),
 						sourcing(() -> getContractInfo(userLiteralId.get()).logged())
 				);
@@ -1064,7 +1061,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(Utils.asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1130,7 +1127,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(Utils.asToken(id))),
 						mintToken(VANILLA_TOKEN, amount)
 				).when(
 						withOpContext(
@@ -1193,7 +1190,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						tokenCreate(VANILLA_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(Utils.asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1254,7 +1251,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(10L)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(Utils.asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1319,12 +1316,12 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(10L)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(Utils.asToken(id))),
 						tokenCreate(KNOWABLE_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(10L)
-								.exposingCreatedIdTo(id -> knowableTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> knowableTokenID.set(Utils.asToken(id)))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1396,12 +1393,12 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(10)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(Utils.asToken(id))),
 						tokenCreate(KNOWABLE_TOKEN)
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(10)
-								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id)))
+								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(Utils.asToken(id)))
 				)
 				.when(
 						withOpContext(
@@ -1475,7 +1472,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
 								.initialSupply(0)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(Utils.asToken(id))),
 						mintToken(VANILLA_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						cryptoUpdate(TOKEN_TREASURY).key(MULTI_KEY)
@@ -1554,7 +1551,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
 								.initialSupply(0)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(Utils.asToken(id))),
 						mintToken(VANILLA_TOKEN, 10),
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						cryptoUpdate(TOKEN_TREASURY).key(MULTI_KEY)
@@ -1636,7 +1633,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
 								.initialSupply(0)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(Utils.asToken(id))),
 						mintToken(VANILLA_TOKEN, 20),
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						tokenAssociate(SECOND_ACCOUNT, VANILLA_TOKEN),
@@ -1724,7 +1721,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
 								.initialSupply(0)
-								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+								.exposingCreatedIdTo(id -> vanillaTokenID.set(Utils.asToken(id))),
 						mintToken(VANILLA_TOKEN,
 								List.of(metadata("firstMemo"),
 										metadata("secondMemo"),
@@ -1821,48 +1818,5 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 					create2Addr.get(),
 					mirrorAddr.get());
 		});
-	}
-
-	private static TokenID asToken(String v) {
-		long[] nativeParts = asDotDelimitedLongArray(v);
-		return TokenID.newBuilder()
-				.setShardNum(nativeParts[0])
-				.setRealmNum(nativeParts[1])
-				.setTokenNum(nativeParts[2])
-				.build();
-	}
-
-	private AccountAmount aaWith(final AccountID account, final long amount) {
-		return AccountAmount.newBuilder()
-				.setAccountID(account)
-				.setAmount(amount)
-				.build();
-	}
-
-	private AccountAmount aaWith(final String hexedEvmAddress, final long amount) {
-		return AccountAmount.newBuilder()
-				.setAccountID(aa(hexedEvmAddress))
-				.setAmount(amount)
-				.build();
-	}
-
-	private AccountID aa(final String hexedEvmAddress) {
-		return AccountID.newBuilder().setAlias(ByteString.copyFrom(unhex(hexedEvmAddress))).build();
-	}
-
-	private Key aliasContractIdKey(final String hexedEvmAddress) {
-		return Key.newBuilder()
-				.setContractID(ContractID.newBuilder()
-						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress)))
-				).build();
-
-	}
-
-	private Key aliasDelegateContractKey(final String hexedEvmAddress) {
-		return Key.newBuilder()
-				.setDelegatableContractId(ContractID.newBuilder()
-						.setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(hexedEvmAddress)))
-				).build();
-
 	}
 }
