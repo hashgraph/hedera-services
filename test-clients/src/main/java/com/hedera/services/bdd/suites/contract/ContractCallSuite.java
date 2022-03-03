@@ -41,17 +41,22 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.fee.FeeBuilder;
+import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -64,6 +69,11 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_INSERT;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_REMOVE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.JURISDICTION_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.JURISDICTION_ISVALID_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_ADD_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_OWNER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_SEVEN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OC_TOKEN_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SYMBOL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_ERC20_CONSTRUCTOR_ABI;
@@ -73,6 +83,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_TAKE_TICKET;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_USER_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_WORK_TICKET;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.literalInitcodeFor;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -96,6 +107,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -158,8 +171,94 @@ public class ContractCallSuite extends HapiApiSuite {
 				gasLimitOverMaxGasLimitFailsPrecheck(),
 				imapUserExercise(),
 				workingHoursDemo(),
-				deletedContractsCannotBeUpdated()
+				deletedContractsCannotBeUpdated(),
+				bitcarbonTestStillPasses()
 		});
+	}
+
+	private HapiApiSpec bitcarbonTestStillPasses() {
+		final var addressInitcode = "addressInitcode";
+		final var addressContract = "addressContract";
+		final var jurisdictionInitcode = "jurisdictionInitcode";
+		final var jurisdictionContract = "jurisdictionContract";
+		final var mintersInitcode = "mintersInitcode";
+		final var mintersContract = "mintersContract";
+		final var historicalAddress = "1234567890123456789012345678901234567890";
+
+		final AtomicReference<byte[]> nyJurisCode = new AtomicReference<>();
+		final AtomicReference<byte[]> defaultPayerMirror = new AtomicReference<>();
+		final AtomicReference<String> addressBookMirror = new AtomicReference<>();
+		final AtomicReference<String> jurisdictionMirror = new AtomicReference<>();
+		final var addJurisTxn = "addJurisTxn";
+
+		return defaultHapiSpec("BitcarbonTestStillPasses")
+				.given(
+						withOpContext((spec, opLog) -> defaultPayerMirror.set(
+								asSolidityAddress(spec.registry().getAccountID(DEFAULT_PAYER)))),
+						sourcing(() -> createLargeFile(
+								DEFAULT_PAYER, addressInitcode, literalInitcodeFor("AddressBook"))),
+						contractCreate(addressContract)
+								.bytecode(addressInitcode)
+								.exposingNumTo(num -> addressBookMirror.set(
+										asHexedSolidityAddress(0, 0, num))),
+						sourcing(() -> createLargeFile(
+								DEFAULT_PAYER, jurisdictionInitcode, literalInitcodeFor("Jurisdictions"))),
+						contractCreate(jurisdictionContract)
+								.bytecode(jurisdictionInitcode)
+								.exposingNumTo(num -> jurisdictionMirror.set(
+										asHexedSolidityAddress(0, 0, num)))
+								.withExplicitParams(() -> explicitJurisdictionConsParams),
+						sourcing(() -> createLargeFile(
+								DEFAULT_PAYER, mintersInitcode,
+								bookInterpolated(
+										literalInitcodeFor("Minters").toByteArray(),
+										addressBookMirror.get()))),
+						contractCreate(mintersContract)
+								.bytecode(mintersInitcode)
+								.withExplicitParams(() -> String.format(
+										explicitMinterConsParamsTpl, jurisdictionMirror.get()))
+				).when(
+						contractCall(mintersContract)
+								.withExplicitParams(() -> String.format(
+										explicitMinterConfigParamsTpl, jurisdictionMirror.get())),
+						contractCall(jurisdictionContract)
+								.withExplicitParams(() -> explicitJurisdictionsAddParams)
+								.via(addJurisTxn)
+								.gas(1_000_000),
+						getTxnRecord(addJurisTxn).exposingFilteredCallResultVia(
+								JURISDICTION_ABI,
+								event -> event.name.equals("JurisdictionAdded"),
+								data -> nyJurisCode.set((byte[]) data.get(0))),
+						sourcing(() -> logIt("NY juris code is " + CommonUtils.hex(nyJurisCode.get())))
+				).then(
+						sourcing(() -> contractCallLocal(
+								jurisdictionContract, JURISDICTION_ISVALID_ABI, nyJurisCode.get()
+						).has(resultWith()
+								.resultThruAbi(
+										JURISDICTION_ISVALID_ABI, isLiteralResult(new Object[] { Boolean.TRUE })))),
+						contractCallLocal(
+								mintersContract, MINT_SEVEN_ABI
+						).has(resultWith()
+								.resultThruAbi(
+										MINT_SEVEN_ABI, isLiteralResult(new Object[] { BigInteger.valueOf(7L) }))),
+						sourcing(() -> contractCallLocal(
+								mintersContract, MINT_OWNER_ABI
+						).has(resultWith()
+								.resultThruAbi(
+										MINT_OWNER_ABI, isLiteralResult(new Object[] {
+												defaultPayerMirror.get()
+										})))),
+						sourcing(() -> contractCallLocal(
+								jurisdictionContract, MINT_OWNER_ABI
+						).has(resultWith()
+								.resultThruAbi(
+										MINT_OWNER_ABI, isLiteralResult(new Object[] {
+												defaultPayerMirror.get()
+										})))),
+						sourcing(() -> contractCall(
+								mintersContract, MINT_ADD_ABI, historicalAddress, "Peter", nyJurisCode.get())
+								.gas(1_000_000))
+				);
 	}
 
 	private HapiApiSpec deletedContractsCannotBeUpdated() {
@@ -627,8 +726,13 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCreate("fuse").bytecode("bytecode").gas(300_000)
 				).when(
 						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
+								.scrambleTxnBody(
+										tx -> {
+											System.out.println(" tx - " + Bytes.wrap(tx.toByteArray()));
+											return tx;
+										})
 				).then(
-						getTxnRecord("lightTxn").logged()
+						getTxnRecord("lightTxn").logged().exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())))
 				);
 	}
 
@@ -1371,4 +1475,24 @@ public class ContractCallSuite extends HapiApiSuite {
 	protected Logger getResultsLogger() {
 		return log;
 	}
+
+	private ByteString bookInterpolated(final byte[] jurisdictionInitcode, final String addressBookMirror) {
+		return ByteString.copyFrom(
+				new String(jurisdictionInitcode)
+						.replaceAll("_+AddressBook.sol:AddressBook_+", addressBookMirror)
+						.getBytes());
+	}
+
+	private static final String explicitJurisdictionConsParams =
+			"45fd06740000000000000000000000001234567890123456789012345678901234567890";
+	private static final String explicitMinterConsParamsTpl =
+			"1c26cc85%s0000000000000000000000001234567890123456789012345678901234567890";
+	private static final String explicitMinterConfigParamsTpl =
+			"da71addf000000000000000000000000%s";
+	private static final String explicitJurisdictionsAddParams =
+			"218c66ea0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000" +
+					"0000000000000000000000000000000000000339000000000000000000000000123456789012345678901234" +
+					"5678901234567890000000000000000000000000123456789012345678901234567890123456789000000000" +
+					"000000000000000000000000000000000000000000000000000000026e790000000000000000000000000000" +
+					"00000000000000000000000000000000";
 }

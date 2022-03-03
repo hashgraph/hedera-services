@@ -60,6 +60,31 @@ contract Create2Factory {
 
         emit Deployed(addr, _salt);
     }
+
+    function wronglyDeployTwice(bytes memory bytecode, uint _salt) public payable {
+        address addr;
+
+        assembly {
+            addr := create2(
+                callvalue(), 
+                add(bytecode, 0x20),
+                mload(bytecode), 
+                _salt 
+            )
+
+            addr := create2(
+                callvalue(), 
+                add(bytecode, 0x20),
+                mload(bytecode), 
+                _salt 
+            )
+
+            // Must fail because this address would already exist from first create2
+            if iszero(extcodesize(addr)) {
+                revert(0, 0)
+            }
+        }
+    }
 }
 
 contract TestContract {
