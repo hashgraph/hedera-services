@@ -29,8 +29,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
@@ -235,23 +235,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setAlias(alias);
 	}
 
-	public EntityNumPair getLastAssociatedToken() {
-		return new EntityNumPair(state().getLastAssociatedToken());
+	public TokenAssociationMetadata getTokenAssociationMetadata() {
+		return state().getTokenAssociationMetadata();
 	}
 
-	public void setLastAssociatedToken(final EntityNumPair lastAssociatedToken) {
-		throwIfImmutable("Cannot change this account's lastAssociatedToken if it is immutable");
-		state().setLastAssociatedToken(lastAssociatedToken.value());
+	public void setTokenAssociationMetadata(final TokenAssociationMetadata tokenAssociationMetaData) {
+		throwIfImmutable("Cannot change this account's tokenAssociationMetaData if it is immutable");
+		state().setTokenAssociationMetadata(tokenAssociationMetaData);
 	}
 
-	public int getAssociatedTokensCount() {
-		return state().getAssociatedTokensCount();
-	}
-
-	public void setAssociatedTokensCount(final int associatedTokensCount) {
-		throwIfImmutable("Cannot change this account's associatedTokensCount if it is immutable");
-		state().setAssociatedTokensCount(associatedTokensCount);
-	}
 	public long getBalance() {
 		return state().balance();
 	}

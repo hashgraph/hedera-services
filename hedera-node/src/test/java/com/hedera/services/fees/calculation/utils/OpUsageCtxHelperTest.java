@@ -35,6 +35,7 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -166,6 +167,7 @@ class OpUsageCtxHelperTest {
 	void returnsExpectedCtxForAccount() {
 		var accounts = mock(MerkleMap.class);
 		var merkleAccount = mock(MerkleAccount.class);
+		var tokenAssociationMetadata = mock(TokenAssociationMetadata.class);
 		given(workingView.accounts()).willReturn(accounts);
 		given(accounts.get(any())).willReturn(merkleAccount);
 		given(merkleAccount.getCryptoAllowances()).willReturn(Collections.emptyMap());
@@ -174,7 +176,8 @@ class OpUsageCtxHelperTest {
 		given(merkleAccount.getAccountKey()).willReturn(asUsableFcKey(key).get());
 		given(merkleAccount.getMemo()).willReturn(memo);
 		given(merkleAccount.getExpiry()).willReturn(now);
-		given(merkleAccount.getAssociatedTokensCount()).willReturn(tokenRelationShipCount);
+		given(merkleAccount.getTokenAssociationMetadata()).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(tokenRelationShipCount);
 		given(merkleAccount.getMaxAutomaticAssociations()).willReturn(maxAutomaticAssociations);
 		given(merkleAccount.getProxy()).willReturn(new EntityId());
 
@@ -190,12 +193,14 @@ class OpUsageCtxHelperTest {
 	void returnsExpectedCtxForCryptoApproveAccount() {
 		var accounts = mock(MerkleMap.class);
 		var merkleAccount = mock(MerkleAccount.class);
+		var tokenAssociationMetadata = mock(TokenAssociationMetadata.class);
 		given(workingView.accounts()).willReturn(accounts);
 		given(accounts.get(any())).willReturn(merkleAccount);
 		given(merkleAccount.getAccountKey()).willReturn(asUsableFcKey(key).get());
 		given(merkleAccount.getMemo()).willReturn(memo);
 		given(merkleAccount.getExpiry()).willReturn(now);
-		given(merkleAccount.getAssociatedTokensCount()).willReturn(tokenRelationShipCount);
+		given(merkleAccount.getTokenAssociationMetadata()).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(tokenRelationShipCount);
 		given(merkleAccount.getMaxAutomaticAssociations()).willReturn(maxAutomaticAssociations);
 		given(merkleAccount.getProxy()).willReturn(new EntityId());
 		given(merkleAccount.getCryptoAllowances()).willReturn(cryptoAllowance);

@@ -35,6 +35,7 @@ import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -377,7 +378,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		for (var accountId : accounts.keySet()) {
 			var merkleAccount = accounts.getForModify(accountId);
-
+			int numAssociations = 0;
+			int numZeroBalances = 0;
 			EntityNumPair prevListRootKey = MISSING_NUM_PAIR;
 			for (var tokenId : merkleAccount.tokens().asTokenIds()) {
 				var newListRootKey = EntityNumPair.fromLongs(accountId.longValue(), tokenId.getTokenNum());
@@ -388,9 +390,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					var prevAssociation = tokenRels.getForModify(prevListRootKey);
 					prevAssociation.setPrevKey(newListRootKey);
 				}
+
+				if (association.getBalance() == 0) {
+					numZeroBalances++;
+				}
+				numAssociations++;
 				prevListRootKey = newListRootKey;
 			}
-			merkleAccount.setLastAssociatedToken(prevListRootKey);
+			merkleAccount.setTokenAssociationMetadata(
+					new TokenAssociationMetadata(numAssociations, numZeroBalances, prevListRootKey));
 			merkleAccount.forgetAssociatedTokens();
 		}
 	}

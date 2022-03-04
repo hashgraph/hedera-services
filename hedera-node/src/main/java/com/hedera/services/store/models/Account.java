@@ -83,8 +83,9 @@ public class Account {
 	private TreeMap<EntityNum, Long> cryptoAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
 	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
+	private int numAssociations;
+	private int numZeroBalances;
 	private EntityNumPair lastAssociatedToken;
-	private int associatedTokensCount;
 
 	public Account(Id id) {
 		this.id = id;
@@ -161,12 +162,20 @@ public class Account {
 		this.lastAssociatedToken = lastAssociatedToken;
 	}
 
-	public int getAssociatedTokensCount() {
-		return associatedTokensCount;
+	public int getNumAssociations() {
+		return numAssociations;
 	}
 
-	public void setAssociatedTokensCount(final int associatedTokensCount) {
-		this.associatedTokensCount = associatedTokensCount;
+	public void setNumAssociations(final int numAssociations) {
+		this.numAssociations = numAssociations;
+	}
+
+	public int getNumZeroBalances() {
+		return numZeroBalances;
+	}
+
+	public void setNumZeroBalances(int numZeroBalances) {
+		this.numZeroBalances = numZeroBalances;
 	}
 
 	public List<TokenRelationship> associateWith(
@@ -198,7 +207,8 @@ public class Account {
 				prevRel.setPrevKey(newRel.getKey());
 				tokenRelationshipsToPersist.add(prevRel);
 			}
-			associatedTokensCount++;
+			numZeroBalances++;
+			numAssociations++;
 			prevRel = newRel;
 			currKey = newRel.getKey();
 		}
@@ -274,7 +284,8 @@ public class Account {
 				prevRel.setNextKey(nextKey);
 				unPersistedRelationships.put(prevKey, prevRel);
 			}
-			associatedTokensCount--;
+			numZeroBalances--;
+			numAssociations--;
 		}
 		return unPersistedRelationships.values().stream().toList();
 	}
@@ -315,8 +326,9 @@ public class Account {
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("nftAllowances", nftAllowances)
+				.add("numAssociations", numAssociations)
+				.add("numZeroBalances", numZeroBalances)
 				.add("lastAssociatedToken", lastAssociatedToken)
-				.add("associatedTokensCount", associatedTokensCount)
 				.toString();
 	}
 

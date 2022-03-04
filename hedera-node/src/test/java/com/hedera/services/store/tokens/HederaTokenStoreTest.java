@@ -41,6 +41,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
@@ -74,18 +75,18 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
-import static com.hedera.services.ledger.properties.AccountProperty.ASSOCIATED_TOKENS_COUNT;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIATED_TOKEN;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.services.state.submerkle.TokenAssociationMetadata.EMPTY_TOKEN_ASSOCIATION_META;
 import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
@@ -162,6 +163,7 @@ class HederaTokenStoreTest {
 	private static final String newName = "NEWNAME";
 	private static final int maxCustomFees = 5;
 	private static final int associatedTokensCount = 2;
+	private static final int numZeroBalances = 1;
 	private static final long expiry = CONSENSUS_NOW + 1_234_567L;
 	private static final long newExpiry = CONSENSUS_NOW + 1_432_765L;
 	private static final long totalSupply = 1_000_000L;
@@ -200,6 +202,7 @@ class HederaTokenStoreTest {
 	private static final Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
 	private static final EntityNumPair sponsorRelMiscKey = EntityNumPair.fromLongs(sponsor.getAccountNum(), misc.getTokenNum());
 	private static final EntityNumPair sponsorRelNftKey = EntityNumPair.fromLongs(sponsor.getAccountNum(), nonfungible.getTokenNum());
+	private static final EntityNumPair anotherFeeCollectorMiscKey = EntityNumPair.fromLongs(anotherFeeCollector.getAccountNum(), misc.getTokenNum());
 
 	private EntityIdSource ids;
 	private SideEffectsTracker sideEffectsTracker;
@@ -211,6 +214,7 @@ class HederaTokenStoreTest {
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	private BackingTokens backingTokens;
 	private HederaLedger hederaLedger;
+	private TokenAssociationMetadata tokenAssociationMetadata;
 
 	private MerkleToken token;
 	private MerkleToken nonfungibleToken;
@@ -245,6 +249,8 @@ class HederaTokenStoreTest {
 		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(primaryTreasury));
 		given(nftsLedger.exists(aNft)).willReturn(true);
 		given(nftsLedger.exists(tNft)).willReturn(true);
+
+		tokenAssociationMetadata = mock(TokenAssociationMetadata.class);
 
 		accountsLedger = (TransactionalLedger<AccountID, AccountProperty, MerkleAccount>) mock(
 				TransactionalLedger.class);
@@ -504,8 +510,9 @@ class HederaTokenStoreTest {
 	void autoAssociatingHappyPathWorksOnEmptyExistingAssociations() {
 		final var key = asTokenRel(sponsor, misc);
 
-		given(accountsLedger.get(sponsor, ASSOCIATED_TOKENS_COUNT)).willReturn(associatedTokensCount);
-		given(accountsLedger.get(sponsor, LAST_ASSOCIATED_TOKEN)).willReturn(MISSING_NUM_PAIR);
+		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
 
@@ -523,16 +530,18 @@ class HederaTokenStoreTest {
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
-		verify(accountsLedger).set(sponsor, LAST_ASSOCIATED_TOKEN, sponsorRelMiscKey);
-		verify(accountsLedger).set(sponsor, ASSOCIATED_TOKENS_COUNT, associatedTokensCount + 1);
+		verify(accountsLedger).set(sponsor, TOKEN_ASSOCIATION_METADATA,
+				new TokenAssociationMetadata(associatedTokensCount+1,1,sponsorRelMiscKey));
 	}
 
 	@Test
 	void autoAssociatingHappyPathWorksOnAccountWithExistingAssociations() {
 		final var key = asTokenRel(sponsor, misc);
 
-		given(accountsLedger.get(sponsor, ASSOCIATED_TOKENS_COUNT)).willReturn(associatedTokensCount);
-		given(accountsLedger.get(sponsor, LAST_ASSOCIATED_TOKEN)).willReturn(sponsorRelNftKey);
+		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(sponsorRelNftKey);
+		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
 		given(tokenRelsLedger.get(sponsorNft, NEXT_KEY)).willReturn(MISSING_NUM_PAIR);
@@ -551,8 +560,8 @@ class HederaTokenStoreTest {
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
-		verify(accountsLedger).set(sponsor, LAST_ASSOCIATED_TOKEN, sponsorRelMiscKey);
-		verify(accountsLedger).set(sponsor, ASSOCIATED_TOKENS_COUNT, associatedTokensCount + 1);
+		verify(accountsLedger).set(sponsor, TOKEN_ASSOCIATION_METADATA, new TokenAssociationMetadata(
+				associatedTokensCount+1, numZeroBalances+1, sponsorRelMiscKey));
 	}
 
 	@Test
@@ -560,7 +569,9 @@ class HederaTokenStoreTest {
 
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
-		given(accountsLedger.get(sponsor, LAST_ASSOCIATED_TOKEN)).willReturn(MISSING_NUM_PAIR);
+		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+
 
 		// auto associate a fungible token
 		var status = subject.associate(sponsor, List.of(misc), true);
@@ -668,8 +679,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyNfts = 8;
 		final long startSponsorANfts = 4;
 		final long startCounterpartyANfts = 1;
-		given(accountsLedger.get(counterparty, ASSOCIATED_TOKENS_COUNT)).willReturn(0);
-		given(accountsLedger.get(counterparty, LAST_ASSOCIATED_TOKEN)).willReturn(MISSING_NUM_PAIR);
+
 		given(accountsLedger.get(counterparty, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(100);
 		given(accountsLedger.get(counterparty, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(0);
 		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
@@ -677,6 +687,11 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
 		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyANfts);
 		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
+		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(accountsLedger.get(counterparty, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -705,6 +720,11 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);
 		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyANfts);
+		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(accountsLedger.get(counterparty, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -733,6 +753,11 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
 		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
 		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(counterparty));
+		given(accountsLedger.get(counterparty, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(accountsLedger.get(primaryTreasury, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
 		final var status = subject.changeOwner(tNft, counterparty, primaryTreasury);
 
@@ -742,6 +767,10 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts - 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts + 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts - 1);
+		verify(accountsLedger).set(primaryTreasury, TOKEN_ASSOCIATION_METADATA,
+				new TokenAssociationMetadata(associatedTokensCount, numZeroBalances, MISSING_NUM_PAIR));
+		verify(accountsLedger).set(counterparty, TOKEN_ASSOCIATION_METADATA,
+				new TokenAssociationMetadata(associatedTokensCount, numZeroBalances+1, MISSING_NUM_PAIR));
 		verify(uniqueTokenViewsManager).treasuryReturnNotice(muti, sender, receiver);
 		assertSoleTokenChangesAreForNftTransfer(tNft, counterparty, primaryTreasury);
 	}
@@ -755,12 +784,18 @@ class HederaTokenStoreTest {
 		final var sender = EntityId.fromGrpcAccountId(primaryTreasury);
 		final var receiver = EntityId.fromGrpcAccountId(counterparty);
 		final var muti = EntityNumPair.fromLongs(tNft.tokenId().getTokenNum(), tNft.serialNo());
+		final var expectedMeta = new TokenAssociationMetadata(associatedTokensCount, numZeroBalances, MISSING_NUM_PAIR);
 		given(accountsLedger.get(primaryTreasury, NUM_NFTS_OWNED)).willReturn(startTreasuryNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(treasuryNft, TOKEN_BALANCE)).willReturn(startTreasuryTNfts);
 		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyTNfts);
 		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(EntityId.MISSING_ENTITY_ID);
 		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(sender);
+		given(accountsLedger.get(counterparty, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(accountsLedger.get(primaryTreasury, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
 		final var status = subject.changeOwner(tNft, primaryTreasury, counterparty);
 
@@ -772,6 +807,8 @@ class HederaTokenStoreTest {
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts + 1);
 		verify(uniqueTokenViewsManager).treasuryExitNotice(muti, sender, receiver);
+		verify(accountsLedger).set(primaryTreasury, TOKEN_ASSOCIATION_METADATA, expectedMeta);
+		verify(accountsLedger).set(counterparty, TOKEN_ASSOCIATION_METADATA, expectedMeta);
 		assertSoleTokenChangesAreForNftTransfer(tNft, primaryTreasury, counterparty);
 	}
 
@@ -1442,7 +1479,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
 		given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
 		given(accountsLedger.get(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
-		given(accountsLedger.get(anotherFeeCollector, LAST_ASSOCIATED_TOKEN)).willReturn(MISSING_NUM_PAIR);
+		given(accountsLedger.get(anotherFeeCollector, TOKEN_ASSOCIATION_METADATA)).willReturn(EMPTY_TOKEN_ASSOCIATION_META);
 
 		final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
 
@@ -1459,22 +1496,32 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(anotherFeeCollectorMisc, TOKEN_BALANCE)).willReturn(0L);
 		given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(5);
 		given(accountsLedger.get(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
-		given(accountsLedger.get(anotherFeeCollector, ASSOCIATED_TOKENS_COUNT)).willReturn(0);
-		given(accountsLedger.get(anotherFeeCollector, LAST_ASSOCIATED_TOKEN)).willReturn(MISSING_NUM_PAIR);
+		given(accountsLedger.get(anotherFeeCollector, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
 		final var status = subject.adjustBalance(anotherFeeCollector, misc, 1);
 
 		assertEquals(OK, status);
 		verify(tokenRelsLedger).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
 		verify(accountsLedger).set(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, 4);
-		verify(accountsLedger).set(anotherFeeCollector, ASSOCIATED_TOKENS_COUNT, 1);
+		verify(accountsLedger).set(anotherFeeCollector, TOKEN_ASSOCIATION_METADATA, new TokenAssociationMetadata(
+				associatedTokensCount+1, numZeroBalances+1, anotherFeeCollectorMiscKey));
 	}
 
 	@Test
 	void performsValidAdjustment() {
+		given(accountsLedger.get(treasury, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
+
 		subject.adjustBalance(treasury, misc, -1);
 
 		verify(tokenRelsLedger).set(treasuryMisc, TOKEN_BALANCE, treasuryBalance - 1);
+		verify(accountsLedger).set(treasury, TOKEN_ASSOCIATION_METADATA, new TokenAssociationMetadata(
+				associatedTokensCount, numZeroBalances, MISSING_NUM_PAIR));
 	}
 
 	@Test
@@ -1515,6 +1562,10 @@ class HederaTokenStoreTest {
 		final var aa = AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
 		final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
 		fungibleChange.setExpectedDecimals(2);
+		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.numZeroBalances()).willReturn(2);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(5);
 
 		assertEquals(2, subject.get(misc).decimals());
 		assertEquals(2, fungibleChange.getExpectedDecimals());

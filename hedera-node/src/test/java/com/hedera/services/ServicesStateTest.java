@@ -37,6 +37,7 @@ import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
@@ -475,8 +476,10 @@ class ServicesStateTest {
 
 		subject.migrate();
 
-		verify(merkleAccount1).setLastAssociatedToken(associationKey1);
-		verify(merkleAccount2).setLastAssociatedToken(associationKey3);
+		verify(merkleAccount1).setTokenAssociationMetadata(new TokenAssociationMetadata(
+				1,0,associationKey1));
+		verify(merkleAccount2).setTokenAssociationMetadata(new TokenAssociationMetadata(
+				2,0,associationKey3));
 		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey1).nextKey());
 		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey1).prevKey());
 		assertEquals(associationKey1, tokenAssociations.get(associationKey1).getKey());

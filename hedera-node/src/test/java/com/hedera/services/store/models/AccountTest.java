@@ -84,7 +84,7 @@ class AccountTest {
 		subject.setAutoAssociationMetadata(autoAssociationMetadata);
 		subject.setOwnedNfts(ownedNfts);
 		subject.setLastAssociatedToken(firstRelKey);
-		subject.setAssociatedTokensCount(associatedTokensCount);
+		subject.setNumAssociations(associatedTokensCount);
 
 		firstRel.setKey(firstRelKey);
 		firstRel.setNextKey(secondRelKey);
@@ -149,7 +149,8 @@ class AccountTest {
 		final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, " +
 				"ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, " +
 				"alias=, cryptoAllowances=null, fungibleTokenAllowances=null, nftAllowances=null" +
-				subject.getAlias().toStringUtf8() + ", lastAssociatedToken=PermHashLong(12345, 666), associatedTokensCount=3}";
+				subject.getAlias().toStringUtf8() + ", numAssociations=3, numZeroBalances=0," +
+				" lastAssociatedToken=PermHashLong(12345, 666)}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
@@ -175,7 +176,7 @@ class AccountTest {
 
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
-		assertEquals(associatedTokensCount - 1 , subject.getAssociatedTokensCount());
+		assertEquals(associatedTokensCount - 1 , subject.getNumAssociations());
 		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
@@ -202,7 +203,7 @@ class AccountTest {
 
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
-		assertEquals(associatedTokensCount - 1, subject.getAssociatedTokensCount());
+		assertEquals(associatedTokensCount - 1, subject.getNumAssociations());
 		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
@@ -228,7 +229,7 @@ class AccountTest {
 
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
-		assertEquals(associatedTokensCount - 1, subject.getAssociatedTokensCount());
+		assertEquals(associatedTokensCount - 1, subject.getNumAssociations());
 		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
@@ -293,7 +294,7 @@ class AccountTest {
 		subject.associateWith(List.of(firstNewToken, secondNewToken), tokenStore, true, true);
 
 		// expect:
-		assertEquals(associatedTokensCount + 2, subject.getAssociatedTokensCount());
+		assertEquals(associatedTokensCount + 2, subject.getNumAssociations());
 		assertEquals(EntityNumPair.fromLongs(12345, 999).value(), subject.getLastAssociatedToken().value());
 	}
 
@@ -301,7 +302,7 @@ class AccountTest {
 	void accountEqualsCheck() {
 		// setup:
 		var account = new Account(subjectId);
-		account.setAssociatedTokensCount(associatedTokensCount);
+		account.setNumAssociations(associatedTokensCount);
 		account.setExpiry(1000L);
 		account.initBalance(100L);
 		account.setOwnedNfts(1L);
@@ -338,7 +339,7 @@ class AccountTest {
 		subject.setOwnedNfts(0);
 		var otherSubject = new Account(subjectId);
 		otherSubject.incrementOwnedNfts();
-		otherSubject.setAssociatedTokensCount(associatedTokensCount);
+		otherSubject.setNumAssociations(associatedTokensCount);
 
 		subject.incrementOwnedNfts();
 		otherSubject.setAutoAssociationMetadata(autoAssociationMetadata);

@@ -27,8 +27,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -162,26 +162,15 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getNftsOwned;
 		}
 	},
-	LAST_ASSOCIATED_TOKEN {
+	TOKEN_ASSOCIATION_METADATA {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setLastAssociatedToken((EntityNumPair) t);
+			return (a, t) -> a.setTokenAssociationMetadata((TokenAssociationMetadata) t);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getLastAssociatedToken;
-		}
-	},
-	ASSOCIATED_TOKENS_COUNT {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setAssociatedTokensCount((int) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getAssociatedTokensCount;
+			return MerkleAccount::getTokenAssociationMetadata;
 		}
 	},
 	MAX_AUTOMATIC_ASSOCIATIONS {
