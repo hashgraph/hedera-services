@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,8 +33,10 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
  * the {@link Account} type hierarchy, while the logic for the native HTS pre-compiles is implemented
  * in terms of {@link com.hedera.services.ledger.TransactionalLedger} instances.
  *
- * @param <W> the type of the wrapped world view
- * @param <A> the account specialization used by the wrapped world view
+ * @param <W>
+ * 		the type of the wrapped world view
+ * @param <A>
+ * 		the account specialization used by the wrapped world view
  */
 public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extends Account>
 		extends AbstractLedgerWorldUpdater<AbstractLedgerWorldUpdater<W, A>, UpdateTrackingLedgerAccount<A>> {
@@ -79,27 +81,28 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 
 		final var ledgers = trackingLedgers();
 		/* We need to commit the ledgers first to make sure that any accounts we created exist in the parent,
-		* so that any set(..., BALANCE, ...) calls made by the UpdateTrackingLedgerAccounts below will be
-		* harmless repetitions of the balances we just flushed via commit().
-		*
-		* We filter any pending aliases to ensure the target address has actually been updated in this
-		* frame (it is possible for a spawned child message to have reverted during creation, _without_
-		* reverting this frame; and then the target address would not even exist.) */
+		 * so that any set(..., BALANCE, ...) calls made by the UpdateTrackingLedgerAccounts below will be
+		 * harmless repetitions of the balances we just flushed via commit().
+		 *
+		 * We filter any pending aliases to ensure the target address has actually been updated in this
+		 * frame (it is possible for a spawned child message to have reverted during creation, _without_
+		 * reverting this frame; and then the target address would not even exist.) */
 		ledgers.aliases().filterPendingChanges(updatedAccounts::containsKey);
 		ledgers.commit();
 		for (final var updatedAccount : getUpdatedAccounts()) {
 			/* First check if there is already a mutable tracker for this account in our parent updater;
-			* if there is, we commit by propagating the changes from our tracker into that tracker. */
+			 * if there is, we commit by propagating the changes from our tracker into that tracker. */
 			var mutable = wrapped.updatedAccounts.get(updatedAccount.getAddress());
 			if (mutable == null) {
 				/* If the parent updater didn't have a mutable tracker, we must give it one. Unless
-				* we created this account (meaning our mutable tracker has no wrapped account), the
-				* "inner" mutable tracker we created in getForMutation() will do fine; we just need to
-				* update its tracking accounts to the parent's. */
+				 * we created this account (meaning our mutable tracker has no wrapped account), the
+				 * "inner" mutable tracker we created in getForMutation() will do fine; we just need to
+				 * update its tracking accounts to the parent's. */
 				mutable = updatedAccount.getWrappedAccount();
 				if (mutable == null) {
 					/* We created this account, so create a new tracker for our parent. */
-					mutable = new UpdateTrackingLedgerAccount<>(updatedAccount.getAddress(), wrapped.trackingAccounts());
+					mutable = new UpdateTrackingLedgerAccount<>(
+							updatedAccount.getAddress(), wrapped.trackingAccounts());
 				} else {
 					/* This tracker is reusable, just update its tracking accounts to our parent's. */
 					mutable.updateTrackingAccounts(wrapped.trackingAccounts());
@@ -107,7 +110,10 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 				wrapped.updatedAccounts.put(mutable.getAddress(), mutable);
 			}
 			mutable.setNonce(updatedAccount.getNonce());
-			mutable.setBalance(updatedAccount.getBalance());
+
+			if (!updatedAccount.wrappedAccountIsTokenProxy()) {
+				mutable.setBalance(updatedAccount.getBalance());
+			}
 			if (updatedAccount.codeWasUpdated()) {
 				mutable.setCode(updatedAccount.getCode());
 			}

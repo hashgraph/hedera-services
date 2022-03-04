@@ -71,8 +71,8 @@ public class SStoreSuite extends HapiApiSuite {
 				multipleSStoreOpsSucceed(),
 				benchmarkSingleSetter(),
 				childStorage(),
-				cleanupAppProperties(),
-				temporarySStoreRefundTest()
+				temporarySStoreRefundTest(),
+				cleanupAppProperties()
 		});
 	}
 
@@ -163,11 +163,13 @@ public class SStoreSuite extends HapiApiSuite {
 							for (int childKbStorage = 0; childKbStorage <= almostFullKb; childKbStorage += kbPerStep) {
 								var subOp1 = contractCall(
 										"childStorage", ContractResources.GROW_CHILD_ABI, 0, kbPerStep, 17).gas(
-										MAX_CONTRACT_GAS);
+										MAX_CONTRACT_GAS).via("small" + childKbStorage);
 								var subOp2 = contractCall(
 										"childStorage", ContractResources.GROW_CHILD_ABI, 1, kbPerStep, 19).gas(
-										MAX_CONTRACT_GAS);
-								CustomSpecAssert.allRunFor(spec, subOp1, subOp2);
+										MAX_CONTRACT_GAS).via("large" + childKbStorage);
+								var subOp3 = getTxnRecord("small" + childKbStorage).logged();
+								var subOp4 = getTxnRecord("large" + childKbStorage).logged();
+								CustomSpecAssert.allRunFor(spec, subOp1, subOp2, subOp3, subOp4);
 							}
 						})
 				).then(flattened(
@@ -221,6 +223,7 @@ public class SStoreSuite extends HapiApiSuite {
 								.gas(GAS_LIMIT)
 								.via("storageTx")
 				).then(
+						getTxnRecord("storageTx").logged(),
 						contractCallLocal("immutableContract", ContractResources.BENCHMARK_GET_COUNTER)
 								.nodePayment(1_234_567)
 								.has(

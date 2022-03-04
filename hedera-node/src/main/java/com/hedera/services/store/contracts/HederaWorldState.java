@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -31,8 +32,11 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -51,12 +55,14 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -82,6 +88,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
 	private final CodeCache codeCache;
+	private final GlobalDynamicProperties dynamicProperties;
+	private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
+	private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY =
+			"6080604052348015600f57600080fd5b506000610167905077618dc65efefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
+
 
 	@Inject
 	public HederaWorldState(
@@ -89,26 +100,30 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final EntityAccess entityAccess,
 			final CodeCache codeCache,
 			final SigImpactHistorian sigImpactHistorian,
-			final AccountRecordsHistorian recordsHistorian
+			final AccountRecordsHistorian recordsHistorian,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.ids = ids;
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.recordsHistorian = recordsHistorian;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	/* Used to manage static calls. */
 	public HederaWorldState(
 			final EntityIdSource ids,
 			final EntityAccess entityAccess,
-			final CodeCache codeCache
+			final CodeCache codeCache,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.ids = ids;
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = null;
 		this.recordsHistorian = null;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -206,7 +221,13 @@ public class HederaWorldState implements HederaMutableWorldState {
 		if (address == null) {
 			return null;
 		}
+
+		if (entityAccess.isTokenAccount(address) && dynamicProperties.isRedirectTokenCallsEnabled()) {
+			return new WorldStateTokenAccount(address, EntityId.fromAddress(address));
+		}
+
 		final var accountId = accountIdFromEvmAddress(address);
+
 		if (!isGettable(accountId)) {
 			return null;
 		}
@@ -214,6 +235,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		final long expiry = entityAccess.getExpiry(accountId);
 		final long balance = entityAccess.getBalance(accountId);
 		final long autoRenewPeriod = entityAccess.getAutoRenew(accountId);
+
 		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod,
 				entityAccess.getProxy(accountId));
 	}
@@ -357,13 +379,35 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 	}
 
+	public class WorldStateTokenAccount extends WorldStateAccount {
+		public static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;
+
+		public WorldStateTokenAccount(final Address address,
+									  final EntityId proxyAccount) {
+			super(address, Wei.of(0), 0, 0, proxyAccount);
+		}
+
+		@Override
+		public Bytes getCode() {
+			return Bytes.fromHexString(TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(TOKEN_BYTECODE_PATTERN,
+					getAddress().toUnprefixedHexString()));
+		}
+
+		@Override
+		public long getNonce() {
+			return TOKEN_PROXY_ACCOUNT_NONCE;
+		}
+	}
+
 	public static class Updater
 			extends AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount>
 			implements HederaWorldUpdater {
-		
+
 		private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 
-		private Gas sbhRefund = Gas.ZERO;
+		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(BytesComparator.INSTANCE);
+
+		Gas sbhRefund = Gas.ZERO;
 
 		protected Updater(final HederaWorldState world, final WorldLedgers trackingLedgers) {
 			super(world, trackingLedgers);
@@ -372,6 +416,36 @@ public class HederaWorldState implements HederaMutableWorldState {
 		@Override
 		public Map<Address, Address> getSponsorMap() {
 			return sponsorMap;
+		}
+
+		public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
+			return stateChanges;
+		}
+
+		public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getFinalStateChanges() {
+			this.addAllStorageUpdatesToStateChanges();
+			return stateChanges;
+		}
+
+		private void addAllStorageUpdatesToStateChanges() {
+			// record storage read/write access
+			for (UpdateTrackingLedgerAccount<? extends com.hedera.services.store.models.Account> uta :
+					(Collection<UpdateTrackingLedgerAccount<? extends com.hedera.services.store.models.Account>>)
+							this.getTouchedAccounts()) {
+				final var storageUpdates = uta.getUpdatedStorage().entrySet();
+				if (!storageUpdates.isEmpty()) {
+					Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
+							stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE)
+							);
+					for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
+						UInt256 key = entry.getKey();
+						UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
+						UInt256 updatedStorageValue = uta.getStorageValue(key);
+						accountChanges.put(key,
+								new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+					}
+				}
+			}
 		}
 
 		@Override

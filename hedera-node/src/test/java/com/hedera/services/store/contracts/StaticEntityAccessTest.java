@@ -51,6 +51,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigInteger;
 
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -195,11 +197,13 @@ class StaticEntityAccessTest {
 	void nonMutatorsWork() {
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
 		given(accounts.get(EntityNum.fromAccountId(nonExtantId))).willReturn(null);
+		given(stateView.tokenExists(fungible)).willReturn(true);
 
 		assertEquals(someNonContractAccount.getBalance(), subject.getBalance(id));
 		assertEquals(someNonContractAccount.isDeleted(), subject.isDeleted(id));
 		assertTrue(subject.isExtant(id));
 		assertFalse(subject.isExtant(nonExtantId));
+		assertTrue(subject.isTokenAccount(fungibleTokenAddr));
 		assertEquals(someNonContractAccount.getMemo(), subject.getMemo(id));
 		assertEquals(someNonContractAccount.getExpiry(), subject.getExpiry(id));
 		assertEquals(someNonContractAccount.getAutoRenewSecs(), subject.getAutoRenew(id));

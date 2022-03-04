@@ -25,10 +25,12 @@ package com.hedera.services.contracts.execution;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -171,7 +173,7 @@ abstract class EvmTxProcessor {
 		final Wei upfrontCost = gasCost.add(value);
 		final Gas intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
-		final var updater = worldState.updater();
+		final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
 		final var senderEvmAddress = sender.getId().asEvmAddress();
 		final var senderAccount = updater.getOrCreateSenderAccount(senderEvmAddress);
 		final MutableAccount mutableSender = senderAccount.getMutable();
@@ -224,7 +226,11 @@ abstract class EvmTxProcessor {
 
 		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
 		final Gas sbhRefund = updater.getSbhRefund();
-		if (!isStatic) {
+		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+
+		if (isStatic) {
+			stateChanges = Map.of();
+		} else {
 			// return gas price to accounts
 			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
 			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
@@ -238,6 +244,12 @@ abstract class EvmTxProcessor {
 			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
+			if (dynamicProperties.shouldEnableTraceability()) {
+				stateChanges = updater.getFinalStateChanges();
+			} else {
+				stateChanges = Map.of();
+			}
+
 			/* Commit top level Updater */
 			updater.commit();
 		}
@@ -250,14 +262,18 @@ abstract class EvmTxProcessor {
 					sbhRefund.toLong(),
 					gasPrice,
 					initialFrame.getOutputData(),
-					mirrorReceiver);
+					mirrorReceiver,
+					stateChanges,
+					dynamicProperties.shouldEnableTraceability());
 		} else {
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction.toLong(),
 					sbhRefund.toLong(),
 					gasPrice,
 					initialFrame.getRevertReason(),
-					initialFrame.getExceptionalHaltReason());
+					initialFrame.getExceptionalHaltReason(),
+					stateChanges,
+					dynamicProperties.shouldEnableTraceability());
 		}
 	}
 

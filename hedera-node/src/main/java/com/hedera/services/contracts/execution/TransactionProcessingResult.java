@@ -28,6 +28,9 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.ContractStateChange;
+import com.hederahashgraph.api.proto.java.StorageChange;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -37,6 +40,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -69,15 +73,19 @@ public class TransactionProcessingResult {
 	private final Optional<Address> recipient;
 	private final Optional<Bytes> revertReason;
 	private final Optional<ExceptionalHaltReason> haltReason;
+	private final boolean enableTraceability;
 
 	private List<ContractID> createdContracts = new ArrayList<>();
+	private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
 	public static TransactionProcessingResult failed(
 			final long gasUsed,
 			final long sbhRefund,
 			final long gasPrice,
 			final Optional<Bytes> revertReason,
-			final Optional<ExceptionalHaltReason> haltReason) {
+			final Optional<ExceptionalHaltReason> haltReason,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final boolean enableTraceability) {
 		return new TransactionProcessingResult(
 				Status.FAILED,
 				new ArrayList<>(),
@@ -87,7 +95,9 @@ public class TransactionProcessingResult {
 				Bytes.EMPTY,
 				Optional.empty(),
 				revertReason,
-				haltReason);
+				haltReason,
+				stateChanges,
+				enableTraceability);
 	}
 
 	public static TransactionProcessingResult successful(
@@ -96,7 +106,9 @@ public class TransactionProcessingResult {
 			final long sbhRefund,
 			final long gasPrice,
 			final Bytes output,
-			final Address recipient) {
+			final Address recipient,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final boolean enableTraceability) {
 		return new TransactionProcessingResult(
 				Status.SUCCESSFUL,
 				logs,
@@ -106,7 +118,9 @@ public class TransactionProcessingResult {
 				output,
 				Optional.of(recipient),
 				Optional.empty(),
-				Optional.empty());
+				Optional.empty(),
+				stateChanges,
+				enableTraceability);
 	}
 
 	public TransactionProcessingResult(
@@ -118,7 +132,9 @@ public class TransactionProcessingResult {
 			final Bytes output,
 			final Optional<Address> recipient,
 			final Optional<Bytes> revertReason,
-			final Optional<ExceptionalHaltReason> haltReason) {
+			final Optional<ExceptionalHaltReason> haltReason,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final boolean enableTraceability) {
 		this.logs = logs;
 		this.output = output;
 		this.status = status;
@@ -128,14 +144,15 @@ public class TransactionProcessingResult {
 		this.recipient = recipient;
 		this.haltReason = haltReason;
 		this.revertReason = revertReason;
+		this.stateChanges = stateChanges;
+		this.enableTraceability = enableTraceability;
 	}
 
 	/**
 	 * Adds a list of created contracts to be externalised as part of the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
 	 *
-	 * @param createdContracts
-	 * 		the list of contractIDs created
+	 * @param createdContracts the list of contractIDs created
 	 */
 	public void setCreatedContracts(List<ContractID> createdContracts) {
 		this.createdContracts = createdContracts;
@@ -210,7 +227,27 @@ public class TransactionProcessingResult {
 		contractResultBuilder.addAllLogInfo(logInfo);
 
 		/* Populate Created Contract IDs */
-		return contractResultBuilder.addAllCreatedContractIDs(createdContracts);
+		contractResultBuilder.addAllCreatedContractIDs(createdContracts);
+
+		if (enableTraceability) {
+			/* Populate stateChanges */
+			stateChanges.forEach((address, states) -> {
+				ContractStateChange.Builder contractChanges = ContractStateChange.newBuilder().setContractID(
+						EntityIdUtils.contractIdFromEvmAddress(address.toArray()));
+				states.forEach((slot, changePair) -> {
+					StorageChange.Builder stateChange = StorageChange.newBuilder()
+							.setSlot(ByteString.copyFrom(slot.trimLeadingZeros().toArrayUnsafe()))
+							.setValueRead(ByteString.copyFrom(changePair.getLeft().trimLeadingZeros().toArrayUnsafe()));
+					Bytes changePairRight = changePair.getRight();
+					if (changePairRight != null) {
+						stateChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(changePairRight.trimLeadingZeros().toArrayUnsafe())).build());
+					}
+					contractChanges.addStorageChanges(stateChange.build());
+				});
+				contractResultBuilder.addStateChanges(contractChanges.build());
+			});
+		}
+		return contractResultBuilder;
 	}
 
 	@NotNull

@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -171,6 +172,8 @@ class MintPrecompilesTest {
 	private PrecompilePricingUtils precompilePricingUtils;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private UsagePricesProvider resourceCosts;
 
 	private HTSPrecompiledContract subject;
 
@@ -180,7 +183,7 @@ class MintPrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
-				() -> feeCalculator, stateView, precompilePricingUtils);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
@@ -209,7 +212,8 @@ class MintPrecompilesTest {
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а-> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -241,7 +245,8 @@ class MintPrecompilesTest {
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -283,7 +288,8 @@ class MintPrecompilesTest {
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -314,6 +320,7 @@ class MintPrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 		// when:
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -345,6 +352,7 @@ class MintPrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		assertFailsWith(() -> subject.computeInternal(frame), FAIL_INVALID);
@@ -368,7 +376,7 @@ class MintPrecompilesTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers(sideEffects)).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 	}
 

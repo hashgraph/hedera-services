@@ -25,6 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -171,6 +172,8 @@ class AssociatePrecompileTest {
 	private PrecompilePricingUtils precompilePricingUtils;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private UsagePricesProvider resourceCosts;
 
 	private HTSPrecompiledContract subject;
 
@@ -180,7 +183,7 @@ class AssociatePrecompileTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
 
 		subject.setAssociateLogicFactory(associateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
@@ -212,6 +215,7 @@ class AssociatePrecompileTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
 		// when:
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -229,7 +233,7 @@ class AssociatePrecompileTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers(sideEffects)).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(frame.getRecipientAddress()).willReturn(recipientAddress);
 		givenLedgers();
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
@@ -264,6 +268,7 @@ class AssociatePrecompileTest {
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -304,6 +309,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -349,7 +355,8 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -393,6 +400,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -438,6 +446,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -479,7 +488,7 @@ class AssociatePrecompileTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers(sideEffects)).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 	}
 
 	private void givenLedgers() {
