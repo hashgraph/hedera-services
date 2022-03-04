@@ -96,19 +96,7 @@ import com.hedera.services.bdd.suites.file.negative.DeleteFailuresSpec;
 import com.hedera.services.bdd.suites.file.negative.QueryFailuresSpec;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.CreateSuccessSpec;
-import com.hedera.services.bdd.suites.file.positive.IssDemoSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
-import com.hedera.services.bdd.suites.freeze.CryptoTransferThenFreezeTest;
-import com.hedera.services.bdd.suites.freeze.FreezeAbort;
-import com.hedera.services.bdd.suites.freeze.FreezeDockerNetwork;
-import com.hedera.services.bdd.suites.freeze.FreezeIntellijNetwork;
-import com.hedera.services.bdd.suites.freeze.FreezeSuite;
-import com.hedera.services.bdd.suites.freeze.FreezeUpgrade;
-import com.hedera.services.bdd.suites.freeze.PrepareUpgrade;
-import com.hedera.services.bdd.suites.freeze.SimpleFreezeOnly;
-import com.hedera.services.bdd.suites.freeze.UpdateFileForUpgrade;
-import com.hedera.services.bdd.suites.freeze.UpdateServerFiles;
-import com.hedera.services.bdd.suites.freeze.UpgradeSuite;
 import com.hedera.services.bdd.suites.issues.Issue1648Suite;
 import com.hedera.services.bdd.suites.issues.Issue1741Suite;
 import com.hedera.services.bdd.suites.issues.Issue1742Suite;
@@ -123,27 +111,6 @@ import com.hedera.services.bdd.suites.issues.Issue2319Spec;
 import com.hedera.services.bdd.suites.issues.Issue305Spec;
 import com.hedera.services.bdd.suites.issues.Issue310Suite;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
-import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
-import com.hedera.services.bdd.suites.misc.ConsensusQueriesStressTests;
-import com.hedera.services.bdd.suites.misc.ContractQueriesStressTests;
-import com.hedera.services.bdd.suites.misc.CryptoQueriesStressTests;
-import com.hedera.services.bdd.suites.misc.FileQueriesStressTests;
-import com.hedera.services.bdd.suites.misc.FreezeRekeyedState;
-import com.hedera.services.bdd.suites.misc.GuidedTourRemoteSuite;
-import com.hedera.services.bdd.suites.misc.InvalidgRPCValuesTest;
-import com.hedera.services.bdd.suites.misc.KeyExport;
-import com.hedera.services.bdd.suites.misc.MemoValidation;
-import com.hedera.services.bdd.suites.misc.MixedOpsTransactionsSuite;
-import com.hedera.services.bdd.suites.misc.OneOfEveryTransaction;
-import com.hedera.services.bdd.suites.misc.PerpetualTransfers;
-import com.hedera.services.bdd.suites.misc.PersistenceDevSuite;
-import com.hedera.services.bdd.suites.misc.R5BugChecks;
-import com.hedera.services.bdd.suites.misc.RekeySavedStateTreasury;
-import com.hedera.services.bdd.suites.misc.ReviewMainnetEntities;
-import com.hedera.services.bdd.suites.misc.TogglePayerRecordUse;
-import com.hedera.services.bdd.suites.misc.UtilVerbChecks;
-import com.hedera.services.bdd.suites.misc.WalletTestSetup;
-import com.hedera.services.bdd.suites.misc.ZeroStakeNodeTest;
 import com.hedera.services.bdd.suites.perf.AccountBalancesClientSaveLoadTest;
 import com.hedera.services.bdd.suites.perf.AdjustFeeScheduleSuite;
 import com.hedera.services.bdd.suites.perf.FileContractMemoPerfSuite;
@@ -182,42 +149,13 @@ import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.SubmitMessageLoadTest;
 import com.hedera.services.bdd.suites.perf.topic.SubmitMessagePerfSuite;
 import com.hedera.services.bdd.suites.perf.topic.createTopicLoadTest;
-import com.hedera.services.bdd.suites.reconnect.AutoAccountCreationValidationsAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.AutoAccountCreationsBeforeReconnect;
-import com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect;
-import com.hedera.services.bdd.suites.reconnect.CheckUnavailableNode;
-import com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeReconnect;
-import com.hedera.services.bdd.suites.reconnect.CreateFilesBeforeReconnect;
-import com.hedera.services.bdd.suites.reconnect.CreateSchedulesBeforeReconnect;
-import com.hedera.services.bdd.suites.reconnect.CreateTokensBeforeReconnect;
-import com.hedera.services.bdd.suites.reconnect.CreateTopicsBeforeReconnect;
-import com.hedera.services.bdd.suites.reconnect.MixedValidationsAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.SchedulesExpiryDuringReconnect;
-import com.hedera.services.bdd.suites.reconnect.SubmitMessagesForReconnect;
-import com.hedera.services.bdd.suites.reconnect.UpdateAllProtectedFilesDuringReconnect;
-import com.hedera.services.bdd.suites.reconnect.UpdateApiPermissionsDuringReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateApiPermissionStateAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateAppPropertiesStateAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateCongestionPricingAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateDuplicateTransactionAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateExchangeRateStateAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateFeeScheduleStateAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateTokensDeleteAfterReconnect;
-import com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect;
 import com.hedera.services.bdd.suites.records.CharacterizationSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.DuplicateManagementTest;
-import com.hedera.services.bdd.suites.records.FeeItemization;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
-import com.hedera.services.bdd.suites.records.MigrationValidation;
-import com.hedera.services.bdd.suites.records.MigrationValidationPostSteps;
-import com.hedera.services.bdd.suites.records.MigrationValidationPreSteps;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
-import com.hedera.services.bdd.suites.records.RecordPurgeSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
-import com.hedera.services.bdd.suites.regression.AddWellKnownEntities;
-import com.hedera.services.bdd.suites.regression.JrsRestartTestTemplate;
 import com.hedera.services.bdd.suites.regression.SplittingThrottlesWorks;
 import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
@@ -228,7 +166,6 @@ import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecStateful;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
-import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.streaming.RunTransfers;
 import com.hedera.services.bdd.suites.throttling.GasLimitThrottlingSuite;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
@@ -247,10 +184,6 @@ import com.hedera.services.bdd.suites.token.TokenTotalSupplyAfterMintBurnWipeSui
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import com.hedera.services.bdd.suites.token.UniqueTokenManagementSpecs;
-import com.hedera.services.bdd.suites.utils.FetchWithPem;
-import com.hedera.services.bdd.suites.utils.sysfiles.SysFilesUpdate;
-import com.hedera.services.bdd.suites.utils.validation.OneOffValidation;
-import com.hedera.services.bdd.suites.utils.validation.ValidationScenarios;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.Tag;
@@ -461,7 +394,6 @@ class E2EPackageRunner {
 	Collection<DynamicContainer> filePositive() {
 		return List.of(
 				extractSpecsFromSuite(CreateSuccessSpec::new),
-				extractSpecsFromSuite(IssDemoSpec::new),
 				extractSpecsFromSuite(SysDelSysUndelSpec::new)
 		);
 	}
@@ -476,24 +408,6 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(DeleteFailuresSpec::new),
 				extractSpecsFromSuite(QueryFailuresSpec::new),
 				extractSpecsFromSuite(UpdateFailuresSpec::new)
-		);
-	}
-
-	@Tag("freeze")
-	@TestFactory
-	Collection<DynamicContainer> freeze() {
-		return List.of(
-				extractSpecsFromSuite(CryptoTransferThenFreezeTest::new),
-				extractSpecsFromSuite(FreezeAbort::new),
-				extractSpecsFromSuite(FreezeDockerNetwork::new),
-				extractSpecsFromSuite(FreezeIntellijNetwork::new),
-				extractSpecsFromSuite(FreezeSuite::new),
-				extractSpecsFromSuite(FreezeUpgrade::new),
-				extractSpecsFromSuite(PrepareUpgrade::new),
-				extractSpecsFromSuite(SimpleFreezeOnly::new),
-				extractSpecsFromSuite(UpdateFileForUpgrade::new),
-				extractSpecsFromSuite(UpdateServerFiles::new),
-				extractSpecsFromSuite(UpgradeSuite::new)
 		);
 	}
 
@@ -522,34 +436,6 @@ class E2EPackageRunner {
 	Collection<DynamicContainer> meta() {
 		return List.of(
 				extractSpecsFromSuite(VersionInfoSpec::new)
-		);
-	}
-
-	@Tag("misc")
-	@TestFactory
-	Collection<DynamicContainer> misc() {
-		return List.of(
-				extractSpecsFromSuite(CannotDeleteSystemEntitiesSuite::new),
-				extractSpecsFromSuite(ConsensusQueriesStressTests::new),
-				extractSpecsFromSuite(ContractQueriesStressTests::new),
-				extractSpecsFromSuite(CryptoQueriesStressTests::new),
-				extractSpecsFromSuite(FileQueriesStressTests::new),
-				extractSpecsFromSuite(FreezeRekeyedState::new),
-				extractSpecsFromSuite(GuidedTourRemoteSuite::new),
-				extractSpecsFromSuite(InvalidgRPCValuesTest::new),
-				extractSpecsFromSuite(KeyExport::new),
-				extractSpecsFromSuite(MemoValidation::new),
-				extractSpecsFromSuite(MixedOpsTransactionsSuite::new),
-				extractSpecsFromSuite(OneOfEveryTransaction::new),
-				extractSpecsFromSuite(PerpetualTransfers::new),
-				extractSpecsFromSuite(PersistenceDevSuite::new),
-				extractSpecsFromSuite(R5BugChecks::new),
-				extractSpecsFromSuite(RekeySavedStateTreasury::new),
-				extractSpecsFromSuite(ReviewMainnetEntities::new),
-				extractSpecsFromSuite(TogglePayerRecordUse::new),
-				extractSpecsFromSuite(UtilVerbChecks::new),
-				extractSpecsFromSuite(WalletTestSetup::new),
-				extractSpecsFromSuite(ZeroStakeNodeTest::new)
 		);
 	}
 
@@ -663,35 +549,6 @@ class E2EPackageRunner {
 		);
 	}
 
-	@Tag("reconnect")
-	@TestFactory
-	Collection<DynamicContainer> reconnect() {
-		return List.of(
-				extractSpecsFromSuite(AutoAccountCreationsBeforeReconnect::new),
-				extractSpecsFromSuite(AutoAccountCreationValidationsAfterReconnect::new),
-				extractSpecsFromSuite(AutoRenewEntitiesForReconnect::new),
-				extractSpecsFromSuite(CheckUnavailableNode::new),
-				extractSpecsFromSuite(CreateAccountsBeforeReconnect::new),
-				extractSpecsFromSuite(CreateFilesBeforeReconnect::new),
-				extractSpecsFromSuite(CreateSchedulesBeforeReconnect::new),
-				extractSpecsFromSuite(CreateTokensBeforeReconnect::new),
-				extractSpecsFromSuite(CreateTopicsBeforeReconnect::new),
-				extractSpecsFromSuite(MixedValidationsAfterReconnect::new),
-				extractSpecsFromSuite(SchedulesExpiryDuringReconnect::new),
-				extractSpecsFromSuite(SubmitMessagesForReconnect::new),
-				extractSpecsFromSuite(UpdateAllProtectedFilesDuringReconnect::new),
-				extractSpecsFromSuite(UpdateApiPermissionsDuringReconnect::new),
-				extractSpecsFromSuite(ValidateApiPermissionStateAfterReconnect::new),
-				extractSpecsFromSuite(ValidateAppPropertiesStateAfterReconnect::new),
-				extractSpecsFromSuite(ValidateCongestionPricingAfterReconnect::new),
-				extractSpecsFromSuite(ValidateDuplicateTransactionAfterReconnect::new),
-				extractSpecsFromSuite(ValidateExchangeRateStateAfterReconnect::new),
-				extractSpecsFromSuite(ValidateFeeScheduleStateAfterReconnect::new),
-				extractSpecsFromSuite(ValidateTokensDeleteAfterReconnect::new),
-				extractSpecsFromSuite(ValidateTokensStateAfterReconnect::new)
-		);
-	}
-
 	@Tag("records")
 	@TestFactory
 	Collection<DynamicContainer> records() {
@@ -700,13 +557,8 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(ContractRecordsSanityCheckSuite::new),
 				extractSpecsFromSuite(CryptoRecordsSanityCheckSuite::new),
 				extractSpecsFromSuite(DuplicateManagementTest::new),
-				extractSpecsFromSuite(FeeItemization::new),
 				extractSpecsFromSuite(FileRecordsSanityCheckSuite::new),
-				extractSpecsFromSuite(MigrationValidation::new),
-				extractSpecsFromSuite(MigrationValidationPostSteps::new),
-				extractSpecsFromSuite(MigrationValidationPreSteps::new),
 				extractSpecsFromSuite(RecordCreationSuite::new),
-				extractSpecsFromSuite(RecordPurgeSuite::new),
 				extractSpecsFromSuite(SignedTransactionBytesRecordsSuite::new)
 		);
 	}
@@ -715,8 +567,6 @@ class E2EPackageRunner {
 	@TestFactory
 	Collection<DynamicContainer> regression() {
 		return List.of(
-				extractSpecsFromSuite(AddWellKnownEntities::new),
-				extractSpecsFromSuite(JrsRestartTestTemplate::new),
 				extractSpecsFromSuite(SplittingThrottlesWorks::new),
 				extractSpecsFromSuite(SteadyStateThrottlingCheck::new),
 				extractSpecsFromSuite(UmbrellaRedux::new),
@@ -741,7 +591,6 @@ class E2EPackageRunner {
 	@TestFactory
 	Collection<DynamicContainer> streaming() {
 		return List.of(
-				extractSpecsFromSuite(RecordStreamValidation::new),
 				extractSpecsFromSuite(RunTransfers::new)
 		);
 	}
@@ -781,10 +630,6 @@ class E2EPackageRunner {
 	@TestFactory
 	Collection<DynamicContainer> utils() {
 		return List.of(
-				extractSpecsFromSuite(FetchWithPem::new),
-				extractSpecsFromSuite(SysFilesUpdate::new),
-				extractSpecsFromSuite(OneOffValidation::new),
-				extractSpecsFromSuite(ValidationScenarios::new),
 				extractSpecsFromSuite(SubmitMessagePerfSuite::new)
 		);
 	}

@@ -22,18 +22,12 @@ package com.hedera.services.grpc;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.utils.Pause;
-import com.hedera.test.extensions.LogCaptor;
-import com.hedera.test.extensions.LogCaptureExtension;
-import com.hedera.test.extensions.LoggingSubject;
-import com.hedera.test.extensions.LoggingTarget;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.netty.NettyServerBuilder;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 
 import java.io.FileNotFoundException;
@@ -41,12 +35,8 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static com.hedera.test.CiConditions.outsideCircleCi;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -58,7 +48,6 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
-@ExtendWith(LogCaptureExtension.class)
 class NettyGrpcServerManagerTest {
 	private int startRetries = 3;
 	private long startRetryIntervalMs = 1_000L;
@@ -75,10 +64,6 @@ class NettyGrpcServerManagerTest {
 	private BindableService a, b, c;
 	private Set<BindableService> bindableServices;
 
-	@LoggingTarget
-	private LogCaptor logCaptor;
-
-	@LoggingSubject
 	private NettyGrpcServerManager subject;
 
 	@BeforeEach
@@ -131,35 +116,20 @@ class NettyGrpcServerManagerTest {
 		// then:
 		verify(mockPause, times(2)).forMs(startRetryIntervalMs);
 		verify(server, times(3)).start();
-		if (outsideCircleCi.getAsBoolean()) {
-			assertThat(logCaptor.warnLogs(), contains(
-					"(Attempts=1) Still trying to start Netty on port 8080...Failed to bind",
-					"(Attempts=2) Still trying to start Netty on port 8080...Failed to bind"));
-		}
 	}
 
-	@Disabled
 	@Test
 	void givesUpIfMaxRetriesExhaustedAndPropagatesIOException() throws Exception {
-		// setup:
 		final var mockPause = mock(Pause.class);
 
 		given(server.start())
 				.willThrow(new IOException("Failed to bind"));
 
-		// expect:
 		assertThrows(IOException.class, () ->
 				subject.startOneNettyServer(false, port, ignore -> {}, mockPause));
 
-		// then:
 		verify(mockPause, times(startRetries)).forMs(startRetryIntervalMs);
 		verify(server, times(startRetries + 1)).start();
-		if (outsideCircleCi.getAsBoolean()) {
-			assertThat(logCaptor.warnLogs(), contains(
-					"(Attempts=1) Still trying to start Netty on port 8080...Failed to bind",
-					"(Attempts=2) Still trying to start Netty on port 8080...Failed to bind",
-					"(Attempts=3) Still trying to start Netty on port 8080...Failed to bind"));
-		}
 	}
 
 	@Test
@@ -180,9 +150,6 @@ class NettyGrpcServerManagerTest {
 		// then:
 		verify(mockPause, never()).forMs(startRetryIntervalMs);
 		verify(server).start();
-		if (outsideCircleCi.getAsBoolean()) {
-			assertTrue(logCaptor.warnLogs().isEmpty());
-		}
 	}
 
 	@Test

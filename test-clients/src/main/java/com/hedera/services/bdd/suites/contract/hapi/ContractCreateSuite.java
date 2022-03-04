@@ -94,7 +94,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -273,11 +272,11 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
 				).then(
 						sourcing(() -> getContractInfo("0.0." + firstStickId.get())
-								.hasCostAnswerPrecheck(CONTRACT_DELETED)),
+								.has(contractWith().isDeleted())),
 						sourcing(() -> getContractInfo("0.0." + secondStickId.get())
-								.hasCostAnswerPrecheck(CONTRACT_DELETED)),
+								.has(contractWith().isDeleted())),
 						sourcing(() -> getContractInfo("0.0." + thirdStickId.get())
-								.hasCostAnswerPrecheck(CONTRACT_DELETED))
+								.has(contractWith().isDeleted()))
 				);
 	}
 
