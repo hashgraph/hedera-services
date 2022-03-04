@@ -18,7 +18,7 @@ public class UniqueTokensCommitInterceptor implements CommitInterceptor<NftId, M
 	}
 
 	@Override
-	public void preview(List<MerkleLeafChanges<NftId, MerkleUniqueToken, NftProperty>> changesToCommit) {
+	public void preview(List<EntityChanges<NftId, MerkleUniqueToken, NftProperty>> changesToCommit) {
 		//to be implemented
 	}
 }

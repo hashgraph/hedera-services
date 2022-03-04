@@ -201,7 +201,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		// then:
 		assertEquals(newAccount1, account);
 		// and:
-		verify(backingTestAccounts, times(2)).getRef(1L);
+		verify(backingTestAccounts).getRef(1L);
 	}
 
 	@Test
@@ -387,7 +387,7 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		long value = (long) subject.get(1L, LONG);
 
 		// then:
-		verify(backingTestAccounts, times(3)).contains(1L);
+		verify(backingTestAccounts, times(2)).contains(1L);
 		assertEquals(3L, value);
 	}
 

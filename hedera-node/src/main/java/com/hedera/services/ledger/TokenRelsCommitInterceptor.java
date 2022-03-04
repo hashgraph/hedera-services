@@ -25,8 +25,8 @@ public class TokenRelsCommitInterceptor implements CommitInterceptor<Pair<Accoun
 	 * @throws IllegalStateException if these changes are invalid
 	 */
 	@Override
-	public void preview(final List<MerkleLeafChanges<Pair<AccountID, TokenID>, MerkleTokenRelStatus,
-			TokenRelProperty>> changesToCommit) {
+	public void preview(final List<EntityChanges<Pair<AccountID, TokenID>, MerkleTokenRelStatus,
+				TokenRelProperty>> changesToCommit) {
 		//to be implemented
 	}
 }

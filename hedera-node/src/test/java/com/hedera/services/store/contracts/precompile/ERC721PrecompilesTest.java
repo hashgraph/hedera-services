@@ -59,7 +59,6 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -83,12 +82,10 @@ import java.util.Optional;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
-import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ERC_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ERC_TRANSFER_FROM;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_OWNER_OF_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
@@ -98,7 +95,6 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.ownerOfAndTokenUriWrapper;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.precompiledContract;
@@ -109,15 +105,10 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
-import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -253,7 +244,7 @@ class ERC721PrecompilesTest {
         given(encoder.encodeName(any())).willReturn(successResult);
 
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -284,7 +275,7 @@ class ERC721PrecompilesTest {
         given(encoder.encodeSymbol(any())).willReturn(successResult);
 
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -316,7 +307,7 @@ class ERC721PrecompilesTest {
         given(encoder.encodeTotalSupply(10L)).willReturn(successResult);
 
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -353,7 +344,7 @@ class ERC721PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -388,7 +379,7 @@ class ERC721PrecompilesTest {
         given(encoder.encodeOwner(EntityIdUtils.asTypedEvmAddress(sender))).willReturn(successResult);
 
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -421,7 +412,7 @@ class ERC721PrecompilesTest {
         given(encoder.encodeTokenUri("Metadata")).willReturn(successResult);
 
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -436,7 +427,7 @@ class ERC721PrecompilesTest {
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArguments, а -> а));
@@ -449,7 +440,7 @@ class ERC721PrecompilesTest {
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_DECIMALS);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArguments, а -> а));

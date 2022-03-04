@@ -305,7 +305,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return null;
 		}
 
-		prepareFieldsFromFrame(messageFrame);
+		prepareFields(messageFrame);
 		final UnaryOperator<byte[]> aliasResolver = updater::unaliased;
 
 		prepareComputation(input, aliasResolver);
@@ -326,10 +326,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return computeInternal(messageFrame);
 	}
 
-	void prepareFieldsFromFrame(final MessageFrame messageFrame) {
+	void prepareFields(final MessageFrame messageFrame) {
 		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
-		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
 		this.sideEffectsTracker = sideEffectsFactory.get();
+		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
 		this.senderAddress = messageFrame.getSenderAddress();
 	}
 

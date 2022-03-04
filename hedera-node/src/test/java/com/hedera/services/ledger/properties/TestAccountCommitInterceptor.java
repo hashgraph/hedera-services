@@ -2,7 +2,7 @@ package com.hedera.services.ledger.properties;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.CommitInterceptor;
-import com.hedera.services.ledger.MerkleLeafChanges;
+import com.hedera.services.ledger.EntityChanges;
 import com.hedera.services.ledger.accounts.TestAccount;
 
 import java.util.List;
@@ -18,7 +18,7 @@ public class TestAccountCommitInterceptor implements CommitInterceptor<Long, Tes
 	}
 
 	@Override
-	public void preview(List<MerkleLeafChanges<Long, TestAccount, TestAccountProperty>> changesToCommit) {
+	public void preview(List<EntityChanges<Long, TestAccount, TestAccountProperty>> changesToCommit) {
 
 	}
 }

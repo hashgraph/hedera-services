@@ -13,7 +13,7 @@ public class AccountsCommitInterceptor implements
 
 	// The tracker this interceptor should use for previewing changes. The interceptor is NOT
 	// responsible for calling reset() on the tracker, as that will be done by the client code.
-	private SideEffectsTracker sideEffectsTracker;
+	private final SideEffectsTracker sideEffectsTracker;
 
 	public AccountsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
 		this.sideEffectsTracker = sideEffectsTracker;
@@ -25,7 +25,7 @@ public class AccountsCommitInterceptor implements
 	 * @throws IllegalStateException if these changes are invalid
 	 */
 	@Override
-	public void preview(final List<MerkleLeafChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
+	public void preview(final List<EntityChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
 		for (final var changeToCommit : changesToCommit) {
 			final var account = changeToCommit.id();
 			final var merkleAccount = changeToCommit.merkleLeaf();
@@ -34,9 +34,7 @@ public class AccountsCommitInterceptor implements
 			trackHBarTransfer(changedProperties, account, merkleAccount);
 		}
 
-		if (changesToCommit.size() > 1) {
-			checkSum();
-		}
+		checkSum();
 	}
 
 	private void trackHBarTransfer(final Map<AccountProperty, Object> changedProperties,

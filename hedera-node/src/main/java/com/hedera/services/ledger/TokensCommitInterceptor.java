@@ -18,7 +18,7 @@ public class TokensCommitInterceptor implements CommitInterceptor<TokenID, Merkl
 	}
 
 	@Override
-	public void preview(List<MerkleLeafChanges<TokenID, MerkleToken, TokenProperty>> changesToCommit) {
+	public void preview(List<EntityChanges<TokenID, MerkleToken, TokenProperty>> changesToCommit) {
 		//to be implemented
 	}
 }
