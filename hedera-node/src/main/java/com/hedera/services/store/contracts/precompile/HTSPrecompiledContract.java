@@ -853,14 +853,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var assessmentStatus = impliedTransfers.getMeta().code();
 			validateTrue(assessmentStatus == OK, assessmentStatus);
 			var changes = impliedTransfers.getAllBalanceChanges();
-
-			final var hederaTokenStore = hederaTokenStoreFactory.newHederaTokenStore(
-					ids,
-					validator,
-					sideEffectsTracker,
-					NOOP_VIEWS_MANAGER,
-					dynamicProperties,
-					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+			
 			hederaTokenStore.setAccountsLedger(ledgers.accounts());
 
 			final var transferLogic = transferLogicFactory.newLogic(
