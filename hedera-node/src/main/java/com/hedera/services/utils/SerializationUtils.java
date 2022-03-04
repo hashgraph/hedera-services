@@ -46,14 +46,32 @@ public final class SerializationUtils {
 	}
 
 	public static void serializeTokenAllowances(
-			SerializableDataOutputStream out,
-			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances) throws IOException {
+			final SerializableDataOutputStream out,
+			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances
+	) throws IOException {
 		out.writeInt(fungibleTokenAllowances.size());
 		for (Map.Entry<FcTokenAllowanceId, Long> entry : fungibleTokenAllowances.entrySet()) {
 			out.writeSerializable(entry.getKey(), true);
 			out.writeLong(entry.getValue());
 		}
 	}
+
+	public static Map<FcTokenAllowanceId, Long> deserializeFungibleTokenAllowances(
+			final SerializableDataInputStream in
+	) throws IOException {
+		var numFungibleTokenAllowances = in.readInt();
+		if (numFungibleTokenAllowances == 0) {
+			return Collections.emptyMap();
+		}
+		final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
+		while (numFungibleTokenAllowances-- > 0) {
+			final FcTokenAllowanceId fungibleAllowanceId = in.readSerializable();
+			final Long value = in.readLong();
+			fungibleTokenAllowances.put(fungibleAllowanceId, value);
+		}
+		return fungibleTokenAllowances;
+	}
+
 
 	public static void serializeNftAllowance(
 			SerializableDataOutputStream out,
@@ -77,20 +95,6 @@ public final class SerializationUtils {
 			cryptoAllowances.put(entityNum, allowance);
 		}
 		return cryptoAllowances;
-	}
-
-	public static Map<FcTokenAllowanceId, Long> deserializeFungibleTokenAllowances(SerializableDataInputStream in) throws IOException {
-		Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
-		var numFungibleTokenAllowances = in.readInt();
-		if(numFungibleTokenAllowances > 0){
-			fungibleTokenAllowances = new TreeMap<>();
-		}
-		while (numFungibleTokenAllowances-- > 0) {
-			final FcTokenAllowanceId fungibleAllowanceId = in.readSerializable();
-			final Long value = in.readLong();
-			fungibleTokenAllowances.put(fungibleAllowanceId, value);
-		}
-		return fungibleTokenAllowances;
 	}
 
 	public static Map<FcTokenAllowanceId, FcTokenAllowance> deserializeNftAllowances(SerializableDataInputStream in) throws IOException {
