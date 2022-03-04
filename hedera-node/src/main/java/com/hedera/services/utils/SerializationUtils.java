@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public final class SerializationUtils {
-	private SerializationUtils()  {
+	private SerializationUtils() {
 		throw new UnsupportedOperationException("Utility Class");
 	}
 
@@ -83,12 +83,14 @@ public final class SerializationUtils {
 		}
 	}
 
-	public static Map<EntityNum, Long> deserializeCryptoAllowances(SerializableDataInputStream in) throws IOException {
-		Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
+	public static Map<EntityNum, Long> deserializeCryptoAllowances(
+			final SerializableDataInputStream in
+	) throws IOException {
 		var numCryptoAllowances = in.readInt();
-		if(numCryptoAllowances > 0){
-			cryptoAllowances = new TreeMap<>();
+		if (numCryptoAllowances == 0) {
+			return Collections.emptyMap();
 		}
+		final Map<EntityNum, Long> cryptoAllowances = new TreeMap<>();
 		while (numCryptoAllowances-- > 0) {
 			final var entityNum = EntityNum.fromLong(in.readLong());
 			final var allowance = in.readLong();
@@ -97,12 +99,14 @@ public final class SerializationUtils {
 		return cryptoAllowances;
 	}
 
-	public static Map<FcTokenAllowanceId, FcTokenAllowance> deserializeNftAllowances(SerializableDataInputStream in) throws IOException {
-		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = Collections.emptyMap();
+	public static Map<FcTokenAllowanceId, FcTokenAllowance> deserializeNftAllowances(
+			final SerializableDataInputStream in
+	) throws IOException {
 		var numNftAllowances = in.readInt();
-		if(numNftAllowances > 0){
-			nftAllowances = new TreeMap<>();
+		if (numNftAllowances == 0) {
+			return Collections.emptyMap();
 		}
+		final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
 		while (numNftAllowances-- > 0) {
 			final FcTokenAllowanceId nftAllowanceId = in.readSerializable();
 			final FcTokenAllowance value = in.readSerializable();
