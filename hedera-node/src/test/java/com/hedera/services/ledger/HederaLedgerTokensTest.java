@@ -32,9 +32,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIA
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -55,30 +52,6 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		final var balance = subject.getTokenBalance(misc, frozenId);
 
 		assertEquals(miscFrozenTokenBalance, balance);
-	}
-
-	@Test
-	void recognizesAccountWithNonZeroTokenBalances() {
-		assertFalse(subject.allTokenBalancesVanish(misc));
-	}
-
-	@Test
-	void ignoresNonZeroBalanceOfDeletedToken() {
-		given(frozenToken.isDeleted()).willReturn(true);
-
-		assertTrue(subject.allTokenBalancesVanish(misc));
-	}
-
-	@Test
-	void throwsIfSubjectHasNoUsableTokenRelsLedger() {
-		subject.setTokenRelsLedger(null);
-
-		assertThrows(IllegalStateException.class, () -> subject.allTokenBalancesVanish(deletable));
-	}
-
-	@Test
-	void recognizesAccountWithZeroTokenBalances() {
-		assertTrue(subject.allTokenBalancesVanish(deletable));
 	}
 
 	@Test

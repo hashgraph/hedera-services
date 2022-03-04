@@ -23,8 +23,8 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.txns.TransitionLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
@@ -46,7 +46,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
 /**
@@ -88,11 +87,6 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 			AccountID beneficiary = op.getTransferAccountID();
 			if (ledger.isDetached(id) || ledger.isDetached(beneficiary)) {
 				txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-				return;
-			}
-
-			if (!ledger.allTokenBalancesVanish(id)) {
-				txnCtx.setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 				return;
 			}
 

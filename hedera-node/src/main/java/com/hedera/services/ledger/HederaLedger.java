@@ -45,7 +45,6 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -55,7 +54,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -70,14 +68,11 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
-import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIATED_TOKEN;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
-import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -290,33 +285,6 @@ public class HederaLedger {
 	public long getTokenBalance(AccountID aId, TokenID tId) {
 		var relationship = asTokenRel(aId, tId);
 		return (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-	}
-
-	public boolean allTokenBalancesVanish(AccountID aId) {
-		if (tokenRelsLedger == null) {
-			throw new IllegalStateException("Ledger has no manageable token relationships!");
-		}
-
-		var currKey = (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
-		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
-		// get All the tokenIds associated by traversing the linkedList
-		// TODO
-		while (!currKey.equals(MISSING_NUM_PAIR)) {
-			listOfAssociatedTokens.add(currKey.asAccountTokenRel().getRight());
-			currKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), NEXT_KEY);
-		}
-
-		for (TokenID tId : listOfAssociatedTokens) {
-			if (tokenStore.get(tId).isDeleted()) {
-				continue;
-			}
-			var relationship = asTokenRel(aId, tId);
-			var balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-			if (balance > 0) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	public boolean isKnownTreasury(AccountID aId) {
