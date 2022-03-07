@@ -199,8 +199,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN = -0x6238ee20;
 	//createNonFungibleTokenWithCustomFees(HederaToken memory token, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees, RoyaltyFee[] memory royaltyFees)
 	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES = -0x21abcac2;
-	//setTokenThresholdKeys (address token, TresholdTokenKey[] memory tokenKeys)
-	protected static final int ABI_ID_UPDATE_TOKEN_WITH_THRESHOLD_KEYS = 0x3ff927f;
 
 	private int functionId;
 	private Precompile precompile;
@@ -317,7 +315,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> new FungibleTokenCreateWithFeesPrecompile();
 					case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> new NonFungibleTokenCreatePrecompile();
 					case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> new NonFungibleTokenCreateWithFeesPrecompile();
-					case ABI_ID_UPDATE_TOKEN_WITH_THRESHOLD_KEYS -> new UpdateTokenWithThresholdKeysPrecompile();
 					default -> null;
 				};
 		if (precompile != null) {
@@ -809,39 +806,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class NonFungibleTokenCreateWithFeesPrecompile implements Precompile {
-
-		@Override
-		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-			return null;
-		}
-
-		@Override
-		public ExpirableTxnRecord.Builder run(MessageFrame frame, WorldLedgers ledgers) {
-			return null;
-		}
-
-		@Override
-		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-			return 0;
-		}
-
-		@Override
-		public void addImplicitCostsIn(TxnAccessor accessor) {
-			Precompile.super.addImplicitCostsIn(accessor);
-		}
-
-		@Override
-		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			return Precompile.super.getSuccessResultFor(childRecord);
-		}
-
-		@Override
-		public Bytes getFailureResultFor(ResponseCodeEnum status) {
-			return Precompile.super.getFailureResultFor(status);
-		}
-	}
-
-	protected class UpdateTokenWithThresholdKeysPrecompile implements Precompile {
 
 		@Override
 		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {

@@ -370,17 +370,6 @@ interface IHederaTokenService {
         RoyaltyFee[] memory royaltyFees)
     external returns (bool success, address tokenAddress, bytes memory errorMessage);
 
-    /// Update a token with threshold keys. The transaction must be signed by the token admin key.
-    /// For an immutable tokens (that is, a token without an admin key) updates on keys are not
-    /// possible and the transaction will resolve to TOKEN_IS_IMMUTABLE
-    /// @param token the address of the token to update
-    /// @param tokenKeys a list of threshold keys to update the token with
-    /// @return success whether the update was successful
-    /// @return errorMessage any errors that occured during token update
-    function setTokenThresholdKeys (
-        address token,
-        TresholdTokenKey[] memory tokenKeys) external returns (bool success, bytes memory errorMessage);
-
 
     /**********************
      * ABIV1 calls        *

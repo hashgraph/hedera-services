@@ -277,19 +277,5 @@ abstract contract HederaTokenService is HederaResponseCodes {
         (tokenAddress, errorMessage) = abi.decode(result, (address, bytes));
     }
 
-    /// Update a token with threshold keys. The transaction must be signed by the token admin key.
-    /// For an immutable tokens (that is, a token without an admin key) updates on keys are not
-    /// possible and the transaction will resolve to TOKEN_IS_IMMUTABLE
-    /// @param token the address of the token to update
-    /// @param tokenKeys a list of threshold keys to update the token with
-    /// @return success whether the update was successful
-    /// @return errorMessage any errors that occured during token update
-    function setTokenThresholdKeys (
-        address token,
-        IHederaTokenService.TresholdTokenKey[] memory tokenKeys) internal returns (bool success, bytes memory errorMessage){
-        (success, errorMessage) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.setTokenThresholdKeys.selector,
-            token, tokenKeys));
-    }
 
 }

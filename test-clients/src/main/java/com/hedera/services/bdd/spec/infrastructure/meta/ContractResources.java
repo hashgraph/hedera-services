@@ -891,12 +891,6 @@ public class ContractResources {
 			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
 			"\"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
-	public static final String UPDATE_TOKEN_WITH_THRESHOLD_KEYS_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
-			"\"name\": \"token\", \"type\": \"address\" }, { \"internalType\": \"bytes\", \"name\": \"ed25519\", " +
-			"\"type\": \"bytes\" }, { \"internalType\": \"bytes\", \"name\": \"ECDSA_secp256k1\", " +
-			"\"type\": \"bytes\" } ], \"name\": \"updateTokenWithThresholdKeys\", " +
-			"\"outputs\": [], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
-
 	public static final String SAFE_MINT_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"token\"," +
 			" \"type\": \"address\" }, { \"internalType\": \"uint64\", \"name\": \"amount\", \"type\": \"uint64\" }, " +
 			"{ \"internalType\": \"bytes[]\", \"name\": \"metadata\", \"type\": \"bytes[]\" } ], " +

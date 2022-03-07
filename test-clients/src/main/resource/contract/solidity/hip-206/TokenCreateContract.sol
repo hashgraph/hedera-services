@@ -149,52 +149,6 @@ contract TokenCreateContract is HederaTokenService {
         createdTokenAddress = token;
     }
 
-    // update a token with a 3 required out of 5 possible signatures threshold key
-    function updateTokenWithThresholdKeys(address token, bytes memory ed25519, bytes memory ECDSA_secp256k1) external {
-
-        // create all possible values for the threshold key
-        IHederaTokenService.KeyValue[] memory possibleKeyValues = new IHederaTokenService.KeyValue[](5);
-
-        IHederaTokenService.KeyValue memory value1;
-        value1.contractId = address(this);
-
-        IHederaTokenService.KeyValue memory value2;
-        value2.inheritAccountKey = true;
-
-        IHederaTokenService.KeyValue memory value3;
-        value3.ed25519 = ed25519;
-
-        IHederaTokenService.KeyValue memory value4;
-        value4.ECDSA_secp256k1 = ECDSA_secp256k1;
-
-        IHederaTokenService.KeyValue memory value5;
-        value5.delegatableContractId = address(this);
-
-        possibleKeyValues[0] = value1;
-        possibleKeyValues[1] = value2;
-        possibleKeyValues[2] = value3;
-        possibleKeyValues[3] = value4;
-        possibleKeyValues[4] = value5;
-
-        // turn on bit corresponding to admin key type
-        uint adminKeyType;
-        adminKeyType = adminKeyType.setBit(0);
-
-        // create the threshold key struct
-        IHederaTokenService.TresholdTokenKey memory thresholdKey;
-        thresholdKey.keyType = adminKeyType;
-        thresholdKey.threshold = 3;
-        thresholdKey.keys = possibleKeyValues;
-
-        IHederaTokenService.TresholdTokenKey[] memory thresholdKeysList = new IHederaTokenService.TresholdTokenKey[](1);
-        thresholdKeysList[0] = thresholdKey;
-
-        (bool success, bytes memory errorMessage) = HederaTokenService.setTokenThresholdKeys(token, thresholdKeysList);
-
-        if (!success){
-            revert (abi.decode(errorMessage, (string)));
-        }
-    }
 }
 
 library Bits {
