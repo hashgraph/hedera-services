@@ -52,11 +52,12 @@ import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 public class SolidityFnResult implements SelfSerializable {
 	private static final byte[] MISSING_BYTES = new byte[0];
 
-	static final int MERKLE_VERSION = 2;
 
 	static final int PRE_RELEASE_0230_VERSION = 1;
 	static final int RELEASE_0230_VERSION = 2;
 	static final int RELEASE_0240_VERSION = 3;
+	static final int MERKLE_VERSION = RELEASE_0240_VERSION;
+
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
 	static DomainSerdes serdes = new DomainSerdes();
