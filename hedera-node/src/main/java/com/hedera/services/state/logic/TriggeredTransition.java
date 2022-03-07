@@ -36,24 +36,27 @@ public class TriggeredTransition implements Runnable {
 	private final FeeCalculator fees;
 	private final FeeChargingPolicy chargingPolicy;
 	private final NetworkCtxManager networkCtxManager;
-	private final ScreenedTransition screenedTransition;
+	private final RequestedTransition requestedTransition;
 	private final TransactionContext txnCtx;
+	private final NetworkUtilization networkUtilization;
 
 	@Inject
 	public TriggeredTransition(
-			StateView currentView,
-			FeeCalculator fees,
-			FeeChargingPolicy chargingPolicy,
-			TransactionContext txnCtx,
-			NetworkCtxManager networkCtxManager,
-			ScreenedTransition screenedTransition
+			final StateView currentView,
+			final FeeCalculator fees,
+			final FeeChargingPolicy chargingPolicy,
+			final TransactionContext txnCtx,
+			final NetworkCtxManager networkCtxManager,
+			final RequestedTransition requestedTransition,
+			final NetworkUtilization networkUtilization
 	) {
 		this.currentView = currentView;
 		this.fees = fees;
 		this.chargingPolicy = chargingPolicy;
 		this.txnCtx = txnCtx;
 		this.networkCtxManager = networkCtxManager;
-		this.screenedTransition = screenedTransition;
+		this.networkUtilization = networkUtilization;
+		this.requestedTransition = requestedTransition;
 	}
 
 	@Override
@@ -62,7 +65,7 @@ public class TriggeredTransition implements Runnable {
 		final var now = txnCtx.consensusTime();
 
 		networkCtxManager.advanceConsensusClockTo(now);
-		networkCtxManager.prepareForIncorporating(accessor);
+		networkUtilization.trackUserTxn(accessor, now);
 
 		final var fee = fees.computeFee(accessor, txnCtx.activePayerKey(), currentView, now);
 		final var chargingOutcome = chargingPolicy.applyForTriggered(fee);
@@ -71,6 +74,8 @@ public class TriggeredTransition implements Runnable {
 			return;
 		}
 
-		screenedTransition.finishFor(accessor);
+		if (networkUtilization.screenForAvailableCapacity()) {
+			requestedTransition.finishFor(accessor);
+		}
 	}
 }
