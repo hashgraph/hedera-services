@@ -39,7 +39,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class ScreenedTransitionTest {
+class RequestedTransitionTest {
 	@Mock
 	private TransitionRunner transitionRunner;
 	@Mock
@@ -51,11 +51,11 @@ class ScreenedTransitionTest {
 	@Mock
 	private TxnAccessor accessor;
 
-	private ScreenedTransition subject;
+	private RequestedTransition subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new ScreenedTransition(transitionRunner, opPolicies, txnCtx, networkCtxManager);
+		subject = new RequestedTransition(transitionRunner, opPolicies, txnCtx, networkCtxManager);
 	}
 
 	@Test

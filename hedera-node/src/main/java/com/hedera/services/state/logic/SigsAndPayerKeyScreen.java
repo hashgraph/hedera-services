@@ -37,8 +37,8 @@ import java.util.function.BiPredicate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
-public class SignatureScreen {
-	private static final Logger log = LogManager.getLogger(SignatureScreen.class);
+public class SigsAndPayerKeyScreen {
+	private static final Logger log = LogManager.getLogger(SigsAndPayerKeyScreen.class);
 
 	private final Rationalization rationalization;
 	private final PayerSigValidity payerSigValidity;
@@ -47,7 +47,7 @@ public class SignatureScreen {
 	private final BiPredicate<JKey, TransactionSignature> validityTest;
 
 	@Inject
-	public SignatureScreen(
+	public SigsAndPayerKeyScreen(
 			Rationalization rationalization,
 			PayerSigValidity payerSigValidity,
 			TransactionContext txnCtx,

@@ -28,56 +28,75 @@ import javax.inject.Singleton;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+/**
+ * Applies a series of screens to the user transaction submitted via HAPI and now initialized at
+ * consensus in the {@link TransactionContext}, aborting the requested state transition if any
+ * screen fails. Accumulates various side-effects in other infrastructure components along the
+ * way. (For example, the payer solvency screen charges fees as a side-effect.)
+ *
+ * In order, the screens roughly test for:
+ * <ol>
+ *   <li>Validity of the supplied cryptographic signatures and activation of the payer's Hedera key.</li>
+ *   <li>Node due diligence, transaction chronology, and payer solvency.</li>
+ *   <li>Activation of non-payer Hedera keys linked to the transaction.</li>
+ *   <li>Availability of network capacity (for smart contract operations).</li>
+ * </ol>
+ */
 @Singleton
 public class TopLevelTransition implements Runnable {
-	private final ScreenedTransition screenedTransition;
-	private final TransactionContext txnCtx;
 	private final NetworkCtxManager networkCtxManager;
+	private final TransactionContext txnCtx;
+	private final NonPayerKeysScreen nonPayerKeysScreen;
+	private final RequestedTransition requestedTransition;
+	private final SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
 	private final TxnChargingPolicyAgent chargingPolicyAgent;
-	private final SignatureScreen signatureScreen;
-	private final ThrottleScreen throttleScreen;
-	private final KeyActivationScreen keyActivationScreen;
+	private final NetworkUtilization networkUtilization;
 
 	@Inject
 	public TopLevelTransition(
-			ScreenedTransition screenedTransition,
-			NetworkCtxManager networkCtxManager,
-			TransactionContext txnCtx,
-			SignatureScreen signatureScreen,
-			TxnChargingPolicyAgent chargingPolicyAgent,
-			KeyActivationScreen keyActivationScreen,
-			ThrottleScreen throttleScreen
+			final SigsAndPayerKeyScreen sigsAndPayerKeyScreen,
+			final NetworkCtxManager networkCtxManager,
+			final RequestedTransition requestedTransition,
+			final TransactionContext txnCtx,
+			final NonPayerKeysScreen nonPayerKeysScreen,
+			final NetworkUtilization networkUtilization,
+			final TxnChargingPolicyAgent chargingPolicyAgent
 	) {
 		this.txnCtx = txnCtx;
 		this.networkCtxManager = networkCtxManager;
+		this.networkUtilization = networkUtilization;
 		this.chargingPolicyAgent = chargingPolicyAgent;
-		this.signatureScreen = signatureScreen;
-		this.keyActivationScreen = keyActivationScreen;
-		this.screenedTransition = screenedTransition;
-		this.throttleScreen = throttleScreen;
+		this.sigsAndPayerKeyScreen = sigsAndPayerKeyScreen;
+		this.nonPayerKeysScreen = nonPayerKeysScreen;
+		this.requestedTransition = requestedTransition;
 	}
 
 	@Override
 	public void run() {
 		final var accessor = txnCtx.accessor();
 		final var now = txnCtx.consensusTime();
-
 		networkCtxManager.advanceConsensusClockTo(now);
 
-		final var sigStatus = signatureScreen.applyTo(accessor);
+		final var sigStatus = sigsAndPayerKeyScreen.applyTo(accessor);
+		// We update the network utilization before we compute and charge fees b/c
+		// network utilization determines the congestion pricing multiplier; so this
+		// is the simplest way to guarantee a reconnected node will apply the same
+		// multiplier as nodes that were never disconnected
+		// (c.f. https://github.com/hashgraph/hedera-services/issues/2936)
+		if (sigStatus == OK) {
+			networkUtilization.trackUserTxn(accessor, now);
+		} else {
+			// If the signature status isn't ok, only work done will be fee charging
+			networkUtilization.trackFeePayments(now);
+		}
 		if (!chargingPolicyAgent.applyPolicyFor(accessor)) {
 			return;
 		}
-		if (!keyActivationScreen.reqKeysAreActiveGiven(sigStatus)) {
+		if (!nonPayerKeysScreen.reqKeysAreActiveGiven(sigStatus)) {
 			return;
 		}
-
-		final var throttleScreenStatus = throttleScreen.applyTo(accessor);
-		if (throttleScreenStatus != OK) {
-			txnCtx.setStatus(throttleScreenStatus);
-			return;
+		if (networkUtilization.screenForAvailableCapacity()) {
+			requestedTransition.finishFor(accessor);
 		}
-
-		screenedTransition.finishFor(accessor);
 	}
 }

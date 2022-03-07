@@ -43,7 +43,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class KeyActivationScreenTest {
+class NonPayerKeysScreenTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
@@ -53,11 +53,11 @@ class KeyActivationScreenTest {
 	@Mock
 	private BiPredicate<JKey, TransactionSignature> validityTest;
 
-	private KeyActivationScreen subject;
+	private NonPayerKeysScreen subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new KeyActivationScreen(txnCtx, activationHelper, terminalSigStatusTest, validityTest);
+		subject = new NonPayerKeysScreen(txnCtx, activationHelper, terminalSigStatusTest, validityTest);
 	}
 
 	@Test
