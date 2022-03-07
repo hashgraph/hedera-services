@@ -34,14 +34,14 @@ import java.util.function.Predicate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 @Singleton
-public class KeyActivationScreen {
+public class NonPayerKeysScreen {
 	private final TransactionContext txnCtx;
 	private final InHandleActivationHelper activationHelper;
 	private final Predicate<ResponseCodeEnum> terminalSigStatusTest;
 	private final BiPredicate<JKey, TransactionSignature> validityTest;
 
 	@Inject
-	public KeyActivationScreen(
+	public NonPayerKeysScreen(
 			TransactionContext txnCtx,
 			InHandleActivationHelper activationHelper,
 			Predicate<ResponseCodeEnum> terminalSigStatusTest,

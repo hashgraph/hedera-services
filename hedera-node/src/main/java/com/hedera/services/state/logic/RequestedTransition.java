@@ -31,14 +31,14 @@ import javax.inject.Singleton;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
-public class ScreenedTransition {
+public class RequestedTransition {
 	private final TransitionRunner transitionRunner;
 	private final SystemOpPolicies opPolicies;
 	private final TransactionContext txnCtx;
 	private final NetworkCtxManager networkCtxManager;
 
 	@Inject
-	public ScreenedTransition(
+	public RequestedTransition(
 			TransitionRunner transitionRunner,
 			SystemOpPolicies opPolicies,
 			TransactionContext txnCtx,
