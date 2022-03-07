@@ -48,7 +48,7 @@ public class CreateTopicPerfSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return Arrays.asList(createTopicPerf());
 	}
 

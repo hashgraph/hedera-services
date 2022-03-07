@@ -144,4 +144,11 @@ public interface SigningOrderResultFactory<T> {
 	 * @return the error summary
 	 */
 	SigningOrderResult<T> forMissingFeeCollector();
+
+	/**
+	 * Report an invalid owner provided in a CryptoApproveAllowance or CryptoAdjustAllowance
+	 *
+	 * @return the error summary
+	 */
+	SigningOrderResult<T> forInvalidAllowanceOwner();
 }

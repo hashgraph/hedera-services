@@ -50,7 +50,6 @@ import org.junit.jupiter.api.Test;
 import java.util.function.Predicate;
 
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.test.CiConditions.isInCircleCi;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_INVALID_SENDER_SCENARIO;
@@ -64,7 +63,6 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
@@ -83,8 +81,6 @@ class SigVerifierRegressionTest {
 
 	@Test
 	void rejectsInvalidTxn() throws Throwable {
-		assumeFalse(isInCircleCi);
-
 		// given:
 		Transaction invalidSignedTxn = Transaction.newBuilder()
 				.setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes()))
@@ -96,9 +92,6 @@ class SigVerifierRegressionTest {
 
 	@Test
 	void acceptsValidNonCryptoTransferPayerSig() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
 		setupFor(FULL_PAYER_SIGS_VIA_MAP_SCENARIO);
 
 		// expect:
@@ -107,9 +100,6 @@ class SigVerifierRegressionTest {
 
 	@Test
 	void rejectsIncompleteNonCryptoTransferPayerSig() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
 		setupFor(MISSING_PAYER_SIGS_VIA_MAP_SCENARIO);
 
 		// expect:
@@ -118,9 +108,6 @@ class SigVerifierRegressionTest {
 
 	@Test
 	void rejectsInvalidNonCryptoTransferPayerSig() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
 		setupFor(INVALID_PAYER_SIGS_VIA_MAP_SCENARIO);
 
 		// expect:
@@ -129,9 +116,6 @@ class SigVerifierRegressionTest {
 
 	@Test
 	void acceptsNonQueryPaymentTransfer() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
 		setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
 
 		// expect:
@@ -140,9 +124,6 @@ class SigVerifierRegressionTest {
 
 	@Test
 	void acceptsQueryPaymentTransfer() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
 		setupFor(VALID_QUERY_PAYMENT_SCENARIO);
 
 		// expect:
@@ -151,9 +132,6 @@ class SigVerifierRegressionTest {
 
 	@Test
 	void rejectsInvalidPayerAccount() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
 		setupFor(INVALID_PAYER_ID_SCENARIO);
 
 		// expect:
@@ -182,9 +160,6 @@ class SigVerifierRegressionTest {
 
 	@Test
 	void rejectsQueryPaymentTransferWithMissingSigs() throws Throwable {
-		assumeFalse(isInCircleCi);
-
-		// given:
 		setupFor(QUERY_PAYMENT_MISSING_SIGS_SCENARIO);
 
 		// expect:

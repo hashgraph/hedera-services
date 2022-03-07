@@ -26,7 +26,6 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
-import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -112,7 +111,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class ContractKeysHTSSuite extends HapiApiSuite {
-    private static final long GAS_TO_OFFER = 4_000_000L;
+    private static final long GAS_TO_OFFER = 2_000_000L;
 
     private static final Logger log = LogManager.getLogger(ContractKeysHTSSuite.class);
     private static final String TOKEN_TREASURY = "treasury";
@@ -149,7 +148,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
     }
 
     @Override
-    protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
         return allOf(
 				HSCS_KEY_1(),
 				HSCS_KEY_2(),
@@ -3402,10 +3401,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 
 	@NotNull
 	private String getNestedContractAddress(String contract, HapiApiSpec spec) {
-		return CommonUtils.calculateSolidityAddress(
-				(int) spec.registry().getContractId(contract).getShardNum(),
-				spec.registry().getContractId(contract).getRealmNum(),
-				spec.registry().getContractId(contract).getContractNum());
+        return AssociatePrecompileSuite.getNestedContractAddress(contract, spec);
 	}
 
 	@Override

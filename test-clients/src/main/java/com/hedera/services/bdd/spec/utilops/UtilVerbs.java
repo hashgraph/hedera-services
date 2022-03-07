@@ -118,6 +118,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
@@ -314,6 +315,19 @@ public class UtilVerbs {
 		return fileUpdate(APP_PROPERTIES)
 				.payingWith(ADDRESS_BOOK_CONTROL)
 				.overridingProps(Map.of(property, "" + value));
+	}
+
+	public static HapiSpecOperation overridingTwo(
+			final String aProperty,
+			final String aValue,
+			final String bProperty,
+			final String bValue
+	) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(Map.of(
+						aProperty, aValue,
+						bProperty, bValue));
 	}
 
 	public static HapiSpecOperation resetAppPropertiesTo(String path) {
@@ -592,6 +606,17 @@ public class UtilVerbs {
 		}
 		var stylized = new String(baos.toByteArray());
 		return ByteString.copyFrom(serde.toRawFile(stylized));
+	}
+
+	public static HapiSpecOperation createLargeFile(
+			String payer,
+			String fileName,
+			ByteString byteString
+	) {
+		return blockingOrder(
+				fileCreate(fileName).payingWith(payer).contents(new byte[0]),
+				updateLargeFile(payer, fileName, byteString, false, OptionalLong.empty())
+		);
 	}
 
 	public static HapiSpecOperation updateLargeFile(

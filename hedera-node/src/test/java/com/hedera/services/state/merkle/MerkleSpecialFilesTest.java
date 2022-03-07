@@ -73,6 +73,11 @@ class MerkleSpecialFilesTest {
 	}
 
 	@Test
+	void isSelfHashing() {
+		assertTrue(subject.isSelfHashing());
+	}
+
+	@Test
 	void emptySpecialFilesNeverMatchHashes() {
 		assertFalse(subject.hashMatches(fid, stuffHash), "Empty special files shouldn't match hashes");
 	}

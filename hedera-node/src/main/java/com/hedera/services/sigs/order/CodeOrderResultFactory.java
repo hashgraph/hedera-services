@@ -27,6 +27,7 @@ import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
@@ -120,6 +121,11 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 		return MISSING_FEE_COLLECTOR_RESULT;
 	}
 
+	@Override
+	public SigningOrderResult<ResponseCodeEnum> forInvalidAllowanceOwner() {
+		return MISSING_ALLOWANCE_OWNER_RESULT;
+	}
+
 	static final SigningOrderResult<ResponseCodeEnum> INVALID_ACCOUNT_RESULT =
 			new SigningOrderResult<>(INVALID_ACCOUNT_ID);
 	static final SigningOrderResult<ResponseCodeEnum> GENERAL_ERROR_RESULT =
@@ -148,4 +154,6 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 			new SigningOrderResult<>(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
 	static final SigningOrderResult<ResponseCodeEnum> MISSING_FEE_COLLECTOR_RESULT =
 			new SigningOrderResult<>(INVALID_CUSTOM_FEE_COLLECTOR);
+	static final SigningOrderResult<ResponseCodeEnum> MISSING_ALLOWANCE_OWNER_RESULT =
+			new SigningOrderResult<>(INVALID_ALLOWANCE_OWNER_ID);
 }

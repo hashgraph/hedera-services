@@ -26,20 +26,27 @@ import java.math.BigInteger;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 
 public class HTSPrecompileResult implements ContractCallResult {
 	private HTSPrecompileResult() {}
 
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
+	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
+	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
+	private static final TupleType decimalsType = TupleType.parse("(uint8)");
+	private static final TupleType ownerOfType = TupleType.parse("(address)");
+	private static final TupleType nameType = TupleType.parse("(string)");
+	private static final TupleType symbolType = TupleType.parse("(string)");
+	private static final TupleType tokenUriType = TupleType.parse("(string)");
+	private static final TupleType ercTransferType = TupleType.parse("(bool)");
 
 	public static HTSPrecompileResult htsPrecompileResult() {
 		return new HTSPrecompileResult();
 	}
 
 	public enum FunctionType {
-		MINT, BURN
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
 	}
 
 	private FunctionType functionType;
@@ -47,13 +54,28 @@ public class HTSPrecompileResult implements ContractCallResult {
 	private ResponseCodeEnum status;
 	private long totalSupply;
 	private long[] serialNumbers;
+	private int decimals;
+	private byte[] owner;
+	private String name;
+	private String symbol;
+	private String metadata;
+	private long balance;
+	private boolean ercFungibleTransferStatus;
 
 	public HTSPrecompileResult forFunction(final FunctionType functionType) {
-		if (functionType == FunctionType.MINT) {
-			tupleType = mintReturnType;
-		} else if (functionType == FunctionType.BURN) {
-			tupleType = burnReturnType;
+		switch(functionType) {
+			case MINT -> tupleType = mintReturnType;
+			case BURN -> tupleType = burnReturnType;
+			case TOTAL_SUPPLY -> tupleType = totalSupplyType;
+			case DECIMALS -> tupleType = decimalsType;
+			case BALANCE -> tupleType = balanceOfType;
+			case OWNER -> tupleType = ownerOfType;
+			case NAME -> tupleType = nameType;
+			case SYMBOL -> tupleType = symbolType;
+			case TOKEN_URI -> tupleType = tokenUriType;
+			case ERC_TRANSFER -> tupleType = ercTransferType;
 		}
+
 		this.functionType = functionType;
 		return this;
 	}
@@ -73,16 +95,66 @@ public class HTSPrecompileResult implements ContractCallResult {
 		return this;
 	}
 
+	public HTSPrecompileResult withDecimals(final int decimals) {
+		this.decimals = decimals;
+		return this;
+	}
+
+	public HTSPrecompileResult withBalance(final long balance) {
+		this.balance = balance;
+		return this;
+	}
+
+	public HTSPrecompileResult withOwner(final byte[] address) {
+		this.owner = address;
+		return this;
+	}
+
+	public HTSPrecompileResult withName(final String name) {
+		this.name = name;
+		return this;
+	}
+
+	public HTSPrecompileResult withSymbol(final String symbol) {
+		this.symbol = symbol;
+		return this;
+	}
+
+	public HTSPrecompileResult withTokenUri(final String tokenUri) {
+		this.metadata = tokenUri;
+		return this;
+	}
+
+	public HTSPrecompileResult withErcFungibleTransferStatus(final boolean ercFungibleTransferStatus) {
+		this.ercFungibleTransferStatus = ercFungibleTransferStatus;
+		return this;
+	}
+
 	@Override
 	public Bytes getBytes() {
 		Tuple result;
-		if (functionType == FunctionType.MINT) {
-			result = Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply), serialNumbers);
-		} else if (functionType == FunctionType.BURN) {
-			result = Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply));
-		} else {
-			return UInt256.valueOf(status.getNumber());
+
+		switch(functionType) {
+			case MINT -> result = Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply), serialNumbers);
+			case BURN -> result = Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply));
+			case TOTAL_SUPPLY -> result = Tuple.of(BigInteger.valueOf(totalSupply));
+			case DECIMALS -> result = Tuple.of(decimals);
+			case BALANCE -> result = Tuple.of(BigInteger.valueOf(balance));
+			case OWNER -> {return Bytes.wrap(expandByteArrayTo32Length(owner));}
+			case NAME -> result = Tuple.of(name);
+			case SYMBOL -> result = Tuple.of(symbol);
+			case TOKEN_URI -> result = Tuple.of(metadata);
+			case ERC_TRANSFER -> result = Tuple.of(ercFungibleTransferStatus);
+			default -> result = Tuple.of(status.getNumber());
 		}
 		return Bytes.wrap(tupleType.encode(result).array());
 	}
+
+	private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
+		byte[] expandedArray = new byte[32];
+
+		System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length-bytesToExpand.length, bytesToExpand.length);
+		return expandedArray;
+	}
+
 }

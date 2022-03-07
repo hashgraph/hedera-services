@@ -28,6 +28,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -52,6 +53,7 @@ public class HTSTestsUtil {
 	public static final AccountID feeCollector = IdUtils.asAccount("0.0.4");
 	public static final AccountID account = IdUtils.asAccount("0.0.3");
 	public static final AccountID accountMerkleId = IdUtils.asAccount("0.0.999");
+	public static final ContractID precompiledContract = IdUtils.asContract("0.0.359");
 	public static final TokenID nonFungible = IdUtils.asToken("0.0.777");
 	public static final TokenID tokenMerkleId = IdUtils.asToken("0.0.777");
 	public static final Id accountId = Id.fromGrpcAccount(account);
@@ -77,6 +79,9 @@ public class HTSTestsUtil {
 			BurnWrapper.forFungible(fungible, AMOUNT);
 	public static final MintWrapper fungibleMint =
 			MintWrapper.forFungible(fungible, AMOUNT);
+	public static final Long serialNumber = 1L;
+	public static final BalanceOfWrapper balanceOfOp = new BalanceOfWrapper(accountMerkleId);
+	public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper = new OwnerOfAndTokenURIWrapper(serialNumber);
 
 	public static final Association multiAssociateOp =
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
@@ -104,6 +109,32 @@ public class HTSTestsUtil {
 	public static final Address fungibleTokenAddr = fungibleId.asEvmAddress();
 	public static final Address senderAddr = Address.ALTBN128_PAIRING;
 	public static final Address accountAddr = accountId.asEvmAddress();
+	public static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
+	public static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
+
+	public static final Bytes ercTransferSuccessResult = Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000001");
+
+	public static final Bytes BALANCE_OF = Bytes.fromHexString("0x70a082310000000000000000000000000000000000000000000" +
+			"0000000000000000003ee");
+
+	public static final Bytes TOKEN_TRANSFER = Bytes.fromHexString("0xa9059cbb0000000000000000000000000000000000000000000000000000000000000" +
+			"3f00000000000000000000000000000000000000000000000000000000000000002");
+
+
+	public static final Bytes OWNER_OF = Bytes.fromHexString("0x6352211e0000000000000000000000000000000000000000000000000000000000000001");
+
+	public static final Bytes SAFE_TRANSFER_FROM_WITH_DATA = Bytes.fromHexString("0xb88d4fde0000000000000000000000000000000000000000000000000000000000000" +
+			"3e900000000000000000000000000000000000000000000000000000000000003ea000000000000000000000000000000000000000000000000000000000000000" +
+			"10000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000" +
+			"95465737420646174610000000000000000000000000000000000000000000000");
+
+	public static final Bytes SAFE_TRANSFER_FROM = Bytes.fromHexString("0x42842e0e0000000000000000000000000000000000000000000000000000000000000" +
+			"41200000000000000000000000000000000000000000000000000000000000004130000000000000000000000000000000000000000000000000000000000000001");
+
+	public static final Bytes TRANSFER_FROM = Bytes.fromHexString("0x23b872dd0000000000000000000000000000000000000000000000000000000000000" +
+			"40c000000000000000000000000000000000000000000000000000000000000040d0000000000000000000000000000000000000000000000000000000000000001");
+
+	public static final Bytes TOKEN_URI = Bytes.fromHexString("0xc87b56dd0000000000000000000000000000000000000000000000000000000000000001");
 
 	public static final TokenTransferWrapper nftTransferList =
 			new TokenTransferWrapper(

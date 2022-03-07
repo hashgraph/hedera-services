@@ -199,11 +199,19 @@ public final class EntityIdUtils {
 		return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
 
+	public static byte[] asEvmAddress(final TokenID id) {
+		return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
+	}
+
 	public static Address asTypedEvmAddress(final AccountID id) {
 		return Address.wrap(Bytes.wrap(asEvmAddress(id)));
 	}
 
 	public static Address asTypedEvmAddress(final ContractID id) {
+		return Address.wrap(Bytes.wrap(asEvmAddress(id)));
+	}
+
+	public static Address asTypedEvmAddress(final TokenID id) {
 		return Address.wrap(Bytes.wrap(asEvmAddress(id)));
 	}
 
