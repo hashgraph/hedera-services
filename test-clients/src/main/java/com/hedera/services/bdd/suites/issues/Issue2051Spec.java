@@ -47,7 +47,7 @@ public class Issue2051Spec extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[]{
 						transferAccountCannotBeDeletedForContractTarget(),

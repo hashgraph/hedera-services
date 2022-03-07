@@ -23,8 +23,6 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
@@ -44,37 +42,39 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.function.Predicate;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.absolute;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
-	private final SigImpactHistorian sigImpactHistorian;
 	private final AccountStore accountStore;
 	private final AdjustAllowanceChecks adjustAllowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final SideEffectsTracker sideEffectsTracker;
+	private final Map<Long, Account> entitiesChanged;
 
 	@Inject
 	public CryptoAdjustAllowanceTransitionLogic(
 			final TransactionContext txnCtx,
-			final SigImpactHistorian sigImpactHistorian,
 			final AccountStore accountStore,
 			final AdjustAllowanceChecks allowanceChecks,
 			final GlobalDynamicProperties dynamicProperties,
 			final SideEffectsTracker sideEffectsTracker) {
 		this.txnCtx = txnCtx;
-		this.sigImpactHistorian = sigImpactHistorian;
 		this.accountStore = accountStore;
 		this.adjustAllowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
+		this.entitiesChanged = new HashMap<>();
 	}
 
 	@Override
@@ -82,25 +82,21 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		/* --- Extract gRPC --- */
 		final var adjustAccessor = (CryptoAllowanceAccessor) txnCtx.accessor();
 		final AccountID owner = adjustAccessor.getOwner();
+		entitiesChanged.clear();
 
 		/* --- Use models --- */
-		final Id ownerId = Id.fromGrpcAccount(owner);
-		final var ownerAccount = accountStore.loadAccount(ownerId);
+		final Id payerId = Id.fromGrpcAccount(owner);
+		final var payerAccount = accountStore.loadAccount(payerId);
 
 		/* --- Do the business logic --- */
-		adjustCryptoAllowances(adjustAccessor.getCryptoAllowances(), ownerAccount);
-		adjustFungibleTokenAllowances(adjustAccessor.getTokenAllowances(), ownerAccount);
-		adjustNftAllowances(adjustAccessor.getNftAllowances(), ownerAccount);
-
-		/* --- validate --- */
-		if (exceedsAccountLimit(ownerAccount)) {
-			sideEffectsTracker.reset();
-			throw new InvalidTransactionException(MAX_ALLOWANCES_EXCEEDED);
-		}
+		adjustCryptoAllowances(adjustAccessor.getCryptoAllowances(), payerAccount);
+		adjustFungibleTokenAllowances(adjustAccessor.getTokenAllowances(), payerAccount);
+		adjustNftAllowances(adjustAccessor.getNftAllowances(), payerAccount);
 
 		/* --- Persist the owner account --- */
-		accountStore.commitAccount(ownerAccount);
-		sigImpactHistorian.markEntityChanged(ownerId.num());
+		for (final var entry : entitiesChanged.entrySet()) {
+			accountStore.commitAccount(entry.getValue());
+		}
 
 		txnCtx.setStatus(SUCCESS);
 	}
@@ -113,12 +109,12 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		final var adjustAccessor = (CryptoAllowanceAccessor) accessor;
-		final AccountID owner = adjustAccessor.getOwner();
-		final var ownerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
+		final AccountID payer = adjustAccessor.getOwner();
+		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 		return adjustAllowanceChecks.allowancesValidation(adjustAccessor.getCryptoAllowances(),
-				adjustAccessor.getTokenAllowances(), adjustAccessor.getNftAllowances(), ownerAccount,
+				adjustAccessor.getTokenAllowances(), adjustAccessor.getNftAllowances(), payerAccount,
 				dynamicProperties.maxAllowanceLimitPerTransaction());
-	}
+		}
 
 	/**
 	 * Adjust allowances based on all changes needed for CryptoAllowances from the transaction.
@@ -129,16 +125,23 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	 *
 	 * @param cryptoAllowances
 	 * 		newly given crypto allowances in the operation
-	 * @param ownerAccount
-	 * 		owner account
+	 * @param payerAccount
+	 * 		account of the payer for this adjustAllowance txn
 	 */
-	private void adjustCryptoAllowances(final List<CryptoAllowance> cryptoAllowances, final Account ownerAccount) {
+	private void adjustCryptoAllowances(final List<CryptoAllowance> cryptoAllowances, final Account payerAccount) {
 		if (cryptoAllowances.isEmpty()) {
 			return;
 		}
-		final Map<EntityNum, Long> cryptoMap = new TreeMap<>(ownerAccount.getCryptoAllowances());
+
 		for (final var allowance : cryptoAllowances) {
+			final var owner = allowance.getOwner();
+
+			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+			final var cryptoMap = accountToAdjust.getMutableCryptoAllowances();
+
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
+
 			final var amount = allowance.getAmount();
 
 			// if there is no key in the map, adjust transaction acts as approve transaction
@@ -157,10 +160,10 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 					cryptoMap.put(spender.asEntityNum(), aggregatedAmount);
 				}
 			}
+			validateAllowanceLimitsOn(accountToAdjust);
+			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
+			sideEffectsTracker.setCryptoAllowances(accountToAdjust.getId().asEntityNum(), cryptoMap);
 		}
-
-		ownerAccount.setCryptoAllowances(cryptoMap);
-		sideEffectsTracker.setCryptoAllowances(cryptoMap);
 	}
 
 	/**
@@ -170,45 +173,50 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	 *
 	 * @param nftAllowances
 	 * 		newly given list of nft allowances
-	 * @param ownerAccount
-	 * 		owner account
+	 * @param payerAccount
+	 * 		account of the payer for this adjustAllowance txn
 	 */
-	private void adjustNftAllowances(final List<NftAllowance> nftAllowances, final Account ownerAccount) {
+	private void adjustNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
-		final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowancesMap = new TreeMap<>(
-				ownerAccount.getNftAllowances());
+
 		for (var allowance : nftAllowances) {
+			final var owner = allowance.getOwner();
+
+			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+			final var nftAllowancesMap = accountToAdjust.getMutableNftAllowances();
+
 			final var spenderAccount = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = allowance.getTokenId();
 			final var spender = Id.fromGrpcAccount(spenderAccount);
+			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
-			final FcTokenAllowance value;
 			if (!nftAllowancesMap.containsKey(key)) {
-				value = approvedForAll.getValue() ? FcTokenAllowance.from(
-						approvedForAll.getValue()) : FcTokenAllowance.from(serialNums);
+				final var value = approvedForAll.getValue() ? FcTokenAllowance.from(
+						true) : FcTokenAllowance.from(serialNums);
+				nftAllowancesMap.put(key, value);
 			} else {
 				final var oldValue = nftAllowancesMap.get(key);
 				if (approvedForAll.getValue()) {
-					value = FcTokenAllowance.from(approvedForAll.getValue());
+					nftAllowancesMap.put(key, FcTokenAllowance.from(true));
 				} else {
 					final var newSerials = adjustSerials(oldValue.getSerialNumbers(), serialNums);
 					if (newSerials.isEmpty()) {
 						nftAllowancesMap.remove(key);
-						continue;
+					} else {
+						nftAllowancesMap.put(key, FcTokenAllowance.from(newSerials));
 					}
-					value = FcTokenAllowance.from(newSerials);
 				}
 			}
-			nftAllowancesMap.put(key, value);
+			validateAllowanceLimitsOn(accountToAdjust);
+			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
+			sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), nftAllowancesMap);
 		}
-		ownerAccount.setNftAllowances(nftAllowancesMap);
-		sideEffectsTracker.setNftAllowances(nftAllowancesMap);
 	}
 
 	/**
@@ -219,20 +227,26 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	 *
 	 * @param tokenAllowances
 	 * 		newly given list of token allowances
-	 * @param ownerAccount
-	 * 		owner account
+	 * @param payerAccount
+	 * 		account of the payer for this adjustAllowance txn
 	 */
 	private void adjustFungibleTokenAllowances(final List<TokenAllowance> tokenAllowances,
-			final Account ownerAccount) {
+			final Account payerAccount) {
 		if (tokenAllowances.isEmpty()) {
 			return;
 		}
-		final Map<FcTokenAllowanceId, Long> tokenAllowancesMap = new TreeMap<>(
-				ownerAccount.getFungibleTokenAllowances());
+
 		for (var allowance : tokenAllowances) {
-			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			final var owner = allowance.getOwner();
+
+			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+			final var tokenAllowancesMap = accountToAdjust.getMutableFungibleTokenAllowances();
+
+
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
@@ -250,9 +264,10 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 					tokenAllowancesMap.put(key, aggregatedAmount);
 				}
 			}
+			validateAllowanceLimitsOn(accountToAdjust);
+			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
+			sideEffectsTracker.setFungibleTokenAllowances(accountToAdjust.getId().asEntityNum(), tokenAllowancesMap);
 		}
-		ownerAccount.setFungibleTokenAllowances(tokenAllowancesMap);
-		sideEffectsTracker.setFungibleTokenAllowances(tokenAllowancesMap);
 	}
 
 	/**
@@ -275,11 +290,9 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	 * @return adjusted serial numbers to be set for the allowance
 	 */
 	private List<Long> adjustSerials(final List<Long> oldSerials, final List<Long> opSerials) {
-		List<Long> newSerials = new ArrayList<>();
-		newSerials.addAll(oldSerials);
+		List<Long> newSerials = new ArrayList<>(oldSerials);
 
-		for (int i = 0; i < opSerials.size(); i++) {
-			final var serial = opSerials.get(i);
+		for (final Long serial : opSerials) {
 			if (serial < 0) {
 				newSerials.remove(absolute(serial));
 			} else {
@@ -287,5 +300,10 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			}
 		}
 		return newSerials;
+	}
+
+	private void validateAllowanceLimitsOn(final Account owner) {
+		final var limitExceeded = exceedsAccountLimit(owner);
+		validateFalse(limitExceeded, MAX_ALLOWANCES_EXCEEDED);
 	}
 }

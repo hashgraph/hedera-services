@@ -22,6 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV18;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -51,11 +52,13 @@ public class HederaSStoreOperation extends AbstractOperation {
 					Optional.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
 
 	private final boolean checkSuperCost;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public HederaSStoreOperation(final GasCalculator gasCalculator) {
+	public HederaSStoreOperation(final GasCalculator gasCalculator, final GlobalDynamicProperties dynamicProperties) {
 		super(0x55, "SSTORE", 2, 0, 1, gasCalculator);
 		checkSuperCost = !(gasCalculator instanceof GasCalculatorHederaV18);
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -85,7 +88,7 @@ public class HederaSStoreOperation extends AbstractOperation {
 			Wei gasPrice = frame.getGasPrice();
 			gasCost = Gas.of(calculateStorageGasNeeded(
 					64 /*two 256-bit words*/, durationInSeconds, sbh, gasPrice.toLong()));
-			((HederaWorldUpdater)frame.getWorldUpdater()).addSbhRefund(gasCost);
+			((HederaWorldUpdater) frame.getWorldUpdater()).addSbhRefund(gasCost);
 		} else {
 			checkCalculator = true;
 		}
@@ -105,6 +108,10 @@ public class HederaSStoreOperation extends AbstractOperation {
 					optionalCost, Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
 		} else if (remainingGas.compareTo(gasCost) < 0) {
 			return new OperationResult(optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+		}
+
+		if (dynamicProperties.shouldEnableTraceability()) {
+			HederaOperationUtil.cacheExistingValue(frame, account.getAddress(), key, currentValue);
 		}
 
 		account.setStorageValue(key, value);

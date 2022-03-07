@@ -805,7 +805,6 @@ class MiscUtilsTest {
 		);
 
 		assertArrayEquals(expectedHash, CommonUtils.noThrowSha384HashOf(testBytes));
-		assertArrayEquals(expectedHash, CommonUtils.sha384HashOf(testBytes).toByteArray());
 	}
 
 	@Test

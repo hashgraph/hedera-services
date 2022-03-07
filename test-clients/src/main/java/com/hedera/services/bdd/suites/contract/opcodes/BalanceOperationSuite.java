@@ -33,6 +33,7 @@ import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -44,7 +45,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 public class BalanceOperationSuite extends HapiApiSuite {
@@ -55,7 +55,7 @@ public class BalanceOperationSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[]{
 				verifiesExistenceOfAccountsAndContracts()
 		});
@@ -87,8 +87,8 @@ public class BalanceOperationSuite extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							AccountID id = spec.registry().getAccountID(ACCOUNT);
 							ContractID contractID = spec.registry().getContractId(CONTRACT);
-							String solidityAddress = calculateSolidityAddress((int)id.getShardNum(), id.getRealmNum(), id.getAccountNum());
-							String contractAddress = calculateSolidityAddress((int)contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum());
+							String solidityAddress = asHexedSolidityAddress(id);
+							String contractAddress = asHexedSolidityAddress(contractID);
 
 							final var call = contractCall(CONTRACT,
 									ContractResources.BALANCE_CHECKER_BALANCE_OF,

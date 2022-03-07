@@ -21,6 +21,7 @@ package com.hedera.services.bdd.spec.keys;
  */
 
 import com.google.common.io.Files;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
@@ -28,7 +29,6 @@ import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
-import com.hedera.services.legacy.client.util.TransactionSigner;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
@@ -36,6 +36,8 @@ import com.hedera.services.legacy.proto.utils.SignatureGenerator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Transaction;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
@@ -106,10 +108,6 @@ public class KeyFactory implements Serializable {
 				setup.genesisAccountName(),
 				genesisKp,
 				KeyShape.listSigs(ON));
-	}
-
-	public Transaction getSigned(Transaction.Builder txn, List<Key> signers) throws Exception {
-		return TransactionSigner.signTransactionComplexWithSigMap(txn, signers, pkMap);
 	}
 
 	public void exportSimpleKeyAsLegacyStartUpAccount(String exportKey, AccountID owner, String b64EncodedLoc) {
@@ -268,6 +266,26 @@ public class KeyFactory implements Serializable {
 
 		txn.setSigMap(sigMap);
 
+		return txn.build();
+	}
+
+	public Transaction signWithFullPrefixEd25519Keys(
+			final Transaction.Builder txn,
+			final List<Key> keys
+	) throws Throwable {
+		final List<Entry<Key, SigControl>> authors = keys.stream()
+				.<Entry<Key, SigControl>>map(k -> Pair.of(k, SigControl.ED25519_ON))
+				.toList();
+		final var signing = new PrimitiveSigning(
+				com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBodyBytes(txn), authors);
+		final var primitiveSigs = signing.completed();
+		final var sigMap = SignatureMap.newBuilder();
+		for (final var sig : primitiveSigs) {
+			sigMap.addSigPair(SignaturePair.newBuilder()
+					.setPubKeyPrefix(ByteString.copyFrom(sig.getKey()))
+					.setEd25519(ByteString.copyFrom(sig.getValue())));
+		}
+		txn.setSigMap(sigMap);
 		return txn.build();
 	}
 

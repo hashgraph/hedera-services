@@ -62,7 +62,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						updateKeyOnAutoCreatedAccount(),
 						accountCreatedAfterAliasAccountExpires(),

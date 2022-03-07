@@ -81,8 +81,6 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private SigImpactHistorian sigImpactHistorian;
-	@Mock
 	private AccountStore accountStore;
 	@Mock
 	private AdjustAllowanceChecks adjustAllowanceChecks;
@@ -100,7 +98,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoAdjustAllowanceTransitionLogic(txnCtx, sigImpactHistorian, accountStore,
+		subject = new CryptoAdjustAllowanceTransitionLogic(txnCtx, accountStore,
 				adjustAllowanceChecks, dynamicProperties, sideEffectsTracker);
 	}
 
@@ -159,7 +157,6 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		given(aliasManager.unaliased(ownerId)).willReturn(ownerNum);
 		given(aliasManager.unaliased(spender1)).willReturn(spenderNum);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
-		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		subject.doStateTransition();
 
@@ -234,7 +231,6 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
 		assertEquals(0, ownerAcccount.getNftAllowances().size());
-		verify(sideEffectsTracker).reset();
 		verify(accountStore, never()).commitAccount(ownerAcccount);
 	}
 
@@ -260,7 +256,6 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		setAccessor();
 		given(aliasManager.unaliased(ownerId)).willReturn(ownerNum);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 
@@ -268,7 +263,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
 		assertEquals(0, ownerAcccount.getNftAllowances().size());
-		verify(accountStore).commitAccount(ownerAcccount);
+		verify(accountStore, never()).commitAccount(ownerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
 

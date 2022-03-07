@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -64,13 +65,15 @@ class UpdateTrackingLedgerAccountTest {
 	private EntityAccess entityAccess;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private HederaWorldState parentState;
 
 	@BeforeEach
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
-		parentState = new HederaWorldState(ids, entityAccess, codeCache);
+		parentState = new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties);
 	}
 
 	@Test
@@ -87,6 +90,22 @@ class UpdateTrackingLedgerAccountTest {
 	}
 
 	@Test
+	void missingWrappedAccountIsNotATokenProxy() {
+		final var subject = new UpdateTrackingLedgerAccount<>(targetAddress, null);
+
+		assertFalse(subject.wrappedAccountIsTokenProxy());
+	}
+
+	@Test
+	void wrappedTokenProxyIsRecognized() {
+		final var tokenProxyAccount = parentState.new WorldStateTokenAccount(targetAddress, proxyId);
+
+		final var subject = new UpdateTrackingLedgerAccount<>(tokenProxyAccount, null);
+
+		assertTrue(subject.wrappedAccountIsTokenProxy());
+	}
+
+	@Test
 	void justPropagatesBalanceChangeWithNullTrackingAccounts() {
 		final var account = parentState.new WorldStateAccount(
 				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
@@ -96,6 +115,7 @@ class UpdateTrackingLedgerAccountTest {
 		subject.setBalance(Wei.of(newBalance));
 
 		assertEquals(newBalance, subject.getBalance().toLong());
+		assertFalse(subject.wrappedAccountIsTokenProxy());
 	}
 
 	@Test

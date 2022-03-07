@@ -68,7 +68,7 @@ public class UpdateAllProtectedFilesDuringReconnect extends HapiApiSuite {
 	private static final String FEES_FILE_REGISTRY = "FeeSchedulesInRegistry";
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				runTransfersBeforeReconnect(),
 				updateAllProtectedFilesDuringReconnect()

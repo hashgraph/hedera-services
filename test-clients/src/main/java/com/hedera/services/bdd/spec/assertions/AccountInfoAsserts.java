@@ -20,15 +20,14 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
-import com.google.protobuf.BoolValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.List;
@@ -36,7 +35,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
-import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -111,7 +109,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts solidityId(String cid) {
 		registerProvider((spec, o) -> {
 			AccountID id = spec.registry().getAccountID(cid);
-			String solidityId = calculateSolidityAddress(0, id.getRealmNum(), id.getAccountNum());
+			final var solidityId = HapiPropertySource.asHexedSolidityAddress(id);
 			assertEquals(solidityId,
 					((AccountInfo) o).getContractAccountID(),
 					"Bad Solidity contract Id!");
@@ -197,9 +195,9 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts noAllowances() {
 		registerProvider((spec, o) -> {
-			assertEquals(((AccountInfo) o).getCryptoAllowancesCount(), 0, "Bad CryptoAllowances count!");
-			assertEquals(((AccountInfo) o).getTokenAllowancesCount(), 0, "Bad TokenAllowances count!");
-			assertEquals(((AccountInfo) o).getNftAllowancesCount(), 0, "Bad NftAllowances count!");
+			assertEquals(((AccountInfo) o).getGrantedCryptoAllowancesCount(), 0, "Bad CryptoAllowances count!");
+			assertEquals(((AccountInfo) o).getGrantedTokenAllowancesCount(), 0, "Bad TokenAllowances count!");
+			assertEquals(((AccountInfo) o).getGrantedNftAllowancesCount(), 0, "Bad NftAllowances count!");
 		});
 		return this;
 	}
@@ -316,9 +314,9 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts cryptoAllowancesContaining(String spender, long allowance) {
 
 		registerProvider((spec, o) -> {
-			var cryptoAllowance = CryptoAllowance.newBuilder().setAmount(allowance)
+			var cryptoAllowance = GrantedCryptoAllowance.newBuilder().setAmount(allowance)
 					.setSpender(spec.registry().getAccountID(spender)).build();
-			assertTrue(((AccountInfo) o).getCryptoAllowancesList().contains(cryptoAllowance),
+			assertTrue(((AccountInfo) o).getGrantedCryptoAllowancesList().contains(cryptoAllowance),
 					"Bad CryptoAllowances!");
 		});
 		return this;
@@ -326,11 +324,11 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts tokenAllowancesContaining(String token, String spender, long allowance) {
 		registerProvider((spec, o) -> {
-			var tokenAllowance = TokenAllowance.newBuilder()
+			var tokenAllowance = GrantedTokenAllowance.newBuilder()
 					.setAmount(allowance)
 					.setTokenId(spec.registry().getTokenID(token))
 					.setSpender(spec.registry().getAccountID(spender)).build();
-			assertTrue(((AccountInfo) o).getTokenAllowancesList().contains(tokenAllowance),
+			assertTrue(((AccountInfo) o).getGrantedTokenAllowancesList().contains(tokenAllowance),
 					"Bad TokenAllowances!");
 		});
 		return this;
@@ -339,13 +337,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts nftAllowancesContaining(String token, String spender, boolean approvedForAll,
 			List<Long> serials) {
 		registerProvider((spec, o) -> {
-			var nftAllowance = NftAllowance.newBuilder()
-					.setApprovedForAll(BoolValue.of(approvedForAll))
+			var nftAllowance = GrantedNftAllowance.newBuilder()
+					.setApprovedForAll(approvedForAll)
 					.setTokenId(spec.registry().getTokenID(token))
 					.setSpender(spec.registry().getAccountID(spender))
 					.addAllSerialNumbers(serials)
 					.build();
-			assertTrue(((AccountInfo) o).getNftAllowancesList().contains(nftAllowance),
+			assertTrue(((AccountInfo) o).getGrantedNftAllowancesList().contains(nftAllowance),
 					"Bad NftAllowances!");
 		});
 		return this;
@@ -353,7 +351,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts cryptoAllowancesCount(int count) {
 		registerProvider((spec, o) -> {
-			assertEquals(count, ((AccountInfo) o).getCryptoAllowancesCount(),
+			assertEquals(count, ((AccountInfo) o).getGrantedCryptoAllowancesCount(),
 					"Bad CryptoAllowances!");
 		});
 		return this;
@@ -361,7 +359,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts tokenAllowancesCount(int count) {
 		registerProvider((spec, o) -> {
-			assertEquals(count, ((AccountInfo) o).getTokenAllowancesCount(),
+			assertEquals(count, ((AccountInfo) o).getGrantedTokenAllowancesCount(),
 					"Bad TokenAllowances!");
 		});
 		return this;
@@ -369,7 +367,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 
 	public AccountInfoAsserts nftAllowancesCount(int count) {
 		registerProvider((spec, o) -> {
-			assertEquals(count, ((AccountInfo) o).getNftAllowancesCount(),
+			assertEquals(count, ((AccountInfo) o).getGrantedNftAllowancesCount(),
 					"Bad NFTAllowances!");
 		});
 		return this;

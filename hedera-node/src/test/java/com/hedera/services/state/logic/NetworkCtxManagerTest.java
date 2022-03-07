@@ -27,7 +27,6 @@ import com.hedera.services.context.domain.trackers.IssEventStatus;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -48,12 +47,9 @@ import java.util.function.BiPredicate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
@@ -94,8 +90,6 @@ class NetworkCtxManagerTest {
 	private TxnAccessor txnAccessor;
 	@Mock
 	private MiscRunningAvgs runningAvgs;
-	@Mock
-	private NarratedCharging narratedCharging;
 
 	private NetworkCtxManager subject;
 
@@ -114,8 +108,7 @@ class NetworkCtxManagerTest {
 				handleThrottling,
 				() -> networkCtx,
 				txnCtx,
-				runningAvgs,
-				narratedCharging);
+				runningAvgs);
 	}
 
 	@Test
@@ -177,31 +170,6 @@ class NetworkCtxManagerTest {
 		verify(networkCtx).syncThrottling(handleThrottling);
 		verify(networkCtx).syncMultiplierSource(feeMultiplierSource);
 		verify(handleThrottling, times(0)).leakUnusedGasPreviouslyReserved(anyLong());
-	}
-
-	@Test
-	void preparesContextAsExpected() {
-		// setup:
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(sometime);
-
-		// when:
-		assertEquals(OK, subject.prepareForIncorporating(txnAccessor));
-
-		// then:
-		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
-		verify(feeMultiplierSource).updateMultiplier(sometime);
-	}
-
-	@Test
-	void whenContractCallThrottledPrepareReturnsCorrectStatus() {
-		given(handleThrottling.shouldThrottleTxn(txnAccessor)).willReturn(true);
-		given(handleThrottling.wasLastTxnGasThrottled()).willReturn(true);
-
-		// then:
-		assertEquals(CONSENSUS_GAS_EXHAUSTED, subject.prepareForIncorporating(txnAccessor));
-		verify(handleThrottling).shouldThrottleTxn(txnAccessor);
-		verify(feeMultiplierSource).updateMultiplier(any());
-		verify(narratedCharging).refundPayerServiceFee();
 	}
 
 	@Test

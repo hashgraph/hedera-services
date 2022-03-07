@@ -55,6 +55,7 @@ import java.util.function.Function;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.getIdWithAliasLookUp;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.MISSING_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllowance> {
@@ -106,9 +107,9 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 						.setCurrentKey(info.getKey())
 						.setCurrentlyHasProxy(info.hasProxyAccountID())
 						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
-						.setCurrentCryptoAllowances(info.getCryptoAllowancesList())
-						.setCurrentTokenAllowances(info.getTokenAllowancesList())
-						.setCurrentNftAllowances(info.getNftAllowancesList())
+						.setCurrentCryptoAllowances(info.getGrantedCryptoAllowancesList())
+						.setCurrentTokenAllowances(info.getGrantedTokenAllowancesList())
+						.setCurrentNftAllowances(info.getGrantedNftAllowancesList())
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
 				var opMeta = new CryptoApproveAllowanceMeta(_txn.getCryptoApproveAllowance(),

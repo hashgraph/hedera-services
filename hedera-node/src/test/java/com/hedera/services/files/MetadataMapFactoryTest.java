@@ -21,6 +21,7 @@ package com.hedera.services.files;
  */
 
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
+import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,11 @@ class MetadataMapFactoryTest {
 	void toAttrThrowsIaeOnError() {
 		final var bytes = "NONSENSE".getBytes();
 		assertThrows(IllegalArgumentException.class, () -> toAttr(bytes));
+	}
+
+	@Test
+	void toAttrTreatsTombstoneAsMissing() {
+		assertNull(toAttr(FcBlobsBytesStore.EMPTY_BLOB.getData()));
 	}
 
 	@Test

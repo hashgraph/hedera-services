@@ -27,17 +27,17 @@ import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,10 +88,10 @@ class GetAccountInfoResourceUsageTest {
 
 	private GetAccountInfoResourceUsage subject;
 
-	private CryptoAllowance cryptoAllowances = CryptoAllowance.newBuilder().setSpender(proxy).setAmount(10L).build();
-	private TokenAllowance tokenAllowances = TokenAllowance.newBuilder()
+	private GrantedCryptoAllowance cryptoAllowances = GrantedCryptoAllowance.newBuilder().setSpender(proxy).setAmount(10L).build();
+	private GrantedTokenAllowance tokenAllowances = GrantedTokenAllowance.newBuilder()
 			.setSpender(proxy).setAmount(10L).setTokenId(IdUtils.asToken("0.0.1000")).build();
-	private NftAllowance nftAllowances = NftAllowance.newBuilder().setSpender(proxy)
+	private GrantedNftAllowance nftAllowances = GrantedNftAllowance.newBuilder().setSpender(proxy)
 			.setTokenId(IdUtils.asToken("0.0.1000"))
 			.addAllSerialNumbers(List.of(1L, 2L, 3L)).build();
 
@@ -113,9 +113,9 @@ class GetAccountInfoResourceUsageTest {
 				.addTokenRelationships(1, TokenRelationship.newBuilder().setTokenId(bToken))
 				.addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
 				.setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
-				.addAllCryptoAllowances(List.of(cryptoAllowances))
-				.addAllNftAllowances(List.of(nftAllowances))
-				.addAllTokenAllowances(List.of(tokenAllowances))
+				.addAllGrantedCryptoAllowances(List.of(cryptoAllowances))
+				.addAllGrantedNftAllowances(List.of(nftAllowances))
+				.addAllGrantedTokenAllowances(List.of(tokenAllowances))
 				.build();
 		final var query = accountInfoQuery(a, ANSWER_ONLY);
 		given(view.infoForAccount(queryTarget, aliasManager)).willReturn(Optional.of(info));

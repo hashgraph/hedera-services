@@ -102,7 +102,7 @@ public final class DiverseStateCreation extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		try {
 			SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
 			MEDIUM_CONTENTS = Files.newInputStream(Paths.get(MEDIUM_CONTENTS_LOC)).readAllBytes();

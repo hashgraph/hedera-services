@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SELF_DESTRUCT_CALLABLE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -39,7 +40,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -56,7 +56,7 @@ public class SelfDestructSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						HSCS_EVM_008_SelfDestructInConstructorWorks(),
 						HSCS_EVM_008_SelfDestructWhenCalling(),
@@ -81,7 +81,7 @@ public class SelfDestructSuite extends HapiApiSuite {
 						getAccountInfo("selfDestroying")
 								.hasCostAnswerPrecheck(ACCOUNT_DELETED),
 						getContractInfo("selfDestroying")
-								.hasCostAnswerPrecheck(CONTRACT_DELETED),
+								.has(contractWith().isDeleted()),
 						withOpContext((spec, opLog) -> {
 							final var registry = spec.registry();
 							final var destroyedNum = registry.getContractId("selfDestroying").getContractNum();
@@ -112,7 +112,7 @@ public class SelfDestructSuite extends HapiApiSuite {
 						getAccountInfo("destructable")
 								.hasCostAnswerPrecheck(ACCOUNT_DELETED),
 						getContractInfo("destructable")
-								.hasCostAnswerPrecheck(CONTRACT_DELETED)
+								.has(contractWith().isDeleted())
 				);
 	}
 }

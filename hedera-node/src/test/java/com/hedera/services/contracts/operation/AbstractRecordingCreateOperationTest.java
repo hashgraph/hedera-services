@@ -129,6 +129,13 @@ class AbstractRecordingCreateOperationTest {
 	}
 
 	@Test
+	void returnsInvalidWhenDisabled() {
+		subject.isEnabled = false;
+
+		assertSame(Subject.INVALID_RESPONSE, subject.execute(frame, evm));
+	}
+
+	@Test
 	void noopsOnNull() {
 		given(frame.stackSize()).willReturn(3);
 
@@ -267,6 +274,7 @@ class AbstractRecordingCreateOperationTest {
 		static final Address PRETEND_CONTRACT_ADDRESS = Address.ALTBN128_ADD;
 		static final Optional<Gas> PRETEND_OPTIONAL_COST = Optional.of(Gas.of(PRETEND_GAS_COST));
 
+		boolean isEnabled = true;
 		boolean usePretendCost = true;
 
 		protected Subject(
@@ -283,6 +291,11 @@ class AbstractRecordingCreateOperationTest {
 			super(
 					opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator,
 					creator, syntheticTxnFactory, recordsHistorian);
+		}
+
+		@Override
+		protected boolean isEnabled() {
+			return isEnabled;
 		}
 
 		@Override

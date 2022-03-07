@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
@@ -86,7 +87,9 @@ class ExpirableTxnRecordTest {
 	private static final AccountID beneficiary = IdUtils.asAccount("0.0.6");
 	private static final AccountID magician = IdUtils.asAccount("0.0.7");
 	private static final AccountID spender = IdUtils.asAccount("0.0.8");
+	private static final AccountID owner =  IdUtils.asAccount("0.0.9");
 	private static final EntityNum spenderNum = EntityNum.fromAccountId(spender);
+	private static final EntityNum ownerNum = EntityNum.fromAccountId(owner);
 	private static final List<TokenAssociation> newRelationships = List.of(new FcTokenAssociation(
 			10, 11).toGrpc());
 
@@ -121,35 +124,41 @@ class ExpirableTxnRecordTest {
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenA), spenderNum);
 	private static final FcTokenAllowanceId nftAllowanceId =
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(nft), spenderNum);
-	private static final TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {{
-		put(spenderNum, initialAllowance);
+	private static final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = new TreeMap<>() {{
+		put(ownerNum, new TreeMap<>() {{
+			put(spenderNum, initialAllowance);
+		}});
 	}};
-	private static final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
-		put(fungibleAllowanceId, initialAllowance);
+	private static final Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleAllowances = new TreeMap<>() {{
+		put(ownerNum, new TreeMap<>() {{
+			put(fungibleAllowanceId, initialAllowance);
+		}});
 	}};
-	private static final TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
-		put(fungibleAllowanceId, nftAllowance1);
-		put(nftAllowanceId, nftAllowance2);
+	private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = new TreeMap<>() {{
+		put(ownerNum, new TreeMap<>() {{
+			put(fungibleAllowanceId, nftAllowance1);
+			put(nftAllowanceId, nftAllowance2);
+		}});
 	}};
 	private static final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
-			.setOwner(IdUtils.asAccount("0.0.0"))
+			.setOwner(owner)
 			.setAmount(initialAllowance)
 			.setSpender(spender)
 			.build();
 	private static final TokenAllowance fungibleTokenAllowance = TokenAllowance.newBuilder()
-			.setOwner(IdUtils.asAccount("0.0.0"))
+			.setOwner(owner)
 			.setAmount(initialAllowance)
 			.setSpender(spender)
 			.setTokenId(tokenA)
 			.build();
 	private static final NftAllowance nftAllowanceAll = NftAllowance.newBuilder()
-			.setOwner(IdUtils.asAccount("0.0.0"))
+			.setOwner(owner)
 			.setApprovedForAll(BoolValue.of(true))
 			.setTokenId(tokenA)
 			.setSpender(spender)
 			.build();
 	private static final NftAllowance nftAllowanceSome = NftAllowance.newBuilder()
-			.setOwner(IdUtils.asAccount("0.0.0"))
+			.setOwner(owner)
 			.setApprovedForAll(BoolValue.of(false))
 			.setTokenId(nft)
 			.addAllSerialNumbers(List.of(1L, 2L))
@@ -503,8 +512,12 @@ class ExpirableTxnRecordTest {
 				.willReturn(subject.getFee())
 				.willReturn(subject.getExpiry())
 				.willReturn(subject.getSubmittingMember())
+				.willReturn(ownerNum.longValue())
 				.willReturn(spenderNum.longValue())
-				.willReturn(initialAllowance);
+				.willReturn(initialAllowance)
+				.willReturn(ownerNum.longValue())
+				.willReturn(initialAllowance)
+				.willReturn(ownerNum.longValue());
 		given(fin.readShort()).willReturn(subject.getNumChildRecords());
 		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
 				.willReturn(subject.getMemo());
@@ -516,8 +529,11 @@ class ExpirableTxnRecordTest {
 				.willReturn(subject.getAlias().toByteArray());
 		given(fin.readInt())
 				.willReturn(cryptoAllowances.size())
+				.willReturn(1)
 				.willReturn(fungibleAllowances.size())
-				.willReturn(nftAllowances.size());
+				.willReturn(1)
+				.willReturn(nftAllowances.size())
+				.willReturn(2);
 		given(fin.readSerializable())
 				.willReturn(fungibleAllowanceId)
 				.willReturn(fungibleAllowanceId)
@@ -678,8 +694,8 @@ class ExpirableTxnRecordTest {
 				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null," +
 				" " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], evmAddress=}," +
-				" " +
+				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
+				"stateChanges={}, evmAddress=}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
 				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
@@ -704,7 +720,8 @@ class ExpirableTxnRecordTest {
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
 				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null, " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], evmAddress=}, " +
+				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
+				"stateChanges={}, evmAddress=}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, tokenAdjustments=0.0.3" +
 				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
@@ -730,8 +747,8 @@ class ExpirableTxnRecordTest {
 				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null," +
 				" " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], evmAddress=}," +
-				" " +
+				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
+				"stateChanges={}, evmAddress=}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
 				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
@@ -741,12 +758,12 @@ class ExpirableTxnRecordTest {
 				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +
 				"(FcTokenAssociation{token=10, account=11}), " +
-				"cryptoAllowances=[{owner : EntityId{shard=0, realm=0, num=0}, spender : EntityNum{value=8}, allowance : 100}], " +
-				"fungibleTokenAllowances=[{owner : EntityId{shard=0, realm=0, num=0}, token : EntityNum{value=3}, " +
+				"cryptoAllowances=[{owner : EntityNum{value=9}, spender : EntityNum{value=8}, allowance : 100}], " +
+				"fungibleTokenAllowances=[{owner : EntityNum{value=9}, token : EntityNum{value=3}, " +
 				"spender : EntityNum{value=8}, allowance : 100}], " +
-				"nftAllowances=[{owner : EntityId{shard=0, realm=0, num=0}, token : EntityNum{value=2}, " +
+				"nftAllowances=[{owner : EntityNum{value=9}, token : EntityNum{value=2}, " +
 				"spender : EntityNum{value=8}, isApproveForAll : false, SerialNums : 1, 2}, " +
-				"{owner : EntityId{shard=0, realm=0, num=0}, token : EntityNum{value=3}, spender : EntityNum{value=8}, " +
+				"{owner : EntityNum{value=9}, token : EntityNum{value=3}, spender : EntityNum{value=8}, " +
 				"isApproveForAll : true, SerialNums : }]}";
 
 		assertEquals(expected, subject.toString());
