@@ -102,7 +102,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				exceedsAccountLimit(),
 				succeedsWhenTokenPausedFrozenKycRevoked(),
 				serialsInAscendingOrder(),
-				feesAsExpected()
+				feesAsExpected(),
+				canHaveMultipleAllowedSpendersForTheSameNFT()
 		});
 	}
 
@@ -1433,6 +1434,58 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 										.nftAllowancesContaining(nft, spender, false, List.of(1L))
 								));
 
+	}
+
+	private HapiApiSpec canHaveMultipleAllowedSpendersForTheSameNFT() {
+		final String owner1 = "owner1";
+		final String owner2 = "owner2";
+		final String spender = "spender";
+		final String spender2 = "spender2";
+		final String nft = "nft";
+		return defaultHapiSpec("canHaveMultipleAllowedSpendersForTheSameNFT")
+				.given(
+						newKeyNamed("supplyKey"),
+						cryptoCreate(owner1)
+								.balance(ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						cryptoCreate(owner2)
+								.balance(ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						cryptoCreate(spender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender2)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						tokenCreate(nft)
+								.maxSupply(10L)
+								.initialSupply(0)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(owner1, nft),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("a")
+						)).via("nftTokenMint"),
+						cryptoTransfer(
+								movingUnique(nft, 1L).between(TOKEN_TREASURY, owner1)
+						))
+				.when(
+						cryptoApproveAllowance()
+								.payingWith(DEFAULT_PAYER)
+								.addNftAllowance(owner1, nft, spender, false, List.of(1L))
+								.signedBy(DEFAULT_PAYER, owner1),
+						cryptoApproveAllowance()
+								.payingWith(DEFAULT_PAYER)
+								.addNftAllowance(owner1, nft, spender2, false, List.of(1L))
+								.signedBy(DEFAULT_PAYER, owner1)
+				)
+				.then(
+						getAccountInfo(owner1).has(accountWith()
+								.nftAllowancesContaining(nft, spender, false, List.of(1L))
+								.nftAllowancesContaining(nft, spender2, false, List.of(1L)))
+				);
 	}
 
 	@Override
