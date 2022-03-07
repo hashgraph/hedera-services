@@ -75,6 +75,9 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
  * method that handles the end-to-end execution of a EVM transaction.
  */
 abstract class EvmTxProcessor {
+	static final Hash UNAVAILABLE_BLOCK_HASH = Hash.fromHexStringLenient("0x");
+	static final Function<Long, Hash> ALWAYS_UNAVAILABLE_BLOCK_HASH = n -> UNAVAILABLE_BLOCK_HASH;
+
 	private static final int MAX_STACK_SIZE = 1024;
 	private static final int MAX_CODE_SIZE = 0x6000;
 	private static final List<ContractValidationRule> VALIDATION_RULES =
