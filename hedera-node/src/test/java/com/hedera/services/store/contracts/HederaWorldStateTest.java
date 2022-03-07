@@ -663,7 +663,7 @@ class HederaWorldStateTest {
 	}
 
 	private void givenNonNullWorldLedgers() {
-		given(worldLedgers.wrapped(any())).willReturn(worldLedgers);
+		given(worldLedgers.wrapped()).willReturn(worldLedgers);
 		given(entityAccess.worldLedgers()).willReturn(worldLedgers);
 	}
 }

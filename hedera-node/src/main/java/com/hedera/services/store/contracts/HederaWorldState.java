@@ -22,7 +22,6 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -198,7 +197,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public Updater updater() {
-		return new Updater(this, entityAccess.worldLedgers().wrapped(new SideEffectsTracker()));
+		return new Updater(this, entityAccess.worldLedgers().wrapped());
 	}
 
 	@Override
@@ -542,7 +541,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		@Override
 		public WorldUpdater updater() {
 			return new HederaStackedWorldStateUpdater(this, wrappedWorldView(),
-					trackingLedgers().wrapped(new SideEffectsTracker()));
+					trackingLedgers().wrapped());
 		}
 
 		@Override

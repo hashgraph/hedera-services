@@ -20,7 +20,6 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
@@ -44,6 +43,6 @@ public class MockLedgerWorldUpdater
 
 	@Override
 	public WorldUpdater updater() {
-		return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped(new SideEffectsTracker()));
+		return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped());
 	}
 }

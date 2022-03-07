@@ -21,7 +21,6 @@ package com.hedera.services.store.contracts;
  */
 
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -80,7 +79,7 @@ class AbstractStackedLedgerUpdaterTest {
 	void setUp() {
 		setupLedgers();
 
-		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped(new SideEffectsTracker()));
+		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped());
 
 		subject = (AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount>) wrapped.updater();
 	}
@@ -131,15 +130,6 @@ class AbstractStackedLedgerUpdaterTest {
 
 	@Test
 	void commitsNewlyCreatedAccountAsExpected() {
-		final var payer = worldState.new WorldStateAccount(
-				payerAddress, Wei.of(payerBalance), payerExpiry, payerAutoRenew, EntityId.MISSING_ENTITY_ID);
-		given(worldState.get(payerAddress)).willReturn(payer);
-		ledgers.accounts().create(payerAccount);
-		ledgers.accounts().set(payerAccount, BALANCE, payerBalance);
-
-		final var payerAccount = subject.getAccount(payerAddress);
-		payerAccount.getMutable().decrementBalance(Wei.of(aBalance));
-
 		subject.createAccount(aAddress, aNonce, Wei.of(aBalance));
 
 		subject.commit();
@@ -150,9 +140,7 @@ class AbstractStackedLedgerUpdaterTest {
 		assertEquals(aBalance, wrapped.trackingLedgers().accounts().get(aAccount, BALANCE));
 
 		final var wrappedMutableAccount = wrapped.getAccount(aAddress);
-		final var wrappedMutablePayerAccount = wrapped.getAccount(payerAddress);
 		wrappedMutableAccount.getMutable().decrementBalance(Wei.of(1));
-		wrappedMutablePayerAccount.getMutable().setBalance(Wei.of(1));
 
 		wrapped.commit();
 		assertEquals(aBalance - 1, ledgers.accounts().get(aAccount, BALANCE));
@@ -174,18 +162,6 @@ class AbstractStackedLedgerUpdaterTest {
 	@Test
 	void commitsNewlyModifiedAccountAsExpected() {
 		final var mockCode = Bytes.ofUnsignedLong(1_234L);
-
-		final var payer = worldState.new WorldStateAccount(
-				payerAddress, Wei.of(payerBalance), payerExpiry, payerAutoRenew, EntityId.MISSING_ENTITY_ID);
-		given(worldState.get(payerAddress)).willReturn(payer);
-		ledgers.accounts().create(payerAccount);
-		ledgers.accounts().set(payerAccount, BALANCE, payerBalance);
-
-		final var payerAccount = subject.getAccount(payerAddress);
-		payerAccount.getMutable().incrementBalance(Wei.of(1));
-		payerAccount.getMutable().setCode(mockCode);
-		payerAccount.getMutable().clearStorage();
-
 		final var account = worldState.new WorldStateAccount(
 				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew, EntityId.MISSING_ENTITY_ID);
 		given(worldState.get(aAddress)).willReturn(account);
@@ -196,19 +172,15 @@ class AbstractStackedLedgerUpdaterTest {
 		mutableAccount.getMutable().decrementBalance(Wei.of(1));
 		mutableAccount.getMutable().setCode(mockCode);
 		mutableAccount.getMutable().clearStorage();
-
 		subject.trackingLedgers().aliases().link(nonMirrorAddress, aAddress);
 		subject.trackingLedgers().aliases().link(otherNonMirrorAddress, bAddress);
-		subject.trackingLedgers().aliases().link(payerNonMirrorAddress, payerAddress);
 
 		subject.commit();
 
 		final var wrappedMutableAccount = wrapped.getAccount(aAddress);
-		final var wrappedMutablePayerAccount = wrapped.getAccount(payerAddress);
 		assertEquals(mockCode, wrappedMutableAccount.getCode());
 		wrappedMutableAccount.getMutable().decrementBalance(Wei.of(1));
 		assertEquals(aBalance, ledgers.accounts().get(aAccount, BALANCE));
-		wrappedMutablePayerAccount.getMutable().incrementBalance(Wei.of(1));
 
 		wrapped.commit();
 		assertEquals(aBalance - 2, ledgers.accounts().get(aAccount, BALANCE));
@@ -261,22 +233,14 @@ class AbstractStackedLedgerUpdaterTest {
 	}
 
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
-	private static final AccountID payerAccount = IdUtils.asAccount("0.0.23456");
 	private static final Address aAddress = EntityIdUtils.asTypedEvmAddress(aAccount);
 	private static final Address bAddress = EntityNum.fromLong(54321).toEvmAddress();
-	private static final Address payerAddress = EntityIdUtils.asTypedEvmAddress(payerAccount);
-	private static final long payerBalance = 1_000L;
-	private static final long payerNonce = 1L;
 	private static final long aBalance = 1_000L;
 	private static final long aNonce = 1L;
 	private static final long aExpiry = 1_234_567L;
 	private static final long aAutoRenew = 7776000L;
-	private static final long payerExpiry = 1_234_567L;
-	private static final long payerAutoRenew = 7776000L;
 	private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
 	private static final byte[] otherRawNonMirrorAddress = unhex("abcdecabcdecabcdecbabcdecabcdecabcdecbbb");
 	private static final Address otherNonMirrorAddress = Address.wrap(Bytes.wrap(otherRawNonMirrorAddress));
-	private static final byte[] payerRawNonMirrorAddress = unhex("abcdecaccdeaabcddcbabcdecabcdecabcdecbbb");
-	private static final Address payerNonMirrorAddress = Address.wrap(Bytes.wrap(payerRawNonMirrorAddress));
 }
