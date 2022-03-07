@@ -163,6 +163,19 @@ public class WorldLedgers {
 				tokenRelsLedger != null;
 	}
 
+	public WorldLedgers wrapped() {
+		if (!areMutable()) {
+			return staticLedgersWith(StackedContractAliases.wrapping(aliases), staticEntityAccess);
+		}
+
+		return new WorldLedgers(
+				StackedContractAliases.wrapping(aliases),
+				activeLedgerWrapping(tokenRelsLedger),
+				activeLedgerWrapping(accountsLedger),
+				activeLedgerWrapping(nftsLedger),
+				activeLedgerWrapping(tokensLedger));
+	}
+
 	public WorldLedgers wrapped(final SideEffectsTracker sideEffectsTracker) {
 		if (!areMutable()) {
 			return staticLedgersWith(StackedContractAliases.wrapping(aliases), staticEntityAccess);

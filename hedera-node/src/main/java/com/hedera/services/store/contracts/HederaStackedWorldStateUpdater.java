@@ -22,7 +22,6 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -144,7 +143,7 @@ public class HederaStackedWorldStateUpdater
 		return new HederaStackedWorldStateUpdater(
 				(AbstractLedgerWorldUpdater) this,
 				worldState,
-				trackingLedgers().wrapped(new SideEffectsTracker()));
+				trackingLedgers().wrapped());
 	}
 
 	/* --- Internal helpers --- */
