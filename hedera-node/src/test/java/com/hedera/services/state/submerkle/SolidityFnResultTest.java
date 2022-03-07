@@ -400,7 +400,7 @@ class SolidityFnResultTest {
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(SolidityFnResult.MERKLE_VERSION, subject.getVersion());
+		assertEquals(SolidityFnResult.RELEASE_0240_VERSION, subject.getVersion());
 		assertEquals(SolidityFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
