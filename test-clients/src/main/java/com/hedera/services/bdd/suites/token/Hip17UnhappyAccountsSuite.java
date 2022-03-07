@@ -73,7 +73,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 	}
 
 		@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+		public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				/* Dissociated Account */
 				uniqueTokenOperationsFailForDissociatedAccount(),

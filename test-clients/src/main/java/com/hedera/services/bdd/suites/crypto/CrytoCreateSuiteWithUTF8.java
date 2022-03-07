@@ -45,7 +45,7 @@ public class CrytoCreateSuiteWithUTF8 extends HapiApiSuite {
     }
 
     @Override
-    protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
         return allOf(
                 positiveTests()
         );

@@ -7,6 +7,7 @@ csvOutputFolder,                               data/stats
 dbBackup.active,                               1
 dbConnection.active,                           1
 dbRestore.active,                              1
+loadKeysFromPfxFiles,                          0
 doUpnp,                                        false
 maxOutgoingSyncs,                              1
 reconnect.active,                              1

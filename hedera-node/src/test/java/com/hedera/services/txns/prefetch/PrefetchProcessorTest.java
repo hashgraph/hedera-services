@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hedera.services.txns.prefetch.PrefetchProcessor.MINIMUM_QUEUE_CAPACITY;
 import static com.hedera.services.txns.prefetch.PrefetchProcessor.MINIMUM_THREAD_POOL_SIZE;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -194,11 +195,8 @@ class PrefetchProcessorTest {
     void submitEmptyTransitionLogic() {
         given(lookup.lookupFor(any(), any())).willReturn(Optional.empty());
 
-        final var queue = setupSubmit();
-        processor.submit(accessor);
-
-        await().atMost(200, TimeUnit.MILLISECONDS)
-                .until(() -> executed.size() == 0);
+        setupSubmit();
+        assertDoesNotThrow(() -> processor.submit(accessor));
     }
 
     @Test
