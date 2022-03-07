@@ -104,4 +104,12 @@ public class TxnChargingPolicyAgent {
 
 		return true;
 	}
+
+	/**
+	 * Refund the service fees already charged to the payer, because the user-submitted
+	 * transaction was fully valid but network capacity was unavailable to satisfy it.
+	 */
+	public void refundPayerServiceFee() {
+		chargingPolicy.refundPayerServiceFee();
+	}
 }
