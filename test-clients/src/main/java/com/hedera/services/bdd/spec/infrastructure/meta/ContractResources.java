@@ -20,7 +20,13 @@ package com.hedera.services.bdd.spec.infrastructure.meta;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class ContractResources {
 	public static final String SIMPLE_STORAGE_BYTECODE_PATH = bytecodePath("simpleStorage");
@@ -64,17 +70,67 @@ public class ContractResources {
 	public static final String FIBONACCI_PLUS_PATH = bytecodePath("FibonacciPlus");
 	public static final String LARGE_CONTRACT_CRYPTO_KITTIES = bytecodePath("CryptoKitties");
 	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
+	public static final String TRACEABILITY_RECURSIVE_CALLS = bytecodePath("Traceability");
+	public static final String TRACEABILITY_RECURSIVE_CALLS_CALLCODE = bytecodePath("TraceabilityCallcode");
 	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String SAFE_OPERATIONS_CONTRACT = bytecodePath("SafeOperationsContract");
 	public static final String NESTED_CREATIONS_PATH = bytecodePath("NestedCreations");
+	public static final String ERC_20_CONTRACT = bytecodePath("ERC20Contract");
+	public static final String NESTED_ERC_20_CONTRACT = bytecodePath("NestedERC20Contract");
+	public static final String ERC_721_CONTRACT = bytecodePath("ERC721Contract");
+
 	public static final String CREATE2_FACTORY_PATH = bytecodePath("Create2Factory");
 	public static final String SALTING_CREATOR_FACTORY_PATH = bytecodePath("SaltingCreatorFactory");
 	public static final String ADDRESS_VAL_RETURNER_PATH = bytecodePath("AddressValueRet");
 	public static final String PRECOMPILE_CREATE2_USER_PATH = bytecodePath("Create2PrecompileUser");
 	public static final String REVERTING_CREATE_FACTORY_PATH = bytecodePath("RevertingCreateFactory");
 	public static final String REVERTING_CREATE2_FACTORY_PATH = bytecodePath("RevertingCreate2Factory");
+	public static final String NESTED_TRANSFERRING_CONTRACT_PATH = bytecodePath("NestedTransferringContract");
+	public static final String NESTED_TRANSFER_CONTRACT_1_PATH = bytecodePath("NestedTransferContract1");
+	public static final String NESTED_TRANSFER_CONTRACT_2_PATH = bytecodePath("NestedTransferContract2");
+	public static final String OUTER_CREATOR_PATH = bytecodePath("OuterCreator");
+	public static final String VARIOUS_CREATE2_CALLS_PATH = bytecodePath("VariousCreate2Calls");
+	public static final String EMIT_BLOCKTIME_PATH = bytecodePath("EmitBlockTimestamp");
 
+	public static final String EMIT_TIME_ABI = "{\"inputs\":[],\"name\":\"logNow\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_NORMAL_ABI = "{\"inputs\":[],\"name\":\"makeNormalCall\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"" +
+			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_STATIC_ABI = "{\"inputs\":[],\"name\":\"makeStaticCall\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateM" +
+			"utability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_DELEGATE_ABI = "{\"inputs\":[],\"name\":\"makeDelegateCall\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_CODE_ABI = "{\"inputs\":[],\"name\":\"makeCallCode\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String CREATE_DONOR_PATH = bytecodePath("CreateDonor");
+
+	public static final String BUILD_THEN_REVERT_THEN_BUILD_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"buildThenRevertThenBuild\",\"outputs\":[]," +
+			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String RELINQUISH_FUNDS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"beneficiary\",\"type\":\"address\"}],\"name\":\"relinquishFundsTo\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String CREATE_DONOR_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
+			"\"type\":\"bytes32\"}],\"name\":\"buildDonor\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String CREATE_AND_RECREATE_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
+			"\"type\":\"bytes32\"}],\"name\":\"createAndRecreateTest\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String WRONG_REPEATED_CREATE2_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
+			"\"name\":\"bytecode\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_salt\"," +
+			"\"type\":\"uint256\"}],\"name\":\"wronglyDeployTwice\",\"outputs\":[],\"stateMutability\":\"payable\"," +
+			"\"type\":\"function\"}";
+	public static final String WHAT_IS_FOO_ABI = "{\"inputs\":[],\"name\":\"whatTheFoo\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String START_CHAIN_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"logMessage\"," +
+			"\"type\":\"bytes\"}],\"name\":\"startChain\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
 	public static final String NORMAL_DEPLOY_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"bytecode\"," +
 			"\"type\":\"bytes\"}],\"name\":\"deploy\",\"outputs\":[],\"stateMutability\":\"payable\"," +
 			"\"type\":\"function\"}";
@@ -154,6 +210,52 @@ public class ContractResources {
 			"\"name\":\"insert\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"size\"," +
 			"\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
+	public static final String TRACEABILITY_CONSTRUCTOR = "{\"inputs\":[{\"internalType\":\"uint256\"," +
+			"\"name\":\"_slot0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_slot1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_slot2\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
+	public static final String TRACEABILITY_EET_1 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario1\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_2 = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
+			"type\":\"address\"}],\"name\":\"eetScenario2\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_3 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario3\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_4 = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
+			"type\":\"address\"}],\"name\":\"eetScenario4\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_5 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario5\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_6 = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
+			"type\":\"address\"}],\"name\":\"eetScenario6\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_7 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario7\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_8 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario8\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_9 = "{\"inputs\":[{\"internalType\":\"address\"" +
+			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
+			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario9\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_10 = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
+			"type\":\"address\"}],\"name\":\"eetScenario10\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String TRACEABILITY_EET_11 = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
+			"type\":\"address\"}],\"name\":\"eetScenario11\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
 	public static final String SEND_REPEATEDLY_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"just_send_" +
 			"num\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"account_num\",\"type\":\"uint64\"}," +
 			"{\"internalType\":\"uint64\",\"name\":\"value\",\"type\":\"uint64\"}],\"name\":\"sendRepeatedlyTo\"," +
@@ -651,5 +753,13 @@ public class ContractResources {
 
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);
+	}
+
+	public static ByteString literalInitcodeFor(final String contract) {
+		try {
+			return ByteString.copyFrom(Files.readAllBytes(Paths.get(bytecodePath(contract))));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }

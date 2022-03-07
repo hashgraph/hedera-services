@@ -52,7 +52,7 @@ public class ERC721ContractInteractions extends HapiApiSuite {
     }
 
     @Override
-    protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 callsERC721ContractInteractions()
         );

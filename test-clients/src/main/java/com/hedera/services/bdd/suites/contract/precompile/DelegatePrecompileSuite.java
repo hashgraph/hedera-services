@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -87,13 +86,13 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 		return false;
 	}
 
-	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return allOf(
-				positiveSpecs(),
-				negativeSpecs()
-		);
-	}
+    @Override
+	public List<HapiApiSpec> getSpecsInSuite() {
+        return allOf(
+                positiveSpecs(),
+                negativeSpecs()
+        );
+    }
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
@@ -254,13 +253,10 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 	}
 
 
-	@NotNull
-	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
-		return CommonUtils.calculateSolidityAddress(
-				(int) spec.registry().getContractId(outerContract).getShardNum(),
-				spec.registry().getContractId(outerContract).getRealmNum(),
-				spec.registry().getContractId(outerContract).getContractNum());
-	}
+    @NotNull
+    private String getNestedContractAddress(final String outerContract, final HapiApiSpec spec) {
+        return AssociatePrecompileSuite.getNestedContractAddress(outerContract, spec);
+    }
 
 	@Override
 	protected Logger getResultsLogger() {

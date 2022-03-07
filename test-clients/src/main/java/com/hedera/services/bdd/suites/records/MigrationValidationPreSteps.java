@@ -78,7 +78,7 @@ public class MigrationValidationPreSteps extends HapiApiSuite {
     public static void main(String... args) { new MigrationValidationPreSteps().runSuiteSync(); }
 
     @Override
-    protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
                         migrationPreservesEntitiesPreStep()

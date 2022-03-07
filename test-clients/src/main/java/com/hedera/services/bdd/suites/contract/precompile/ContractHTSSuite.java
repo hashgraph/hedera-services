@@ -25,7 +25,6 @@ import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -107,7 +106,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				positiveSpecs(),
 				negativeSpecs()
@@ -863,12 +862,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	@NotNull
-	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
-		return CommonUtils.calculateSolidityAddress(
-				(int) spec.registry().getContractId(outerContract).getShardNum(),
-				spec.registry().getContractId(outerContract).getRealmNum(),
-				spec.registry().getContractId(outerContract).getContractNum());
+	private String getNestedContractAddress(HapiApiSpec spec) {
+		return AssociatePrecompileSuite.getNestedContractAddress(ContractHTSSuite.NESTED, spec);
 	}
 
 	@Override

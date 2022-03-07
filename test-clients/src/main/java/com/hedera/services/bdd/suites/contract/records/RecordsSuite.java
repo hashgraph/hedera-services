@@ -50,8 +50,8 @@ public class RecordsSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
+	public List<HapiApiSpec> getSpecsInSuite() {
+		return List.of(new HapiApiSpec[] {
 				bigCall(),
 				txRecordsContainValidTransfers()
 		});

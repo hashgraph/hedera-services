@@ -504,6 +504,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		this.name = name;
 	}
 
+	public void setDecimals(int decimals) {
+		throwIfImmutable("Cannot change this token's decimals if it's immutable.");
+		this.decimals = decimals;
+	}
+
 	public void setTreasury(EntityId treasury) {
 		throwIfImmutable("Cannot change this token's treasure account if it's immutable.");
 		this.treasury = treasury;

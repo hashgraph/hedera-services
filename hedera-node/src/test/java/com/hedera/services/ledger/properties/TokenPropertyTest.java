@@ -35,6 +35,7 @@ import static com.hedera.services.ledger.properties.TokenProperty.ACC_FROZEN_BY_
 import static com.hedera.services.ledger.properties.TokenProperty.ADMIN_KEY;
 import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_ACCOUNT;
 import static com.hedera.services.ledger.properties.TokenProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
 import static com.hedera.services.ledger.properties.TokenProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.TokenProperty.FEE_SCHEDULE;
 import static com.hedera.services.ledger.properties.TokenProperty.FEE_SCHEDULE_KEY;
@@ -58,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenPropertyTest {
 	final long totalSupply = 2L;
+	final int decimals = 10;
 	final JKey adminKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
 	final JKey freezeKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012346".getBytes());
 	final JKey kycKey = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012347".getBytes());
@@ -86,6 +88,7 @@ class TokenPropertyTest {
 		// given:
 		final MerkleToken target = new MerkleToken();
 		TOTAL_SUPPLY.setter().accept(target, totalSupply);
+		DECIMALS.setter().accept(target, decimals);
 		ADMIN_KEY.setter().accept(target, adminKey);
 		FREEZE_KEY.setter().accept(target, freezeKey);
 		KYC_KEY.setter().accept(target, kycKey);
@@ -132,6 +135,7 @@ class TokenPropertyTest {
 		final var supplyTypeGetter = SUPPLY_TYPE.getter();
 		final var maxSupplyGetter = MAX_SUPPLY.getter();
 		final var feeScheduleGetter = FEE_SCHEDULE.getter();
+		final var decimalsGetter = DECIMALS.getter();
 		// expect:
 		assertEquals(totalSupply, totalSupplyGetter.apply(target));
 		assertEquals(adminKey, adminKeyGetter.apply(target));
@@ -156,6 +160,7 @@ class TokenPropertyTest {
 		assertEquals(supplyType, supplyTypeGetter.apply(target));
 		assertEquals(maxSupply, maxSupplyGetter.apply(target));
 		assertEquals(feeSchedule, feeScheduleGetter.apply(target));
+		assertEquals(decimals, decimalsGetter.apply(target));
 	}
 
 	@Test
@@ -164,6 +169,7 @@ class TokenPropertyTest {
 		final MerkleToken target = new MerkleToken();
 		// and:
 		final var totalSupplySetter = TOTAL_SUPPLY.setter();
+		final var decimalsSetter = DECIMALS.setter();
 		final var adminKeySetter = ADMIN_KEY.setter();
 		final var freezeKeySetter = FREEZE_KEY.setter();
 		final var kycKeySetter = KYC_KEY.setter();
@@ -188,6 +194,7 @@ class TokenPropertyTest {
 		final var feeScheduleSetter = FEE_SCHEDULE.setter();
 		// when:
 		totalSupplySetter.accept(target, totalSupply);
+		decimalsSetter.accept(target, decimals);
 		adminKeySetter.accept(target, adminKey);
 		freezeKeySetter.accept(target, freezeKey);
 		kycKeySetter.accept(target, kycKey);
@@ -212,6 +219,7 @@ class TokenPropertyTest {
 		feeScheduleSetter.accept(target, feeSchedule);
 		// expect:
 		assertEquals(totalSupply, target.totalSupply());
+		assertEquals(decimals, target.decimals());
 		assertEquals(adminKey, target.getAdminKey());
 		assertEquals(freezeKey, target.getFreezeKey());
 		assertEquals(kycKey, target.getKycKey());

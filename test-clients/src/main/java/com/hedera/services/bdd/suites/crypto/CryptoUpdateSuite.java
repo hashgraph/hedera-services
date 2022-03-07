@@ -70,7 +70,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
 	public static void main(String... args) {
-		new CryptoUpdateSuite().runSuiteAsync();
+		new CryptoUpdateSuite().runSuiteSync();
 	}
 
 	private final SigControl TWO_LEVEL_THRESH = KeyShape.threshSigs(2,
@@ -99,7 +99,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						updateWithUniqueSigs(),
 						updateWithOverlappingSigs(),
