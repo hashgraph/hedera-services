@@ -32,7 +32,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.test.IdUtils.asAccount;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.countSerials;
 import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,14 +50,11 @@ class CryptoApproveAllowanceMetaTest {
 
 	@Test
 	void allGettersAndToStringWork() {
-		final var expected = "CryptoApproveAllowanceMeta{numOfCryptoAllowances=1, numOfTokenAllowances=2, " +
-				"numOfNftAllowances=3, aggregatedNftAllowancesWithSerials=10, effectiveNow=1234567, " +
+		final var expected = "CryptoApproveAllowanceMeta{aggregatedNftAllowancesWithSerials=10, effectiveNow=1234567," +
+				" " +
 				"msgBytesUsed=112}";
 		final var now = 1_234_567;
 		final var subject = CryptoApproveAllowanceMeta.newBuilder()
-				.numOfCryptoAllowances(1)
-				.numOfTokenAllowances(2)
-				.numOfNftAllowances(3)
 				.msgBytesUsed(112)
 				.aggregatedNftAllowancesWithSerials(10)
 				.effectiveNow(now)
@@ -63,16 +62,13 @@ class CryptoApproveAllowanceMetaTest {
 
 		assertEquals(now, subject.getEffectiveNow());
 		assertEquals(10, subject.getAggregatedNftAllowancesWithSerials());
-		assertEquals(1, subject.getNumOfCryptoAllowances());
-		assertEquals(2, subject.getNumOfTokenAllowances());
-		assertEquals(3, subject.getNumOfNftAllowances());
 		assertEquals(112, subject.getMsgBytesUsed());
 		assertEquals(expected, subject.toString());
 	}
 
 	@Test
 	void calculatesBaseSizeAsExpected() {
-		final var cryptoApproveTxnBody = CryptoApproveAllowanceTransactionBody
+		final var op = CryptoApproveAllowanceTransactionBody
 				.newBuilder()
 				.addAllCryptoAllowances(List.of(cryptoAllowances))
 				.addAllTokenAllowances(List.of(tokenAllowances))
@@ -80,20 +76,18 @@ class CryptoApproveAllowanceMetaTest {
 				.build();
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setCryptoApproveAllowance(
-						cryptoApproveTxnBody
+						op
 				).build();
 
-		var subject = new CryptoApproveAllowanceMeta(cryptoApproveTxnBody,
+		var subject = new CryptoApproveAllowanceMeta(op,
 				canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
 
-		final var expectedMsgBytes = CRYPTO_ALLOWANCE_SIZE
-				+ TOKEN_ALLOWANCE_SIZE
-				+ NFT_ALLOWANCE_SIZE;
+		final var expectedMsgBytes = (op.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE)
+				+ (op.getTokenAllowancesCount() * TOKEN_ALLOWANCE_SIZE)
+				+ (op.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE) +
+				countSerials(op.getNftAllowancesList()) * LONG_SIZE;
 
 		assertEquals(expectedMsgBytes, subject.getMsgBytesUsed());
-		assertEquals(1, subject.getNumOfCryptoAllowances());
-		assertEquals(1, subject.getNumOfTokenAllowances());
-		assertEquals(1, subject.getNumOfNftAllowances());
 		assertEquals(3, subject.getAggregatedNftAllowancesWithSerials());
 	}
 
@@ -101,18 +95,14 @@ class CryptoApproveAllowanceMetaTest {
 	void hashCodeAndEqualsWork() {
 		final var now = 1_234_567;
 		final var subject1 = CryptoApproveAllowanceMeta.newBuilder()
-				.numOfCryptoAllowances(1)
-				.numOfTokenAllowances(2)
-				.numOfNftAllowances(3)
+				.msgBytesUsed(112)
 				.aggregatedNftAllowancesWithSerials(10)
 				.effectiveNow(now)
 				.build();
 
 		final var subject2 = CryptoApproveAllowanceMeta.newBuilder()
-				.numOfCryptoAllowances(1)
-				.numOfTokenAllowances(2)
-				.numOfNftAllowances(3)
 				.aggregatedNftAllowancesWithSerials(10)
+				.msgBytesUsed(112)
 				.effectiveNow(now)
 				.build();
 

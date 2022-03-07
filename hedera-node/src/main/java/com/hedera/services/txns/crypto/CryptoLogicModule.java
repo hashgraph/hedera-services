@@ -28,6 +28,7 @@ import dagger.multibindings.IntoMap;
 
 import java.util.List;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
@@ -79,6 +80,15 @@ public final class CryptoLogicModule {
 			final CryptoApproveAllowanceTransitionLogic cryptoApproveAllowanceTransitionLogic
 	) {
 		return List.of(cryptoApproveAllowanceTransitionLogic);
+	}
+
+	@Provides
+	@IntoMap
+	@FunctionKey(CryptoAdjustAllowance)
+	public static List<TransitionLogic> provideCryptoAdjustAllowanceLogic(
+			final CryptoAdjustAllowanceTransitionLogic cryptoAdjustAllowanceTransitionLogic
+	) {
+		return List.of(cryptoAdjustAllowanceTransitionLogic);
 	}
 
 	private CryptoLogicModule() {

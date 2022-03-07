@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.core.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -96,7 +95,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				positiveSpecs(),
 				negativeSpecs()
@@ -383,10 +382,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 	}
 
 	@NotNull
-	private String getNestedContractAddress(String outerContract, HapiApiSpec spec) {
-		return CommonUtils.calculateSolidityAddress(
-				(int) spec.registry().getContractId(outerContract).getShardNum(),
-				spec.registry().getContractId(outerContract).getRealmNum(),
-				spec.registry().getContractId(outerContract).getContractNum());
+	private String getNestedContractAddress(final String outerContract, final HapiApiSpec spec) {
+		return AssociatePrecompileSuite.getNestedContractAddress(outerContract, spec);
 	}
 }

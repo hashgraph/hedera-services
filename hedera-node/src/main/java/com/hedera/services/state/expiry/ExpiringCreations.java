@@ -56,7 +56,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class ExpiringCreations implements EntityCreator {
-
 	private final ExpiryManager expiries;
 	private final NarratedCharging narratedCharging;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -151,9 +150,6 @@ public class ExpiringCreations implements EntityCreator {
 		if (sideEffectsTracker.hasTrackedNewTokenId()) {
 			receiptBuilder.setTokenId(EntityId.fromGrpcTokenId(sideEffectsTracker.getTrackedNewTokenId()));
 		}
-		if (sideEffectsTracker.hasTrackedContractCreation()) {
-			receiptBuilder.setContractId(EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId()));
-		}
 		if (sideEffectsTracker.hasTrackedTokenSupply()) {
 			receiptBuilder.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply());
 		}
@@ -169,7 +165,10 @@ public class ExpiringCreations implements EntityCreator {
 				.setMemo(memo)
 				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
 				.setAssessedCustomFees(customFeesCharged)
-				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
+				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations())
+				.setCryptoAllowances(sideEffectsTracker.getCryptoAllowances())
+				.setNftAllowances(sideEffectsTracker.getNftAllowances())
+				.setFungibleTokenAllowances(sideEffectsTracker.getFungibleTokenAllowances());
 
 		if (sideEffectsTracker.hasTrackedAutoCreation()) {
 			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));
@@ -180,7 +179,11 @@ public class ExpiringCreations implements EntityCreator {
 			setTokensAndTokenAdjustments(baseRecord, tokenChanges);
 		}
 		if (sideEffectsTracker.hasTrackedContractCreation()) {
+			final var newId = 	EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId());
+			receiptBuilder.setContractId(newId);
 			final var createResult = new SolidityFnResult();
+			// A bit redundant, but set this for consistency with top-level records
+			createResult.setContractId(newId);
 			createResult.setEvmAddress(sideEffectsTracker.getNewEntityAlias().toByteArray());
 			baseRecord.setContractCreateResult(createResult);
 		}

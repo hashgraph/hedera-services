@@ -62,7 +62,7 @@ public final class AdjustmentUtils {
 				return includedHtsChange(account, denom, amount, manager);
 			}
 		} else {
-			extantChange.adjustUnits(amount);
+			extantChange.aggregateUnits(amount);
 			return extantChange;
 		}
 	}

@@ -46,7 +46,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -92,7 +94,7 @@ class CallLocalExecutorTest {
 		given(aliasManager.lookupIdBy(target.getEvmAddress())).willReturn(EntityNum.fromLong(contractID.num()));
 
 		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
+				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(), new TreeMap<>(), true);
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -112,7 +114,8 @@ class CallLocalExecutorTest {
 	void processingSuccessful() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress());
+				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
+						Collections.emptyMap(), true);
 		final var expected = response(OK, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -132,7 +135,8 @@ class CallLocalExecutorTest {
 	void processingReturnsModificationHaltReason() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
+				.failed(0, 0, 1, Optional.empty(), Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE),
+						Collections.emptyMap(), true);
 		final var expected = response(LOCAL_CALL_MODIFICATION_EXCEPTION, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -152,7 +156,7 @@ class CallLocalExecutorTest {
 	void processingReturnsInvalidSolidityAddressHaltReason() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.empty(), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+				.failed(0, 0, 1, Optional.empty(), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), Collections.emptyMap(), true);
 		final var expected = response(INVALID_SOLIDITY_ADDRESS, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));
@@ -172,7 +176,7 @@ class CallLocalExecutorTest {
 	void processingReturnsRevertReason() {
 		// setup:
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.of(Bytes.of("out of gas".getBytes())), Optional.empty());
+				.failed(0, 0, 1, Optional.of(Bytes.of("out of gas".getBytes())), Optional.empty(), Collections.emptyMap(), true);
 		final var expected = response(CONTRACT_REVERT_EXECUTED, transactionProcessingResult);
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(callerID));

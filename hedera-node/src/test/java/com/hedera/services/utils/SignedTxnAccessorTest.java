@@ -29,6 +29,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.usage.crypto.CryptoContextUtils;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -36,6 +37,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -76,6 +78,9 @@ import java.util.function.Function;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -590,13 +595,26 @@ class SignedTxnAccessorTest {
 
 		final var expandedMeta = spanMapAccessor.getCryptoApproveMeta(accessor);
 
-		assertEquals(112, expandedMeta.getMsgBytesUsed());
+		assertEquals(128, expandedMeta.getMsgBytesUsed());
 		assertEquals(now, expandedMeta.getEffectiveNow());
 		assertEquals(2, expandedMeta.getAggregatedNftAllowancesWithSerials());
-		assertEquals(1,  expandedMeta.getNumOfCryptoAllowances());
-		assertEquals(1, expandedMeta.getNumOfTokenAllowances());
-		assertEquals(1, expandedMeta.getNumOfNftAllowances());
 	}
+
+	@Test
+	void setCryptoAdjustUsageMetaWorks() {
+		final var txn = signedCryptoAdjustTxn();
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getCryptoAdjustMeta(accessor);
+
+		assertEquals(128, expandedMeta.getMsgBytesUsed());
+		assertEquals(now, expandedMeta.getEffectiveNow());
+		assertEquals(CryptoContextUtils.convertToCryptoMap(List.of(cryptoAllowance1)), expandedMeta.getCryptoAllowances());
+		assertEquals(CryptoContextUtils.convertToTokenMap(List.of(tokenAllowance1)), expandedMeta.getTokenAllowances());
+		assertEquals(CryptoContextUtils.convertToNftMap(List.of(nftAllowance1)), expandedMeta.getNftAllowances());
+	}
+
 
 	@Test
 	void getGasLimitWorksForCreate() {
@@ -636,6 +654,10 @@ class SignedTxnAccessorTest {
 
 	private Transaction signedCryptoApproveTxn() {
 		return buildTransactionFrom(cryptoApproveOp());
+	}
+
+	private Transaction signedCryptoAdjustTxn() {
+		return buildTransactionFrom(cryptoAdjustOp());
 	}
 
 	private TransactionBody cryptoCreateOp() {
@@ -678,6 +700,20 @@ class SignedTxnAccessorTest {
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
 				.setCryptoApproveAllowance(op)
+				.build();
+	}
+
+	private TransactionBody cryptoAdjustOp() {
+		final var op = CryptoAdjustAllowanceTransactionBody.newBuilder()
+				.addAllCryptoAllowances(List.of(cryptoAllowance1))
+				.addAllTokenAllowances(List.of(tokenAllowance1))
+				.addAllNftAllowances(List.of(nftAllowance1))
+				.build();
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setCryptoAdjustAllowance(op)
 				.build();
 	}
 

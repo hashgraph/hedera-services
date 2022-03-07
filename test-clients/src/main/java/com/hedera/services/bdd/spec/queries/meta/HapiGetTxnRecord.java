@@ -21,6 +21,8 @@ package com.hedera.services.bdd.spec.queries.meta;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -28,7 +30,6 @@ import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
@@ -46,10 +47,12 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.solidity.Abi;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.ByteArrayOutputStream;
@@ -74,6 +77,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.suites.HapiApiSuite.HBAR_TOKEN_SENTINEL;
 import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -101,6 +105,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
 	private List<Triple<String, String, Long>> assessedCustomFeesToValidate = new ArrayList<>();
 	private List<Pair<String, String>> newTokenAssociations = new ArrayList<>();
+	private List<ExpectedCryptoAllowance> expectedCryptoAllowances = new ArrayList<>();
+	private List<ExpectedTokenAllowance> expectedTokenAllowances = new ArrayList<>();
+	private List<ExpectedNftAllowance> expectedNftAllowances = new ArrayList<>();
 	private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
 	private Optional<TransactionID> explicitTxnId = Optional.empty();
 	private Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
@@ -117,9 +124,26 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 	private Optional<Integer> childRecordsCount = Optional.empty();
 	private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
+	private Optional<Integer> cryptoAllowanceCount = Optional.empty();
+	private Optional<Integer> tokenAllowanceCount = Optional.empty();
+	private Optional<Integer> nftAllowanceCount = Optional.empty();
 
-	private static record ExpectedChildInfo(String aliasingKey) {
+	private Consumer<List<?>> eventDataObserver;
+	private Predicate<Abi.Event> eventMatcher;
+	private String contractResultAbi = null;
+
+	public static ByteString sha384HashOf(final Transaction transaction) {
+		if (transaction.getSignedTransactionBytes().isEmpty()) {
+			return ByteString.copyFrom(noThrowSha384HashOf(transaction.toByteArray()));
+		}
+
+		return ByteString.copyFrom(noThrowSha384HashOf(transaction.getSignedTransactionBytes().toByteArray()));
 	}
+
+	private record ExpectedChildInfo(String aliasingKey) {}
+	private record ExpectedCryptoAllowance(String owner, String spender, Long allowance) {}
+	private record ExpectedTokenAllowance(String owner, String token, String spender, Long allowance) {}
+	private record ExpectedNftAllowance(String owner, String token, String spender, Boolean isApproveForAll, List<Long> serialNums) {}
 
 	private Map<Integer, ExpectedChildInfo>	childExpectations = new HashMap<>();
 
@@ -143,6 +167,18 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord exposingTo(final Consumer<TransactionRecord> observer) {
 		this.observer = Optional.of(observer);
+		return this;
+	}
+
+	public HapiGetTxnRecord exposingFilteredCallResultVia(
+			final String abi,
+			final Predicate<Abi.Event> eventMatcher,
+			final Consumer<List<?>> dataObserver
+	) {
+		this.contractResultAbi = abi;
+		this.eventMatcher = eventMatcher;
+		this.eventDataObserver = dataObserver;
+
 		return this;
 	}
 
@@ -192,6 +228,22 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	public HapiGetTxnRecord hasAliasInChildRecord(final String aliasingKey, final int childIndex) {
 		requestChildRecords = true;
 		childExpectations.put(childIndex, new ExpectedChildInfo(aliasingKey));
+		return this;
+	}
+
+	public HapiGetTxnRecord hasCryptoAllowance(final String owner, final String spender, final long allowance) {
+		expectedCryptoAllowances.add(new ExpectedCryptoAllowance(owner, spender, allowance));
+		return this;
+	}
+
+	public HapiGetTxnRecord hasTokenAllowance(final String owner, final String token, final String spender, final long allowance) {
+		expectedTokenAllowances.add(new ExpectedTokenAllowance(owner, token, spender, allowance));
+		return this;
+	}
+
+	public HapiGetTxnRecord hasNftAllowance(final String owner, final String token, final String spender
+			, final boolean isApproveForAll, final List<Long> serialNums) {
+		expectedNftAllowances.add(new ExpectedNftAllowance(owner, token, spender, isApproveForAll, serialNums));
 		return this;
 	}
 
@@ -301,6 +353,21 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
+	public HapiGetTxnRecord hasCryptoAllowanceCount(final int cryptoAllowanceCount) {
+		this.cryptoAllowanceCount = Optional.of(cryptoAllowanceCount);
+		return this;
+	}
+
+	public HapiGetTxnRecord hasTokenAllowanceCount(final int tokenAllowanceCount) {
+		this.tokenAllowanceCount = Optional.of(tokenAllowanceCount);
+		return this;
+	}
+
+	public HapiGetTxnRecord hasNftAllowanceCount(final int nftAllowanceCount) {
+		this.nftAllowanceCount = Optional.of(nftAllowanceCount);
+		return this;
+	}
+
 	public TransactionRecord getResponseRecord() {
 		return response.getTransactionGetRecord().getTransactionRecord();
 	}
@@ -341,7 +408,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	private void assertTransactionHash(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
 		Transaction transaction = Transaction.parseFrom(spec.registry().getBytes(txn));
-		assertArrayEquals(CommonUtils.sha384HashOf(transaction).toByteArray(),
+		assertArrayEquals(sha384HashOf(transaction).toByteArray(),
 				actualRecord.getTransactionHash().toByteArray(),
 				"Bad transaction hash!");
 	}
@@ -365,9 +432,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					out.writeLong(actualRecord.getConsensusTimestamp().getSeconds());
 					out.writeInt(actualRecord.getConsensusTimestamp().getNanos());
 					out.writeLong(actualRecord.getReceipt().getTopicSequenceNumber());
-					out.writeObject(CommonUtils.noThrowSha384HashOf(lastMessagedSubmitted.get()));
+					out.writeObject(noThrowSha384HashOf(lastMessagedSubmitted.get()));
 					out.flush();
-					var expectedRunningHash = CommonUtils.noThrowSha384HashOf(boas.toByteArray());
+					var expectedRunningHash = noThrowSha384HashOf(boas.toByteArray());
 					var actualRunningHash = actualRecord.getReceipt().getTopicRunningHash();
 					assertArrayEquals(expectedRunningHash,
 							actualRunningHash.toByteArray(),
@@ -387,6 +454,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (assertNothing) {
 			return;
 		}
+
 		final var txRecord = response.getTransactionGetRecord();
 		final var actualRecord = txRecord.getTransactionRecord();
 		assertCorrectRecord(spec, actualRecord);
@@ -464,6 +532,71 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					assertEquals(literalKey.toByteString().toStringUtf8(), childRecord.getAlias().toStringUtf8());
 				}
 			}
+		}
+		cryptoAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getCryptoAdjustmentsCount(),
+				"expected cryptoAllowanceCount was : " + n + " but is : " + actualRecord.getCryptoAdjustmentsCount()));
+		for (var expectedCryptoAllowance : expectedCryptoAllowances) {
+			final var ownerId = spec.registry().getAccountID(expectedCryptoAllowance.owner());
+			final var spenderId = spec.registry().getAccountID(expectedCryptoAllowance.spender());
+			final var allowance = expectedCryptoAllowance.allowance();
+			boolean found = false;
+			for (var actualAllowance : actualRecord.getCryptoAdjustmentsList()) {
+				if (
+						actualAllowance.getOwner().equals(ownerId) &&
+						actualAllowance.getSpender().equals(spenderId) &&
+						actualAllowance.getAmount() == allowance
+				) {
+					found = true;
+				}
+			}
+			assertTrue(found, "Couldn't find crypto allowance with ->" +
+					" owner : " + ownerId + " spender : " + spenderId + " allowance : " + allowance);
+		}
+		tokenAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getTokenAdjustmentsCount(),
+				"expected tokenAllowanceCount was : " + n + " but is : " + actualRecord.getTokenAdjustmentsCount()));
+		for (var expectedTokenAllowance : expectedTokenAllowances) {
+			final var ownerId = spec.registry().getAccountID(expectedTokenAllowance.owner());
+			final var tokenId = spec.registry().getTokenID(expectedTokenAllowance.token());
+			final var spenderId = spec.registry().getAccountID(expectedTokenAllowance.spender());
+			final var allowance = expectedTokenAllowance.allowance();
+			boolean found = false;
+			for (var actualAllowance : actualRecord.getTokenAdjustmentsList()) {
+				if (
+						actualAllowance.getOwner().equals(ownerId) &&
+						actualAllowance.getTokenId().equals(tokenId) &&
+						actualAllowance.getSpender().equals(spenderId) &&
+						actualAllowance.getAmount() == allowance
+				) {
+					found = true;
+				}
+			}
+			assertTrue(found, "Couldn't find token allowance with ->" +
+					" owner : " + ownerId + " token : " + tokenId + " spender : " + spenderId + " allowance : " + allowance);
+		}
+		nftAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getNftAdjustmentsCount(),
+				"expected nftAllowanceCount was : " + n + " but is : " + actualRecord.getNftAdjustmentsCount()));
+
+		for (var expectedNftAllowance : expectedNftAllowances) {
+			final var ownerId = spec.registry().getAccountID(expectedNftAllowance.owner());
+			final var tokenId = spec.registry().getTokenID(expectedNftAllowance.token());
+			final var spenderId = spec.registry().getAccountID(expectedNftAllowance.spender());
+			final var isApprovedForAll = BoolValue.of(expectedNftAllowance.isApproveForAll());
+			final var serialNums = expectedNftAllowance.serialNums();
+			boolean found = false;
+			for (var actualAllowance : actualRecord.getNftAdjustmentsList()) {
+				if (
+						actualAllowance.getOwner().equals(ownerId) &&
+						actualAllowance.getTokenId().equals(tokenId) &&
+						actualAllowance.getSpender().equals(spenderId) &&
+						(!actualAllowance.hasApprovedForAll() || actualAllowance.getApprovedForAll().equals(isApprovedForAll)) &&
+						actualAllowance.getSerialNumbersList().equals(serialNums)
+				) {
+					found = true;
+				}
+			}
+			assertTrue(found, "Couldn't find nft allowance with ->" +
+					" owner : " + ownerId + " token : " + tokenId + " spender : " + spenderId +
+					" isApprovedForAll : " + isApprovedForAll + " serialNums : " + serialNums);
 		}
 	}
 
@@ -591,6 +724,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		Query query = getRecordQuery(spec, payment, false);
 		response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
 		final TransactionRecord record = response.getTransactionGetRecord().getTransactionRecord();
+		if (contractResultAbi != null) {
+			exposeRequestedEventsFrom(record);
+		}
 		observer.ifPresent(obs -> obs.accept(record));
 		childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
 		childRecordsCount.ifPresent(count -> assertEquals(count, childRecords.size()));
@@ -632,6 +768,21 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		}
 		if (saveTxnRecordToRegistry.isPresent()) {
 			spec.registry().saveTransactionRecord(saveTxnRecordToRegistry.get(), record);
+		}
+	}
+
+	private void exposeRequestedEventsFrom(final TransactionRecord record) {
+		final var abi = Abi.fromJson(contractResultAbi);
+		final var matcher = abi.findEvent(eventMatcher);
+		final var logs = record.getContractCallResult().getLogInfoList();
+		for (final var log : logs) {
+			final var data = log.getData().toByteArray();
+			final var topics = new byte[log.getTopicCount()][];
+			for (int i = 0, n = log.getTopicCount(); i < n; i++) {
+				topics[i] = log.getTopic(i).toByteArray();
+			}
+			final var decodedLog = matcher.decode(data, topics);
+			eventDataObserver.accept(decodedLog);
 		}
 	}
 

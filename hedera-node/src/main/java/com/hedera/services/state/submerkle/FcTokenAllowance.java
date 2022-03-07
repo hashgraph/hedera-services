@@ -1,22 +1,24 @@
 /*
  * -
  *  * ‌
- *  * Hedera Services Node
- *  * ​
- *  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- *  * ​
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
+ * * Hedera Services Node
  *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
- *  * ‍
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
  *
  */
 
@@ -31,6 +33,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -138,7 +141,9 @@ public class FcTokenAllowance implements SelfSerializable {
 	public static FcTokenAllowance from(
 			final boolean approvedForAll,
 			final List<Long> serialNumbers) {
-		return new FcTokenAllowance(approvedForAll, serialNumbers);
+		final var modifiableList = new ArrayList<>(serialNumbers);
+		Collections.sort(modifiableList);
+		return new FcTokenAllowance(approvedForAll, modifiableList);
 	}
 
 	public static FcTokenAllowance from(final boolean approvedForAll) {
@@ -146,6 +151,9 @@ public class FcTokenAllowance implements SelfSerializable {
 	}
 
 	public static FcTokenAllowance from(final List<Long> serialNumbers) {
-		return new FcTokenAllowance(serialNumbers);
+		final var modifiableList = new ArrayList<>(serialNumbers);
+
+		Collections.sort(modifiableList);
+		return new FcTokenAllowance(modifiableList);
 	}
 }

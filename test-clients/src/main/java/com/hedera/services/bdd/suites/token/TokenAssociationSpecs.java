@@ -97,7 +97,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						treasuryAssociationIsAutomatic(),
 						dissociateHasExpectedSemantics(),
@@ -343,11 +343,13 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 	}
 
 	public HapiApiSpec canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
-		final String nonTreasuryAcquaintance = "1bFrozen";
+		final String aNonTreasuryAcquaintance = "aNonTreasuryAcquaintance";
+		final String bNonTreasuryAcquaintance = "bNonTreasuryAcquaintance";
 		final long initialSupply = 100L;
 		final long nonZeroXfer = 10L;
 		final var treasuryDissoc = "treasuryDissoc";
-		final var nonTreasuryDissoc = "nonTreasuryDissoc";
+		final var aNonTreasuryDissoc = "aNonTreasuryDissoc";
+		final var bNonTreasuryDissoc = "bNonTreasuryDissoc";
 
 		return defaultHapiSpec("CanDissociateFromDeletedTokenWithAlreadyDissociatedTreasury")
 				.given(
@@ -359,15 +361,28 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.initialSupply(initialSupply)
 								.treasury(TOKEN_TREASURY),
-						cryptoCreate(nonTreasuryAcquaintance).balance(0L)
+						cryptoCreate(aNonTreasuryAcquaintance).balance(0L),
+						cryptoCreate(bNonTreasuryAcquaintance).maxAutomaticTokenAssociations(1)
 				).when(
-						tokenAssociate(nonTreasuryAcquaintance, TBD_TOKEN),
-						cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN).between(TOKEN_TREASURY, nonTreasuryAcquaintance)),
-						tokenFreeze(TBD_TOKEN, nonTreasuryAcquaintance),
-						tokenDelete(TBD_TOKEN)
-				).then(
+						tokenAssociate(aNonTreasuryAcquaintance, TBD_TOKEN),
+						cryptoTransfer(moving(nonZeroXfer, TBD_TOKEN)
+								.distributing(TOKEN_TREASURY, aNonTreasuryAcquaintance, bNonTreasuryAcquaintance)),
+						tokenFreeze(TBD_TOKEN, aNonTreasuryAcquaintance),
+						tokenDelete(TBD_TOKEN),
+						tokenDissociate(bNonTreasuryAcquaintance, TBD_TOKEN).via(bNonTreasuryDissoc),
 						tokenDissociate(TOKEN_TREASURY, TBD_TOKEN).via(treasuryDissoc),
-						tokenDissociate(nonTreasuryAcquaintance, TBD_TOKEN).via(nonTreasuryDissoc)
+						tokenDissociate(aNonTreasuryAcquaintance, TBD_TOKEN).via(aNonTreasuryDissoc)
+				).then(
+						getTxnRecord(bNonTreasuryDissoc).hasPriority(recordWith()
+								.tokenTransfers(changingFungibleBalances()
+										.including(TBD_TOKEN, bNonTreasuryAcquaintance, -nonZeroXfer / 2))),
+						getTxnRecord(treasuryDissoc).hasPriority(recordWith()
+								.tokenTransfers(changingFungibleBalances()
+										.including(TBD_TOKEN, TOKEN_TREASURY, nonZeroXfer - initialSupply))),
+						getTxnRecord(aNonTreasuryDissoc).hasPriority(recordWith()
+								.tokenTransfers(changingFungibleBalances()
+										.including(TBD_TOKEN, aNonTreasuryAcquaintance, -nonZeroXfer / 2)))
+
 				);
 	}
 

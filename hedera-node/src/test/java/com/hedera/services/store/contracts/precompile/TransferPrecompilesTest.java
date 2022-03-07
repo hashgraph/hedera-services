@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
@@ -45,6 +46,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
@@ -71,6 +73,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -200,6 +203,8 @@ class TransferPrecompilesTest {
 	@Mock
 	private ContractAliases aliases;
 	@Mock
+	private UsagePricesProvider resourceCosts;
+	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 
 	private HTSPrecompiledContract subject;
@@ -210,7 +215,7 @@ class TransferPrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
 		subject.setTransferLogicFactory(transferLogicFactory);
 		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
@@ -245,14 +250,19 @@ class TransferPrecompilesTest {
 				.willReturn(1L);
 		given(creator.createUnsuccessfulSyntheticRecord(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
 				.willReturn(mockRecordBuilder);
+		given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
 		// then:
 		assertEquals(UInt256.valueOf(ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN_VALUE), result);
+		ArgumentCaptor<SolidityFnResult> captor = ArgumentCaptor.forClass(SolidityFnResult.class);
+		verify(mockRecordBuilder).setContractCallResult(captor.capture());
+		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN.name(), captor.getValue().getError());
 	}
 
 	@Test
@@ -304,7 +314,8 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -350,6 +361,7 @@ class TransferPrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -405,7 +417,8 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -465,7 +478,8 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -526,7 +540,8 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -592,7 +607,8 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -663,7 +679,8 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -729,7 +746,8 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 

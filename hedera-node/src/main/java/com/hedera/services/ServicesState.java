@@ -69,8 +69,11 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
+import static com.hedera.services.state.migration.StateChildIndices.NUM_0210_CHILDREN;
+import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
@@ -129,10 +132,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version >= MINIMUM_SUPPORTED_VERSION && version < CURRENT_VERSION) {
-			return StateChildIndices.NUM_PRE_0220_CHILDREN;
-		} else if (version == CURRENT_VERSION) {
-			return StateChildIndices.NUM_0220_CHILDREN;
+		if (version >= MINIMUM_SUPPORTED_VERSION && version <= CURRENT_VERSION) {
+			return (version <= RELEASE_0210_VERSION) ? NUM_0210_CHILDREN : NUM_POST_0210_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -145,7 +146,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public void initialize() {
-                /* ReleaseTwentyTwoMigration will create the new top-level VirtualMap children, nothing to do here. */
+		/* ReleaseTwentyTwoMigration will create the new top-level VirtualMap children, nothing to do here. */
 	}
 
 	@Override

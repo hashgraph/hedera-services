@@ -116,7 +116,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
 						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
@@ -892,8 +892,9 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).then(
 						cryptoTransfer(
 								moving(1, A_TOKEN).between("firstTreasury", "beneficiary"),
-								moving(1, A_TOKEN).from("firstTreasury")
-						).hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS)
+								moving(1, A_TOKEN).from("firstTreasury"))
+								.dontFullyAggregateTokenTransfers()
+								.hasPrecheck(ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS)
 				);
 	}
 
@@ -933,7 +934,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								moving(100, A_TOKEN).between(TOKEN_TREASURY, FIRST_USER),
 								moving(100, A_TOKEN).between(TOKEN_TREASURY, SECOND_USER),
 								moving(100, B_TOKEN).between(TOKEN_TREASURY, SECOND_USER)
-						).fullyAggregateTokenTransfers()
+						)
 				).then(
 						getAccountBalance(TOKEN_TREASURY)
 								.hasTokenBalance(A_TOKEN, TOTAL_SUPPLY - 200)

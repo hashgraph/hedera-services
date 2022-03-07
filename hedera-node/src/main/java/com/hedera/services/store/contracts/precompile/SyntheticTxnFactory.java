@@ -20,8 +20,10 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -36,6 +38,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -44,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -57,6 +61,16 @@ public class SyntheticTxnFactory {
 	public TransactionBody.Builder createContractSkeleton() {
 		final var builder = ContractCreateTransactionBody.newBuilder();
 		return TransactionBody.newBuilder().setContractCreateInstance(builder);
+	}
+
+	public TransactionBody.Builder createTransactionCall(long gas, Bytes functionParameters) {
+		final var builder = ContractCallTransactionBody.newBuilder();
+
+		builder.setContractID(HTS_PRECOMPILE_MIRROR_ID);
+		builder.setGas(gas);
+		builder.setFunctionParameters(ByteString.copyFrom(functionParameters.toArray()));
+
+		return TransactionBody.newBuilder().setContractCall(builder);
 	}
 
 	public TransactionBody.Builder createBurn(final BurnWrapper burnWrapper) {

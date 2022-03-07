@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -41,9 +42,11 @@ import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -247,6 +250,14 @@ public class SigRequirements {
 			return cryptoUpdate(payer, txn, factory, linkedRefs);
 		} else if (txn.hasCryptoDelete()) {
 			return cryptoDelete(payer, txn.getCryptoDelete(), factory, linkedRefs);
+		} else if (txn.hasCryptoApproveAllowance()) {
+			final var approveTxn = txn.getCryptoApproveAllowance();
+			return cryptoAllowance(payer, approveTxn.getCryptoAllowancesList(), approveTxn.getTokenAllowancesList(),
+					approveTxn.getNftAllowancesList(), factory, linkedRefs);
+		} else if (txn.hasCryptoAdjustAllowance()) {
+			final var adjustTxn = txn.getCryptoAdjustAllowance();
+			return cryptoAllowance(payer, adjustTxn.getCryptoAllowancesList(), adjustTxn.getTokenAllowancesList(),
+					adjustTxn.getNftAllowancesList(), factory, linkedRefs);
 		} else {
 			return null;
 		}
@@ -509,6 +520,37 @@ public class SigRequirements {
 				: SigningOrderResult.noKnownKeys();
 	}
 
+	private <T> SigningOrderResult<T> cryptoAllowance(
+			final AccountID payer,
+			final List<CryptoAllowance> cryptoAllowancesList,
+			final List<TokenAllowance> tokenAllowancesList,
+			final List<NftAllowance> nftAllowancesList,
+			final SigningOrderResultFactory<T> factory,
+			final @Nullable LinkedRefs linkedRefs) {
+		List<JKey> requiredKeys = new ArrayList<>();
+
+		for (final var allowance : cryptoAllowancesList) {
+			final var owner = allowance.getOwner();
+			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+				return factory.forInvalidAllowanceOwner();
+			}
+		}
+		for (final var allowance : tokenAllowancesList) {
+			final var owner = allowance.getOwner();
+			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+				return factory.forInvalidAllowanceOwner();
+			}
+		}
+		for (final var allowance : nftAllowancesList) {
+			final var owner = allowance.getOwner();
+			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+				return factory.forInvalidAllowanceOwner();
+			}
+		}
+
+		return factory.forValidOrder(requiredKeys);
+	}
+
 	private <T> SigningOrderResult<T> cryptoDelete(
 			final AccountID payer,
 			final CryptoDeleteTransactionBody op,
@@ -588,12 +630,13 @@ public class SigRequirements {
 			final var token = xfers.getToken();
 			for (NftTransfer adjust : xfers.getNftTransfersList()) {
 				final var sender = adjust.getSenderAccountID();
-				if ((failure = nftIncludeIfNecessary(payer, sender, null, required, token, op, linkedRefs))
+				if ((failure = nftIncludeIfNecessary(payer, sender, null, adjust.getIsApproval(), required, token, op,
+						linkedRefs))
 						!= NONE) {
 					return accountFailure(failure, factory);
 				}
 				final var receiver = adjust.getReceiverAccountID();
-				if ((failure = nftIncludeIfNecessary(payer, receiver, sender, required, token, op, linkedRefs))
+				if ((failure = nftIncludeIfNecessary(payer, receiver, sender, false, required, token, op, linkedRefs))
 						!= NONE) {
 					return (failure == MISSING_TOKEN) ? factory.forMissingToken() : accountFailure(failure, factory);
 				}
@@ -1102,6 +1145,21 @@ public class SigRequirements {
 		return factory.forValidOrder(required);
 	}
 
+	private KeyOrderingFailure includeOwnerIfNecessary(
+			final AccountID payer,
+			final AccountID owner,
+			final List<JKey> required,
+			final LinkedRefs linkedRefs) {
+		if (!owner.equals(AccountID.getDefaultInstance()) && !payer.equals(owner)) {
+			var ownerResult = sigMetaLookup.accountSigningMetaFor(owner, linkedRefs);
+			if (!ownerResult.succeeded()) {
+				return INVALID_ACCOUNT;
+			}
+			required.add(ownerResult.metadata().key());
+		}
+		return NONE;
+	}
+
 	private KeyOrderingFailure includeIfNecessary(
 			final AccountID payer,
 			final AccountAmount adjust,
@@ -1113,8 +1171,11 @@ public class SigRequirements {
 		if (!payer.equals(account)) {
 			var result = sigMetaLookup.aliasableAccountSigningMetaFor(account, linkedRefs);
 			if (result.succeeded()) {
-				var meta = result.metadata();
-				if (adjust.getAmount() < 0 || meta.receiverSigRequired()) {
+				final var meta = result.metadata();
+				final var isUnapprovedDebit = adjust.getAmount() < 0 && !adjust.getIsApproval();
+
+				if ((isUnapprovedDebit || meta.receiverSigRequired())) {
+					// we can skip adding the sender's key if the payer has allowance granted to use sender's hbar.
 					required.add(meta.key());
 				}
 			} else {
@@ -1136,6 +1197,7 @@ public class SigRequirements {
 			final AccountID payer,
 			final AccountID party,
 			final AccountID counterparty,
+			final boolean isApproval,
 			final List<JKey> required,
 			final TokenID token,
 			final CryptoTransferTransactionBody op,
@@ -1146,11 +1208,14 @@ public class SigRequirements {
 			if (!result.succeeded()) {
 				return result.failureIfAny();
 			}
-			var meta = result.metadata();
+			final var meta = result.metadata();
 			final var isSender = counterparty == null;
-			if (isSender || meta.receiverSigRequired()) {
+			final var isUnapprovedTransfer = isSender && !isApproval;
+			final var isGatedReceipt = !isSender && meta.receiverSigRequired();
+
+			if (isUnapprovedTransfer || isGatedReceipt) {
 				required.add(meta.key());
-			} else {
+			} else if (!isSender) {
 				final var tokenResult = sigMetaLookup.tokenSigningMetaFor(token, linkedRefs);
 				if (!tokenResult.succeeded()) {
 					return tokenResult.failureIfAny();

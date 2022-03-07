@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Assertions;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -43,7 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.legacy.core.CommonUtils.calculateSolidityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 public class ExtCodeHashOperationSuite extends HapiApiSuite {
@@ -54,7 +54,7 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[]{
 				verifiesExistence()
 		});
@@ -85,8 +85,8 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
 						withOpContext((spec, opLog) -> {
 							AccountID accountID = spec.registry().getAccountID(DEFAULT_PAYER);
 							ContractID contractID = spec.registry().getContractId(CONTRACT);
-							String accountSolidityAddress = calculateSolidityAddress((int) accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum());
-							String contractAddress = calculateSolidityAddress((int) contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum());
+							String accountSolidityAddress = asHexedSolidityAddress(accountID);
+							String contractAddress = asHexedSolidityAddress(contractID);
 
 							final var call = contractCall(CONTRACT,
 									ContractResources.EXT_CODE_OP_CHECKER_HASH_OF,

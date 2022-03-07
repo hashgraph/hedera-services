@@ -118,6 +118,16 @@ import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRA
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_PROXY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_WITH_NEW_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_ALLOWANCE_NO_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_ALLOWANCE_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO;
@@ -134,6 +144,8 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_EXTANT_SENDERS;
@@ -150,6 +162,7 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoUpdateScenarios.CRYPTO_UPDATE_NO_NEW_KEY_SELF_PAID_SCENARIO;
@@ -255,6 +268,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKE
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.OWNER_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_ALIAS;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SYS_ACCOUNT_KT;
@@ -268,6 +282,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
@@ -461,6 +476,33 @@ class SigRequirementsTest {
 		// then:
 		assertThat(sanityRestored(payerSummary.getOrderedKeys()), contains(DEFAULT_PAYER_KT.asKey()));
 		assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
+	void doesntAddOwnerSigWhenAllowanceGrantedToPayerForHbarTransfer() throws Throwable {
+		setupFor(CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
+
+		final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(sanityRestored(nonPayerSummary.getOrderedKeys()).isEmpty());
+	}
+
+	@Test
+	void doesntAddOwnerSigWhenAllowanceGrantedToPayerForFungibleTokenTransfer() throws Throwable {
+		setupFor(TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO);
+
+		final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertFalse(sanityRestored(nonPayerSummary.getOrderedKeys()).contains(OWNER_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void doesntAddOwnerSigWhenAllowanceGrantedToPayerForNFTTransfer() throws Throwable {
+		setupFor(NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO);
+
+		final var nonPayerSummary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertFalse(sanityRestored(nonPayerSummary.getOrderedKeys()).contains(OWNER_ACCOUNT_KT.asKey()));
 	}
 
 	@Test
@@ -695,6 +737,110 @@ class SigRequirementsTest {
 
 		// then:
 		verify(mockSummaryFactory).forGeneralError();
+	}
+
+	@Test
+	void getsCryptoApproveAllowanceVanilla() throws Throwable {
+		setupFor(CRYPTO_APPROVE_ALLOWANCE_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoApproveAllowanceWithSomeSpecificOwners() throws Throwable {
+		setupFor(CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoApproveAllowanceMissingOwnerInFungibleTokenAllowance() throws Throwable {
+		setupFor(CRYPTO_APPROVE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoApproveAllowanceMissingOwnerInCryptoAllowance() throws Throwable {
+		setupFor(CRYPTO_APPROVE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoApproveAllowanceMissingOwnerInNftAllowance() throws Throwable {
+		setupFor(CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoAdjustAllowanceVanilla() throws Throwable {
+		setupFor(CRYPTO_ADJUST_ALLOWANCE_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoAdjustAllowanceWithSomeSpecificOwners() throws Throwable {
+		setupFor(CRYPTO_ADJUST_ALLOWANCE_NO_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoAdjustAllowanceMissingOwnerInFungibleTokenAllowance() throws Throwable {
+		setupFor(CRYPTO_ADJUST_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoAdjustAllowanceMissingOwnerInCryptoAllowance() throws Throwable {
+		setupFor(CRYPTO_ADJUST_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoAdjustAllowanceMissingOwnerInNftAllowance() throws Throwable {
+		setupFor(CRYPTO_ADJUST_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
 	}
 
 	@Test

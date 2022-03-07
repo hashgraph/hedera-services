@@ -34,7 +34,6 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -53,6 +52,9 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static com.hedera.services.fees.calculation.AutoRenewCalcs.countSerials;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftAllowancesList;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
@@ -188,10 +190,9 @@ class AutoRenewCalcsTest {
 				.setCurrentMemo(expiredAccount.getMemo())
 				.setCurrentNumTokenRels(expiredAccount.tokens().numAssociations())
 				.setCurrentMaxAutomaticAssociations(expiredAccount.getMaxAutomaticAssociations())
-				.setCurrentCryptoAllowanceCount(expiredAccount.getCryptoAllowances().size())
-				.setCurrentTokenAllowanceCount(expiredAccount.getFungibleTokenAllowances().size())
-				.setCurrentNftAllowanceCount(expiredAccount.getNftAllowances().size())
-				.setCurrentNftSerialsCount(countSerials(expiredAccount.getNftAllowances()))
+				.setCurrentCryptoAllowances(getCryptoAllowancesList(expiredAccount))
+				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(expiredAccount))
+				.setCurrentNftAllowances(getNftAllowancesList(expiredAccount))
 				.build();
 
 		// expect:
