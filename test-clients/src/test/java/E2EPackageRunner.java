@@ -254,7 +254,7 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
-	@Tag("contract.precompile")
+	@Tag("contract.precompile.part1")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile() {
 		return List.of(
@@ -262,7 +262,15 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(ContractBurnHTSSuite::new),
 				extractSpecsFromSuite(ContractHTSSuite::new),
 				extractSpecsFromSuite(ContractKeysHTSSuite::new),
-				extractSpecsFromSuite(ContractMintHTSSuite::new),
+				extractSpecsFromSuite(ContractMintHTSSuite::new)
+		);
+	}
+
+	@Tag("contract")
+	@Tag("contract.precompile.part2")
+	@TestFactory
+	Collection<DynamicContainer> contractPrecompile2() {
+		return List.of(
 				extractSpecsFromSuite(CryptoTransferHTSSuite::new),
 				extractSpecsFromSuite(DelegatePrecompileSuite::new),
 				extractSpecsFromSuite(DissociatePrecompileSuite::new),
