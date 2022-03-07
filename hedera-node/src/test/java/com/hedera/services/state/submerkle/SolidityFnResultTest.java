@@ -120,7 +120,7 @@ class SolidityFnResultTest {
 		assertEquals(createdContractIds, subject.getCreatedContractIds());
 		assertEquals(stateChanges, subject.getStateChanges());
 		assertEquals(0x2055c5c03ff84eb4L, subject.getClassId());
-		assertEquals(2, subject.getVersion());
+		assertEquals(3, subject.getVersion());
 	}
 
 	@Test
@@ -400,7 +400,7 @@ class SolidityFnResultTest {
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(SolidityFnResult.MERKLE_VERSION, subject.getVersion());
+		assertEquals(SolidityFnResult.RELEASE_0240_VERSION, subject.getVersion());
 		assertEquals(SolidityFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
