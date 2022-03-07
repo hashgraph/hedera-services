@@ -37,9 +37,16 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
@@ -233,5 +240,24 @@ public class TxnUtils {
 	public static void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
 		final var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());
+	}
+
+	public static <T extends SelfSerializable> void assertSerdeWorks(
+			final T original,
+			final Supplier<T> factory,
+			final int version
+	) throws IOException {
+		final var baos = new ByteArrayOutputStream();
+		final var out = new SerializableDataOutputStream(baos);
+		original.serialize(out);
+		;
+
+		final var reconstruction = factory.get();
+
+		final var bais = new ByteArrayInputStream(baos.toByteArray());
+		final var in = new SerializableDataInputStream(bais);
+		reconstruction.deserialize(in, version);
+
+		assertEquals(original, reconstruction);
 	}
 }

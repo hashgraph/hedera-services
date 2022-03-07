@@ -63,5 +63,6 @@ class CodeOrderResultFactoryTest {
 		assertSame(CodeOrderResultFactory.UNRESOLVABLE_SIGNERS_RESULT, subject.forUnresolvableRequiredSigners());
 		assertSame(CodeOrderResultFactory.UNSCHEDULABLE_TRANSACTION_RESULT, subject.forUnschedulableTxn());
 		assertSame(CodeOrderResultFactory.MISSING_FEE_COLLECTOR_RESULT, subject.forMissingFeeCollector());
+		assertSame(CodeOrderResultFactory.MISSING_ALLOWANCE_OWNER_RESULT, subject.forInvalidAllowanceOwner());
 	}
 }

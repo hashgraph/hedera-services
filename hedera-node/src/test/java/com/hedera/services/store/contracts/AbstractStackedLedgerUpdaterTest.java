@@ -22,11 +22,11 @@ package com.hedera.services.store.contracts;
 
 
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.backing.HashMapBackingTokens;
+import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
+import com.hedera.services.ledger.backing.HashMapBackingTokens;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
@@ -50,14 +51,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.swirlds.common.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractStackedLedgerUpdaterTest {
+	@Mock
+	private ContractAliases aliases;
 	@Mock
 	private HederaWorldState worldState;
 
@@ -139,6 +147,19 @@ class AbstractStackedLedgerUpdaterTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
+	void doesntAdjustBalanceOfProxyTokenAccountWrapper() {
+		final var proxyAccountWrapper = mock(UpdateTrackingLedgerAccount.class);
+		given(proxyAccountWrapper.wrappedAccountIsTokenProxy()).willReturn(true);
+		given(proxyAccountWrapper.getAddress()).willReturn(aAddress);
+		subject.updatedAccounts.put(aAddress, proxyAccountWrapper);
+
+		assertDoesNotThrow(subject::commit);
+
+		verify(proxyAccountWrapper, never()).getBalance();
+	}
+
+	@Test
 	void commitsNewlyModifiedAccountAsExpected() {
 		final var mockCode = Bytes.ofUnsignedLong(1_234L);
 		final var account = worldState.new WorldStateAccount(
@@ -151,6 +172,8 @@ class AbstractStackedLedgerUpdaterTest {
 		mutableAccount.getMutable().decrementBalance(Wei.of(1));
 		mutableAccount.getMutable().setCode(mockCode);
 		mutableAccount.getMutable().clearStorage();
+		subject.trackingLedgers().aliases().link(nonMirrorAddress, aAddress);
+		subject.trackingLedgers().aliases().link(otherNonMirrorAddress, bAddress);
 
 		subject.commit();
 
@@ -161,6 +184,9 @@ class AbstractStackedLedgerUpdaterTest {
 
 		wrapped.commit();
 		assertEquals(aBalance - 2, ledgers.accounts().get(aAccount, BALANCE));
+
+		verify(aliases).link(nonMirrorAddress, aAddress);
+		verify(aliases, never()).link(otherNonMirrorAddress, bAddress);
 	}
 
 	private void assertTrackingLedgersInTxn() {
@@ -198,19 +224,23 @@ class AbstractStackedLedgerUpdaterTest {
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>());
-		final var aliasManager = new AliasManager();
 
 		tokenRelsLedger.begin();
 		accountsLedger.begin();
 		nftsLedger.begin();
 
-		ledgers = new WorldLedgers(aliasManager, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+		ledgers = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
 	}
 
 	private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
 	private static final Address aAddress = EntityIdUtils.asTypedEvmAddress(aAccount);
+	private static final Address bAddress = EntityNum.fromLong(54321).toEvmAddress();
 	private static final long aBalance = 1_000L;
 	private static final long aNonce = 1L;
 	private static final long aExpiry = 1_234_567L;
 	private static final long aAutoRenew = 7776000L;
+	private static final byte[] rawNonMirrorAddress = unhex("abcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
+	private static final byte[] otherRawNonMirrorAddress = unhex("abcdecabcdecabcdecbabcdecabcdecabcdecbbb");
+	private static final Address otherNonMirrorAddress = Address.wrap(Bytes.wrap(otherRawNonMirrorAddress));
 }

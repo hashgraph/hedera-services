@@ -83,7 +83,7 @@ public final class DiverseStateValidation extends HapiApiSuite {
 	private final AtomicReference<Map<String, String>> hexedBytecode = new AtomicReference<>();
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		try {
 			SMALL_CONTENTS = Files.newInputStream(Paths.get(SMALL_CONTENTS_LOC)).readAllBytes();
 			LARGE_CONTENTS = Files.newInputStream(Paths.get(LARGE_CONTENTS_LOC)).readAllBytes();

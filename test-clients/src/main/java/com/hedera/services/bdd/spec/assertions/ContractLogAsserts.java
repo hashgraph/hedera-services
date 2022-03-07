@@ -23,6 +23,7 @@ package com.hedera.services.bdd.spec.assertions;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import org.junit.jupiter.api.Assertions;
 
@@ -78,6 +79,11 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
 			Assertions.assertTrue(((ContractLoginfo) o).getTopicList().isEmpty(), "Bad topics value in Topics array. " +
 					"No topics expected");
 		});
+		return this;
+	}
+
+	public ContractLogAsserts contract(final String contract) {
+		registerIdLookupAssert(contract, ContractLoginfo::getContractID, ContractID.class, "Bad contract");
 		return this;
 	}
 

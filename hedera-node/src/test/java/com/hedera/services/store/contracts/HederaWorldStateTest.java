@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
@@ -54,10 +55,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -71,8 +76,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,19 +96,22 @@ class HederaWorldStateTest {
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
 	final Id contract = new Id(0, 0, 2);
 	final AccountID accountId = IdUtils.asAccount("0.0.12345");
 	final Bytes code = Bytes.of("0x60606060".getBytes());
-
+	private static final Bytes TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS = Bytes.fromHexString(
+			"6080604052348015600f57600080fd5b506000610167905077618dc65e0000000000000000000000000000000000000000600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033");
 	private HederaWorldState subject;
 
 	@BeforeEach
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
-	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian);
+	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian, dynamicProperties);
 	}
 
 	@Test
@@ -142,12 +152,51 @@ class HederaWorldStateTest {
 				(Consumer<InProgressChildRecord>) customizerCaptor.getValue(),
 				EntityIdUtils.contractIdFromEvmAddress(Address.RIPEMD160),
 				specialMemo);
+	}
 
-		/* sad path with existing but not accessible account */
-		updater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
-		updater.commit();
-		given(entityAccess.isExtant(any())).willReturn(false);
-		assertFailsWith(() -> subject.customizeSponsoredAccounts(), ResponseCodeEnum.FAIL_INVALID);
+	@Test
+	void alwaysClearsSponsorMapEvenAfterUnforseeableFailure() {
+		givenNonNullWorldLedgers();
+
+		given(entityAccess.isExtant(any())).willReturn(true);
+		given(entityAccess.getMemo(any())).willReturn("memo");
+		given(entityAccess.getProxy(any())).willReturn(EntityId.MISSING_ENTITY_ID);
+		given(entityAccess.getAutoRenew(any())).willReturn(100L);
+		willThrow(RuntimeException.class).given(entityAccess).customize(any(), any());
+
+		final var subjectUpdater = subject.updater();
+		subjectUpdater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
+		subjectUpdater.commit();
+
+		assertThrows(RuntimeException.class, subject::customizeSponsoredAccounts);
+		/* Now the sponsor map should be cleared */
+		assertDoesNotThrow(subject::customizeSponsoredAccounts);
+	}
+
+	@Test
+	void doesntFailWhenSponsoredAccountIsMissing() {
+		givenNonNullWorldLedgers();
+
+		final var subjectUpdater = subject.updater();
+
+		subjectUpdater.getSponsorMap().put(Address.RIPEMD160, Address.RIPEMD160);
+		subjectUpdater.commit();
+
+		assertDoesNotThrow(subject::customizeSponsoredAccounts);
+	}
+
+	@Test
+	void doesntFailWhenSponsorIsMissing() {
+		givenNonNullWorldLedgers();
+
+		final var subjectUpdater = subject.updater();
+
+		subjectUpdater.getSponsorMap().put(Address.RIPEMD160, Address.BLS12_MAP_FP2_TO_G2);
+		subjectUpdater.commit();
+
+		given(entityAccess.isExtant(accountIdFromEvmAddress(Address.RIPEMD160))).willReturn(true);
+		given(entityAccess.isExtant(accountIdFromEvmAddress(Address.BLS12_MAP_FP2_TO_G2))).willReturn(false);
+		assertDoesNotThrow(subject::customizeSponsoredAccounts);
 	}
 
 	private void assertCapturedWorkAsExpected(
@@ -364,7 +413,7 @@ class HederaWorldStateTest {
 
 	@Test
 	void failsFastIfDeletionsHappenOnStaticWorld() {
-		subject = new HederaWorldState(ids, entityAccess, new CodeCache(0, entityAccess));
+		subject = new HederaWorldState(ids, entityAccess, new CodeCache(0, entityAccess), dynamicProperties);
 		final var tbd = IdUtils.asAccount("0.0.321");
 		final var tbdAddress = EntityIdUtils.asTypedEvmAddress(tbd);
 		givenNonNullWorldLedgers();
@@ -411,6 +460,7 @@ class HederaWorldStateTest {
 		assertEquals(234L, actualSubject.getSbhRefund().toLong());
 		actualSubject.revert();
 		assertEquals(0, actualSubject.getSbhRefund().toLong());
+		assertTrue(actualSubject.getStateChanges().isEmpty());
 	}
 
 	@Test
@@ -440,6 +490,30 @@ class HederaWorldStateTest {
 		verify(entityAccess).getBalance(zeroAddress);
 		verify(entityAccess).getProxy(zeroAddress);
 		verify(entityAccess).getAutoRenew(zeroAddress);
+	}
+
+	@Test
+	void updaterGetsHederaTokenAccount() {
+		givenNonNullWorldLedgers();
+
+		final var zeroAddress = EntityIdUtils.accountIdFromEvmAddress(Address.ZERO.toArray());
+		final var updater = subject.updater();
+		// and:
+		given(entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(zeroAddress))).willReturn(true);
+		given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
+		// and:
+		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(0), 0, 0, new EntityId());
+
+		// when:
+		final var result = updater.getHederaAccount(Address.ZERO);
+
+		// then:
+		assertEquals(expected.getAddress(), result.getAddress());
+		assertEquals(expected.getBalance(), result.getBalance());
+		assertEquals(expected.getProxyAccount(), result.getProxyAccount());
+		assertEquals(expected.getExpiry(), result.getExpiry());
+		assertEquals(-1, result.getNonce());
+		assertEquals(TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS, result.getCode());
 	}
 
 	@Test
@@ -510,6 +584,53 @@ class HederaWorldStateTest {
 	}
 
 	@Test
+	void updaterCorrectlyPopulatesStateChanges() {
+		givenNonNullWorldLedgers();
+		final var contractAddress = "0xffff";
+		final var slot = 1L;
+		final var oldSlotValue = 4L;
+		final var newSlotValue = 255L;
+		final var updatedAccount = mock(UpdateTrackingLedgerAccount.class);
+		given(updatedAccount.getAddress()).willReturn(Address.fromHexString(contractAddress));
+		given(updatedAccount.getOriginalStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(oldSlotValue));
+		given(updatedAccount.getUpdatedStorage()).willReturn(Map.of(UInt256.valueOf(slot), UInt256.valueOf(newSlotValue)));
+		given(updatedAccount.getStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(newSlotValue));
+
+		final var actualSubject = subject.updater();
+		assertEquals(0, actualSubject.getTouchedAccounts().size());
+		actualSubject.track(updatedAccount);
+
+		final var finalStateChanges = actualSubject.getFinalStateChanges();
+		assertEquals(1, finalStateChanges.size());
+		final var contractStateChange = finalStateChanges.get(Address.fromHexString(contractAddress));
+		assertEquals(1, contractStateChange.size());
+		assertNotNull(contractStateChange.get(UInt256.valueOf(slot)));
+		assertEquals(contractStateChange.get(UInt256.valueOf(slot)).getLeft(), UInt256.valueOf(oldSlotValue));
+		assertEquals(contractStateChange.get(UInt256.valueOf(slot)).getRight(), UInt256.valueOf(newSlotValue));
+	}
+
+	@Test
+	void onlyStoresCodeIfUpdated() {
+		givenNonNullWorldLedgers();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		final var someAddress = contract.asEvmAddress();
+		given(aliases.resolveForEvm(someAddress)).willReturn(someAddress);
+
+		final var actualSubject = subject.updater();
+
+		final var accountId = accountIdFromEvmAddress(someAddress);
+		given(entityAccess.isExtant(accountId)).willReturn(true);
+		given(entityAccess.getBalance(accountId)).willReturn(balance);
+		given(entityAccess.getProxy(accountId)).willReturn(EntityId.MISSING_ENTITY_ID);
+		given(entityAccess.getAutoRenew(accountId)).willReturn(123L);
+
+		actualSubject.getAccount(someAddress);
+		actualSubject.commit();
+
+		verify(entityAccess, never()).storeCode(any(), any());
+	}
+
+	@Test
 	void persistNewlyCreatedContracts() {
 		givenNonNullWorldLedgers();
 		final var newAddress = contract.asEvmAddress();
@@ -532,6 +653,17 @@ class HederaWorldStateTest {
 		// and:
 		assertEquals(1, result.size());
 		assertEquals(contract.asGrpcContract(), result.get(0));
+	}
+
+	@Test
+	void creationPredicateDoesntMatchUnlessContractIdMatchesBackingId() {
+		final var receiptBuilder = TxnReceipt.newBuilder()
+				.setContractId(contract.asEntityId())
+				.setStatus(SUCCESS_LITERAL);
+		final var recordBuilder = ExpirableTxnRecord.newBuilder()
+				.setReceiptBuilder(receiptBuilder);
+
+		assertFalse(HederaWorldState.isCreationOf(sponsor.asGrpcAccount(), recordBuilder));
 	}
 
 	private void givenNonNullWorldLedgers() {

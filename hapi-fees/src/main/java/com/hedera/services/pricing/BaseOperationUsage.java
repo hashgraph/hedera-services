@@ -49,6 +49,7 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -296,7 +297,7 @@ class BaseOperationUsage {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowances(List.of(CryptoAllowance.newBuilder()
+				.setCurrentCryptoAllowances(List.of(GrantedCryptoAllowance.newBuilder()
 						.setSpender(AN_ACCOUNT)
 						.setAmount(1L)
 						.build()))

@@ -58,6 +58,7 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -105,6 +106,11 @@ class CreateEvmTxProcessorTest {
 
 		createEvmTxProcessor = new CreateEvmTxProcessor(
 				worldState, livePricesSource, codeCache, globalDynamicProperties, gasCalculator, operations, precompiledContractMap);
+	}
+
+	@Test
+	void blockHashAlwaysUnavailable() {
+		assertSame(EvmTxProcessor.UNAVAILABLE_BLOCK_HASH, EvmTxProcessor.ALWAYS_UNAVAILABLE_BLOCK_HASH.apply(1L));
 	}
 
 	@Test

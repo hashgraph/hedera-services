@@ -39,7 +39,7 @@ public class TopicAutoRenewalSuite extends HapiApiSuite {
 	// TODO : just added empty shells for now.
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				topicAutoRemoval(),
 				topicAutoRenewal()

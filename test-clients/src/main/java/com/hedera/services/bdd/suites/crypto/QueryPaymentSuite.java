@@ -55,7 +55,7 @@ public class QueryPaymentSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(queryPaymentTests());
 	}
 

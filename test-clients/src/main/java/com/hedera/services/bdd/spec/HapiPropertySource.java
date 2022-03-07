@@ -283,6 +283,14 @@ public interface HapiPropertySource {
 		return asSolidityAddress((int) accountId.getShardNum(), accountId.getRealmNum(), accountId.getAccountNum());
 	}
 
+	static String asHexedSolidityAddress(final AccountID accountId) {
+		return CommonUtils.hex(asSolidityAddress(accountId));
+	}
+
+	static String asHexedSolidityAddress(final ContractID contractId) {
+		return CommonUtils.hex(asSolidityAddress(contractId));
+	}
+
 	static byte[] asSolidityAddress(final ContractID contractId) {
 		return asSolidityAddress((int) contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
 	}
@@ -301,10 +309,28 @@ public interface HapiPropertySource {
 		return solidityAddress;
 	}
 
+	static String asHexedSolidityAddress(final int shard, final long realm, final long num) {
+		return CommonUtils.hex(asSolidityAddress(shard, realm, num));
+	}
+
 	static ContractID contractIdFromHexedMirrorAddress(final String hexedEvm) {
 		return ContractID.newBuilder()
 				.setContractNum(Longs.fromByteArray(
 						Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)
 				)).build();
+	}
+
+	static AccountID accountIdFromHexedMirrorAddress(final String hexedEvm) {
+		return AccountID.newBuilder()
+				.setAccountNum(Longs.fromByteArray(
+						Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)
+				)).build();
+	}
+
+	static String literalIdFromHexedMirrorAddress(final String hexedEvm) {
+		return HapiPropertySource.asContractString(ContractID.newBuilder()
+				.setContractNum(Longs.fromByteArray(
+						Arrays.copyOfRange(CommonUtils.unhex(hexedEvm), 12, 20)
+				)).build());
 	}
 }

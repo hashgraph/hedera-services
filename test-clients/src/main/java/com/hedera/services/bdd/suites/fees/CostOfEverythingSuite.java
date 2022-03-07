@@ -78,7 +78,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return Stream.of(
 //				cryptoCreatePaths(),
 //				cryptoTransferPaths(),

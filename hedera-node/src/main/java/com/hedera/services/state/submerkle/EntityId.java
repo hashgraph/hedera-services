@@ -21,6 +21,8 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -31,8 +33,10 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.hyperledger.besu.datatypes.Address;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Objects;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
@@ -212,6 +216,14 @@ public class EntityId implements SelfSerializable {
 			return MISSING_ENTITY_ID;
 		}
 		return new EntityId(id.getShardNum(), id.getRealmNum(), id.getContractNum());
+	}
+
+	public static EntityId fromAddress(final Address address) {
+		final var evmAddress = address.toArrayUnsafe();
+		return new EntityId(
+				Ints.fromByteArray(Arrays.copyOfRange(evmAddress, 0, 4)),
+				Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 4, 12)),
+				Longs.fromByteArray(Arrays.copyOfRange(evmAddress, 12, 20)));
 	}
 
 	public ContractID toGrpcContractId() {

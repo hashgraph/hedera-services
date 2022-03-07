@@ -50,7 +50,7 @@ public abstract class HapiApiSuite {
 	private static final Random r = new Random();
 
 	protected abstract Logger getResultsLogger();
-	protected abstract List<HapiApiSpec> getSpecsInSuite();
+	public abstract List<HapiApiSpec> getSpecsInSuite();
 
 	public static final Key EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 

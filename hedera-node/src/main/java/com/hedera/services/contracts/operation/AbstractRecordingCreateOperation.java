@@ -51,6 +51,8 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 public abstract class AbstractRecordingCreateOperation extends AbstractOperation {
 	private static final int MAX_STACK_DEPTH = 1024;
 
+	protected static final Operation.OperationResult INVALID_RESPONSE = new OperationResult(
+			Optional.of(Gas.ZERO), Optional.of(ExceptionalHaltReason.INVALID_OPERATION));
 	protected static final Operation.OperationResult UNDERFLOW_RESPONSE =
 			new Operation.OperationResult(
 					Optional.empty(), Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
@@ -78,6 +80,11 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
 	@Override
 	public Operation.OperationResult execute(final MessageFrame frame, final EVM evm) {
+		// We have a feature flag for CREATE2
+		if (!isEnabled()) {
+			return INVALID_RESPONSE;
+		}
+
 		// manual check because some reads won't come until the "complete" step.
 		if (frame.stackSize() < getStackItemsConsumed()) {
 			return UNDERFLOW_RESPONSE;
@@ -112,6 +119,8 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 	static Operation.OperationResult haltWith(final Optional<Gas> optionalCost, final ExceptionalHaltReason reason) {
 		return new Operation.OperationResult(optionalCost, Optional.of(reason));
 	}
+
+	protected abstract boolean isEnabled();
 
 	protected abstract Gas cost(final MessageFrame frame);
 
