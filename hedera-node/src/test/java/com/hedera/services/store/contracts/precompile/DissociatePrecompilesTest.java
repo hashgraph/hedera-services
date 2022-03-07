@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -173,6 +174,8 @@ class DissociatePrecompilesTest {
 	private PrecompilePricingUtils precompilePricingUtils;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private UsagePricesProvider resourceCosts;
 
 	private HTSPrecompiledContract subject;
 
@@ -182,7 +185,7 @@ class DissociatePrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setDissociateLogicFactory(dissociateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
@@ -211,6 +214,7 @@ class DissociatePrecompilesTest {
 				.willReturn(1L);	given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
+		subject.prepareFieldsFromFrame(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -249,7 +253,8 @@ class DissociatePrecompilesTest {
 		given(syntheticTxnFactory.createDissociate(dissociateToken)).willReturn(mockSynthBodyBuilder);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 
@@ -294,7 +299,8 @@ class DissociatePrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.prepareComputation(pretendArguments, a -> a);
+		subject.prepareFieldsFromFrame(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
 

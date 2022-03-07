@@ -55,7 +55,7 @@ public class CreateTopicsBeforeReconnect extends HapiApiSuite {
 	private static final AtomicInteger topicNumber = new AtomicInteger(0);
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				runCreateTopics()
 		);

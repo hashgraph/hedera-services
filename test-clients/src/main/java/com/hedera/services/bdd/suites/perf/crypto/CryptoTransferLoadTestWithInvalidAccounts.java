@@ -50,7 +50,7 @@ public final class CryptoTransferLoadTestWithInvalidAccounts extends LoadTest {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				runCryptoTransfers()
 		);

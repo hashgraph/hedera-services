@@ -47,19 +47,18 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.function.Predicate;
-
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.swirlds.common.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -149,8 +148,19 @@ class AbstractStackedLedgerUpdaterTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
+	void doesntAdjustBalanceOfProxyTokenAccountWrapper() {
+		final var proxyAccountWrapper = mock(UpdateTrackingLedgerAccount.class);
+		given(proxyAccountWrapper.wrappedAccountIsTokenProxy()).willReturn(true);
+		given(proxyAccountWrapper.getAddress()).willReturn(aAddress);
+		subject.updatedAccounts.put(aAddress, proxyAccountWrapper);
+
+		assertDoesNotThrow(subject::commit);
+
+		verify(proxyAccountWrapper, never()).getBalance();
+	}
+
+	@Test
 	void commitsNewlyModifiedAccountAsExpected() {
-		final ArgumentCaptor<Predicate<Address>> captor = ArgumentCaptor.forClass(Predicate.class);
 		final var mockCode = Bytes.ofUnsignedLong(1_234L);
 		final var account = worldState.new WorldStateAccount(
 				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew, EntityId.MISSING_ENTITY_ID);

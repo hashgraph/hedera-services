@@ -63,14 +63,14 @@ public class FcTokenAllowanceId implements SelfSerializable, Comparable<FcTokenA
 
 	@Override
 	public void deserialize(final SerializableDataInputStream din, final int i) throws IOException {
-		tokenNum = EntityNum.fromLong(din.readLong());
-		spenderNum = EntityNum.fromLong(din.readLong());
+		tokenNum = EntityNum.fromInt(din.readInt());
+		spenderNum = EntityNum.fromInt(din.readInt());
 	}
 
 	@Override
 	public void serialize(final SerializableDataOutputStream dos) throws IOException {
-		dos.writeLong(tokenNum.intValue());
-		dos.writeLong(spenderNum.intValue());
+		dos.writeInt(tokenNum.intValue());
+		dos.writeInt(spenderNum.intValue());
 	}
 
 	@Override

@@ -75,7 +75,7 @@ public final class MemoValidation extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		setUpByteArrays();
 		return List.of(
 				cryptoOps(),

@@ -57,7 +57,7 @@ public class CreateTokensBeforeReconnect extends HapiApiSuite {
 	private static final AtomicInteger tokenNumber = new AtomicInteger(0);
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				runCreateTopics()
 		);

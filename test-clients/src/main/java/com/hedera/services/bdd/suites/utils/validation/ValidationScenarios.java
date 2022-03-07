@@ -232,7 +232,7 @@ public class ValidationScenarios extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		var specs = Stream.of(
 				Optional.of(recordPayerBalance(startingBalance::set)),
 				ofNullable(skipScenarioPayer() ? null : ensureScenarioPayer()),

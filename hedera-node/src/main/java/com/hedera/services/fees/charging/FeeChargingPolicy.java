@@ -108,6 +108,10 @@ public class FeeChargingPolicy {
 		return OK;
 	}
 
+	void refundPayerServiceFee() {
+		narratedCharging.refundPayerServiceFee();
+	}
+
 	private ResponseCodeEnum chargePendingSolvency(FeeObject fees) {
 		narratedCharging.setFees(fees);
 
