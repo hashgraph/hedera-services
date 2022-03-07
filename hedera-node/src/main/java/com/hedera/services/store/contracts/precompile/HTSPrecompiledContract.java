@@ -233,7 +233,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//transferFrom(address sender, address recipient, uint256 amount)
 	//transferFrom(address from, address to, uint256 tokenId)
 	protected static final int ABI_ID_ERC_TRANSFER_FROM = 0x23b872dd;
-
+	//allowance(address token, address owner, address spender)
+	protected static final int ABI_ID_ALLOWANCE = -0x229d12c2;
+	//approve(address token, address spender, uint256 amount)
+	//approve(address token, address to, uint256 tokenId)
+	protected static final int ABI_ID_APPROVE = 0x95ea7b3;
+	//setApprovalForAll(address token, address operator, bool approved)
+	protected static final int ABI_ID_SET_APPROVAL_FOR_ALL = -0x5dd34b9b;
+	//getApproved(address token, uint256 tokenId)
+	protected static final int ABI_ID_GET_APPROVED = 0x81812fc;
+	//isApprovedForAll(address token, address owner, address operator)
+	protected static final int ABI_ID_IS_APPROVED_FOR_ALL = -0x167a163b;
 	//ownerOf(uint256 tokenId)
 	protected static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
 	//tokenURI(uint256 tokenId)
@@ -444,6 +454,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						} else if (ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.senderAddress, isFungibleToken);
+						} else if (ABI_ID_ALLOWANCE == nestedFunctionSelector) {
+							nestedPrecompile = new AllowancePrecompile(tokenID);
+						} else if (ABI_ID_APPROVE == nestedFunctionSelector) {
+							nestedPrecompile = new ApprovePrecompile(tokenID);
+						} else if (ABI_ID_SET_APPROVAL_FOR_ALL == nestedFunctionSelector) {
+							nestedPrecompile = new SetApprovalForAllPrecompile(tokenID);
+						} else if (ABI_ID_GET_APPROVED == nestedFunctionSelector) {
+							nestedPrecompile = new GetApprovedPrecompile(tokenID);
+						} else if (ABI_ID_IS_APPROVED_FOR_ALL == nestedFunctionSelector) {
+							nestedPrecompile = new IsApprovedForAllPrecompile(tokenID);
 						} else {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = null;
@@ -1311,6 +1331,86 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var balance =  (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 
 			return encoder.encodeBalance(balance);
+		}
+	}
+
+	protected class AllowancePrecompile extends ERCReadOnlyAbstractPrecompile {
+		public AllowancePrecompile(final TokenID tokenID) {
+			super(tokenID);
+		}
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+			return super.body(input, aliasResolver);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			return Bytes.EMPTY;
+		}
+	}
+
+	protected class ApprovePrecompile extends ERCReadOnlyAbstractPrecompile {
+		public ApprovePrecompile(final TokenID tokenID) {
+			super(tokenID);
+		}
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+			return super.body(input, aliasResolver);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			return Bytes.EMPTY;
+		}
+	}
+
+	protected class SetApprovalForAllPrecompile extends ERCReadOnlyAbstractPrecompile {
+		public SetApprovalForAllPrecompile(final TokenID tokenID) {
+			super(tokenID);
+		}
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+			return super.body(input, aliasResolver);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			return Bytes.EMPTY;
+		}
+	}
+
+	protected class GetApprovedPrecompile extends ERCReadOnlyAbstractPrecompile {
+		public GetApprovedPrecompile(final TokenID tokenID) {
+			super(tokenID);
+		}
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+			return super.body(input, aliasResolver);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			return Bytes.EMPTY;
+		}
+	}
+
+	protected class IsApprovedForAllPrecompile extends ERCReadOnlyAbstractPrecompile {
+		public IsApprovedForAllPrecompile(final TokenID tokenID) {
+			super(tokenID);
+		}
+
+		@Override
+		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+			return super.body(input, aliasResolver);
+		}
+
+		@Override
+		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+			return Bytes.EMPTY;
 		}
 	}
 
