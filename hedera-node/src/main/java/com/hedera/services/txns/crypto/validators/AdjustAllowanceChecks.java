@@ -265,9 +265,12 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
 
-			final var owner = nftsMap.get().get(EntityNumPair.fromNftId(nftId)).getOwner();
-			if (!ownerAccount.getId().asEntityId().equals(owner)) {
-				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+			final var nft = nftsMap.get().get(EntityNumPair.fromNftId(nftId));
+			final var owner = nft.getOwner();
+			if (!ownerAccount.equals(token.getTreasury())) {
+				if (!ownerAccount.getId().asEntityId().equals(owner)) {
+					return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+				}
 			}
 		}
 
