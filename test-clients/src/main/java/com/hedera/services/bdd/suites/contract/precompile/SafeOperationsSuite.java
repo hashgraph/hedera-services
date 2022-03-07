@@ -92,6 +92,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 	private static final String MULTI_KEY = "Multi key";
 	private static final String FREEZE_KEY = "Freeze key";
 	private static final TokenID DUMMY_ID = TokenID.newBuilder().build();
+	private static final long GAS_TO_OFFER = 2_000_000L;
 
 	public static void main(String... args) {
 		new SafeOperationsSuite().runSuiteSync();
@@ -108,7 +109,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				safeMintPrecompile(),
 				safeBurnPrecompile(),
@@ -256,7 +257,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("safeTokenAssociateTxn")
-														.gas(250_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
@@ -301,7 +302,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(ACCOUNT)
 														.via("safeTokenDissociateTxn")
-														.gas(250_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS)
 										)
 						)
@@ -363,7 +364,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 																asAddress(unfrozenTokenID.get())))
 														.payingWith(ACCOUNT)
 														.via("safeMultipleTokensAssociationsTxn")
-														.gas(350_000)
+														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS)
 										)
 						)
@@ -425,7 +426,7 @@ public class SafeOperationsSuite extends HapiApiSuite {
 																asAddress(vanillaTokenID.get()),
 																asAddress(knowableTokenTokenID.get())))
 														.payingWith(ACCOUNT)
-														.gas(250_000)
+														.gas(GAS_TO_OFFER)
 														.via("safeMultipleDissociationTxn")
 														.hasKnownStatus(SUCCESS)
 										)
