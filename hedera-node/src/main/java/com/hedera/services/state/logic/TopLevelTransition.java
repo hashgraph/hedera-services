@@ -78,7 +78,7 @@ public class TopLevelTransition implements Runnable {
 		networkCtxManager.advanceConsensusClockTo(now);
 
 		final var sigStatus = sigsAndPayerKeyScreen.applyTo(accessor);
-		// We update the network utilization before we compute and charging fees b/c
+		// We update the network utilization before we compute and charge fees b/c
 		// network utilization determines the congestion pricing multiplier; so this
 		// is the simplest way to guarantee a reconnected node will apply the same
 		// multiplier as nodes that were never disconnected
