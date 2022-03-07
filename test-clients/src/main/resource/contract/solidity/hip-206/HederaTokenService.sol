@@ -135,6 +135,81 @@ abstract contract HederaTokenService is HederaResponseCodes {
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
 
+    /// Creates a Fungible Token with the specified properties
+    /// @param token the basic properties of the token being created
+    /// @param initialTotalSupply Specifies the initial supply of tokens to be put in circulation. The
+    /// initial supply is sent to the Treasury Account. The supply is in the lowest denomination possible.
+    /// @param decimals the number of decimal places a token is divisible by
+    /// @return success whether the create was successful
+    /// @return tokenAddress the created token's address
+    /// @return errorMessage an error message if any errors occurred
+    function createFungibleToken(
+        IHederaTokenService.HederaToken memory token,
+        uint initialTotalSupply,
+        uint decimals)
+    internal returns (bool success, address tokenAddress, bytes memory errorMessage) {
+        bytes memory result;
+        (success, result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector,
+            token, initialTotalSupply, decimals));
+        (tokenAddress, errorMessage) = abi.decode(result, (address, bytes));
+    }
+
+    /// Creates a Fungible Token with the specified properties
+    /// @param token the basic properties of the token being created
+    /// @param initialTotalSupply Specifies the initial supply of tokens to be put in circulation. The
+    /// initial supply is sent to the Treasury Account. The supply is in the lowest denomination possible.
+    /// @param decimals the number of decimal places a token is divisible by
+    /// @param fixedFees list of fixed fees to apply to the token
+    /// @param fractionalFees list of fractional fees to apply to the token
+    /// @return success whether the create was successful
+    /// @return tokenAddress the created token's address
+    /// @return errorMessage an error message if any errors occurred
+    function createFungibleTokenWithCustomFees(
+        IHederaTokenService.HederaToken memory token,
+        uint initialTotalSupply,
+        uint decimals,
+        IHederaTokenService.FixedFee[] memory fixedFees,
+        IHederaTokenService.FractionalFee[] memory fractionalFees)
+    internal returns (bool success, address tokenAddress, bytes memory errorMessage) {
+        bytes memory result;
+        (success, result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector,
+            token, initialTotalSupply, decimals, fixedFees, fractionalFees));
+        (tokenAddress, errorMessage) = abi.decode(result, (address, bytes));
+    }
+
+    /// Creates an Non Fungible Unique Token with the specified properties
+    /// @param token the basic properties of the token being created
+    /// @return success whether the create was successful
+    /// @return tokenAddress the created token's address
+    /// @return errorMessage an error message if any errors occurred
+    function createNonFungibleToken(IHederaTokenService.HederaToken memory token)
+    internal returns (bool success, address tokenAddress, bytes memory errorMessage) {
+        bytes memory result;
+        (success, result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.createNonFungibleToken.selector, token));
+        (tokenAddress, errorMessage) = abi.decode(result, (address, bytes));
+    }
+
+    /// Creates an Non Fungible Unique Token with the specified properties
+    /// @param token the basic properties of the token being created
+    /// @param fixedFees list of fixed fees to apply to the token
+    /// @param royaltyFees list of royalty fees to apply to the token
+    /// @return success whether the create was successful
+    /// @return tokenAddress the created token's address
+    /// @return errorMessage an error message if any errors occurred
+    function createNonFungibleTokenWithCustomFees(
+        IHederaTokenService.HederaToken memory token,
+        IHederaTokenService.FixedFee[] memory fixedFees,
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees)
+    internal returns (bool success, address tokenAddress, bytes memory errorMessage) {
+        bytes memory result;
+        (success, result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaTokenService.createNonFungibleTokenWithCustomFees.selector,
+            token, fixedFees, royaltyFees));
+        (tokenAddress, errorMessage) = abi.decode(result, (address, bytes));
+    }
 
     /**********************
      * ABI v1 calls       *
@@ -198,84 +273,5 @@ abstract contract HederaTokenService is HederaResponseCodes {
             token, sender, receiver, serialNumber));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
     }
-
-    /// Creates a Fungible Token with the specified properties
-    /// @param token the basic properties of the token being created
-    /// @param initialTotalSupply Specifies the initial supply of tokens to be put in circulation. The
-    /// initial supply is sent to the Treasury Account. The supply is in the lowest denomination possible.
-    /// @param decimals the number of decimal places a token is divisible by
-    /// @return success whether the create was successful
-    /// @return tokenAddress the created token's address
-    /// @return errorMessage an error message if any errors occurred
-    function createFungibleToken(
-        IHederaTokenService.HederaToken memory token,
-        uint initialTotalSupply,
-        uint decimals)
-    internal returns (bool success, address tokenAddress, bytes memory errorMessage) {
-        bytes memory result;
-        (success, result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.createFungibleToken.selector,
-            token, initialTotalSupply, decimals));
-        (tokenAddress, errorMessage) = abi.decode(result, (address, bytes));
-    }
-
-    /// Creates a Fungible Token with the specified properties
-    /// @param token the basic properties of the token being created
-    /// @param initialTotalSupply Specifies the initial supply of tokens to be put in circulation. The
-    /// initial supply is sent to the Treasury Account. The supply is in the lowest denomination possible.
-    /// @param decimals the number of decimal places a token is divisible by
-    /// @param fixedFees list of fixed fees to apply to the token
-    /// @param fractionalFees list of fractional fees to apply to the token
-    /// @return success whether the create was successful
-    /// @return tokenAddress the created token's address
-    /// @return errorMessage an error message if any errors occurred
-    function createFungibleTokenWithCustomFees(
-        IHederaTokenService.HederaToken memory token,
-        uint initialTotalSupply,
-        uint decimals,
-        IHederaTokenService.FixedFee[] memory fixedFees,
-        IHederaTokenService.FractionalFee[] memory fractionalFees)
-    internal returns (bool success, address tokenAddress, bytes memory errorMessage) {
-        bytes memory result;
-        (success, result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.createFungibleTokenWithCustomFees.selector,
-            token, initialTotalSupply, decimals, fixedFees, fractionalFees));
-        (tokenAddress, errorMessage) = abi.decode(result, (address, bytes));
-    }
-
-    /// Creates an Non Fungible Unique Token with the specified properties
-    /// @param token the basic properties of the token being created
-    /// @return success whether the create was successful
-    /// @return tokenAddress the created token's address
-    /// @return errorMessage an error message if any errors occurred
-    function createNonFungibleToken(IHederaTokenService.HederaToken memory token)
-    internal returns (bool success, address tokenAddress, bytes memory errorMessage) {
-        bytes memory result;
-        (success, result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.createNonFungibleToken.selector, token));
-        (tokenAddress, errorMessage) = abi.decode(result, (address, bytes));
-    }
-
-    /// Creates an Non Fungible Unique Token with the specified properties
-    /// @param token the basic properties of the token being created
-    /// @param fixedFees list of fixed fees to apply to the token
-    /// @param fractionalFees list of fractional fees to apply to the token
-    /// @param royaltyFees list of royalty fees to apply to the token
-    /// @return success whether the create was successful
-    /// @return tokenAddress the created token's address
-    /// @return errorMessage an error message if any errors occurred
-    function createNonFungibleTokenWithCustomFees(
-        IHederaTokenService.HederaToken memory token,
-        IHederaTokenService.FixedFee[] memory fixedFees,
-        IHederaTokenService.FractionalFee[] memory fractionalFees,
-        IHederaTokenService.RoyaltyFee[] memory royaltyFees)
-    internal returns (bool success, address tokenAddress, bytes memory errorMessage) {
-        bytes memory result;
-        (success, result) = precompileAddress.call(
-            abi.encodeWithSelector(IHederaTokenService.createNonFungibleTokenWithCustomFees.selector,
-            token, fixedFees, fractionalFees, royaltyFees));
-        (tokenAddress, errorMessage) = abi.decode(result, (address, bytes));
-    }
-
 
 }

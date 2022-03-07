@@ -196,9 +196,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//createFungibleTokenWithCustomFees(HederaToken memory token, uint initialTotalSupply, uint decimals, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees)
 	protected static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES = 0x4b37e995;
 	//createNonFungibleToken(HederaToken memory token)
-	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN = -0x6238ee20;
-	//createNonFungibleTokenWithCustomFees(HederaToken memory token, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees, RoyaltyFee[] memory royaltyFees)
-	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES = -0x21abcac2;
+	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN = 0x9dc711e0;
+	//createNonFungibleTokenWithCustomFees(HederaToken memory token, FixedFee[] memory fixedFees, RoyaltyFee[] memory royaltyFees)
+	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES = 0x9c1fba6b;
 
 	private int functionId;
 	private Precompile precompile;
