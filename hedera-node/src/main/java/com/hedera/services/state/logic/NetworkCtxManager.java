@@ -168,28 +168,6 @@ public class NetworkCtxManager {
 	}
 
 	/**
-	 * Used to monitor the current network usage for automated congestion pricing
-	 * and to throttle ContractCreate and ContractCall transactions by the transaction gas limit.
-	 *
-	 * @param accessor
-	 * 		the accessor for the transaction
-	 * @return whether processing can continue for this transaction
-	 */
-	public ResponseCodeEnum prepareForIncorporating(final TxnAccessor accessor) {
-		/* We unconditionally evaluate the throttle to track network usage for congestion pricing
-		 * purposes. (Note that since a gas-throttled transaction does not take up any capacity
-		 * in the "normal" throttle buckets, it actually reduces congestion by a tiny amount.)  */
-		handleThrottling.shouldThrottleTxn(accessor);
-		feeMultiplierSource.updateMultiplier(networkCtx.get().consensusTimeOfLastHandledTxn());
-
-		if (handleThrottling.wasLastTxnGasThrottled()) {
-			narratedCharging.refundPayerServiceFee();
-			return CONSENSUS_GAS_EXHAUSTED;
-		}
-		return OK;
-	}
-
-	/**
 	 * Callback used by the processing flow to notify the context manager it should update any network
 	 * context that derives from the side effects of handled transactions.
 	 *

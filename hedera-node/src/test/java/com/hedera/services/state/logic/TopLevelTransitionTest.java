@@ -23,6 +23,7 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,11 +34,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hedera.services.state.logic.NetworkUtilization.STAND_IN_CRYPTO_TRANSFER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class TopLevelTransitionTest {
@@ -52,90 +56,122 @@ class TopLevelTransitionTest {
 	@Mock
 	private TxnAccessor accessor;
 	@Mock
-	private ScreenedTransition screenedTransition;
+	private RequestedTransition requestedTransition;
 	@Mock
-	private SignatureScreen signatureScreen;
+	private SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
 	@Mock
-	private KeyActivationScreen keyActivationScreen;
+	private NonPayerKeysScreen nonPayerKeysScreen;
 	@Mock
-	private ThrottleScreen throttleScreen;
+	private NetworkUtilization networkUtilization;
 
 	private TopLevelTransition subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new TopLevelTransition(
-				screenedTransition,
+				sigsAndPayerKeyScreen,
 				networkCtxManager,
+				requestedTransition,
 				txnCtx,
-				signatureScreen,
-				chargingPolicyAgent,
-				keyActivationScreen,
-				throttleScreen);
+				nonPayerKeysScreen,
+				networkUtilization,
+				chargingPolicyAgent);
+	}
+
+	@Test
+	void standinCryptoTransferHasExpectedType() {
+		assertEquals(HederaFunctionality.CryptoTransfer, STAND_IN_CRYPTO_TRANSFER.getFunction());
+	}
+
+	@Test
+	void switchesToStandinUtilizationAndAbortsWhenKeyActivationScreenFails() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensusNow);
+		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(INVALID_SIGNATURE);
+
+		// when:
+		subject.run();
+
+		// then:
+		verify(networkUtilization).trackFeePayments(consensusNow);
+		verify(requestedTransition, never()).finishFor(accessor);
 	}
 
 	@Test
 	void happyPathScopedProcessFlows() {
 		// setup:
-		InOrder inOrder = Mockito.inOrder(networkCtxManager, signatureScreen, chargingPolicyAgent, keyActivationScreen);
+		InOrder inOrder = Mockito.inOrder(
+				networkCtxManager, sigsAndPayerKeyScreen, chargingPolicyAgent,
+				networkUtilization, nonPayerKeysScreen, requestedTransition);
 
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(signatureScreen.applyTo(accessor)).willReturn(OK);
+		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
-		given(keyActivationScreen.reqKeysAreActiveGiven(OK)).willReturn(true);
-		given(throttleScreen.applyTo(accessor)).willReturn(OK);
+		given(nonPayerKeysScreen.reqKeysAreActiveGiven(OK)).willReturn(true);
+		given(networkUtilization.screenForAvailableCapacity()).willReturn(true);
 		// when:
 		subject.run();
 
 		// then:
 		inOrder.verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
-		inOrder.verify(signatureScreen).applyTo(accessor);
+		inOrder.verify(sigsAndPayerKeyScreen).applyTo(accessor);
+		inOrder.verify(networkUtilization).trackUserTxn(accessor, consensusNow);
 		inOrder.verify(chargingPolicyAgent).applyPolicyFor(accessor);
-		inOrder.verify(keyActivationScreen).reqKeysAreActiveGiven(OK);
-		verify(screenedTransition).finishFor(accessor);
+		inOrder.verify(nonPayerKeysScreen).reqKeysAreActiveGiven(OK);
+		inOrder.verify(networkUtilization).screenForAvailableCapacity();
+		inOrder.verify(requestedTransition).finishFor(accessor);
+	}
+
+	@Test
+	void gasThrottledProcessFlows() {
+		// setup:
+		InOrder inOrder = Mockito.inOrder(
+				networkCtxManager, sigsAndPayerKeyScreen, chargingPolicyAgent,
+				nonPayerKeysScreen, txnCtx, networkUtilization);
+
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensusNow);
+		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
+		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
+		given(nonPayerKeysScreen.reqKeysAreActiveGiven(OK)).willReturn(true);
+		// when:
+		subject.run();
+
+		// then:
+		inOrder.verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
+		inOrder.verify(sigsAndPayerKeyScreen).applyTo(accessor);
+		inOrder.verify(networkUtilization).trackUserTxn(accessor, consensusNow);
+		inOrder.verify(chargingPolicyAgent).applyPolicyFor(accessor);
+		inOrder.verify(nonPayerKeysScreen).reqKeysAreActiveGiven(OK);
+		inOrder.verify(networkUtilization).screenForAvailableCapacity();
+		verifyNoInteractions(requestedTransition);
 	}
 
 	@Test
 	void abortsWhenChargingPolicyAgentFails() {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(signatureScreen.applyTo(accessor)).willReturn(OK);
+		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 
 		// when:
 		subject.run();
 
 		// then:
-		verify(screenedTransition, never()).finishFor(accessor);
+		verify(requestedTransition, never()).finishFor(accessor);
 	}
 
 	@Test
 	void abortsWhenKeyActivationScreenFails() {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(signatureScreen.applyTo(accessor)).willReturn(OK);
+		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
 
 		// when:
 		subject.run();
 
 		// then:
-		verify(screenedTransition, never()).finishFor(accessor);
-	}
-
-	@Test
-	void abortsWhenThrottleScreenFails() {
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(txnCtx.consensusTime()).willReturn(consensusNow);
-		given(signatureScreen.applyTo(accessor)).willReturn(OK);
-		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
-		given(keyActivationScreen.reqKeysAreActiveGiven(OK)).willReturn(true);
-		given(throttleScreen.applyTo(accessor)).willReturn(BUSY);
-
-		// when:
-		subject.run();
-
-		// then:
-		verify(screenedTransition, never()).finishFor(accessor);
+		verify(requestedTransition, never()).finishFor(accessor);
 	}
 }
