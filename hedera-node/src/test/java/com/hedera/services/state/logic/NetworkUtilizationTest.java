@@ -5,6 +5,7 @@ import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +16,7 @@ import java.time.Instant;
 
 import static com.hedera.services.state.logic.NetworkUtilization.STAND_IN_CRYPTO_TRANSFER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -57,6 +59,13 @@ class NetworkUtilizationTest {
 
 		verify(handleThrottling).shouldThrottleTxn(STAND_IN_CRYPTO_TRANSFER);
 		verify(feeMultiplierSource).updateMultiplier(consensusNow);
+	}
+
+
+	@Test
+	void standInCryptoTransferHasExpectedProperties() {
+		assertEquals(HederaFunctionality.CryptoTransfer, STAND_IN_CRYPTO_TRANSFER.getFunction());
+		assertTrue(STAND_IN_CRYPTO_TRANSFER.areAutoCreationsCounted());
 	}
 
 	@Test

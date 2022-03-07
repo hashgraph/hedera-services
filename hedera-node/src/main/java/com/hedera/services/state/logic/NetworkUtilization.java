@@ -37,6 +37,9 @@ public class NetworkUtilization {
 							.build().toByteString())
 					.build().toByteString())
 			.build());
+	static {
+		STAND_IN_CRYPTO_TRANSFER.setNumAutoCreations(0);
+	}
 
 	private final TransactionContext txnCtx;
 	private final FeeMultiplierSource feeMultiplierSource;

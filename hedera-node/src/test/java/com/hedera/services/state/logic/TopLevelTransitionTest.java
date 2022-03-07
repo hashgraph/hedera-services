@@ -23,7 +23,6 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.utils.TxnAccessor;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,10 +33,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static com.hedera.services.state.logic.NetworkUtilization.STAND_IN_CRYPTO_TRANSFER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -76,11 +73,6 @@ class TopLevelTransitionTest {
 				nonPayerKeysScreen,
 				networkUtilization,
 				chargingPolicyAgent);
-	}
-
-	@Test
-	void standinCryptoTransferHasExpectedType() {
-		assertEquals(HederaFunctionality.CryptoTransfer, STAND_IN_CRYPTO_TRANSFER.getFunction());
 	}
 
 	@Test
