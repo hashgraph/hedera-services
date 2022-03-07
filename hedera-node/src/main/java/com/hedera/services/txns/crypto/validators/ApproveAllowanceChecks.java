@@ -22,7 +22,6 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -233,10 +232,9 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			}
 			final var nft = nftsMap.get().get(EntityNumPair.fromNftId(nftId));
 			final var owner = nft.getOwner();
-			if (!ownerAccount.equals(token.getTreasury())) {
-				if (!ownerAccount.getId().asEntityId().equals(owner)) {
-					return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-				}
+			if (!ownerAccount.equals(token.getTreasury()) &&
+					!ownerAccount.getId().asEntityId().equals(owner)) {
+				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
 		}
 

@@ -113,11 +113,10 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 
 	private HapiApiSpec canGrantFungibleAllowancesWithTreasuryOwner() {
 		final String spender = "spender";
-		final String receiver = "receiver";
 		final String otherReceiver = "otherReceiver";
 		final String fungibleToken = "fungible";
 		final String supplyKey = "supplyKey";
-		return defaultHapiSpec("CanGrantNftAllowancesWithTreasuryOwner")
+		return defaultHapiSpec("canGrantFungibleAllowancesWithTreasuryOwner")
 				.given(
 						newKeyNamed(supplyKey),
 						cryptoCreate(TOKEN_TREASURY),
@@ -159,12 +158,10 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 
 	private HapiApiSpec canGrantNftAllowancesWithTreasuryOwner() {
 		final String spender = "spender";
-		final String receiver = "receiver";
 		final String otherReceiver = "otherReceiver";
-		final String fungibleToken = "fungible";
 		final String nonFungibleToken = "nonFungible";
 		final String supplyKey = "supplyKey";
-		return defaultHapiSpec("CanGrantNftAllowancesWithTreasuryOwner")
+		return defaultHapiSpec("canGrantNftAllowancesWithTreasuryOwner")
 				.given(
 						newKeyNamed(supplyKey),
 						cryptoCreate(TOKEN_TREASURY),
@@ -183,6 +180,10 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.balance(ONE_HBAR)
 								.maxAutomaticTokenAssociations(1)
 				).when(
+						cryptoApproveAllowance()
+								.addNftAllowance(TOKEN_TREASURY, nonFungibleToken, spender, false, List.of(4L))
+								.signedBy(TOKEN_TREASURY, DEFAULT_PAYER)
+								.hasPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER),
 						cryptoApproveAllowance()
 								.addNftAllowance(TOKEN_TREASURY, nonFungibleToken, spender, false, List.of(1L, 3L))
 								.signedBy(TOKEN_TREASURY, DEFAULT_PAYER),
