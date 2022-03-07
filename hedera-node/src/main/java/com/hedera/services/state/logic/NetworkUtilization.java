@@ -19,7 +19,7 @@ import java.time.Instant;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 
 /**
- * Smol manager component that does the work of tracking network utilization (and its impact
+ * Small manager component that does the work of tracking network utilization (and its impact
  * on congestion pricing) by delegating to an injected {@link FunctionalityThrottling} and
  * {@link FeeMultiplierSource}.
  *

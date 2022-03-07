@@ -108,10 +108,6 @@ public class FeeChargingPolicy {
 		return OK;
 	}
 
-	/**
-	 * Refund the service fees already charged to the payer, because the user-submitted
-	 * transaction was fully valid but network capacity was unavailable to satisfy it.
-	 */
 	void refundPayerServiceFee() {
 		narratedCharging.refundPayerServiceFee();
 	}
