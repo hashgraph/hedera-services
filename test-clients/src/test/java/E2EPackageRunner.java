@@ -51,6 +51,7 @@ import com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite;
 import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
+import com.hedera.services.bdd.suites.contract.traceability.ContractTraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoAdjustAllowanceSuite;
@@ -254,6 +255,7 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
+	@Tag("contract.precompile")
 	@Tag("contract.precompile.part1")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile() {
@@ -267,6 +269,7 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
+	@Tag("contract.precompile")
 	@Tag("contract.precompile.part2")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile2() {
@@ -333,6 +336,15 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(ContractGetInfoSuite::new),
 				extractSpecsFromSuite(ContractMusicalChairsSuite::new),
 				extractSpecsFromSuite(ContractUpdateSuite::new)
+		);
+	}
+
+	@Tag("contract")
+	@Tag("contract.traceability")
+	@TestFactory
+	Collection<DynamicContainer> contractTraceability() {
+		return List.of(
+				extractSpecsFromSuite(ContractTraceabilitySuite::new)
 		);
 	}
 
