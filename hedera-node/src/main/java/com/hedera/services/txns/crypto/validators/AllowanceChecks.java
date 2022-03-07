@@ -35,6 +35,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -192,7 +193,9 @@ public interface AllowanceChecks {
 
 	default boolean validOwner(final MerkleUniqueToken nft,
 			final Account ownerAccount, final Token token) {
-		return ownerAccount.equals(token.getTreasury()) ||
-				ownerAccount.getId().asEntityId().equals(nft.getOwner());
+		final var listedOwner = nft.getOwner();
+		return MISSING_ENTITY_ID.equals(listedOwner)
+				? ownerAccount.equals(token.getTreasury())
+				: listedOwner.equals(ownerAccount.getId().asEntityId());
 	}
 }
