@@ -161,26 +161,27 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						transferWithMissingAccountGetsInvalidAccountId(),
-						vanillaTransferSucceeds(),
-						complexKeyAcctPaysForOwnTransfer(),
-						twoComplexKeysRequired(),
-						specialAccountsBalanceCheck(),
-						tokenTransferFeesScaleAsExpected(),
-						okToSetInvalidPaymentHeaderForCostAnswer(),
-						baseCryptoTransferFeeChargedAsExpected(),
-						autoAssociationRequiresOpenSlots(),
-						royaltyCollectorsCanUseAutoAssociation(),
-						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-						transferToNonAccountEntitiesReturnsInvalidAccountId(),
-						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-						checksExpectedDecimalsForFungibleTokenTransferList(),
-						allowanceTransfersWorkAsExpected(),
-						allowanceTransfersWithComplexTransfersWork(),
-						canUseMirrorAliasesForNonContractXfers(),
-						canUseEip1014AliasesForXfers(),
+//						transferWithMissingAccountGetsInvalidAccountId(),
+//						vanillaTransferSucceeds(),
+//						complexKeyAcctPaysForOwnTransfer(),
+//						twoComplexKeysRequired(),
+//						specialAccountsBalanceCheck(),
+//						tokenTransferFeesScaleAsExpected(),
+//						okToSetInvalidPaymentHeaderForCostAnswer(),
+//						baseCryptoTransferFeeChargedAsExpected(),
+//						autoAssociationRequiresOpenSlots(),
+//						royaltyCollectorsCanUseAutoAssociation(),
+//						royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+//						dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+//						hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						transferToNonAccountEntitiesReturnsInvalidAccountId(),
+//						nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+//						checksExpectedDecimalsForFungibleTokenTransferList(),
+//						allowanceTransfersWorkAsExpected(),
+//						allowanceTransfersWithComplexTransfersWork(),
+//						canUseMirrorAliasesForNonContractXfers(),
+//						canUseEip1014AliasesForXfers(),
+						canGrantNftAllowancesWithTreasuryOwner(),
 				}
 		);
 	}
@@ -547,6 +548,30 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						getAccountInfo(anotherReceiver)
 								.hasToken(relationshipWith(fungibleToken).balance(50))
 								.has(accountWith().balance(ONE_HBAR))
+				);
+	}
+
+	private HapiApiSpec canGrantNftAllowancesWithTreasuryOwner() {
+		return defaultHapiSpec("CanGrantNftAllowancesWithTreasuryOwner")
+				.given(
+						newKeyNamed(supplyKey),
+						cryptoCreate(TOKEN_TREASURY),
+						cryptoCreate(spender),
+						tokenCreate(nonFungibleToken)
+								.supplyType(TokenSupplyType.INFINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.treasury(TOKEN_TREASURY)
+								.initialSupply(0)
+								.supplyKey(supplyKey),
+						mintToken(nonFungibleToken, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b"),
+								ByteString.copyFromUtf8("c")))
+				).when(
+						cryptoApproveAllowance()
+								.addNftAllowance(TOKEN_TREASURY, nonFungibleToken, spender, false, List.of(1L, 3L))
+								.fee(ONE_HUNDRED_HBARS)
+				).then(
 				);
 	}
 
@@ -1522,9 +1547,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromTo(GENESIS, "receiver", 1_000L)
 						).payingWith("payer").sigControl(
-								forKey("payer", payerSigs),
-								forKey("receiver", receiverSigs)
-						).hasKnownStatus(SUCCESS)
+										forKey("payer", payerSigs),
+										forKey("receiver", receiverSigs)
+								).hasKnownStatus(SUCCESS)
 								.fee(ONE_HUNDRED_HBARS)
 				);
 	}
