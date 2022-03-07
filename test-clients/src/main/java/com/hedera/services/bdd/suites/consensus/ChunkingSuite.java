@@ -51,7 +51,7 @@ public class ChunkingSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				chunkNumberIsValidated(),
 				chunkTransactionIDIsValidated(),

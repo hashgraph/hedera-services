@@ -50,7 +50,7 @@ public class ContractCallPerfSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				contractCallPerf()
 		);

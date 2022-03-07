@@ -81,9 +81,9 @@ class FcTokenAllowanceIdTest {
 	void deserializeWorks() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		final var newSubject = new FcTokenAllowanceId();
-		given(in.readLong())
-				.willReturn(tokenNum.longValue())
-				.willReturn(spenderNum.longValue());
+		given(in.readInt())
+				.willReturn(tokenNum.intValue())
+				.willReturn(spenderNum.intValue());
 
 		newSubject.deserialize(in, FcTokenAllowanceId.CURRENT_VERSION);
 
@@ -97,8 +97,8 @@ class FcTokenAllowanceIdTest {
 
 		subject.serialize(out);
 
-		inOrder.verify(out).writeLong(tokenNum.longValue());
-		inOrder.verify(out).writeLong(spenderNum.longValue());
+		inOrder.verify(out).writeInt(tokenNum.intValue());
+		inOrder.verify(out).writeInt(spenderNum.intValue());
 	}
 
 	@Test

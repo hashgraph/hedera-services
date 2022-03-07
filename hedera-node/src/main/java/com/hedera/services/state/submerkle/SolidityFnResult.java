@@ -29,7 +29,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.StorageChange;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -40,7 +39,6 @@ import org.hyperledger.besu.datatypes.Address;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,6 +46,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.swirlds.common.CommonUtils.hex;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 public class SolidityFnResult implements SelfSerializable {
@@ -57,6 +56,7 @@ public class SolidityFnResult implements SelfSerializable {
 
 	static final int PRE_RELEASE_0230_VERSION = 1;
 	static final int RELEASE_0230_VERSION = 2;
+	static final int RELEASE_0240_VERSION = 3;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -125,29 +125,29 @@ public class SolidityFnResult implements SelfSerializable {
 		createdContractIds = in.readSerializableList(MAX_CREATED_IDS, true, EntityId::new);
 		if (version >= RELEASE_0230_VERSION) {
 			evmAddress = in.readByteArray(MAX_ADDRESS_BYTES);
-			int contractLen = in.readInt();
-			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> state = new HashMap<>(contractLen);
-			while (contractLen > 0) {
-				byte[] contractAddress = in.readByteArray(32);
-				int storageLen = in.readInt();
-				Map<Bytes, Pair<Bytes, Bytes>> storage = new HashMap<>(storageLen);
-				state.put(Address.wrap(Bytes.wrap(contractAddress)), storage);
-				while (storageLen > 0) {
+		}
+		if (version >= RELEASE_0240_VERSION) {
+			int numAffectedContracts = in.readInt();
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> state = new TreeMap<>();
+			while (numAffectedContracts-- > 0) {
+				final byte[] contractAddress = in.readByteArray(MAX_ADDRESS_BYTES);
+				int numAffectedSlots = in.readInt();
+				final Map<Bytes, Pair<Bytes, Bytes>> storage = new TreeMap<>();
+				state.put(Address.fromHexString(hex(contractAddress)), storage);
+				while (numAffectedSlots-- > 0) {
 					Bytes slot = Bytes.wrap(in.readByteArray(32));
 					Bytes left = Bytes.wrap(in.readByteArray(32));
 					boolean hasRight = in.readBoolean();
 					Bytes right = hasRight ? Bytes.wrap(in.readByteArray(32)) : null;
 					storage.put(slot, Pair.of(left, right));
-					storageLen--;
 				}
-				contractLen--;
 			}
 			stateChanges = state;
 		}
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		out.writeLong(gasUsed);
 		out.writeByteArray(bloom);
 		out.writeByteArray(result);
@@ -156,7 +156,7 @@ public class SolidityFnResult implements SelfSerializable {
 		out.writeSerializableList(logs, true, true);
 		out.writeSerializableList(createdContractIds, true, true);
 		out.writeByteArray(evmAddress);
-		out.write(stateChanges.size());
+		out.writeInt(stateChanges.size());
 		for (Map.Entry<Address, Map<Bytes, Pair<Bytes, Bytes>>> entry : stateChanges.entrySet()) {
 			out.writeByteArray(entry.getKey().trimLeadingZeros().toArrayUnsafe());
 			Map<Bytes, Pair<Bytes, Bytes>> slots = entry.getValue();
@@ -177,7 +177,7 @@ public class SolidityFnResult implements SelfSerializable {
 
 	/* --- Object --- */
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(final Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -192,7 +192,8 @@ public class SolidityFnResult implements SelfSerializable {
 				Arrays.equals(bloom, that.bloom) &&
 				Objects.equals(logs, that.logs) &&
 				Objects.equals(createdContractIds, that.createdContractIds) &&
-				Arrays.equals(evmAddress, that.evmAddress);
+				Arrays.equals(evmAddress, that.evmAddress) &&
+				this.stateChanges.equals(that.stateChanges);
 	}
 
 	@Override
@@ -207,18 +208,19 @@ public class SolidityFnResult implements SelfSerializable {
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
 				.add("gasUsed", gasUsed)
-				.add("bloom", CommonUtils.hex(bloom))
-				.add("result", CommonUtils.hex(result))
+				.add("bloom", hex(bloom))
+				.add("result", hex(result))
 				.add("error", error)
 				.add("contractId", contractId)
 				.add("createdContractIds", createdContractIds)
 				.add("logs", logs)
-				.add("evmAddress", CommonUtils.hex(evmAddress))
+				.add("stateChanges", stateChanges)
+				.add("evmAddress", hex(evmAddress))
 				.toString();
 	}
 
 	/* --- Bean --- */
-	public void setContractId(EntityId contractId) {
+	public void setContractId(final EntityId contractId) {
 		this.contractId = contractId;
 	}
 
@@ -260,6 +262,10 @@ public class SolidityFnResult implements SelfSerializable {
 
 	public void setEvmAddress(final byte[] evmAddress) {
 		this.evmAddress = evmAddress;
+	}
+
+	public void setStateChanges(final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
+		this.stateChanges = stateChanges;
 	}
 
 	/* --- Helpers --- */

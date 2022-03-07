@@ -123,7 +123,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				positiveSpecs(),
 				negativeSpecs()

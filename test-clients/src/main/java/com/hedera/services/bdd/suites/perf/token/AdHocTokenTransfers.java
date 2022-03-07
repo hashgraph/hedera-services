@@ -67,7 +67,7 @@ public class AdHocTokenTransfers extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
 						runTokenTransfers(),
