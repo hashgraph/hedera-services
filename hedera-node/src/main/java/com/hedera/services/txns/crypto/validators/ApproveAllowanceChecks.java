@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -55,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 
+@Singleton
 public class ApproveAllowanceChecks implements AllowanceChecks {
 	protected final TypedTokenStore tokenStore;
 	protected final AccountStore accountStore;
