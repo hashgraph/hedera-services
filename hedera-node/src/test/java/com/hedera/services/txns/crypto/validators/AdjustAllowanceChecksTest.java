@@ -562,8 +562,6 @@ class AdjustAllowanceChecksTest {
 		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1))).willReturn(token);
 
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
-		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1)).getOwner()).willReturn(
-				EntityId.fromGrpcAccountId(ownerId));
 
 		var validity = subject.validateSerialNums(serials, treasury, token2Model, existingSerials);
 		assertEquals(OK, validity);

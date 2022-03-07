@@ -21,9 +21,11 @@ package com.hedera.services.txns.crypto.validators;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -175,7 +177,8 @@ public interface AllowanceChecks {
 		return totalAllowances == 0;
 	}
 
-	default Pair<Account, ResponseCodeEnum> fetchOwnerAccount(Id owner, Account payerAccount, AccountStore accountStore) {
+	default Pair<Account, ResponseCodeEnum> fetchOwnerAccount(Id owner, Account payerAccount,
+			AccountStore accountStore) {
 		if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 			return Pair.of(payerAccount, OK);
 		} else {
@@ -185,5 +188,11 @@ public interface AllowanceChecks {
 				return Pair.of(payerAccount, INVALID_ALLOWANCE_OWNER_ID);
 			}
 		}
+	}
+
+	default boolean validOwner(final MerkleUniqueToken nft,
+			final Account ownerAccount, final Token token) {
+		return ownerAccount.equals(token.getTreasury()) ||
+				ownerAccount.getId().asEntityId().equals(nft.getOwner());
 	}
 }
