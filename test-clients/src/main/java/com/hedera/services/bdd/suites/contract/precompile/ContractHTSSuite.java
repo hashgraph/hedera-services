@@ -31,7 +31,6 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -862,8 +861,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 				);
 	}
 
-	private String getNestedContractAddress(HapiApiSpec spec) {
-		return AssociatePrecompileSuite.getNestedContractAddress(ContractHTSSuite.NESTED, spec);
+	private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
+		return AssociatePrecompileSuite.getNestedContractAddress(contract, spec);
 	}
 
 	@Override

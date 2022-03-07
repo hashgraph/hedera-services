@@ -395,7 +395,7 @@ public class TxnVerbs {
 	    newContractCreate(contract).balance(10_000L).payingWith(ACCOUNT),
 	    newContractCreate(contract, to).balance(10_000L).payingWith(ACCOUNT)
 	 */
-	public static HapiContractCreate newContractCreate(final String contractName, final String suffix, final Object... constructorParams) {
+	public static HapiContractCreate cloneContract(final String contractName, final String suffix, final Object... constructorParams) {
 		if (constructorParams.length > 0) {
 			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
 			return new HapiContractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);

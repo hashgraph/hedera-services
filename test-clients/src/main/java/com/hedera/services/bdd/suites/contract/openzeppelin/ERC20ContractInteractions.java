@@ -43,14 +43,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ERC20ContractInteractions extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERC20ContractInteractions.class);
-	private static final long GAS_TO_OFFER = 2_000_000;
 
 	public static void main(String[] args) {
 		new ERC20ContractInteractions().runSuiteSync();

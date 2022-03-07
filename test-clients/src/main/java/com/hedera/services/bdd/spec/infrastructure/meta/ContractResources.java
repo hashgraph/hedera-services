@@ -209,6 +209,197 @@ public class ContractResources {
 			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v\",\"type\":\"uint256\"}]," +
 			"\"name\":\"insert\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"size\"," +
 			"\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String IMAP_USER_REMOVE = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"k\",\"type" +
+			"\":\"uint256\"}],\"name\":\"remove\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"success\"," +
+			"\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String MIXED_FRAMES_SCENARIOS_CONS_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_mixedMintTokenContractAddress\"," +
+			"\"type\": \"address\"}],\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String ERC_20_NAME_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}],\"name\": \"name\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_20_SYMBOL_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": " +
+			"\"token\",\"type\": \"address\"}],\"name\": \"symbol\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_20_DECIMALS_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": " +
+			"\"token\",\"type\": \"address\"}],\"name\": \"decimals\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_20_TOTAL_SUPPLY_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": " +
+			"\"token\",\"type\": \"address\"}],\"name\": \"totalSupply\",\"outputs\": [],\"stateMutability\": " +
+			"\"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_20_BALANCE_OF_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"account\",\"type\": \"address\"}],\"name\": \"balanceOf\",\"outputs\": [],\"stateMutability\": " +
+			"\"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_20_TRANSFER_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"recipient\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"amount\"," +
+			"\"type\": \"uint256\"}],\"name\": \"transfer\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String ERC_20_DELEGATE_TRANSFER_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"recipient\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"amount\"," +
+			"\"type\": \"uint256\"}],\"name\": \"delegateTransfer\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+
+	public static final String ERC_20_TRANSFER_FROM_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"recipient\"," +
+			"\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"amount\",\"type\": \"uint256\"}],\"name\": \"transferFrom\",\"outputs\": []," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_20_ALLOWANCE_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"owner\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"spender\",\"type\": \"address\"}],\"name\": \"allowance\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_20_APPROVE_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"spender\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"amount\",\"type\": \"uint256\"}],\"name\": \"approve\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String ERC_721_NAME_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}]," +
+			"\"name\": \"name\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_SYMBOL_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}]," +
+			"\"name\": \"symbol\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_TOKEN_URI_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"tokenId\",\"type\": \"uint256\"}],\"name\": \"tokenURI\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_TOTAL_SUPPLY_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}]," +
+			"\"name\": \"totalSupply\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_TOKEN_BY_INDEX_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"index\",\"type\": \"uint256\"}],\"name\": \"tokenByIndex\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_TOKEN_OF_OWNER_BY_INDEX_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"owner\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"index\",\"type\": \"uint256\"}]," +
+			"\"name\": \"tokenOfOwnerByIndex\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_BALANCE_OF_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"owner\",\"type\": \"address\"}],\"name\": \"balanceOf\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_OWNER_OF_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"tokenId\",\"type\": \"uint256\"}],\"name\": \"ownerOf\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_SAFE_TRANSFER_FROM_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"from\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"to\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"tokenId\",\"type\": \"uint256\"}],\"name\": \"safeTransferFrom\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_SAFE_TRANSFER_FROM_WITH_DATA_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"from\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"to\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"tokenId\",\"type\": \"uint256\"},{\"internalType\": \"bytes\",\"name\": \"data\",\"type\": \"bytes\"}]," +
+			"\"name\": \"safeTransferFromWithData\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_TRANSFER_FROM_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address\"," +
+			"\"name\": \"from\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"to\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"tokenId\"," +
+			"\"type\": \"uint256\"}],\"name\": \"transferFrom\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_APPROVE_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"},{\"internalType\": \"address\"," +
+			"\"name\": \"to\",\"type\": \"address\"},{\"internalType\": \"uint256\",\"name\": \"tokenId\",\"type\": \"uint256\"}],\"name\": \"approve\",\"outputs\": []," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_SET_APPROVAL_FOR_ALL_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"operator\",\"type\": \"address\"},{\"internalType\": \"bool\",\"name\": \"approved\",\"type\": \"bool\"}]," +
+			"\"name\": \"setApprovalForAll\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_GET_APPROVED_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint256\",\"name\": \"tokenId\",\"type\": \"uint256\"}],\"name\": \"getApproved\",\"outputs\": []," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String ERC_721_IS_APPROVED_FOR_ALL_CALL = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"owner\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"operator\",\"type\": \"address\"}]," +
+			"\"name\": \"isApprovedForAll\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"";
+
+	public static final String BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"}],\"name\": \"burnCallAfterNestedMintCallWithPrecompileCall\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_CALL = "{\"inputs\": " +
+			"[{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"}],\"name\": \"burnDelegateCallAfterNestedMintCallWithPrecompileCall\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL = "{\"inputs" +
+			"\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"}],\"name\": \"burnDelegateCallAfterNestedMintDelegateCallWithPrecompileCall\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_CALL = "{\"inputs\": " +
+			"[{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"}],\"name\": \"burnCallAfterNestedMintDelegateCallWithPrecompileCall\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String BURN_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL = "{\"inputs\": " +
+			"[{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"}],\"name\": \"burnCallAfterNestedMintCallWithPrecompileDelegateCall\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_CALL_WITH_PRECOMPILE_DELEGATE_CALL = "{\"inputs" +
+			"\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"}],\"name\": \"burnDelegateCallAfterNestedMintCallWithPrecompileDelegateCall\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String BURN_DELEGATE_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL =
+			"{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"}],\"name\": \"burnDelegateCallAfterNestedMintDelegateCallWithPrecompileDelegateCall\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String BURN_CALL_AFTER_NESTED_MINT_DELEGATE_CALL_WITH_PRECOMPILE_DELEGATE_CALL = "{\"inputs\": " +
+			"[{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"}],\"name\": \"burnCallAfterNestedMintDelegateCallWithPrecompileDelegateCall\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String HW_MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"constructor\"}";
+	public static final String HW_BRRR_CALL_ABI = "{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"amount\"," +
+			"\"type\":\"uint64\"}],\"name\":\"brrr\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String HW_MINT_CALL_ABI = "{\"inputs\":[],\"name\":\"mint\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String NESTED_MINT_CONS_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_mintContractAddress\"," +
+			"\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+	public static final String NESTED_TRANSFER_NFT_AFTER_MINT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\"," +
+			"\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\"," +
+			"\"name\": \"recipient\",\"type\": \"address\"},{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"},{\"internalType\": \"int64\"," +
+			"\"name\": \"serialNumber\",\"type\": \"int64\"}],\"name\": \"sendNFTAfterMint\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String REVERT_MINT_AFTER_FAILED_ASSOCIATE = "{\"inputs\": [{\"internalType" +
+			"\": \"address\",\"name\": \"accountToAssociate\",\"type\": \"address\"},{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"}],\"name\": \"revertMintAfterFailedAssociate\",\"outputs\":[]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MINT_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"_tokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"constructor\"}";
+	public static final String MINT_FUNGIBLE_CALL_ABI = "{\"inputs\":[{\"internalType\":\"uint64\"," +
+			"\"name\":\"amount\"," +
+			"\"type\":\"uint64\"}],\"name\":\"mintFungibleToken\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String MINT_NON_FUNGIBLE_CALL_ABI = "{\"inputs\":[{\"internalType\":\"bytes[]\"," +
+			"\"name\":\"metadata\"," +
+			"\"type\":\"bytes[]\"}],\"name\":\"mintNonFungibleToken\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String REVERT_AFTER_FAILED_MINT = "{\"inputs\": [{\"internalType\": \"address\"," +
+			"\"name\": \"sender\",\"type\": \"address\"},{\"internalType\": \"address\",\"name\": \"recipient\",\"type\": \"address\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"amount\",\"type\": \"int64\"}],\"name\": \"revertMintAfterFailedMint\"," +
+			"\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String MINT_FUNGIBLE_WITH_EVENT_CALL_ABI = "{\"inputs\":[{\"internalType\":\"uint64\"," +
+			"\"name\":\"amount\"," +
+			"\"type\":\"uint64\"}],\"name\":\"mintFungibleTokenWithEvent\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"bytes[]\"," +
+			"\"name\": \"metadata\",\"type\": \"bytes[]\"}],\"name\": \"mintNonFungibleTokenWithEvent\",\"outputs\": " +
+			"[]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+	public static final String CRYPTO_TRANSFER_CONS_ABI = "{\"inputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"constructor\"}";
+	public static final String CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST = "{\"inputs\": [{\"components\": [{\"internalType\": \"address\"," +
+			"\"name\": \"token\",\"type\": \"address\"},{\"components\": [{\"internalType\": \"address\",\"name\": \"accountID\"," +
+			"\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"amount\",\"type\": \"int64\"}],\"internalType\": \"struct IHederaTokenService.AccountAmount[]\"," +
+			"\"name\": \"transfers\",\"type\": \"tuple[]\"},{\"components\": [{\"internalType\": \"address\",\"name\": \"senderAccountID\",\"type\": \"address\"}," +
+			"{" + "\"internalType\": \"address\",\"name\": \"receiverAccountID\",\"type\": \"address\"},{\"internalType\": \"int64\",\"name\": \"serialNumber\"," +
+			"\"type\": \"int64\"}],\"internalType\": \"struct IHederaTokenService.NftTransfer[]\",\"name\": \"nftTransfers\",\"type\": \"tuple[]\"}]," +
+			"\"internalType\": \"struct IHederaTokenService.TokenTransferList[]\",\"name\": \"tokenTransfers\"," + "\"type\": \"tuple[]\"" + "}]," +
+			"\"name\": \"transferMultipleTokens\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String BURN_TOKEN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String BURN_TOKEN_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
+			"\"name\": \"burnToken\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String BURN_TOKEN_WITH_EVENT_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": " +
+			"\"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
+			"\"name\": \"burnTokenWithEvent\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": " +
+			"\"function\"}";
+
+	public static final String NESTED_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"mintTokenContractAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String BURN_AFTER_NESTED_MINT_ABI = "{\"inputs\": [{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"address\",\"name\": \"tokenAddress\",\"type\": \"address\"},{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"} ]," +
+		"\"name\": \"burnAfterNestedMint\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String TRANSFER_AND_BURN_CONSTRUCTOR_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_tokenAddress\",\"type\": \"address\"}]," +
+			"\"stateMutability\": \"nonpayable\",\"type\": \"constructor\"}";
+
+	public static final String TRANSFER_BURN_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"_address\",\"type\": \"address\"}," +
+			"{\"internalType\": \"address\",\"name\": \"_address2\",\"type\": \"address\"}," +
+			"{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}," +
+			"{\"internalType\": \"int64\",\"name\": \"serialNum\",\"type\": \"int64\"}," +
+			"{\"internalType\": \"int64[]\",\"name\": \"serialNumbers\",\"type\": \"int64[]\"}]," +
+			"\"name\": \"transferBurn\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
 
 	public static final String TRACEABILITY_CONSTRUCTOR = "{\"inputs\":[{\"internalType\":\"uint256\"," +
 			"\"name\":\"_slot0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_slot1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_slot2\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";

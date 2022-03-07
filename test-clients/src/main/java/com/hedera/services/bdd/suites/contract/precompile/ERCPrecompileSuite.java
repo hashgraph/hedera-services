@@ -1062,7 +1062,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec getErc721OwnerOf() {
 		final var ownerOfTxn = "ownerOfTxn";
 
-		return defaultHapiSpec("ERC_721_OWNER_OF")
+		HapiApiSpec then = defaultHapiSpec("ERC_721_OWNER_OF")
 				.given(
 						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
 						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
@@ -1116,6 +1116,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
+		return then;
 	}
 
 	private HapiApiSpec getErc721TokenURIFromErc20TokenFails() {
