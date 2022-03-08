@@ -437,4 +437,22 @@ public class TxnVerbs {
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
 		return new HapiFreeze().startingAt(freezeStartTime);
 	}
+
+	/**	This method enables the developer to create a file with the ability to chain methods, related to HapiFileCreate.
+	 The execution of the method requires the spec context, therefore the invocation is not straightforward.
+	 Example:
+	 withOpContext(
+	 		(spec, noOp) -> {
+	 				chainedFileCreate(contract, spec).hasPrecheck(TRANSACTION_OVERSIZE);
+	                chainedFileCreate(contract, spec).contents("").key(KEY_LIST);
+	 	}
+	 )
+	 */
+	public static HapiFileCreate enhancedFileCreate(final String contractName, final HapiApiSpec spec) {
+		final var path = getResourcePath(contractName, ".bin");
+		final var file = new HapiFileCreate(contractName);
+		sourcing(() -> file).execFor(spec);
+		sourcing(() -> updateLargeFile(GENESIS, contractName, extractByteCode(path))).execFor(spec);
+		return file;
+	}
 }

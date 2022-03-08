@@ -7,7 +7,7 @@ contract NestedCreations {
     function propagate() public {
         child = new Inner();
         child.propagate();
-    } 
+    }
 }
 
 contract Inner {
@@ -16,18 +16,18 @@ contract Inner {
     function propagate() public {
         grandchild = new InnerInner();
         try grandchild.propagate_abortively() {
-          /* No-op */
+            /* No-op */
         } catch Error(string memory) {
-          /* Ignore */
+            /* Ignore */
         }
-    } 
+    }
 }
 
 contract InnerInner {
     Innermost great_grandchild;
 
     function propagate_abortively() public {
-        great_grandchild = new Innermost();        
+        great_grandchild = new Innermost();
         revert("NOPE");
     }
 }
