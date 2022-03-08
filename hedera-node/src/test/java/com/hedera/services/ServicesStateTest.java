@@ -455,8 +455,8 @@ class ServicesStateTest {
 		final var associationKey2 = EntityNumPair.fromLongs(account2.longValue(), token1.longValue());
 		final var associationKey3 = EntityNumPair.fromLongs(account2.longValue(), token2.longValue());
 		final var association1 = new MerkleTokenRelStatus(1000L, false, true, false);
-		final var association2 = new MerkleTokenRelStatus(1000L, true, true, false);
-		final var association3 = new MerkleTokenRelStatus(1000L, false, false, true);
+		final var association2 = new MerkleTokenRelStatus(0L, true, true, false);
+		final var association3 = new MerkleTokenRelStatus(500L, false, false, true);
 
 		MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations = new MerkleMap<>();
 		tokenAssociations.put(associationKey1, association1);
@@ -479,7 +479,7 @@ class ServicesStateTest {
 		verify(merkleAccount1).setTokenAssociationMetadata(new TokenAssociationMetadata(
 				1,0,associationKey1));
 		verify(merkleAccount2).setTokenAssociationMetadata(new TokenAssociationMetadata(
-				2,0,associationKey3));
+				2,1,associationKey3));
 		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey1).nextKey());
 		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey1).prevKey());
 		assertEquals(associationKey1, tokenAssociations.get(associationKey1).getKey());
