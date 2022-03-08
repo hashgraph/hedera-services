@@ -44,7 +44,7 @@ public class ValidateNewAddressBook extends HapiApiSuite {
 	final String TARGET_DIR = "./remote-system-files";
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				fetchFiles()
 		);

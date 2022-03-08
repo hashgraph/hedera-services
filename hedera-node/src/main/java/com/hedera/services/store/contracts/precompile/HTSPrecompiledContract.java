@@ -80,6 +80,8 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -130,12 +132,14 @@ import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -380,7 +384,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
 		// convert to gas cost
-		final Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
+		Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
 
 		// charge premium
 		gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
@@ -666,7 +670,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Check required signatures --- */
 			final var accountId = Id.fromGrpcAccount(associateOp.accountId());
-			accountId.asEvmAddress();
 			final var hasRequiredSigs = validateKey(frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
 
@@ -698,7 +701,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	protected class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
 		@Override
-		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		public TransactionBody.Builder body(final Bytes input, UnaryOperator<byte[]> aliasResolver) {
 			associateOp = decoder.decodeMultipleAssociations(input, aliasResolver);
 			return syntheticTxnFactory.createAssociate(associateOp);
 		}
@@ -1417,7 +1420,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	/**
 	 * Checks if a key implicit in a target address is active in the current frame using a {@link
 	 * ContractActivationTest}.
-	 *
+	 * <p>
 	 * We massage the current frame a bit to ensure that a precompile being executed via delegate call is tested as
 	 * such.
 	 * There are three cases.
@@ -1430,17 +1433,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 *     <li>The precompile is being executed via a call, and the calling code is being executed as
 	 *     part of a non-delegate call.</li>
 	 * </ol>
-	 *
+	 * <p>
 	 * Note that because the {@link DecodingFacade} converts every address to its "mirror" address form
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame
-	 * 		current frame
-	 * @param target
-	 * 		the element to test for key activation, in standard form
-	 * @param activationTest
-	 * 		the function which should be invoked for key validation
+	 * @param frame          current frame
+	 * @param target         the element to test for key activation, in standard form
+	 * @param activationTest the function which should be invoked for key validation
 	 * @return whether the implied key is active
 	 */
 	private boolean validateKey(
@@ -1468,9 +1468,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	boolean isToken(final MessageFrame frame, final Address address) {
-		var account = frame.getWorldUpdater().get(address);
+		final var account = frame.getWorldUpdater().get(address);
 		if (account != null) {
-			return account.getNonce() == -1;
+			return account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
 		}
 		return false;
 	}
@@ -1488,19 +1488,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 *     {@code activeContract} address should be considered active (modulo whether the recipient
 		 * 	 and contract imply a delegate call).</li>
 		 * </ul>
-		 *
+		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param target
-		 * 		an address with an implicit key understood by this implementation
-		 * @param recipient
-		 * 		the idealized account receiving the call operation
-		 * @param contract
-		 * 		the idealized account whose code is being executed
-		 * @param activeContract
-		 * 		the contract address that can activate a contract or delegatable contract key
-		 * @param aliases
-		 * 		the current contract aliases in effect
+		 * @param target         an address with an implicit key understood by this implementation
+		 * @param recipient      the idealized account receiving the call operation
+		 * @param contract       the idealized account whose code is being executed
+		 * @param activeContract the contract address that can activate a contract or delegatable contract key
+		 * @param aliases        the current contract aliases in effect
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(

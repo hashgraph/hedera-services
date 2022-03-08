@@ -24,9 +24,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
@@ -40,8 +40,6 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -50,7 +48,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -66,11 +63,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ERCPrecompileSuite extends HapiApiSuite {
@@ -91,16 +85,16 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	private static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
 
 	public static void main(String... args) {
-		new ERCPrecompileSuite().runSuiteAsync();
+		new ERCPrecompileSuite().runSuiteSync();
 	}
 
 	@Override
 	public boolean canRunAsync() {
-		return true;
+		return false;
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
 				ERC_20(),
 				ERC_721()
@@ -121,6 +115,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				getErc20TokenDecimalsFromErc721TokenFails(),
 				transferErc20TokenFromErc721TokenFails(),
 				transferErc20TokenReceiverContract(),
+				transferErc20TokenSenderAccount()
 				transferErc20TokenSenderAccount(),
 				transferErc20TokenFromContract()
 		);
@@ -146,6 +141,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_NAME")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -186,7 +183,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																.withName(tokenName)
 														)
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -196,6 +194,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_SYMBOL")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -236,7 +236,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																.withSymbol(tokenSymbol)
 														)
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -246,6 +247,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_DECIMALS")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -286,7 +289,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																.withDecimals(decimals)
 														)
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -296,6 +300,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_TOTAL_SUPPLY")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -334,7 +340,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																.withTotalSupply(totalSupply)
 														)
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -343,6 +350,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_BALANCE_OF")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -385,7 +394,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																.withBalance(3)
 														)
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -394,6 +404,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_TRANSFER")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
 						cryptoCreate(RECIPIENT),
@@ -431,14 +443,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 							final var sender = spec.registry().getContractInfo(ERC_20_CONTRACT_NAME).getContractID();
 							final var receiver = spec.registry().getAccountInfo(RECIPIENT).getAccountID();
 
-							var txnRecord=
+							var txnRecord =
 									getTxnRecord(transferTxn).hasPriority(recordWith().contractCallResult(resultWith()
-											.logs(inOrder(logWith().withTopicsInOrder(List.of(
-															eventSignatureOf(TRANSFER_SIGNATURE),
-															parsedToByteString(sender.getContractNum()),
-															parsedToByteString(receiver.getAccountNum())
-													)).longValue(2))
-											)))
+													.logs(inOrder(logWith().withTopicsInOrder(List.of(
+																	eventSignatureOf(TRANSFER_SIGNATURE),
+																	parsedToByteString(sender.getContractNum()),
+																	parsedToByteString(receiver.getAccountNum())
+															)).longValue(2))
+													)))
 											.andAllChildRecords().logged();
 							allRunFor(spec, txnRecord);
 						}),
@@ -456,10 +468,10 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						getAccountBalance(ERC_20_CONTRACT_NAME)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 3),
 						getAccountBalance(RECIPIENT)
-								.hasTokenBalance(FUNGIBLE_TOKEN, 2)
+								.hasTokenBalance(FUNGIBLE_TOKEN, 2),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
-
 
 
 	private HapiApiSpec transferErc20TokenReceiverContract() {
@@ -467,6 +479,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_TRANSFER_RECEIVER_CONTRACT")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
 						cryptoCreate(RECIPIENT),
@@ -513,14 +527,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 							final var sender = spec.registry().getContractInfo(ERC_20_CONTRACT_NAME).getContractID();
 							final var receiver = spec.registry().getContractInfo(NESTED_ERC_20_CONTRACT_NAME).getContractID();
 
-							var txnRecord=
+							var txnRecord =
 									getTxnRecord(transferTxn).hasPriority(recordWith().contractCallResult(resultWith()
-											.logs(inOrder(logWith().withTopicsInOrder(List.of(
-															eventSignatureOf(TRANSFER_SIGNATURE),
-															parsedToByteString(sender.getContractNum()),
-															parsedToByteString(receiver.getContractNum())
-													)).longValue(2))
-											)))
+													.logs(inOrder(logWith().withTopicsInOrder(List.of(
+																	eventSignatureOf(TRANSFER_SIGNATURE),
+																	parsedToByteString(sender.getContractNum()),
+																	parsedToByteString(receiver.getContractNum())
+															)).longValue(2))
+													)))
 											.andAllChildRecords().logged();
 							allRunFor(spec, txnRecord);
 						}),
@@ -538,7 +552,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						getAccountBalance(ERC_20_CONTRACT_NAME)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 3),
 						getAccountBalance(NESTED_ERC_20_CONTRACT_NAME)
-								.hasTokenBalance(FUNGIBLE_TOKEN, 2)
+								.hasTokenBalance(FUNGIBLE_TOKEN, 2),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -547,6 +562,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_TRANSFER_SENDER_ACCOUNT")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
 						cryptoCreate(RECIPIENT),
@@ -585,7 +602,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 							final var sender = spec.registry().getAccountInfo(ACCOUNT).getAccountID();
 							final var receiver = spec.registry().getAccountInfo(RECIPIENT).getAccountID();
 
-							var txnRecord=
+							var txnRecord =
 									getTxnRecord(transferTxn).hasPriority(recordWith().contractCallResult(resultWith()
 													.logs(inOrder(logWith().withTopicsInOrder(List.of(
 																	eventSignatureOf(TRANSFER_SIGNATURE),
@@ -611,6 +628,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						getAccountBalance(ACCOUNT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 3),
 						getAccountBalance(RECIPIENT)
+								.hasTokenBalance(FUNGIBLE_TOKEN, 2),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 								.hasTokenBalance(FUNGIBLE_TOKEN, 2)
 				);
 	}
@@ -915,6 +934,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_ALLOWANCE_RETURNS_FAILURE")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(theSpender),
@@ -946,7 +966,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(allowanceTxn).andAllChildRecords().logged()
+						getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -955,6 +976,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_APPROVE_RETURNS_FAILURE")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -984,7 +1006,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(approveTxn).andAllChildRecords().logged()
+						getTxnRecord(approveTxn).andAllChildRecords().logged(),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -993,6 +1016,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_DECIMALS_FROM_ERC_721_TOKEN")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -1022,7 +1046,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(invalidDecimalsTxn).andAllChildRecords().logged()
+						getTxnRecord(invalidDecimalsTxn).andAllChildRecords().logged(),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -1031,6 +1056,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_TRANSFER_FROM_ERC_721_TOKEN")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_MILLION_HBARS),
 						cryptoCreate(RECIPIENT),
@@ -1064,7 +1090,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(invalidTransferTxn).andAllChildRecords().logged()
+						getTxnRecord(invalidTransferTxn).andAllChildRecords().logged(),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -1074,6 +1101,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_721_NAME")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -1114,7 +1143,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																.withName(tokenName)
 														)
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -1124,6 +1154,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_721_SYMBOL")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -1164,7 +1196,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																.withSymbol(tokenSymbol)
 														)
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -1173,6 +1206,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_721_TOKEN_URI")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -1212,7 +1247,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																.withTokenUri("FIRST")
 														)
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -1221,6 +1257,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_721_TOTAL_SUPPLY")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -1260,7 +1298,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																.withTotalSupply(1)
 														)
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -1270,6 +1309,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_721_BALANCE_OF")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -1312,7 +1353,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																.withBalance(1)
 														)
 										)
-						)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -1321,6 +1363,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_721_OWNER_OF")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -1368,6 +1412,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 																)
 												)
 										)
+						),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 						)
 				);
 	}
@@ -1526,6 +1572,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_721_TOKEN_URI_FROM_ERC_20_TOKEN")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -1554,7 +1601,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(invalidTokenURITxn).andAllChildRecords().logged()
+						getTxnRecord(invalidTokenURITxn).andAllChildRecords().logged(),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -1563,6 +1611,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_721_OWNER_OF_FROM_ERC_20_TOKEN")
 				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
@@ -1593,7 +1642,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
-						getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged()
+						getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged(),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 

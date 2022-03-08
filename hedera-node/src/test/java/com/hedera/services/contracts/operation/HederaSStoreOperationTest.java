@@ -20,6 +20,7 @@ package com.hedera.services.contracts.operation;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -82,14 +83,23 @@ class HederaSStoreOperationTest {
 	@Mock
 	BlockValues hederaBlockValues;
 
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+
 	@BeforeEach
 	void setUp() {
-		subject = new HederaSStoreOperation(gasCalculator);
+		subject = new HederaSStoreOperation(gasCalculator, dynamicProperties);
 	}
 
 	@Test
 	void executesCorrectly() {
 		givenValidContext(keyBytesMock, valueBytesMock);
+		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
+
+		var frameStack = new ArrayDeque<MessageFrame>();
+		frameStack.add(messageFrame);
+
+		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
 
 		final var result = subject.execute(messageFrame, evm);
 
