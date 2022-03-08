@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.contract.hapi;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,7 +32,8 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
 public class ContractGetInfoSuite extends HapiApiSuite {
@@ -47,29 +48,31 @@ public class ContractGetInfoSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-			getInfoWorks(),
-			invalidContractFromCostAnswer(),
-			invalidContractFromAnswerOnly()
+				getInfoWorks(),
+				invalidContractFromCostAnswer(),
+				invalidContractFromAnswerOnly()
 		);
 	}
 
 	private HapiApiSpec getInfoWorks() {
+		final var contract = "Multipurpose";
 		final var MEMO = "This is a test.";
 		return defaultHapiSpec("GetInfoWorks")
 				.given(
 						newKeyNamed("adminKey"),
-						contractCreate("defaultContract")
+						uploadInitCode(contract),
+						newContractCreate(contract)
 								.adminKey("adminKey")
 								.entityMemo(MEMO)
 								.autoRenewSecs(6999999L)
 				).when().then(
-						getContractInfo("defaultContract")
+						getContractInfo(contract)
 								.hasExpectedLedgerId("0x03")
 								.hasExpectedInfo()
 								.has(
 										contractWith()
-											.memo(MEMO)
-											.adminKey("adminKey")
+												.memo(MEMO)
+												.adminKey("adminKey")
 								)
 				);
 	}
