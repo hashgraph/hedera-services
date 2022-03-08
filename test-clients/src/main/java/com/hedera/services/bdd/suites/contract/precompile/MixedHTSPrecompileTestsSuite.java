@@ -36,7 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -83,7 +83,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
-						newFileCreate(outerContract, nestedContract),
+						uploadInitCode(outerContract, nestedContract),
 						newContractCreate(nestedContract),
 						withOpContext(
 								(spec, opLog) ->

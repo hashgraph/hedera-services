@@ -48,7 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
@@ -127,7 +127,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(accountID::set),
 						cryptoCreate(RECEIVER)
 								.exposingCreatedIdTo(receiverID::set),
-						newFileCreate(OUTER_CONTRACT, NESTED_CONTRACT),
+						uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
 						newContractCreate(NESTED_CONTRACT),
 						tokenAssociate(NESTED_CONTRACT, VANILLA_TOKEN),
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
@@ -178,7 +178,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
 						mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("Second!"))),
-						newFileCreate(OUTER_CONTRACT, NESTED_CONTRACT),
+						uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
 						newContractCreate(NESTED_CONTRACT)
 				)
 				.when(
@@ -220,7 +220,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(50L)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
-						newFileCreate(OUTER_CONTRACT, NESTED_CONTRACT),
+						uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
 						newContractCreate(NESTED_CONTRACT))
 				.when(
 						withOpContext(

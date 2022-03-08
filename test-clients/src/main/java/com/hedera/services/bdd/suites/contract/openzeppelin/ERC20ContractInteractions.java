@@ -39,7 +39,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -84,7 +84,7 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 						cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(RECEIVER),
 						getAccountBalance(OWNER).logged(),
-						newFileCreate(CONTRACT)
+						uploadInitCode(CONTRACT)
 				).when(
 						getAccountBalance(OWNER).logged(),
 						newContractCreate(CONTRACT, INITIAL_AMOUNT)

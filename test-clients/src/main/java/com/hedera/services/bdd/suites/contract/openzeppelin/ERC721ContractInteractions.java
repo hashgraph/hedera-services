@@ -32,7 +32,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -80,7 +80,7 @@ public class ERC721ContractInteractions extends HapiApiSuite {
                         cryptoCreate(CONTRACT_CREATOR),
                         cryptoCreate(NFT_SENDER),
                         QueryVerbs.getAccountBalance(PAYER).logged(),
-                        newFileCreate(CONTRACT)
+                        uploadInitCode(CONTRACT)
                 ).when(
                         QueryVerbs.getAccountBalance(PAYER).logged(),
                         newContractCreate(CONTRACT)

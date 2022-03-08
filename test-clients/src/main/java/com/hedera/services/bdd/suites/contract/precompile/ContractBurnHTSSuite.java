@@ -52,7 +52,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
@@ -125,7 +125,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.adminKey(MULTI_KEY)
 								.treasury(TOKEN_TREASURY),
-						newFileCreate(THE_CONTRACT),
+						uploadInitCode(THE_CONTRACT),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -193,7 +193,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						mintToken(TOKEN, List.of(copyFromUtf8("First!"))),
 						mintToken(TOKEN, List.of(copyFromUtf8("Second!"))),
-						newFileCreate(THE_CONTRACT),
+						uploadInitCode(THE_CONTRACT),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -249,7 +249,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.adminKey(MULTI_KEY)
 								.treasury(TOKEN_TREASURY),
-						newFileCreate(innerContract, outerContract),
+						uploadInitCode(innerContract, outerContract),
 						newContractCreate(innerContract)
 								.gas(GAS_TO_OFFER),
 						withOpContext(
@@ -323,7 +323,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								.withCustom(fixedHbarFee(5 * ONE_HBAR, feeCollector)),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
-						newFileCreate(theContract),
+						uploadInitCode(theContract),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(

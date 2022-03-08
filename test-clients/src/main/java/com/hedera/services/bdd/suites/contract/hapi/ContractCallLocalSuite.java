@@ -42,7 +42,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -78,7 +78,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private HapiApiSpec vanillaSuccess() {
 		return defaultHapiSpec("VanillaSuccess")
 				.given(
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT).adminKey(THRESHOLD)
 				).when(
 						contractCall(CONTRACT, "create").gas(785_000)
@@ -93,7 +93,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private HapiApiSpec impureCallFails() {
 		return defaultHapiSpec("ImpureCallFails")
 				.given(
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT).adminKey(THRESHOLD)
 				).when().then(
 						sleepFor(3_000L),
@@ -106,7 +106,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 	private HapiApiSpec deletedContract() {
 		return defaultHapiSpec("InvalidDeletedContract")
 				.given(
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT)
 				).when(
 						contractDelete(CONTRACT)
@@ -140,7 +140,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 		return defaultHapiSpec("InsufficientFee")
 				.given(
 						cryptoCreate("payer"),
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "create").gas(785_000)
@@ -159,7 +159,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 		return defaultHapiSpec("LowBalanceFails")
 				.given(
 						cryptoCreate("payer"),
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT),
 						cryptoCreate("payer").balance(adequateQueryPayment)
 				).when(

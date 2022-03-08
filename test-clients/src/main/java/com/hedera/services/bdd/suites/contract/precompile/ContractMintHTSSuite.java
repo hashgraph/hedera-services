@@ -55,7 +55,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
@@ -137,7 +137,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
-						newFileCreate(HELLO_WORLD_MINT)
+						uploadInitCode(HELLO_WORLD_MINT)
 				).when(
 						sourcing(() -> newContractCreate(HELLO_WORLD_MINT, fungibleNum.get()))
 				).then(
@@ -182,7 +182,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> nonFungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
-						newFileCreate(HELLO_WORLD_MINT),
+						uploadInitCode(HELLO_WORLD_MINT),
 						sourcing(() -> newContractCreate(HELLO_WORLD_MINT, nonFungibleNum.get()))
 				).when(
 						contractCall(HELLO_WORLD_MINT, "mint")
@@ -224,7 +224,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
-						newFileCreate(MINT_CONTRACT),
+						uploadInitCode(MINT_CONTRACT),
 						sourcing(() -> newContractCreate(MINT_CONTRACT, fungibleNum.get()))
 				).when(
 						contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", amount
@@ -265,7 +265,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> nonFungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
-						newFileCreate(MINT_CONTRACT),
+						uploadInitCode(MINT_CONTRACT),
 						sourcing(() -> newContractCreate(MINT_CONTRACT, nonFungibleNum.get()))
 				).when(
 						contractCall(MINT_CONTRACT, "mintNonFungibleTokenWithEvent",
@@ -308,7 +308,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
-						newFileCreate(outerContract, nestedContract),
+						uploadInitCode(outerContract, nestedContract),
 						newContractCreate(nestedContract)
 				).when(withOpContext(
 								(spec, opLog) ->
@@ -383,7 +383,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						tokenAssociate(theAccount, List.of(fungibleToken)),
 						tokenAssociate(theRecipient, List.of(fungibleToken)),
 						cryptoTransfer(moving(200, fungibleToken).between(TOKEN_TREASURY, theAccount)),
-						newFileCreate(contract)
+						uploadInitCode(contract)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -429,7 +429,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
-						newFileCreate(nestedContract, outerContract),
+						uploadInitCode(nestedContract, outerContract),
 						newContractCreate(nestedContract)
 				).when(
 						withOpContext(

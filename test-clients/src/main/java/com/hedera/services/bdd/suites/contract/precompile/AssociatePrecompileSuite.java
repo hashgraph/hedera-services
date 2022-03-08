@@ -50,7 +50,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -136,7 +136,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
 		return defaultHapiSpec("FunctionCallWithLessThanFourBytesFailsWithinSingleContractCall")
 				.given(
-						newFileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
 						newContractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
 						contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
@@ -154,7 +154,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
 		return defaultHapiSpec("InvalidAbiCallGracefullyFailsWithinSingleContractCall")
 				.given(
-						newFileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
 						newContractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
 						contractCall(THE_GRACEFULLY_FAILING_CONTRACT,
@@ -172,7 +172,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
 		return defaultHapiSpec("NonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
 				.given(
-						newFileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
 						newContractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
 						contractCall(
@@ -199,7 +199,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						newFileCreate(THE_CONTRACT),
+						uploadInitCode(THE_CONTRACT),
 						newContractCreate(THE_CONTRACT)
 				).when(
 						withOpContext(
@@ -244,7 +244,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						newFileCreate(THE_CONTRACT),
+						uploadInitCode(THE_CONTRACT),
 						newContractCreate(THE_CONTRACT)
 				).when(
 						withOpContext(
@@ -317,7 +317,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						newFileCreate(THE_CONTRACT),
+						uploadInitCode(THE_CONTRACT),
 						newContractCreate(THE_CONTRACT)
 				).when(
 						withOpContext(
@@ -364,7 +364,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						newFileCreate(INNER_CONTRACT, OUTER_CONTRACT),
+						uploadInitCode(INNER_CONTRACT, OUTER_CONTRACT),
 						newContractCreate(INNER_CONTRACT)
 				).when(
 						withOpContext(
@@ -408,7 +408,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> secondVanillaTokenID.set(asToken(id))),
-						newFileCreate(THE_CONTRACT),
+						uploadInitCode(THE_CONTRACT),
 						newContractCreate(THE_CONTRACT)
 				).when(
 						withOpContext(
@@ -450,7 +450,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
 		return defaultHapiSpec("InvalidSingleAbiCallConsumesAllProvidedGas")
 				.given(
-						newFileCreate(THE_GRACEFULLY_FAILING_CONTRACT),
+						uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
 						newContractCreate(THE_GRACEFULLY_FAILING_CONTRACT)
 				).when(
 						contractCall(THE_GRACEFULLY_FAILING_CONTRACT,

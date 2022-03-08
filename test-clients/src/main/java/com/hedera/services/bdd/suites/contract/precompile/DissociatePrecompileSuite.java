@@ -47,7 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
@@ -167,7 +167,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(nonZeroBalanceUnfrozen)
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(nonZeroBalanceUnfrozenID::set),
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT)
 				).when(
 						withOpContext(
@@ -265,7 +265,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-						newFileCreate(OUTER_CONTRACT, NESTED_CONTRACT),
+						uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
 						newContractCreate(NESTED_CONTRACT)
 				)
 				.when(withOpContext(
@@ -317,7 +317,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.initialSupply(TOTAL_SUPPLY)
 								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT)
 				)
 				.when(

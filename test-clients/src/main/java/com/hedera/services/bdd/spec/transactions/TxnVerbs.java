@@ -352,11 +352,11 @@ public class TxnVerbs {
 		return new HapiContractUpdate(contract);
 	}
 
-	/*  Note to the reviewer:
-		This method is temporarily named with the "new" prefix, as soon as the implementation is approved and the legacy
-		fileCreate() is entirely replaced, this method will be renamed to "fileCreate"
+	/**
+	 * This method enables the developer to upload one or many contract(s) bytecode(s), but without the ability to chain methods
+	 * related to HapiFileCreate.
 	 */
-	public static HapiSpecOperation newFileCreate(final String... contractsNames) {
+	public static HapiSpecOperation uploadInitCode(final String... contractsNames) {
 		return withOpContext((spec, ctxLog) -> {
 			List<HapiSpecOperation> ops = new ArrayList<>();
 			for (String contractName : contractsNames) {
@@ -368,6 +368,24 @@ public class TxnVerbs {
 			}
 			allRunFor(spec, ops);
 		});
+	}
+
+	/**This method enables the developer to upload contract bytecode with the ability to chain methods, related to HapiFileCreate.
+	 The execution of the method requires the op context, therefore the invocation is not straightforward.
+	 Example:
+	 withOpContext(
+	 (spec, noOp) -> {
+	 chainedFileCreate(contract, spec).hasPrecheck(TRANSACTION_OVERSIZE);
+	 chainedFileCreate(contract, spec).contents("").key(KEY_LIST);
+	 }
+	 )
+	 */
+	public static HapiFileCreate uploadInitCode(final String contractName, final HapiApiSpec spec) {
+		final var path = getResourcePath(contractName, ".bin");
+		final var file = new HapiFileCreate(contractName);
+		sourcing(() -> file).execFor(spec);
+		sourcing(() -> updateLargeFile(GENESIS, contractName, extractByteCode(path))).execFor(spec);
+		return file;
 	}
 
 	/*  Note to the reviewer:
@@ -384,16 +402,16 @@ public class TxnVerbs {
 	}
 
 	/**  Note:
-		Previously - when creating contracts we were passing a name, chosen by the developer, which can differentiate
-		from the name of the contract.
-		The new implementation of the contract creation depends on the exact name of the contract, which means, that we
-		can not create multiple instances of the contract with the same name.
-		Therefore - in order to provide each contract with a unique name - the developer must attach a suffix to happily
-		create multiple instances of the same contract, but with different names.
-		Example:
-		final var contract = "TransferringContract";
-	    newContractCreate(contract).balance(10_000L).payingWith(ACCOUNT),
-	    newContractCreate(contract, to).balance(10_000L).payingWith(ACCOUNT)
+	 Previously - when creating contracts we were passing a name, chosen by the developer, which can differentiate
+	 from the name of the contract.
+	 The new implementation of the contract creation depends on the exact name of the contract, which means, that we
+	 can not create multiple instances of the contract with the same name.
+	 Therefore - in order to provide each contract with a unique name - the developer must attach a suffix to happily
+	 create multiple instances of the same contract, but with different names.
+	 Example:
+	 final var contract = "TransferringContract";
+	 newContractCreate(contract).balance(10_000L).payingWith(ACCOUNT),
+	 newContractCreate(contract, to).balance(10_000L).payingWith(ACCOUNT)
 	 */
 	public static HapiContractCreate cloneContract(final String contractName, final String suffix, final Object... constructorParams) {
 		if (constructorParams.length > 0) {
@@ -404,14 +422,14 @@ public class TxnVerbs {
 		}
 	}
 
-	/**	This method enables the developer to create a file and deploy a contract with a single method call.
-		The execution of the method requires the spec context, therefore the invocation is not straightforward:
-		"withOpContext((spec, log) -> contractDeploy(contractName, spec).execFor(spec));"
-		It can be convenient when the developer deploys a nested contract, since both the creation of the outer and the inner contract
-		can happen in the given clause:
-		"withOpContext((spec, log) -> contractDeploy(INNER_CONTRACT, spec).execFor(spec)),
-		 withOpContext((spec, log) -> contractDeploy(OUTER_CONTRACT, spec, getNestedContractAddress(INNER_CONTRACT, spec)).execFor(spec))"
-	*/
+	/**This method enables the developer to create a file and deploy a contract with a single method call.
+	 The execution of the method requires the op context, therefore the invocation is not straightforward:
+	 "withOpContext((spec, log) -> contractDeploy(contractName, spec).execFor(spec));"
+	 It can be convenient when the developer deploys a nested contract, since both the creation of the outer and the inner contract
+	 can happen in the given clause:
+	 "withOpContext((spec, log) -> contractDeploy(INNER_CONTRACT, spec).execFor(spec)),
+	 withOpContext((spec, log) -> contractDeploy(OUTER_CONTRACT, spec, getNestedContractAddress(INNER_CONTRACT, spec)).execFor(spec))"
+	 */
 	public static HapiContractCreate contractDeploy(final String contractName,
 													final HapiApiSpec spec,
 													final Object... constructorParams) {
@@ -436,23 +454,5 @@ public class TxnVerbs {
 	/* SYSTEM */
 	public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
 		return new HapiFreeze().startingAt(freezeStartTime);
-	}
-
-	/**	This method enables the developer to create a file with the ability to chain methods, related to HapiFileCreate.
-	 The execution of the method requires the spec context, therefore the invocation is not straightforward.
-	 Example:
-	 withOpContext(
-	 		(spec, noOp) -> {
-	 				chainedFileCreate(contract, spec).hasPrecheck(TRANSACTION_OVERSIZE);
-	                chainedFileCreate(contract, spec).contents("").key(KEY_LIST);
-	 	}
-	 )
-	 */
-	public static HapiFileCreate enhancedFileCreate(final String contractName, final HapiApiSpec spec) {
-		final var path = getResourcePath(contractName, ".bin");
-		final var file = new HapiFileCreate(contractName);
-		sourcing(() -> file).execFor(spec);
-		sourcing(() -> updateLargeFile(GENESIS, contractName, extractByteCode(path))).execFor(spec);
-		return file;
 	}
 }

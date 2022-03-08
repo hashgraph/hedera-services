@@ -48,7 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
@@ -166,7 +166,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.withCustom(fixedHbarFee(4 * ONE_HBAR, feeCollector)),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("First!"))),
 						mintToken(tokenWithHbarFee, List.of(copyFromUtf8("Second!"))),
-						newFileCreate(theContract),
+						uploadInitCode(theContract),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -223,7 +223,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.tokenType(FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
-						newFileCreate(theContract),
+						uploadInitCode(theContract),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -284,7 +284,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
-						newFileCreate(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
+						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
 						newContractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
@@ -362,7 +362,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.between(TOKEN_TREASURY, ACCOUNT)),
 						cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN)
 								.between(TOKEN_TREASURY, ACCOUNT)),
-						newFileCreate(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
+						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
 						newContractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
@@ -495,7 +495,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.between(TOKEN_TREASURY, ACCOUNT)),
 						cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN)
 								.between(TOKEN_TREASURY, ACCOUNT)),
-						newFileCreate(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
+						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
 						newContractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
@@ -624,7 +624,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(hbarReceiverAccountID::set)
 								.balance(0L),
 						cryptoCreate(TOKEN_TREASURY),
-						newFileCreate(outerContract, innerContract),
+						uploadInitCode(outerContract, innerContract),
 						newContractCreate(innerContract),
 						withOpContext(
 								(spec, opLog) ->
@@ -688,7 +688,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
-						newFileCreate(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
+						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
 						newContractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
@@ -753,7 +753,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
-						newFileCreate(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
+						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
 						newContractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
@@ -818,7 +818,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.tokenType(TokenType.FUNGIBLE_COMMON)
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
-						newFileCreate(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
+						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
 						newContractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->

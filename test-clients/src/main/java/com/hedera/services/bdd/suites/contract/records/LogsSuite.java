@@ -36,7 +36,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newFileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
@@ -69,7 +69,7 @@ public class LogsSuite extends HapiApiSuite {
 		return defaultHapiSpec("log0Works")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "log0", 15).via("log0")
@@ -86,7 +86,7 @@ public class LogsSuite extends HapiApiSuite {
 		return defaultHapiSpec("log1Works")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "log1", 15).via("log1")
@@ -104,7 +104,7 @@ public class LogsSuite extends HapiApiSuite {
 		return defaultHapiSpec("log2Works")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "log2", 1, 2).via("log2")
@@ -124,7 +124,7 @@ public class LogsSuite extends HapiApiSuite {
 		return defaultHapiSpec("log3Works")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "log3", 1, 2, 3).via("log3")
@@ -145,7 +145,7 @@ public class LogsSuite extends HapiApiSuite {
 		return defaultHapiSpec("log4Works")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						newFileCreate(CONTRACT),
+						uploadInitCode(CONTRACT),
 						newContractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "log4", 1, 2, 3, 4).via("log4")
