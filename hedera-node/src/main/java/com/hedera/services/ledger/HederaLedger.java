@@ -294,8 +294,8 @@ public class HederaLedger {
 			throw new IllegalStateException("Ledger has no manageable token relationships!");
 		}
 
-		var tokenAssociationMetadata = (TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
-		return tokenAssociationMetadata.numAssociations() == tokenAssociationMetadata.numZeroBalances();
+		final var tokenAssociationMetadata = (TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
+		return tokenAssociationMetadata.hasNoTokenBalances();
 	}
 
 	public boolean isKnownTreasury(AccountID aId) {

@@ -23,8 +23,11 @@ package com.hedera.services.state.submerkle;
 import com.hedera.services.utils.EntityNumPair;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TokenAssociationMetadataTest {
 	final int numAssociations = 10;
@@ -37,7 +40,7 @@ class TokenAssociationMetadataTest {
 	void equalsWorks() {
 		final var other1 = new TokenAssociationMetadata(numAssociations+1, numZeroBalances, lastAssociation);
 		final var other2 = new TokenAssociationMetadata(numAssociations, numZeroBalances-1, lastAssociation);
-		final var other3 = new TokenAssociationMetadata(numAssociations, numZeroBalances, EntityNumPair.MISSING_NUM_PAIR);
+		final var other3 = new TokenAssociationMetadata(numAssociations, numZeroBalances, MISSING_NUM_PAIR);
 		final var identicalSubject = new TokenAssociationMetadata(numAssociations, numZeroBalances, lastAssociation);
 
 		assertEquals(subject, identicalSubject);
@@ -52,5 +55,14 @@ class TokenAssociationMetadataTest {
 				"numZeroBalances = " + numZeroBalances + ", lastAssociation = " + lastAssociation;
 
 		assertEquals(expected, subject.toString());
+	}
+
+	@Test
+	void validatesAllTokenBalancesIfZero() {
+		assertFalse(subject.hasNoTokenBalances());
+
+		final var other = new TokenAssociationMetadata(5, 5, MISSING_NUM_PAIR);
+
+		assertTrue(other.hasNoTokenBalances());
 	}
 }

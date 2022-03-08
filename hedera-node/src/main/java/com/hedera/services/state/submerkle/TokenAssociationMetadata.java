@@ -34,6 +34,10 @@ public record TokenAssociationMetadata(int numAssociations, int numZeroBalances,
 		Objects.requireNonNull(lastAssociation);
 	}
 
+	public boolean hasNoTokenBalances() {
+		return numAssociations == numZeroBalances;
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(numAssociations, numZeroBalances, lastAssociation);

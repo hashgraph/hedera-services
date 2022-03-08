@@ -23,8 +23,8 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -88,6 +89,8 @@ class CryptoDeleteTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		accessor = mock(PlatformTxnAccessor.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
+
+		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
 		subject = new CryptoDeleteTransitionLogic(ledger, sigImpactHistorian, txnCtx);
 	}
@@ -212,6 +215,19 @@ class CryptoDeleteTransitionLogicTest {
 		// when:
 		verify(ledger, never()).delete(target, payer);
 		verify(txnCtx).setStatus(ACCOUNT_IS_TREASURY);
+	}
+
+	@Test
+	void rejectsIfTargetHasNonZeroTokenBalances() {
+		givenValidTxnCtx();
+		given(ledger.allTokenBalancesVanish(target)).willReturn(false);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(ledger, never()).delete(target, payer);
+		verify(txnCtx).setStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 	}
 
 	@Test

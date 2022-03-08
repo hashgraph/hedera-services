@@ -66,15 +66,6 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	void ignoresNonZeroBalanceOfDeletedToken() {
-		given(frozenToken.isDeleted()).willReturn(true);
-		when(accountsLedger.get(misc, TOKEN_ASSOCIATION_METADATA)).thenReturn(
-				new TokenAssociationMetadata(10, 10, EntityNumPair.MISSING_NUM_PAIR));
-
-		assertTrue(subject.allTokenBalancesVanish(misc));
-	}
-
-	@Test
 	void throwsIfSubjectHasNoUsableTokenRelsLedger() {
 		subject.setTokenRelsLedger(null);
 
