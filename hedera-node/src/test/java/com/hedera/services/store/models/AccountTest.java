@@ -99,6 +99,15 @@ class AccountTest {
 	}
 
 	@Test
+	void cannotSetNegativeCounters() {
+		subject.setNumZeroBalances(-1);
+		subject.setNumAssociations(-2);
+
+		assertEquals(0, subject.getNumZeroBalances());
+		assertEquals(0, subject.getNumAssociations());
+	}
+
+	@Test
 	void canonicalAddressIsMirrorWithEmptyAlias() {
 		assertEquals(EntityNum.fromModel(subjectId).toEvmAddress(), subject.canonicalAddress());
 	}

@@ -168,6 +168,7 @@ public class Account {
 
 	public void setNumAssociations(final int numAssociations) {
 		if (numAssociations < 0) {
+			// not possible
 			this.numAssociations = 0;
 		} else {
 			this.numAssociations = numAssociations;
@@ -180,6 +181,7 @@ public class Account {
 
 	public void setNumZeroBalances(final int numZeroBalances) {
 		if (numZeroBalances < 0) {
+			// not possible
 			this.numZeroBalances = 0;
 		} else {
 			this.numZeroBalances = numZeroBalances;

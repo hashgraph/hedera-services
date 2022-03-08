@@ -318,6 +318,11 @@ public class Token {
 			removedUniqueTokens.add(new UniqueToken(id, serialNum, account.getId()));
 		}
 
+		if (newAccountBalance == 0) {
+			final var currentNumZeroBalances = account.getNumZeroBalances();
+			account.setNumZeroBalances(currentNumZeroBalances + 1);
+		}
+
 		account.setOwnedNfts(account.getOwnedNfts() - serialNumbers.size());
 		accountRel.setBalance(newAccountBalance);
 		setTotalSupply(newTotalSupply);
@@ -385,13 +390,15 @@ public class Token {
 					"Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
 		}
 		final var treasuryAccount = treasuryRel.getAccount();
-		if (treasuryRel.getBalance() == 0) {
-			treasuryAccount.setNumZeroBalances(treasuryAccount.getNumZeroBalances() - 1);
-		}
-
 		final long newTreasuryBalance = treasuryRel.getBalance() + amount;
 		validateTrue(newTreasuryBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
-
+		if (treasuryRel.getBalance() == 0 && amount > 0) {
+			// for mint op
+			treasuryAccount.setNumZeroBalances(treasuryAccount.getNumZeroBalances() - 1);
+		} else if (newTreasuryBalance == 0 && amount < 0) {
+			// for burn op
+			treasuryAccount.setNumZeroBalances(treasuryAccount.getNumZeroBalances() + 1);
+		}
 		setTotalSupply(newTotalSupply);
 		treasuryRel.setBalance(newTreasuryBalance);
 	}

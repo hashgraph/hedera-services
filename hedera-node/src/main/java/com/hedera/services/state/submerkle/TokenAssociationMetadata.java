@@ -43,7 +43,7 @@ public record TokenAssociationMetadata(int numAssociations, int numZeroBalances,
 	public String toString() {
 		return "numAssociations = " + numAssociations + ", " +
 				"numZeroBalances = " + numZeroBalances + ", " +
-				"lastAssociations = " + lastAssociation.toString();
+				"lastAssociation = " + lastAssociation.toString();
 	}
 
 	@Override

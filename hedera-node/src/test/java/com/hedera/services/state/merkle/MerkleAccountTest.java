@@ -47,6 +47,8 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutom
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -137,6 +139,15 @@ class MerkleAccountTest {
 	@AfterEach
 	void cleanup() {
 		MerkleAccount.serdes = new DomainSerdes();
+	}
+
+	@Test
+	void forgetsTokensChildAsExpected() {
+		assertNotNull(subject.tokens());
+
+		subject.forgetAssociatedTokens();
+
+		assertNull(subject.tokens());
 	}
 
 	@Test

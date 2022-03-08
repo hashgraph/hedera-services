@@ -677,8 +677,8 @@ class HederaTokenStoreTest {
 	void changingOwnerAutoAssociatesCounterpartyWithOpenSlots() {
 		final long startSponsorNfts = 5;
 		final long startCounterpartyNfts = 8;
-		final long startSponsorANfts = 4;
-		final long startCounterpartyANfts = 1;
+		final long startSponsorANfts = 1;
+		final long startCounterpartyANfts = 0;
 
 		given(accountsLedger.get(counterparty, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(100);
 		given(accountsLedger.get(counterparty, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(0);
@@ -696,6 +696,8 @@ class HederaTokenStoreTest {
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
 		assertEquals(OK, status);
+		verify(accountsLedger).set(sponsor, TOKEN_ASSOCIATION_METADATA,
+				new TokenAssociationMetadata(associatedTokensCount, numZeroBalances + 1, MISSING_NUM_PAIR));
 	}
 
 	@Test
@@ -1512,6 +1514,7 @@ class HederaTokenStoreTest {
 
 	@Test
 	void performsValidAdjustment() {
+		given(tokenRelsLedger.get(treasuryMisc, TOKEN_BALANCE)).willReturn(1L);
 		given(accountsLedger.get(treasury, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
 		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
 		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
@@ -1519,9 +1522,9 @@ class HederaTokenStoreTest {
 
 		subject.adjustBalance(treasury, misc, -1);
 
-		verify(tokenRelsLedger).set(treasuryMisc, TOKEN_BALANCE, treasuryBalance - 1);
+		verify(tokenRelsLedger).set(treasuryMisc, TOKEN_BALANCE, 0L);
 		verify(accountsLedger).set(treasury, TOKEN_ASSOCIATION_METADATA, new TokenAssociationMetadata(
-				associatedTokensCount, numZeroBalances, MISSING_NUM_PAIR));
+				associatedTokensCount, numZeroBalances + 1, MISSING_NUM_PAIR));
 	}
 
 	@Test
