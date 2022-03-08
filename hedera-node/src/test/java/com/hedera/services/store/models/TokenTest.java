@@ -641,7 +641,7 @@ class TokenTest {
 		final var desired = "Token{id=1.2.3, type=null, deleted=false, autoRemoved=false, " +
 				"treasury=Account{id=0.0.0, expiry=0, balance=0, deleted=false, " +
 				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=, cryptoAllowances=null, " +
-				"fungibleTokenAllowances=null, nftAllowances=null, numAssociations=0, numZeroBalances=0," +
+				"fungibleTokenAllowances=null, nftAllowances=null, numAssociations=2, numZeroBalances=1," +
 				" lastAssociatedToken=null}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, " +
 				"frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, pauseKey=<N/A>, paused=false}";
 
