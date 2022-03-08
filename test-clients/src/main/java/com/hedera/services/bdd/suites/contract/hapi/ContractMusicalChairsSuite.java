@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -32,21 +31,21 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MUSICAL_CHAIRS_SIT_DOWN;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 public class ContractMusicalChairsSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractMusicalChairsSuite.class);
@@ -67,7 +66,8 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 
 	private HapiApiSpec playGame() {
 		final var dj = "dj";
-		final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).collect(Collectors.toList());
+		final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();
+		final var contract = "MusicalChairs";
 
 		List<HapiSpecOperation> given = new ArrayList<>();
 		List<HapiSpecOperation> when = new ArrayList<>();
@@ -76,14 +76,17 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 		////// Create contract //////
 		given.add(UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"));
 		given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));
-		given.add(fileCreate("bytecode").path(ContractResources.MUSICAL_CHAIRS_CONTRACT));
-		given.add(withOpContext((spec, opLog) ->
-				allRunFor(
-						spec,
-						contractCreate("Musical Chairs", ContractResources.MUSICAL_CHAIRS_CONSTRUCTOR,
-								(Object) asAddress(spec.registry().getAccountID(dj)))
-								.payingWith(dj)
-								.bytecode("bytecode"))));
+		given.add(uploadInitCode(contract));
+		given.add(withOpContext(
+						(spec, opLog) ->
+								allRunFor(
+										spec,
+										newContractCreate(contract, (Object) asAddress(spec.registry().getAccountID(dj))
+										)
+												.payingWith(dj)
+								)
+				)
+		);
 
 		////// Add the players //////
 		players.stream()
@@ -91,34 +94,35 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 				.forEach(given::add);
 
 		////// Start the music! //////
-		when.add(contractCall("Musical Chairs",
-				ContractResources.MUSICAL_CHAIRS_START_MUSIC)
-				.payingWith("dj"));
+		when.add(contractCall(contract, "startMusic").payingWith("dj"));
 
 		////// 100 "random" seats taken //////
 		new Random(0x1337)
 				.ints(100, 0, 29)
 				.forEach(i ->
-						when.add(contractCall("Musical Chairs",
-								MUSICAL_CHAIRS_SIT_DOWN)
+						when.add(contractCall(contract,
+								"sitDown")
 								.payingWith(players.get(i))
 								.hasAnyStatusAtAll())); // sometimes a player sits too soon, so don't fail on reverts
 
 
 		////// Stop the music! //////
-		then.add(contractCall("Musical Chairs",
-				ContractResources.MUSICAL_CHAIRS_STOP_MUSIC)
-				.payingWith("dj"));
+		then.add(contractCall(contract, "stopMusic").payingWith(dj));
 
 		////// And the winner is..... //////
-		then.add(withOpContext((spec, opLog) ->
-				allRunFor(
-						spec,
-						contractCallLocal("Musical Chairs",
-								ContractResources.MUSICAL_CHAIRS_WHO_IS_ON_THE_BUBBLE)
-								.has(resultWith().resultThruAbi(ContractResources.MUSICAL_CHAIRS_WHO_IS_ON_THE_BUBBLE,
-										isLiteralResult(new Object[] { asAddress(
-												spec.registry().getAccountID("Player13")) }))))));
+		then.add(withOpContext(
+						(spec, opLog) ->
+								allRunFor(
+										spec,
+										contractCallLocal(contract, "whoIsOnTheBubble")
+												.has(resultWith()
+														.resultThruAbi(getABIFor(FunctionType.FUNCTION, "whoIsOnTheBubble", contract),
+																isLiteralResult(new Object[]{asAddress(
+																		spec.registry().getAccountID("Player13"))})))
+								)
+				)
+		)
+		;
 		then.add(UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties"));
 
 		return defaultHapiSpec("playGame")
