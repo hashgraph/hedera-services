@@ -1,4 +1,4 @@
-package com.hedera.services.bdd.suites.contract;
+package com.hedera.services.bdd.suites.contract.hapi;
 
 /*-
  * ‌
@@ -35,6 +35,7 @@ import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
@@ -94,7 +95,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -120,7 +120,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						createEmptyConstructor(),
 						insufficientPayerBalanceUponCreation(),
@@ -273,11 +273,11 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCall("fuse", ContractResources.LIGHT_ABI).via("lightTxn")
 				).then(
 						sourcing(() -> getContractInfo("0.0." + firstStickId.get())
-								.hasCostAnswerPrecheck(CONTRACT_DELETED)),
+								.has(contractWith().isDeleted())),
 						sourcing(() -> getContractInfo("0.0." + secondStickId.get())
-								.hasCostAnswerPrecheck(CONTRACT_DELETED)),
+								.has(contractWith().isDeleted())),
 						sourcing(() -> getContractInfo("0.0." + thirdStickId.get())
-								.hasCostAnswerPrecheck(CONTRACT_DELETED))
+								.has(contractWith().isDeleted()))
 				);
 	}
 
@@ -736,10 +736,22 @@ public class ContractCreateSuite extends HapiApiSuite {
 							final var record = recordOp.getResponseRecord();
 							final var consensusSecond = record.getConsensusTimestamp().getSeconds();
 							final var logs = record.getContractCallResult().getLogInfoList();
-							assertEquals(1, logs.size());
+
+							assertEquals(2, logs.size());
+							final var blockTimeLogData = logs.get(0).getData().toByteArray();
 							final var blockTimestamp = Longs.fromByteArray(
-									Arrays.copyOfRange(logs.get(0).getData().toByteArray(), 24, 32));
-							assertEquals(consensusSecond, blockTimestamp);
+									Arrays.copyOfRange(blockTimeLogData, 24, 32));
+							assertEquals(consensusSecond, blockTimestamp,
+									"Wrong block time");
+
+							final var blockHashLogData = logs.get(1).getData().toByteArray();
+							final var prevBlockNumber = Longs.fromByteArray(
+									Arrays.copyOfRange(blockHashLogData, 24, 32));
+							assertEquals(consensusSecond - 1, prevBlockNumber,
+									"Wrong previous block number");
+							final var blockHash = Bytes32.wrap(
+									Arrays.copyOfRange(blockHashLogData, 32, 64));
+							assertEquals(Bytes32.ZERO, blockHash);
 						})
 				);
 	}

@@ -41,7 +41,7 @@ public class Issue2143Spec extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[]{
 						account55ControlCanUpdatePropertiesAndPermissions(),

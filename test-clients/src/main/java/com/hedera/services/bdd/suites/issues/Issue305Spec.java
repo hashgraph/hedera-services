@@ -49,7 +49,7 @@ public class Issue305Spec extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return IntStream.range(0, 5).mapToObj(ignore -> createDeleteInSameRoundWorks()).collect(toList());
 	}
 

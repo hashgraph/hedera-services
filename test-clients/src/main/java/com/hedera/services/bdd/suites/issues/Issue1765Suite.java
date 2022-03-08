@@ -55,7 +55,7 @@ public class Issue1765Suite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 //				recordOfInvalidFileAppendSanityChecks(),
 //				recordOfInvalidAccountUpdateSanityChecks(),

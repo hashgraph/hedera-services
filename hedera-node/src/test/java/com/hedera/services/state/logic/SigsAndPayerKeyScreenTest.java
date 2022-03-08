@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
-class SignatureScreenTest {
+class SigsAndPayerKeyScreenTest {
 	@Mock
 	private Rationalization rationalization;
 	@Mock
@@ -66,11 +66,11 @@ class SignatureScreenTest {
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
-	private SignatureScreen subject;
+	private SigsAndPayerKeyScreen subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new SignatureScreen(
+		subject = new SigsAndPayerKeyScreen(
 				rationalization, payerSigValidity, txnCtx, speedometers, validityTest);
 	}
 

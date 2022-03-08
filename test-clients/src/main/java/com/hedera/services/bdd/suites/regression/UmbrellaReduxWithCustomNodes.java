@@ -90,7 +90,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
         umbrellaReduxWithCustomNodes.runSuiteSync();
     }
     @Override
-    protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[]{
                         UmbrellaReduxWithCustomNodes(),

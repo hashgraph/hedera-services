@@ -96,6 +96,8 @@ class ApproveAllowanceChecksTest {
 	@Mock
 	private Account owner;
 	@Mock
+	private Account treasury;
+	@Mock
 	private Account payerAccount;
 	@Mock
 	private MerkleUniqueToken token;
@@ -468,6 +470,33 @@ class ApproveAllowanceChecksTest {
 
 		var validity = subject.validateSerialNums(serials, owner, token2Model);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
+	}
+
+	@Test
+	void approvesAllowanceFromTreasury(){
+		final var serials = List.of(1L);
+		token2Model.setTreasury(treasury);
+		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1))).willReturn(token);
+
+		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
+		given(token.getOwner()).willReturn(EntityId.MISSING_ENTITY_ID);
+
+		var validity = subject.validateSerialNums(serials, treasury, token2Model);
+		assertEquals(OK, validity);
+	}
+
+	@Test
+	void rejectsAllowanceFromInvalidTreasury(){
+		final var serials = List.of(1L);
+		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1))).willReturn(token);
+
+		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
+		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1)).getOwner()).willReturn(
+				EntityId.fromGrpcAccountId(spender1));
+		given(treasury.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+
+		var validity = subject.validateSerialNums(serials, treasury, token2Model);
+		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
 
 	@Test

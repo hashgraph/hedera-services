@@ -88,7 +88,7 @@ public class SysFileUploadSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		uploadData = appropriateContents(sysFileId);
 		return isDryRun ? Collections.emptyList() : List.of(new HapiApiSpec[] { uploadSysFiles(), });
 	}
