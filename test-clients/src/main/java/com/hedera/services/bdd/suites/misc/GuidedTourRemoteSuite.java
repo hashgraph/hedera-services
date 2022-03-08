@@ -93,7 +93,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
 						contractCreate("balanceLookup").bytecode("bytecode")
 				).when().then(
-						/* This contract (c.f. src/main/resource/solidity/BalanceLookup.sol) assumes
+						/* This contract (c.f. src/main/resource/contract/contracts/BalanceLookup/BalanceLookup.sol) assumes
 						   a shard and realm of 0; accepts just the sequence number of an account. */
 						contractCallLocal(
 								"balanceLookup",
