@@ -167,15 +167,23 @@ public class Account {
 	}
 
 	public void setNumAssociations(final int numAssociations) {
-		this.numAssociations = numAssociations;
+		if (numAssociations < 0) {
+			this.numAssociations = 0;
+		} else {
+			this.numAssociations = numAssociations;
+		}
 	}
 
 	public int getNumZeroBalances() {
 		return numZeroBalances;
 	}
 
-	public void setNumZeroBalances(int numZeroBalances) {
-		this.numZeroBalances = numZeroBalances;
+	public void setNumZeroBalances(final int numZeroBalances) {
+		if (numZeroBalances < 0) {
+			this.numZeroBalances = 0;
+		} else {
+			this.numZeroBalances = numZeroBalances;
+		}
 	}
 
 	public List<TokenRelationship> associateWith(

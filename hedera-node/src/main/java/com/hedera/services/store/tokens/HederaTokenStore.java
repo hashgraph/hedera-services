@@ -418,10 +418,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
 		final var fromThisNftsOwned = (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
 		final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
-		final var fromTokenAssociationMetaData = (TokenAssociationMetadata) accountsLedger.get(from, TOKEN_ASSOCIATION_METADATA);
-		final var toTokenAssociationMetaData = (TokenAssociationMetadata) accountsLedger.get(to, TOKEN_ASSOCIATION_METADATA);
+		final var toThisNftsOwned = (long) tokenRelsLedger.get(toRel, TOKEN_BALANCE);
+		final var fromTokenAssociationMetaData =
+				(TokenAssociationMetadata) accountsLedger.get(from, TOKEN_ASSOCIATION_METADATA);
+		final var toTokenAssociationMetaData =
+				(TokenAssociationMetadata) accountsLedger.get(to, TOKEN_ASSOCIATION_METADATA);
 
-		final var toThisNftsOwned = (long) tokenRelsLedger.get(asTokenRel(to, nftType), TOKEN_BALANCE);
 		final var isTreasuryReturn = tokenTreasury.equals(to);
 		if (isTreasuryReturn) {
 			nftsLedger.set(nftId, OWNER, EntityId.MISSING_ENTITY_ID);
@@ -536,11 +538,15 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		tokenRelsLedger.set(relationship, TOKEN_BALANCE, newBalance);
 		final var tokenAssociationMetadata = (TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
 		int updatedNumZeroBalance = tokenAssociationMetadata.numZeroBalances();
-		if (newBalance == 0) {
+
+		// If the original balance is zero, then the receiving account's numZeroBalances has to be decreased
+		// and if the newBalance is zero, then the sending account's numZeroBalances has to be increased
+		if (newBalance == 0 && adjustment < 0) {
 			updatedNumZeroBalance++;
-		} else if (balance == 0) {
+		} else if (balance == 0 && adjustment > 0) {
 			updatedNumZeroBalance--;
 		}
+
 		accountsLedger.set(aId, TOKEN_ASSOCIATION_METADATA,
 				new TokenAssociationMetadata(
 						tokenAssociationMetadata.numAssociations(),

@@ -278,6 +278,11 @@ public class Token {
 		final var newTotalSupply = totalSupply - amount;
 		final var newAccBalance = accountRel.getBalance() - amount;
 
+		if (newAccBalance == 0) {
+			final var currentNumZeroBalances = accountRel.getAccount().getNumZeroBalances();
+			accountRel.getAccount().setNumZeroBalances(currentNumZeroBalances + 1);
+		}
+
 		accountRel.setBalance(newAccBalance);
 		setTotalSupply(newTotalSupply);
 	}
@@ -378,6 +383,10 @@ public class Token {
 		if (supplyType == TokenSupplyType.FINITE) {
 			validateTrue(maxSupply >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED,
 					"Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
+		}
+		final var treasuryAccount = treasuryRel.getAccount();
+		if (treasuryRel.getBalance() == 0) {
+			treasuryAccount.setNumZeroBalances(treasuryAccount.getNumZeroBalances() - 1);
 		}
 
 		final long newTreasuryBalance = treasuryRel.getBalance() + amount;
