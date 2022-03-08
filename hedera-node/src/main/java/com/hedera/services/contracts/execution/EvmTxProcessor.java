@@ -25,12 +25,15 @@ package com.hedera.services.contracts.execution;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
@@ -57,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.function.Function;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -70,6 +74,9 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
  * method that handles the end-to-end execution of a EVM transaction.
  */
 abstract class EvmTxProcessor {
+	static final Hash UNAVAILABLE_BLOCK_HASH = Hash.fromHexStringLenient("0x");
+	static final Function<Long, Hash> ALWAYS_UNAVAILABLE_BLOCK_HASH = n -> UNAVAILABLE_BLOCK_HASH;
+
 	private static final int MAX_STACK_SIZE = 1024;
 	private static final int MAX_CODE_SIZE = 0x6000;
 
@@ -171,7 +178,7 @@ abstract class EvmTxProcessor {
 		final Wei upfrontCost = gasCost.add(value);
 		final Gas intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
-		final var updater = worldState.updater();
+		final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
 		final var senderEvmAddress = sender.getId().asEvmAddress();
 		final var senderAccount = updater.getOrCreateSenderAccount(senderEvmAddress);
 		final MutableAccount mutableSender = senderAccount.getMutable();
@@ -209,7 +216,7 @@ abstract class EvmTxProcessor {
 						})
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
-						.blockHashLookup(h -> null)
+						.blockHashLookup(ALWAYS_UNAVAILABLE_BLOCK_HASH)
 						.contextVariables(Map.of(
 								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
 								"HederaFunctionality", getFunctionType(),
@@ -224,7 +231,11 @@ abstract class EvmTxProcessor {
 
 		var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
 		final Gas sbhRefund = updater.getSbhRefund();
-		if (!isStatic) {
+		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+
+		if (isStatic) {
+			stateChanges = Map.of();
+		} else {
 			// return gas price to accounts
 			final Gas refunded = Gas.of(gasLimit).minus(gasUsedByTransaction).plus(sbhRefund);
 			final Wei refundedWei = refunded.priceFor(Wei.of(gasPrice));
@@ -238,6 +249,12 @@ abstract class EvmTxProcessor {
 			mutableCoinbase.incrementBalance(coinbaseFee.priceFor(Wei.of(gasPrice)));
 			initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
+			if (dynamicProperties.shouldEnableTraceability()) {
+				stateChanges = updater.getFinalStateChanges();
+			} else {
+				stateChanges = Map.of();
+			}
+
 			/* Commit top level Updater */
 			updater.commit();
 		}
@@ -250,14 +267,18 @@ abstract class EvmTxProcessor {
 					sbhRefund.toLong(),
 					gasPrice,
 					initialFrame.getOutputData(),
-					mirrorReceiver);
+					mirrorReceiver,
+					stateChanges,
+					dynamicProperties.shouldEnableTraceability());
 		} else {
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction.toLong(),
 					sbhRefund.toLong(),
 					gasPrice,
 					initialFrame.getRevertReason(),
-					initialFrame.getExceptionalHaltReason());
+					initialFrame.getExceptionalHaltReason(),
+					stateChanges,
+					dynamicProperties.shouldEnableTraceability());
 		}
 	}
 

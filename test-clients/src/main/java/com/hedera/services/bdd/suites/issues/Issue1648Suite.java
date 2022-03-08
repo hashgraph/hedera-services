@@ -42,7 +42,7 @@ public class Issue1648Suite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				recordStorageFeeIncreasesWithNumTransfers()
 		);

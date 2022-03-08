@@ -81,6 +81,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.expandSigsFromLastSignedState());
 		assertTrue(subject.shouldExportPrecompileResults());
 		assertFalse(subject.isCreate2Enabled());
+		assertTrue(subject.isRedirectTokenCallsEnabled());
 	}
 
 	@Test
@@ -200,6 +201,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.expandSigsFromLastSignedState());
 		assertFalse(subject.shouldExportPrecompileResults());
 		assertTrue(subject.isCreate2Enabled());
+		assertFalse(subject.isRedirectTokenCallsEnabled());
 	}
 
 	@Test
@@ -353,6 +355,9 @@ class GlobalDynamicPropertiesTest {
 				.willReturn((i + 57) % 2 == 0);
 		given(properties.getBooleanProperty("contracts.allowCreate2"))
 				.willReturn((i + 58) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.redirectTokenCalls")).willReturn((i + 59) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.enableTraceability"))
+				.willReturn((i + 59) % 2 == 0);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

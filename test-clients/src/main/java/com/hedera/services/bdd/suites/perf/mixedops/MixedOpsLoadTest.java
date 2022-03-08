@@ -101,7 +101,7 @@ public class MixedOpsLoadTest extends LoadTest {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				runMixedOps()
 		);

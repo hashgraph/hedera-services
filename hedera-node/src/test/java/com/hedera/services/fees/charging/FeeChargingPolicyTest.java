@@ -64,6 +64,13 @@ class FeeChargingPolicyTest {
 	}
 
 	@Test
+	void delegatesRefund() {
+		subject.refundPayerServiceFee();
+		
+		verify(narratedCharging).refundPayerServiceFee();
+	}
+
+	@Test
 	void chargesNonServicePenaltyForUnableToCoverTotal() {
 		given(narratedCharging.isPayerWillingToCoverNetworkFee()).willReturn(true);
 		given(narratedCharging.canPayerAffordNetworkFee()).willReturn(true);

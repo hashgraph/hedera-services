@@ -57,7 +57,7 @@ public class MixedFileOpsLoadTest extends LoadTest {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				runMixedFileOps()
 		);

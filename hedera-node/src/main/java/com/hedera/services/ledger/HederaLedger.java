@@ -296,26 +296,6 @@ public class HederaLedger {
 
 		var tokenAssociationMetadata = (TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
 		return tokenAssociationMetadata.numAssociations() == tokenAssociationMetadata.numZeroBalances();
-
-//		var currKey = (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
-//		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
-//		// get All the tokenIds associated by traversing the linkedList
-//		while (!currKey.equals(MISSING_NUM_PAIR)) {
-//			listOfAssociatedTokens.add(currKey.asAccountTokenRel().getRight());
-//			currKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), NEXT_KEY);
-//		}
-//
-//		for (TokenID tId : listOfAssociatedTokens) {
-//			if (tokenStore.get(tId).isDeleted()) {
-//				continue;
-//			}
-//			var relationship = asTokenRel(aId, tId);
-//			var balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-//			if (balance > 0) {
-//				return false;
-//			}
-//		}
-//		return true;
 	}
 
 	public boolean isKnownTreasury(AccountID aId) {

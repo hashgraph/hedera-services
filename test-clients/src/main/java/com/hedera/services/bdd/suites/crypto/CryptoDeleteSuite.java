@@ -48,7 +48,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
 public class CryptoDeleteSuite extends HapiApiSuite {
@@ -65,10 +64,10 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 				fundsTransferOnDelete(),
-				cannotDeleteAccountsWithNonzeroTokenBalances(),
+				canDeleteAccountsWithNonzeroTokenBalances(),
 				cannotDeleteAlreadyDeletedAccount(),
 				cannotDeleteAccountWithSameBeneficiary(),
 				cannotDeleteTreasuryAccount(),
@@ -126,8 +125,8 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 										tinyBarsFromTo("toBeDeleted", "transferAccount", B)))));
 	}
 
-	private HapiApiSpec cannotDeleteAccountsWithNonzeroTokenBalances() {
-		return defaultHapiSpec("CannotDeleteAccountsWithNonzeroTokenBalances")
+	private HapiApiSpec canDeleteAccountsWithNonzeroTokenBalances() {
+		return defaultHapiSpec("CanDeleteAccountsWithNonzeroTokenBalances")
 				.given(
 						cryptoCreate("toBeDeleted"),
 						cryptoCreate("transferAccount"),
@@ -141,8 +140,10 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 								.between(TOKEN_TREASURY, "toBeDeleted"))
 				).then(
 						cryptoDelete("toBeDeleted")
+								.transfer("transferAccount"),
+						cryptoDelete("toBeDeleted")
 								.transfer("transferAccount")
-								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
+								.hasKnownStatus(ACCOUNT_DELETED)
 				);
 	}
 

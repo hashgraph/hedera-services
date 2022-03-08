@@ -60,6 +60,10 @@ public class Utils {
 		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getAccountNum());
 	}
 
+	public static byte[] asAddress(final ContractID id) {
+		return asSolidityAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+	}
+
 	public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
 		final byte[] solidityAddress = new byte[20];
 
