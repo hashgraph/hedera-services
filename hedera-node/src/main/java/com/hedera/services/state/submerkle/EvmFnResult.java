@@ -35,13 +35,16 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.hyperledger.besu.evm.log.Log;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -49,9 +52,8 @@ import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.swirlds.common.CommonUtils.hex;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
-public class SolidityFnResult implements SelfSerializable {
+public class EvmFnResult implements SelfSerializable {
 	private static final byte[] MISSING_BYTES = new byte[0];
-
 
 	static final int PRE_RELEASE_0230_VERSION = 1;
 	static final int RELEASE_0230_VERSION = 2;
@@ -74,21 +76,65 @@ public class SolidityFnResult implements SelfSerializable {
 	private byte[] evmAddress = MISSING_BYTES;
 	private String error;
 	private EntityId contractId;
-	private List<EntityId> createdContractIds = new ArrayList<>();
-	private List<SolidityLog> logs = new ArrayList<>();
-	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>();
+	private List<EntityId> createdContractIds = Collections.emptyList();
+	private List<EvmLog> logs = Collections.emptyList();
+	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = Collections.emptyMap();
 
-	public SolidityFnResult() {
+	public EvmFnResult() {
 		/* RuntimeConstructable */
 	}
 
-	public SolidityFnResult(
+	public static EvmFnResult traceableSuccess(
+			final List<Log> logs,
+			final long gasUsed,
+			final long sbhRefund,
+			final long gasPrice,
+			final Bytes output,
+			final Address recipient,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
+	) {
+		throw new AssertionError("Not implemented");
+	}
+
+	public static EvmFnResult untraceableSuccess(
+			final List<Log> logs,
+			final long gasUsed,
+			final long sbhRefund,
+			final long gasPrice,
+			final Bytes output,
+			final Address recipient
+	) {
+		throw new AssertionError("Not implemented");
+	}
+
+	public static EvmFnResult traceableFailure(
+			final long gasUsed,
+			final long sbhRefund,
+			final long gasPrice,
+			final Optional<Bytes> revertReason,
+			final Optional<ExceptionalHaltReason> haltReason,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
+	) {
+		throw new AssertionError("Not implemented");
+	}
+
+	public static EvmFnResult untraceableFailure(
+			final long gasUsed,
+			final long sbhRefund,
+			final long gasPrice,
+			final Optional<Bytes> revertReason,
+			final Optional<ExceptionalHaltReason> haltReason
+	) {
+		throw new AssertionError("Not implemented");
+	}
+
+	public EvmFnResult(
 			EntityId contractId,
 			byte[] result,
 			String error,
 			byte[] bloom,
 			long gasUsed,
-			List<SolidityLog> logs,
+			List<EvmLog> logs,
 			List<EntityId> createdContractIds,
 			byte[] evmAddress,
 			Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
@@ -118,11 +164,11 @@ public class SolidityFnResult implements SelfSerializable {
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		gasUsed = in.readLong();
-		bloom = in.readByteArray(SolidityLog.MAX_BLOOM_BYTES);
+		bloom = in.readByteArray(EvmLog.MAX_BLOOM_BYTES);
 		result = in.readByteArray(MAX_RESULT_BYTES);
 		error = serdes.readNullableString(in, MAX_ERROR_BYTES);
 		contractId = serdes.readNullableSerializable(in);
-		logs = in.readSerializableList(MAX_LOGS, true, SolidityLog::new);
+		logs = in.readSerializableList(MAX_LOGS, true, EvmLog::new);
 		createdContractIds = in.readSerializableList(MAX_CREATED_IDS, true, EntityId::new);
 		if (version >= RELEASE_0230_VERSION) {
 			evmAddress = in.readByteArray(MAX_ADDRESS_BYTES);
@@ -182,10 +228,10 @@ public class SolidityFnResult implements SelfSerializable {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || SolidityFnResult.class != o.getClass()) {
+		if (o == null || EvmFnResult.class != o.getClass()) {
 			return false;
 		}
-		var that = (SolidityFnResult) o;
+		var that = (EvmFnResult) o;
 		return gasUsed == that.gasUsed &&
 				Objects.equals(contractId, that.contractId) &&
 				Arrays.equals(result, that.result) &&
@@ -245,7 +291,7 @@ public class SolidityFnResult implements SelfSerializable {
 		return gasUsed;
 	}
 
-	public List<SolidityLog> getLogs() {
+	public List<EvmLog> getLogs() {
 		return logs;
 	}
 
@@ -270,14 +316,14 @@ public class SolidityFnResult implements SelfSerializable {
 	}
 
 	/* --- Helpers --- */
-	public static SolidityFnResult fromGrpc(final ContractFunctionResult that) {
-		return new SolidityFnResult(
+	public static EvmFnResult fromGrpc(final ContractFunctionResult that) {
+		return new EvmFnResult(
 				that.hasContractID() ? EntityId.fromGrpcContractId(that.getContractID()) : null,
 				that.getContractCallResult().isEmpty() ? MISSING_BYTES : that.getContractCallResult().toByteArray(),
 				!that.getContractCallResult().isEmpty() ? that.getErrorMessage() : null,
 				that.getBloom().isEmpty() ? MISSING_BYTES : that.getBloom().toByteArray(),
 				that.getGasUsed(),
-				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).toList(),
+				that.getLogInfoList().stream().map(EvmLog::fromGrpc).toList(),
 				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).toList(),
 				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : MISSING_BYTES,
 				that.getStateChangesList().stream().collect(Collectors.toMap(
@@ -308,7 +354,7 @@ public class SolidityFnResult implements SelfSerializable {
 			grpc.setContractID(contractId.toGrpcContractId());
 		}
 		if (isNotEmpty(logs)) {
-			grpc.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).toList());
+			grpc.addAllLogInfo(logs.stream().map(EvmLog::toGrpc).toList());
 		}
 		if (isNotEmpty(createdContractIds)) {
 			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).toList());

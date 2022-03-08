@@ -35,7 +35,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -353,7 +353,7 @@ class BasicTransactionContextTest {
 		record = subject.recordSoFar().build();
 
 		// expect:
-		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCallResult());
+		assertEquals(EvmFnResult.fromGrpc(result), record.getContractCallResult());
 	}
 
 	@Test
@@ -368,7 +368,7 @@ class BasicTransactionContextTest {
 		record = subject.recordSoFar().build();
 
 		// expect:
-		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCreateResult());
+		assertEquals(EvmFnResult.fromGrpc(result), record.getContractCreateResult());
 	}
 
 	@Test

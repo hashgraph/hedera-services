@@ -33,11 +33,15 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogTopic;
+import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +60,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-class SolidityFnResultTest {
+class EvmFnResultTest {
 	private static final long gasUsed = 1_234;
 	private static final EntityNum cNum = EntityNum.fromLong(1_234_567_890L);
 	private static final Address realContract = cNum.toEvmAddress();
@@ -73,7 +77,7 @@ class SolidityFnResultTest {
 	private static final List<EntityId> createdContractIds = List.of(
 			new EntityId(2L, 3L, 4L),
 			new EntityId(3L, 4L, 5L));
-	private final List<SolidityLog> logs = List.of(logFrom(0), logFrom(1));
+	private final List<EvmLog> logs = List.of(logFrom(0), logFrom(1));
 	private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
 			new TreeMap<>(Map.of(Address.fromHexString("0x6"),
 					Map.of(Bytes.of(7), Pair.of(Bytes.of(8), null)),
@@ -84,13 +88,13 @@ class SolidityFnResultTest {
 					Map.of(Bytes.of(slot), Pair.of(Bytes.of(left), Bytes.of(right))));
 
 	private DomainSerdes serdes;
-	private SolidityFnResult subject;
+	private EvmFnResult subject;
 
 	@BeforeEach
 	void setup() {
 		serdes = mock(DomainSerdes.class);
 
-		subject = new SolidityFnResult(
+		subject = new EvmFnResult(
 				contractId,
 				result,
 				error,
@@ -101,12 +105,12 @@ class SolidityFnResultTest {
 				evmAddress,
 				stateChanges);
 
-		SolidityFnResult.serdes = serdes;
+		EvmFnResult.serdes = serdes;
 	}
 
 	@AfterEach
 	void cleanup() {
-		SolidityFnResult.serdes = new DomainSerdes();
+		EvmFnResult.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -124,9 +128,29 @@ class SolidityFnResultTest {
 	}
 
 	@Test
+	void besuParsingWorksForTraceableSuccess() {
+		final var aLog = besuLog(123L, data[0], topics);
+		final var bLog = besuLog(456L, data[1], otherTopics);
+		final var logs = List.of(aLog, bLog);
+		final var realBloom = bloomForAll(logs);
+
+		subject = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				realBloom,
+				gasUsed,
+				null,
+//				List.of(EvmLog.fromBesu(aLog), ,
+				createdContractIds,
+				evmAddress,
+				stateChanges);
+	}
+
+	@Test
 	void objectContractWorks() {
 		final var one = subject;
-		final var two = new SolidityFnResult(
+		final var two = new EvmFnResult(
 				contractId,
 				otherResult,
 				error,
@@ -136,7 +160,7 @@ class SolidityFnResultTest {
 				createdContractIds,
 				evmAddress,
 				stateChanges);
-		final var three = new SolidityFnResult(
+		final var three = new EvmFnResult(
 				contractId,
 				result,
 				error,
@@ -146,7 +170,7 @@ class SolidityFnResultTest {
 				createdContractIds,
 				evmAddress,
 				stateChanges);
-		final var four = new SolidityFnResult(
+		final var four = new EvmFnResult(
 				contractId,
 				result,
 				error,
@@ -170,7 +194,7 @@ class SolidityFnResultTest {
 	@Test
 	void beanWorks() {
 		assertEquals(
-				new SolidityFnResult(
+				new EvmFnResult(
 						subject.getContractId(),
 						subject.getResult(),
 						subject.getError(),
@@ -210,7 +234,7 @@ class SolidityFnResultTest {
 
 	@Test
 	void factoryWorks() {
-		subject = new SolidityFnResult(
+		subject = new EvmFnResult(
 				contractId,
 				result,
 				error,
@@ -228,7 +252,7 @@ class SolidityFnResultTest {
 				.setErrorMessage(error)
 				.setContractID(contractId.toGrpcContractId())
 				.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()))
-				.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).collect(toList()))
+				.addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
 				.addStateChanges(ContractStateChange.newBuilder()
 						.setContractID(cNum.toGrpcContractID())
 						.addStorageChanges(StorageChange.newBuilder()
@@ -240,7 +264,7 @@ class SolidityFnResultTest {
 				.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
 				.build();
 
-		assertEquals(subject, SolidityFnResult.fromGrpc(grpc));
+		assertEquals(subject, EvmFnResult.fromGrpc(grpc));
 	}
 
 	@Test
@@ -253,7 +277,7 @@ class SolidityFnResultTest {
 				.setErrorMessage(error)
 				.setContractID(contractId.toGrpcContractId())
 				.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).collect(toList()))
-				.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).collect(toList()))
+				.addAllLogInfo(logs.stream().map(EvmLog::toGrpc).collect(toList()))
 				.addStateChanges(actual.getStateChanges(0))
 				.addStateChanges(actual.getStateChanges(1))
 				.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
@@ -266,22 +290,22 @@ class SolidityFnResultTest {
 	void deserializeWorksPre0230() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		subject.setEvmAddress(new byte[0]);
-		final var readSubject = new SolidityFnResult();
+		final var readSubject = new EvmFnResult();
 		given(in.readLong()).willReturn(gasUsed);
-		given(in.readByteArray(SolidityLog.MAX_BLOOM_BYTES)).willReturn(bloom);
-		given(in.readByteArray(SolidityFnResult.MAX_RESULT_BYTES)).willReturn(result);
-		given(serdes.readNullableString(in, SolidityFnResult.MAX_ERROR_BYTES)).willReturn(error);
+		given(in.readByteArray(EvmLog.MAX_BLOOM_BYTES)).willReturn(bloom);
+		given(in.readByteArray(EvmFnResult.MAX_RESULT_BYTES)).willReturn(result);
+		given(serdes.readNullableString(in, EvmFnResult.MAX_ERROR_BYTES)).willReturn(error);
 		given(serdes.readNullableSerializable(in)).willReturn(contractId);
 		given(in.readSerializableList(
-				intThat(i -> i == SolidityFnResult.MAX_LOGS),
+				intThat(i -> i == EvmFnResult.MAX_LOGS),
 				booleanThat(b -> b),
 				any(Supplier.class))).willReturn(logs);
 		given(in.readSerializableList(
-				intThat(i -> i == SolidityFnResult.MAX_CREATED_IDS),
+				intThat(i -> i == EvmFnResult.MAX_CREATED_IDS),
 				booleanThat(b -> b),
 				any(Supplier.class))).willReturn(createdContractIds);
 
-		readSubject.deserialize(in, SolidityFnResult.PRE_RELEASE_0230_VERSION);
+		readSubject.deserialize(in, EvmFnResult.PRE_RELEASE_0230_VERSION);
 
 		subject.setStateChanges(Collections.emptyMap());
 		assertEquals(subject, readSubject);
@@ -290,23 +314,23 @@ class SolidityFnResultTest {
 	@Test
 	void deserializeWorksPost0240() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
-		final var readSubject = new SolidityFnResult();
+		final var readSubject = new EvmFnResult();
 		given(in.readLong()).willReturn(gasUsed);
-		given(in.readByteArray(SolidityLog.MAX_BLOOM_BYTES)).willReturn(bloom);
-		given(in.readByteArray(SolidityFnResult.MAX_RESULT_BYTES)).willReturn(result);
-		given(in.readByteArray(SolidityFnResult.MAX_ADDRESS_BYTES)).willReturn(evmAddress);
-		given(serdes.readNullableString(in, SolidityFnResult.MAX_ERROR_BYTES)).willReturn(error);
+		given(in.readByteArray(EvmLog.MAX_BLOOM_BYTES)).willReturn(bloom);
+		given(in.readByteArray(EvmFnResult.MAX_RESULT_BYTES)).willReturn(result);
+		given(in.readByteArray(EvmFnResult.MAX_ADDRESS_BYTES)).willReturn(evmAddress);
+		given(serdes.readNullableString(in, EvmFnResult.MAX_ERROR_BYTES)).willReturn(error);
 		given(serdes.readNullableSerializable(in)).willReturn(contractId);
 		given(in.readSerializableList(
-				intThat(i -> i == SolidityFnResult.MAX_LOGS),
+				intThat(i -> i == EvmFnResult.MAX_LOGS),
 				booleanThat(b -> b),
 				any(Supplier.class))).willReturn(logs);
 		given(in.readSerializableList(
-				intThat(i -> i == SolidityFnResult.MAX_CREATED_IDS),
+				intThat(i -> i == EvmFnResult.MAX_CREATED_IDS),
 				booleanThat(b -> b),
 				any(Supplier.class))).willReturn(createdContractIds);
 
-		readSubject.deserialize(in, SolidityFnResult.RELEASE_0240_VERSION);
+		readSubject.deserialize(in, EvmFnResult.RELEASE_0240_VERSION);
 
 		subject.setStateChanges(Collections.emptyMap());
 		assertEquals(subject, readSubject);
@@ -316,23 +340,23 @@ class SolidityFnResultTest {
 	@Test
 	void deserializeWorksFor0230() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
-		final var readSubject = new SolidityFnResult();
+		final var readSubject = new EvmFnResult();
 		given(in.readLong()).willReturn(gasUsed);
-		given(in.readByteArray(SolidityLog.MAX_BLOOM_BYTES)).willReturn(bloom);
-		given(in.readByteArray(SolidityFnResult.MAX_RESULT_BYTES)).willReturn(result);
-		given(in.readByteArray(SolidityFnResult.MAX_ADDRESS_BYTES)).willReturn(evmAddress);
-		given(serdes.readNullableString(in, SolidityFnResult.MAX_ERROR_BYTES)).willReturn(error);
+		given(in.readByteArray(EvmLog.MAX_BLOOM_BYTES)).willReturn(bloom);
+		given(in.readByteArray(EvmFnResult.MAX_RESULT_BYTES)).willReturn(result);
+		given(in.readByteArray(EvmFnResult.MAX_ADDRESS_BYTES)).willReturn(evmAddress);
+		given(serdes.readNullableString(in, EvmFnResult.MAX_ERROR_BYTES)).willReturn(error);
 		given(serdes.readNullableSerializable(in)).willReturn(contractId);
 		given(in.readSerializableList(
-				intThat(i -> i == SolidityFnResult.MAX_LOGS),
+				intThat(i -> i == EvmFnResult.MAX_LOGS),
 				booleanThat(b -> b),
 				any(Supplier.class))).willReturn(logs);
 		given(in.readSerializableList(
-				intThat(i -> i == SolidityFnResult.MAX_CREATED_IDS),
+				intThat(i -> i == EvmFnResult.MAX_CREATED_IDS),
 				booleanThat(b -> b),
 				any(Supplier.class))).willReturn(createdContractIds);
 
-		readSubject.deserialize(in, SolidityFnResult.RELEASE_0230_VERSION);
+		readSubject.deserialize(in, EvmFnResult.RELEASE_0230_VERSION);
 
 		subject.setStateChanges(Collections.emptyMap());
 		assertEquals(subject, readSubject);
@@ -341,7 +365,7 @@ class SolidityFnResultTest {
 
 	@Test
 	void deserializeVersion22Works() throws IOException {
-		subject = new SolidityFnResult(
+		subject = new EvmFnResult(
 				contractId,
 				result,
 				error,
@@ -353,18 +377,18 @@ class SolidityFnResultTest {
 				Collections.emptyMap());
 
 		final var in = mock(SerializableDataInputStream.class);
-		final var readSubject = new SolidityFnResult();
+		final var readSubject = new EvmFnResult();
 		given(in.readLong()).willReturn(gasUsed);
-		given(in.readByteArray(SolidityLog.MAX_BLOOM_BYTES)).willReturn(bloom);
-		given(in.readByteArray(SolidityFnResult.MAX_RESULT_BYTES)).willReturn(result);
-		given(serdes.readNullableString(in, SolidityFnResult.MAX_ERROR_BYTES)).willReturn(error);
+		given(in.readByteArray(EvmLog.MAX_BLOOM_BYTES)).willReturn(bloom);
+		given(in.readByteArray(EvmFnResult.MAX_RESULT_BYTES)).willReturn(result);
+		given(serdes.readNullableString(in, EvmFnResult.MAX_ERROR_BYTES)).willReturn(error);
 		given(serdes.readNullableSerializable(in)).willReturn(contractId);
 		given(in.readSerializableList(
-				intThat(i -> i == SolidityFnResult.MAX_LOGS),
+				intThat(i -> i == EvmFnResult.MAX_LOGS),
 				booleanThat(b -> b),
 				any(Supplier.class))).willReturn(logs);
 		given(in.readSerializableList(
-				intThat(i -> i == SolidityFnResult.MAX_CREATED_IDS),
+				intThat(i -> i == EvmFnResult.MAX_CREATED_IDS),
 				booleanThat(b -> b),
 				any(Supplier.class))).willReturn(createdContractIds);
 		given(in.readInt()).willReturn(1);
@@ -376,7 +400,7 @@ class SolidityFnResultTest {
 				.willReturn(right);
 		given(in.readBoolean()).willReturn(true);
 
-		readSubject.deserialize(in, SolidityFnResult.PRE_RELEASE_0230_VERSION);
+		readSubject.deserialize(in, EvmFnResult.PRE_RELEASE_0230_VERSION);
 
 		assertEquals(subject, readSubject);
 	}
@@ -400,12 +424,12 @@ class SolidityFnResultTest {
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(SolidityFnResult.RELEASE_0240_VERSION, subject.getVersion());
-		assertEquals(SolidityFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+		assertEquals(EvmFnResult.RELEASE_0240_VERSION, subject.getVersion());
+		assertEquals(EvmFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
-	private static SolidityLog logFrom(final int s) {
-		return new SolidityLog(
+	private static EvmLog logFrom(final int s) {
+		return new EvmLog(
 				contracts[s],
 				blooms[s],
 				List.of(topics[s], topics[s + 1 % 3]),
@@ -419,9 +443,15 @@ class SolidityFnResultTest {
 	};
 
 	private static final byte[][] topics = new byte[][] {
-			"alpha".getBytes(),
-			"bravo".getBytes(),
-			"charlie".getBytes(),
+			"alpha000000000000000000000000000".getBytes(),
+			"bravo000000000000000000000000000".getBytes(),
+			"charlie0000000000000000000000000".getBytes(),
+	};
+
+	private static final byte[][] otherTopics = new byte[][] {
+			"alpha999999999999999999999999999".getBytes(),
+			"bravo999999999999999999999999999".getBytes(),
+			"charlie9999999999999999999999999".getBytes(),
 	};
 
 	private static final byte[][] blooms = new byte[][] {
@@ -435,4 +465,16 @@ class SolidityFnResultTest {
 			"two".getBytes(),
 			"three".getBytes(),
 	};
+
+	private static Log besuLog(final long num, byte[] data, byte[][] topics) {
+		final var logger = EntityNum.fromLong(num);
+		final var l = new Log(
+				logger.toEvmAddress(),
+				Bytes.wrap(data), Arrays.stream(topics).map(bytes -> LogTopic.of(Bytes.wrap(bytes))).toList());
+		return l;
+	}
+
+	static byte[] bloomForAll(final List<Log> logs) {
+		return LogsBloomFilter.builder().insertLogs(logs).build().toArray();
+	}
 }

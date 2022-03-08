@@ -54,7 +54,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
@@ -531,7 +531,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					.setGasUsed(this.gasRequirement.toLong())
 					.setContractCallResult(result != null ? ByteString.copyFrom(result.toArrayUnsafe()) : ByteString.EMPTY);
 			errorStatus.ifPresent(status -> contractCallResult.setErrorMessage(status.name()));
-			childRecord.setContractCallResult(SolidityFnResult.fromGrpc(contractCallResult.build()));
+			childRecord.setContractCallResult(EvmFnResult.fromGrpc(contractCallResult.build()));
 		}
 	}
 

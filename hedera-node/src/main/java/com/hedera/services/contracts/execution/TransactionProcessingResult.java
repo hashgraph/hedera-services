@@ -39,6 +39,7 @@ import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,12 +48,10 @@ import java.util.Optional;
  * Model object holding all the necessary data to build and externalise the result of a single EVM transaction
  */
 public class TransactionProcessingResult {
-
 	/**
 	 * The status of the transaction after being processed.
 	 */
 	public enum Status {
-
 		/**
 		 * The transaction was successfully processed.
 		 */
@@ -64,19 +63,19 @@ public class TransactionProcessingResult {
 		FAILED
 	}
 
-	private final Bytes output;
 	private final long gasUsed;
 	private final long sbhRefund;
 	private final long gasPrice;
 	private final Status status;
-	private final List<Log> logs;
-	private final Optional<Address> recipient;
-	private final Optional<Bytes> revertReason;
-	private final Optional<ExceptionalHaltReason> haltReason;
+	private final Bytes output;
 	private final boolean enableTraceability;
-
-	private List<ContractID> createdContracts = new ArrayList<>();
+	private final List<Log> logs;
+	private final Optional<Bytes> revertReason;
+	private final Optional<Address> recipient;
+	private final Optional<ExceptionalHaltReason> haltReason;
 	private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+
+	private List<ContractID> createdContracts = Collections.emptyList();
 
 	public static TransactionProcessingResult failed(
 			final long gasUsed,
@@ -85,10 +84,11 @@ public class TransactionProcessingResult {
 			final Optional<Bytes> revertReason,
 			final Optional<ExceptionalHaltReason> haltReason,
 			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
-			final boolean enableTraceability) {
+			final boolean enableTraceability
+	) {
 		return new TransactionProcessingResult(
 				Status.FAILED,
-				new ArrayList<>(),
+				Collections.emptyList(),
 				gasUsed,
 				sbhRefund,
 				gasPrice,
@@ -108,7 +108,8 @@ public class TransactionProcessingResult {
 			final Bytes output,
 			final Address recipient,
 			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
-			final boolean enableTraceability) {
+			final boolean enableTraceability
+	) {
 		return new TransactionProcessingResult(
 				Status.SUCCESSFUL,
 				logs,
@@ -123,7 +124,7 @@ public class TransactionProcessingResult {
 				enableTraceability);
 	}
 
-	public TransactionProcessingResult(
+	 private TransactionProcessingResult(
 			final Status status,
 			final List<Log> logs,
 			final long gasUsed,
@@ -134,7 +135,8 @@ public class TransactionProcessingResult {
 			final Optional<Bytes> revertReason,
 			final Optional<ExceptionalHaltReason> haltReason,
 			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
-			final boolean enableTraceability) {
+			final boolean enableTraceability
+	 ) {
 		this.logs = logs;
 		this.output = output;
 		this.status = status;
@@ -152,7 +154,8 @@ public class TransactionProcessingResult {
 	 * Adds a list of created contracts to be externalised as part of the
 	 * {@link com.hedera.services.state.submerkle.ExpirableTxnRecord}
 	 *
-	 * @param createdContracts the list of contractIDs created
+	 * @param createdContracts
+	 * 		the list of contractIDs created
 	 */
 	public void setCreatedContracts(List<ContractID> createdContracts) {
 		this.createdContracts = createdContracts;
@@ -240,7 +243,8 @@ public class TransactionProcessingResult {
 							.setValueRead(ByteString.copyFrom(changePair.getLeft().trimLeadingZeros().toArrayUnsafe()));
 					Bytes changePairRight = changePair.getRight();
 					if (changePairRight != null) {
-						stateChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(changePairRight.trimLeadingZeros().toArrayUnsafe())).build());
+						stateChange.setValueWritten(BytesValue.newBuilder().setValue(
+								ByteString.copyFrom(changePairRight.trimLeadingZeros().toArrayUnsafe())).build());
 					}
 					contractChanges.addStorageChanges(stateChange.build());
 				});

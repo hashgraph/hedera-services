@@ -46,8 +46,8 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
  * Overrides Besu precompiler handling, so we can break model layers in Precompile execution
  */
 public class HederaMessageCallProcessor extends MessageCallProcessor {
-
-	static final Bytes INVALID_TRANSFER = Bytes.of("Transfer of Value to Hedera Precompile".getBytes(StandardCharsets.UTF_8));
+	private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
+	public static final Bytes INVALID_TRANSFER = Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
 	Map<Address, PrecompiledContract> hederaPrecompiles;
 

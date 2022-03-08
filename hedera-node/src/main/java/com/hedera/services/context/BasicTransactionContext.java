@@ -32,7 +32,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
@@ -279,13 +279,13 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public void setCallResult(final ContractFunctionResult result) {
 		this.contractFunctionResult = result;
-		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(SolidityFnResult.fromGrpc(result));
+		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(EvmFnResult.fromGrpc(result));
 	}
 
 	@Override
 	public void setCreateResult(final ContractFunctionResult result) {
 		this.contractFunctionResult = result;
-		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(SolidityFnResult.fromGrpc(result));
+		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(EvmFnResult.fromGrpc(result));
 	}
 
 	@Override

@@ -71,9 +71,9 @@ public class ExpirableTxnRecordTestHelper {
 				.setFee(record.getTransactionFee())
 				.setTransferList(
 						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
-				.setContractCallResult(record.hasContractCallResult() ? SolidityFnResult.fromGrpc(
+				.setContractCallResult(record.hasContractCallResult() ? EvmFnResult.fromGrpc(
 						record.getContractCallResult()) : null)
-				.setContractCreateResult(record.hasContractCreateResult() ? SolidityFnResult.fromGrpc(
+				.setContractCreateResult(record.hasContractCreateResult() ? EvmFnResult.fromGrpc(
 						record.getContractCreateResult()) : null)
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
