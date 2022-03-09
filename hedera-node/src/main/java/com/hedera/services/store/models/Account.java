@@ -294,10 +294,20 @@ public class Account {
 				prevRel.setNextKey(nextKey);
 				unPersistedRelationships.put(prevKey, prevRel);
 			}
-			numZeroBalances--;
+			if (shouldDecreaseNumZeroBalances(dissociation)) {
+				numZeroBalances--;
+			}
 			numAssociations--;
 		}
 		return unPersistedRelationships.values().stream().toList();
+	}
+
+	private boolean shouldDecreaseNumZeroBalances(final Dissociation dissociation) {
+		if (dissociation.dissociatingToken().getTreasury().getId().equals(id)) {
+			return dissociation.dissociatedTokenTreasuryRel().getBalance() == 0;
+		} else {
+			return dissociation.dissociatingAccountRel().getBalance() == 0;
+		}
 	}
 
 	public Id getId() {

@@ -54,10 +54,12 @@ import static org.mockito.Mockito.verify;
 class AccountTest {
 	private static final byte[] mockCreate2Addr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
 	private final long miscAccountNum = 12345;
+	private final long treasuryNum = 11111;
 	private final long firstAssocTokenNum = 666;
 	private final long secondAssocTokenNum = 777;
 	private final long thirdAssocTokenNum = 555;
 	private final Id subjectId = new Id(0, 0, miscAccountNum);
+	private final Id treasuryId = new Id(0, 0, treasuryNum);
 	private final long ownedNfts = 5;
 	private final int associatedTokensCount = 3;
 	private final int alreadyUsedAutoAssociations = 123;
@@ -73,6 +75,7 @@ class AccountTest {
 	private final Token firstToken = new Token(new Id(0,0, firstAssocTokenNum));
 	private final Token secondToken = new Token(new Id(0,0, secondAssocTokenNum));
 	private final Token thirdToken = new Token(new Id(0,0, thirdAssocTokenNum));
+	private final Account treasuryAccount = new Account(treasuryId);
 
 	private Account subject;
 	private OptionValidator validator;
@@ -93,6 +96,10 @@ class AccountTest {
 		secondRel.setNextKey(thirdRelKey);
 		thirdRel.setKey(thirdRelKey);
 		thirdRel.setPrevKey(secondRelKey);
+
+		firstToken.setTreasury(treasuryAccount);
+		secondToken.setTreasury(treasuryAccount);
+		thirdToken.setTreasury(treasuryAccount);
 
 		validator = mock(ContextOptionValidator.class);
 		tokenStore = mock(TypedTokenStore.class);
@@ -175,6 +182,7 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
 		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
 		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(firstToken);
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(secondToken);
 		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
@@ -199,6 +207,7 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
 		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
 		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(thirdToken);
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(firstToken);
 		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
@@ -226,6 +235,7 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
 		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
 		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(secondToken);
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(firstToken);
 		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
@@ -255,6 +265,7 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
 		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
 		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(thirdToken);
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(thirdToken);
 		given(tokenStore.getLatestTokenRelationship(any())).willReturn(thirdRel);
