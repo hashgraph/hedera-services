@@ -41,10 +41,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
@@ -130,24 +132,30 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 	private HapiApiSpec cannotDeleteAccountsWithNonzeroTokenBalances() {
 		return defaultHapiSpec("CannotDeleteAccountsWithNonzeroTokenBalances")
 				.given(
+						newKeyNamed("admin"),
 						cryptoCreate("toBeDeleted"),
 						cryptoCreate("transferAccount"),
 						cryptoCreate(TOKEN_TREASURY)
 				).when(
 						tokenCreate("misc")
+								.adminKey("admin")
 								.initialSupply(TOKEN_INITIAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate("toBeDeleted", "misc"),
 						cryptoTransfer(moving(TOKEN_INITIAL_SUPPLY, "misc")
 								.between(TOKEN_TREASURY, "toBeDeleted"))
 				).then(
+						cryptoDelete(TOKEN_TREASURY)
+								.hasKnownStatus(ACCOUNT_IS_TREASURY),
+						tokenDelete("misc"),
 						cryptoDelete("toBeDeleted")
 								.transfer("transferAccount")
 								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
 						tokenDissociate("toBeDeleted", "misc"),
 						cryptoDelete("toBeDeleted"),
 						cryptoDelete("toBeDeleted")
-								.hasKnownStatus(ACCOUNT_DELETED)
+								.hasKnownStatus(ACCOUNT_DELETED),
+						cryptoDelete(TOKEN_TREASURY)
 				);
 	}
 

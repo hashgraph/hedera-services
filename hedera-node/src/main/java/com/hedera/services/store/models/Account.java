@@ -248,6 +248,10 @@ public class Account {
 			// update links
 			// return the touched relationships.
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
+			if (shouldDecreaseNumZeroBalances(dissociation)) {
+				numZeroBalances--;
+			}
+			numAssociations--;
 			dissociation.updateModelRelsSubjectTo(validator);
 			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
 			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
@@ -294,10 +298,6 @@ public class Account {
 				prevRel.setNextKey(nextKey);
 				unPersistedRelationships.put(prevKey, prevRel);
 			}
-			if (shouldDecreaseNumZeroBalances(dissociation)) {
-				numZeroBalances--;
-			}
-			numAssociations--;
 		}
 		return unPersistedRelationships.values().stream().toList();
 	}
