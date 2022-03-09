@@ -20,10 +20,15 @@ package com.hedera.services.store;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
+import com.hedera.services.ledger.AccountsCommitInterceptor;
+import com.hedera.services.ledger.TokenRelsCommitInterceptor;
+import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
@@ -82,31 +87,40 @@ public interface StoresModule {
 	@Provides
 	@Singleton
 	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
-			BackingStore<NftId, MerkleUniqueToken> backingNfts
+			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
+			final SideEffectsTracker sideEffectsTracker
 	) {
-		return new TransactionalLedger<>(
+		final var uniqueTokensLedger =  new TransactionalLedger<>(
 				NftProperty.class,
 				MerkleUniqueToken::new,
 				backingNfts,
 				new ChangeSummaryManager<>());
+		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor(sideEffectsTracker);
+		uniqueTokensLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
+		return uniqueTokensLedger;
 	}
 
 	@Provides
 	@Singleton
-	public static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
-			BackingStore<TokenID, MerkleToken> backingTokens
+	static TransactionalLedger<TokenID, TokenProperty, MerkleToken> provideTokensLedger(
+			final BackingStore<TokenID, MerkleToken> backingTokens,
+			final SideEffectsTracker sideEffectsTracker
 	) {
-		return new TransactionalLedger<>(
+		final var tokensLedger = new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				backingTokens,
 				new ChangeSummaryManager<>());
+		final var tokensCommitInterceptor = new TokensCommitInterceptor(sideEffectsTracker);
+		tokensLedger.setCommitInterceptor(tokensCommitInterceptor);
+		return tokensLedger;
 	}
 
 	@Provides
 	@Singleton
 	static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> provideTokenRelsLedger(
-			BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
+			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels,
+			final SideEffectsTracker sideEffectsTracker
 	) {
 		final var tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
@@ -114,19 +128,25 @@ public interface StoresModule {
 				backingTokenRels,
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
+		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor(sideEffectsTracker);
+		tokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
 		return tokenRelsLedger;
 	}
 
 	@Provides
 	@Singleton
-	public static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
-			final BackingStore<AccountID, MerkleAccount> backingAccounts
+	static TransactionalLedger<AccountID, AccountProperty, MerkleAccount> provideAccountsLedger(
+			final BackingStore<AccountID, MerkleAccount> backingAccounts,
+			final SideEffectsTracker sideEffectsTracker
 	) {
-		return new TransactionalLedger<>(
+		final var accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
+		return accountsLedger;
 	}
 
 	@Provides
@@ -143,7 +163,7 @@ public interface StoresModule {
 
 	@Provides
 	@Singleton
-	public static CodeCache provideCodeCache(
+	static CodeCache provideCodeCache(
 			final NodeLocalProperties properties,
 			final MutableEntityAccess entityAccess
 	) {

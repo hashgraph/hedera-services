@@ -54,11 +54,7 @@ public interface EntityAccess {
 	String currentManagedChangeSet();
 
 	/* --- Account access --- */
-	void spawn(AccountID id, long balance, HederaAccountCustomizer customizer);
-
 	void customize(AccountID id, HederaAccountCustomizer customizer);
-
-	void adjustBalance(AccountID id, long adjustment);
 
 	long getAutoRenew(AccountID id);
 

@@ -25,7 +25,6 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.DetachedAccountException;
-import com.hedera.services.exceptions.InconsistentAdjustmentsException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -74,7 +73,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
-import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
@@ -225,10 +223,11 @@ public class HederaLedger {
 	}
 
 	public void commit() {
-		throwIfPendingStateIsInconsistent();
+		// The interceptor on the accounts ledger tracks and validates any hbar side effects of this txn;
+		// so we must commit here _before_ saving a record derived from the singleton SideEffectsTracker
+		accountsLedger.commit();
 		historian.saveExpirableTransactionRecords();
 		historian.noteNewExpirationEvents();
-		accountsLedger.commit();
 		mutableEntityAccess.commit();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
@@ -269,7 +268,6 @@ public class HederaLedger {
 	public void adjustBalance(final AccountID id, final long adjustment) {
 		long newBalance = computeNewBalance(id, adjustment);
 		setBalance(id, newBalance);
-		sideEffectsTracker.trackHbarChange(id, adjustment);
 	}
 
 	void doTransfer(AccountID from, AccountID to, long adjustment) {
@@ -278,9 +276,6 @@ public class HederaLedger {
 
 		setBalance(from, newFromBalance);
 		setBalance(to, newToBalance);
-
-		sideEffectsTracker.trackHbarChange(from, -1 * adjustment);
-		sideEffectsTracker.trackHbarChange(to, adjustment);
 	}
 
 	/* --- TOKEN MANIPULATION --- */
@@ -365,10 +360,6 @@ public class HederaLedger {
 	public AccountID create(AccountID sponsor, long balance, HederaAccountCustomizer customizer) {
 		long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
 		setBalance(sponsor, newSponsorBalance);
-		// We must *immediately* track this pending balance change, because if the spawn()
-		// below throws an exception, we need throwIfPendingStateIsInconsistent() to detect
-		// the inconsistent change-set.
-		sideEffectsTracker.trackHbarChange(sponsor, -balance);
 
 		var id = ids.newAccountId(sponsor);
 		spawn(id, balance, customizer);
@@ -380,8 +371,6 @@ public class HederaLedger {
 		accountsLedger.create(id);
 		setBalance(id, balance);
 		customizer.customize(id, accountsLedger);
-
-		sideEffectsTracker.trackHbarChange(id, balance);
 	}
 
 	public void customize(AccountID id, HederaAccountCustomizer customizer) {
@@ -502,12 +491,6 @@ public class HederaLedger {
 			throw new InsufficientFundsException(id, adjustment);
 		}
 		return balance + adjustment;
-	}
-
-	private void throwIfPendingStateIsInconsistent() {
-		if (!isNetZeroAdjustment(sideEffectsTracker.getNetTrackedHbarChanges())) {
-			throw new InconsistentAdjustmentsException();
-		}
 	}
 
 	private void setBalance(AccountID id, long newBalance) {
