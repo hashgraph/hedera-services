@@ -126,7 +126,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 */
 	public static <K, P extends Enum<P> & BeanProperty<A>, A> TransactionalLedger<K, P, A> activeLedgerWrapping(
 			final TransactionalLedger<K, P, A> sourceLedger
-			) {
+	) {
 		Objects.requireNonNull(sourceLedger);
 
 		final var wrapper = new TransactionalLedger<>(
@@ -197,7 +197,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 
 		try {
-			if(commitInterceptor!=null) {
+			if (commitInterceptor != null) {
 				computePendingEntityChanges();
 				commitInterceptor.preview(entityChanges);
 			}

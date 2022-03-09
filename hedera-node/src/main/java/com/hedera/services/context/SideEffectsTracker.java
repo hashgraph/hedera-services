@@ -64,7 +64,6 @@ public class SideEffectsTracker {
 
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
 	private final TransferList.Builder netHbarChanges = TransferList.newBuilder();
-	private long netHbarChange = 0;
 	private final List<Long> nftMints = new ArrayList<>();
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
@@ -72,6 +71,7 @@ public class SideEffectsTracker {
 
 	private int numTouches = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
+	private long netHbarChange = 0;
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
 	private ContractID newContractId = null;

@@ -241,7 +241,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	//Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
 	//Transfer(address indexed from, address indexed to, uint256 value)
-	private static final Bytes TRANSFER_EVENT = Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+	private static final Bytes TRANSFER_EVENT = Bytes.fromHexString(
+			"ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
 
 	private int functionId;
 	private Precompile precompile;
@@ -493,8 +494,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		ExpirableTxnRecord.Builder childRecord;
 		try {
 			precompile.run(frame);
-			/*We need to first commit the ledgers before creating any synthetic records, since the sideEffectsTracker
-			is populated during commit*/
+			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
+			// synthetic record, as the ledger interceptors will populate the sideEffectsTracker
 			ledgers.commit();
 
 			childRecord = creator.createSuccessfulSyntheticRecord(
@@ -535,7 +536,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var contractCallResult = ContractFunctionResult.newBuilder()
 					.setContractID(HTS_PRECOMPILE_MIRROR_ID)
 					.setGasUsed(this.gasRequirement.toLong())
-					.setContractCallResult(result != null ? ByteString.copyFrom(result.toArrayUnsafe()) : ByteString.EMPTY);
+					.setContractCallResult(
+							result != null ? ByteString.copyFrom(result.toArrayUnsafe()) : ByteString.EMPTY);
 			errorStatus.ifPresent(status -> contractCallResult.setErrorMessage(status.name()));
 			childRecord.setContractCallResult(SolidityFnResult.fromGrpc(contractCallResult.build()));
 		}
@@ -647,9 +649,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		protected Association associateOp;
 
 		@Override
-		public void run(
-				final MessageFrame frame
-		) {
+		public void run(final MessageFrame frame) {
 			Objects.requireNonNull(associateOp);
 
 			/* --- Check required signatures --- */
@@ -853,7 +853,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var assessmentStatus = impliedTransfers.getMeta().code();
 			validateTrue(assessmentStatus == OK, assessmentStatus);
 			var changes = impliedTransfers.getAllBalanceChanges();
-			
+
 			hederaTokenStore.setAccountsLedger(ledgers.accounts());
 
 			final var transferLogic = transferLogicFactory.newLogic(
@@ -893,7 +893,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public List<FcAssessedCustomFee> getCustomFees(){
+		public List<FcAssessedCustomFee> getCustomFees() {
 			return impliedTransfers.getAssessedCustomFees();
 		}
 
@@ -1060,7 +1060,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public void run(
 				final MessageFrame frame
-		) {}
+		) {
+		}
 
 		@Override
 		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
@@ -1085,7 +1086,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID, aliasResolver);
+				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID,
+						aliasResolver);
 				default -> throw new InvalidTransactionException(
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + nestedInput + ")",
 						FAIL_INVALID);
@@ -1219,7 +1221,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
-			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), tokenUriWrapper.tokenId());
+			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(),
+					tokenUriWrapper.tokenId());
 			var metaData = (byte[]) nftsLedger.get(nftId, METADATA);
 
 			String metaDataString = new String(metaData);
@@ -1246,7 +1249,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
-			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), ownerWrapper.tokenId());
+			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(),
+					ownerWrapper.tokenId());
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
 			var accountIdOwner = owner.toGrpcAccountId();
 
@@ -1300,9 +1304,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame          current frame
-	 * @param target         the element to test for key activation, in standard form
-	 * @param activationTest the function which should be invoked for key validation
+	 * @param frame
+	 * 		current frame
+	 * @param target
+	 * 		the element to test for key activation, in standard form
+	 * @param activationTest
+	 * 		the function which should be invoked for key validation
 	 * @return whether the implied key is active
 	 */
 	private boolean validateKey(
@@ -1353,11 +1360,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param target         an address with an implicit key understood by this implementation
-		 * @param recipient      the idealized account receiving the call operation
-		 * @param contract       the idealized account whose code is being executed
-		 * @param activeContract the contract address that can activate a contract or delegatable contract key
-		 * @param aliases        the current contract aliases in effect
+		 * @param target
+		 * 		an address with an implicit key understood by this implementation
+		 * @param recipient
+		 * 		the idealized account receiving the call operation
+		 * @param contract
+		 * 		the idealized account whose code is being executed
+		 * @param activeContract
+		 * 		the contract address that can activate a contract or delegatable contract key
+		 * @param aliases
+		 * 		the current contract aliases in effect
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(

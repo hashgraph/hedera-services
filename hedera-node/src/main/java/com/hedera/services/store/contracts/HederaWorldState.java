@@ -497,18 +497,16 @@ public class HederaWorldState implements HederaMutableWorldState {
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
 				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
-
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
-
 				if (updatedAccount.codeWasUpdated()) {
 					entityAccess.storeCode(accountId, updatedAccount.getCode());
 				}
 			}
 
 			entityAccess.recordNewKvUsageTo(trackingAccounts());
-			/* Because we have tracked all account creations, deletions, and balance changes in the ledgers,
-			this commit() persists all of that information without any additional use of the deletedAccounts
-			or updatedAccounts collections. */
+			// Because we have tracked all account creations, deletions, and balance changes in the ledgers,
+			// this commit() persists all of that information without any additional use of the deletedAccounts
+			// or updatedAccounts collections.
 			trackingLedgers().commit(impactHistorian);
 
 			wrapped.sponsorMap.putAll(sponsorMap);
