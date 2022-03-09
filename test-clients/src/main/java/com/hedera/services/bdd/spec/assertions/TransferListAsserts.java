@@ -47,6 +47,7 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
 		return new ExactParticipantsAssert(provider);
 	}
 
+	@SafeVarargs
 	public static TransferListAsserts including(Function<HapiApiSpec, TransferList>... providers) {
 		return new ExplicitTransferAsserts(Arrays.asList(providers));
 	}

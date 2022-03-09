@@ -77,9 +77,9 @@ public class StateAccessor {
 		return children.storage();
 	}
 
-        public VirtualMap<ContractKey, ContractValue> contractStorage() {
-                return children.contractStorage();
-        }
+	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+		return children.contractStorage();
+	}
 
 	public MerkleMap<EntityNum, MerkleToken> tokens() {
 		return children.tokens();
