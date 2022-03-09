@@ -44,7 +44,7 @@ public class EvmLog implements SelfSerializable {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2af05aa9c7ff917L;
 
-	private static final byte[] MISSING_BYTES = new byte[0];
+	public static final byte[] MISSING_BYTES = new byte[0];
 
 	private byte[] data = MISSING_BYTES;
 	private byte[] bloom = MISSING_BYTES;
@@ -197,15 +197,6 @@ public class EvmLog implements SelfSerializable {
 
 	public void setBloom(byte[] bloom) {
 		this.bloom = bloom;
-	}
-
-	/* --- Helpers --- */
-	public static EvmLog fromGrpc(ContractLoginfo grpc) {
-		return new EvmLog(
-				grpc.hasContractID() ? EntityId.fromGrpcContractId(grpc.getContractID()) : null,
-				grpc.getBloom().isEmpty() ? MISSING_BYTES : grpc.getBloom().toByteArray(),
-				grpc.getTopicList().stream().map(ByteString::toByteArray).toList(),
-				grpc.getData().isEmpty() ? MISSING_BYTES : grpc.getData().toByteArray());
 	}
 
 	public ContractLoginfo toGrpc() {

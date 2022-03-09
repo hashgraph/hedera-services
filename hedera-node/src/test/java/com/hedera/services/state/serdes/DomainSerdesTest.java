@@ -27,8 +27,8 @@ import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -403,7 +403,7 @@ public class DomainSerdesTest {
 						asAccount("0.0.2"), -4L,
 						asAccount("0.0.1001"), 2L,
 						asAccount("0.0.1002"), 2L)))
-				.setContractCallResult(EvmFnResult.fromGrpc(ContractFunctionResult.newBuilder()
+				.setContractCallResult(SerdeUtils.fromGrpc(ContractFunctionResult.newBuilder()
 						.setContractID(asContract("1.2.3"))
 						.setErrorMessage("Couldn't figure it out!")
 						.setGasUsed(55L)
@@ -426,7 +426,7 @@ public class DomainSerdesTest {
 						asAccount("0.0.2"),-6L,
 						asAccount("0.0.1001"), 3L,
 						asAccount("0.0.1002"), 3L)))
-				.setContractCallResult(EvmFnResult.fromGrpc(ContractFunctionResult.newBuilder()
+				.setContractCallResult(SerdeUtils.fromGrpc(ContractFunctionResult.newBuilder()
 						.setContractID(asContract("4.3.2"))
 						.setErrorMessage("Couldn't figure it out immediately!")
 						.setGasUsed(55L)

@@ -53,6 +53,7 @@ import java.util.TreeMap;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.any;
@@ -188,6 +189,16 @@ class EvmFnResultTest {
 	}
 
 	@Test
+	void doesntFailIfRecipientSomehowMissing() {
+		final var result = mock(TransactionProcessingResult.class);
+		given(result.getRecipient()).willReturn(Optional.empty());
+		given(result.isSuccessful()).willReturn(true);
+		given(result.getOutput()).willReturn(Bytes.EMPTY);
+
+		assertDoesNotThrow(() -> EvmFnResult.fromCall(result));
+	}
+
+	@Test
 	void besuParsingWorksForCreateSuccess() {
 		final var expected = new EvmFnResult(
 				contractId,
@@ -300,7 +311,7 @@ class EvmFnResultTest {
 	}
 
 	@Test
-	void factoryWorks() {
+	void grpcFactoryWorksWithEverythingSet() {
 		subject = new EvmFnResult(
 				contractId,
 				result,
@@ -331,7 +342,37 @@ class EvmFnResultTest {
 				.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
 				.build();
 
-		assertEquals(subject, EvmFnResult.fromGrpc(grpc));
+		assertEquals(grpc, subject.toGrpc());
+	}
+
+	@Test
+	void grpcFactoryWorksWithSomeFieldsMissing() {
+		subject = new EvmFnResult(
+				null,
+				result,
+				null,
+				bloom,
+				gasUsed,
+				Collections.emptyList(),
+				Collections.emptyList(),
+				EvmFnResult.EMPTY,
+				specialStateChanges);
+
+		final var grpc = ContractFunctionResult.newBuilder()
+				.setGasUsed(gasUsed)
+				.setContractCallResult(ByteString.copyFrom(result))
+				.setBloom(ByteString.copyFrom(bloom))
+				.addStateChanges(ContractStateChange.newBuilder()
+						.setContractID(cNum.toGrpcContractID())
+						.addStorageChanges(StorageChange.newBuilder()
+								.setSlot(ByteString.copyFrom(slot))
+								.setValueRead(ByteString.copyFrom(left))
+								.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(right)).build())
+								.build())
+						.build())
+				.build();
+
+		assertEquals(grpc, subject.toGrpc());
 	}
 
 	@Test

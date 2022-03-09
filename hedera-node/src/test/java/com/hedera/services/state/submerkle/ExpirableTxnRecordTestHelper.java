@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.utils.MiscUtils;
+import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 
@@ -71,9 +72,9 @@ public class ExpirableTxnRecordTestHelper {
 				.setFee(record.getTransactionFee())
 				.setTransferList(
 						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
-				.setContractCallResult(record.hasContractCallResult() ? EvmFnResult.fromGrpc(
+				.setContractCallResult(record.hasContractCallResult() ? SerdeUtils.fromGrpc(
 						record.getContractCallResult()) : null)
-				.setContractCreateResult(record.hasContractCreateResult() ? EvmFnResult.fromGrpc(
+				.setContractCreateResult(record.hasContractCreateResult() ? SerdeUtils.fromGrpc(
 						record.getContractCreateResult()) : null)
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)

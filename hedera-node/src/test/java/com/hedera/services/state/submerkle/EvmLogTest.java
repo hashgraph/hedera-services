@@ -99,12 +99,12 @@ class EvmLogTest {
 		final var bSource = new Log(
 				bSourceNum.toEvmAddress(),
 				Bytes.wrap(otherData),
-				aTopics.stream().map(bytes -> LogTopic.of(Bytes.wrap(bytes))).toList());
+				Collections.emptyList());
 		final var bBloom = bloomFor(bSource);
 
 		final var expected = List.of(
 				new EvmLog(aSourceNum.toId().asEntityId(), aBloom, aTopics, data),
-				new EvmLog(bSourceNum.toId().asEntityId(), bBloom, aTopics, otherData));
+				new EvmLog(bSourceNum.toId().asEntityId(), bBloom, Collections.emptyList(), otherData));
 
 		final var converted = EvmLog.fromBesu(List.of(aSource, bSource));
 

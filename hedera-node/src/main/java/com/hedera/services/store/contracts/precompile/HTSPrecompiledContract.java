@@ -52,9 +52,9 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
@@ -76,7 +76,6 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -153,6 +152,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 	public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
 			Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
+	public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID = EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
@@ -526,12 +526,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final Optional<ResponseCodeEnum> errorStatus
 	) {
 		if (dynamicProperties.shouldExportPrecompileResults()) {
-			final var contractCallResult = ContractFunctionResult.newBuilder()
-					.setContractID(HTS_PRECOMPILE_MIRROR_ID)
-					.setGasUsed(this.gasRequirement.toLong())
-					.setContractCallResult(result != null ? ByteString.copyFrom(result.toArrayUnsafe()) : ByteString.EMPTY);
-			errorStatus.ifPresent(status -> contractCallResult.setErrorMessage(status.name()));
-			childRecord.setContractCallResult(EvmFnResult.fromGrpc(contractCallResult.build()));
+			final var evmFnResult = new EvmFnResult(
+					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
+					result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
+					errorStatus.map(ResponseCodeEnum::name).orElse(null),
+					EvmFnResult.EMPTY,
+					this.gasRequirement.toLong(),
+					Collections.emptyList(),
+					Collections.emptyList(),
+					EvmFnResult.EMPTY,
+					Collections.emptyMap());
+			childRecord.setContractCallResult(evmFnResult);
 		}
 	}
 

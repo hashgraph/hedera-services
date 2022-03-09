@@ -25,7 +25,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.utils.BytesComparator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -35,6 +34,8 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
@@ -48,14 +49,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.swirlds.common.CommonUtils.hex;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 public class EvmFnResult implements SelfSerializable {
-	private static final byte[] EMPTY = new byte[0];
+	private static final Logger log = LogManager.getLogger(EvmFnResult.class);
+
+	public static final byte[] EMPTY = new byte[0];
 
 	static final int PRE_RELEASE_0230_VERSION = 1;
 	static final int RELEASE_0230_VERSION = 2;
@@ -96,22 +97,23 @@ public class EvmFnResult implements SelfSerializable {
 
 	private static EvmFnResult from(final TransactionProcessingResult result, final byte[] evmAddress) {
 		if (result.isSuccessful()) {
-			assert result.getRecipient().isPresent();
+			final var recipient = result.getRecipient().orElse(Address.ZERO);
+			if (Address.ZERO == recipient) {
+				// The recipient should always be set on a successful EVM result
+				log.warn("No recipient was set on successful EVM result {}", result::toGrpc);
+			}
 			return success(
 					result.getLogs(),
 					result.getGasUsed(),
 					result.getOutput(),
-					result.getRecipient().get(),
+					recipient,
 					result.getStateChanges(),
 					serializableIdsFrom(result.getCreatedContracts()),
 					evmAddress);
 		} else {
-			String error = null;
-			if (result.getRevertReason().isPresent()) {
-				error = result.getRevertReason().get().toString();
-			} else if (result.getHaltReason().isPresent()) {
-				error = result.getHaltReason().get().toString();
-			}
+			final var error = result.getRevertReason()
+					.map(Object::toString)
+					.orElse(result.getHaltReason().map(Object::toString).orElse(null));
 			return failure(result.getGasUsed(), error, result.getStateChanges());
 		}
 	}
@@ -303,34 +305,6 @@ public class EvmFnResult implements SelfSerializable {
 		this.stateChanges = stateChanges;
 	}
 
-	/* --- Helpers --- */
-	public static EvmFnResult fromGrpc(final ContractFunctionResult that) {
-		return new EvmFnResult(
-				that.hasContractID() ? EntityId.fromGrpcContractId(that.getContractID()) : null,
-				that.getContractCallResult().isEmpty() ? EMPTY : that.getContractCallResult().toByteArray(),
-				!that.getContractCallResult().isEmpty() ? that.getErrorMessage() : null,
-				that.getBloom().isEmpty() ? EMPTY : that.getBloom().toByteArray(),
-				that.getGasUsed(),
-				that.getLogInfoList().stream().map(EvmLog::fromGrpc).toList(),
-				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).toList(),
-				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : EMPTY,
-				that.getStateChangesList().stream().collect(Collectors.toMap(
-						csc -> Address.wrap(Bytes.wrap(asEvmAddress(csc.getContractID()))),
-						csc -> csc.getStorageChangesList().stream().collect(Collectors.toMap(
-								sc -> Bytes.wrap(sc.getSlot().toByteArray()).trimLeadingZeros(),
-								sc -> Pair.of(
-										Bytes.wrap(sc.getValueRead().toByteArray()).trimLeadingZeros(),
-										!sc.hasValueWritten() ? null :
-												Bytes.wrap(
-														sc.getValueWritten().getValue().toByteArray()).trimLeadingZeros()),
-								(l, r) -> l,
-								() -> new TreeMap<>(BytesComparator.INSTANCE)
-						)),
-						(l, r) -> l,
-						() -> new TreeMap<>(BytesComparator.INSTANCE)))
-		);
-	}
-
 	public ContractFunctionResult toGrpc() {
 		var grpc = ContractFunctionResult.newBuilder();
 		grpc.setGasUsed(gasUsed);
@@ -348,7 +322,9 @@ public class EvmFnResult implements SelfSerializable {
 		if (isNotEmpty(createdContractIds)) {
 			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).toList());
 		}
-		grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
+		if (evmAddress.length > 0) {
+			grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
+		}
 		for (var changes : stateChanges.entrySet()) {
 			var contractStateChange = ContractStateChange.newBuilder().setContractID(
 					EntityIdUtils.contractIdFromEvmAddress(changes.getKey().toArrayUnsafe()));
