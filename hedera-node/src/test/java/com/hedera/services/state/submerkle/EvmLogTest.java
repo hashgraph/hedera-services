@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -101,15 +102,19 @@ class EvmLogTest {
 				aTopics.stream().map(bytes -> LogTopic.of(Bytes.wrap(bytes))).toList());
 		final var bBloom = bloomFor(bSource);
 
-		final var expected = new EvmLog[] {
+		final var expected = List.of(
 				new EvmLog(aSourceNum.toId().asEntityId(), aBloom, aTopics, data),
-				new EvmLog(bSourceNum.toId().asEntityId(), bBloom, aTopics, otherData) };
+				new EvmLog(bSourceNum.toId().asEntityId(), bBloom, aTopics, otherData));
 
 		final var converted = EvmLog.fromBesu(List.of(aSource, bSource));
 
 		assertEquals(expected, converted);
 	}
 
+	@Test
+	void convertsEmptyLogs() {
+		assertEquals(List.of(), EvmLog.fromBesu(Collections.emptyList()));
+	}
 
 	@Test
 	void equalsSame() {

@@ -182,6 +182,26 @@ public class TransactionProcessingResult {
 		return sbhRefund;
 	}
 
+	public Bytes getOutput() {
+		return output;
+	}
+
+	public List<Log> getLogs() {
+		return logs;
+	}
+
+	public Optional<Address> getRecipient() {
+		return recipient;
+	}
+
+	public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
+		return stateChanges;
+	}
+
+	public List<ContractID> getCreatedContracts() {
+		return createdContracts;
+	}
+
 	/**
 	 * Returns the exceptional halt reason
 	 *

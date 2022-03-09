@@ -22,9 +22,12 @@ package com.hedera.services.state.submerkle;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.CommonUtils;
@@ -45,6 +48,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
@@ -62,6 +66,8 @@ import static org.mockito.Mockito.verify;
 
 class EvmFnResultTest {
 	private static final long gasUsed = 1_234;
+	private static final long gasPrice = 4_567;
+	private static final long sbhRefund = 8_901;
 	private static final EntityNum cNum = EntityNum.fromLong(1_234_567_890L);
 	private static final Address realContract = cNum.toEvmAddress();
 	private static final byte[] contract = realContract.toArray();
@@ -73,10 +79,13 @@ class EvmFnResultTest {
 	private static final byte[] bloom = "ijklmnopqrstuvwxyz".getBytes();
 	private static final byte[] evmAddress = Address.BLAKE2B_F_COMPRESSION.toArray();
 	private static final String error = "Oops!";
-	private static final EntityId contractId = new EntityId(1L, 2L, 3L);
+	private static final EntityId contractId = new EntityId(0L, 0L, 3L);
+	private static final Address recipient = EntityNum.fromLong(3L).toEvmAddress();
 	private static final List<EntityId> createdContractIds = List.of(
 			new EntityId(2L, 3L, 4L),
 			new EntityId(3L, 4L, 5L));
+	private static final List<ContractID> grpcCreatedContractIds = createdContractIds.stream()
+			.map(EntityId::toGrpcContractId).toList();
 	private final List<EvmLog> logs = List.of(logFrom(0), logFrom(1));
 	private final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
 			new TreeMap<>(Map.of(Address.fromHexString("0x6"),
@@ -128,23 +137,83 @@ class EvmFnResultTest {
 	}
 
 	@Test
-	void besuParsingWorksForTraceableSuccess() {
-		final var aLog = besuLog(123L, data[0], topics);
-		final var bLog = besuLog(456L, data[1], otherTopics);
-		final var logs = List.of(aLog, bLog);
-		final var realBloom = bloomForAll(logs);
+	void besuParsingWorksForRevertFailure() {
+		final var revertReason = HederaMessageCallProcessor.INVALID_TRANSFER.toString();
+		final var expected = new EvmFnResult(
+				null,
+				new byte[0],
+				revertReason,
+				new byte[0],
+				gasUsed,
+				Collections.emptyList(),
+				Collections.emptyList(),
+				new byte[0],
+				stateChanges);
 
-		subject = new EvmFnResult(
+		final var input = TransactionProcessingResult.failed(
+				gasUsed, 0, 0,
+				Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
+				Optional.empty(),
+				stateChanges,
+				true);
+
+		final var actual = EvmFnResult.fromCall(input);
+
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void besuParsingWorksForCallSuccess() {
+		final var expected = new EvmFnResult(
 				contractId,
 				result,
-				error,
+				null,
 				realBloom,
 				gasUsed,
+				EvmLog.fromBesu(besuLogs),
+				createdContractIds,
+				new byte[0],
+				stateChanges);
+
+		final var input = TransactionProcessingResult.successful(
+				besuLogs,
+				gasUsed, 0, 0,
+				Bytes.wrap(result),
+				recipient,
+				stateChanges,
+				true);
+		input.setCreatedContracts(grpcCreatedContractIds);
+
+		final var actual = EvmFnResult.fromCall(input);
+
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void besuParsingWorksForCreateSuccess() {
+		final var expected = new EvmFnResult(
+				contractId,
+				result,
 				null,
-//				List.of(EvmLog.fromBesu(aLog), ,
+				realBloom,
+				gasUsed,
+				EvmLog.fromBesu(besuLogs),
 				createdContractIds,
 				evmAddress,
 				stateChanges);
+
+		final var input = TransactionProcessingResult.successful(
+				besuLogs,
+				gasUsed, 0, 0,
+				Bytes.wrap(result),
+				recipient,
+				stateChanges,
+				true);
+		input.setCreatedContracts(grpcCreatedContractIds);
+
+		final var actual = EvmFnResult.fromCreate(input, evmAddress);
+
+		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -465,6 +534,11 @@ class EvmFnResultTest {
 			"two".getBytes(),
 			"three".getBytes(),
 	};
+
+	private static final Log aLog = besuLog(123L, data[0], topics);
+	private static final Log bLog = besuLog(456L, data[1], otherTopics);
+	private static final List<Log> besuLogs = List.of(aLog, bLog);
+	private static final byte[] realBloom = bloomForAll(besuLogs);
 
 	private static Log besuLog(final long num, byte[] data, byte[][] topics) {
 		final var logger = EntityNum.fromLong(num);

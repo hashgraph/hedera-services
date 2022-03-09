@@ -1,6 +1,8 @@
 package com.hedera.services.submerkle;
 
 import com.google.common.primitives.Longs;
+import com.hedera.services.context.EvmResultRandomParams;
+import com.hedera.services.context.FullEvmResult;
 import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
@@ -29,8 +31,16 @@ public class RandomFactory {
 		this.r = r;
 	}
 
-	public TransactionProcessingResult randomEvmResult(final EvmResultRandomParams params) {
-		return r.nextBoolean() ? randomSuccess(params) : randomFailure(params);
+	public FullEvmResult randomEvmResult(final EvmResultRandomParams params) {
+		final var doCreation = r.nextDouble() < params.creationProbability();
+		if (doCreation) {
+			return new FullEvmResult(randomSuccess(params), randomAddress().toArrayUnsafe());
+		} else {
+			final var doSuccess = r.nextDouble() < params.callSuccessProbability();
+			return doSuccess
+					? new FullEvmResult(randomSuccess(params), null)
+					: new FullEvmResult(randomFailure(params), null);
+		}
 	}
 
 	private TransactionProcessingResult randomSuccess(final EvmResultRandomParams params) {

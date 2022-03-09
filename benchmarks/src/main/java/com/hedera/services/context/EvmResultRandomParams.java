@@ -1,4 +1,4 @@
-package com.hedera.services.submerkle;
+package com.hedera.services.context;
 
 public record EvmResultRandomParams(
 		int maxLogs,
@@ -9,5 +9,6 @@ public record EvmResultRandomParams(
 		int numAddressesWithChanges,
 		int numStateChangesPerAddress,
 		double creationProbability,
+		double callSuccessProbability,
 		boolean enableTraceability) {
 }

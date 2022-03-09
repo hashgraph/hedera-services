@@ -429,22 +429,19 @@ public class HederaWorldState implements HederaMutableWorldState {
 			return stateChanges;
 		}
 
+		@SuppressWarnings("unchecked")
 		private void addAllStorageUpdatesToStateChanges() {
-			// record storage read/write access
-			for (UpdateTrackingLedgerAccount<? extends com.hedera.services.store.models.Account> uta :
-					(Collection<UpdateTrackingLedgerAccount<? extends com.hedera.services.store.models.Account>>)
-							this.getTouchedAccounts()) {
+			for (UpdateTrackingLedgerAccount<? extends Account> uta :
+					(Collection<UpdateTrackingLedgerAccount<? extends Account>>) this.getTouchedAccounts()) {
 				final var storageUpdates = uta.getUpdatedStorage().entrySet();
 				if (!storageUpdates.isEmpty()) {
-					Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
-							stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE)
-							);
+					final Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
+							stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
 					for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
 						UInt256 key = entry.getKey();
 						UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
 						UInt256 updatedStorageValue = uta.getStorageValue(key);
-						accountChanges.put(key,
-								new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+						accountChanges.put(key, new ImmutablePair<>(originalStorageValue, updatedStorageValue));
 					}
 				}
 			}

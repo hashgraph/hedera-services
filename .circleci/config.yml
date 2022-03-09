@@ -1420,7 +1420,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - 02952-M-RemoveGrpcUseInContractFnResult
+                  - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

@@ -1,8 +1,6 @@
 package com.hedera.services.context;
 
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.state.submerkle.EvmFnResult;
-import com.hedera.services.submerkle.EvmResultRandomParams;
 import com.hedera.services.submerkle.RandomFactory;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
@@ -13,6 +11,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Arrays;
 import java.util.SplittableRandom;
@@ -28,7 +27,7 @@ public class EvmFnResultBench {
 
 	private int i;
 	private EvmResultRandomParams params;
-	private TransactionProcessingResult[] results;
+	private FullEvmResult[] results;
 
 	@Param("4")
 	int maxLogs;
@@ -48,6 +47,8 @@ public class EvmFnResultBench {
 	int numStateChangesPerAddress;
 	@Param("0.1")
 	double creationProbability;
+	@Param("0.8")
+	double callSuccessProbability;
 	@Param("true")
 	boolean enableTraceability;
 
@@ -62,19 +63,38 @@ public class EvmFnResultBench {
 				numAddressesWithChanges,
 				numStateChangesPerAddress,
 				creationProbability,
+				callSuccessProbability,
 				enableTraceability);
 	}
 
 	@Setup(Level.Iteration)
 	public void generateIterationInputs() {
-		results = new TransactionProcessingResult[uniqResultsPerIteration];
+		results = new FullEvmResult[uniqResultsPerIteration];
 		Arrays.setAll(results, i -> randomFactory.randomEvmResult(params));
 		i = 0;
 	}
 
 	@Benchmark
-	public void makeResultExternalizable() {
+	public void externalizeWithGrpcIntermediary(Blackhole blackhole) {
 		final var input = results[i++ % uniqResultsPerIteration];
-		EvmFnResult.fromGrpc(input.toGrpc());
+		EvmFnResult result;
+		if (input.evmAddress() == null) {
+			result = EvmFnResult.fromGrpc(input.result().toGrpc());
+		} else {
+			result = EvmFnResult.fromGrpc(input.result().toCreationGrpc(input.evmAddress()));
+		}
+		blackhole.consume(result);
+	}
+
+	@Benchmark
+	public void externalizeDirectly(Blackhole blackhole) {
+		final var input = results[i++ % uniqResultsPerIteration];
+		EvmFnResult result;
+		if (input.evmAddress() == null) {
+			result = EvmFnResult.fromCall(input.result());
+		} else {
+			result = EvmFnResult.fromCreate(input.result(), input.evmAddress());
+		}
+		blackhole.consume(result);
 	}
 }

@@ -81,8 +81,17 @@ public class EvmLog implements SelfSerializable {
 				log.getData().toArrayUnsafe());
 	}
 
-	public static EvmLog[] fromBesu(final List<Log> logs) {
-		throw new AssertionError("Not implemented");
+	public static List<EvmLog> fromBesu(final List<Log> logs) {
+		if (logs.isEmpty())	{
+			return Collections.emptyList();
+		} else {
+			final int n = logs.size();
+			final List<EvmLog> ans = new ArrayList<>(n);
+			for (int i = 0; i < n; i++) {
+				ans.add(fromBesu(logs.get(i)));
+			}
+			return ans;
+		}
 	}
 
 	/* --- SelfSerializable --- */
