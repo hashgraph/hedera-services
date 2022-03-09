@@ -53,9 +53,9 @@ import java.util.TreeMap;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.booleanThat;
 import static org.mockito.BDDMockito.given;
@@ -122,6 +122,23 @@ class EvmFnResultTest {
 	}
 
 	@Test
+	void stripsLeadingZerosInChangeRepresentation() {
+		final var slot = Bytes.wrap(Address.BLS12_G1MULTIEXP.toArray());
+		final var access = Pair.of(
+								Bytes.of(Address.BLS12_MAP_FP2_TO_G2.toArray()),
+								Bytes.of(Address.BLS12_G1MUL.toArray()));
+		final var expected = StorageChange.newBuilder()
+				.setSlot(ByteString.copyFrom(Address.BLS12_G1MULTIEXP.trimLeadingZeros().toArray()))
+				.setValueRead(ByteString.copyFrom(Address.BLS12_MAP_FP2_TO_G2.trimLeadingZeros().toArray()))
+				.setValueWritten(BytesValue.newBuilder()
+						.setValue(ByteString.copyFrom(Address.BLS12_G1MUL.trimLeadingZeros().toArray()))
+						.build())
+				.build();
+		final var actual = EvmFnResult.trimmedGrpc(slot, access);
+		assertEquals(expected, actual.build());
+	}
+
+	@Test
 	void gettersWork() {
 		assertEquals(contractId, subject.getContractId());
 		assertEquals(result, subject.getResult());
@@ -153,8 +170,7 @@ class EvmFnResultTest {
 				gasUsed, 0, 0,
 				Optional.of(HederaMessageCallProcessor.INVALID_TRANSFER),
 				Optional.empty(),
-				stateChanges,
-				true);
+				stateChanges);
 
 		final var actual = EvmFnResult.fromCall(input);
 
@@ -179,8 +195,7 @@ class EvmFnResultTest {
 				gasUsed, 0, 0,
 				Bytes.wrap(result),
 				recipient,
-				stateChanges,
-				true);
+				stateChanges);
 		input.setCreatedContracts(grpcCreatedContractIds);
 
 		final var actual = EvmFnResult.fromCall(input);
@@ -189,13 +204,12 @@ class EvmFnResultTest {
 	}
 
 	@Test
-	void doesntFailIfRecipientSomehowMissing() {
+	void throwsIaeIfRecipientSomehowMissing() {
 		final var result = mock(TransactionProcessingResult.class);
 		given(result.getRecipient()).willReturn(Optional.empty());
 		given(result.isSuccessful()).willReturn(true);
-		given(result.getOutput()).willReturn(Bytes.EMPTY);
 
-		assertDoesNotThrow(() -> EvmFnResult.fromCall(result));
+		assertThrows(IllegalArgumentException.class, () -> EvmFnResult.fromCall(result));
 	}
 
 	@Test
@@ -216,8 +230,7 @@ class EvmFnResultTest {
 				gasUsed, 0, 0,
 				Bytes.wrap(result),
 				recipient,
-				stateChanges,
-				true);
+				stateChanges);
 		input.setCreatedContracts(grpcCreatedContractIds);
 
 		final var actual = EvmFnResult.fromCreate(input, evmAddress);

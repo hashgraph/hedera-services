@@ -99,8 +99,7 @@ public class EvmFnResult implements SelfSerializable {
 		if (result.isSuccessful()) {
 			final var recipient = result.getRecipient().orElse(Address.ZERO);
 			if (Address.ZERO == recipient) {
-				// The recipient should always be set on a successful EVM result
-				log.warn("No recipient was set on successful EVM result {}", result::toGrpc);
+				throw new IllegalArgumentException("Successful processing result had no recipient");
 			}
 			return success(
 					result.getLogs(),
@@ -325,24 +324,24 @@ public class EvmFnResult implements SelfSerializable {
 		if (evmAddress.length > 0) {
 			grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
 		}
-		for (var changes : stateChanges.entrySet()) {
-			var contractStateChange = ContractStateChange.newBuilder().setContractID(
-					EntityIdUtils.contractIdFromEvmAddress(changes.getKey().toArrayUnsafe()));
-			for (var slotChange : changes.getValue().entrySet()) {
-				var storageChange = StorageChange.newBuilder();
-				storageChange.setSlot(ByteString.copyFrom(slotChange.getKey().toArrayUnsafe()));
-				Pair<Bytes, Bytes> value = slotChange.getValue();
-				storageChange.setValueRead(ByteString.copyFrom(value.getLeft().toArrayUnsafe()));
-				Bytes valueRight = value.getRight();
-				if (valueRight != null) {
-					storageChange.setValueWritten(
-							BytesValue.newBuilder().setValue(ByteString.copyFrom(valueRight.toArrayUnsafe())).build());
-				}
-				contractStateChange.addStorageChanges(storageChange.build());
-			}
-			grpc.addStateChanges(contractStateChange);
-		}
+		stateChanges.forEach((address, slotAccesses) -> {
+			final var builder = ContractStateChange.newBuilder()
+					.setContractID(EntityIdUtils.contractIdFromEvmAddress(address.toArrayUnsafe()));
+			slotAccesses.forEach((slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
+			grpc.addStateChanges(builder);
+		});
 		return grpc.build();
+	}
+
+	static StorageChange.Builder trimmedGrpc(final Bytes slot, final Pair<Bytes, Bytes> access) {
+		final var grpc = StorageChange.newBuilder()
+				.setSlot(ByteString.copyFrom(slot.trimLeadingZeros().toArrayUnsafe()))
+				.setValueRead(ByteString.copyFrom(access.getLeft().trimLeadingZeros().toArrayUnsafe()));
+		if (access.getRight() != null) {
+			grpc.setValueWritten(BytesValue.newBuilder().setValue(
+					ByteString.copyFrom(access.getRight().trimLeadingZeros().toArrayUnsafe())));
+		}
+		return grpc;
 	}
 
 	private static byte[] bloomFor(final List<Log> logs) {

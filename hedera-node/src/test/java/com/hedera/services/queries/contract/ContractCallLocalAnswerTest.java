@@ -21,7 +21,6 @@ package com.hedera.services.queries.contract;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -240,7 +239,8 @@ class ContractCallLocalAnswerTest {
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L);
 
 		final var transactionProcessingResult = TransactionProcessingResult
-				.failed(0, 0, 1, Optional.empty(), Optional.empty(), new TreeMap<>(), dynamicProperties.shouldEnableTraceability());
+				.failed(0, 0, 1, Optional.empty(),
+						Optional.empty(), new TreeMap<>());
 
 		given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
 		given(accountStore.loadContract(any())).willReturn(new Account(Id.fromGrpcContract(target)));

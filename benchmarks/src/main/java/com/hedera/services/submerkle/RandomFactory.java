@@ -73,8 +73,7 @@ public class RandomFactory {
 				randomNonNegativeLong(),
 				output,
 				randomAddress(),
-				randomStateChanges(params),
-				params.enableTraceability());
+				randomStateChanges(params));
 		if (r.nextDouble() < params.creationProbability()) {
 			ans.setCreatedContracts(randomCreations(params.maxCreations()));
 		}
@@ -104,8 +103,7 @@ public class RandomFactory {
 				randomNonNegativeLong(),
 				revertReason,
 				haltReason,
-				randomStateChanges(params),
-				params.enableTraceability());
+				randomStateChanges(params));
 	}
 
 	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> randomStateChanges(final EvmResultRandomParams params) {

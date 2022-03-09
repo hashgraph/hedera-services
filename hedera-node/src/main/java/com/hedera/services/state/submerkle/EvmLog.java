@@ -75,6 +75,7 @@ public class EvmLog implements SelfSerializable {
 
 	public static EvmLog fromBesu(final Log log) {
 		return new EvmLog(
+				// The HederaLogOperation ensures this will be a mirror address
 				EntityId.fromAddress(log.getLogger()),
 				LogsBloomFilter.builder().insertLog(log).build().toArray(),
 				topicsOf(log),

@@ -154,6 +154,7 @@ import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DynamicGasCostSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DynamicGasCostSuite.class);
@@ -194,16 +195,16 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-						create2FactoryWorksAsExpected(),
-						canDeleteViaAlias(),
-						cannotSelfDestructToMirrorAddress(),
+//						create2FactoryWorksAsExpected(),
+//						canDeleteViaAlias(),
+//						cannotSelfDestructToMirrorAddress(),
 						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
-						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-						canUseAliasesInPrecompilesAndContractKeys(),
-						inlineCreateCanFailSafely(),
-						inlineCreate2CanFailSafely(),
-						allLogOpcodesResolveExpectedContractId(),
+//						priorityAddressIsCreate2ForInternalMessages(),
+//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+//						canUseAliasesInPrecompilesAndContractKeys(),
+//						inlineCreateCanFailSafely(),
+//						inlineCreate2CanFailSafely(),
+//						allLogOpcodesResolveExpectedContractId(),
 				}
 		);
 	}
@@ -953,9 +954,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									staticCallAliasAns.get(),
 									staticCallMirrorAns.get(),
 									"Static call with mirror address should be same as call with alias");
-							assertEquals(
-									staticCallAliasAns.get().toString(16),
-									aliasAddr.get(),
+							assertTrue(
+									aliasAddr.get().endsWith(staticCallAliasAns.get().toString(16)),
 									"Alias should get priority over mirror address");
 						}),
 						sourcing(() -> contractCall(
