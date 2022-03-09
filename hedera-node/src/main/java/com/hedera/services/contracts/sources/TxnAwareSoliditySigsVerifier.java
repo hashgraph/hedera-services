@@ -27,19 +27,15 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.merkle.map.MerkleMap;
 import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.BiPredicate;
-import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
@@ -52,21 +48,15 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final ActivationTest activationTest;
 	private final TransactionContext txnCtx;
 	private final BiPredicate<JKey, TransactionSignature> cryptoValidity;
-	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	private WorldLedgers ledgers;
 
 	@Inject
 	public TxnAwareSoliditySigsVerifier(
 			final ActivationTest activationTest,
 			final TransactionContext txnCtx,
-			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final BiPredicate<JKey, TransactionSignature> cryptoValidity
 	) {
 		this.txnCtx = txnCtx;
-		this.tokens = tokens;
-		this.accounts = accounts;
 		this.activationTest = activationTest;
 		this.cryptoValidity = cryptoValidity;
 	}
@@ -85,7 +75,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
 		final var account = ledgers != null ?
-				Optional.of(ledgers.accounts().getImmutableRef(accountId)) : Optional.empty();
+				Optional.ofNullable(ledgers.accounts().getImmutableRef(accountId)) : Optional.empty();
 		validateTrue(account.isPresent(), INVALID_ACCOUNT_ID);
 
 		if (accountAddress.equals(activeContract)) {
@@ -105,12 +95,13 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final ContractAliases aliases
 	) {
 		final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
-		final var simpleId = Id.fromGrpcToken(tokenId);
-		final var entityNum = simpleId.asEntityNum();
-		final var token = tokens.get().get(entityNum);
-		validateTrue(token != null, INVALID_TOKEN_ID);
-		validateTrue(token.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
-		return isActiveInFrame(token.getSupplyKey(), recipient, contract, activeContract, aliases);
+		final var token = ledgers != null ?
+				Optional.ofNullable(ledgers.tokens().getImmutableRef(tokenId)) : Optional.empty();
+
+		validateTrue(token.isPresent(), INVALID_TOKEN_ID);
+		final var merkleToken = (MerkleToken) token.get();
+		validateTrue(merkleToken.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
+		return isActiveInFrame(merkleToken.getSupplyKey(), recipient, contract, activeContract, aliases);
 	}
 
 	@Override
@@ -177,9 +168,12 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	}
 
 	private Optional<JKey> receiverSigKeyIfAnyOf(final AccountID id) {
-		return Optional.ofNullable(accounts.get().get(fromAccountId(id)))
-				.filter(account -> !account.isSmartContract())
-				.filter(MerkleAccount::isReceiverSigRequired)
-				.map(MerkleAccount::getAccountKey);
+		final var merkleAccount = ledgers != null ? Optional.ofNullable(ledgers.accounts().getImmutableRef(id)) :
+				Optional.empty();
+
+		return merkleAccount
+				.filter(account -> !((MerkleAccount)account).isSmartContract())
+				.filter(account -> ((MerkleAccount)account).isReceiverSigRequired())
+				.map(account -> ((MerkleAccount)account).getAccountKey());
 	}
 }

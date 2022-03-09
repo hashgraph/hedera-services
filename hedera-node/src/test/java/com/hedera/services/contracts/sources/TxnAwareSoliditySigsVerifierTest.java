@@ -27,6 +27,7 @@ import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
@@ -43,8 +44,8 @@ import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.merkle.map.MerkleMap;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
@@ -78,6 +80,7 @@ class TxnAwareSoliditySigsVerifierTest {
 	private static final Id accountId = new Id(0, 0, 1234);
 	private static final Address PRETEND_TOKEN_ADDR = tokenId.asEvmAddress();
 	private static final Address PRETEND_ACCOUNT_ADDR = accountId.asEvmAddress();
+	private final TokenID token = IdUtils.asToken("0.0.666");
 	private final AccountID payer = IdUtils.asAccount("0.0.2");
 	private final AccountID account = IdUtils.asAccount("0.0.1234");
 	private final AccountID sigRequired = IdUtils.asAccount("0.0.555");
@@ -95,10 +98,6 @@ class TxnAwareSoliditySigsVerifierTest {
 	@Mock
 	private BiPredicate<JKey, TransactionSignature> cryptoValidity;
 	@Mock
-	private MerkleMap<EntityNum, MerkleToken> tokens;
-	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	@Mock
 	private ActivationTest activationTest;
 	@Mock
 	private TransactionContext txnCtx;
@@ -111,6 +110,8 @@ class TxnAwareSoliditySigsVerifierTest {
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+	@Mock
 	private WorldLedgers ledgers;
 
 	private TxnAwareSoliditySigsVerifier subject;
@@ -119,14 +120,14 @@ class TxnAwareSoliditySigsVerifierTest {
 	private void setup() throws Exception {
 		expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
-		subject = new TxnAwareSoliditySigsVerifier(activationTest, txnCtx, () -> tokens, () -> accounts,
-				cryptoValidity);
+		subject = new TxnAwareSoliditySigsVerifier(activationTest, txnCtx, cryptoValidity);
 		subject.setWorldLedgers(ledgers);
 	}
 
 	@Test
 	void throwsIfAskedToVerifyMissingToken() {
-		given(tokens.get(tokenId.asEntityNum())).willReturn(null);
+		given(ledgers.tokens()).willReturn(tokensLedger);
+		given(tokensLedger.getImmutableRef(token)).willReturn(null);
 
 		assertFailsWith(() ->
 						subject.hasActiveSupplyKey(
@@ -137,10 +138,11 @@ class TxnAwareSoliditySigsVerifierTest {
 
 	@Test
 	void throwsIfAskedToVerifyTokenWithoutSupplyKey() {
-		final var token = mock(MerkleToken.class);
+		final var merkleToken = mock(MerkleToken.class);
 
-		given(tokens.get(tokenId.asEntityNum())).willReturn(token);
-		given(token.hasSupplyKey()).willReturn(false);
+		given(ledgers.tokens()).willReturn(tokensLedger);
+		given(tokensLedger.getImmutableRef(token)).willReturn(merkleToken);
+		given(merkleToken.hasSupplyKey()).willReturn(false);
 
 		assertFailsWith(() ->
 						subject.hasActiveSupplyKey(
@@ -152,10 +154,11 @@ class TxnAwareSoliditySigsVerifierTest {
 	@Test
 	void testsSupplyKeyIfPresent() {
 		given(txnCtx.accessor()).willReturn(accessor);
-		final var token = mock(MerkleToken.class);
-		given(tokens.get(tokenId.asEntityNum())).willReturn(token);
-		given(token.hasSupplyKey()).willReturn(true);
-		given(token.getSupplyKey()).willReturn(expectedKey);
+		final var merkleToken = mock(MerkleToken.class);
+		given(ledgers.tokens()).willReturn(tokensLedger);
+		given(tokensLedger.getImmutableRef(token)).willReturn(merkleToken);
+		given(merkleToken.hasSupplyKey()).willReturn(true);
+		given(merkleToken.getSupplyKey()).willReturn(expectedKey);
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
@@ -196,8 +199,9 @@ class TxnAwareSoliditySigsVerifierTest {
 	@Test
 	void filtersContracts() {
 		given(txnCtx.activePayer()).willReturn(payer);
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.getImmutableRef(smartContract)).willReturn(contract);
 		given(contract.isSmartContract()).willReturn(true);
-		given(accounts.get(EntityNum.fromAccountId(smartContract))).willReturn(contract);
 
 		final var contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(
 				EntityIdUtils.asTypedEvmAddress(smartContract),
@@ -210,7 +214,8 @@ class TxnAwareSoliditySigsVerifierTest {
 	@Test
 	void filtersNoSigRequired() {
 		given(txnCtx.activePayer()).willReturn(payer);
-		given(accounts.get(EntityNum.fromAccountId(noSigRequired))).willReturn(noSigReqAccount);
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.getImmutableRef(noSigRequired)).willReturn(noSigReqAccount);
 
 		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
 				EntityIdUtils.asTypedEvmAddress(noSigRequired),
@@ -225,7 +230,8 @@ class TxnAwareSoliditySigsVerifierTest {
 		givenAccessorInCtx();
 		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
 		given(sigReqAccount.getAccountKey()).willReturn(expectedKey);
-		given(accounts.get(EntityNum.fromAccountId(sigRequired))).willReturn(sigReqAccount);
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.getImmutableRef(sigRequired)).willReturn(sigReqAccount);
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
