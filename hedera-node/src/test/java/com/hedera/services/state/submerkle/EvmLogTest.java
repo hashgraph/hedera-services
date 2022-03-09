@@ -137,7 +137,7 @@ class EvmLogTest {
 	@Test
 	void toStringWorks() {
 		assertEquals(
-				"SolidityLog{data=" + CommonUtils.hex(data) + ", " +
+				"EvmLog{data=" + CommonUtils.hex(data) + ", " +
 						"bloom=" + CommonUtils.hex(bloom) + ", " +
 						"contractId=" + aLoggerId + ", " +
 						"topics=" + aTopics.stream().map(CommonUtils::hex).collect(toList()) + "}",

@@ -66,8 +66,6 @@ import static org.mockito.Mockito.verify;
 
 class EvmFnResultTest {
 	private static final long gasUsed = 1_234;
-	private static final long gasPrice = 4_567;
-	private static final long sbhRefund = 8_901;
 	private static final EntityNum cNum = EntityNum.fromLong(1_234_567_890L);
 	private static final Address realContract = cNum.toEvmAddress();
 	private static final byte[] contract = realContract.toArray();
@@ -280,7 +278,7 @@ class EvmFnResultTest {
 	@Test
 	void toStringWorks() {
 		assertEquals(
-				"SolidityFnResult{" +
+				"EvmFnResult{" +
 						"gasUsed=" + gasUsed + ", " +
 						"bloom=" + CommonUtils.hex(bloom) + ", " +
 						"result=" + CommonUtils.hex(result) + ", " +
