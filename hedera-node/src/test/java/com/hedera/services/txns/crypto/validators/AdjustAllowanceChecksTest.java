@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto.validators;
 import com.google.protobuf.BoolValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -149,9 +150,9 @@ class AdjustAllowanceChecksTest {
 	@BeforeEach
 	void setUp() {
 		resetAllowances();
-		token1Model.setMaxSupply(5000L);
+		token1Model.initSupplyConstraints(TokenSupplyType.FINITE, 5000L);
 		token1Model.setType(TokenType.FUNGIBLE_COMMON);
-		token2Model.setMaxSupply(5000L);
+		token2Model.initSupplyConstraints(TokenSupplyType.FINITE, 5000L);
 		token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		cryptoAllowances.add(cryptoAllowance1);
