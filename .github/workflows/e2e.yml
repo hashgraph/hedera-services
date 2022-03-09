@@ -14,9 +14,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        packages: ['contract.opcodes,contract.openzeppelin',
-                   'contract.precompile,contract.records',
-                   'contract.hapi']
+        packages: ['contract.opcodes,contract.openzeppelin,contract.traceability',
+                   'contract.precompile.part1,contract.records',
+                   'contract.precompile.part2,contract.hapi']
     steps:
       - uses: actions/checkout@v2 # checkout current branch
       - name: Set up JDK 17
