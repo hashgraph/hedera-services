@@ -136,6 +136,11 @@ public class DecodingFacade {
 	private static final Bytes ERC_TRANSFER_FROM_SELECTOR = Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
 	private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER = TypeFactory.create("(bytes32,bytes32,uint256)");
 
+	private static final Function TOKEN_ALLOWANCE_FUNCTION =
+			new Function("allowance(address,address)", INT_OUTPUT);
+	private static final Bytes TOKEN_ALLOWANCE_SELECTOR = Bytes.wrap(TOKEN_ALLOWANCE_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_ALLOWANCE_DECODER = TypeFactory.create("(bytes32,bytes32)");
+
 	@Inject
 	public DecodingFacade() {
 	}
@@ -215,7 +220,7 @@ public class DecodingFacade {
 
 		final var from = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
 		final var to = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
-		if(isFungible) {
+		if (isFungible) {
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 			final var amount = (BigInteger) decodedArguments.get(2);
 			addAdjustmentAsTransfer(fungibleTransfers, token, to, amount.longValue());
@@ -243,6 +248,15 @@ public class DecodingFacade {
 		final var tokenId = (BigInteger) decodedArguments.get(0);
 
 		return new OwnerOfAndTokenURIWrapper(tokenId.longValue());
+	}
+
+	public TokenAllowanceWrapper decodeTokenAllowance(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_ALLOWANCE_SELECTOR, TOKEN_ALLOWANCE_DECODER);
+
+		final var owner = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var spender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
+
+		return new TokenAllowanceWrapper(owner, spender);
 	}
 
 	public MintWrapper decodeMint(final Bytes input) {

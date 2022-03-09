@@ -22,18 +22,21 @@ package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-import java.math.BigInteger;
 import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 
+import java.math.BigInteger;
+
 public class HTSPrecompileResult implements ContractCallResult {
-	private HTSPrecompileResult() {}
+	private HTSPrecompileResult() {
+	}
 
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
 	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
 	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
+	private static final TupleType allowanceOfType = TupleType.parse("(uint256)");
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
 	private static final TupleType ownerOfType = TupleType.parse("(address)");
 	private static final TupleType nameType = TupleType.parse("(string)");
@@ -46,7 +49,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 	}
 
 	public enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE
 	}
 
 	private FunctionType functionType;
@@ -60,10 +63,11 @@ public class HTSPrecompileResult implements ContractCallResult {
 	private String symbol;
 	private String metadata;
 	private long balance;
+	private long allowance;
 	private boolean ercFungibleTransferStatus;
 
 	public HTSPrecompileResult forFunction(final FunctionType functionType) {
-		switch(functionType) {
+		switch (functionType) {
 			case MINT -> tupleType = mintReturnType;
 			case BURN -> tupleType = burnReturnType;
 			case TOTAL_SUPPLY -> tupleType = totalSupplyType;
@@ -74,6 +78,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 			case SYMBOL -> tupleType = symbolType;
 			case TOKEN_URI -> tupleType = tokenUriType;
 			case ERC_TRANSFER -> tupleType = ercTransferType;
+			case ALLOWANCE -> tupleType = allowanceOfType;
 		}
 
 		this.functionType = functionType;
@@ -90,7 +95,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 		return this;
 	}
 
-	public HTSPrecompileResult withSerialNumbers(final long ... serialNumbers) {
+	public HTSPrecompileResult withSerialNumbers(final long... serialNumbers) {
 		this.serialNumbers = serialNumbers;
 		return this;
 	}
@@ -130,21 +135,29 @@ public class HTSPrecompileResult implements ContractCallResult {
 		return this;
 	}
 
+	public HTSPrecompileResult withAllowance(final long allowance) {
+		this.allowance = allowance;
+		return this;
+	}
+
 	@Override
 	public Bytes getBytes() {
 		Tuple result;
 
-		switch(functionType) {
+		switch (functionType) {
 			case MINT -> result = Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply), serialNumbers);
 			case BURN -> result = Tuple.of(status.getNumber(), BigInteger.valueOf(totalSupply));
 			case TOTAL_SUPPLY -> result = Tuple.of(BigInteger.valueOf(totalSupply));
 			case DECIMALS -> result = Tuple.of(decimals);
 			case BALANCE -> result = Tuple.of(BigInteger.valueOf(balance));
-			case OWNER -> {return Bytes.wrap(expandByteArrayTo32Length(owner));}
+			case OWNER -> {
+				return Bytes.wrap(expandByteArrayTo32Length(owner));
+			}
 			case NAME -> result = Tuple.of(name);
 			case SYMBOL -> result = Tuple.of(symbol);
 			case TOKEN_URI -> result = Tuple.of(metadata);
 			case ERC_TRANSFER -> result = Tuple.of(ercFungibleTransferStatus);
+			case ALLOWANCE -> result = Tuple.of(BigInteger.valueOf(allowance));
 			default -> result = Tuple.of(status.getNumber());
 		}
 		return Bytes.wrap(tupleType.encode(result).array());
@@ -153,7 +166,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 	private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
 		byte[] expandedArray = new byte[32];
 
-		System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length-bytesToExpand.length, bytesToExpand.length);
+		System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
 		return expandedArray;
 	}
 
