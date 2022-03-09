@@ -85,14 +85,15 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
 		final var account = ledgers != null ?
-				ledgers.accounts().getImmutableRef(accountId) : null;
-		validateTrue(account != null, INVALID_ACCOUNT_ID);
+				Optional.of(ledgers.accounts().getImmutableRef(accountId)) : Optional.empty();
+		validateTrue(account.isPresent(), INVALID_ACCOUNT_ID);
 
 		if (accountAddress.equals(activeContract)) {
 			return true;
 		}
 
-		return isActiveInFrame(account.getAccountKey(), recipient, contract, activeContract, aliases);
+		return isActiveInFrame(((MerkleAccount)account.get()).getAccountKey(), recipient, contract, activeContract,
+				aliases);
 	}
 
 	@Override
