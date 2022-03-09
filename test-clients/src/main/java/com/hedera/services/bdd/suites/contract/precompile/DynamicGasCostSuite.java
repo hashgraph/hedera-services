@@ -953,9 +953,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 									staticCallAliasAns.get(),
 									staticCallMirrorAns.get(),
 									"Static call with mirror address should be same as call with alias");
-							assertEquals(
-									staticCallAliasAns.get().toString(16),
-									aliasAddr.get(),
+							assertTrue(
+									aliasAddr.get().endsWith(staticCallAliasAns.get().toString(16)),
 									"Alias should get priority over mirror address");
 						}),
 						sourcing(() -> contractCall(
