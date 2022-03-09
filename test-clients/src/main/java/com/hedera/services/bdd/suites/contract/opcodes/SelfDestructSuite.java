@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.contract.opcodes;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,14 +29,12 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SELF_DESTRUCT_CALLABLE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -65,26 +62,25 @@ public class SelfDestructSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec HSCS_EVM_008_SelfDestructInConstructorWorks() {
+		final var contract = "FactorySelfDestructConstructor";
 		final var nextAccount = "civilian";
 
 		return defaultHapiSpec("HSCS_EVM_008_SelfDestructInConstructorWorks")
 				.given(
-						fileCreate("bytecode")
-								.path(FACTORY_SELF_DESTRUCT_CONSTRUCTOR_CONTRACT)
+						uploadInitCode(contract)
 				).when(
-						contractCreate("selfDestroying")
+						newContractCreate(contract)
 								.balance(3 * ONE_HBAR)
-								.bytecode("bytecode")
 								.via("contractCreate"),
 						cryptoCreate(nextAccount)
 				).then(
-						getAccountInfo("selfDestroying")
+						getAccountInfo(contract)
 								.hasCostAnswerPrecheck(ACCOUNT_DELETED),
-						getContractInfo("selfDestroying")
+						getContractInfo(contract)
 								.has(contractWith().isDeleted()),
 						withOpContext((spec, opLog) -> {
 							final var registry = spec.registry();
-							final var destroyedNum = registry.getContractId("selfDestroying").getContractNum();
+							final var destroyedNum = registry.getContractId(contract).getContractNum();
 							final var nextNum = registry.getAccountID(nextAccount).getAccountNum();
 							assertEquals(
 									destroyedNum + 2, nextNum,
@@ -94,24 +90,24 @@ public class SelfDestructSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec HSCS_EVM_008_SelfDestructWhenCalling() {
+		final var contract = "SelfDestructCallable";
 		return defaultHapiSpec("HSCS_EVM_008_SelfDestructWhenCalling")
 				.given(
 						cryptoCreate("acc").balance(ONE_HUNDRED_HBARS),
-						fileCreate("bytecode").path(SELF_DESTRUCT_CALLABLE).payingWith("acc")
+						uploadInitCode(contract)
 				)
 				.when(
-						contractCreate("destructable")
-								.bytecode("bytecode")
+						newContractCreate(contract)
 								.via("cc")
 								.payingWith("acc")
 								.hasKnownStatus(SUCCESS)
 				)
 				.then(
-						contractCall("destructable", ContractResources.SELF_DESTRUCT_CALL_ABI)
+						contractCall(contract, "destroy")
 								.payingWith("acc"),
-						getAccountInfo("destructable")
+						getAccountInfo(contract)
 								.hasCostAnswerPrecheck(ACCOUNT_DELETED),
-						getContractInfo("destructable")
+						getContractInfo(contract)
 								.has(contractWith().isDeleted())
 				);
 	}

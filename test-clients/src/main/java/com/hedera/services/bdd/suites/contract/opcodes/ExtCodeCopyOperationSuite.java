@@ -22,10 +22,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -38,8 +35,8 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -59,50 +56,41 @@ public class ExtCodeCopyOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec verifiesExistence() {
-		final String CONTRACT = "extCodeCopyOpChecker";
-		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
-		ByteString EMPTY_BYTECODE = ByteString.EMPTY;
+		final var contract = "ExtCodeOperationsChecker";
+		final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+		final var EMPTY_BYTECODE = ByteString.EMPTY;
 
 		return defaultHapiSpec("VerifiesExistence")
 				.given(
-						fileCreate("bytecode").path(ContractResources.EXT_CODE_OPERATIONS_CHECKER_CONTRACT),
-						contractCreate("extCodeCopyOpChecker")
-								.bytecode("bytecode")
-								.gas(300_000L)
+						uploadInitCode(contract),
+						newContractCreate(contract)
 				).when(
 				)
 				.then(
-						contractCall(CONTRACT,
-								ContractResources.EXT_CODE_OP_CHECKER_CODE_COPY_OF,
-								INVALID_ADDRESS)
+						contractCall(contract, "codeCopyOf", INVALID_ADDRESS)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-						contractCallLocal(CONTRACT,
-								ContractResources.EXT_CODE_OP_CHECKER_CODE_COPY_OF,
-								INVALID_ADDRESS)
+						contractCallLocal(contract, "codeCopyOf", INVALID_ADDRESS)
 								.hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
-							AccountID accountID = spec.registry().getAccountID(DEFAULT_PAYER);
-							ContractID contractID = spec.registry().getContractId(CONTRACT);
-							String accountSolidityAddress = asHexedSolidityAddress(accountID);
-							String contractAddress = asHexedSolidityAddress(contractID);
+							final var accountID = spec.registry().getAccountID(DEFAULT_PAYER);
+							final var contractID = spec.registry().getContractId(contract);
+							final var accountSolidityAddress = asHexedSolidityAddress(accountID);
+							final var contractAddress = asHexedSolidityAddress(contractID);
 
-							final var call = contractCall(CONTRACT,
-									ContractResources.EXT_CODE_OP_CHECKER_CODE_COPY_OF,
+							final var call = contractCall(contract, "codeCopyOf",
 									accountSolidityAddress)
 									.via("callRecord");
 							final var callRecord = getTxnRecord("callRecord");
 
-							final var accountCodeCallLocal = contractCallLocal(CONTRACT,
-									ContractResources.EXT_CODE_OP_CHECKER_CODE_COPY_OF,
+							final var accountCodeCallLocal = contractCallLocal(contract, "codeCopyOf",
 									accountSolidityAddress)
 									.saveResultTo("accountCode");
 
-							final var contractCodeCallLocal = contractCallLocal(CONTRACT,
-									ContractResources.EXT_CODE_OP_CHECKER_CODE_COPY_OF,
+							final var contractCodeCallLocal = contractCallLocal(contract, "codeCopyOf",
 									contractAddress)
 									.saveResultTo("contractCode");
 
-							final var getBytecodeCall = getContractBytecode(CONTRACT)
+							final var getBytecodeCall = getContractBytecode(contract)
 									.saveResultTo("contractGetBytecode");
 
 							allRunFor(spec, call, callRecord, accountCodeCallLocal, contractCodeCallLocal, getBytecodeCall);

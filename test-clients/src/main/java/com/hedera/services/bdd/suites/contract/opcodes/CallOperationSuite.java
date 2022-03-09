@@ -22,9 +22,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,9 +32,9 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -57,31 +55,25 @@ public class CallOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec verifiesExistence() {
-		final String CONTRACT = "callOpChecker";
-		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
-		final String ACCOUNT = "account";
-		final int EXPECTED_BALANCE = 10;
+		final var contract = "CallOperationsChecker";
+		final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+		final var ACCOUNT = "account";
+		final var EXPECTED_BALANCE = 10;
 
 		return defaultHapiSpec("VerifiesExistence")
 				.given(
-						fileCreate("bytecode").path(ContractResources.CALL_OPERATIONS_CHECKER),
-						contractCreate(CONTRACT)
-								.bytecode("bytecode")
-								.gas(300_000L),
-						cryptoCreate(ACCOUNT).balance(0L)
+						cryptoCreate(ACCOUNT).balance(0L),
+						uploadInitCode(contract),
+						newContractCreate(contract)
 				).when(
 				).then(
-						contractCall(CONTRACT,
-								ContractResources.CALL_OP_CHECKER_ABI,
-								INVALID_ADDRESS)
+						contractCall(contract, "call", INVALID_ADDRESS)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
-							AccountID id = spec.registry().getAccountID(ACCOUNT);
-							String solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
+							final var id = spec.registry().getAccountID(ACCOUNT);
+							final var solidityAddress = HapiPropertySource.asHexedSolidityAddress(id);
 
-							final var contractCall = contractCall(CONTRACT,
-									ContractResources.CALL_OP_CHECKER_ABI,
-									solidityAddress)
+							final var contractCall = contractCall(contract, "call", solidityAddress)
 									.sending(EXPECTED_BALANCE);
 
 							final var balance = getAccountBalance(ACCOUNT).hasTinyBars(EXPECTED_BALANCE);
@@ -92,23 +84,20 @@ public class CallOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec callingContract() {
-		final String CONTRACT = "callingContract";
-		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+		final var contract = "CallingContract";
+		final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 		return defaultHapiSpec("CallingContract")
 				.given(
-						fileCreate("callingContractBytecode").path(ContractResources.CALLING_CONTRACT)
+						uploadInitCode(contract),
+						newContractCreate(contract)
 				).when(
-						contractCreate(CONTRACT).bytecode("callingContractBytecode"),
-						contractCall(CONTRACT, ContractResources.CALLING_CONTRACT_SET_VALUE, 35),
-						contractCallLocal("callingContract",
-								ContractResources.CALLING_CONTRACT_VIEW_VAR)
+						contractCall(contract, "setVar1", 35),
+						contractCallLocal(contract, "getVar1")
 								.logged(),
-						contractCall(CONTRACT, ContractResources.CALLING_CONTRACT_CALL_CONTRACT,
-								INVALID_ADDRESS, 222)
+						contractCall(contract, "callContract", INVALID_ADDRESS, 222)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
 				).then(
-						contractCallLocal(CONTRACT,
-								ContractResources.CALLING_CONTRACT_VIEW_VAR)
+						contractCallLocal(contract, "getVar1")
 								.logged()
 				);
 	}

@@ -22,10 +22,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -42,10 +39,12 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 public class ExtCodeSizeOperationSuite extends HapiApiSuite {
@@ -63,41 +62,34 @@ public class ExtCodeSizeOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec verifiesExistence() {
-		final String CONTRACT = "extCodeSizeOpChecker";
-		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+		final var contract = "ExtCodeOperationsChecker";
+		final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
 		return defaultHapiSpec("VerifiesExistence")
 				.given(
-						fileCreate("bytecode").path(ContractResources.EXT_CODE_OPERATIONS_CHECKER_CONTRACT),
-						contractCreate(CONTRACT)
-								.bytecode("bytecode")
-								.gas(300_000L)
+						uploadInitCode(contract),
+						newContractCreate(contract)
 				).when(
 				)
 				.then(
-						contractCall(CONTRACT,
-								ContractResources.EXT_CODE_OP_CHECKER_SIZE_OF,
-								INVALID_ADDRESS)
+						contractCall(contract, "sizeOf", INVALID_ADDRESS)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-						contractCallLocal(CONTRACT,
-								ContractResources.EXT_CODE_OP_CHECKER_SIZE_OF,
-								INVALID_ADDRESS)
+						contractCallLocal(contract, "sizeOf", INVALID_ADDRESS)
 								.hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
-							AccountID accountID = spec.registry().getAccountID(DEFAULT_PAYER);
-							ContractID contractID = spec.registry().getContractId(CONTRACT);
-							String accountSolidityAddress = asHexedSolidityAddress(accountID);
-							String contractAddress = asHexedSolidityAddress(contractID);
+							final var accountID = spec.registry().getAccountID(DEFAULT_PAYER);
+							final var contractID = spec.registry().getContractId(contract);
+							final var accountSolidityAddress = asHexedSolidityAddress(accountID);
+							final var contractAddress = asHexedSolidityAddress(contractID);
 
-							final var call = contractCall(CONTRACT,
-									ContractResources.EXT_CODE_OP_CHECKER_SIZE_OF,
+							final var call = contractCall(contract, "sizeOf",
 									accountSolidityAddress)
 									.via("callRecord");
 
 							final var callRecord = getTxnRecord("callRecord").hasPriority(
 									recordWith().contractCallResult(
 											resultWith().resultThruAbi(
-													ContractResources.EXT_CODE_OP_CHECKER_SIZE_OF,
+													getABIFor(FUNCTION, "sizeOf", contract),
 													isLiteralResult(
 															new Object[]{BigInteger.valueOf(0)}
 													)
@@ -105,24 +97,23 @@ public class ExtCodeSizeOperationSuite extends HapiApiSuite {
 									)
 							);
 
-							final var accountCodeSizeCallLocal = contractCallLocal(CONTRACT,
-									ContractResources.EXT_CODE_OP_CHECKER_SIZE_OF,
-									accountSolidityAddress)
+							final var accountCodeSizeCallLocal = contractCallLocal(contract,
+									"sizeOf", accountSolidityAddress)
 									.has(
 											ContractFnResultAsserts.resultWith()
 													.resultThruAbi(
-															ContractResources.EXT_CODE_OP_CHECKER_SIZE_OF,
+															getABIFor(FUNCTION, "sizeOf", contract),
 															ContractFnResultAsserts.isLiteralResult(
 																	new Object[]{BigInteger.valueOf(0)}
 															)
 													)
 									);
 
-							final var getBytecode = getContractBytecode(CONTRACT)
+							final var getBytecode = getContractBytecode(contract)
 									.saveResultTo("contractBytecode");
 
-							final var contractCodeSize = contractCallLocal(CONTRACT,
-									ContractResources.EXT_CODE_OP_CHECKER_SIZE_OF,
+							final var contractCodeSize = contractCallLocal(contract,
+									"sizeOf",
 									contractAddress)
 									.saveResultTo("contractCodeSize");
 
