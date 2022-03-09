@@ -26,6 +26,7 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -53,6 +54,7 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final BiPredicate<JKey, TransactionSignature> cryptoValidity;
 	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private WorldLedgers ledgers;
 
 	@Inject
 	public TxnAwareSoliditySigsVerifier(
@@ -69,6 +71,10 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		this.cryptoValidity = cryptoValidity;
 	}
 
+	public void setWorldLedgers(final WorldLedgers ledgers) {
+		this.ledgers = ledgers;
+	}
+
 	@Override
 	public boolean hasActiveKey(
 			final Address accountAddress,
@@ -78,9 +84,8 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final ContractAliases aliases
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
-		final var simpleId = Id.fromGrpcAccount(accountId);
-		final var entityNum = simpleId.asEntityNum();
-		final var account = accounts.get().get(entityNum);
+		final var account =
+				ledgers.accounts().getImmutableRef(accountId);
 		validateTrue(account != null, INVALID_ACCOUNT_ID);
 
 		if (accountAddress.equals(activeContract)) {

@@ -299,7 +299,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
-		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
+ 		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
 
 		if (messageFrame.isStatic() && !isRedirectProxy) {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
@@ -331,6 +331,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
 		this.sideEffectsTracker = sideEffectsFactory.get();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
+		((TxnAwareSoliditySigsVerifier)this.sigsVerifier).setWorldLedgers(this.ledgers);
 		this.senderAddress = messageFrame.getSenderAddress();
 	}
 
