@@ -20,7 +20,9 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,10 +30,13 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
-import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIATED_TOKEN;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -39,6 +44,7 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.when;
 
 class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	@BeforeEach
@@ -52,6 +58,26 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		final var balance = subject.getTokenBalance(misc, frozenId);
 
 		assertEquals(miscFrozenTokenBalance, balance);
+	}
+
+	@Test
+	void recognizesAccountWithNonZeroTokenBalances() {
+		assertFalse(subject.allTokenBalancesVanish(misc));
+	}
+
+	@Test
+	void throwsIfSubjectHasNoUsableTokenRelsLedger() {
+		subject.setTokenRelsLedger(null);
+
+		assertThrows(IllegalStateException.class, () -> subject.allTokenBalancesVanish(deletable));
+	}
+
+	@Test
+	void recognizesAccountWithZeroTokenBalances() {
+		when(accountsLedger.get(deletable, TOKEN_ASSOCIATION_METADATA)).thenReturn(
+				new TokenAssociationMetadata(2, 2, EntityNumPair.MISSING_NUM_PAIR));
+
+		assertTrue(subject.allTokenBalancesVanish(deletable));
 	}
 
 	@Test
@@ -99,7 +125,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		verify(tokenRelsLedger).rollback();
 		verify(nftsLedger).rollback();
 		verify(manager).rollback();
-		verify(accountsLedger).undoChangesOfType(List.of(LAST_ASSOCIATED_TOKEN, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS));
+		verify(accountsLedger).undoChangesOfType(List.of(TOKEN_ASSOCIATION_METADATA, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS));
 		verify(sideEffectsTracker).resetTrackedTokenChanges();
 	}
 

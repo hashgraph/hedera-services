@@ -34,6 +34,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
@@ -116,6 +117,8 @@ class GetAccountInfoAnswerTest {
 	private AliasManager aliasManager;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private TokenAssociationMetadata tokenAssociationMetadata;
 
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	private final int maxTokensPerAccountInfo = 10;
@@ -133,6 +136,7 @@ class GetAccountInfoAnswerTest {
 	long firstBalance = 123, secondBalance = 234, thirdBalance = 345, fourthBalance = 456, missingBalance = 567;
 
 	private final long fee = 1_234L;
+	private EntityNumPair firstRelKey = fromAccountTokenRel(payerId, firstToken);
 	private Transaction paymentTxn;
 
 	private GetAccountInfoAnswer subject;
@@ -142,7 +146,6 @@ class GetAccountInfoAnswerTest {
 		tokenRels = new MerkleMap<>();
 
 		final var firstRel = new MerkleTokenRelStatus(firstBalance, true, true, true);
-		final var firstRelKey = fromAccountTokenRel(payerId, firstToken);
 		firstRel.setKey(firstRelKey);
 		final var secondRel = new MerkleTokenRelStatus(secondBalance, false, false, true);
 		final var secondRelKey = fromAccountTokenRel(payerId, secondToken);
@@ -197,7 +200,6 @@ class GetAccountInfoAnswerTest {
 				.fungibleTokenAllowances(fungibleTokenAllowances)
 				.nftAllowances(nftAllowances)
 				.get();
-		payerAccount.setLastAssociatedToken(firstRelKey);
 
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
@@ -276,6 +278,8 @@ class GetAccountInfoAnswerTest {
 		given(tokens.getOrDefault(EntityNum.fromTokenId(thirdToken), REMOVED_TOKEN)).willReturn(token);
 		given(tokens.getOrDefault(EntityNum.fromTokenId(fourthToken), REMOVED_TOKEN)).willReturn(deletedToken);
 		given(tokens.getOrDefault(EntityNum.fromTokenId(missingToken), REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
+		payerAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(firstRelKey);
 
 		given(token.symbol()).willReturn("HEYMA");
 		given(deletedToken.symbol()).willReturn("THEWAY");

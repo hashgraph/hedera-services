@@ -633,7 +633,7 @@ public class StateView {
 			final MerkleMap<EntityNum, MerkleToken> tokens,
 			final int maxTokensPerAccountInfo) {
 		final List<TokenRelationship> listOfAssociatedTokens = new ArrayList<>();
-		var currKey = account.getLastAssociatedToken();
+		var currKey = account.getTokenAssociationMetadata().lastAssociation();
 		int counter = 0;
 
 		while (!currKey.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxTokensPerAccountInfo) {
@@ -674,7 +674,7 @@ public class StateView {
 			final MerkleAccount account,
 			final int maxTokensPerAccountInfo) {
 		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
-		var currKey = account.getLastAssociatedToken();
+		var currKey = account.getTokenAssociationMetadata().lastAssociation();
 		int counter = 0;
 
 		while (!currKey.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxTokensPerAccountInfo) {

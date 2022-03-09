@@ -35,6 +35,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
@@ -66,14 +67,13 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
-import static com.hedera.services.ledger.properties.AccountProperty.ASSOCIATED_TOKENS_COUNT;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.ledger.properties.AccountProperty.LAST_ASSOCIATED_TOKEN;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
@@ -243,8 +243,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			if (validity == OK) {
-				final var lastAssociatedToken = (EntityNumPair) accountsLedger.get(aId, LAST_ASSOCIATED_TOKEN);
-				var associatedTokensCount = (int) accountsLedger.get(aId, ASSOCIATED_TOKENS_COUNT);
+				final var tokenAssociationMetadata =
+						(TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
+				final var lastAssociatedToken = tokenAssociationMetadata.lastAssociation();
+				var numAssociations = tokenAssociationMetadata.numAssociations();
+				var numZeroBalances = tokenAssociationMetadata.numZeroBalances();
 				var currKey = new EntityNumPair(lastAssociatedToken.value());
 				for (var id : tokenIds) {
 					final var relationship = asTokenRel(aId, id);
@@ -283,11 +286,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 						tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey);
 						tokenRelsLedger.set(relationship, NEXT_KEY, currKey);
 					}
-					associatedTokensCount++;
+					numAssociations++;
+					numZeroBalances++;
 					currKey = newKey;
 				}
-				accountsLedger.set(aId, ASSOCIATED_TOKENS_COUNT, associatedTokensCount);
-				accountsLedger.set(aId, LAST_ASSOCIATED_TOKEN, currKey);
+				accountsLedger.set(aId, TOKEN_ASSOCIATION_METADATA,
+						new TokenAssociationMetadata(numAssociations, numZeroBalances, currKey));
 			}
 			return validity;
 		});
@@ -414,7 +418,12 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		final var fromNftsOwned = (long) accountsLedger.get(from, NUM_NFTS_OWNED);
 		final var fromThisNftsOwned = (long) tokenRelsLedger.get(fromRel, TOKEN_BALANCE);
 		final var toNftsOwned = (long) accountsLedger.get(to, NUM_NFTS_OWNED);
-		final var toThisNftsOwned = (long) tokenRelsLedger.get(asTokenRel(to, nftType), TOKEN_BALANCE);
+		final var toThisNftsOwned = (long) tokenRelsLedger.get(toRel, TOKEN_BALANCE);
+		final var fromTokenAssociationMetaData =
+				(TokenAssociationMetadata) accountsLedger.get(from, TOKEN_ASSOCIATION_METADATA);
+		final var toTokenAssociationMetaData =
+				(TokenAssociationMetadata) accountsLedger.get(to, TOKEN_ASSOCIATION_METADATA);
+
 		final var isTreasuryReturn = tokenTreasury.equals(to);
 		if (isTreasuryReturn) {
 			nftsLedger.set(nftId, OWNER, EntityId.MISSING_ENTITY_ID);
@@ -422,9 +431,22 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			nftsLedger.set(nftId, OWNER, EntityId.fromGrpcAccountId(to));
 		}
 
+		final var updatedFromNumZeroBalances = fromThisNftsOwned - 1 == 0 ?
+				fromTokenAssociationMetaData.numZeroBalances() + 1 : fromTokenAssociationMetaData.numZeroBalances();
+		final var updatedToNumZeroBalances = toThisNftsOwned == 0 ?
+				toTokenAssociationMetaData.numZeroBalances() - 1 : toTokenAssociationMetaData.numZeroBalances();
+
 		/* Note correctness here depends on rejecting self-transfers */
 		accountsLedger.set(from, NUM_NFTS_OWNED, fromNftsOwned - 1);
 		accountsLedger.set(to, NUM_NFTS_OWNED, toNftsOwned + 1);
+		accountsLedger.set(from, TOKEN_ASSOCIATION_METADATA, new TokenAssociationMetadata(
+				fromTokenAssociationMetaData.numAssociations(),
+				updatedFromNumZeroBalances,
+				fromTokenAssociationMetaData.lastAssociation()));
+		accountsLedger.set(to, TOKEN_ASSOCIATION_METADATA, new TokenAssociationMetadata(
+				toTokenAssociationMetaData.numAssociations(),
+				updatedToNumZeroBalances,
+				toTokenAssociationMetaData.lastAssociation()));
 		tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
 		tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
 
@@ -514,6 +536,22 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return INSUFFICIENT_TOKEN_BALANCE;
 		}
 		tokenRelsLedger.set(relationship, TOKEN_BALANCE, newBalance);
+		final var tokenAssociationMetadata = (TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
+		int updatedNumZeroBalance = tokenAssociationMetadata.numZeroBalances();
+
+		// If the original balance is zero, then the receiving account's numZeroBalances has to be decreased
+		// and if the newBalance is zero, then the sending account's numZeroBalances has to be increased
+		if (newBalance == 0 && adjustment < 0) {
+			updatedNumZeroBalance++;
+		} else if (balance == 0 && adjustment > 0) {
+			updatedNumZeroBalance--;
+		}
+
+		accountsLedger.set(aId, TOKEN_ASSOCIATION_METADATA,
+				new TokenAssociationMetadata(
+						tokenAssociationMetadata.numAssociations(),
+						updatedNumZeroBalance,
+						tokenAssociationMetadata.lastAssociation()));
 		sideEffectsTracker.trackTokenUnitsChange(tId, aId, adjustment);
 		return OK;
 	}

@@ -83,8 +83,9 @@ public class Account {
 	private TreeMap<EntityNum, Long> cryptoAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
 	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
+	private int numAssociations;
+	private int numZeroBalances;
 	private EntityNumPair lastAssociatedToken;
-	private int associatedTokensCount;
 
 	public Account(Id id) {
 		this.id = id;
@@ -161,12 +162,30 @@ public class Account {
 		this.lastAssociatedToken = lastAssociatedToken;
 	}
 
-	public int getAssociatedTokensCount() {
-		return associatedTokensCount;
+	public int getNumAssociations() {
+		return numAssociations;
 	}
 
-	public void setAssociatedTokensCount(final int associatedTokensCount) {
-		this.associatedTokensCount = associatedTokensCount;
+	public void setNumAssociations(final int numAssociations) {
+		if (numAssociations < 0) {
+			// not possible
+			this.numAssociations = 0;
+		} else {
+			this.numAssociations = numAssociations;
+		}
+	}
+
+	public int getNumZeroBalances() {
+		return numZeroBalances;
+	}
+
+	public void setNumZeroBalances(final int numZeroBalances) {
+		if (numZeroBalances < 0) {
+			// not possible
+			this.numZeroBalances = 0;
+		} else {
+			this.numZeroBalances = numZeroBalances;
+		}
 	}
 
 	public List<TokenRelationship> associateWith(
@@ -198,7 +217,8 @@ public class Account {
 				prevRel.setPrevKey(newRel.getKey());
 				tokenRelationshipsToPersist.add(prevRel);
 			}
-			associatedTokensCount++;
+			numZeroBalances++;
+			numAssociations++;
 			prevRel = newRel;
 			currKey = newRel.getKey();
 		}
@@ -228,6 +248,10 @@ public class Account {
 			// update links
 			// return the touched relationships.
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
+			if (shouldDecreaseNumZeroBalances(dissociation)) {
+				numZeroBalances--;
+			}
+			numAssociations--;
 			dissociation.updateModelRelsSubjectTo(validator);
 			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
 			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
@@ -274,9 +298,16 @@ public class Account {
 				prevRel.setNextKey(nextKey);
 				unPersistedRelationships.put(prevKey, prevRel);
 			}
-			associatedTokensCount--;
 		}
 		return unPersistedRelationships.values().stream().toList();
+	}
+
+	private boolean shouldDecreaseNumZeroBalances(final Dissociation dissociation) {
+		if (dissociation.dissociatingToken().getTreasury().getId().equals(id)) {
+			return dissociation.dissociatedTokenTreasuryRel().getBalance() == 0;
+		} else {
+			return dissociation.dissociatingAccountRel().getBalance() == 0;
+		}
 	}
 
 	public Id getId() {
@@ -315,8 +346,9 @@ public class Account {
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("nftAllowances", nftAllowances)
+				.add("numAssociations", numAssociations)
+				.add("numZeroBalances", numZeroBalances)
 				.add("lastAssociatedToken", lastAssociatedToken)
-				.add("associatedTokensCount", associatedTokensCount)
 				.toString();
 	}
 

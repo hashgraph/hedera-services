@@ -54,12 +54,15 @@ import static org.mockito.Mockito.verify;
 class AccountTest {
 	private static final byte[] mockCreate2Addr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
 	private final long miscAccountNum = 12345;
+	private final long treasuryNum = 11111;
 	private final long firstAssocTokenNum = 666;
 	private final long secondAssocTokenNum = 777;
 	private final long thirdAssocTokenNum = 555;
 	private final Id subjectId = new Id(0, 0, miscAccountNum);
+	private final Id treasuryId = new Id(0, 0, treasuryNum);
 	private final long ownedNfts = 5;
-	private final int associatedTokensCount = 3;
+	private final int numAssociations = 3;
+	private final int numZeroBalances = 2;
 	private final int alreadyUsedAutoAssociations = 123;
 	private final int maxAutoAssociations = 1234;
 	private final int autoAssociationMetadata = buildAutomaticAssociationMetaData(maxAutoAssociations,
@@ -73,6 +76,7 @@ class AccountTest {
 	private final Token firstToken = new Token(new Id(0,0, firstAssocTokenNum));
 	private final Token secondToken = new Token(new Id(0,0, secondAssocTokenNum));
 	private final Token thirdToken = new Token(new Id(0,0, thirdAssocTokenNum));
+	private final Account treasuryAccount = new Account(treasuryId);
 
 	private Account subject;
 	private OptionValidator validator;
@@ -84,7 +88,8 @@ class AccountTest {
 		subject.setAutoAssociationMetadata(autoAssociationMetadata);
 		subject.setOwnedNfts(ownedNfts);
 		subject.setLastAssociatedToken(firstRelKey);
-		subject.setAssociatedTokensCount(associatedTokensCount);
+		subject.setNumAssociations(numAssociations);
+		subject.setNumZeroBalances(numZeroBalances);
 
 		firstRel.setKey(firstRelKey);
 		firstRel.setNextKey(secondRelKey);
@@ -94,8 +99,21 @@ class AccountTest {
 		thirdRel.setKey(thirdRelKey);
 		thirdRel.setPrevKey(secondRelKey);
 
+		firstToken.setTreasury(treasuryAccount);
+		secondToken.setTreasury(treasuryAccount);
+		thirdToken.setTreasury(treasuryAccount);
+
 		validator = mock(ContextOptionValidator.class);
 		tokenStore = mock(TypedTokenStore.class);
+	}
+
+	@Test
+	void cannotSetNegativeCounters() {
+		subject.setNumZeroBalances(-1);
+		subject.setNumAssociations(-2);
+
+		assertEquals(0, subject.getNumZeroBalances());
+		assertEquals(0, subject.getNumAssociations());
 	}
 
 	@Test
@@ -149,7 +167,8 @@ class AccountTest {
 		final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, " +
 				"ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, " +
 				"alias=, cryptoAllowances=null, fungibleTokenAllowances=null, nftAllowances=null" +
-				subject.getAlias().toStringUtf8() + ", lastAssociatedToken=PermHashLong(12345, 666), associatedTokensCount=3}";
+				subject.getAlias().toStringUtf8() + ", numAssociations=" + numAssociations +", numZeroBalances="+
+				numZeroBalances + ", lastAssociatedToken=PermHashLong(12345, 666)}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
@@ -165,6 +184,7 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
 		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
 		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(firstToken);
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(secondToken);
 		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
@@ -175,7 +195,7 @@ class AccountTest {
 
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
-		assertEquals(associatedTokensCount - 1 , subject.getAssociatedTokensCount());
+		assertEquals(numAssociations - 1 , subject.getNumAssociations());
 		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
@@ -189,6 +209,7 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
 		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
 		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(thirdToken);
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(firstToken);
 		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
@@ -202,7 +223,7 @@ class AccountTest {
 
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
-		assertEquals(associatedTokensCount - 1, subject.getAssociatedTokensCount());
+		assertEquals(numAssociations - 1, subject.getNumAssociations());
 		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
@@ -216,6 +237,7 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
 		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
 		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(secondToken);
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(firstToken);
 		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
@@ -228,7 +250,67 @@ class AccountTest {
 
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
-		assertEquals(associatedTokensCount - 1, subject.getAssociatedTokensCount());
+		assertEquals(numAssociations - 1, subject.getNumAssociations());
+		assertEquals(numZeroBalances - 1, subject.getNumZeroBalances());
+		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+	}
+
+	@Test
+	void dissociatingWorksWithNonZeroBalance() {
+		// setup:
+		final var alreadyAssocTokenId = new Id(0, 0, secondAssocTokenNum);
+		final var dissociationRel = mock(Dissociation.class);
+		final var tokenRel = mock(TokenRelationship.class);
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
+		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
+		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(secondToken);
+		given(tokenRel.isAutomaticAssociation()).willReturn(true);
+		given(tokenRel.getBalance()).willReturn(100L);
+		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(firstToken);
+		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
+		given(tokenStore.loadTokenRelationship(any(), any()))
+				.willReturn(secondRel)
+				.willReturn(firstRel);
+
+		// when:
+		subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator);
+
+		// then:
+		verify(dissociationRel).updateModelRelsSubjectTo(validator);
+		assertEquals(numAssociations - 1, subject.getNumAssociations());
+		assertEquals(numZeroBalances, subject.getNumZeroBalances());
+		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+	}
+
+	@Test
+	void treasuryDissociationWorks() {
+		// setup:
+		final var alreadyAssocTokenId = new Id(0, 0, secondAssocTokenNum);
+		final var dissociationRel = mock(Dissociation.class);
+		final var tokenRel = mock(TokenRelationship.class);
+		secondToken.setTreasury(subject);
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
+		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
+		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatedTokenTreasuryRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(secondToken);
+		given(tokenRel.isAutomaticAssociation()).willReturn(true);
+		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(firstToken);
+		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
+		given(tokenStore.loadTokenRelationship(any(), any()))
+				.willReturn(secondRel)
+				.willReturn(firstRel);
+
+		// when:
+		subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator);
+
+		// then:
+		verify(dissociationRel).updateModelRelsSubjectTo(validator);
+		assertEquals(numAssociations - 1, subject.getNumAssociations());
+		assertEquals(numZeroBalances - 1, subject.getNumZeroBalances());
 		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
@@ -245,6 +327,7 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
 		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
 		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(thirdToken);
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(thirdToken);
 		given(tokenStore.getLatestTokenRelationship(any())).willReturn(thirdRel);
@@ -293,7 +376,7 @@ class AccountTest {
 		subject.associateWith(List.of(firstNewToken, secondNewToken), tokenStore, true, true);
 
 		// expect:
-		assertEquals(associatedTokensCount + 2, subject.getAssociatedTokensCount());
+		assertEquals(numAssociations + 2, subject.getNumAssociations());
 		assertEquals(EntityNumPair.fromLongs(12345, 999).value(), subject.getLastAssociatedToken().value());
 	}
 
@@ -301,7 +384,8 @@ class AccountTest {
 	void accountEqualsCheck() {
 		// setup:
 		var account = new Account(subjectId);
-		account.setAssociatedTokensCount(associatedTokensCount);
+		account.setNumAssociations(numAssociations);
+		account.setNumZeroBalances(numZeroBalances);
 		account.setExpiry(1000L);
 		account.initBalance(100L);
 		account.setOwnedNfts(1L);
@@ -338,7 +422,8 @@ class AccountTest {
 		subject.setOwnedNfts(0);
 		var otherSubject = new Account(subjectId);
 		otherSubject.incrementOwnedNfts();
-		otherSubject.setAssociatedTokensCount(associatedTokensCount);
+		otherSubject.setNumAssociations(numAssociations);
+		otherSubject.setNumZeroBalances(numZeroBalances);
 
 		subject.incrementOwnedNfts();
 		otherSubject.setAutoAssociationMetadata(autoAssociationMetadata);

@@ -29,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -140,6 +141,8 @@ class RenewalHelperTest {
 	private AliasManager aliasManager;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private TokenAssociationMetadata tokenAssociationMetadata;
 
 	private RenewalHelper subject;
 
@@ -253,7 +256,8 @@ class RenewalHelperTest {
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
 
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
-		expiredAccountZeroBalance.setLastAssociatedToken(deletedAssociationId);
+		expiredAccountZeroBalance.setTokenAssociationMetadata(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(deletedAssociationId);
 		givenTokenPresent(deletedTokenId, deletedToken);
 		givenTokenPresent(survivedTokenId, longLivedToken);
 		givenRelPresentWith(expiredKey, deletedTokenId, 0,
@@ -289,7 +293,9 @@ class RenewalHelperTest {
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
 
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
-		expiredAccountZeroBalance.setLastAssociatedToken(EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
+		expiredAccountZeroBalance.setTokenAssociationMetadata(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation())
+				.willReturn(EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
 		givenTokenPresent(deletedTokenId, deletedToken);
 		givenTokenPresent(survivedTokenId, longLivedToken);
 		givenRelPresentWith(expiredKey, deletedTokenId, Long.MAX_VALUE,
@@ -331,7 +337,8 @@ class RenewalHelperTest {
 		MerkleMap<EntityNum, MerkleAccount> accountsMap = new MerkleMap<>();
 		accountsMap.put(EntityNum.fromLong(nonExpiredAccountNum), nonExpiredAccount);
 		accountsMap.put(EntityNum.fromLong(brokeExpiredAccountNum), expiredAccountZeroBalance);
-		expiredAccountZeroBalance.setLastAssociatedToken(EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
+		expiredAccountZeroBalance.setTokenAssociationMetadata(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
 
 		AliasManager liveAliasManager = new AliasManager();
 		linkWellKnownEntities(liveAliasManager);

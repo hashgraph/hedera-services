@@ -39,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
@@ -71,6 +72,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.txns.validation.TransferListChecks.isNetZeroAdjustment;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -285,6 +287,15 @@ public class HederaLedger {
 	public long getTokenBalance(AccountID aId, TokenID tId) {
 		var relationship = asTokenRel(aId, tId);
 		return (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+	}
+
+	public boolean allTokenBalancesVanish(AccountID aId) {
+		if (tokenRelsLedger == null) {
+			throw new IllegalStateException("Ledger has no manageable token relationships!");
+		}
+
+		final var tokenAssociationMetadata = (TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
+		return tokenAssociationMetadata.hasNoTokenBalances();
 	}
 
 	public boolean isKnownTreasury(AccountID aId) {

@@ -27,6 +27,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -149,7 +150,8 @@ class SignedStateBalancesExporterTest {
 				.balance(secondNonNodeAccountBalance)
 				.tokens(theToken, theDeletedToken, theMissingToken)
 				.get();
-		secondNonNodeAccount.setLastAssociatedToken(secondNonNodeTokenAssociationKey);
+		secondNonNodeAccount.setTokenAssociationMetadata(new TokenAssociationMetadata(
+				0,0, secondNonNodeTokenAssociationKey));
 		deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
 
 		accounts.put(fromAccountId(thisNode), thisNodeAccount);
