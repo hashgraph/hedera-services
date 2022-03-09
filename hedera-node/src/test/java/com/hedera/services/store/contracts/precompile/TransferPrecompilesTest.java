@@ -224,7 +224,7 @@ class TransferPrecompilesTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(tokensTransferList)))
 				.willReturn(mockSynthBodyBuilder);
@@ -250,7 +250,7 @@ class TransferPrecompilesTest {
 		given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -311,7 +311,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -327,7 +327,7 @@ class TransferPrecompilesTest {
 	@Test
 	void abortsIfImpliedCustomFeesCannotBeAssessed() {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
@@ -358,7 +358,7 @@ class TransferPrecompilesTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -414,7 +414,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -475,7 +475,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -537,7 +537,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -604,7 +604,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -676,7 +676,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -743,7 +743,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -775,7 +775,7 @@ class TransferPrecompilesTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(sideEffects)).willReturn(wrappedLedgers);
 	}
 
 	private void givenMinimalFrameContext() {
@@ -783,7 +783,7 @@ class TransferPrecompilesTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 	}
 
 	private void givenLedgers() {

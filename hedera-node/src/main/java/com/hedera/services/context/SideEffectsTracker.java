@@ -71,6 +71,7 @@ public class SideEffectsTracker {
 
 	private int numTouches = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
+	private long netHbarChange = 0;
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
 	private ContractID newContractId = null;
@@ -302,6 +303,7 @@ public class SideEffectsTracker {
 	 * 		the incremental ℏ change to track
 	 */
 	public void trackHbarChange(final AccountID account, final long amount) {
+		netHbarChange += amount;
 		updateFungibleChanges(account, amount, netHbarChanges);
 	}
 
@@ -323,7 +325,6 @@ public class SideEffectsTracker {
 		final var unitChanges = netTokenChanges.computeIfAbsent(token, ignore -> TransferList.newBuilder());
 		updateFungibleChanges(account, amount, unitChanges);
 	}
-
 
 	/**
 	 * Tracks ownership of the given NFT changing from the given sender to the given receiver. This tracking
@@ -356,6 +357,10 @@ public class SideEffectsTracker {
 	public TransferList getNetTrackedHbarChanges() {
 		purgeZeroAdjustments(netHbarChanges);
 		return netHbarChanges.build();
+	}
+
+	public long getNetHbarChange() {
+		return netHbarChange;
 	}
 
 	/**
@@ -456,6 +461,7 @@ public class SideEffectsTracker {
 	public void reset() {
 		resetTrackedTokenChanges();
 		netHbarChanges.clear();
+		netHbarChange = 0;
 		newAccountId = null;
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;

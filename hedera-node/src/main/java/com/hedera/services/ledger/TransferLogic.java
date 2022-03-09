@@ -152,7 +152,6 @@ public class TransferLogic {
 		final var fundingBalance = (long) accountsLedger.get(funding, BALANCE);
 		final var newFundingBalance = fundingBalance + autoCreationFee;
 		accountsLedger.set(funding, BALANCE, newFundingBalance);
-		sideEffectsTracker.trackHbarChange(funding, autoCreationFee);
 	}
 
 	private void adjustBalancesAndAllowances(final List<BalanceChange> changes) {
@@ -161,7 +160,6 @@ public class TransferLogic {
 			if (change.isForHbar()) {
 				final var newBalance = change.getNewBalance();
 				accountsLedger.set(accountId, BALANCE, newBalance);
-				sideEffectsTracker.trackHbarChange(accountId, change.getAggregatedUnits());
 				if (change.isApprovedAllowance()) {
 					adjustCryptoAllowance(change, accountId);
 				}
