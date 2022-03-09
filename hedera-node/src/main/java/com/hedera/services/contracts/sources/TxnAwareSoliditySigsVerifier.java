@@ -84,8 +84,8 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final ContractAliases aliases
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
-		final var account =
-				ledgers.accounts().getImmutableRef(accountId);
+		final var account = ledgers != null ?
+				ledgers.accounts().getImmutableRef(accountId) : null;
 		validateTrue(account != null, INVALID_ACCOUNT_ID);
 
 		if (accountAddress.equals(activeContract)) {
