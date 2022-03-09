@@ -38,7 +38,6 @@ import java.util.Optional;
 import java.util.function.BiPredicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -76,13 +75,15 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
 		final var account = ledgers != null ?
 				Optional.ofNullable(ledgers.accounts().getImmutableRef(accountId)) : Optional.empty();
+		final MerkleAccount merkleAccount = account.map(o -> (MerkleAccount) o).orElseGet(MerkleAccount::new);
 		validateTrue(account.isPresent(), INVALID_ACCOUNT_ID);
 
 		if (accountAddress.equals(activeContract)) {
 			return true;
 		}
 
-		return isActiveInFrame(((MerkleAccount)account.get()).getAccountKey(), recipient, contract, activeContract,
+		return merkleAccount.getAccountKey() != null && isActiveInFrame(merkleAccount.getAccountKey(), recipient, contract,
+				activeContract,
 				aliases);
 	}
 
@@ -98,8 +99,9 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		final var token = ledgers != null ?
 				Optional.ofNullable(ledgers.tokens().getImmutableRef(tokenId)) : Optional.empty();
 
+		final MerkleToken merkleToken = token.map(o -> (MerkleToken) o).orElseGet(MerkleToken::new);
 		validateTrue(token.isPresent(), INVALID_TOKEN_ID);
-		final var merkleToken = (MerkleToken) token.get();
+
 		validateTrue(merkleToken.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
 		return isActiveInFrame(merkleToken.getSupplyKey(), recipient, contract, activeContract, aliases);
 	}
