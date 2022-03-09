@@ -24,7 +24,9 @@ package com.hedera.services.contracts.sources;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
@@ -33,6 +35,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -76,6 +79,7 @@ class TxnAwareSoliditySigsVerifierTest {
 	private static final Address PRETEND_TOKEN_ADDR = tokenId.asEvmAddress();
 	private static final Address PRETEND_ACCOUNT_ADDR = accountId.asEvmAddress();
 	private final AccountID payer = IdUtils.asAccount("0.0.2");
+	private final AccountID account = IdUtils.asAccount("0.0.1234");
 	private final AccountID sigRequired = IdUtils.asAccount("0.0.555");
 	private final AccountID smartContract = IdUtils.asAccount("0.0.666");
 	private final AccountID noSigRequired = IdUtils.asAccount("0.0.777");
@@ -104,6 +108,10 @@ class TxnAwareSoliditySigsVerifierTest {
 	private Function<byte[], TransactionSignature> pkToCryptoSigsFn;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
+	private WorldLedgers ledgers;
 
 	private TxnAwareSoliditySigsVerifier subject;
 
@@ -113,6 +121,7 @@ class TxnAwareSoliditySigsVerifierTest {
 
 		subject = new TxnAwareSoliditySigsVerifier(activationTest, txnCtx, () -> tokens, () -> accounts,
 				cryptoValidity);
+		subject.setWorldLedgers(ledgers);
 	}
 
 	@Test
@@ -158,7 +167,8 @@ class TxnAwareSoliditySigsVerifierTest {
 
 	@Test
 	void throwsIfAskedToVerifyMissingAccount() {
-		given(accounts.get(accountId.asEntityNum())).willReturn(null);
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.getImmutableRef(account)).willReturn(null);
 
 		assertFailsWith(() ->
 						subject.hasActiveKey(
@@ -171,7 +181,8 @@ class TxnAwareSoliditySigsVerifierTest {
 	@Test
 	void testsAccountKeyIfPresent() {
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(accounts.get(accountId.asEntityNum())).willReturn(sigReqAccount);
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.getImmutableRef(account)).willReturn(sigReqAccount);
 		given(sigReqAccount.getAccountKey()).willReturn(expectedKey);
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
@@ -265,7 +276,8 @@ class TxnAwareSoliditySigsVerifierTest {
 
 	@Test
 	void testsAccountAddressAndActiveContractIfEquals() {
-		given(accounts.get(Id.fromGrpcAccount(smartContract).asEntityNum())).willReturn(sigReqAccount);
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.getImmutableRef(smartContract)).willReturn(contract);
 
 		final var verdict = subject.hasActiveKey(
 				EntityIdUtils.asTypedEvmAddress(smartContract),
