@@ -215,7 +215,7 @@ class AssociatePrecompileTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -233,7 +233,7 @@ class AssociatePrecompileTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(frame.getRecipientAddress()).willReturn(recipientAddress);
 		givenLedgers();
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
@@ -268,7 +268,7 @@ class AssociatePrecompileTest {
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -309,7 +309,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -355,7 +355,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -400,7 +400,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -446,7 +446,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockRecordBuilder);
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -488,7 +488,7 @@ class AssociatePrecompileTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 	}
 
 	private void givenLedgers() {
