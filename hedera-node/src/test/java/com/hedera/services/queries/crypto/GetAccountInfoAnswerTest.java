@@ -36,7 +36,6 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -184,12 +183,7 @@ class GetAccountInfoAnswerTest {
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
 
-		view = new StateView(
-				tokenStore,
-				scheduleStore,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				networkInfo);
+		view = new StateView(tokenStore, scheduleStore, children, networkInfo);
 
 		subject = new GetAccountInfoAnswer(optionValidator, aliasManager);
 	}
