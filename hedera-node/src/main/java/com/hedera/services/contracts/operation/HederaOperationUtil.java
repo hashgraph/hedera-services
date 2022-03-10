@@ -172,17 +172,13 @@ public final class HederaOperationUtil {
 		// if this is a delegate call activeContract should be the recipient address
 		// otherwise it should be the contract address
 		if (isDelegateCall) {
-			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(true,
 					account.getAddress(),
-					frame.getRecipientAddress(),
-					frame.getContractAddress(),
 					frame.getRecipientAddress(),
 					updater.wrappedTrackingLedgers());
 		} else {
-			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(false,
 					account.getAddress(),
-					frame.getRecipientAddress(),
-					frame.getContractAddress(),
 					frame.getContractAddress(),
 					updater.wrappedTrackingLedgers());
 		}

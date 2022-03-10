@@ -256,8 +256,8 @@ class HederaOperationUtilTest {
 		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
 		given(sigsVerifier
-				.hasActiveKeyOrNoReceiverSigReq(
-						mockTarget, Address.ALTBN128_ADD, Address.ALTBN128_MUL, Address.ALTBN128_ADD, ledgers))
+				.hasActiveKeyOrNoReceiverSigReq(true,
+						mockTarget, Address.ALTBN128_ADD, ledgers))
 				.willReturn(false);
 		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
 		given(hederaWorldUpdater.wrappedTrackingLedgers()).willReturn(ledgers);
@@ -278,8 +278,8 @@ class HederaOperationUtilTest {
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
 		verify(worldStateAccount).getAddress();
-		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(
-				mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR , PRETEND_RECIPIENT_ADDR, ledgers);
+		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true,
+				mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
 		verify(gasSupplier).get();
 		verify(executionSupplier, never()).get();
 	}
@@ -294,8 +294,8 @@ class HederaOperationUtilTest {
 		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
 		given(sigsVerifier
-				.hasActiveKeyOrNoReceiverSigReq(
-						mockTarget, Address.ALTBN128_MUL, Address.ALTBN128_MUL, Address.ALTBN128_MUL, ledgers))
+				.hasActiveKeyOrNoReceiverSigReq(false,
+						mockTarget, Address.ALTBN128_MUL, ledgers))
 				.willReturn(false);
 		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
 		given(hederaWorldUpdater.wrappedTrackingLedgers()).willReturn(ledgers);
@@ -316,8 +316,8 @@ class HederaOperationUtilTest {
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
 		verify(worldStateAccount).getAddress();
-		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(
-				mockTarget, PRETEND_CONTRACT_ADDR, PRETEND_CONTRACT_ADDR , PRETEND_CONTRACT_ADDR, ledgers);
+		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(false,
+				mockTarget, PRETEND_CONTRACT_ADDR, ledgers);
 		verify(gasSupplier).get();
 		verify(executionSupplier, never()).get();
 	}
@@ -332,8 +332,8 @@ class HederaOperationUtilTest {
 		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
 		given(sigsVerifier
-				.hasActiveKeyOrNoReceiverSigReq(
-						mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_RECIPIENT_ADDR, ledgers))
+				.hasActiveKeyOrNoReceiverSigReq(true,
+						mockTarget, PRETEND_RECIPIENT_ADDR, ledgers))
 				.willReturn(true);
 		given(executionSupplier.get())
 				.willReturn(new Operation.OperationResult(expectedSuccessfulGas, Optional.empty()));
@@ -354,8 +354,8 @@ class HederaOperationUtilTest {
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
 		verify(worldStateAccount).getAddress();
-		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(
-				mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR , PRETEND_RECIPIENT_ADDR, ledgers);
+		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true,
+				mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
 		verify(gasSupplier, never()).get();
 		verify(executionSupplier).get();
 	}

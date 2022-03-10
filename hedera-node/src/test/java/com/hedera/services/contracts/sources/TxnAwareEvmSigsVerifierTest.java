@@ -127,8 +127,8 @@ class TxnAwareEvmSigsVerifierTest {
 		given(tokensLedger.getImmutableRef(token)).willReturn(null);
 
 		assertFailsWith(() ->
-						subject.hasActiveSupplyKey(
-								PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR,
+						subject.hasActiveSupplyKey(true,
+								PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR,
 								ledgers),
 				INVALID_TOKEN_ID);
 	}
@@ -142,8 +142,9 @@ class TxnAwareEvmSigsVerifierTest {
 		given(merkleToken.hasSupplyKey()).willReturn(false);
 
 		assertFailsWith(() ->
-						subject.hasActiveSupplyKey(
-								PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR,
+						subject.hasActiveSupplyKey(true,
+								PRETEND_TOKEN_ADDR,
+								PRETEND_SENDER_ADDR,
 								ledgers),
 				TOKEN_HAS_NO_SUPPLY_KEY);
 	}
@@ -159,8 +160,8 @@ class TxnAwareEvmSigsVerifierTest {
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
-		final var verdict = subject.hasActiveSupplyKey(
-				PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+		final var verdict = subject.hasActiveSupplyKey(true,
+				PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(verdict);
 	}
@@ -171,8 +172,8 @@ class TxnAwareEvmSigsVerifierTest {
 		given(accountsLedger.getImmutableRef(account)).willReturn(null);
 
 		assertFailsWith(() ->
-						subject.hasActiveKey(
-								PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
+						subject.hasActiveKey(true,
+								PRETEND_ACCOUNT_ADDR,
 								PRETEND_SENDER_ADDR,
 								ledgers),
 				INVALID_ACCOUNT_ID);
@@ -187,8 +188,8 @@ class TxnAwareEvmSigsVerifierTest {
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
-		final var verdict = subject.hasActiveKey(
-				PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+		final var verdict = subject.hasActiveKey(true,
+				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(verdict);
 	}
@@ -200,9 +201,8 @@ class TxnAwareEvmSigsVerifierTest {
 		given(accountsLedger.getImmutableRef(smartContract)).willReturn(contract);
 		given(contract.isSmartContract()).willReturn(true);
 
-		final var contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				EntityIdUtils.asTypedEvmAddress(smartContract),
-				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+		final var contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
+				EntityIdUtils.asTypedEvmAddress(smartContract), PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(contractFlag);
 		verify(activationTest, never()).test(any(), any(), any());
@@ -214,9 +214,8 @@ class TxnAwareEvmSigsVerifierTest {
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.getImmutableRef(noSigRequired)).willReturn(noSigReqAccount);
 
-		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				EntityIdUtils.asTypedEvmAddress(noSigRequired),
-				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
+				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(noSigRequiredFlag);
 		verify(activationTest, never()).test(any(), any(), any());
@@ -233,9 +232,8 @@ class TxnAwareEvmSigsVerifierTest {
 
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
-		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				EntityIdUtils.asTypedEvmAddress(sigRequired),
-				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
+				EntityIdUtils.asTypedEvmAddress(sigRequired), PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(sigRequiredFlag);
 	}
@@ -244,9 +242,8 @@ class TxnAwareEvmSigsVerifierTest {
 	void filtersPayerSinceSigIsGuaranteed() {
 		given(txnCtx.activePayer()).willReturn(payer);
 
-		boolean payerFlag = subject.hasActiveKeyOrNoReceiverSigReq(
-				EntityIdUtils.asTypedEvmAddress(payer),
-				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+		boolean payerFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
+				EntityIdUtils.asTypedEvmAddress(payer), PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(payerFlag);
 
@@ -266,10 +263,10 @@ class TxnAwareEvmSigsVerifierTest {
 
 		final var validityTestForNormalCall =
 				subject.validityTestFor(
-						PRETEND_RECIPIENT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_SENDER_ADDR, aliases);
+						false, PRETEND_SENDER_ADDR, aliases);
 		final var validityTestForDelegateCall =
 				subject.validityTestFor(
-						PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, aliases);
+						true, PRETEND_SENDER_ADDR, aliases);
 
 		assertTrue(validityTestForNormalCall.test(controlledKey, INVALID_MISSING_SIG));
 		assertFalse(validityTestForDelegateCall.test(controlledKey, INVALID_MISSING_SIG));
@@ -282,9 +279,9 @@ class TxnAwareEvmSigsVerifierTest {
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.getImmutableRef(smartContract)).willReturn(contract);
 
-		final var verdict = subject.hasActiveKey(
+		final var verdict = subject.hasActiveKey(true,
 				EntityIdUtils.asTypedEvmAddress(smartContract),
-				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, EntityIdUtils.asTypedEvmAddress(smartContract), ledgers);
+				EntityIdUtils.asTypedEvmAddress(smartContract), ledgers);
 
 		assertTrue(verdict);
 	}
@@ -305,10 +302,10 @@ class TxnAwareEvmSigsVerifierTest {
 
 		final var validityTestForNormalCall =
 				subject.validityTestFor(
-						PRETEND_RECIPIENT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_SENDER_ADDR, aliases);
+						false, PRETEND_SENDER_ADDR, aliases);
 		final var validityTestForDelegateCall =
 				subject.validityTestFor(
-						PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, aliases);
+						true, PRETEND_SENDER_ADDR, aliases);
 
 		assertTrue(validityTestForNormalCall.test(controlledKey, INVALID_MISSING_SIG));
 		assertTrue(validityTestForDelegateCall.test(controlledKey, INVALID_MISSING_SIG));
@@ -327,10 +324,10 @@ class TxnAwareEvmSigsVerifierTest {
 
 		final var validityTestForNormalCall =
 				subject.validityTestFor(
-						PRETEND_RECIPIENT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_SENDER_ADDR, aliases);
+						false, PRETEND_SENDER_ADDR, aliases);
 		final var validityTestForDelegateCall =
 				subject.validityTestFor(
-						PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, aliases);
+						true, PRETEND_SENDER_ADDR, aliases);
 
 		assertTrue(validityTestForNormalCall.test(mockKey, mockSig));
 		assertTrue(validityTestForDelegateCall.test(mockKey, mockSig));

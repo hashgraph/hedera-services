@@ -1317,20 +1317,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final ContractActivationTest activationTest
 	) {
 		final var aliases = updater.aliases();
-
 		final var recipient = aliases.resolveForEvm(frame.getRecipientAddress());
-		final var contract = aliases.resolveForEvm(frame.getContractAddress());
 		final var sender = aliases.resolveForEvm(frame.getSenderAddress());
 
 		if (isDelegateCall(frame) && !isToken(frame, recipient)) {
-			return activationTest.apply(target, recipient, contract, recipient, ledgers);
+			return activationTest.apply(true, target, recipient, ledgers);
 		} else {
 			final var parentFrame = getParentFrame(frame);
 			if (parentFrame.isPresent() && isDelegateCall(parentFrame.get())) {
-				final var parentRecipient = parentFrame.get().getRecipientAddress();
-				return activationTest.apply(target, parentRecipient, contract, sender, ledgers);
+				return activationTest.apply(true, target, sender, ledgers);
 			} else {
-				return activationTest.apply(target, recipient, contract, sender, ledgers);
+				return activationTest.apply(false, target, sender, ledgers);
 			}
 		}
 	}
@@ -1359,12 +1356,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
+		 * @param isDelegateCall
+		 * 		a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
 		 * @param target
 		 * 		an address with an implicit key understood by this implementation
-		 * @param recipient
-		 * 		the idealized account receiving the call operation
-		 * @param contract
-		 * 		the idealized account whose code is being executed
 		 * @param activeContract
 		 * 		the contract address that can activate a contract or delegatable contract key
 		 * @param worldLedgers
@@ -1372,9 +1367,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(
+				boolean isDelegateCall,
 				Address target,
-				Address recipient,
-				Address contract,
 				Address activeContract,
 				WorldLedgers worldLedgers);
 	}

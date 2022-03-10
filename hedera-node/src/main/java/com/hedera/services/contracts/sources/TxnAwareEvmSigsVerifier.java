@@ -61,9 +61,8 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 
 	@Override
 	public boolean hasActiveKey(
+			final boolean isDelegateCall,
 			final Address accountAddress,
-			final Address recipient,
-			final Address contract,
 			final Address activeContract,
 			final WorldLedgers worldLedgers
 	) {
@@ -78,16 +77,15 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 		}
 
 		final MerkleAccount merkleAccount = account.map(MerkleAccount.class::cast).orElseGet(MerkleAccount::new);
-		return merkleAccount.getAccountKey() != null && isActiveInFrame(merkleAccount.getAccountKey(), recipient, contract,
+		return merkleAccount.getAccountKey() != null && isActiveInFrame(merkleAccount.getAccountKey(), isDelegateCall,
 				activeContract,
 				worldLedgers.aliases());
 	}
 
 	@Override
 	public boolean hasActiveSupplyKey(
+			final boolean isDelegateCall,
 			final Address tokenAddress,
-			final Address recipient,
-			final Address contract,
 			final Address activeContract,
 			final WorldLedgers worldLedgers
 	) {
@@ -99,14 +97,13 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 
 		final MerkleToken merkleToken = token.map(MerkleToken.class::cast).orElseGet(MerkleToken::new);
 		validateTrue(merkleToken.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
-		return isActiveInFrame(merkleToken.getSupplyKey(), recipient, contract, activeContract, worldLedgers.aliases());
+		return isActiveInFrame(merkleToken.getSupplyKey(), isDelegateCall, activeContract, worldLedgers.aliases());
 	}
 
 	@Override
 	public boolean hasActiveKeyOrNoReceiverSigReq(
+			final boolean isDelegateCall,
 			final Address target,
-			final Address recipient,
-			final Address contract,
 			final Address activeContract,
 			final WorldLedgers worldLedgers
 	) {
@@ -116,13 +113,12 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 		}
 		final var requiredKey = receiverSigKeyIfAnyOf(accountId, worldLedgers);
 		return requiredKey.map(key ->
-				isActiveInFrame(key, recipient, contract, activeContract, worldLedgers.aliases())).orElse(true);
+				isActiveInFrame(key, isDelegateCall, activeContract, worldLedgers.aliases())).orElse(true);
 	}
 
 	private boolean isActiveInFrame(
 			final JKey key,
-			final Address recipient,
-			final Address contract,
+			final boolean isDelegateCall,
 			final Address activeContract,
 			final ContractAliases aliases
 	) {
@@ -130,17 +126,14 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 		return activationTest.test(
 				key,
 				pkToCryptoSigsFn,
-				validityTestFor(recipient, contract, activeContract, aliases));
+				validityTestFor(isDelegateCall, activeContract, aliases));
 	}
 
 	BiPredicate<JKey, TransactionSignature> validityTestFor(
-			final Address recipient,
-			final Address contract,
+			final boolean isDelegateCall,
 			final Address activeContract,
 			final ContractAliases aliases
 	) {
-		final var isDelegateCall = !contract.equals(recipient);
-
 		/* Note that when this observer is used directly above in isActiveInFrame(), it will be
 		 * called  with each primitive key in the top-level Hedera key of interest, along with
 		 * that key's verified cryptographic signature (if any was available in the sigMap). */
