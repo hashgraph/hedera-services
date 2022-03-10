@@ -226,8 +226,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	public WorldLedgers wrappedTrackingLedgers() {
-		final var wrappedLedgers = trackingLedgers.wrapped();
-		return wrappedLedgers;
+		return trackingLedgers.wrapped();
 	}
 
 	public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {

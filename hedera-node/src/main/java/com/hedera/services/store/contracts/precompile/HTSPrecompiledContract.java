@@ -1328,11 +1328,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return activationTest.apply(true, target, recipient, ledgers);
 		} else {
 			final var parentFrame = getParentFrame(frame);
-			if (parentFrame.isPresent() && isDelegateCall(parentFrame.get())) {
-				return activationTest.apply(true, target, sender, ledgers);
-			} else {
-				return activationTest.apply(false, target, sender, ledgers);
-			}
+			return activationTest.apply(parentFrame.isPresent() && isDelegateCall(parentFrame.get()), target, sender, ledgers);
 		}
 	}
 

@@ -57,6 +57,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -131,6 +132,24 @@ class TxnAwareEvmSigsVerifierTest {
 								PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR,
 								ledgers),
 				INVALID_TOKEN_ID);
+	}
+
+	@Test
+	void throwsIfLedgersAreNullForActiveSupplyKey() {
+		assertFailsWith(() ->
+						subject.hasActiveSupplyKey(true,
+								PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR,
+								null),
+				FAIL_INVALID);
+	}
+
+	@Test
+	void throwsIfLedgersAreNullForActiveKey() {
+		assertFailsWith(() ->
+						subject.hasActiveKey(true,
+								PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR,
+								null),
+				FAIL_INVALID);
 	}
 
 	@Test
