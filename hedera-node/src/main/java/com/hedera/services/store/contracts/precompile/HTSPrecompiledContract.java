@@ -54,7 +54,6 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.store.AccountStore;
@@ -79,8 +78,6 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -126,6 +123,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
@@ -146,7 +144,6 @@ import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOO
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -427,27 +424,27 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						this.isTokenReadOnlyTransaction = true;
 						final var nestedFunctionSelector = nestedInput.getInt(0);
 
-						if(ABI_ID_NAME == nestedFunctionSelector) {
+						if (ABI_ID_NAME == nestedFunctionSelector) {
 							nestedPrecompile = new NamePrecompile(tokenID);
-						} else if(ABI_ID_SYMBOL == nestedFunctionSelector) {
+						} else if (ABI_ID_SYMBOL == nestedFunctionSelector) {
 							nestedPrecompile = new SymbolPrecompile(tokenID);
-						} else if(ABI_ID_DECIMALS == nestedFunctionSelector) {
+						} else if (ABI_ID_DECIMALS == nestedFunctionSelector) {
 							if (!isFungibleToken) {
 								throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON,
 										FAIL_INVALID);
 							}
 							nestedPrecompile = new DecimalsPrecompile(tokenID);
-						} else if(ABI_ID_TOTAL_SUPPLY_TOKEN == nestedFunctionSelector) {
+						} else if (ABI_ID_TOTAL_SUPPLY_TOKEN == nestedFunctionSelector) {
 							nestedPrecompile = new TotalSupplyPrecompile(tokenID);
-						} else if(ABI_ID_BALANCE_OF_TOKEN == nestedFunctionSelector) {
+						} else if (ABI_ID_BALANCE_OF_TOKEN == nestedFunctionSelector) {
 							nestedPrecompile = new BalanceOfPrecompile(tokenID);
-						} else if(ABI_ID_OWNER_OF_NFT == nestedFunctionSelector) {
+						} else if (ABI_ID_OWNER_OF_NFT == nestedFunctionSelector) {
 							if (isFungibleToken) {
 								throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON,
 										FAIL_INVALID);
 							}
 							nestedPrecompile = new OwnerOfPrecompile(tokenID);
-						} else if(ABI_ID_TOKEN_URI_NFT == nestedFunctionSelector) {
+						} else if (ABI_ID_TOKEN_URI_NFT == nestedFunctionSelector) {
 							if (isFungibleToken) {
 								throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON,
 										FAIL_INVALID);
@@ -560,7 +557,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var contractCallResult = ContractFunctionResult.newBuilder()
 					.setContractID(HTS_PRECOMPILE_MIRROR_ID)
 					.setGasUsed(this.gasRequirement.toLong())
-			        .setContractCallResult(result != null ? ByteString.copyFrom(result.toArrayUnsafe()) : ByteString.EMPTY);
+					.setContractCallResult(result != null ? ByteString.copyFrom(result.toArrayUnsafe()) : ByteString.EMPTY);
 			errorStatus.ifPresent(status -> contractCallResult.setErrorMessage(status.name()));
 			childRecord.setContractCallResult(SolidityFnResult.fromGrpc(contractCallResult.build()));
 		}
@@ -1136,10 +1133,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final MessageFrame frame
 		) {
 			final var childRecord = super.run(frame);
-			if(SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
+			if (SUCCESS_LITERAL.equals(childRecord.getReceiptBuilder().getStatus())) {
 				final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
-				if(isFungible) {
+				if (isFungible) {
 					frame.addLog(getLogForFungibleTransfer(precompileAddress));
 				} else {
 					frame.addLog(getLogForNftExchange(precompileAddress));
@@ -1153,11 +1150,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			Address sender = null;
 			Address receiver = null;
 			BigInteger amount = BigInteger.ZERO;
-			for(final var fungibleTransfer: fungibleTransfers) {
-				if(fungibleTransfer.sender!=null) {
+			for (final var fungibleTransfer : fungibleTransfers) {
+				if (fungibleTransfer.sender != null) {
 					sender = asTypedEvmAddress(fungibleTransfer.sender);
 				}
-				if(fungibleTransfer.receiver!=null) {
+				if (fungibleTransfer.receiver != null) {
 					receiver = asTypedEvmAddress(fungibleTransfer.receiver);
 					amount = BigInteger.valueOf(fungibleTransfer.amount);
 				}
@@ -1186,17 +1183,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			if(isFungible) {
+			if (isFungible) {
 				return encoder.encodeEcFungibleTransfer(true);
-			}
-			else {
+			} else {
 				return Bytes.EMPTY;
 			}
 		}
 
 		@Override
 		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-			if(isFungible) {
+			if (isFungible) {
 				return resultFrom(status);
 			} else {
 				return null;
@@ -1283,7 +1279,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
 			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), tokenUriWrapper.tokenId());
-			var metaData =  (byte[]) nftsLedger.get(nftId, METADATA);
+			var metaData = (byte[]) nftsLedger.get(nftId, METADATA);
 
 			String metaDataString = new String(metaData);
 
@@ -1336,25 +1332,38 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = ledgers.tokenRels();
 			final var relationship = asTokenRel(balanceWrapper.accountId(), tokenID);
-			final var balance =  (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+			final var balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
 
 			return encoder.encodeBalance(balance);
 		}
 	}
 
 	protected class AllowancePrecompile extends ERCReadOnlyAbstractPrecompile {
+		private TokenAllowanceWrapper allowanceWrapper;
+
 		public AllowancePrecompile(final TokenID tokenID) {
 			super(tokenID);
 		}
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+			final var nestedInput = input.slice(24);
+			allowanceWrapper = decoder.decodeTokenAllowance(nestedInput, aliasResolver);
+
 			return super.body(input, aliasResolver);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			return Bytes.EMPTY;
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
+			final var allowance = (TreeMap<FcTokenAllowanceId, Long>) accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
+			long value = 0;
+			for (Map.Entry<FcTokenAllowanceId, Long> e : allowance.entrySet()) {
+				if (allowanceWrapper.spender().getAccountNum() == e.getKey().getSpenderNum().longValue()) {
+					value = e.getValue();
+				}
+			}
+			return encoder.encodeAllowance(value);
 		}
 	}
 

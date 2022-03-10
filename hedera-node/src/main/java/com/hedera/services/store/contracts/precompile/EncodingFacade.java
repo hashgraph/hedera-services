@@ -34,6 +34,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.ALLOWANCE;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.BALANCE;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.BURN;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.DECIMALS;
@@ -55,6 +56,7 @@ public class EncodingFacade {
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
 	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
 	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
+	private static final TupleType allowanceOfType = TupleType.parse("(uint256)");
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
 	private static final TupleType ownerOfType = TupleType.parse("(address)");
 	private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
@@ -100,6 +102,13 @@ public class EncodingFacade {
 		return functionResultBuilder()
 				.forFunction(FunctionType.BALANCE)
 				.withBalance(balance)
+				.build();
+	}
+
+	public Bytes encodeAllowance(final long allowance) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.ALLOWANCE)
+				.withAllowance(allowance)
 				.build();
 	}
 
@@ -166,7 +175,7 @@ public class EncodingFacade {
 	}
 
 	protected enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, IS_APPROVED_FOR_ALL
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, IS_APPROVED_FOR_ALL
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -181,6 +190,7 @@ public class EncodingFacade {
 		private boolean isApprovedForAllStatus;
 		private long totalSupply;
 		private long balance;
+		private long allowance;
 		private long[] serialNumbers;
 		private int decimals;
 		private Address owner;
@@ -199,6 +209,8 @@ public class EncodingFacade {
 				tupleType = decimalsType;
 			} else if (functionType == FunctionType.BALANCE) {
 				tupleType = balanceOfType;
+			} else if (functionType == FunctionType.ALLOWANCE) {
+				tupleType = allowanceOfType;
 			} else if (functionType == FunctionType.OWNER) {
 				tupleType = ownerOfType;
 			} else if (functionType == FunctionType.NAME) {
@@ -239,6 +251,11 @@ public class EncodingFacade {
 
 		private FunctionResultBuilder withBalance(final long balance) {
 			this.balance = balance;
+			return this;
+		}
+
+		private FunctionResultBuilder withAllowance(final long allowance) {
+			this.allowance = allowance;
 			return this;
 		}
 
@@ -285,6 +302,8 @@ public class EncodingFacade {
 				result = Tuple.of(decimals);
 			} else if (BALANCE.equals(functionType)) {
 				result = Tuple.of(BigInteger.valueOf(balance));
+			} else if (ALLOWANCE.equals(functionType)) {
+				result = Tuple.of(BigInteger.valueOf(allowance));
 			} else if (OWNER.equals(functionType)) {
 				result = Tuple.of(convertBesuAddressToHeadlongAddress(owner));
 			} else if (NAME.equals(functionType)) {
@@ -335,7 +354,7 @@ public class EncodingFacade {
 		}
 
 		public Log build() {
-			if(tupleTypes.length()>1) {
+			if (tupleTypes.length() > 1) {
 				tupleTypes.deleteCharAt(tupleTypes.length() - 1);
 				tupleTypes.append(")");
 				final var tuple = Tuple.of(data.toArray());
@@ -386,7 +405,7 @@ public class EncodingFacade {
 		private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
 			byte[] expandedArray = new byte[32];
 
-			System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length-bytesToExpand.length, bytesToExpand.length);
+			System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length, bytesToExpand.length);
 			return expandedArray;
 		}
 	}
