@@ -87,9 +87,7 @@ class StoreInitializationFlowTest {
 
 	@Test
 	void initsAsExpected() {
-		given(stateAccessor.tokens()).willReturn(tokens);
 		given(stateAccessor.accounts()).willReturn(accounts);
-		given(stateAccessor.uniqueTokens()).willReturn(nfts);
 
 		// when:
 		subject.run();
