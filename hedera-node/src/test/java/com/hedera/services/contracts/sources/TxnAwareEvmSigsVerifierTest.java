@@ -241,6 +241,17 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	@Test
+	void filtersNoSigRequiredWhenLedgersAreNull() {
+		given(txnCtx.activePayer()).willReturn(payer);
+
+		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
+				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, null);
+
+		assertTrue(noSigRequiredFlag);
+		verify(activationTest, never()).test(any(), any(), any());
+	}
+
+	@Test
 	void testsWhenReceiverSigIsRequired() {
 		givenAccessorInCtx();
 		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
