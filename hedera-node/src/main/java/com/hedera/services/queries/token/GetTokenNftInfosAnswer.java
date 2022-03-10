@@ -36,6 +36,8 @@ import javax.inject.Singleton;
 
 import java.util.Optional;
 
+import static com.hedera.services.queries.token.GetAccountNftInfosAnswer.IRRELEVANT_PAYMENT_EXTRACTOR;
+import static com.hedera.services.queries.token.GetAccountNftInfosAnswer.IRRELEVANT_RESPONSE_TYPE_EXTRACTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
@@ -44,8 +46,8 @@ public class GetTokenNftInfosAnswer extends AbstractAnswer {
 	@Inject
 	public GetTokenNftInfosAnswer() {
 		super(HederaFunctionality.TokenGetNftInfos,
-				query -> null,
-				query -> query.getTokenGetNftInfos().getHeader().getResponseType(),
+				IRRELEVANT_PAYMENT_EXTRACTOR,
+				IRRELEVANT_RESPONSE_TYPE_EXTRACTOR,
 				response -> response.getTokenGetNftInfos().getHeader().getNodeTransactionPrecheckCode(),
 				(query, view) -> NOT_SUPPORTED);
 	}

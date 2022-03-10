@@ -29,11 +29,12 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosResponse;
+import com.hederahashgraph.api.proto.java.Transaction;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import java.util.Optional;
+import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetAccountNftInfos;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -41,43 +42,47 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 @Singleton
 public class GetAccountNftInfosAnswer extends AbstractAnswer {
-    @Inject
-    public GetAccountNftInfosAnswer() {
-        super(TokenGetAccountNftInfos,
-                query -> null,
-                query -> query.getTokenGetAccountNftInfos().getHeader().getResponseType(),
-                response -> response.getTokenGetAccountNftInfos().getHeader().getNodeTransactionPrecheckCode(),
-                (query, view) -> NOT_SUPPORTED);
-    }
+	public static final Function<Query, Transaction> IRRELEVANT_PAYMENT_EXTRACTOR = q -> null;
+	public static final Function<Query, ResponseType> IRRELEVANT_RESPONSE_TYPE_EXTRACTOR = q -> null;
 
-    @Override
-    public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
-        TokenGetAccountNftInfosQuery op = query.getTokenGetAccountNftInfos();
-        TokenGetAccountNftInfosResponse.Builder response = TokenGetAccountNftInfosResponse.newBuilder();
+	@Inject
+	public GetAccountNftInfosAnswer() {
+		super(
+				TokenGetAccountNftInfos,
+				IRRELEVANT_PAYMENT_EXTRACTOR,
+				IRRELEVANT_RESPONSE_TYPE_EXTRACTOR,
+				response -> response.getTokenGetAccountNftInfos().getHeader().getNodeTransactionPrecheckCode(),
+				(query, view) -> NOT_SUPPORTED);
+	}
 
-        ResponseType type = op.getHeader().getResponseType();
-        if (type == COST_ANSWER) {
-            response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
-        } else {
-            response.setHeader(answerOnlyHeader(NOT_SUPPORTED));
-        }
-        return Response.newBuilder()
-                .setTokenGetAccountNftInfos(response)
-                .build();
-    }
+	@Override
+	public Response responseGiven(Query query, StateView view, ResponseCodeEnum validity, long cost) {
+		TokenGetAccountNftInfosQuery op = query.getTokenGetAccountNftInfos();
+		TokenGetAccountNftInfosResponse.Builder response = TokenGetAccountNftInfosResponse.newBuilder();
 
-    @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-        return Optional.empty();
-    }
+		ResponseType type = op.getHeader().getResponseType();
+		if (type == COST_ANSWER) {
+			response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
+		} else {
+			response.setHeader(answerOnlyHeader(NOT_SUPPORTED));
+		}
+		return Response.newBuilder()
+				.setTokenGetAccountNftInfos(response)
+				.build();
+	}
 
-    @Override
-    public boolean needsAnswerOnlyCost(Query query) {
-        return false;
-    }
+	@Override
+	public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+		return Optional.empty();
+	}
 
-    @Override
-    public boolean requiresNodePayment(Query query) {
-        return false;
-    }
+	@Override
+	public boolean needsAnswerOnlyCost(Query query) {
+		return false;
+	}
+
+	@Override
+	public boolean requiresNodePayment(Query query) {
+		return false;
+	}
 }

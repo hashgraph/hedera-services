@@ -45,6 +45,8 @@ class GetAccountNftInfosAnswerTest {
 	@Test
 	void neverDoesOrNeedsAnything() {
 		// expect:
+		assertNull(GetAccountNftInfosAnswer.IRRELEVANT_PAYMENT_EXTRACTOR.apply(query));
+		assertNull(GetAccountNftInfosAnswer.IRRELEVANT_RESPONSE_TYPE_EXTRACTOR.apply(query));
 		assertFalse(subject.needsAnswerOnlyCost(query));
 		assertFalse(subject.requiresNodePayment(query));
 		assertFalse(subject.extractPaymentFrom(query).isPresent());

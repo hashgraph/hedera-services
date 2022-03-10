@@ -379,12 +379,11 @@ public class TypedTokenStore {
 		mapModelChanges(token, mutableToken);
 		tokens.put(token.getId().asGrpcToken(), mutableToken);
 
-		final var treasury = mutableToken.treasury();
 		if (token.hasMintedUniqueTokens()) {
-			persistMinted(token.mintedUniqueTokens(), treasury);
+			persistMinted(token.mintedUniqueTokens());
 		}
 		if (token.hasRemovedUniqueTokens()) {
-			destroyRemoved(token.removedUniqueTokens(), treasury);
+			destroyRemoved(token.removedUniqueTokens());
 		}
 
 		/* Only needed during HTS refactor. Will be removed once all operations that
@@ -428,16 +427,14 @@ public class TypedTokenStore {
 		sideEffectsTracker.trackTokenChanges(token);
 	}
 
-	private void destroyRemoved(List<UniqueToken> nfts, EntityId treasury) {
-		for (var nft : nfts) {
-			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().num(), nft.getSerialNumber());
+	private void destroyRemoved(List<UniqueToken> nfts) {
+		for (final var nft : nfts) {
 			uniqueTokens.remove(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()));
 		}
 	}
 
-	private void persistMinted(List<UniqueToken> nfts, EntityId treasury) {
-		for (var nft : nfts) {
-			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().num(), nft.getSerialNumber());
+	private void persistMinted(List<UniqueToken> nfts) {
+		for (final var nft : nfts) {
 			final var merkleNft = new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
 			uniqueTokens.put(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()), merkleNft);
 		}

@@ -39,7 +39,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -373,7 +372,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
 
-			updateLedgers(nftId, from, to, owner, tokenTreasury.toGrpcAccountId());
+			updateLedgers(nftId, from, to, tokenTreasury.toGrpcAccountId());
 			return OK;
 		});
 	}
@@ -382,7 +381,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final NftId nftId,
 			final AccountID from,
 			final AccountID to,
-			final EntityId owner,
 			final AccountID tokenTreasury
 	) {
 		final var nftType = nftId.tokenId();
@@ -406,8 +404,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
 		tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
 
-		final var merkleNftId = EntityNumPair.fromLongs(nftId.tokenId().getTokenNum(), nftId.serialNo());
-		final var receiver = fromGrpcAccountId(to);
 		sideEffectsTracker.trackNftOwnerChange(nftId, from, to);
 	}
 
