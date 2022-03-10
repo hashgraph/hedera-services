@@ -47,7 +47,6 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 	private final ActivationTest activationTest;
 	private final TransactionContext txnCtx;
 	private final BiPredicate<JKey, TransactionSignature> cryptoValidity;
-	private WorldLedgers ledgers;
 
 	@Inject
 	public TxnAwareSoliditySigsVerifier(
@@ -60,31 +59,28 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		this.cryptoValidity = cryptoValidity;
 	}
 
-	public void setWorldLedgers(final WorldLedgers ledgers) {
-		this.ledgers = ledgers;
-	}
-
 	@Override
 	public boolean hasActiveKey(
 			final Address accountAddress,
 			final Address recipient,
 			final Address contract,
 			final Address activeContract,
-			final ContractAliases aliases
+			final WorldLedgers worldLedgers
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
-		final var account = ledgers != null ?
-				Optional.ofNullable(ledgers.accounts().getImmutableRef(accountId)) : Optional.empty();
-		final MerkleAccount merkleAccount = account.map(o -> (MerkleAccount) o).orElseGet(MerkleAccount::new);
+		final var account = worldLedgers != null ?
+				Optional.ofNullable(worldLedgers.accounts().getImmutableRef(accountId)) : Optional.empty();
+
 		validateTrue(account.isPresent(), INVALID_ACCOUNT_ID);
 
 		if (accountAddress.equals(activeContract)) {
 			return true;
 		}
 
+		final MerkleAccount merkleAccount = account.map(MerkleAccount.class::cast).orElseGet(MerkleAccount::new);
 		return merkleAccount.getAccountKey() != null && isActiveInFrame(merkleAccount.getAccountKey(), recipient, contract,
 				activeContract,
-				aliases);
+				worldLedgers.aliases());
 	}
 
 	@Override
@@ -93,17 +89,17 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address recipient,
 			final Address contract,
 			final Address activeContract,
-			final ContractAliases aliases
+			final WorldLedgers worldLedgers
 	) {
 		final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
-		final var token = ledgers != null ?
-				Optional.ofNullable(ledgers.tokens().getImmutableRef(tokenId)) : Optional.empty();
+		final var token = worldLedgers != null ?
+				Optional.ofNullable(worldLedgers.tokens().getImmutableRef(tokenId)) : Optional.empty();
 
-		final MerkleToken merkleToken = token.map(o -> (MerkleToken) o).orElseGet(MerkleToken::new);
 		validateTrue(token.isPresent(), INVALID_TOKEN_ID);
 
+		final MerkleToken merkleToken = token.map(MerkleToken.class::cast).orElseGet(MerkleToken::new);
 		validateTrue(merkleToken.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
-		return isActiveInFrame(merkleToken.getSupplyKey(), recipient, contract, activeContract, aliases);
+		return isActiveInFrame(merkleToken.getSupplyKey(), recipient, contract, activeContract, worldLedgers.aliases());
 	}
 
 	@Override
@@ -112,15 +108,15 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 			final Address recipient,
 			final Address contract,
 			final Address activeContract,
-			final ContractAliases aliases
+			final WorldLedgers worldLedgers
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(target);
 		if (txnCtx.activePayer().equals(accountId)) {
 			return true;
 		}
-		final var requiredKey = receiverSigKeyIfAnyOf(accountId);
+		final var requiredKey = receiverSigKeyIfAnyOf(accountId, worldLedgers);
 		return requiredKey.map(key ->
-				isActiveInFrame(key, recipient, contract, activeContract, aliases)).orElse(true);
+				isActiveInFrame(key, recipient, contract, activeContract, worldLedgers.aliases())).orElse(true);
 	}
 
 	private boolean isActiveInFrame(
@@ -169,8 +165,8 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		};
 	}
 
-	private Optional<JKey> receiverSigKeyIfAnyOf(final AccountID id) {
-		final var merkleAccount = ledgers != null ? Optional.ofNullable(ledgers.accounts().getImmutableRef(id)) :
+	private Optional<JKey> receiverSigKeyIfAnyOf(final AccountID id, final WorldLedgers worldLedgers) {
+		final var merkleAccount = worldLedgers != null ? Optional.ofNullable(worldLedgers.accounts().getImmutableRef(id)) :
 				Optional.empty();
 
 		return merkleAccount

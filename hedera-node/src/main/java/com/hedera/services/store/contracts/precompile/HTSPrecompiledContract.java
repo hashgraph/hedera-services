@@ -36,7 +36,6 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
-import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -331,7 +330,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
 		this.sideEffectsTracker = sideEffectsFactory.get();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
-		((TxnAwareSoliditySigsVerifier)this.sigsVerifier).setWorldLedgers(this.ledgers);
 		this.senderAddress = messageFrame.getSenderAddress();
 	}
 
@@ -1325,14 +1323,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		final var sender = aliases.resolveForEvm(frame.getSenderAddress());
 
 		if (isDelegateCall(frame) && !isToken(frame, recipient)) {
-			return activationTest.apply(target, recipient, contract, recipient, aliases);
+			return activationTest.apply(target, recipient, contract, recipient, ledgers);
 		} else {
 			final var parentFrame = getParentFrame(frame);
 			if (parentFrame.isPresent() && isDelegateCall(parentFrame.get())) {
 				final var parentRecipient = parentFrame.get().getRecipientAddress();
-				return activationTest.apply(target, parentRecipient, contract, sender, aliases);
+				return activationTest.apply(target, parentRecipient, contract, sender, ledgers);
 			} else {
-				return activationTest.apply(target, recipient, contract, sender, aliases);
+				return activationTest.apply(target, recipient, contract, sender, ledgers);
 			}
 		}
 	}
@@ -1369,8 +1367,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * 		the idealized account whose code is being executed
 		 * @param activeContract
 		 * 		the contract address that can activate a contract or delegatable contract key
-		 * @param aliases
-		 * 		the current contract aliases in effect
+		 * @param worldLedgers
+		 * 		the worldLedgers representing current state
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(
@@ -1378,7 +1376,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				Address recipient,
 				Address contract,
 				Address activeContract,
-				ContractAliases aliases);
+				WorldLedgers worldLedgers);
 	}
 
 	private Optional<MessageFrame> getParentFrame(final MessageFrame currentFrame) {

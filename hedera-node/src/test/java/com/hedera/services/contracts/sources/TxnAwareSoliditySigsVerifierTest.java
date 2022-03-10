@@ -121,7 +121,6 @@ class TxnAwareSoliditySigsVerifierTest {
 		expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
 		subject = new TxnAwareSoliditySigsVerifier(activationTest, txnCtx, cryptoValidity);
-		subject.setWorldLedgers(ledgers);
 	}
 
 	@Test
@@ -132,7 +131,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		assertFailsWith(() ->
 						subject.hasActiveSupplyKey(
 								PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR,
-								aliases),
+								ledgers),
 				INVALID_TOKEN_ID);
 	}
 
@@ -147,7 +146,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		assertFailsWith(() ->
 						subject.hasActiveSupplyKey(
 								PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR,
-								aliases),
+								ledgers),
 				TOKEN_HAS_NO_SUPPLY_KEY);
 	}
 
@@ -163,7 +162,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
 		final var verdict = subject.hasActiveSupplyKey(
-				PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, aliases);
+				PRETEND_TOKEN_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(verdict);
 	}
@@ -177,7 +176,7 @@ class TxnAwareSoliditySigsVerifierTest {
 						subject.hasActiveKey(
 								PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR,
 								PRETEND_SENDER_ADDR,
-								aliases),
+								ledgers),
 				INVALID_ACCOUNT_ID);
 	}
 
@@ -191,7 +190,7 @@ class TxnAwareSoliditySigsVerifierTest {
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
 		final var verdict = subject.hasActiveKey(
-				PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, aliases);
+				PRETEND_ACCOUNT_ADDR, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(verdict);
 	}
@@ -205,7 +204,7 @@ class TxnAwareSoliditySigsVerifierTest {
 
 		final var contractFlag = subject.hasActiveKeyOrNoReceiverSigReq(
 				EntityIdUtils.asTypedEvmAddress(smartContract),
-				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, aliases);
+				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(contractFlag);
 		verify(activationTest, never()).test(any(), any(), any());
@@ -219,7 +218,7 @@ class TxnAwareSoliditySigsVerifierTest {
 
 		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
 				EntityIdUtils.asTypedEvmAddress(noSigRequired),
-				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, aliases);
+				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(noSigRequiredFlag);
 		verify(activationTest, never()).test(any(), any(), any());
@@ -238,7 +237,7 @@ class TxnAwareSoliditySigsVerifierTest {
 
 		boolean sigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(
 				EntityIdUtils.asTypedEvmAddress(sigRequired),
-				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, aliases);
+				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(sigRequiredFlag);
 	}
@@ -249,7 +248,7 @@ class TxnAwareSoliditySigsVerifierTest {
 
 		boolean payerFlag = subject.hasActiveKeyOrNoReceiverSigReq(
 				EntityIdUtils.asTypedEvmAddress(payer),
-				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, aliases);
+				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(payerFlag);
 
@@ -287,7 +286,7 @@ class TxnAwareSoliditySigsVerifierTest {
 
 		final var verdict = subject.hasActiveKey(
 				EntityIdUtils.asTypedEvmAddress(smartContract),
-				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, EntityIdUtils.asTypedEvmAddress(smartContract), aliases);
+				PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, EntityIdUtils.asTypedEvmAddress(smartContract), ledgers);
 
 		assertTrue(verdict);
 	}

@@ -616,15 +616,15 @@ class TransferPrecompilesTest {
 		verify(wrappedLedgers).commit();
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 		verify(sigsVerifier)
-				.hasActiveKey(senderId.asEvmAddress(), recipientAddr, contractAddr, recipientAddr, aliases);
+				.hasActiveKey(senderId.asEvmAddress(), recipientAddr, contractAddr, recipientAddr, wrappedLedgers);
 		verify(sigsVerifier)
 				.hasActiveKeyOrNoReceiverSigReq(
-						receiverId.asEvmAddress(), recipientAddr, contractAddr, recipientAddr, aliases);
+						receiverId.asEvmAddress(), recipientAddr, contractAddr, recipientAddr, wrappedLedgers);
 		verify(sigsVerifier)
-				.hasActiveKey(receiverId.asEvmAddress(), recipientAddr, contractAddr, recipientAddr, aliases);
+				.hasActiveKey(receiverId.asEvmAddress(), recipientAddr, contractAddr, recipientAddr, wrappedLedgers);
 		verify(sigsVerifier, never())
 				.hasActiveKeyOrNoReceiverSigReq(EntityIdUtils.asTypedEvmAddress(feeCollector), recipientAddr,
-						contractAddr, recipientAddr, aliases);
+						contractAddr, recipientAddr, wrappedLedgers);
 	}
 
 	@Test

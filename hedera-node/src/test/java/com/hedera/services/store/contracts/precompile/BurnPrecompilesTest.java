@@ -190,7 +190,7 @@ class BurnPrecompilesTest {
 		givenNonfungibleFrameContext();
 
 		given(sigsVerifier.hasActiveSupplyKey(
-				nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases)
+				nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, wrappedLedgers)
 		)
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -220,7 +220,7 @@ class BurnPrecompilesTest {
 		givenNonfungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases))
+		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, wrappedLedgers))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
@@ -257,7 +257,7 @@ class BurnPrecompilesTest {
 		givenFungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(fungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases))
+		given(sigsVerifier.hasActiveSupplyKey(fungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, wrappedLedgers))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts

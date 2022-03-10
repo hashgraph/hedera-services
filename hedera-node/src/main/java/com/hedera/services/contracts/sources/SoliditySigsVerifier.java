@@ -23,6 +23,7 @@ package com.hedera.services.contracts.sources;
  */
 
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.store.contracts.WorldLedgers;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface SoliditySigsVerifier {
@@ -45,12 +46,12 @@ public interface SoliditySigsVerifier {
 	 * 		the address of the contract whose code is being executed (possibly via {@code delegatecall})
 	 * @param activeContract
 	 * 		the address of the contract that is deemed active
-	 * @param aliases
-	 * 		the current contract aliases
+	 * @param worldLedgers
+	 * 		the worldLedgers representing current state
 	 * @return whether the target account's key has an active signature
 	 */
 	boolean hasActiveKey(
-			Address account, Address recipient, Address contract, Address activeContract, ContractAliases aliases);
+			Address account, Address recipient, Address contract, Address activeContract, WorldLedgers worldLedgers);
 
 	/**
 	 * Determines if the target account <b>either</b> has no receiver sig requirement; or an active key given
@@ -71,12 +72,12 @@ public interface SoliditySigsVerifier {
 	 * 		the address of the contract whose code is being executed (possibly via {@code delegatecall})
 	 * @param activeContract
 	 * 		the address of the contract that is deemed active
-	 * @param aliases
-	 * 		the current contract aliases
+	 * @param worldLedgers
+	 * 		the worldLedgers representing current state
 	 * @return false if the account requires a receiver sig but has no active key; true otherwise
 	 */
 	boolean hasActiveKeyOrNoReceiverSigReq(
-			Address target, Address recipient, Address contract, Address activeContract, ContractAliases aliases);
+			Address target, Address recipient, Address contract, Address activeContract, WorldLedgers worldLedgers);
 
 	/**
 	 * Determines if the target token has an active supply key given the cryptographic signatures from the
@@ -97,10 +98,10 @@ public interface SoliditySigsVerifier {
 	 * 		the address of the contract whose code is being executed (possibly via {@code delegatecall})
 	 * @param activeContract
 	 * 		the address of the contract that should be signed in the key
-	 * @param aliases
-	 * 		the current contract aliases
+	 * @param worldLedgers
+	 * 		the worldLedgers representing current state
 	 * @return whether the target account's key has an active signature
 	 */
 	boolean hasActiveSupplyKey(
-			Address token, Address recipient, Address contract, Address activeContract, ContractAliases aliases);
+			Address token, Address recipient, Address contract, Address activeContract, WorldLedgers worldLedgers);
 }

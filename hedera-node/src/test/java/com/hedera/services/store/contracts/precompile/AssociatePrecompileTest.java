@@ -200,7 +200,7 @@ class AssociatePrecompileTest {
 		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), contractAddress, contractAddress, senderAddress,
-				aliases))
+				wrappedLedgers))
 				.willReturn(false);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -243,7 +243,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), recipientAddress, contractAddress, recipientAddress,
-				aliases))
+				wrappedLedgers))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -291,7 +291,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), parentRecipientAddress,
 				contractAddress,
-				senderAddress, aliases))
+				senderAddress, wrappedLedgers))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -332,7 +332,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), contractAddress,
 				contractAddress,
-				senderAddress, aliases))
+				senderAddress, wrappedLedgers))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -377,7 +377,7 @@ class AssociatePrecompileTest {
 		given(syntheticTxnFactory.createAssociate(associateOp))
 				.willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), contractAddress,
-				contractAddress, senderAddress, aliases))
+				contractAddress, senderAddress, wrappedLedgers))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);
@@ -423,7 +423,7 @@ class AssociatePrecompileTest {
 				.willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(
 				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(),
-				contractAddress, contractAddress, senderAddress, aliases))
+				contractAddress, contractAddress, senderAddress, wrappedLedgers))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);

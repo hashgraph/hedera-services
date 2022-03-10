@@ -177,14 +177,14 @@ public final class HederaOperationUtil {
 					frame.getRecipientAddress(),
 					frame.getContractAddress(),
 					frame.getRecipientAddress(),
-					updater.aliases());
+					updater.wrappedTrackingLedgers());
 		} else {
 			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
 					account.getAddress(),
 					frame.getRecipientAddress(),
 					frame.getContractAddress(),
 					frame.getContractAddress(),
-					updater.aliases());
+					updater.wrappedTrackingLedgers());
 		}
 		if (!sigReqIsMet) {
 			return new Operation.OperationResult(
