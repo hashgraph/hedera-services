@@ -22,11 +22,10 @@ package com.hedera.services.contracts.sources;
  *
  */
 
-import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import org.hyperledger.besu.datatypes.Address;
 
-public interface SoliditySigsVerifier {
+public interface EvmSigsVerifier {
 	/**
 	 * Determines if the target account has an active key given the cryptographic signatures from the
 	 * {@link com.hederahashgraph.api.proto.java.SignatureMap} that could be verified asynchronously; plus

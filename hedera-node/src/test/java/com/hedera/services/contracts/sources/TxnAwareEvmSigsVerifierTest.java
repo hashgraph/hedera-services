@@ -39,7 +39,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -53,7 +52,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
@@ -72,7 +70,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class TxnAwareSoliditySigsVerifierTest {
+class TxnAwareEvmSigsVerifierTest {
 	private static final Address PRETEND_RECIPIENT_ADDR = Address.ALTBN128_ADD;
 	private static final Address PRETEND_CONTRACT_ADDR = Address.ALTBN128_MUL;
 	private static final Address PRETEND_SENDER_ADDR = Address.ALTBN128_PAIRING;
@@ -114,13 +112,13 @@ class TxnAwareSoliditySigsVerifierTest {
 	@Mock
 	private WorldLedgers ledgers;
 
-	private TxnAwareSoliditySigsVerifier subject;
+	private TxnAwareEvmSigsVerifier subject;
 
 	@BeforeEach
 	private void setup() throws Exception {
 		expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
-		subject = new TxnAwareSoliditySigsVerifier(activationTest, txnCtx, cryptoValidity);
+		subject = new TxnAwareEvmSigsVerifier(activationTest, txnCtx, cryptoValidity);
 	}
 
 	@Test

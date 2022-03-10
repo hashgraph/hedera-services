@@ -26,8 +26,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -184,7 +184,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final EncodingFacade encoder;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
-	private final SoliditySigsVerifier sigsVerifier;
+	private final EvmSigsVerifier sigsVerifier;
 	private final AccountRecordsHistorian recordsHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final DissociationFactory dissociationFactory;
@@ -262,7 +262,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final AccountRecordsHistorian recordsHistorian,
-			final TxnAwareSoliditySigsVerifier sigsVerifier,
+			final TxnAwareEvmSigsVerifier sigsVerifier,
 			final DecodingFacade decoder,
 			final EncodingFacade encoder,
 			final SyntheticTxnFactory syntheticTxnFactory,

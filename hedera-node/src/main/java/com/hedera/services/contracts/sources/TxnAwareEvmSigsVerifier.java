@@ -43,13 +43,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 
 @Singleton
-public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
+public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 	private final ActivationTest activationTest;
 	private final TransactionContext txnCtx;
 	private final BiPredicate<JKey, TransactionSignature> cryptoValidity;
 
 	@Inject
-	public TxnAwareSoliditySigsVerifier(
+	public TxnAwareEvmSigsVerifier(
 			final ActivationTest activationTest,
 			final TransactionContext txnCtx,
 			final BiPredicate<JKey, TransactionSignature> cryptoValidity

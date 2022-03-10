@@ -22,7 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -147,7 +147,7 @@ public final class HederaOperationUtil {
 	 * @return The operation result of the execution
 	 */
 	public static Operation.OperationResult addressSignatureCheckExecution(
-			final SoliditySigsVerifier sigsVerifier,
+			final EvmSigsVerifier sigsVerifier,
 			final MessageFrame frame,
 			final Address address,
 			final Supplier<Gas> supplierHaltGasCost,

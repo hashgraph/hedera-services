@@ -22,7 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -73,7 +73,7 @@ class HederaOperationUtilTest {
 	@Mock
 	private HederaWorldState.WorldStateAccount worldStateAccount;
 	@Mock
-	private SoliditySigsVerifier sigsVerifier;
+	private EvmSigsVerifier sigsVerifier;
 	@Mock
 	private Supplier<Gas> gasSupplier;
 	@Mock

@@ -22,7 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -68,7 +68,7 @@ class HederaCallCodeOperationTest {
 	@Mock
 	private Gas cost;
 	@Mock
-	private SoliditySigsVerifier sigsVerifier;
+	private EvmSigsVerifier sigsVerifier;
 	@Mock
 	private BiPredicate<Address, MessageFrame> addressValidator;
 	@Mock
