@@ -106,7 +106,7 @@ class GetAccountInfoResourceUsageTest {
 
 	@Test
 	void usesEstimator() {
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
+		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		final var captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
 		final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setLedgerId(ledgerId)
@@ -144,7 +144,7 @@ class GetAccountInfoResourceUsageTest {
 
 	@Test
 	void returnsDefaultIfNoSuchAccount() {
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
+		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo)).willReturn(Optional.empty());
 
 		final var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);

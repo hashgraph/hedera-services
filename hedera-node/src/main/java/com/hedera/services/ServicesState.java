@@ -373,8 +373,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	private void updateLinks() {
-		var accounts = accounts();
-		var tokenRels = tokenAssociations();
+		final var accounts = accounts();
+		final var tokenRels = tokenAssociations();
 
 		for (var accountId : accounts.keySet()) {
 			var merkleAccount = accounts.getForModify(accountId);

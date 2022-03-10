@@ -93,11 +93,12 @@ public class GetAccountBalanceAnswer implements AnswerService {
 				.setAccountID(id);
 
 		if (validity == OK) {
-			var key = EntityNum.fromAccountId(id);
-			var account = accounts.get(key);
+			final var key = EntityNum.fromAccountId(id);
+			final var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
-			for (var relationship : StateView.getAssociatedTokenRels(
-					view.tokenAssociations(), account, view.tokens(), dynamicProperties.maxTokensPerAccount())) {
+			final var tokenRelationships = StateView.getAssociatedTokenRels(
+					view.tokenAssociations(), account, view.tokens(), dynamicProperties.maxTokensPerInfoQuery());
+			for (var relationship : tokenRelationships) {
 				final var tId = relationship.getTokenId();
 				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);
 				opAnswer.addTokenBalances(TokenBalance.newBuilder()

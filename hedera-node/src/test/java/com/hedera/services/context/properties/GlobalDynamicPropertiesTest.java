@@ -130,7 +130,7 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// then:
-		assertEquals(1, subject.maxTokensPerAccount());
+		assertEquals(1, subject.maxTokensPerInfoQuery());
 		assertEquals(2, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(6, subject.maxFileSizeKb());
 		assertEquals(15, subject.maxTransferListSize());
@@ -212,7 +212,7 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// then:
-		assertEquals(2, subject.maxTokensPerAccount());
+		assertEquals(2, subject.maxTokensPerInfoQuery());
 		assertEquals(3, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(7, subject.maxFileSizeKb());
 		assertEquals(9, subject.cacheRecordsTtl());

@@ -81,6 +81,16 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		this.automaticAssociation = automaticAssociation;
 	}
 
+	private MerkleTokenRelStatus(MerkleTokenRelStatus that) {
+		this.balance = that.balance;
+		this.frozen = that.frozen;
+		this.kycGranted = that.kycGranted;
+		this.numbers = that.numbers;
+		this.automaticAssociation = that.automaticAssociation;
+		this.prevKey = that.prevKey;
+		this.nextKey = that.nextKey;
+	}
+
 	/* --- MerkleLeaf --- */
 	@Override
 	public long getClassId() {
@@ -147,6 +157,9 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 				.append(frozen)
 				.append(kycGranted)
 				.append(automaticAssociation)
+				.append(numbers)
+				.append(nextKey)
+				.append(prevKey)
 				.toHashCode();
 	}
 
@@ -194,10 +207,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	@Override
 	public MerkleTokenRelStatus copy() {
 		setImmutable(true);
-		final var copy = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
-		copy.setNextKey(new EntityNumPair(nextKey));
-		copy.setPrevKey(new EntityNumPair(prevKey));
-		return copy;
+		return new MerkleTokenRelStatus(this);
 	}
 
 	@Override

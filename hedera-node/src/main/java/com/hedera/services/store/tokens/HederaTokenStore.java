@@ -77,7 +77,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCI
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
-import static com.hedera.services.ledger.properties.TokenRelProperty.KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.PREV_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
@@ -226,72 +225,66 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	@Override
-	public ResponseCodeEnum associate(AccountID aId, List<TokenID> tokens, boolean automaticAssociation) {
-		return fullySanityChecked(true, aId, tokens, (account, tokenIds) -> {
-			for (var tId : tokenIds) {
-				if (tokenRelsLedger.contains(Pair.of(aId, tId))) {
-					return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
-				}
+	public ResponseCodeEnum autoAssociate(AccountID aId, TokenID tId) {
+		return fullySanityChecked(aId, tId, (accountId, tokenId) -> {
+			if (tokenRelsLedger.contains(Pair.of(aId, tId))) {
+				return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 			}
+
 			var validity = OK;
 			var maxAutomaticAssociations = (int) accountsLedger.get(aId, MAX_AUTOMATIC_ASSOCIATIONS);
 			var alreadyUsedAutomaticAssociations = (int) accountsLedger.get(aId,
 					ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
 
-			if (automaticAssociation && alreadyUsedAutomaticAssociations >= maxAutomaticAssociations) {
+			if (alreadyUsedAutomaticAssociations >= maxAutomaticAssociations) {
 				validity = NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 			}
 
 			if (validity == OK) {
 				final var tokenAssociationMetadata =
 						(TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
-				final var lastAssociatedToken = tokenAssociationMetadata.lastAssociation();
+
+				final var lastAssociation = tokenAssociationMetadata.lastAssociation();
 				var numAssociations = tokenAssociationMetadata.numAssociations();
 				var numZeroBalances = tokenAssociationMetadata.numZeroBalances();
-				var currKey = new EntityNumPair(lastAssociatedToken.value());
-				for (var id : tokenIds) {
-					final var relationship = asTokenRel(aId, id);
-					tokenRelsLedger.create(relationship);
-					final var token = get(id);
-					tokenRelsLedger.set(
-							relationship,
-							TokenRelProperty.IS_FROZEN,
-							token.hasFreezeKey() && token.accountsAreFrozenByDefault());
-					tokenRelsLedger.set(
-							relationship,
-							TokenRelProperty.IS_KYC_GRANTED,
-							!token.hasKycKey());
-					tokenRelsLedger.set(
-							relationship,
-							TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
-							automaticAssociation);
 
-					sideEffectsTracker.trackAutoAssociation(id, aId);
-					if (automaticAssociation) {
-						accountsLedger.set(aId, ALREADY_USED_AUTOMATIC_ASSOCIATIONS,
-								alreadyUsedAutomaticAssociations + 1);
-					}
+				final var relationship = asTokenRel(aId, tId);
+				final var newAssociationKey = EntityNumPair.fromLongs(aId.getAccountNum(),	tId.getTokenNum());
 
-					final var newKey = EntityNumPair.fromLongs(
-							relationship.getKey().getAccountNum(),
-							relationship.getValue().getTokenNum());
+				tokenRelsLedger.create(relationship);
+				final var token = get(tId);
+				tokenRelsLedger.set(
+						relationship,
+						TokenRelProperty.IS_FROZEN,
+						token.hasFreezeKey() && token.accountsAreFrozenByDefault());
+				tokenRelsLedger.set(
+						relationship,
+						TokenRelProperty.IS_KYC_GRANTED,
+						!token.hasKycKey());
+				tokenRelsLedger.set(
+						relationship,
+						TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
+						true);
 
-					if (currKey.equals(MISSING_NUM_PAIR)) {
-						tokenRelsLedger.set(relationship, PREV_KEY, MISSING_NUM_PAIR);
-						tokenRelsLedger.set(relationship, NEXT_KEY, MISSING_NUM_PAIR);
-						tokenRelsLedger.set(relationship, KEY, newKey);
-					} else {
-						final var oldPrevKey = (EntityNumPair) tokenRelsLedger.get(currKey.asAccountTokenRel(), PREV_KEY);
-						tokenRelsLedger.set(currKey.asAccountTokenRel(), PREV_KEY, newKey);
-						tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey);
-						tokenRelsLedger.set(relationship, NEXT_KEY, currKey);
-					}
-					numAssociations++;
-					numZeroBalances++;
-					currKey = newKey;
+				sideEffectsTracker.trackAutoAssociation(tId, aId);
+				accountsLedger.set(aId, ALREADY_USED_AUTOMATIC_ASSOCIATIONS,
+						alreadyUsedAutomaticAssociations + 1);
+
+				if (lastAssociation.equals(MISSING_NUM_PAIR)) {
+					tokenRelsLedger.set(relationship, PREV_KEY, MISSING_NUM_PAIR);
+					tokenRelsLedger.set(relationship, NEXT_KEY, MISSING_NUM_PAIR);
+				} else {
+					// oldPrevKey should be MISSING_NUM_PAIR
+					final var oldPrevKey = (EntityNumPair) tokenRelsLedger.get(lastAssociation.asAccountTokenRel(), PREV_KEY);
+					tokenRelsLedger.set(lastAssociation.asAccountTokenRel(), PREV_KEY, newAssociationKey);
+					tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey);
+					tokenRelsLedger.set(relationship, NEXT_KEY, lastAssociation);
 				}
+
+				numAssociations++;
+				numZeroBalances++;
 				accountsLedger.set(aId, TOKEN_ASSOCIATION_METADATA,
-						new TokenAssociationMetadata(numAssociations, numZeroBalances, currKey));
+						new TokenAssociationMetadata(numAssociations, numZeroBalances, newAssociationKey));
 			}
 			return validity;
 		});
@@ -811,28 +804,23 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private ResponseCodeEnum fullySanityChecked(
-			final boolean strictTokenCheck,
 			final AccountID aId,
-			final List<TokenID> tokens,
-			final BiFunction<AccountID, List<TokenID>, ResponseCodeEnum> action
+			final TokenID tId,
+			final BiFunction<AccountID, TokenID, ResponseCodeEnum> action
 	) {
 		final var validity = checkAccountUsability(aId);
 		if (validity != OK) {
 			return validity;
 		}
-		if (strictTokenCheck) {
-			for (var tID : tokens) {
-				final var id = resolve(tID);
-				if (id == MISSING_TOKEN) {
-					return INVALID_TOKEN_ID;
-				}
-				final var token = get(id);
-				if (token.isDeleted()) {
-					return TOKEN_WAS_DELETED;
-				}
-			}
+		final var id = resolve(tId);
+		if (id == MISSING_TOKEN) {
+			return INVALID_TOKEN_ID;
 		}
-		return action.apply(aId, tokens);
+		final var token = get(id);
+		if (token.isDeleted()) {
+			return TOKEN_WAS_DELETED;
+		}
+		return action.apply(aId, tId);
 	}
 
 	private void resetPendingCreation() {
@@ -953,7 +941,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private ResponseCodeEnum validateAndAutoAssociate(AccountID aId, TokenID tId) {
 		if ((int) accountsLedger.get(aId, MAX_AUTOMATIC_ASSOCIATIONS) > 0) {
-			return associate(aId, List.of(tId), true);
+			return autoAssociate(aId, tId);
 		}
 		return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 	}

@@ -48,9 +48,6 @@ public class AccountStore {
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final BackingStore<AccountID, MerkleAccount> accounts;
-	// This Needs TokenRels Ledger to help use the lastAssociatedToken from the merkleAccount
-	// and build associatedTokenIds list
-	// So the field associatedTokens in Account model can by a list of TOkeIds instead of CopyOnWriteIds
 
 	@Inject
 	public AccountStore(

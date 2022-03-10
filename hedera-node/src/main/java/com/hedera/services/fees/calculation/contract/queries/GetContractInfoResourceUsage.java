@@ -61,7 +61,7 @@ public final class GetContractInfoResourceUsage implements QueryResourceUsageEst
 	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
 		final var op = query.getContractGetInfo();
 		final var tentativeInfo =
-				view.infoForContract(op.getContractID(), aliasManager, dynamicProperties.maxTokensPerAccount());
+				view.infoForContract(op.getContractID(), aliasManager, dynamicProperties.maxTokensPerInfoQuery());
 		if (tentativeInfo.isPresent()) {
 			final var info = tentativeInfo.get();
 			putIfNotNull(queryCtx, CONTRACT_INFO_CTX_KEY, info);

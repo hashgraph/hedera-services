@@ -69,8 +69,6 @@ public class RandomToken implements OpProvider {
 	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
 			/* Auto-renew account might be deleted by the time our TokenCreate reaches consensus */
 			INVALID_AUTORENEW_ACCOUNT,
-			/* The randomly chosen treasury might already have tokens.maxPerAccount associated tokens */
-//			TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED,
 			/* Treasury account might be deleted by the time our TokenCreate reaches consensus */
 			INVALID_TREASURY_ACCOUNT_FOR_TOKEN
 	);

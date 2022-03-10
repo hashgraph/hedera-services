@@ -147,7 +147,7 @@ class GetAccountBalanceAnswerTest {
 		given(dMerkleToken.hasFreezeKey()).willReturn(true);
 		given(dMerkleToken.hasKycKey()).willReturn(true);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokenPerAccountBalanceInfo);
+		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokenPerAccountBalanceInfo);
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(fromAccountTokenRel(target, aToken), aRel);

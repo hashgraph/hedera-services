@@ -157,7 +157,7 @@ public class GetContractInfoAnswer implements AnswerService {
 				response.setContractInfo((ContractGetInfoResponse.ContractInfo) ctx.get(CONTRACT_INFO_CTX_KEY));
 			}
 		} else {
-			var info = view.infoForContract(op.getContractID(), aliasManager, dynamicProperties.maxTokensPerAccount());
+			var info = view.infoForContract(op.getContractID(), aliasManager, dynamicProperties.maxTokensPerInfoQuery());
 			if (info.isEmpty()) {
 				response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
 			} else {

@@ -557,8 +557,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@FunctionalInterface
 	interface AssociateLogicFactory {
 		AssociateLogic newAssociateLogic(
-				TypedTokenStore tokenStore,
-				AccountStore accountStore);
+				final TypedTokenStore tokenStore,
+				final AccountStore accountStore);
 	}
 
 	@FunctionalInterface

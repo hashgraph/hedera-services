@@ -170,8 +170,7 @@ public class FcCustomFee implements SelfSerializable {
 			case FRACTIONAL_FEE:
 				validateTrue(token.isFungibleCommon(), CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
 				if (!beingCreated) {
-					validateTrue(tokenStore.getMerkleTokenRelationship(token, collector) != null,
-							TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+					validateTrue(tokenStore.hasAssociation(token, collector), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
 				}
 				break;
 		}

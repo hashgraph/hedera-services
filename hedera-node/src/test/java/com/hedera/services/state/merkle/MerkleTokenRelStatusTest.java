@@ -83,7 +83,7 @@ class MerkleTokenRelStatusTest {
 		assertEquals(subject, eight);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
-		assertEquals(subject.hashCode(), five.hashCode());
+		assertEquals(subject.hashCode(), seven.hashCode());
 	}
 
 	@Test

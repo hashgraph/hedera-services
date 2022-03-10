@@ -47,12 +47,13 @@ class TokenAssociationMetadataTest {
 		assertNotEquals(subject, other1);
 		assertNotEquals(subject, other2);
 		assertNotEquals(subject, other3);
+		assertNotEquals(subject, null);
 	}
 
 	@Test
 	void toStringWorks() {
-		final var expected = "numAssociations = " + numAssociations + ", " +
-				"numZeroBalances = " + numZeroBalances + ", lastAssociation = " + lastAssociation;
+		final var expected = "TokenAssociationMetadata[numAssociations=" + numAssociations +
+				", numZeroBalances=" + numZeroBalances + ", lastAssociation=" + lastAssociation + "]";
 
 		assertEquals(expected, subject.toString());
 	}
@@ -64,5 +65,6 @@ class TokenAssociationMetadataTest {
 		final var other = new TokenAssociationMetadata(5, 5, MISSING_NUM_PAIR);
 
 		assertTrue(other.hasNoTokenBalances());
+		assertTrue(TokenAssociationMetadata.EMPTY_TOKEN_ASSOCIATION_META.hasNoTokenBalances());
 	}
 }

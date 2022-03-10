@@ -31,6 +31,7 @@ import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
@@ -242,6 +243,14 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public void setTokenAssociationMetadata(final TokenAssociationMetadata tokenAssociationMetaData) {
 		throwIfImmutable("Cannot change this account's tokenAssociationMetaData if it is immutable");
 		state().setTokenAssociationMetadata(tokenAssociationMetaData);
+	}
+
+	public int getNumAssociations() {
+		return getTokenAssociationMetadata().numAssociations();
+	}
+
+	public EntityNumPair getLastAssociation() {
+		return getTokenAssociationMetadata().lastAssociation();
 	}
 
 	public long getBalance() {

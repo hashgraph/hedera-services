@@ -176,8 +176,6 @@ class OpUsageCtxHelperTest {
 		given(merkleAccount.getAccountKey()).willReturn(asUsableFcKey(key).get());
 		given(merkleAccount.getMemo()).willReturn(memo);
 		given(merkleAccount.getExpiry()).willReturn(now);
-		given(merkleAccount.getTokenAssociationMetadata()).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.numAssociations()).willReturn(tokenRelationShipCount);
 		given(merkleAccount.getMaxAutomaticAssociations()).willReturn(maxAutomaticAssociations);
 		given(merkleAccount.getProxy()).willReturn(new EntityId());
 
@@ -199,8 +197,6 @@ class OpUsageCtxHelperTest {
 		given(merkleAccount.getAccountKey()).willReturn(asUsableFcKey(key).get());
 		given(merkleAccount.getMemo()).willReturn(memo);
 		given(merkleAccount.getExpiry()).willReturn(now);
-		given(merkleAccount.getTokenAssociationMetadata()).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.numAssociations()).willReturn(tokenRelationShipCount);
 		given(merkleAccount.getMaxAutomaticAssociations()).willReturn(maxAutomaticAssociations);
 		given(merkleAccount.getProxy()).willReturn(new EntityId());
 		given(merkleAccount.getCryptoAllowances()).willReturn(cryptoAllowance);

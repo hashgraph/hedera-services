@@ -178,7 +178,7 @@ class AccountStoreTest {
 		// then:
 		assertEquals(expectedReplacement, miscMerkleAccount);
 		// and:
-		assertEquals(thirdRelKey , miscMerkleAccount.getTokenAssociationMetadata().lastAssociation());
+		assertEquals(thirdRelKey , miscMerkleAccount.getLastAssociation());
 	}
 
 	@Test

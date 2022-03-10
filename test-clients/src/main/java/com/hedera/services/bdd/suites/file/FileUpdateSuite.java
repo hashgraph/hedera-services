@@ -138,7 +138,6 @@ public class FileUpdateSuite extends HapiApiSuite {
 				optimisticSpecialFileUpdate(),
 				associateHasExpectedSemantics(),
 				notTooManyFeeScheduleCanBeCreated(),
-//				numAccountsAllowedIsDynamic(),
 				allUnusedGasIsRefundedIfSoConfigured(),
 				maxRefundIsEnforced(),
 				gasLimitOverMaxGasLimitFailsPrecheck(),
@@ -166,8 +165,6 @@ public class FileUpdateSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
-//						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-//								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
 								"tokens.maxPerAccount", "" + 1000
 						)).payingWith(ADDRESS_BOOK_CONTROL),
@@ -215,38 +212,6 @@ public class FileUpdateSuite extends HapiApiSuite {
 						getAliasedAccountInfo(aliasKey)
 				);
 	}
-
-//	public HapiApiSpec numAccountsAllowedIsDynamic() {
-//		final int MONOGAMOUS_NETWORK = 1;
-//
-//		return defaultHapiSpec("NumAccountsAllowedIsDynamic")
-//				.given(
-//						newKeyNamed("admin"),
-//						cryptoCreate(TOKEN_TREASURY).balance(0L)
-//				).when(
-//						fileUpdate(APP_PROPERTIES)
-//								.payingWith(ADDRESS_BOOK_CONTROL)
-//								.overridingProps(Map.of("tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK)),
-//						tokenCreate("primary")
-//								.adminKey("admin")
-//								.treasury(TOKEN_TREASURY),
-//						tokenCreate("secondaryFails")
-//								.treasury(TOKEN_TREASURY)
-//								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
-//						tokenDelete("primary"),
-//						/* Deleted tokens still count against your max allowed associations. */
-//						tokenCreate("secondaryFailsAgain")
-//								.treasury(TOKEN_TREASURY)
-//								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
-//				).then(
-//						fileUpdate(APP_PROPERTIES)
-//								.payingWith(ADDRESS_BOOK_CONTROL)
-//								.overridingProps(Map.of(
-//										"tokens.maxPerAccount", defaultMaxTokenPerAccount
-//								)),
-//						tokenCreate("secondary").treasury(TOKEN_TREASURY)
-//				);
-//	}
 
 	public HapiApiSpec notTooManyFeeScheduleCanBeCreated() {
 		final var denom = "fungible";

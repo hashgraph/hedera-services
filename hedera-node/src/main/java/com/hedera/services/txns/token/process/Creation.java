@@ -75,7 +75,7 @@ public class Creation {
 	private Token provisionalToken;
 	private Account treasury;
 	private Account autoRenew;
-	private List<TokenRelationship> newRels;
+	private List<TokenRelationship> newAndUpdatedRels;
 
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
@@ -121,12 +121,13 @@ public class Creation {
 		provisionalToken.getCustomFees().forEach(fee ->
 				fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore));
 		final var hasExistingAssociations = treasury.getLastAssociatedToken().value() != 0;
-		newRels = listing.listFrom(provisionalToken, tokenStore);
+		newAndUpdatedRels = listing.listFrom(provisionalToken, tokenStore);
 		if (op.getInitialSupply() > 0) {
-			/* The new treasury relation will either be at 0 [treasury has no other relationships] index or
-			at 1 [treasury has existing token relationships] index */
+			// When we created the new relationship for a treasury that already had a last-added relationship,
+			// we had to _first_ update the prev pointer on that relationship; so it will come first in the list of
+			// newAndUpdatedRels --- and the new relationship with this token will come second
 			provisionalToken.mint(
-					hasExistingAssociations ? newRels.get(1) : newRels.get(0),
+					hasExistingAssociations ? newAndUpdatedRels.get(1) : newAndUpdatedRels.get(0),
 					op.getInitialSupply(),
 					true);
 		}
@@ -135,12 +136,12 @@ public class Creation {
 
 	public void persist() {
 		tokenStore.persistNew(provisionalToken);
-		tokenStore.commitTokenRelationships(newRels);
-		newRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
+		tokenStore.commitTokenRelationships(newAndUpdatedRels);
+		newAndUpdatedRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
 	}
 
 	public List<FcTokenAssociation> newAssociations() {
-		return newRels.stream().map(TokenRelationship::asAutoAssociation).toList();
+		return newAndUpdatedRels.stream().map(TokenRelationship::asAutoAssociation).toList();
 	}
 
 	public Id newTokenId() {
@@ -165,8 +166,8 @@ public class Creation {
 		this.autoRenew = autoRenew;
 	}
 
-	void setNewRels(List<TokenRelationship> newRels) {
-		this.newRels = newRels;
+	void setNewAndUpdatedRels(List<TokenRelationship> newAndUpdatedRels) {
+		this.newAndUpdatedRels = newAndUpdatedRels;
 	}
 
 	Account getTreasury() {

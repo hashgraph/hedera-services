@@ -89,6 +89,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
@@ -624,8 +625,7 @@ public class StateView {
 	 * 		MerkelAccount for which the associations have to be looked up.
 	 * @param maxTokensPerAccountInfo
 	 * 		maximum number of token associations to be fetched.
-	 * @return
-	 * 		A list of TokenRelationships associated to the account.
+	 * @return A list of TokenRelationships associated to the account.
 	 */
 	public static List<TokenRelationship> getAssociatedTokenRels(
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
@@ -633,26 +633,11 @@ public class StateView {
 			final MerkleMap<EntityNum, MerkleToken> tokens,
 			final int maxTokensPerAccountInfo) {
 		final List<TokenRelationship> listOfAssociatedTokens = new ArrayList<>();
-		var currKey = account.getTokenAssociationMetadata().lastAssociation();
-		int counter = 0;
+		var startKey = account.getLastAssociation();
 
-		while (!currKey.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxTokensPerAccountInfo) {
-			final var tId = currKey.asAccountTokenRel().getRight();
-			final var tokenNum = EntityNum.fromTokenId(tId);
-			final var token = tokens.getOrDefault(tokenNum, REMOVED_TOKEN);
-			final var currRel = allTokenAssociations.get(currKey);
-			listOfAssociatedTokens.add(new RawTokenRelationship(
-					currRel.getBalance(),
-					tId.getShardNum(),
-					tId.getRealmNum(),
-					tId.getTokenNum(),
-					currRel.isFrozen(),
-					currRel.isKycGranted(),
-					currRel.isAutomaticAssociation()
-			).asGrpcFor(token));
-			currKey = currRel.nextKey();
-			counter++;
-		}
+		doBoundedIteration(allTokenAssociations, tokens, startKey, maxTokensPerAccountInfo, (tokenId, rel) ->
+				listOfAssociatedTokens.add(rel));
+
 		return listOfAssociatedTokens;
 	}
 
@@ -666,24 +651,51 @@ public class StateView {
 	 * 		MerkelAccount for which the associations have to be looked up.
 	 * @param maxTokensPerAccountInfo
 	 * 		maximum number of token associations to be fetched.
-	 * @return
-	 * 		A list of TokenIds associated to the account.
+	 * @return A list of TokenIds associated to the account.
 	 */
 	public static List<TokenID> getAssociatedTokenIds(
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
 			final MerkleAccount account,
 			final int maxTokensPerAccountInfo) {
 		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
-		var currKey = account.getTokenAssociationMetadata().lastAssociation();
-		int counter = 0;
+		final var startKey = account.getLastAssociation();
 
-		while (!currKey.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxTokensPerAccountInfo) {
-			var currRel = allTokenAssociations.get(currKey);
-			listOfAssociatedTokens.add(currKey.asAccountTokenRel().getRight());
+		doBoundedIteration(allTokenAssociations, null, startKey, maxTokensPerAccountInfo, (tokenId, rel) ->
+				listOfAssociatedTokens.add(tokenId));
+
+		return listOfAssociatedTokens;
+	}
+
+	private static void doBoundedIteration(
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
+			final MerkleMap<EntityNum, MerkleToken> tokens,
+			final EntityNumPair startKey,
+			final int maxRelsToVisit,
+			final BiConsumer<TokenID, TokenRelationship> visitor
+	) {
+		TokenRelationship relToAdd = TokenRelationship.getDefaultInstance();
+		var currKey = startKey;
+		var counter = 0;
+		while (!currKey.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRelsToVisit) {
+			final var currRel = allTokenAssociations.get(currKey);
+			final var relTokenId = currKey.getLowOrderAsTokenId();
+			if (tokens != null) {
+				final var tokenNum = EntityNum.fromTokenId(relTokenId);
+				final var token = tokens.getOrDefault(tokenNum, REMOVED_TOKEN);
+				relToAdd = new RawTokenRelationship(
+						currRel.getBalance(),
+						relTokenId.getShardNum(),
+						relTokenId.getRealmNum(),
+						relTokenId.getTokenNum(),
+						currRel.isFrozen(),
+						currRel.isKycGranted(),
+						currRel.isAutomaticAssociation()
+				).asGrpcFor(token);
+			}
+			visitor.accept(relTokenId, relToAdd);
 			currKey = currRel.nextKey();
 			counter++;
 		}
-		return listOfAssociatedTokens;
 	}
 
 	private static <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> emptyMm() {

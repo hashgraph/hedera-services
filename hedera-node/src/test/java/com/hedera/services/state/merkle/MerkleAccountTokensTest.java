@@ -140,12 +140,6 @@ class MerkleAccountTokensTest {
 				List.of(a, b, c),
 				subject.asTokenIds());
 
-		var limitedTokenIds = subject.asTokenIds(2);
-		assertEquals(List.of(a, b), limitedTokenIds);
-
-		limitedTokenIds = subject.asTokenIds(10);
-		assertEquals(List.of(a, b, c), limitedTokenIds);
-
 		subject = new MerkleAccountTokens();
 
 		assertEquals(Collections.emptyList(), subject.asTokenIds());

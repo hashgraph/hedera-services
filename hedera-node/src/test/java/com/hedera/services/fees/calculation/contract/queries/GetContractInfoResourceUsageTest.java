@@ -89,7 +89,7 @@ class GetContractInfoResourceUsageTest {
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 
 		view = mock(StateView.class);
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerContractInfo);
+		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokensPerContractInfo);
 		given(view.infoForContract(target, aliasManager, maxTokensPerContractInfo)).willReturn(Optional.of(info));
 
 		estimator = mock(ContractGetInfoUsage.class);

@@ -306,7 +306,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(newTreasuryNft, TOKEN_BALANCE)).willReturn(1L);
 
 		properties = mock(GlobalDynamicProperties.class);
-		given(properties.maxTokensPerAccount()).willReturn(MAX_TOKENS_PER_ACCOUNT);
+		given(properties.maxTokensPerInfoQuery()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(properties.maxTokenSymbolUtf8Bytes()).willReturn(MAX_TOKEN_SYMBOL_UTF8_BYTES);
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);
@@ -463,7 +463,7 @@ class HederaTokenStoreTest {
 	void associatingRejectsDeletedTokens() {
 		given(token.isDeleted()).willReturn(true);
 
-		final var status = subject.associate(sponsor, List.of(misc), false);
+		final var status = subject.autoAssociate(sponsor, misc);
 
 		assertEquals(TOKEN_WAS_DELETED, status);
 	}
@@ -472,7 +472,7 @@ class HederaTokenStoreTest {
 	void associatingRejectsMissingToken() {
 		given(backingTokens.contains(misc)).willReturn(false);
 
-		final var status = subject.associate(sponsor, List.of(misc), false);
+		final var status = subject.autoAssociate(sponsor, misc);
 
 		assertEquals(INVALID_TOKEN_ID, status);
 	}
@@ -481,7 +481,7 @@ class HederaTokenStoreTest {
 	void associatingRejectsMissingAccounts() {
 		given(accountsLedger.exists(sponsor)).willReturn(false);
 
-		final var status = subject.associate(sponsor, List.of(misc), false);
+		final var status = subject.autoAssociate(sponsor, misc);
 
 		assertEquals(INVALID_ACCOUNT_ID, status);
 	}
@@ -502,7 +502,7 @@ class HederaTokenStoreTest {
 	void associatingRejectsAlreadyAssociatedTokens() {
 		given(tokenRelsLedger.contains(Pair.of(sponsor, misc))).willReturn(true);
 
-		final var status = subject.associate(sponsor, List.of(misc), false);
+		final var status = subject.autoAssociate(sponsor, misc);
 
 		assertEquals(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, status);
 	}
@@ -520,7 +520,7 @@ class HederaTokenStoreTest {
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.accountsAreFrozenByDefault()).willReturn(true);
 
-		final var status = subject.associate(sponsor, List.of(misc), true);
+		final var status = subject.autoAssociate(sponsor, misc);
 
 		assertEquals(OK, status);
 		assertEquals(
@@ -550,7 +550,7 @@ class HederaTokenStoreTest {
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.accountsAreFrozenByDefault()).willReturn(true);
 
-		final var status = subject.associate(sponsor, List.of(misc), true);
+		final var status = subject.autoAssociate(sponsor, misc);
 
 		assertEquals(OK, status);
 		assertEquals(
@@ -574,11 +574,11 @@ class HederaTokenStoreTest {
 
 
 		// auto associate a fungible token
-		var status = subject.associate(sponsor, List.of(misc), true);
+		var status = subject.autoAssociate(sponsor, misc);
 		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
 
 		// auto associate a fungibleUnique token
-		status = subject.associate(sponsor, List.of(nonfungible), true);
+		status = subject.autoAssociate(sponsor, nonfungible);
 		assertEquals(NO_REMAINING_AUTOMATIC_ASSOCIATIONS, status);
 	}
 

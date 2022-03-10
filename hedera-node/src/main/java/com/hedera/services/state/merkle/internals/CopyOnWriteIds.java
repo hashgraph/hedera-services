@@ -172,9 +172,9 @@ public class CopyOnWriteIds {
 		return ids;
 	}
 
-	public List<TokenID> getAsIds(int count) {
+	public List<TokenID> getAsIds() {
 		final List<TokenID> modelIds = new ArrayList<>();
-		for (int i = 0, n = size(); i < count && i < n; i++) {
+		for (int i = 0, n = size(); i < n; i++) {
 			modelIds.add(asGrpcTokenId(nativeIdAt(i)));
 		}
 		return modelIds;

@@ -78,6 +78,10 @@ public record EntityNumPair(long value) {
 				unsignedLowOrder32From(value));
 	}
 
+	public TokenID getLowOrderAsTokenId() {
+		return STATIC_PROPERTIES.scopedTokenWith(unsignedLowOrder32From(value));
+	}
+
 	@Override
 	public int hashCode() {
 		return (int) MiscUtils.perm64(value);
@@ -89,19 +93,5 @@ public record EntityNumPair(long value) {
 				+ BitPackUtils.unsignedHighOrder32From(value)
 				+ ", "
 				+ BitPackUtils.unsignedLowOrder32From(value) + ")";
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || EntityNumPair.class != o.getClass()) {
-			return false;
-		}
-
-		var that = (EntityNumPair) o;
-
-		return this.value == that.value;
 	}
 }

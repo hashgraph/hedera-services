@@ -103,7 +103,7 @@ class CreationTest {
 	void getsExpectedAutoAssociations() {
 		givenSubjectWithEverything();
 		given(newRel.asAutoAssociation()).willReturn(autoAssociation);
-		subject.setNewRels(List.of(newRel));
+		subject.setNewAndUpdatedRels(List.of(newRel));
 
 		final var actual = subject.newAssociations();
 
@@ -114,7 +114,7 @@ class CreationTest {
 	void persistWorks() {
 		givenSubjectWithEverything();
 		given(newRel.getAccount()).willReturn(treasury);
-		subject.setNewRels(List.of(newRel));
+		subject.setNewAndUpdatedRels(List.of(newRel));
 		subject.setProvisionalToken(provisionalToken);
 
 		subject.persist();

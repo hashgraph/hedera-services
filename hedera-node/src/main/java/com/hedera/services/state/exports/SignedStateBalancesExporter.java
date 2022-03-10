@@ -239,10 +239,11 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			final MerkleMap<EntityNum, MerkleToken> tokens,
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
 	) {
-		for (final var tokenAssociation : StateView.getAssociatedTokenRels(tokenAssociations, account, tokens, Integer.MAX_VALUE)) {
-			final var token = tokens.get(fromTokenId(tokenAssociation.getTokenId()));
+		final var tokenRelationships = StateView.getAssociatedTokenRels(tokenAssociations, account, tokens, Integer.MAX_VALUE);
+		for (final var relationship : tokenRelationships) {
+			final var token = tokens.get(fromTokenId(relationship.getTokenId()));
 			if (token != null) {
-				sabBuilder.addTokenUnitBalances(tb(tokenAssociation.getTokenId(), tokenAssociation.getBalance()));
+				sabBuilder.addTokenUnitBalances(tb(relationship.getTokenId(), relationship.getBalance()));
 			}
 		}
 	}

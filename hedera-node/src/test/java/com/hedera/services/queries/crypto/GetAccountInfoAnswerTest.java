@@ -248,7 +248,7 @@ class GetAccountInfoAnswerTest {
 
 	@Test
 	void identifiesFailInvalid() throws Throwable {
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
+		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 		// and:
 		StateView view = mock(StateView.class);
@@ -266,7 +266,7 @@ class GetAccountInfoAnswerTest {
 
 	@Test
 	void getsTheAccountInfo() throws Throwable {
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(maxTokensPerAccountInfo);
+		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.decimals())

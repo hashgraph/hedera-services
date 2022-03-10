@@ -22,7 +22,6 @@ package com.hedera.services.store.models;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.ContextOptionValidator;
@@ -357,7 +356,7 @@ class AccountTest {
 	void failsOnAssociatingWithAlreadyRelatedToken() {
 		// setup:
 		final var alreadyAssocToken = new Token(new Id(0, 0, 666));
-		given(tokenStore.getMerkleTokenRelationship(alreadyAssocToken, subject)).willReturn(new MerkleTokenRelStatus());
+		given(tokenStore.hasAssociation(alreadyAssocToken, subject)).willReturn(true);
 
 		// expect:
 		assertFailsWith(

@@ -147,7 +147,7 @@ public interface AllowanceChecks {
 		if (ownerAccount.getId().equals(spenderId)) {
 			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
-		if (tokenStore.getMerkleTokenRelationship(token, ownerAccount) == null) {
+		if (!tokenStore.hasAssociation(token, ownerAccount)) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 		}
 		return OK;
