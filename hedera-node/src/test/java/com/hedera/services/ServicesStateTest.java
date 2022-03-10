@@ -55,7 +55,6 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -581,25 +580,6 @@ class ServicesStateTest {
 		subject.init(platform, addressBook, dualState);
 
 		verify(networkContext, never()).discardPreparedUpgradeMeta();
-	}
-
-	@Test
-	void forwardsFcomtrAsExpected() {
-		// setup:
-		final FCOneToManyRelation<EntityNum, Long> a = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<EntityNum, Long> b = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<EntityNum, Long> c = new FCOneToManyRelation<>();
-		// and:
-		subject.setMetadata(metadata);
-
-		given(metadata.getUniqueTokenAssociations()).willReturn(a);
-		given(metadata.getUniqueOwnershipAssociations()).willReturn(b);
-		given(metadata.getUniqueTreasuryOwnershipAssociations()).willReturn(c);
-
-		// expect:
-		assertSame(a, subject.uniqueTokenAssociations());
-		assertSame(b, subject.uniqueOwnershipAssociations());
-		assertSame(c, subject.uniqueTreasuryOwnershipAssociations());
 	}
 
 	@Test

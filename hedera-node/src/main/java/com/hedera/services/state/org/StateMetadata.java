@@ -21,10 +21,8 @@ package com.hedera.services.state.org;
  */
 
 import com.hedera.services.ServicesApp;
-import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.merkle.Archivable;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 
 /**
  * Contains the part of the Hedera Services world state that does influence
@@ -33,27 +31,17 @@ import com.swirlds.fchashmap.FCOneToManyRelation;
 public class StateMetadata implements FastCopyable, Archivable {
 	private final ServicesApp app;
 
-	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
-	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations;
-
 	public StateMetadata(ServicesApp app) {
 		this.app = app;
-		this.uniqueTokenAssociations = new FCOneToManyRelation<>();
-		this.uniqueOwnershipAssociations = new FCOneToManyRelation<>();
-		this.uniqueTreasuryOwnershipAssociations = new FCOneToManyRelation<>();
 	}
 
 	private StateMetadata(StateMetadata that) {
-		this.uniqueTokenAssociations = that.uniqueTokenAssociations.copy();
-		this.uniqueOwnershipAssociations = that.uniqueOwnershipAssociations.copy();
-		this.uniqueTreasuryOwnershipAssociations = that.uniqueTreasuryOwnershipAssociations.copy();
 		this.app = that.app;
 	}
 
 	@Override
 	public void archive() {
-		release();
+		// No-op
 	}
 
 	@Override
@@ -63,37 +51,10 @@ public class StateMetadata implements FastCopyable, Archivable {
 
 	@Override
 	public void release() {
-		uniqueTokenAssociations.release();
-		uniqueOwnershipAssociations.release();
-		uniqueTreasuryOwnershipAssociations.release();
+		// No-op
 	}
 
 	public ServicesApp app() {
 		return app;
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> getUniqueTokenAssociations() {
-		return uniqueTokenAssociations;
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipAssociations() {
-		return uniqueOwnershipAssociations;
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> getUniqueTreasuryOwnershipAssociations() {
-		return uniqueTreasuryOwnershipAssociations;
-	}
-
-	/* --- Only used by unit tests --- */
-	void setUniqueTokenAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations) {
-		this.uniqueTokenAssociations = uniqueTokenAssociations;
-	}
-
-	void setUniqueOwnershipAssociations(FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations) {
-		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
-	}
-
-	void setUniqueTreasuryOwnershipAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations) {
-		this.uniqueTreasuryOwnershipAssociations = uniqueTreasuryOwnershipAssociations;
 	}
 }

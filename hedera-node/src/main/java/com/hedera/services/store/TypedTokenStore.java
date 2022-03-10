@@ -35,7 +35,6 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -84,7 +83,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 public class TypedTokenStore {
 	private final AccountStore accountStore;
 	private final SideEffectsTracker sideEffectsTracker;
-	private final UniqueTokenViewsManager uniqueTokenViewsManager;
 	private final BackingStore<TokenID, MerkleToken> tokens;
 	private final BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
@@ -99,13 +97,11 @@ public class TypedTokenStore {
 			final BackingStore<TokenID, MerkleToken> tokens,
 			final BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
 			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-			final UniqueTokenViewsManager uniqueTokenViewsManager,
 			final LegacyTreasuryAdder legacyStoreDelegate,
 			final LegacyTreasuryRemover delegate,
 			final SideEffectsTracker sideEffectsTracker
 	) {
 		this.tokens = tokens;
-		this.uniqueTokenViewsManager = uniqueTokenViewsManager;
 		this.tokenRels = tokenRels;
 		this.uniqueTokens = uniqueTokens;
 		this.accountStore = accountStore;
@@ -436,11 +432,6 @@ public class TypedTokenStore {
 		for (var nft : nfts) {
 			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().num(), nft.getSerialNumber());
 			uniqueTokens.remove(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()));
-			if (treasury.matches(nft.getOwner())) {
-				uniqueTokenViewsManager.burnNotice(merkleNftId, treasury);
-			} else {
-				uniqueTokenViewsManager.wipeNotice(merkleNftId, new EntityId(nft.getOwner()));
-			}
 		}
 	}
 
@@ -449,7 +440,6 @@ public class TypedTokenStore {
 			final var merkleNftId = EntityNumPair.fromLongs(nft.getTokenId().num(), nft.getSerialNumber());
 			final var merkleNft = new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
 			uniqueTokens.put(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()), merkleNft);
-			uniqueTokenViewsManager.mintNotice(merkleNftId, treasury);
 		}
 	}
 

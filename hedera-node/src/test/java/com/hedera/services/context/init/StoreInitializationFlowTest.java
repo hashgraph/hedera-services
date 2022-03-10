@@ -30,7 +30,6 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -57,8 +56,6 @@ class StoreInitializationFlowTest {
 	@Mock
 	private AliasManager aliasManager;
 	@Mock
-	private UniqueTokenViewsManager uniqueTokenViewsManager;
-	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
 	@Mock
 	private BackingStore<NftId, MerkleUniqueToken> backingNfts;
@@ -82,7 +79,6 @@ class StoreInitializationFlowTest {
 				scheduleStore,
 				aliasManager,
 				stateAccessor,
-				uniqueTokenViewsManager,
 				backingAccounts,
 				backingTokens,
 				backingNfts,
@@ -104,7 +100,6 @@ class StoreInitializationFlowTest {
 		verify(backingNfts).rebuildFromSources();
 		verify(tokenStore).rebuildViews();
 		verify(scheduleStore).rebuildViews();
-		verify(uniqueTokenViewsManager).rebuildNotice(tokens, nfts);
 		verify(aliasManager).rebuildAliasesMap(accounts);
 	}
 }

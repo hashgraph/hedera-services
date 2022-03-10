@@ -23,10 +23,8 @@ package com.hedera.services.fees.calculation.token;
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.fees.calculation.token.queries.GetAccountNftInfosResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
-import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfosResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenAssociateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenCreateResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.TokenDeleteResourceUsage;
@@ -56,15 +54,11 @@ public final class TokenFeesModule {
 	@ElementsIntoSet
 	public static Set<QueryResourceUsageEstimator> provideTokenQueryEstimators(
 			final GetTokenInfoResourceUsage getTokenInfoResourceUsage,
-			final GetTokenNftInfoResourceUsage getTokenNftInfoResourceUsage,
-			final GetTokenNftInfosResourceUsage getTokenNftInfosResourceUsage,
-			final GetAccountNftInfosResourceUsage getAccountNftInfosResourceUsage
+			final GetTokenNftInfoResourceUsage getTokenNftInfoResourceUsage
 	) {
 		return Set.of(
 				getTokenInfoResourceUsage,
-				getTokenNftInfoResourceUsage,
-				getTokenNftInfosResourceUsage,
-				getAccountNftInfosResourceUsage);
+				getTokenNftInfoResourceUsage);
 	}
 
 	@Provides

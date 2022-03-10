@@ -36,7 +36,6 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -66,12 +65,6 @@ public interface StateChildren {
 	MerkleSpecialFiles specialFiles();
 
 	MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens();
-
-	FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations();
-
-	FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations();
-
-	FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations();
 
 	RecordsRunningHashLeaf runningHashLeaf();
 }

@@ -38,7 +38,6 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -124,7 +123,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	private static final Predicate<Key> REMOVES_ADMIN_KEY = ImmutableKeyUtils::signalsKeyRemoval;
 
 	private final OptionValidator validator;
-	private final UniqueTokenViewsManager uniqueTokenViewsManager;
 	private final GlobalDynamicProperties properties;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
@@ -144,7 +142,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			final EntityIdSource ids,
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
-			final UniqueTokenViewsManager uniqueTokenViewsManager,
 			final GlobalDynamicProperties properties,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
@@ -157,7 +154,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.backingTokens = backingTokens;
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.sideEffectsTracker = sideEffectsTracker;
-		this.uniqueTokenViewsManager = uniqueTokenViewsManager;
 		/* Known-treasuries view is re-built on restart or reconnect */
 	}
 
@@ -412,16 +408,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 		final var merkleNftId = EntityNumPair.fromLongs(nftId.tokenId().getTokenNum(), nftId.serialNo());
 		final var receiver = fromGrpcAccountId(to);
-		if (isTreasuryReturn) {
-			uniqueTokenViewsManager.treasuryReturnNotice(merkleNftId, owner, receiver);
-		} else {
-			final var isTreasuryExit = tokenTreasury.equals(from);
-			if (isTreasuryExit) {
-				uniqueTokenViewsManager.treasuryExitNotice(merkleNftId, owner, receiver);
-			} else {
-				uniqueTokenViewsManager.exchangeNotice(merkleNftId, owner, receiver);
-			}
-		}
 		sideEffectsTracker.trackNftOwnerChange(nftId, from, to);
 	}
 
