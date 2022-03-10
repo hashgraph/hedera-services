@@ -32,12 +32,11 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -100,7 +99,7 @@ public class BasicTransactionContext implements TransactionContext {
 	private List<FcAssessedCustomFee> assessedCustomFees;
 
 	ExpirableTxnRecord.Builder recordSoFar = ExpirableTxnRecord.newBuilder();
-	private ContractFunctionResult contractFunctionResult;
+	private EvmFnResult evmFnResult;
 
 	private final NodeInfo nodeInfo;
 	private final EntityCreator creator;
@@ -150,7 +149,7 @@ public class BasicTransactionContext implements TransactionContext {
 		ids.resetProvisionalIds();
 		recordSoFar.reset();
 		sideEffectsTracker.reset();
-		contractFunctionResult = null;
+		evmFnResult = null;
 	}
 
 	@Override
@@ -277,15 +276,15 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void setCallResult(final ContractFunctionResult result) {
-		this.contractFunctionResult = result;
-		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(SolidityFnResult.fromGrpc(result));
+	public void setCallResult(final EvmFnResult result) {
+		this.evmFnResult = result;
+		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(result);
 	}
 
 	@Override
-	public void setCreateResult(final ContractFunctionResult result) {
-		this.contractFunctionResult = result;
-		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(SolidityFnResult.fromGrpc(result));
+	public void setCreateResult(final EvmFnResult result) {
+		this.evmFnResult = result;
+		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(result);
 	}
 
 	@Override
@@ -323,12 +322,12 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public boolean hasContractResult() {
-		return contractFunctionResult != null;
+		return evmFnResult != null;
 	}
 
 	@Override
 	public long getGasUsedForContractTxn() {
-		return contractFunctionResult.getGasUsed();
+		return evmFnResult.getGasUsed();
 	}
 
 	/* --- Used by unit tests --- */
