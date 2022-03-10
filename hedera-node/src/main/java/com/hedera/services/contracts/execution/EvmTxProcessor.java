@@ -268,8 +268,7 @@ abstract class EvmTxProcessor {
 					gasPrice,
 					initialFrame.getOutputData(),
 					mirrorReceiver,
-					stateChanges,
-					dynamicProperties.shouldEnableTraceability());
+					stateChanges);
 		} else {
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction.toLong(),
@@ -277,8 +276,7 @@ abstract class EvmTxProcessor {
 					gasPrice,
 					initialFrame.getRevertReason(),
 					initialFrame.getExceptionalHaltReason(),
-					stateChanges,
-					dynamicProperties.shouldEnableTraceability());
+					stateChanges);
 		}
 	}
 

@@ -22,11 +22,11 @@ package com.hedera.services.context;
 
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -184,7 +184,7 @@ public interface TransactionContext {
 	 *
 	 * @param result the result of the contract call
 	 */
-	void setCallResult(ContractFunctionResult result);
+	void setCallResult(EvmFnResult result);
 
 	/**
 	 * Record that the current transaction created a smart contract with
@@ -192,7 +192,7 @@ public interface TransactionContext {
 	 *
 	 * @param result the result of the contract creation.
 	 */
-	void setCreateResult(ContractFunctionResult result);
+	void setCreateResult(EvmFnResult result);
 
 	/**
 	 * Record that an additional fee was deducted from the payer of the

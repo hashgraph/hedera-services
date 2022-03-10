@@ -23,35 +23,40 @@ package com.hedera.services.state.submerkle;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.utils.BytesComparator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.log.Log;
+import org.hyperledger.besu.evm.log.LogsBloomFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.swirlds.common.CommonUtils.hex;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
-public class SolidityFnResult implements SelfSerializable {
-	private static final byte[] MISSING_BYTES = new byte[0];
+public class EvmFnResult implements SelfSerializable {
+	private static final Logger log = LogManager.getLogger(EvmFnResult.class);
 
+	public static final byte[] EMPTY = new byte[0];
 
 	static final int PRE_RELEASE_0230_VERSION = 1;
 	static final int RELEASE_0230_VERSION = 2;
@@ -69,26 +74,56 @@ public class SolidityFnResult implements SelfSerializable {
 	public static final int MAX_ADDRESS_BYTES = 20;
 
 	private long gasUsed;
-	private byte[] bloom = MISSING_BYTES;
-	private byte[] result = MISSING_BYTES;
-	private byte[] evmAddress = MISSING_BYTES;
+	private byte[] bloom = EMPTY;
+	private byte[] result = EMPTY;
+	private byte[] evmAddress = EMPTY;
 	private String error;
 	private EntityId contractId;
-	private List<EntityId> createdContractIds = new ArrayList<>();
-	private List<SolidityLog> logs = new ArrayList<>();
-	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>();
+	private List<EntityId> createdContractIds = Collections.emptyList();
+	private List<EvmLog> logs = Collections.emptyList();
+	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = Collections.emptyMap();
 
-	public SolidityFnResult() {
+	public EvmFnResult() {
 		/* RuntimeConstructable */
 	}
 
-	public SolidityFnResult(
+	public static EvmFnResult fromCall(final TransactionProcessingResult result) {
+		return from(result, EMPTY);
+	}
+
+	public static EvmFnResult fromCreate(final TransactionProcessingResult result, final byte[] evmAddress) {
+		return from(result, evmAddress);
+	}
+
+	private static EvmFnResult from(final TransactionProcessingResult result, final byte[] evmAddress) {
+		if (result.isSuccessful()) {
+			final var recipient = result.getRecipient().orElse(Address.ZERO);
+			if (Address.ZERO == recipient) {
+				throw new IllegalArgumentException("Successful processing result had no recipient");
+			}
+			return success(
+					result.getLogs(),
+					result.getGasUsed(),
+					result.getOutput(),
+					recipient,
+					result.getStateChanges(),
+					serializableIdsFrom(result.getCreatedContracts()),
+					evmAddress);
+		} else {
+			final var error = result.getRevertReason()
+					.map(Object::toString)
+					.orElse(result.getHaltReason().map(Object::toString).orElse(null));
+			return failure(result.getGasUsed(), error, result.getStateChanges());
+		}
+	}
+
+	public EvmFnResult(
 			EntityId contractId,
 			byte[] result,
 			String error,
 			byte[] bloom,
 			long gasUsed,
-			List<SolidityLog> logs,
+			List<EvmLog> logs,
 			List<EntityId> createdContractIds,
 			byte[] evmAddress,
 			Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
@@ -118,11 +153,11 @@ public class SolidityFnResult implements SelfSerializable {
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		gasUsed = in.readLong();
-		bloom = in.readByteArray(SolidityLog.MAX_BLOOM_BYTES);
+		bloom = in.readByteArray(EvmLog.MAX_BLOOM_BYTES);
 		result = in.readByteArray(MAX_RESULT_BYTES);
 		error = serdes.readNullableString(in, MAX_ERROR_BYTES);
 		contractId = serdes.readNullableSerializable(in);
-		logs = in.readSerializableList(MAX_LOGS, true, SolidityLog::new);
+		logs = in.readSerializableList(MAX_LOGS, true, EvmLog::new);
 		createdContractIds = in.readSerializableList(MAX_CREATED_IDS, true, EntityId::new);
 		if (version >= RELEASE_0230_VERSION) {
 			evmAddress = in.readByteArray(MAX_ADDRESS_BYTES);
@@ -182,10 +217,10 @@ public class SolidityFnResult implements SelfSerializable {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || SolidityFnResult.class != o.getClass()) {
+		if (o == null || EvmFnResult.class != o.getClass()) {
 			return false;
 		}
-		var that = (SolidityFnResult) o;
+		var that = (EvmFnResult) o;
 		return gasUsed == that.gasUsed &&
 				Objects.equals(contractId, that.contractId) &&
 				Arrays.equals(result, that.result) &&
@@ -245,7 +280,7 @@ public class SolidityFnResult implements SelfSerializable {
 		return gasUsed;
 	}
 
-	public List<SolidityLog> getLogs() {
+	public List<EvmLog> getLogs() {
 		return logs;
 	}
 
@@ -269,33 +304,6 @@ public class SolidityFnResult implements SelfSerializable {
 		this.stateChanges = stateChanges;
 	}
 
-	/* --- Helpers --- */
-	public static SolidityFnResult fromGrpc(final ContractFunctionResult that) {
-		return new SolidityFnResult(
-				that.hasContractID() ? EntityId.fromGrpcContractId(that.getContractID()) : null,
-				that.getContractCallResult().isEmpty() ? MISSING_BYTES : that.getContractCallResult().toByteArray(),
-				!that.getContractCallResult().isEmpty() ? that.getErrorMessage() : null,
-				that.getBloom().isEmpty() ? MISSING_BYTES : that.getBloom().toByteArray(),
-				that.getGasUsed(),
-				that.getLogInfoList().stream().map(SolidityLog::fromGrpc).toList(),
-				that.getCreatedContractIDsList().stream().map(EntityId::fromGrpcContractId).toList(),
-				that.hasEvmAddress() ? that.getEvmAddress().getValue().toByteArray() : MISSING_BYTES,
-				that.getStateChangesList().stream().collect(Collectors.toMap(
-						csc -> Address.wrap(Bytes.wrap(asEvmAddress(csc.getContractID()))),
-						csc -> csc.getStorageChangesList().stream().collect(Collectors.toMap(
-								sc -> Bytes.wrap(sc.getSlot().toByteArray()).trimLeadingZeros(),
-								sc -> Pair.of(
-										Bytes.wrap(sc.getValueRead().toByteArray()).trimLeadingZeros(),
-										!sc.hasValueWritten() ? null :
-												Bytes.wrap(sc.getValueWritten().getValue().toByteArray()).trimLeadingZeros()),
-								(l, r) -> l,
-								() -> new TreeMap<>(BytesComparator.INSTANCE)
-						)),
-						(l, r) -> l,
-						() -> new TreeMap<>(BytesComparator.INSTANCE)))
-		);
-	}
-
 	public ContractFunctionResult toGrpc() {
 		var grpc = ContractFunctionResult.newBuilder();
 		grpc.setGasUsed(gasUsed);
@@ -308,28 +316,87 @@ public class SolidityFnResult implements SelfSerializable {
 			grpc.setContractID(contractId.toGrpcContractId());
 		}
 		if (isNotEmpty(logs)) {
-			grpc.addAllLogInfo(logs.stream().map(SolidityLog::toGrpc).toList());
+			grpc.addAllLogInfo(logs.stream().map(EvmLog::toGrpc).toList());
 		}
 		if (isNotEmpty(createdContractIds)) {
 			grpc.addAllCreatedContractIDs(createdContractIds.stream().map(EntityId::toGrpcContractId).toList());
 		}
-		grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
-		for (var changes : stateChanges.entrySet()) {
-			var contractStateChange = ContractStateChange.newBuilder().setContractID(
-					EntityIdUtils.contractIdFromEvmAddress(changes.getKey().toArrayUnsafe()));
-			for (var slotChange : changes.getValue().entrySet()) {
-				var storageChange = StorageChange.newBuilder();
-				storageChange.setSlot(ByteString.copyFrom(slotChange.getKey().toArrayUnsafe()));
-				Pair<Bytes, Bytes> value = slotChange.getValue();
-				storageChange.setValueRead(ByteString.copyFrom(value.getLeft().toArrayUnsafe()));
-				Bytes valueRight = value.getRight();
-				if (valueRight != null) {
-					storageChange.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(valueRight.toArrayUnsafe())).build());
-				}
-				contractStateChange.addStorageChanges(storageChange.build());
-			}
-			grpc.addStateChanges(contractStateChange);
+		if (evmAddress.length > 0) {
+			grpc.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)));
 		}
+		stateChanges.forEach((address, slotAccesses) -> {
+			final var builder = ContractStateChange.newBuilder()
+					.setContractID(EntityIdUtils.contractIdFromEvmAddress(address.toArrayUnsafe()));
+			slotAccesses.forEach((slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
+			grpc.addStateChanges(builder);
+		});
 		return grpc.build();
+	}
+
+	static StorageChange.Builder trimmedGrpc(final Bytes slot, final Pair<Bytes, Bytes> access) {
+		final var grpc = StorageChange.newBuilder()
+				.setSlot(ByteString.copyFrom(slot.trimLeadingZeros().toArrayUnsafe()))
+				.setValueRead(ByteString.copyFrom(access.getLeft().trimLeadingZeros().toArrayUnsafe()));
+		if (access.getRight() != null) {
+			grpc.setValueWritten(BytesValue.newBuilder().setValue(
+					ByteString.copyFrom(access.getRight().trimLeadingZeros().toArrayUnsafe())));
+		}
+		return grpc;
+	}
+
+	private static byte[] bloomFor(final List<Log> logs) {
+		return LogsBloomFilter.builder().insertLogs(logs).build().toArray();
+	}
+
+	private static List<EntityId> serializableIdsFrom(final List<ContractID> grpcCreations) {
+		final var n = grpcCreations.size();
+		if (n > 0) {
+			final List<EntityId> createdContractIds = new ArrayList<>();
+			for (int i = 0; i < n; i++) {
+				createdContractIds.add(EntityId.fromGrpcContractId(grpcCreations.get(i)));
+			}
+			return createdContractIds;
+		} else {
+			return Collections.emptyList();
+		}
+	}
+
+	private static EvmFnResult success(
+			final List<Log> logs,
+			final long gasUsed,
+			final Bytes output,
+			final Address recipient,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final List<EntityId> createdContractIds,
+			final byte[] evmAddress
+	) {
+		return new EvmFnResult(
+				EntityId.fromAddress(recipient),
+				output.toArrayUnsafe(),
+				null,
+				bloomFor(logs),
+				gasUsed,
+				EvmLog.fromBesu(logs),
+				createdContractIds,
+				evmAddress,
+				stateChanges);
+	}
+
+
+	private static EvmFnResult failure(
+			final long gasUsed,
+			final String error,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
+	) {
+		return new EvmFnResult(
+				null,
+				EMPTY,
+				error,
+				EMPTY,
+				gasUsed,
+				Collections.emptyList(),
+				Collections.emptyList(),
+				EMPTY,
+				stateChanges);
 	}
 }

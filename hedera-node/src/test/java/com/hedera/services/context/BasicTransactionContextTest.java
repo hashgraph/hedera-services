@@ -31,11 +31,11 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -46,7 +46,6 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -90,6 +89,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -136,8 +136,6 @@ class BasicTransactionContextTest {
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
 			.setAccountID(payer)
 			.build();
-	private final ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(
-			contractCreated).build();
 	private ExpirableTxnRecord record;
 
 	@Mock
@@ -164,6 +162,8 @@ class BasicTransactionContextTest {
 	private SideEffectsTracker sideEffectsTracker;
 	@Mock
 	private EntityIdSource ids;
+	@Mock
+	private EvmFnResult result;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -352,8 +352,7 @@ class BasicTransactionContextTest {
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar().build();
 
-		// expect:
-		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCallResult());
+		assertSame(result, record.getContractCallResult());
 	}
 
 	@Test
@@ -367,8 +366,7 @@ class BasicTransactionContextTest {
 		subject.setCreateResult(result);
 		record = subject.recordSoFar().build();
 
-		// expect:
-		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCreateResult());
+		assertSame(result, record.getContractCreateResult());
 	}
 
 	@Test
@@ -602,7 +600,6 @@ class BasicTransactionContextTest {
 
 	@Test
 	void hasContractResultWorksForCreateWithResult() {
-		ContractFunctionResult result = ContractFunctionResult.newBuilder().build();
 		subject.setCreateResult(result);
 		assertTrue(subject.hasContractResult());
 	}
@@ -614,16 +611,18 @@ class BasicTransactionContextTest {
 
 	@Test
 	void getGasUsedForContractTXWorksForCreate() {
-		ContractFunctionResult result = ContractFunctionResult.newBuilder().setGasUsed(123456789L).build();
+		final var gasUsed = 123456789L;
+		given(result.getGasUsed()).willReturn(gasUsed);
 		subject.setCreateResult(result);
-		assertEquals(123456789L, subject.getGasUsedForContractTxn());
+		assertEquals(gasUsed, subject.getGasUsedForContractTxn());
 	}
 
 	@Test
 	void getGasUsedForContractTXWorksForCall() {
-		ContractFunctionResult result = ContractFunctionResult.newBuilder().setGasUsed(123456789L).build();
+		final var gasUsed = 123456789L;
+		given(result.getGasUsed()).willReturn(gasUsed);
 		subject.setCallResult(result);
-		assertEquals(123456789L, subject.getGasUsedForContractTxn());
+		assertEquals(gasUsed, subject.getGasUsedForContractTxn());
 	}
 
 	private ExpirableTxnRecord.Builder buildExpectedRecord(
