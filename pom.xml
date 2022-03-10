@@ -210,6 +210,7 @@
 		<module>hapi-fees</module>
 		<module>hedera-node</module>
 		<module>test-clients</module>
+		<module>benchmarks</module>
 	</modules>
 
 	<build>

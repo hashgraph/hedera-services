@@ -238,8 +238,10 @@ class SideEffectsTrackerTest {
 		assertEquals(cAccount, cChange.getAccountID());
 		assertEquals(cOnlyBalanceChange, cChange.getAmount());
 
+		assertEquals(aFirstBalanceChange + aSecondBalanceChange + cOnlyBalanceChange, subject.getNetHbarChange());
 		subject.reset();
 		assertEquals(0, subject.getNetTrackedHbarChanges().getAccountAmountsCount());
+		assertEquals(0, subject.getNetHbarChange());
 	}
 
 	@Test

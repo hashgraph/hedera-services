@@ -21,8 +21,13 @@ package com.hedera.services.store.contracts;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.AccountsCommitInterceptor;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TokenRelsCommitInterceptor;
+import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
@@ -78,6 +83,8 @@ class WorldLedgersTest {
 	private ContractAliases aliases;
 	@Mock
 	private StaticEntityAccess staticEntityAccess;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	private WorldLedgers subject;
 
@@ -170,7 +177,56 @@ class WorldLedgersTest {
 	}
 
 	@Test
-	void wrapsAsExpected() {
+	void wrapsAsExpectedWithCommitInterceptors() {
+		final var liveTokenRels = new TransactionalLedger<>(
+				TokenRelProperty.class,
+				MerkleTokenRelStatus::new,
+				new HashMapBackingTokenRels(),
+				new ChangeSummaryManager<>());
+		final var liveAccounts = new TransactionalLedger<>(
+				AccountProperty.class,
+				MerkleAccount::new,
+				new HashMapBackingAccounts(),
+				new ChangeSummaryManager<>());
+		final var liveNfts = new TransactionalLedger<>(
+				NftProperty.class,
+				MerkleUniqueToken::new,
+				new HashMapBackingNfts(),
+				new ChangeSummaryManager<>());
+		final var liveTokens = new TransactionalLedger<>(
+				TokenProperty.class,
+				MerkleToken::new,
+				new HashMapBackingTokens(),
+				new ChangeSummaryManager<>());
+		final var liveAliases = new AliasManager();
+
+		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
+		assertTrue(source.areMutable());
+		final var nullTokenRels = new WorldLedgers(liveAliases, null, liveAccounts, liveNfts, liveTokens);
+		final var nullAccounts = new WorldLedgers(liveAliases, liveTokenRels, null, liveNfts, liveTokens);
+		final var nullNfts = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, null, liveTokens);
+		final var nullTokens = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, null);
+		assertFalse(nullTokenRels.areMutable());
+		assertFalse(nullAccounts.areMutable());
+		assertFalse(nullNfts.areMutable());
+		assertFalse(nullTokens.areMutable());
+
+		final var wrappedUnusable = nullAccounts.wrapped(sideEffectsTracker);
+		assertSame(((StackedContractAliases) wrappedUnusable.aliases()).wrappedAliases(), nullAccounts.aliases());
+		assertFalse(wrappedUnusable.areMutable());
+
+		final var wrappedSource = source.wrapped(sideEffectsTracker);
+
+		assertSame(liveTokenRels, wrappedSource.tokenRels().getEntitiesLedger());
+		assertSame(liveAccounts, wrappedSource.accounts().getEntitiesLedger());
+		assertSame(liveNfts, wrappedSource.nfts().getEntitiesLedger());
+		assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
+		final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
+		assertSame(liveAliases, stackedAliases.wrappedAliases());
+	}
+
+	@Test
+	void wrapsAsExpectedWithoutCommitInterceptors() {
 		final var liveTokenRels = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,

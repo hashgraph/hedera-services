@@ -691,10 +691,10 @@ class ExpirableTxnRecordTest {
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
 				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, " +
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
-				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null," +
+				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null," +
 				" " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
+				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
 				"stateChanges={}, evmAddress=}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
@@ -718,9 +718,9 @@ class ExpirableTxnRecordTest {
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
 				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, " +
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
-				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null, " +
+				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null, " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
+				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
 				"stateChanges={}, evmAddress=}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, tokenAdjustments=0.0.3" +
@@ -744,10 +744,10 @@ class ExpirableTxnRecordTest {
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
 				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, " +
 				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
-				"memo=Alpha bravo charlie, contractCreation=SolidityFnResult{gasUsed=55, bloom=, result=, error=null," +
+				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null," +
 				" " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[SolidityLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
+				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
 				"stateChanges={}, evmAddress=}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +

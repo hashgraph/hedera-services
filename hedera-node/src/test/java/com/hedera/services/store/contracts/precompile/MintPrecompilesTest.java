@@ -93,7 +93,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendin
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -212,7 +211,7 @@ class MintPrecompilesTest {
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а-> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -245,7 +244,7 @@ class MintPrecompilesTest {
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -264,7 +263,7 @@ class MintPrecompilesTest {
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
-				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+				accountStore, tokens, nfts, tokenRels, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
 		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
@@ -288,7 +287,7 @@ class MintPrecompilesTest {
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -320,7 +319,7 @@ class MintPrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 		// when:
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -352,7 +351,7 @@ class MintPrecompilesTest {
 		given(mockFeeObject.getServiceFee())
 				.willReturn(1L);
 
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		assertFailsWith(() -> subject.computeInternal(frame), FAIL_INVALID);
@@ -376,7 +375,7 @@ class MintPrecompilesTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 	}
 
@@ -394,7 +393,7 @@ class MintPrecompilesTest {
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
-				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+				accountStore, tokens, nfts, tokenRels, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
 		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))

@@ -91,7 +91,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipi
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -206,7 +205,7 @@ class BurnPrecompilesTest {
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 		given(encoder.encodeBurnFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -226,7 +225,7 @@ class BurnPrecompilesTest {
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
-				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+				accountStore, tokens, nfts, tokenRels,  NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
 		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
@@ -241,7 +240,7 @@ class BurnPrecompilesTest {
 		given(mockRecordBuilder.getReceiptBuilder()).willReturn(receiptBuilder);
 		given(encoder.encodeBurnSuccess(123L)).willReturn(successResult);
 
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -263,7 +262,7 @@ class BurnPrecompilesTest {
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
-				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+				accountStore, tokens, nfts, tokenRels, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
 		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
@@ -275,7 +274,7 @@ class BurnPrecompilesTest {
 				.willReturn(expirableTxnRecordBuilder);
 		given(encoder.encodeBurnSuccess(49)).willReturn(burnSuccessResultWith49Supply);
 
-		subject.prepareFieldsFromFrame(frame);
+		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 		final var result = subject.computeInternal(frame);
@@ -306,7 +305,7 @@ class BurnPrecompilesTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
 	}
 
