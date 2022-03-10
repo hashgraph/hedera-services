@@ -54,6 +54,8 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -112,8 +114,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -122,6 +126,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
@@ -1402,18 +1407,33 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class IsApprovedForAllPrecompile extends ERCReadOnlyAbstractPrecompile {
+		private IsApproveForAllWrapper isApproveForAllWrapper;
+
 		public IsApprovedForAllPrecompile(final TokenID tokenID) {
 			super(tokenID);
 		}
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+			final var nestedInput = input.slice(24);
+			isApproveForAllWrapper = decoder.decodeIsApprovedForAll(nestedInput, aliasResolver);
+
 			return super.body(input, aliasResolver);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			return Bytes.EMPTY;
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
+			var allowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(isApproveForAllWrapper.owner(), NFT_ALLOWANCES);
+			boolean isApprovedForAll = false;
+
+			for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> e : allowances.entrySet()) {
+				if (isApproveForAllWrapper.operator().getAccountNum() == e.getKey().getSpenderNum().longValue()) {
+					isApprovedForAll = e.getValue().isApprovedForAll();
+				}
+			}
+
+			return encoder.encodeIsApprovedForAll(isApprovedForAll);
 		}
 	}
 

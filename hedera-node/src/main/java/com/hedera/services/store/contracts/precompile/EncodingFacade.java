@@ -38,6 +38,7 @@ import static com.hedera.services.store.contracts.precompile.EncodingFacade.Func
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.BURN;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.DECIMALS;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.ERC_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.IS_APPROVED_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.MINT;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.NAME;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.OWNER;
@@ -60,6 +61,7 @@ public class EncodingFacade {
 	private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType ercTransferType = TupleType.parse("(bool)");
+	private static final TupleType isApprovedForAllType = TupleType.parse("(bool)");
 
 	@Inject
 	public EncodingFacade() {
@@ -156,8 +158,15 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeIsApprovedForAll(final boolean isApprovedForAllStatus) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.IS_APPROVED_FOR_ALL)
+				.withIsApprovedForAllStatus(isApprovedForAllStatus)
+				.build();
+	}
+
 	protected enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, IS_APPROVED_FOR_ALL
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -169,6 +178,7 @@ public class EncodingFacade {
 		private TupleType tupleType;
 		private int status;
 		private boolean ercFungibleTransferStatus;
+		private boolean isApprovedForAllStatus;
 		private long totalSupply;
 		private long balance;
 		private long[] serialNumbers;
@@ -199,6 +209,8 @@ public class EncodingFacade {
 				tupleType = tokenUriType;
 			} else if (functionType == FunctionType.ERC_TRANSFER) {
 				tupleType = ercTransferType;
+			} else if (functionType == IS_APPROVED_FOR_ALL) {
+				tupleType = isApprovedForAllType;
 			}
 
 			this.functionType = functionType;
@@ -255,6 +267,11 @@ public class EncodingFacade {
 			return this;
 		}
 
+		private FunctionResultBuilder withIsApprovedForAllStatus(final boolean isApprovedForAllStatus) {
+			this.isApprovedForAllStatus = isApprovedForAllStatus;
+			return this;
+		}
+
 		private Bytes build() {
 			Tuple result = Tuple.of(status);
 
@@ -278,6 +295,8 @@ public class EncodingFacade {
 				result = Tuple.of(metadata);
 			} else if (ERC_TRANSFER.equals(functionType)) {
 				result = Tuple.of(ercFungibleTransferStatus);
+			} else if (IS_APPROVED_FOR_ALL.equals(functionType)) {
+				result = Tuple.of(isApprovedForAllStatus);
 			}
 
 			return Bytes.wrap(tupleType.encode(result).array());

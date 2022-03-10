@@ -136,6 +136,11 @@ public class DecodingFacade {
 	private static final Bytes ERC_TRANSFER_FROM_SELECTOR = Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
 	private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER = TypeFactory.create("(bytes32,bytes32,uint256)");
 
+	private static final Function IS_APPROVED_FOR_ALL =
+			new Function("isApprovedForAll(address,address)");
+	private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
+	private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create("(bytes32,bytes32)");
+
 	@Inject
 	public DecodingFacade() {
 	}
@@ -271,6 +276,15 @@ public class DecodingFacade {
 
 		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES,
 				List.of(new SyntheticTxnFactory.FungibleTokenTransfer(amount, tokenID, sender, receiver))));
+	}
+
+	public IsApproveForAllWrapper decodeIsApprovedForAll(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, IS_APPROVED_FOR_ALL_SELECTOR, IS_APPROVED_FOR_ALL_DECODER);
+
+		final var owner = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var operator = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
+
+		return new IsApproveForAllWrapper(owner, operator);
 	}
 
 	public List<TokenTransferWrapper> decodeTransferTokens(

@@ -40,13 +40,14 @@ public class HTSPrecompileResult implements ContractCallResult {
 	private static final TupleType symbolType = TupleType.parse("(string)");
 	private static final TupleType tokenUriType = TupleType.parse("(string)");
 	private static final TupleType ercTransferType = TupleType.parse("(bool)");
+	private static final TupleType isApprovedForAllType = TupleType.parse("(bool)");
 
 	public static HTSPrecompileResult htsPrecompileResult() {
 		return new HTSPrecompileResult();
 	}
 
 	public enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, IS_APPROVED_FOR_ALL
 	}
 
 	private FunctionType functionType;
@@ -61,6 +62,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 	private String metadata;
 	private long balance;
 	private boolean ercFungibleTransferStatus;
+	private boolean isApprovedForAllStatus;
 
 	public HTSPrecompileResult forFunction(final FunctionType functionType) {
 		switch(functionType) {
@@ -74,6 +76,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 			case SYMBOL -> tupleType = symbolType;
 			case TOKEN_URI -> tupleType = tokenUriType;
 			case ERC_TRANSFER -> tupleType = ercTransferType;
+			case IS_APPROVED_FOR_ALL -> tupleType = isApprovedForAllType;
 		}
 
 		this.functionType = functionType;
@@ -130,6 +133,11 @@ public class HTSPrecompileResult implements ContractCallResult {
 		return this;
 	}
 
+	public HTSPrecompileResult withIsApprovedForAll(final boolean isApprovedForAllStatus) {
+		this.isApprovedForAllStatus = isApprovedForAllStatus;
+		return this;
+	}
+
 	@Override
 	public Bytes getBytes() {
 		Tuple result;
@@ -145,6 +153,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 			case SYMBOL -> result = Tuple.of(symbol);
 			case TOKEN_URI -> result = Tuple.of(metadata);
 			case ERC_TRANSFER -> result = Tuple.of(ercFungibleTransferStatus);
+			case IS_APPROVED_FOR_ALL -> result = Tuple.of(isApprovedForAllStatus);
 			default -> result = Tuple.of(status.getNumber());
 		}
 		return Bytes.wrap(tupleType.encode(result).array());
