@@ -53,13 +53,13 @@ contract ERC721Contract {
     }
 
     function safeTransferFrom(address token, address from, address to, uint256 tokenId) public {
-         IERC721(token).safeTransferFrom(from, to, tokenId);
+        IERC721(token).safeTransferFrom(from, to, tokenId);
     }
 
     function safeTransferFromWithData(address token, address from, address to,
-         uint256 tokenId, bytes calldata data) public {
-            IERC721(token).safeTransferFrom(from, to, tokenId, data);
-     }
+        uint256 tokenId, bytes calldata data) public {
+        IERC721(token).safeTransferFrom(from, to, tokenId, data);
+    }
 
 
     function tokenByIndex(address token, uint256 index) public view {

@@ -30,7 +30,7 @@ contract ERC20Contract {
     }
 
     function delegateTransfer(address token, address recipient, uint256 amount) public {
-      (bool success, bytes memory result) = address(IERC20(token)).delegatecall(abi.encodeWithSignature("transfer(address,uint256)", recipient, amount));
+        (bool success, bytes memory result) = address(IERC20(token)).delegatecall(abi.encodeWithSignature("transfer(address,uint256)", recipient, amount));
     }
 
     //Not supported operations - should return a failure
