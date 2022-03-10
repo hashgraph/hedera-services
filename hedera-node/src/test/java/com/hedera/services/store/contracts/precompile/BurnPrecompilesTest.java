@@ -91,7 +91,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipi
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -226,7 +225,7 @@ class BurnPrecompilesTest {
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
-				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+				accountStore, tokens, nfts, tokenRels,  NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
 		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
@@ -263,7 +262,7 @@ class BurnPrecompilesTest {
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
-				accountStore, tokens, nfts, tokenRels, NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
+				accountStore, tokens, nfts, tokenRels, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);
 		given(burnLogicFactory.newBurnLogic(tokenStore, accountStore)).willReturn(burnLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);

@@ -55,7 +55,6 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
@@ -349,18 +348,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public VirtualMap<ContractKey, ContractValue> contractStorage() {
 		return getChild(StateChildIndices.CONTRACT_STORAGE);
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
-		return metadata.getUniqueTokenAssociations();
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations() {
-		return metadata.getUniqueOwnershipAssociations();
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations() {
-		return metadata.getUniqueTreasuryOwnershipAssociations();
 	}
 
 	private void internalInit(

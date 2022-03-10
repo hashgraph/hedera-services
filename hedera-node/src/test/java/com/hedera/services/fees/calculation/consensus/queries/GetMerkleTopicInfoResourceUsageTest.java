@@ -26,7 +26,6 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.JEd25519KeyConverter;
@@ -65,12 +64,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 		topics = mock(MerkleMap.class);
 		final var children = new MutableStateChildren();
 		children.setTopics(topics);
-		view = new StateView(
-				null,
-				null,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				null);
+		view = new StateView(null, null, children, null);
 
 		subject = new GetTopicInfoResourceUsage();
 	}

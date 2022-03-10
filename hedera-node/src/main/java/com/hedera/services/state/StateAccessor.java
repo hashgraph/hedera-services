@@ -39,7 +39,6 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -95,18 +94,6 @@ public class StateAccessor {
 
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
 		return children.uniqueTokens();
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
-		return children.uniqueTokenAssociations();
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations() {
-		return children.uniqueOwnershipAssociations();
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations() {
-		return children.uniqueOwnershipTreasuryAssociations();
 	}
 
 	public MerkleSpecialFiles specialFiles() {

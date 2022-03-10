@@ -48,10 +48,7 @@ import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.annotations.AreFcotmrQueriesDisabled;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
-import com.hedera.services.store.tokens.views.ConfigDrivenUniqTokenViewFactory;
-import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import dagger.Binds;
@@ -63,10 +60,6 @@ import javax.inject.Singleton;
 
 @Module
 public interface StoresModule {
-	@Binds
-	@Singleton
-	UniqTokenViewFactory bindTokenViewFactory(ConfigDrivenUniqTokenViewFactory configDrivenFactory);
-
 	@Binds
 	@Singleton
 	TokenStore bindTokenStore(HederaTokenStore hederaTokenStore);
@@ -147,12 +140,6 @@ public interface StoresModule {
 		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		return accountsLedger;
-	}
-
-	@Provides
-	@AreFcotmrQueriesDisabled
-	static boolean provideAreFcotmrQueriesDisabled(final @CompositeProps PropertySource properties) {
-		return !properties.getBooleanProperty("tokens.nfts.areQueriesEnabled");
 	}
 
 	@Provides

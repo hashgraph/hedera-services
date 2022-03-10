@@ -45,7 +45,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
-import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.QueryUtils.payer;
 import static com.hedera.test.utils.QueryUtils.txnRecordQuery;
@@ -177,12 +176,7 @@ class AnswerFunctionsTest {
 	private void setupAccountsView() {
 		final var children = new MutableStateChildren();
 		children.setAccounts(accounts);
-		view = new StateView(
-				null,
-				null,
-				children,
-				EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				null);
+		view = new StateView(null, null, children, null);
 	}
 
 	private void givenRecordCount(final int n) {

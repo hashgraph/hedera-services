@@ -197,7 +197,6 @@ class BootstrapPropertiesTest {
 			entry("ledger.nftTransfers.maxLen", 10),
 			entry("ledger.xferBalanceChanges.maxLen", 20),
 			entry("tokens.nfts.areEnabled", true),
-			entry("tokens.nfts.areQueriesEnabled", true),
 			entry("tokens.nfts.useTreasuryWildcards", true),
 			entry("tokens.nfts.maxQueryRange", 100L),
 			entry("tokens.nfts.maxBatchSizeWipe", 10),
