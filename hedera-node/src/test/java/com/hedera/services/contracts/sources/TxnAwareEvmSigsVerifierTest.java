@@ -186,6 +186,18 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	@Test
+	void supplyKeyFailsWhenTokensLedgerIsNull() {
+		given(ledgers.tokens()).willReturn(null);
+
+		assertFailsWith(() ->
+						subject.hasActiveSupplyKey(true,
+								PRETEND_TOKEN_ADDR,
+								PRETEND_SENDER_ADDR,
+								ledgers),
+				INVALID_TOKEN_ID);
+	}
+
+	@Test
 	void throwsIfAskedToVerifyMissingAccount() {
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.getImmutableRef(account)).willReturn(null);
@@ -211,6 +223,18 @@ class TxnAwareEvmSigsVerifierTest {
 				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(verdict);
+	}
+
+	@Test
+	void activeKeyFailsWhenAccountsLedgerIsNull() {
+		given(ledgers.accounts()).willReturn(null);
+
+		assertFailsWith(() ->
+						subject.hasActiveKey(true,
+								PRETEND_ACCOUNT_ADDR,
+								PRETEND_SENDER_ADDR,
+								ledgers),
+				INVALID_ACCOUNT_ID);
 	}
 
 	@Test
@@ -246,6 +270,18 @@ class TxnAwareEvmSigsVerifierTest {
 
 		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
 				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, null);
+
+		assertTrue(noSigRequiredFlag);
+		verify(activationTest, never()).test(any(), any(), any());
+	}
+
+	@Test
+	void filtersNoSigRequiredWhenLedgersAreNotNullButAccountsLedgerIsNull() {
+		given(txnCtx.activePayer()).willReturn(payer);
+		given(ledgers.accounts()).willReturn(null);
+
+		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
+				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(noSigRequiredFlag);
 		verify(activationTest, never()).test(any(), any(), any());

@@ -73,7 +73,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 		}
 
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
-		final var account = Optional.ofNullable(worldLedgers.accounts().getImmutableRef(accountId));
+		final var account =
+				worldLedgers.accounts()!=null ?
+						Optional.ofNullable(worldLedgers.accounts().getImmutableRef(accountId)) : Optional.empty();
 
 		validateTrue(account.isPresent(), INVALID_ACCOUNT_ID);
 
@@ -99,7 +101,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 		}
 
 		final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
-		final var token = Optional.ofNullable(worldLedgers.tokens().getImmutableRef(tokenId));
+		final var token =
+				worldLedgers.tokens() != null ? Optional.ofNullable(worldLedgers.tokens().getImmutableRef(tokenId)) :
+						Optional.empty();
 
 		validateTrue(token.isPresent(), INVALID_TOKEN_ID);
 
@@ -167,7 +171,8 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 	}
 
 	private Optional<JKey> receiverSigKeyIfAnyOf(final AccountID id, final WorldLedgers worldLedgers) {
-		final var merkleAccount = worldLedgers != null ? Optional.ofNullable(worldLedgers.accounts().getImmutableRef(id)) :
+		final var merkleAccount = (worldLedgers != null && worldLedgers.accounts() != null) ?
+				Optional.ofNullable(worldLedgers.accounts().getImmutableRef(id)) :
 				Optional.empty();
 
 		return merkleAccount
