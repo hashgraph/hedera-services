@@ -22,6 +22,7 @@ package com.hedera.services.records;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Topic;
 
 import javax.inject.Inject;
@@ -60,15 +61,12 @@ public class TransactionRecordService {
 	 * 		the processing result of the EVM transaction
 	 */
 	public void externalizeUnsuccessfulEvmCreate(TransactionProcessingResult result) {
-		txnCtx.setCreateResult(result.toGrpc());
+		txnCtx.setCreateResult(EvmFnResult.fromCall(result));
 		externalizeGenericEvmCreate(result);
 	}
 
-	public void externalizeSuccessfulEvmCreate(
-			final TransactionProcessingResult result,
-			final byte[] newEvmAddress
-	) {
-		txnCtx.setCreateResult(result.toCreationGrpc(newEvmAddress));
+	public void externalizeSuccessfulEvmCreate(final TransactionProcessingResult result, final byte[] evmAddress) {
+		txnCtx.setCreateResult(EvmFnResult.fromCreate(result, evmAddress));
 		externalizeGenericEvmCreate(result);
 	}
 
@@ -84,9 +82,9 @@ public class TransactionRecordService {
 	 * @param result
 	 * 		the processing result of the EVM transaction
 	 */
-	public void externaliseEvmCallTransaction(TransactionProcessingResult result) {
+	public void externaliseEvmCallTransaction(final TransactionProcessingResult result) {
 		txnCtx.setStatus(getStatus(result, SUCCESS));
-		txnCtx.setCallResult(result.toGrpc());
+		txnCtx.setCallResult(EvmFnResult.fromCall(result));
 		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
 	}
 }

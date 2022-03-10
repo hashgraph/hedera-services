@@ -246,16 +246,14 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		final var result = TransactionProcessingResult
-				.successful(
+		final var result = TransactionProcessingResult.successful(
 						null,
 						1234L,
 						0L,
 						124L,
 						Bytes.EMPTY,
 						contractAccount.getId().asEvmAddress(),
-						Map.of(),
-						properties.shouldEnableTraceability());
+						Map.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -324,16 +322,14 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		final var result = TransactionProcessingResult
-				.successful(
+		final var result = TransactionProcessingResult.successful(
 						null,
 						1234L,
 						0L,
 						124L,
 						Bytes.EMPTY,
 						contractAccount.getId().asEvmAddress(),
-						Map.of(),
-						properties.shouldEnableTraceability());
+						Map.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -389,8 +385,7 @@ class ContractCreateTransitionLogicTest {
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		var result = TransactionProcessingResult.failed(1234L, 0L,
 				124L, Optional.empty(), Optional.empty(),
-				Map.of(),
-				properties.shouldEnableTraceability());
+				Map.of());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -423,16 +418,14 @@ class ContractCreateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given (worldState.persistProvisionalContractCreations()).willReturn(secondaryCreations);
-		final var result = TransactionProcessingResult
-				.successful(
+		final var result = TransactionProcessingResult.successful(
 						null,
 						1234L,
 						0L,
 						124L,
 						Bytes.EMPTY,
 						contractAccount.getId().asEvmAddress(),
-						Map.of(),
-						properties.shouldEnableTraceability());
+						Map.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
