@@ -15,9 +15,9 @@ contract Create2Factory {
     // 2. Compute the address of the contract to be deployed
     // NOTE: _salt is a random number used to create an address
     function getAddress(bytes memory bytecode, uint _salt)
-        public
-        view
-        returns (address)
+    public
+    view
+    returns (address)
     {
         bytes32 hash = keccak256(
             abi.encodePacked(bytes1(0xff), address(this), _salt, keccak256(bytecode))
@@ -46,11 +46,11 @@ contract Create2Factory {
         */
         assembly {
             addr := create2(
-                callvalue(), // wei sent with current call
-                // Actual code starts after skipping the first 32 bytes
-                add(bytecode, 0x20),
-                mload(bytecode), // Load the size of code contained in the first 32 bytes
-                _salt // Salt from function arguments
+            callvalue(), // wei sent with current call
+            // Actual code starts after skipping the first 32 bytes
+            add(bytecode, 0x20),
+            mload(bytecode), // Load the size of code contained in the first 32 bytes
+            _salt // Salt from function arguments
             )
 
             if iszero(extcodesize(addr)) {
@@ -66,20 +66,20 @@ contract Create2Factory {
 
         assembly {
             addr := create2(
-                callvalue(), 
-                add(bytecode, 0x20),
-                mload(bytecode), 
-                _salt 
+            callvalue(),
+            add(bytecode, 0x20),
+            mload(bytecode),
+            _salt
             )
 
             addr := create2(
-                callvalue(), 
-                add(bytecode, 0x20),
-                mload(bytecode), 
-                _salt 
+            callvalue(),
+            add(bytecode, 0x20),
+            mload(bytecode),
+            _salt
             )
 
-            // Must fail because this address would already exist from first create2
+        // Must fail because this address would already exist from first create2
             if iszero(extcodesize(addr)) {
                 revert(0, 0)
             }

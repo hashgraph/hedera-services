@@ -3,21 +3,21 @@ pragma solidity ^0.8.9;
 
 pragma experimental ABIEncoderV2;
 
-import "./hip-206/HederaTokenService.sol";
-import "./hip-206/HederaResponseCodes.sol";
+import "./HederaTokenService.sol";
+import "./HederaResponseCodes.sol";
 
 contract Create2PrecompileUser is HederaTokenService {
     User user;
 
     function createUser(bytes32 salt) public {
         address predictedAddress = address(uint160(uint(keccak256(abi.encodePacked(
-            bytes1(0xff),
-            address(this),
-            salt,
-            keccak256(abi.encodePacked(
-                type(User).creationCode
-            ))
-        )))));
+                bytes1(0xff),
+                address(this),
+                salt,
+                keccak256(abi.encodePacked(
+                    type(User).creationCode
+                ))
+            )))));
 
         user = new User{salt: salt}();
         require(address(user) == predictedAddress);
@@ -25,7 +25,7 @@ contract Create2PrecompileUser is HederaTokenService {
 
     function associateBothTo(address token_type) public {
         int myAssociation = HederaTokenService.associateToken(
-            address(this), token_type);    
+            address(this), token_type);
         if (myAssociation != HederaResponseCodes.SUCCESS) {
             revert("Well, I never!");
         }
@@ -44,7 +44,7 @@ contract Create2PrecompileUser is HederaTokenService {
 
     function dissociateBothFrom(address token_type) public {
         int myDissociation = HederaTokenService.dissociateToken(
-            address(this), token_type);    
+            address(this), token_type);
         if (myDissociation != HederaResponseCodes.SUCCESS) {
             revert("Never ends well.");
         }
@@ -55,7 +55,7 @@ contract Create2PrecompileUser is HederaTokenService {
 contract User is HederaTokenService {
     function associateTo(address token_type) public {
         int userAssociation = HederaTokenService.associateToken(
-            address(this), token_type);    
+            address(this), token_type);
         if (userAssociation != HederaResponseCodes.SUCCESS) {
             revert("It's unheard of...");
         }
@@ -63,14 +63,14 @@ contract User is HederaTokenService {
 
     function dissociateFrom(address token_type) public {
         int userDissociation = HederaTokenService.dissociateToken(
-            address(this), token_type);    
+            address(this), token_type);
         if (userDissociation != HederaResponseCodes.SUCCESS) {
             revert("So unfair");
         }
     }
 
     function mintNft(address token_type, bytes[] memory metadata) external {
-         (int rc, uint64 newSupply, int64[] memory sns) = HederaTokenService.mintToken(token_type, 0, metadata);
+        (int rc, uint64 newSupply, int256[] memory sns) = HederaTokenService.mintToken(token_type, 0, metadata);
 
         if (rc != HederaResponseCodes.SUCCESS) {
             revert("Can't!");
@@ -86,7 +86,7 @@ contract User is HederaTokenService {
 
 contract Helper is HederaTokenService {
     function mintNft(address token_type, bytes[] memory metadata) external {
-         (int rc, uint64 newSupply, int64[] memory sns) = HederaTokenService.mintToken(token_type, 0, metadata);
+        (int rc, uint64 newSupply, int256[] memory sns) = HederaTokenService.mintToken(token_type, 0, metadata);
 
         if (rc != HederaResponseCodes.SUCCESS) {
             revert("Can't even!");

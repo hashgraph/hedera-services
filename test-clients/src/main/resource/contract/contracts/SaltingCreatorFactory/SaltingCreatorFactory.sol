@@ -4,16 +4,16 @@ pragma solidity ^0.8.9;
 contract SaltingCreatorFactory {
     function buildCreator(bytes32 salt) public {
         uint primal_foo = 42;
-        
+
         address predictedAddress = address(uint160(uint(keccak256(abi.encodePacked(
-            bytes1(0xff),
-            address(this),
-            salt,
-            keccak256(abi.encodePacked(
-                type(SaltingCreator).creationCode,
-                primal_foo
-            ))
-        )))));
+                bytes1(0xff),
+                address(this),
+                salt,
+                keccak256(abi.encodePacked(
+                    type(SaltingCreator).creationCode,
+                    primal_foo
+                ))
+            )))));
 
         SaltingCreator creator = new SaltingCreator{salt: salt}(primal_foo);
         require(address(creator) == predictedAddress);
@@ -31,7 +31,7 @@ contract SaltingCreator {
     event Creation(uint v);
 
     constructor(uint _primal_foo) payable {
-        primal_foo = _primal_foo; 
+        primal_foo = _primal_foo;
     }
 
     function createSaltedTestContract(bytes32 salt) public {
@@ -46,7 +46,7 @@ contract SaltingCreator {
     }
 
     function whatTheFoo() public view returns (uint) {
-        return primal_foo; 
+        return primal_foo;
     }
 }
 
