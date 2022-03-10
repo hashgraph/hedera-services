@@ -21,7 +21,6 @@ package com.hedera.services.queries.contract;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
