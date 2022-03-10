@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -73,7 +74,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
@@ -98,6 +98,8 @@ class HederaWorldStateTest {
 	private ContractAliases aliases;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
@@ -431,7 +433,6 @@ class HederaWorldStateTest {
 	@Test
 	void staticInnerUpdaterWorksAsExpected() {
 		final var tbd = IdUtils.asAccount("0.0.321");
-		final var tbdBalance = 123L;
 		final var tbdAddress = EntityIdUtils.asTypedEvmAddress(tbd);
 		givenNonNullWorldLedgers();
 		given(worldLedgers.aliases()).willReturn(aliases);
@@ -443,13 +444,11 @@ class HederaWorldStateTest {
 
 		/* delete branch */
 		given(aliases.resolveForEvm(tbdAddress)).willReturn(tbdAddress);
-		given(entityAccess.getBalance(tbd)).willReturn(tbdBalance).willReturn(0L);
 		var mockTbdAccount = mock(Address.class);
 		actualSubject.getSponsorMap().put(tbdAddress, mockTbdAccount);
 		actualSubject.deleteAccount(tbdAddress);
 		actualSubject.commit();
 		verify(worldLedgers).commit(sigImpactHistorian);
-		verify(entityAccess).adjustBalance(tbd, -tbdBalance);
 		verify(sigImpactHistorian).markEntityChanged(tbd.getAccountNum());
 
 		actualSubject.getSponsorMap().put(Address.ZERO, mockTbdAccount);
@@ -539,8 +538,6 @@ class HederaWorldStateTest {
 
 		final var updater = subject.updater();
 		updater.deleteAccount(tbdAddress);
-		// and:
-		given(entityAccess.getBalance(contract.asGrpcAccount())).willReturn(0L);
 
 		// when:
 		updater.commit();
@@ -549,7 +546,6 @@ class HederaWorldStateTest {
 		verify(entityAccess).flushStorage();
 		verify(worldLedgers).commit(sigImpactHistorian);
 		verify(entityAccess).recordNewKvUsageTo(any());
-		verify(entityAccess).spawn(any(), anyLong(), any());
 	}
 
 	@Test

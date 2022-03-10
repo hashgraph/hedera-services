@@ -21,8 +21,13 @@ package com.hedera.services.store.contracts;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.AccountsCommitInterceptor;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TokenRelsCommitInterceptor;
+import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -169,6 +174,33 @@ public class WorldLedgers {
 				activeLedgerWrapping(accountsLedger),
 				activeLedgerWrapping(nftsLedger),
 				activeLedgerWrapping(tokensLedger));
+	}
+
+	public WorldLedgers wrapped(final SideEffectsTracker sideEffectsTracker) {
+		if (!areMutable()) {
+			return staticLedgersWith(StackedContractAliases.wrapping(aliases), staticEntityAccess);
+		}
+
+		final var tokensCommitInterceptor = new TokensCommitInterceptor(sideEffectsTracker);
+		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor(sideEffectsTracker);
+		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor(sideEffectsTracker);
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+
+		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
+		wrappedTokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
+		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
+		wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
+		final var wrappedNftsLedger = activeLedgerWrapping(nftsLedger);
+		wrappedNftsLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
+		final var wrappedTokensLedger = activeLedgerWrapping(tokensLedger);
+		wrappedTokensLedger.setCommitInterceptor(tokensCommitInterceptor);
+
+		return new WorldLedgers(
+				StackedContractAliases.wrapping(aliases),
+				wrappedTokenRelsLedger,
+				wrappedAccountsLedger,
+				wrappedNftsLedger,
+				wrappedTokensLedger);
 	}
 
 	public ContractAliases aliases() {

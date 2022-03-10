@@ -39,14 +39,14 @@ import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.ra
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomEvmWord;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomStateChangePair;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.registerRecordConstructables;
-import static com.hedera.services.state.submerkle.SolidityFnResult.RELEASE_0240_VERSION;
+import static com.hedera.services.state.submerkle.EvmFnResult.RELEASE_0240_VERSION;
 
-class SolidityFnResultSerdeTest {
+class EvmFnResultSerdeTest {
 	@Test
 	void serdeWorksWithNoStateChanges() throws IOException, ConstructableRegistryException {
 		registerRecordConstructables();
 
-		final var subject = new SolidityFnResult(
+		final var subject = new EvmFnResult(
 				randomEntityId(),
 				randomBytes(128),
 				"Mind the vase now!",
@@ -57,7 +57,7 @@ class SolidityFnResultSerdeTest {
 				randomBytes(20),
 				Collections.emptyMap());
 
-		assertSerdeWorks(subject, SolidityFnResult::new, RELEASE_0240_VERSION);
+		assertSerdeWorks(subject, EvmFnResult::new, RELEASE_0240_VERSION);
 	}
 
 	@Test
@@ -65,7 +65,7 @@ class SolidityFnResultSerdeTest {
 		registerRecordConstructables();
 
 		for (int i = 0; i < 10; i++) {
-			final var subject = new SolidityFnResult(
+			final var subject = new EvmFnResult(
 					randomEntityId(),
 					randomBytes(128),
 					"Mind the vase now!",
@@ -76,7 +76,7 @@ class SolidityFnResultSerdeTest {
 					randomBytes(20),
 					randomStateChanges(5, 10));
 
-			assertSerdeWorks(subject, SolidityFnResult::new, RELEASE_0240_VERSION);
+			assertSerdeWorks(subject, EvmFnResult::new, RELEASE_0240_VERSION);
 		}
 	}
 

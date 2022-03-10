@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto.validators;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -271,8 +272,9 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
 		}
 
-		if (fungibleToken != null && amount > fungibleToken.getMaxSupply()) {
-			return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+		if (fungibleToken.getSupplyType().equals(TokenSupplyType.FINITE) &&
+				amount > fungibleToken.getMaxSupply()) {
+ 			return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 		}
 		return OK;
 	}
