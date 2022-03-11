@@ -117,7 +117,7 @@ class CurrencyAdjustmentsTest {
 
 	@Test
 	void factoryWorks() {
-		assertEquals(subject, grpcAdjustments);
+		assertEquals(grpcAdjustments, subject);
 	}
 
 	@Test
