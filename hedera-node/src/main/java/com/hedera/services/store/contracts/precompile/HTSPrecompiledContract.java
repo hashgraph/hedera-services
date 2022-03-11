@@ -1436,7 +1436,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (isFungible) {
 				frame.addLog(getLogForFungibleAdjustAllowance(precompileAddress));
 			} else {
-				frame.addLog(getLogForNftApprooveAllowence(precompileAddress));
+				frame.addLog(getLogForNftApproveAllowance(precompileAddress));
 			}
 		}
 
@@ -1468,9 +1468,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					.forDataItem(BigInteger.valueOf(approveOp.amount().longValue())).build();
 		}
 
-		private Log getLogForNftApprooveAllowence(final Address logger) {
+		private Log getLogForNftApproveAllowance(final Address logger) {
 			return EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
-					.forEventSignature(TRANSFER_EVENT)
+					.forEventSignature(APPROVAL_EVENT)
 					.forIndexedArgument(senderAddress)
 					.forIndexedArgument(asTypedEvmAddress(approveOp.spender()))
 					.forIndexedArgument(BigInteger.valueOf(approveOp.amount().longValue())).build();
