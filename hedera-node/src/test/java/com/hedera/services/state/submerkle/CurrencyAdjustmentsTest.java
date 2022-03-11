@@ -21,7 +21,9 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,17 +31,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.booleanThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.times;
 
 class CurrencyAdjustmentsTest {
 	private static final AccountID a = IdUtils.asAccount("0.0.13257");
@@ -51,11 +52,13 @@ class CurrencyAdjustmentsTest {
 	private static final long cAmount = -3L;
 
 	private static final CurrencyAdjustments grpcAdjustments = CurrencyAdjustments.fromChanges
-			(new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum() },
-					new long[] { aAmount, bAmount, cAmount });
+			(new long[] { aAmount, bAmount, cAmount },
+					new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum() }
+			);
 	private static final CurrencyAdjustments otherGrpcAdjustments = CurrencyAdjustments.fromChanges
-			(new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum() },
-					new long[] { aAmount * 2, bAmount * 2, cAmount * 2 });
+			(new long[] { aAmount * 2, bAmount * 2, cAmount * 2 },
+					new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum() }
+			);
 
 	private CurrencyAdjustments subject;
 
@@ -108,6 +111,7 @@ class CurrencyAdjustmentsTest {
 
 	@Test
 	void viewWorks() {
+		final TransferList grpcAdjustments = TxnUtils.withAdjustments(a, aAmount, b, bAmount, c, cAmount);
 		assertEquals(grpcAdjustments, subject.toGrpc());
 	}
 
@@ -125,8 +129,9 @@ class CurrencyAdjustmentsTest {
 	@Test
 	void deserializeWorks() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
-		given(in.readLongArray(CurrencyAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(subject.accountCodes);
-		given(in.readLongArray(CurrencyAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(subject.hbars);
+		given(in.readLongArray(CurrencyAdjustments.MAX_NUM_ADJUSTMENTS))
+				.willReturn(subject.accountCodes)
+				.willReturn(subject.hbars);
 
 		final var readSubject = new CurrencyAdjustments();
 		readSubject.deserialize(in, CurrencyAdjustments.MERKLE_VERSION);
@@ -136,20 +141,17 @@ class CurrencyAdjustmentsTest {
 
 	@Test
 	void serializeWorks() throws IOException {
-		final var idsCaptor = ArgumentCaptor.forClass(List.class);
-		final var amountsCaptor = ArgumentCaptor.forClass(long[].class);
+		final var captor = ArgumentCaptor.forClass(long[].class);
 		final var out = mock(SerializableDataOutputStream.class);
 		final var inOrder = inOrder(out);
 
 		subject.serialize(out);
 
-		inOrder.verify(out).writeSerializableList(
-				(List<EntityId>) idsCaptor.capture(),
-				booleanThat(Boolean.TRUE::equals),
-				booleanThat(Boolean.TRUE::equals));
-		inOrder.verify(out).writeLongArray(amountsCaptor.capture());
+		inOrder.verify(out, times(2)).writeLongArray(captor.capture());
+		final var capturedValues = captor.getAllValues();
 
-		assertArrayEquals(subject.hbars, amountsCaptor.getValue());
-		assertEquals(subject.accountCodes, idsCaptor.getValue());
+		assertArrayEquals(subject.accountCodes, capturedValues.get(0));
+		assertArrayEquals(subject.hbars, capturedValues.get(1));
+
 	}
 }

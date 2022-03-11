@@ -32,7 +32,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
 
@@ -114,11 +113,12 @@ public class CurrencyAdjustments implements SelfSerializable {
 	/* --- Helpers --- */
 	public TransferList toGrpc() {
 		var grpc = TransferList.newBuilder();
-		IntStream.range(0, hbars.length)
-				.mapToObj(i -> AccountAmount.newBuilder()
-						.setAmount(hbars[i])
-						.setAccountID(EntityNum.fromLong(accountCodes[i]).toGrpcAccountId()))
-				.forEach(grpc::addAccountAmounts);
+		for (int i = 0; i < hbars.length; i++) {
+			grpc.addAccountAmounts(AccountAmount.newBuilder()
+					.setAmount(hbars[i])
+					.setAccountID(EntityNum.fromLong(accountCodes[i]).toGrpcAccountId())
+					.build());
+		}
 		return grpc.build();
 	}
 

@@ -121,10 +121,12 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		subject.begin();
 		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.delete(a, genesis);
-		final var numNetTransfers = subject.netTransfersInTxn();
+		final var numNetTransfersAccounts = subject.netTransfersInTxn().getAccountCodes().length;
+		final var numNetTransfersBalances = subject.netTransfersInTxn().getHbars().length;
 		subject.commit();
 
-		assertEquals(0, numNetTransfers);
+		assertEquals(0, numNetTransfersAccounts);
+		assertEquals(0, numNetTransfersBalances);
 		assertTrue(subject.exists(a));
 		assertEquals(GENESIS_BALANCE, subject.getBalance(genesis));
 	}

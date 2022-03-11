@@ -44,7 +44,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -962,13 +961,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			}
 
 			this.transferList.hbars = Arrays.copyOfRange(netAdjustsHere, 0, k);
-			this.transferList.accountCodes = netChanged;
+			this.transferList.accountCodes = Arrays.copyOfRange(netChanged, 0, m);
 		}
-
-		public static final Comparator<EntityId> ID_CMP = Comparator
-				.comparingLong(EntityId::num)
-				.thenComparingLong(EntityId::shard)
-				.thenComparingLong(EntityId::realm);
 
 		private void nullOutSideEffectFields(boolean removeCallResult) {
 			transferList = null;

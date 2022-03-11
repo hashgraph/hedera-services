@@ -177,7 +177,7 @@ class SideEffectsTrackerTest {
 		assertSame(Collections.emptyList(), subject.getNetTrackedTokenUnitAndOwnershipChanges());
 		final var netChanges = subject.getNetTrackedHbarChanges();
 		assertEquals(1, netChanges.getAccountCodes().length);
-		assertEquals(aAccount, netChanges.getAccountCodes()[0]);
+		assertEquals(aAccount.getAccountNum(), netChanges.getAccountCodes()[0]);
 		assertEquals(aFirstBalanceChange, netChanges.getHbars()[0]);
 	}
 
@@ -231,9 +231,9 @@ class SideEffectsTrackerTest {
 		final var netChanges = subject.getNetTrackedHbarChanges();
 		assertEquals(2, netChanges.getAccountCodes().length);
 		assertEquals(2, netChanges.getHbars().length);
-		assertEquals(aAccount, netChanges.getAccountCodes()[0]);
+		assertEquals(aAccount.getAccountNum(), netChanges.getAccountCodes()[0]);
 		assertEquals(aFirstBalanceChange + aSecondBalanceChange, netChanges.getHbars()[0]);
-		assertEquals(cAccount, netChanges.getAccountCodes()[1]);
+		assertEquals(cAccount.getAccountNum(), netChanges.getAccountCodes()[1]);
 		assertEquals(cOnlyBalanceChange, netChanges.getHbars()[1]);
 
 		assertEquals(aFirstBalanceChange + aSecondBalanceChange + cOnlyBalanceChange, subject.getNetHbarChange());

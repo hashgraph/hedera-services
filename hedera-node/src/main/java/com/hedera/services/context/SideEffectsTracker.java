@@ -306,7 +306,10 @@ public class SideEffectsTracker {
 	 */
 	public void trackHbarChange(final AccountID account, final long amount) {
 		netHbarChange += amount;
-		TransfersHelper.updateFungibleChanges(account.getAccountNum(), amount, balanceChanges, changedAccounts);
+		final var output = TransfersHelper.updateFungibleChanges(account.getAccountNum(), amount,
+				changedAccounts, balanceChanges);
+		balanceChanges = output.getLeft();
+		changedAccounts = output.getRight();
 	}
 
 	/**
@@ -357,7 +360,9 @@ public class SideEffectsTracker {
 	 * @return the ordered net balance changes
 	 */
 	public CurrencyAdjustments getNetTrackedHbarChanges() {
-		TransfersHelper.purgeZeroAdjustments(balanceChanges, changedAccounts);
+		final var updatedAdjustments = TransfersHelper.purgeZeroAdjustments(balanceChanges, changedAccounts);
+		balanceChanges = updatedAdjustments.getLeft();
+		changedAccounts = updatedAdjustments.getRight();
 		return CurrencyAdjustments.fromChanges(balanceChanges, changedAccounts);
 	}
 
