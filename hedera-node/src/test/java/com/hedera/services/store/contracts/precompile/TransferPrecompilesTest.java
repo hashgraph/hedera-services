@@ -91,6 +91,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferChanges;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.nftTransferList;
@@ -216,11 +217,13 @@ class TransferPrecompilesTest {
 		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
+//		givenFrameContext();
 	}
 
 	@Test
 	void transferFailsFastGivenWrongSyntheticValidity() {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(frame.getSenderAddress()).willReturn(contractAddress);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -307,6 +310,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
+		given(frame.getSenderAddress()).willReturn(contractAddress);
 
 		// when:
 		subject.prepareFields(frame);
@@ -327,6 +331,7 @@ class TransferPrecompilesTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(frame.getSenderAddress()).willReturn(contractAddress);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 
@@ -409,6 +414,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
+		given(frame.getSenderAddress()).willReturn(contractAddress);
 
 		// when:
 		subject.prepareFields(frame);
@@ -429,6 +435,7 @@ class TransferPrecompilesTest {
 		givenMinimalFrameContext();
 		givenLedgers();
 
+		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(syntheticTxnFactory.createCryptoTransfer(
 				Collections.singletonList(tokensTransferListReceiverOnly))).willReturn(mockSynthBodyBuilder);
 		given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
@@ -530,6 +537,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
+		given(frame.getSenderAddress()).willReturn(contractAddress);
 
 		// when:
 		subject.prepareFields(frame);
@@ -552,6 +560,7 @@ class TransferPrecompilesTest {
 		final var receiverId = Id.fromGrpcAccount(receiver);
 		givenMinimalFrameContext();
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
+		given(frame.getSenderAddress()).willReturn(contractAddress);
 		givenLedgers();
 
 		given(syntheticTxnFactory.createCryptoTransfer(Collections.singletonList(nftTransferList)))
@@ -667,6 +676,7 @@ class TransferPrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
+		given(frame.getSenderAddress()).willReturn(contractAddress);
 
 		// when:
 		subject.prepareFields(frame);
@@ -727,6 +737,7 @@ class TransferPrecompilesTest {
 				.willReturn(1L);
 		given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.FAIL_INVALID))
 				.willReturn(mockRecordBuilder);
+		given(frame.getSenderAddress()).willReturn(contractAddress);
 
 		doThrow(new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID))
 				.when(transferLogic)
@@ -759,7 +770,9 @@ class TransferPrecompilesTest {
 	private void givenFrameContext() {
 		given(parentFrame.getContractAddress()).willReturn(parentContractAddress);
 		given(parentFrame.getRecipientAddress()).willReturn(parentContractAddress);
+		given(parentFrame.getSenderAddress()).willReturn(parentContractAddress);
 		given(frame.getContractAddress()).willReturn(contractAddr);
+		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(frame.getMessageFrameStack()).willReturn(frameDeque);
 		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
 		given(frame.getMessageFrameStack().descendingIterator().hasNext()).willReturn(true);
