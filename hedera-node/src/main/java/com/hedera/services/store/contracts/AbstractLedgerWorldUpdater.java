@@ -225,10 +225,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar);
 	}
 
-	public WorldLedgers wrappedTrackingLedgers() {
-		return trackingLedgers.wrapped();
-	}
-
 	public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {
 		final var wrappedLedgers = trackingLedgers.wrapped(sideEffectsTracker);
 		wrappedLedgers.accounts().setPropertyChangeObserver(this::onAccountPropertyChange);
@@ -264,7 +260,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		}
 	}
 
-	protected WorldLedgers trackingLedgers() {
+	public WorldLedgers trackingLedgers() {
 		return trackingLedgers;
 	}
 

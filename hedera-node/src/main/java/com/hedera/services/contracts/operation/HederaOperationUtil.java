@@ -175,12 +175,12 @@ public final class HederaOperationUtil {
 			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(true,
 					account.getAddress(),
 					frame.getRecipientAddress(),
-					updater.wrappedTrackingLedgers());
+					updater.trackingLedgers());
 		} else {
 			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(false,
 					account.getAddress(),
 					frame.getContractAddress(),
-					updater.wrappedTrackingLedgers());
+					updater.trackingLedgers());
 		}
 		if (!sigReqIsMet) {
 			return new Operation.OperationResult(

@@ -260,7 +260,7 @@ class HederaOperationUtilTest {
 						mockTarget, Address.ALTBN128_ADD, ledgers))
 				.willReturn(false);
 		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
-		given(hederaWorldUpdater.wrappedTrackingLedgers()).willReturn(ledgers);
+		given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 
 		// when:
 		final var result = HederaOperationUtil.addressSignatureCheckExecution(
@@ -298,7 +298,7 @@ class HederaOperationUtilTest {
 						mockTarget, Address.ALTBN128_MUL, ledgers))
 				.willReturn(false);
 		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
-		given(hederaWorldUpdater.wrappedTrackingLedgers()).willReturn(ledgers);
+		given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 
 		// when:
 		final var result = HederaOperationUtil.addressSignatureCheckExecution(
@@ -328,7 +328,7 @@ class HederaOperationUtilTest {
 		final var mockTarget = Address.ZERO;
 		givenFrameAddresses();
 		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
-		given(hederaWorldUpdater.wrappedTrackingLedgers()).willReturn(ledgers);
+		given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
 		given(sigsVerifier

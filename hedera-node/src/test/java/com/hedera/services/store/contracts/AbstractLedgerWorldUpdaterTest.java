@@ -343,15 +343,15 @@ class AbstractLedgerWorldUpdaterTest {
 		setupWellKnownNfts();
 
 		/* Get the wrapped nfts for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
-		final var wrappedNfts = wrappedLedgers.nfts();
+		final var trackingLedgers = subject.trackingLedgers();
+		final var nfts = trackingLedgers.nfts();
 
 		/* Make some changes to them (e.g. as part of an HTS precompile) */
-		wrappedNfts.destroy(aNft);
-		wrappedNfts.set(bNft, OWNER, aEntityId);
+		nfts.destroy(aNft);
+		nfts.set(bNft, OWNER, aEntityId);
 
 		/* Commit the changes */
-		wrappedLedgers.commit();
+		trackingLedgers.commit();
 
 		/* And they should be present in the underlying ledgers */
 		assertFalse(ledgers.nfts().contains(aNft));

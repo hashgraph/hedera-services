@@ -21,7 +21,6 @@ package com.hedera.services.contracts.sources;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -32,6 +31,7 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,7 +39,6 @@ import java.util.Optional;
 import java.util.function.BiPredicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -64,18 +63,12 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 	@Override
 	public boolean hasActiveKey(
 			final boolean isDelegateCall,
-			final Address accountAddress,
-			final Address activeContract,
-			final WorldLedgers worldLedgers
+			@NotNull final Address accountAddress,
+			@NotNull final Address activeContract,
+			@NotNull final WorldLedgers worldLedgers
 	) {
-		if (worldLedgers == null) {
-			throw new InvalidTransactionException("WorldLedgers are not set.", FAIL_INVALID);
-		}
-
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
-		final var account =
-				worldLedgers.accounts()!=null ?
-						Optional.ofNullable(worldLedgers.accounts().getImmutableRef(accountId)) : Optional.empty();
+		final var account = Optional.ofNullable(worldLedgers.accounts().getImmutableRef(accountId));
 
 		validateTrue(account.isPresent(), INVALID_ACCOUNT_ID);
 
@@ -92,18 +85,12 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 	@Override
 	public boolean hasActiveSupplyKey(
 			final boolean isDelegateCall,
-			final Address tokenAddress,
-			final Address activeContract,
-			final WorldLedgers worldLedgers
+			@NotNull final Address tokenAddress,
+			@NotNull final Address activeContract,
+			@NotNull final WorldLedgers worldLedgers
 	) {
-		if (worldLedgers == null) {
-			throw new InvalidTransactionException("WorldLedgers are not set.", FAIL_INVALID);
-		}
-
 		final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
-		final var token =
-				worldLedgers.tokens() != null ? Optional.ofNullable(worldLedgers.tokens().getImmutableRef(tokenId)) :
-						Optional.empty();
+		final var token = Optional.ofNullable(worldLedgers.tokens().getImmutableRef(tokenId));
 
 		validateTrue(token.isPresent(), INVALID_TOKEN_ID);
 
@@ -115,9 +102,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 	@Override
 	public boolean hasActiveKeyOrNoReceiverSigReq(
 			final boolean isDelegateCall,
-			final Address target,
-			final Address activeContract,
-			final WorldLedgers worldLedgers
+			@NotNull final Address target,
+			@NotNull final Address activeContract,
+			@NotNull final WorldLedgers worldLedgers
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(target);
 		if (txnCtx.activePayer().equals(accountId)) {
