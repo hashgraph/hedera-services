@@ -201,6 +201,21 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	@Test
+	void testsAccountKeyIfPresentButInvalid() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.exists(account)).willReturn(true);
+		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(expectedKey);
+		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
+
+		final var verdict = subject.hasActiveKey(true,
+				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+
+		assertFalse(verdict);
+	}
+
+	@Test
 	void testsMissingAccountKey() {
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.exists(account)).willReturn(true);
