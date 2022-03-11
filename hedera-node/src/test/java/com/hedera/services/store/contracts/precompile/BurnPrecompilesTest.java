@@ -80,6 +80,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_C
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.burnSuccessResultWith49Supply;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.expirableTxnRecordBuilder;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failInvalidResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
@@ -91,6 +92,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipi
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -211,6 +213,36 @@ class BurnPrecompilesTest {
 		final var result = subject.computeInternal(frame);
 
 		assertEquals(invalidSigResult, result);
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void nftBurnFailurePathWorksWithNullLedgers() {
+		givenNonfungibleFrameContext();
+
+		given(sigsVerifier.hasActiveSupplyKey(true,
+				nonFungibleTokenAddr, recipientAddr, null)
+		)
+				.willThrow(new NullPointerException());
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+		given(creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID)).willReturn(mockRecordBuilder);
+		given(encoder.encodeBurnFailure(FAIL_INVALID)).willReturn(failInvalidResult);
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		final var result = subject.computeInternal(frame);
+
+		assertEquals(failInvalidResult, result);
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 

@@ -80,6 +80,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_C
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountMerkleId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failInvalidResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiAssociateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
@@ -89,6 +90,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -221,6 +223,40 @@ class AssociatePrecompileTest {
 
 		// then:
 		assertEquals(invalidSigResult, result);
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void computeAssociateTokenFailurePathWorksWithNullLedgers() {
+		// given:
+		givenCommonFrameContext();
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
+		given(sigsVerifier.hasActiveKey(false,
+				Id.fromGrpcAccount(accountMerkleId).asEvmAddress(), senderAddress,
+				null))
+				.willThrow(new NullPointerException());
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+		given(creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID)).willReturn(mockRecordBuilder);
+
+		// when:
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		final var result = subject.computeInternal(frame);
+
+		// then:
+		assertEquals(failInvalidResult, result);
 		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
