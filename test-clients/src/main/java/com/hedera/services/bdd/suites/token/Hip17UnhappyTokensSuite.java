@@ -38,7 +38,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfos;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -105,7 +104,6 @@ public class Hip17UnhappyTokensSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				cannotGetNftInfosWhenDeleted(),
 				canStillGetNftInfoWhenDeleted(),
 				cannotWipeNftWhenDeleted(),
 				cannotBurnNftWhenDeleted(),
@@ -119,35 +117,13 @@ public class Hip17UnhappyTokensSuite extends HapiApiSuite {
 				cannotUnfreezeNftWhenDeleted(),
 
 				// TODO: when auto removal and expiry implemented, enable the following and
-				// also add all those scenaios like above to complete the matrix.
-				//cannotGetNftInfoWhenExpired()
-				//cannotGetNftInfoWhenAutoRemoved(),
-				//autoRemovalCasesSuiteCleanup()
+				// also add all those scenarios like above to complete the matrix.
+				// cannotGetNftInfoWhenExpired()
+				// cannotGetNftInfoWhenAutoRemoved(),
+				// autoRemovalCasesSuiteCleanup()
 				}
 		);
 	}
-	private HapiApiSpec cannotGetNftInfosWhenDeleted() {
-		return defaultHapiSpec("cannotGetNftInfosWhenDeleted")
-				.given(
-						newKeyNamed(SUPPLY_KEY),
-						newKeyNamed(ADMIN_KEY),
-						cryptoCreate(TOKEN_TREASURY).key(ADMIN_KEY),
-						tokenCreate(NFTdeleted)
-								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-								.initialSupply(0)
-								.supplyType(TokenSupplyType.INFINITE)
-								.supplyKey(SUPPLY_KEY)
-								.adminKey(ADMIN_KEY)
-								.treasury(TOKEN_TREASURY),
-						mintToken(NFTdeleted, List.of(metadata(FIRST_MEMO)))
-				).when(
-						tokenDelete(NFTdeleted)
-				).then(
-						getTokenNftInfos(NFTdeleted, 0, 3)
-								.hasCostAnswerPrecheck(TOKEN_WAS_DELETED)
-				);
-	}
-
 	private HapiApiSpec canStillGetNftInfoWhenDeleted() {
 		return defaultHapiSpec("canStillGetNftInfoWhenDeleted")
 				.given(

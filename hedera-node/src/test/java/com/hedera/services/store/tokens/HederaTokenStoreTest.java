@@ -44,7 +44,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -200,7 +199,6 @@ class HederaTokenStoreTest {
 	private EntityIdSource ids;
 	private SideEffectsTracker sideEffectsTracker;
 	private GlobalDynamicProperties properties;
-	private UniqueTokenViewsManager uniqueTokenViewsManager;
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
@@ -301,11 +299,9 @@ class HederaTokenStoreTest {
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);
 
-		uniqueTokenViewsManager = mock(UniqueTokenViewsManager.class);
-
 		sideEffectsTracker = new SideEffectsTracker();
 		subject = new HederaTokenStore(
-				ids, TEST_VALIDATOR, sideEffectsTracker, uniqueTokenViewsManager, properties,
+				ids, TEST_VALIDATOR, sideEffectsTracker, properties,
 				tokenRelsLedger, nftsLedger, backingTokens);
 		subject.setAccountsLedger(accountsLedger);
 		subject.setHederaLedger(hederaLedger);
@@ -705,7 +701,6 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(sponsorNft, TOKEN_BALANCE, startSponsorANfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyANfts + 1);
-		verify(uniqueTokenViewsManager).exchangeNotice(muti, sender, receiver);
 		assertSoleTokenChangesAreForNftTransfer(aNft, sponsor, counterparty);
 	}
 
@@ -733,7 +728,6 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts - 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts + 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts - 1);
-		verify(uniqueTokenViewsManager).treasuryReturnNotice(muti, sender, receiver);
 		assertSoleTokenChangesAreForNftTransfer(tNft, counterparty, primaryTreasury);
 	}
 
@@ -762,7 +756,6 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyTNfts + 1);
-		verify(uniqueTokenViewsManager).treasuryExitNotice(muti, sender, receiver);
 		assertSoleTokenChangesAreForNftTransfer(tNft, primaryTreasury, counterparty);
 	}
 

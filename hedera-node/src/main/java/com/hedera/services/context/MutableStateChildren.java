@@ -37,7 +37,6 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -61,9 +60,6 @@ public class MutableStateChildren implements StateChildren {
 	private WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
 	private WeakReference<VirtualMap<ContractKey, ContractValue>> contractStorage;
 	private WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
-	private WeakReference<FCOneToManyRelation<EntityNum, Long>> uniqueTokenAssociations;
-	private WeakReference<FCOneToManyRelation<EntityNum, Long>> uniqueOwnershipAssociations;
-	private WeakReference<FCOneToManyRelation<EntityNum, Long>> uniqueOwnershipTreasuryAssociations;
 	private WeakReference<MerkleNetworkContext> networkCtx;
 	private WeakReference<AddressBook> addressBook;
 	private WeakReference<MerkleSpecialFiles> specialFiles;
@@ -205,49 +201,11 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
-		final var refUniqueTokenAssociations = uniqueTokenAssociations.get();
-		Objects.requireNonNull(refUniqueTokenAssociations);
-		return refUniqueTokenAssociations;
-	}
-
-	public void setUniqueTokenAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations) {
-		this.uniqueTokenAssociations = new WeakReference<>(uniqueTokenAssociations);
-	}
-
-	@Override
-	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations() {
-		final var refUniqueOwnershipAssociations = uniqueOwnershipAssociations.get();
-		Objects.requireNonNull(refUniqueOwnershipAssociations);
-		return refUniqueOwnershipAssociations;
-	}
-
-	public void setUniqueOwnershipAssociations(
-			FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations
-	) {
-		this.uniqueOwnershipAssociations = new WeakReference<>(uniqueOwnershipAssociations);
-	}
-
-	@Override
-	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations() {
-		final var refUniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations.get();
-		Objects.requireNonNull(refUniqueOwnershipTreasuryAssociations);
-		return refUniqueOwnershipTreasuryAssociations;
-	}
-
-	public void setUniqueOwnershipTreasuryAssociations(
-			FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations
-	) {
-		this.uniqueOwnershipTreasuryAssociations = new WeakReference<>(uniqueOwnershipTreasuryAssociations);
-	}
-
-	@Override
 	public RecordsRunningHashLeaf runningHashLeaf() {
 		final var refRunningHashLeaf = runningHashLeaf.get();
 		Objects.requireNonNull(refRunningHashLeaf);
 		return refRunningHashLeaf;
 	}
-
 
 	public void setRunningHashLeaf(RecordsRunningHashLeaf runningHashLeaf) {
 		this.runningHashLeaf = new WeakReference<>(runningHashLeaf);
@@ -256,16 +214,10 @@ public class MutableStateChildren implements StateChildren {
 	public void updateFromMaybeUninitializedState(final ServicesState signedState, final Instant signingTime) {
 		signedAt = signingTime;
 		updatePrimitiveChildrenFrom(signedState);
-		uniqueTokenAssociations = new WeakReference<>(null);
-		uniqueOwnershipAssociations = new WeakReference<>(null);
-		uniqueOwnershipTreasuryAssociations = new WeakReference<>(null);
 	}
 
 	public void updateFrom(final ServicesState state) {
 		updatePrimitiveChildrenFrom(state);
-		uniqueTokenAssociations = new WeakReference<>(state.uniqueTokenAssociations());
-		uniqueOwnershipAssociations = new WeakReference<>(state.uniqueOwnershipAssociations());
-		uniqueOwnershipTreasuryAssociations = new WeakReference<>(state.uniqueTreasuryOwnershipAssociations());
 	}
 
 	public void updatePrimitiveChildrenFrom(final ServicesState state) {

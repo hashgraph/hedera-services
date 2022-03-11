@@ -108,7 +108,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
-import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -296,13 +295,12 @@ class ERC20PrecompilesTest {
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true, true);
 
         given(hederaTokenStoreFactory.newHederaTokenStore(
-                ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+                ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);
 
         given(transferLogicFactory.newLogic(
                 accounts, nfts, tokenRels, hederaTokenStore,
                 sideEffects,
-                NOOP_VIEWS_MANAGER,
                 dynamicProperties,
                 validator,
                 null,
@@ -548,13 +546,12 @@ class ERC20PrecompilesTest {
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true, true);
 
         given(hederaTokenStoreFactory.newHederaTokenStore(
-                ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+                ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);
 
         given(transferLogicFactory.newLogic(
                 accounts, nfts, tokenRels, hederaTokenStore,
                 sideEffects,
-                NOOP_VIEWS_MANAGER,
                 dynamicProperties,
                 validator,
                 null,
@@ -611,7 +608,7 @@ class ERC20PrecompilesTest {
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(false);
         given(hederaTokenStoreFactory.newHederaTokenStore(
-                ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+                ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);
 
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);

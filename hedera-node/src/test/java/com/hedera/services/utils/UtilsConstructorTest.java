@@ -60,7 +60,6 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.models.TopicConversion;
-import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
@@ -115,7 +114,6 @@ class UtilsConstructorTest {
 			MiscSpeedometers.Names.class,
 			MiscSpeedometers.Descriptions.class,
 			ServicesStatsConfig.class,
-			GrpcUtils.class,
 			PresolvencyFlaws.class,
 			PureValidation.class,
 			TokenListChecks.class,
