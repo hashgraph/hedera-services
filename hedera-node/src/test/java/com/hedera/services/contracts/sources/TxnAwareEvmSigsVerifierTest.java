@@ -204,6 +204,18 @@ class TxnAwareEvmSigsVerifierTest {
 
 		assertTrue(verdict);
 	}
+
+	@Test
+	void testsMissingAccountKey() {
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.getImmutableRef(account)).willReturn(sigReqAccount);
+		given(sigReqAccount.getAccountKey()).willReturn(null);
+
+		final var verdict = subject.hasActiveKey(true,
+				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+
+		assertFalse(verdict);
+	}
 	
 	@Test
 	void filtersContracts() {

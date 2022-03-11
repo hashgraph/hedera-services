@@ -160,7 +160,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 	}
 
 	private Optional<JKey> receiverSigKeyIfAnyOf(final AccountID id, final WorldLedgers worldLedgers) {
-		final var merkleAccount = (worldLedgers != null && worldLedgers.accounts() != null) ?
+		final var merkleAccount = worldLedgers.accounts() != null ?
 				Optional.ofNullable(worldLedgers.accounts().getImmutableRef(id)) :
 				Optional.empty();
 
