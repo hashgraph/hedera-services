@@ -61,6 +61,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -165,6 +166,27 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	@Test
+	void supplyKeyFailsWhenTokensLedgerIsNull() {
+		given(ledgers.tokens()).willReturn(null);
+
+		assertFailsWith(() ->
+						subject.hasActiveSupplyKey(true,
+								PRETEND_TOKEN_ADDR,
+								PRETEND_SENDER_ADDR,
+								ledgers),
+				INVALID_TOKEN_ID);
+	}
+
+	@Test
+	void supplyKeyThrowsWhenLedgersAreNull() {
+		assertThrows(IllegalArgumentException.class, () ->
+						subject.hasActiveSupplyKey(true,
+								PRETEND_TOKEN_ADDR,
+								PRETEND_SENDER_ADDR,
+								null));
+	}
+
+	@Test
 	void throwsIfAskedToVerifyMissingAccount() {
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.getImmutableRef(account)).willReturn(null);
@@ -190,6 +212,15 @@ class TxnAwareEvmSigsVerifierTest {
 				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(verdict);
+	}
+
+	@Test
+	void activeKeyThrowsWhenLedgersAreNull() {
+		assertThrows(IllegalArgumentException.class, () ->
+				subject.hasActiveKey(true,
+						PRETEND_TOKEN_ADDR,
+						PRETEND_SENDER_ADDR,
+						null));
 	}
 
 	@Test

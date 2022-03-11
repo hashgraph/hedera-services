@@ -90,7 +90,9 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 			@NotNull final WorldLedgers worldLedgers
 	) {
 		final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
-		final var token = Optional.ofNullable(worldLedgers.tokens().getImmutableRef(tokenId));
+		final var token =
+				worldLedgers.tokens() != null ? Optional.ofNullable(worldLedgers.tokens().getImmutableRef(tokenId)) :
+						Optional.empty();
 
 		validateTrue(token.isPresent(), INVALID_TOKEN_ID);
 
