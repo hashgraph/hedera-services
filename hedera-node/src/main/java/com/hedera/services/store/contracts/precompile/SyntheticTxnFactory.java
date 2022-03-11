@@ -20,16 +20,20 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -98,17 +102,37 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setTokenMint(builder);
 	}
 
+	public TransactionBody.Builder createAdjustAllowance(final ApproveWrapper approveWrapper) {
+
+		final var builder = CryptoAdjustAllowanceTransactionBody.newBuilder();
+
+		if (approveWrapper.isFungible()) {
+			builder.addTokenAllowances(TokenAllowance.newBuilder()
+					.setTokenId(approveWrapper.token())
+					.setSpender(approveWrapper.spender())
+					.setAmount(approveWrapper.adjustment().longValue())
+					.build());
+		} else {
+			builder.addNftAllowances(NftAllowance.newBuilder()
+					.setApprovedForAll(BoolValue.of(false))
+					.setTokenId(approveWrapper.token())
+					.setSpender(approveWrapper.spender())
+					.addSerialNumbers(approveWrapper.amount().longValue())
+					.build());
+		}
+		return TransactionBody.newBuilder().setCryptoAdjustAllowance(builder);
+	}
+
 	/**
 	 * Given a list of {@link TokenTransferWrapper}s, where each wrapper gives changes scoped to a particular
 	 * {@link TokenID}, returns a synthetic {@code CryptoTransfer} whose {@link CryptoTransferTransactionBody}
 	 * consolidates the wrappers.
-	 *
+	 * <p>
 	 * If two wrappers both refer to the same token, their transfer lists are merged as specified in the
 	 * {@link SyntheticTxnFactory#mergeTokenTransfers(TokenTransferList.Builder, TokenTransferList.Builder)}
 	 * helper method.
 	 *
-	 * @param wrappers
-	 * 		the wrappers to consolidate in a synthetic transaction
+	 * @param wrappers the wrappers to consolidate in a synthetic transaction
 	 * @return the synthetic transaction
 	 */
 	public TransactionBody.Builder createCryptoTransfer(final List<TokenTransferWrapper> wrappers) {
@@ -222,15 +246,13 @@ public class SyntheticTxnFactory {
 	/**
 	 * Merges the fungible and non-fungible transfers from one token transfer list into another. (Of course,
 	 * at most one of these merges can be sensible; a token cannot be both fungible _and_ non-fungible.)
-	 *
+	 * <p>
 	 * Fungible transfers are "merged" by summing up all the amount fields for each unique account id that
 	 * appears in either list.  NFT exchanges are "merged" by checking that each exchange from either list
 	 * appears at most once.
 	 *
-	 * @param to
-	 * 		the builder to merge source transfers into
-	 * @param from
-	 * 		a source of fungible transfers and NFT exchanges
+	 * @param to   the builder to merge source transfers into
+	 * @param from a source of fungible transfers and NFT exchanges
 	 * @return the consolidated target builder
 	 */
 	static TokenTransferList.Builder mergeTokenTransfers(

@@ -66,6 +66,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
+import com.hedera.services.txns.crypto.AdjustAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
@@ -180,6 +181,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private BurnLogicFactory burnLogicFactory = BurnLogic::new;
 	private AssociateLogicFactory associateLogicFactory = AssociateLogic::new;
 	private DissociateLogicFactory dissociateLogicFactory = DissociateLogic::new;
+	private AdjustAllowanceLogicFactory adjustAllowanceLogicFactory = AdjustAllowanceLogic::new;
 	private TransferLogicFactory transferLogicFactory = TransferLogic::new;
 	private TokenStoreFactory tokenStoreFactory = TypedTokenStore::new;
 	private HederaTokenStoreFactory hederaTokenStoreFactory = HederaTokenStore::new;
@@ -259,6 +261,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//Transfer(address indexed from, address indexed to, uint256 value)
 	private static final Bytes TRANSFER_EVENT = Bytes.fromHexString(
 			"ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
+	//Approval(address indexed owner, address indexed spender, uint256 value)
+	//Approval(address indexed owner, address indexed approved, uint256 indexed tokenId)
+	private static final Bytes APPROVAL_EVENT = Bytes.fromHexString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925");
 
 	private int functionId;
 	private Precompile precompile;
@@ -466,7 +471,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						} else if (ABI_ID_ALLOWANCE == nestedFunctionSelector) {
 							nestedPrecompile = new AllowancePrecompile(tokenID);
 						} else if (ABI_ID_APPROVE == nestedFunctionSelector) {
-							nestedPrecompile = new ApprovePrecompile(tokenID);
+							this.isTokenReadOnlyTransaction = false;
+							nestedPrecompile = new ApprovePrecompile(tokenID, isFungibleToken);
 						} else if (ABI_ID_SET_APPROVAL_FOR_ALL == nestedFunctionSelector) {
 							nestedPrecompile = new SetApprovalForAllPrecompile(tokenID);
 						} else if (ABI_ID_GET_APPROVED == nestedFunctionSelector) {
@@ -602,6 +608,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				TypedTokenStore tokenStore,
 				AccountStore accountStore,
 				DissociationFactory dissociationFactory);
+	}
+
+	@FunctionalInterface
+	interface AdjustAllowanceLogicFactory {
+		AdjustAllowanceLogic newAdjustAllowanceLogic(
+				AccountStore accountStore,
+				GlobalDynamicProperties dynamicProperties,
+				SideEffectsTracker sideEffectsTracker);
 	}
 
 	@FunctionalInterface
@@ -1139,11 +1153,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
-				if (isFungible) {
-					frame.addLog(getLogForFungibleTransfer(precompileAddress));
-				} else {
-					frame.addLog(getLogForNftExchange(precompileAddress));
-				}
+			if (isFungible) {
+				frame.addLog(getLogForFungibleTransfer(precompileAddress));
+			} else {
+				frame.addLog(getLogForNftExchange(precompileAddress));
+			}
 
 		}
 
@@ -1371,19 +1385,95 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	protected class ApprovePrecompile extends ERCReadOnlyAbstractPrecompile {
-		public ApprovePrecompile(final TokenID tokenID) {
-			super(tokenID);
+	protected class ApprovePrecompile implements Precompile {
+		protected ApproveWrapper approveOp;
+		protected TokenID token;
+		private final boolean isFungible;
+
+		public ApprovePrecompile(final TokenID token, final boolean isFungible) {
+			this.token = token;
+			this.isFungible = isFungible;
 		}
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			return super.body(input, aliasResolver);
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
+			var account = accountsLedger.getImmutableRef(EntityIdUtils.accountIdFromEvmAddress(senderAddress));
+
+			final var nestedInput = input.slice(24);
+			approveOp = decoder.decodeTokenApprove(nestedInput, token, isFungible, aliasResolver);
+
+			if (isFungible) {
+				long value = 0;
+				for (Map.Entry<FcTokenAllowanceId, Long> e : account.getFungibleTokenAllowances().entrySet()) {
+					if (approveOp.spender().getAccountNum() == e.getKey().getSpenderNum().longValue()) {
+						value = e.getValue();
+					}
+				}
+				return syntheticTxnFactory.createAdjustAllowance(approveOp.withAdjustment(approveOp.amount().subtract(BigInteger.valueOf(value))));
+			} else {
+				return syntheticTxnFactory.createAdjustAllowance(approveOp);
+			}
+		}
+
+		@Override
+		public void run(final MessageFrame frame) {
+			Objects.requireNonNull(approveOp);
+
+			/* --- Build the necessary infrastructure to execute the transaction --- */
+			final var accountStore = createAccountStore();
+
+			/* --- Execute the transaction and capture its results --- */
+			final var adjustAllowanceLogic = adjustAllowanceLogicFactory.newAdjustAllowanceLogic(
+					accountStore, dynamicProperties, sideEffectsTracker);
+			adjustAllowanceLogic.adjustAllowance(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
+					transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
+					transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
+					EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
+
+			final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
+
+			if (isFungible) {
+				frame.addLog(getLogForFungibleAdjustAllowance(precompileAddress));
+			} else {
+				frame.addLog(getLogForNftApprooveAllowence(precompileAddress));
+			}
+		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			return 0;
+		}
+
+		@Override
+		public void addImplicitCostsIn(TxnAccessor accessor) {
+			Precompile.super.addImplicitCostsIn(accessor);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			return Bytes.EMPTY;
+			return encoder.encodeApprove(true);
+		}
+
+		@Override
+		public Bytes getFailureResultFor(ResponseCodeEnum status) {
+			return Precompile.super.getFailureResultFor(status);
+		}
+
+		private Log getLogForFungibleAdjustAllowance(final Address logger) {
+			return EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
+					.forEventSignature(APPROVAL_EVENT)
+					.forIndexedArgument(senderAddress)
+					.forIndexedArgument(asTypedEvmAddress(approveOp.spender()))
+					.forDataItem(BigInteger.valueOf(approveOp.amount().longValue())).build();
+		}
+
+		private Log getLogForNftApprooveAllowence(final Address logger) {
+			return EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
+					.forEventSignature(TRANSFER_EVENT)
+					.forIndexedArgument(senderAddress)
+					.forIndexedArgument(asTypedEvmAddress(approveOp.spender()))
+					.forIndexedArgument(BigInteger.valueOf(approveOp.amount().longValue())).build();
 		}
 	}
 
@@ -1471,12 +1561,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame
-	 * 		current frame
-	 * @param target
-	 * 		the element to test for key activation, in standard form
-	 * @param activationTest
-	 * 		the function which should be invoked for key validation
+	 * @param frame          current frame
+	 * @param target         the element to test for key activation, in standard form
+	 * @param activationTest the function which should be invoked for key validation
 	 * @return whether the implied key is active
 	 */
 	private boolean validateKey(
@@ -1527,16 +1614,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param target
-		 * 		an address with an implicit key understood by this implementation
-		 * @param recipient
-		 * 		the idealized account receiving the call operation
-		 * @param contract
-		 * 		the idealized account whose code is being executed
-		 * @param activeContract
-		 * 		the contract address that can activate a contract or delegatable contract key
-		 * @param aliases
-		 * 		the current contract aliases in effect
+		 * @param target         an address with an implicit key understood by this implementation
+		 * @param recipient      the idealized account receiving the call operation
+		 * @param contract       the idealized account whose code is being executed
+		 * @param activeContract the contract address that can activate a contract or delegatable contract key
+		 * @param aliases        the current contract aliases in effect
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(

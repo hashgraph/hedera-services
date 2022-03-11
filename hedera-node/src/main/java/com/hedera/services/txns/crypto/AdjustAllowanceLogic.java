@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +47,7 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwne
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 
+@Singleton
 public class AdjustAllowanceLogic {
     private final AccountStore accountStore;
     private final GlobalDynamicProperties dynamicProperties;
@@ -63,7 +65,10 @@ public class AdjustAllowanceLogic {
         this.entitiesChanged = new HashMap<>();
     }
 
-    public void adjustAllowance(CryptoAdjustAllowanceTransactionBody op, AccountID payer) {
+    public void adjustAllowance(List<CryptoAllowance> cryptoAllowances,
+                                List<TokenAllowance> tokenAllowances,
+                                List<NftAllowance> nftAllowances,
+                                AccountID payer) {
         entitiesChanged.clear();
 
         /* --- Use models --- */
@@ -71,9 +76,9 @@ public class AdjustAllowanceLogic {
         final var payerAccount = accountStore.loadAccount(payerId);
 
         /* --- Do the business logic --- */
-        adjustCryptoAllowances(op.getCryptoAllowancesList(), payerAccount);
-        adjustFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
-        adjustNftAllowances(op.getNftAllowancesList(), payerAccount);
+        adjustCryptoAllowances(cryptoAllowances, payerAccount);
+        adjustFungibleTokenAllowances(tokenAllowances, payerAccount);
+        adjustNftAllowances(nftAllowances, payerAccount);
 
         /* --- Persist the owner account --- */
         for (final var entry : entitiesChanged.entrySet()) {

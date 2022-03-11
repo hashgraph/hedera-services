@@ -121,7 +121,10 @@ public class AdjustAllowanceLogicTest {
 		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
-		subject.adjustAllowance(op, fromGrpcAccount(ownerId).asGrpcAccount());
+		subject.adjustAllowance(op.getCryptoAllowancesList(),
+								op.getTokenAllowancesList(),
+								op.getNftAllowancesList(),
+								fromGrpcAccount(ownerId).asGrpcAccount());
 
 		assertEquals(2, ownerAccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
@@ -157,7 +160,10 @@ public class AdjustAllowanceLogicTest {
 
 		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
 
-        subject.adjustAllowance(op, fromGrpcAccount(ownerId).asGrpcAccount());
+        subject.adjustAllowance(op.getCryptoAllowancesList(),
+								op.getTokenAllowancesList(),
+								op.getNftAllowancesList(),
+								fromGrpcAccount(ownerId).asGrpcAccount());
 
 		assertEquals(0, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
@@ -171,7 +177,10 @@ public class AdjustAllowanceLogicTest {
 		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
-        subject.adjustAllowance(op, fromGrpcAccount(ownerId).asGrpcAccount());
+        subject.adjustAllowance(op.getCryptoAllowancesList(),
+								op.getTokenAllowancesList(),
+								op.getNftAllowancesList(),
+								fromGrpcAccount(ownerId).asGrpcAccount());
 
 		assertEquals(2, ownerAccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
@@ -190,7 +199,10 @@ public class AdjustAllowanceLogicTest {
 		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
-        subject.adjustAllowance(op, fromGrpcAccount(ownerId).asGrpcAccount());
+        subject.adjustAllowance(op.getCryptoAllowancesList(),
+								op.getTokenAllowancesList(),
+								op.getNftAllowancesList(),
+								fromGrpcAccount(ownerId).asGrpcAccount());
 
 		List<Long> expectedSerials = new ArrayList<>();
 		expectedSerials.add(1L);
@@ -214,7 +226,11 @@ public class AdjustAllowanceLogicTest {
 
 		givenValidTxnCtx();
 
-		var exception = assertThrows(InvalidTransactionException.class, () -> subject.adjustAllowance(op, fromGrpcAccount(ownerId).asGrpcAccount()));
+		var exception = assertThrows(InvalidTransactionException.class, () ->
+				subject.adjustAllowance(op.getCryptoAllowancesList(),
+										op.getTokenAllowancesList(),
+										op.getNftAllowancesList(),
+										fromGrpcAccount(ownerId).asGrpcAccount()));
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
 		assertEquals(0, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
@@ -233,7 +249,10 @@ public class AdjustAllowanceLogicTest {
 
 		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
 
-        subject.adjustAllowance(op, fromGrpcAccount(ownerId).asGrpcAccount());
+        subject.adjustAllowance(op.getCryptoAllowancesList(),
+								op.getTokenAllowancesList(),
+								op.getNftAllowancesList(),
+								fromGrpcAccount(ownerId).asGrpcAccount());
 
 		assertEquals(0, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
@@ -254,7 +273,10 @@ public class AdjustAllowanceLogicTest {
 		assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
 		assertEquals(2, ownerAccount.getNftAllowances().size());
 
-        subject.adjustAllowance(op, fromGrpcAccount(ownerId).asGrpcAccount());
+        subject.adjustAllowance(op.getCryptoAllowancesList(),
+								op.getTokenAllowancesList(),
+								op.getNftAllowancesList(),
+								fromGrpcAccount(ownerId).asGrpcAccount());
 
 		assertEquals(1, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
@@ -277,7 +299,10 @@ public class AdjustAllowanceLogicTest {
 		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
-        subject.adjustAllowance(op, fromGrpcAccount(ownerId).asGrpcAccount());
+        subject.adjustAllowance(op.getCryptoAllowancesList(),
+								op.getTokenAllowancesList(),
+								op.getNftAllowancesList(),
+								fromGrpcAccount(ownerId).asGrpcAccount());
 
 		assertEquals(2, ownerAccount.getCryptoAllowances().size());
 		assertEquals(2, ownerAccount.getFungibleTokenAllowances().size());

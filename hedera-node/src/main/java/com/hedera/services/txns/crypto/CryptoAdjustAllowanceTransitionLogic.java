@@ -64,7 +64,10 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		final AccountID payer = cryptoAdjustAllowanceTxn.getTransactionID().getAccountID();
 		final var op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
 
-		adjustAllowanceLogic.adjustAllowance(op, payer);
+		adjustAllowanceLogic.adjustAllowance(op.getCryptoAllowancesList(),
+											 op.getTokenAllowancesList(),
+											 op.getNftAllowancesList(),
+											 payer);
 
 		txnCtx.setStatus(SUCCESS);
 	}
