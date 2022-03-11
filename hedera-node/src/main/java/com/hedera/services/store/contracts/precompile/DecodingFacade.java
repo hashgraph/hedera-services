@@ -151,6 +151,11 @@ public class DecodingFacade {
 	private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
 	private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create("(bytes32,bytes32)");
 
+	private static final Function TOKEN_APPROVE_FUNCTION =
+			new Function("approve(address,uint256)", BOOL_OUTPUT);
+	private static final Bytes TOKEN_APPROVE_SELECTOR = Bytes.wrap(TOKEN_APPROVE_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_APPROVE_DECODER = TypeFactory.create("(bytes32,uint256)");
+
 	@Inject
 	public DecodingFacade() {
 	}
@@ -275,6 +280,15 @@ public class DecodingFacade {
 		final var spender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
 
 		return new TokenAllowanceWrapper(owner, spender);
+	}
+
+	public ApproveWrapper decodeTokenApprove(final Bytes input, final TokenID token, final boolean isFungible, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_APPROVE_SELECTOR, TOKEN_APPROVE_DECODER);
+
+		final var spender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var amount = (BigInteger) decodedArguments.get(1);
+
+		return new ApproveWrapper(token, spender, amount, BigInteger.ZERO, isFungible);
 	}
 
 	public MintWrapper decodeMint(final Bytes input) {

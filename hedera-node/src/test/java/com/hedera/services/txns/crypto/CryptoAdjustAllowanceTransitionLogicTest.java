@@ -103,7 +103,10 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		verify(adjustAllowanceLogic).adjustAllowance(op, fromGrpcAccount(ownerId).asGrpcAccount());
+		verify(adjustAllowanceLogic).adjustAllowance(op.getCryptoAllowancesList(),
+													 op.getTokenAllowancesList(),
+													 op.getNftAllowancesList(),
+													 fromGrpcAccount(ownerId).asGrpcAccount());
 	}
 
 	@Test

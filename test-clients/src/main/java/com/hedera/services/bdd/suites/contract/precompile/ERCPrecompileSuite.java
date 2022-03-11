@@ -123,7 +123,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				transferErc20Token(),
 //				transferErc20TokenFrom(),
 				erc20Allowance(),
-				erc20ApproveReturnsFails(),
+				erc20Approve(),
 				getErc20TokenDecimalsFromErc721TokenFails(),
 				transferErc20TokenFromErc721TokenFails(),
 				transferErc20TokenReceiverContract(),
@@ -143,6 +143,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 //				getErc721TransferFrom(),
 				getErc721TokenURIFromErc20TokenFails(),
 				getErc721OwnerOfFromErc20TokenFails(),
+				erc721TokenApprove(),
 				erc721GetApproved()
 		);
 	}
@@ -1016,27 +1017,33 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec erc20ApproveReturnsFails() {
+	private HapiApiSpec erc20Approve() {
 		final var approveTxn = "approveTxn";
+		final var theSpender = "spender";
 
-		return defaultHapiSpec("ERC_20_APPROVE_RETURNS_FAILURE")
+		return defaultHapiSpec("ERC_20_APPROVE")
 				.given(
 						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(theSpender),
 						cryptoCreate(TOKEN_TREASURY),
 						tokenCreate(FUNGIBLE_TOKEN)
 								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.supplyType(TokenSupplyType.INFINITE)
-								.initialSupply(5)
-								.treasury(TOKEN_TREASURY)
+								.supplyType(TokenSupplyType.FINITE)
+								.supplyKey(MULTI_KEY)
 								.adminKey(MULTI_KEY)
-								.supplyKey(MULTI_KEY),
+								.maxSupply(1000L)
+								.initialSupply(10L)
+								.treasury(TOKEN_TREASURY),
 						fileCreate(ERC_20_CONTRACT_NAME),
 						updateLargeFile(OWNER, ERC_20_CONTRACT_NAME, extractByteCode(ContractResources.ERC_20_CONTRACT)),
 						contractCreate(ERC_20_CONTRACT_NAME)
 								.bytecode(ERC_20_CONTRACT_NAME)
-								.gas(300_000)
+								.gas(300_000),
+						tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+						tokenAssociate(theSpender, FUNGIBLE_TOKEN),
+						tokenAssociate(ERC_20_CONTRACT_NAME, FUNGIBLE_TOKEN)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -1044,10 +1051,18 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 												contractCall(ERC_20_CONTRACT_NAME,
 														ContractResources.ERC_20_APPROVE_CALL,
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
-														asAddress(spec.registry().getAccountID(OWNER)), 10)
+														asAddress(spec.registry().getAccountID(theSpender)), 10)
 														.payingWith(OWNER)
+														.gas(500_000L)
+														.hasKnownStatus(SUCCESS),
+												contractCall(ERC_20_CONTRACT_NAME,
+														ContractResources.ERC_20_APPROVE_CALL,
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(theSpender)), 10)
+														.payingWith(OWNER)
+														.gas(500_000L)
 														.via(approveTxn)
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+														.hasKnownStatus(SUCCESS)
 										)
 						)
 				).then(
@@ -1687,6 +1702,54 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged(),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec erc721TokenApprove() {
+		final var tokenName = "TokenA";
+		final var nameTxn = "nameTxn";
+
+		return defaultHapiSpec("ERC_721_APPROVE")
+				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(RECIPIENT).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NON_FUNGIBLE_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY),
+						fileCreate(ERC_721_CONTRACT_NAME),
+						updateLargeFile(ACCOUNT, ERC_721_CONTRACT_NAME, extractByteCode(ContractResources.ERC_721_CONTRACT)),
+						contractCreate(ERC_721_CONTRACT_NAME)
+								.bytecode(ERC_721_CONTRACT_NAME)
+								.gas(300_000),
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
+						tokenAssociate(ACCOUNT, List.of(NON_FUNGIBLE_TOKEN)),
+						tokenAssociate(RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
+						tokenAssociate(ERC_721_CONTRACT_NAME, List.of(NON_FUNGIBLE_TOKEN))
+				).when(withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(ERC_721_CONTRACT_NAME,
+														ContractResources.ERC_721_APPROVE_CALL,
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(RECIPIENT)),
+														1)
+														.payingWith(ACCOUNT)
+														.via(nameTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER)
+										)
+						)
+				).then(
+						getTxnRecord(nameTxn).andAllChildRecords().logged(),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}

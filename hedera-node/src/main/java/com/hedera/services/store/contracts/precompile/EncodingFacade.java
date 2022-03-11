@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.ALLOWANCE;
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.APPROVE;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.BALANCE;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.BURN;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.DECIMALS;
@@ -58,6 +59,7 @@ public class EncodingFacade {
 	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
 	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
 	private static final TupleType allowanceOfType = TupleType.parse("(uint256)");
+	private static final TupleType approveOfType = TupleType.parse("(bool)");
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
 	private static final TupleType ownerOfType = TupleType.parse("(address)");
 	private static final TupleType getApprovedType = TupleType.parse("(address)");
@@ -118,6 +120,13 @@ public class EncodingFacade {
 		return functionResultBuilder()
 				.forFunction(FunctionType.ALLOWANCE)
 				.withAllowance(allowance)
+				.build();
+	}
+
+	public Bytes encodeApprove(final boolean approve) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.APPROVE)
+				.withApprove(approve)
 				.build();
 	}
 
@@ -184,7 +193,7 @@ public class EncodingFacade {
 	}
 
 	protected enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, GET_APPROVED, IS_APPROVED_FOR_ALL
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, APPROVE, GET_APPROVED, IS_APPROVED_FOR_ALL
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -200,6 +209,7 @@ public class EncodingFacade {
 		private long totalSupply;
 		private long balance;
 		private long allowance;
+		private boolean approve;
 		private long[] serialNumbers;
 		private int decimals;
 		private Address owner;
@@ -221,6 +231,8 @@ public class EncodingFacade {
 				tupleType = balanceOfType;
 			} else if (functionType == FunctionType.ALLOWANCE) {
 				tupleType = allowanceOfType;
+			} else if (functionType == FunctionType.APPROVE) {
+				tupleType = approveOfType;
 			} else if (functionType == FunctionType.OWNER) {
 				tupleType = ownerOfType;
 			} else if (functionType == FunctionType.GET_APPROVED) {
@@ -268,6 +280,11 @@ public class EncodingFacade {
 
 		private FunctionResultBuilder withAllowance(final long allowance) {
 			this.allowance = allowance;
+			return this;
+		}
+
+		private FunctionResultBuilder withApprove(final boolean approve) {
+			this.approve = approve;
 			return this;
 		}
 
@@ -321,6 +338,8 @@ public class EncodingFacade {
 				result = Tuple.of(BigInteger.valueOf(balance));
 			} else if (ALLOWANCE.equals(functionType)) {
 				result = Tuple.of(BigInteger.valueOf(allowance));
+			} else if (APPROVE.equals(functionType)) {
+				result = Tuple.of(approve);
 			} else if (OWNER.equals(functionType)) {
 				result = Tuple.of(convertBesuAddressToHeadlongAddress(owner));
 			}  else if (GET_APPROVED.equals(functionType)) {
