@@ -57,7 +57,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
@@ -72,8 +71,6 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TxnAwareEvmSigsVerifierTest {
-	private static final Address PRETEND_RECIPIENT_ADDR = Address.ALTBN128_ADD;
-	private static final Address PRETEND_CONTRACT_ADDR = Address.ALTBN128_MUL;
 	private static final Address PRETEND_SENDER_ADDR = Address.ALTBN128_PAIRING;
 	private static final Id tokenId = new Id(0, 0, 666);
 	private static final Id accountId = new Id(0, 0, 1234);
@@ -223,11 +220,12 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	@Test
-	void filtersNoSigRequiredWhenLedgersAreNull() {
+	void filtersNoSigRequiredWhenLedgersAreNotNullButAccountsLedgerIsNull() {
 		given(txnCtx.activePayer()).willReturn(payer);
+		given(ledgers.accounts()).willReturn(null);
 
 		final var noSigRequiredFlag = subject.hasActiveKeyOrNoReceiverSigReq(true,
-				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, null);
+				EntityIdUtils.asTypedEvmAddress(noSigRequired), PRETEND_SENDER_ADDR, ledgers);
 
 		assertTrue(noSigRequiredFlag);
 		verify(activationTest, never()).test(any(), any(), any());
@@ -261,7 +259,6 @@ class TxnAwareEvmSigsVerifierTest {
 
 		verify(activationTest, never()).test(any(), any(), any());
 	}
-
 
 	@Test
 	void createsValidityTestThatOnlyAcceptsContractIdKeyWhenBothRecipientAndContractAreActive() {
