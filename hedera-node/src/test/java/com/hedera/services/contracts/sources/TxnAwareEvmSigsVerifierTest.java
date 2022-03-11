@@ -123,7 +123,7 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void throwsIfAskedToVerifyMissingToken() {
 		given(ledgers.tokens()).willReturn(tokensLedger);
-		given(tokensLedger.getImmutableRef(token)).willReturn(null);
+		given(tokensLedger.exists(token)).willReturn(false);
 
 		assertFailsWith(() ->
 						subject.hasActiveSupplyKey(true,
@@ -134,11 +134,9 @@ class TxnAwareEvmSigsVerifierTest {
 
 	@Test
 	void throwsIfAskedToVerifyTokenWithoutSupplyKey() {
-		final var merkleToken = mock(MerkleToken.class);
-
 		given(ledgers.tokens()).willReturn(tokensLedger);
-		given(tokensLedger.getImmutableRef(token)).willReturn(merkleToken);
-		given(merkleToken.hasSupplyKey()).willReturn(false);
+		given(tokensLedger.exists(token)).willReturn(true);
+		given(tokensLedger.get(token, TokenProperty.SUPPLY_KEY)).willReturn(null);
 
 		assertFailsWith(() ->
 						subject.hasActiveSupplyKey(true,
@@ -151,11 +149,10 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void testsSupplyKeyIfPresent() {
 		given(txnCtx.accessor()).willReturn(accessor);
-		final var merkleToken = mock(MerkleToken.class);
 		given(ledgers.tokens()).willReturn(tokensLedger);
-		given(tokensLedger.getImmutableRef(token)).willReturn(merkleToken);
-		given(merkleToken.hasSupplyKey()).willReturn(true);
-		given(merkleToken.getSupplyKey()).willReturn(expectedKey);
+		given(tokensLedger.exists(token)).willReturn(true);
+		given(tokensLedger.get(token, TokenProperty.SUPPLY_KEY)).willReturn(expectedKey);
+
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
@@ -169,18 +166,16 @@ class TxnAwareEvmSigsVerifierTest {
 	void supplyKeyFailsWhenTokensLedgerIsNull() {
 		given(ledgers.tokens()).willReturn(null);
 
-		assertFailsWith(() ->
-						subject.hasActiveSupplyKey(true,
-								PRETEND_TOKEN_ADDR,
-								PRETEND_SENDER_ADDR,
-								ledgers),
-				INVALID_TOKEN_ID);
+		assertThrows(NullPointerException.class, () ->subject.hasActiveSupplyKey(true,
+				PRETEND_TOKEN_ADDR,
+				PRETEND_SENDER_ADDR,
+				ledgers));
 	}
 
 	@Test
 	void throwsIfAskedToVerifyMissingAccount() {
 		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(account)).willReturn(null);
+		given(accountsLedger.exists(account)).willReturn(false);
 
 		assertFailsWith(() ->
 						subject.hasActiveKey(true,
@@ -194,8 +189,8 @@ class TxnAwareEvmSigsVerifierTest {
 	void testsAccountKeyIfPresent() {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(account)).willReturn(sigReqAccount);
-		given(sigReqAccount.getAccountKey()).willReturn(expectedKey);
+		given(accountsLedger.exists(account)).willReturn(true);
+		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(expectedKey);
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
@@ -208,8 +203,8 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void testsMissingAccountKey() {
 		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(account)).willReturn(sigReqAccount);
-		given(sigReqAccount.getAccountKey()).willReturn(null);
+		given(accountsLedger.exists(account)).willReturn(true);
+		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(null);
 
 		final var verdict = subject.hasActiveKey(true,
 				PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
@@ -311,7 +306,7 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void testsAccountAddressAndActiveContractIfEquals() {
 		given(ledgers.accounts()).willReturn(accountsLedger);
-		given(accountsLedger.getImmutableRef(smartContract)).willReturn(contract);
+		given(accountsLedger.exists(smartContract)).willReturn(true);
 
 		final var verdict = subject.hasActiveKey(true,
 				EntityIdUtils.asTypedEvmAddress(smartContract),

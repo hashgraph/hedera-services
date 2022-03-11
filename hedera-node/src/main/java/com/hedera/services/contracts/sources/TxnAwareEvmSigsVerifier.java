@@ -23,9 +23,10 @@ package com.hedera.services.contracts.sources;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -68,16 +69,14 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 			@NotNull final WorldLedgers worldLedgers
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
-		final var account = Optional.ofNullable(worldLedgers.accounts().getImmutableRef(accountId));
-
-		validateTrue(account.isPresent(), INVALID_ACCOUNT_ID);
+		validateTrue(worldLedgers.accounts().exists(accountId), INVALID_ACCOUNT_ID);
 
 		if (accountAddress.equals(activeContract)) {
 			return true;
 		}
 
-		final MerkleAccount merkleAccount = account.map(MerkleAccount.class::cast).orElseGet(MerkleAccount::new);
-		return merkleAccount.getAccountKey() != null && isActiveInFrame(merkleAccount.getAccountKey(), isDelegateCall,
+		final var accountKey = (JKey) worldLedgers.accounts().get(accountId, AccountProperty.KEY);
+		return accountKey != null && isActiveInFrame(accountKey, isDelegateCall,
 				activeContract,
 				worldLedgers.aliases());
 	}
@@ -90,15 +89,12 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 			@NotNull final WorldLedgers worldLedgers
 	) {
 		final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
-		final var token =
-				worldLedgers.tokens() != null ? Optional.ofNullable(worldLedgers.tokens().getImmutableRef(tokenId)) :
-						Optional.empty();
+		validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
 
-		validateTrue(token.isPresent(), INVALID_TOKEN_ID);
+		final var supplyKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.SUPPLY_KEY);
+		validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
-		final MerkleToken merkleToken = token.map(MerkleToken.class::cast).orElseGet(MerkleToken::new);
-		validateTrue(merkleToken.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
-		return isActiveInFrame(merkleToken.getSupplyKey(), isDelegateCall, activeContract, worldLedgers.aliases());
+		return isActiveInFrame(supplyKey, isDelegateCall, activeContract, worldLedgers.aliases());
 	}
 
 	@Override
