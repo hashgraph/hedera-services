@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
@@ -51,7 +52,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Comparator;
@@ -498,7 +498,7 @@ public class HederaLedger {
 	}
 
 	/* -- Only used by unit tests --- */
-	TransferList netTransfersInTxn() {
+	CurrencyAdjustments netTransfersInTxn() {
 		accountsLedger.throwIfNotInTxn();
 		return sideEffectsTracker.getNetTrackedHbarChanges();
 	}

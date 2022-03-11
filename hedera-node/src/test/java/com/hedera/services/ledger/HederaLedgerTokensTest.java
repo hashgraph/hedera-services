@@ -22,8 +22,8 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -182,7 +182,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		given(nftsLedger.isInTransaction()).willReturn(true);
 		given(manager.isInTransaction()).willReturn(true);
 		subject.setTokenViewsManager(manager);
-		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(TransferList.getDefaultInstance());
+		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(new CurrencyAdjustments());
 
 		subject.begin();
 		subject.commit();

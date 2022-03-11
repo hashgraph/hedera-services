@@ -176,10 +176,9 @@ class SideEffectsTrackerTest {
 		assertTrue(subject.getTrackedAutoAssociations().isEmpty());
 		assertSame(Collections.emptyList(), subject.getNetTrackedTokenUnitAndOwnershipChanges());
 		final var netChanges = subject.getNetTrackedHbarChanges();
-		assertEquals(1, netChanges.getAccountAmountsCount());
-		final var aChange = netChanges.getAccountAmounts(0);
-		assertEquals(aAccount, aChange.getAccountID());
-		assertEquals(aFirstBalanceChange, aChange.getAmount());
+		assertEquals(1, netChanges.getAccountCodes().length);
+		assertEquals(aAccount, netChanges.getAccountCodes()[0]);
+		assertEquals(aFirstBalanceChange, netChanges.getHbars()[0]);
 	}
 
 	@Test
@@ -230,17 +229,17 @@ class SideEffectsTrackerTest {
 		subject.trackHbarChange(bAccount, -bOnlyBalanceChange);
 
 		final var netChanges = subject.getNetTrackedHbarChanges();
-		assertEquals(2, netChanges.getAccountAmountsCount());
-		final var aChange = netChanges.getAccountAmounts(0);
-		assertEquals(aAccount, aChange.getAccountID());
-		assertEquals(aFirstBalanceChange + aSecondBalanceChange, aChange.getAmount());
-		final var cChange = netChanges.getAccountAmounts(1);
-		assertEquals(cAccount, cChange.getAccountID());
-		assertEquals(cOnlyBalanceChange, cChange.getAmount());
+		assertEquals(2, netChanges.getAccountCodes().length);
+		assertEquals(2, netChanges.getHbars().length);
+		assertEquals(aAccount, netChanges.getAccountCodes()[0]);
+		assertEquals(aFirstBalanceChange + aSecondBalanceChange, netChanges.getHbars()[0]);
+		assertEquals(cAccount, netChanges.getAccountCodes()[1]);
+		assertEquals(cOnlyBalanceChange, netChanges.getHbars()[1]);
 
 		assertEquals(aFirstBalanceChange + aSecondBalanceChange + cOnlyBalanceChange, subject.getNetHbarChange());
 		subject.reset();
-		assertEquals(0, subject.getNetTrackedHbarChanges().getAccountAmountsCount());
+		assertEquals(0, subject.getNetTrackedHbarChanges().getAccountCodes().length);
+		assertEquals(0, subject.getNetTrackedHbarChanges().getHbars().length);
 		assertEquals(0, subject.getNetHbarChange());
 	}
 
@@ -365,24 +364,24 @@ class SideEffectsTrackerTest {
 		}});
 	}};
 	private static final Map<EntityNum, Long> cryptoAllowance = new TreeMap<>() {{
-			put(EntityNum.fromAccountId(aAccount), initialAllowance);
-		}};
+		put(EntityNum.fromAccountId(aAccount), initialAllowance);
+	}};
 	private static final Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleAllowances = new TreeMap<>() {{
 		put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
 			put(fungibleAllowanceId, initialAllowance);
 		}});
 	}};
 	private static final Map<FcTokenAllowanceId, Long> fungibleAllowance = new TreeMap<>() {{
-			put(fungibleAllowanceId, initialAllowance);
-		}};
+		put(fungibleAllowanceId, initialAllowance);
+	}};
 	private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = new TreeMap<>() {{
 		put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
-				put(fungibleAllowanceId, nftAllowance1);
-				put(nftAllowanceId, nftAllowance2);
-			}});
-	}};
-	private static final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowance = new TreeMap<>() {{
 			put(fungibleAllowanceId, nftAllowance1);
 			put(nftAllowanceId, nftAllowance2);
-		}};
+		}});
+	}};
+	private static final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowance = new TreeMap<>() {{
+		put(fungibleAllowanceId, nftAllowance1);
+		put(nftAllowanceId, nftAllowance2);
+	}};
 }

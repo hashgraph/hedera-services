@@ -209,23 +209,23 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 		if (cryptoAllowances.size() != 0) {
 			final var readable = "[" + cryptoAllowances.entrySet().stream().map(
-					ownerMap -> String.format("%s", ownerMap.getValue().entrySet().stream().map(
-							allowance -> String.format("{owner : %s, spender : %s, allowance : %d}",
-									ownerMap.getKey(),
-									allowance.getKey(),
-									allowance.getValue())).collect(joining(", "))))
+							ownerMap -> String.format("%s", ownerMap.getValue().entrySet().stream().map(
+									allowance -> String.format("{owner : %s, spender : %s, allowance : %d}",
+											ownerMap.getKey(),
+											allowance.getKey(),
+											allowance.getValue())).collect(joining(", "))))
 					.collect(joining(", ")) + "]";
 			helper.add("cryptoAllowances", readable);
 		}
 
 		if (fungibleTokenAllowances.size() != 0) {
 			final var readable = "[" + fungibleTokenAllowances.entrySet().stream().map(
-					ownerMap -> String.format("%s", ownerMap.getValue().entrySet().stream().map(
-							allowance -> String.format("{owner : %s, token : %s, spender : %s, allowance : %d}",
-									ownerMap.getKey(),
-									allowance.getKey().getTokenNum().toString(),
-									allowance.getKey().getSpenderNum().toString(),
-									allowance.getValue())).collect(joining(", "))))
+							ownerMap -> String.format("%s", ownerMap.getValue().entrySet().stream().map(
+									allowance -> String.format("{owner : %s, token : %s, spender : %s, allowance : %d}",
+											ownerMap.getKey(),
+											allowance.getKey().getTokenNum().toString(),
+											allowance.getKey().getSpenderNum().toString(),
+											allowance.getValue())).collect(joining(", "))))
 					.collect(joining(", ")) + "]";
 			helper.add("fungibleTokenAllowances", readable);
 		}
@@ -233,14 +233,18 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (nftAllowances.size() != 0) {
 			final var readable = "[" + nftAllowances.entrySet().stream().map(
 					ownerMap -> String.format("%s", ownerMap.getValue().entrySet().stream().map(
-							allowance -> String.format(
-									"{owner : %s, token : %s, spender : %s, isApproveForAll : %b, SerialNums : %s}",
-									ownerMap.getKey(),
-									allowance.getKey().getTokenNum().toString(),
-									allowance.getKey().getSpenderNum().toString(),
-									allowance.getValue().isApprovedForAll(),
-									allowance.getValue().getSerialNumbers().stream().map(Object::toString).collect(joining(", "))))
-					.collect(joining(", ")))).collect(joining(", ")) + "]";
+									allowance -> String.format(
+											"{owner : %s, token : %s, spender : %s, isApproveForAll : %b, SerialNums " +
+													":" +
+													" " +
+													"%s}",
+											ownerMap.getKey(),
+											allowance.getKey().getTokenNum().toString(),
+											allowance.getKey().getSpenderNum().toString(),
+											allowance.getValue().isApprovedForAll(),
+											allowance.getValue().getSerialNumbers().stream().map(Object::toString).collect(
+													joining(", "))))
+							.collect(joining(", ")))).collect(joining(", ")) + "]";
 			helper.add("nftAllowances", readable);
 		}
 
@@ -433,7 +437,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	private void deserializeAllowanceMaps(SerializableDataInputStream in) throws IOException {
 		var numCryptoAllowances = in.readInt();
-		if(numCryptoAllowances > 0){
+		if (numCryptoAllowances > 0) {
 			cryptoAllowances = new TreeMap<>();
 		}
 		while (numCryptoAllowances-- > 0) {
@@ -442,7 +446,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		var numTokenAllowances = in.readInt();
-		if(numTokenAllowances > 0){
+		if (numTokenAllowances > 0) {
 			fungibleTokenAllowances = new TreeMap<>();
 		}
 		while (numTokenAllowances-- > 0) {
@@ -451,7 +455,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		var numNftAllowances = in.readInt();
-		if(numNftAllowances > 0){
+		if (numNftAllowances > 0) {
 			nftAllowances = new TreeMap<>();
 		}
 		while (numNftAllowances-- > 0) {
@@ -870,7 +874,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
-		public Builder setFungibleTokenAllowances(Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances) {
+		public Builder setFungibleTokenAllowances(
+				Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances) {
 			this.fungibleTokenAllowances = fungibleTokenAllowances;
 			return this;
 		}
@@ -913,48 +918,51 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			final var adjustsHere = this.transferList.hbars.length;
 			final var adjustsThere = that.transferList.hbars.length;
 			final var maxAdjusts = adjustsHere + adjustsThere;
-			final var changedHere = this.transferList.accountIds;
-			final var changedThere = that.transferList.accountIds;
+			final var changedHere = this.transferList.accountCodes;
+			final var changedThere = that.transferList.accountCodes;
+			final var maxAccountCodes = changedHere.length + changedThere.length;
+
 
 			final var netAdjustsHere = new long[maxAdjusts];
-			final List<EntityId> netChanged = new ArrayList<>();
+			final long[] netChanged = new long[maxAccountCodes];
 
 			var i = 0;
 			var j = 0;
 			var k = 0;
+			var m = 0;
 			while (i < adjustsHere && j < adjustsThere) {
-				final var iId = changedHere.get(i);
-				final var jId = changedThere.get(j);
-				final var cmp = ID_CMP.compare(iId, jId);
+				final var iId = changedHere[i];
+				final var jId = changedThere[j];
+				final var cmp = Long.compare(iId, jId);
 				if (cmp == 0) {
 					final var net = this.transferList.hbars[i++] - that.transferList.hbars[j++];
 					if (net != 0) {
 						netAdjustsHere[k++] = net;
-						netChanged.add(iId);
+						netChanged[m++] = iId;
 					}
 				} else if (cmp < 0) {
 					netAdjustsHere[k++] = this.transferList.hbars[i++];
-					netChanged.add(iId);
+					netChanged[m++] = iId;
 				} else {
 					netAdjustsHere[k++] = -that.transferList.hbars[j++];
-					netChanged.add(jId);
+					netChanged[m++] = jId;
 				}
 			}
 			/* Note that at most one of these loops can iterate a non-zero number of times,
 			 * since if both did we could not have exited the prior loop. */
 			while (i < adjustsHere) {
-				final var iId = changedHere.get(i);
+				final var iId = changedHere[i];
 				netAdjustsHere[k++] = this.transferList.hbars[i++];
-				netChanged.add(iId);
+				netChanged[m++] = iId;
 			}
 			while (j < adjustsThere) {
-				final var jId = changedThere.get(j);
+				final var jId = changedThere[j];
 				netAdjustsHere[k++] = -that.transferList.hbars[j++];
-				netChanged.add(jId);
+				netChanged[m++] = jId;
 			}
 
 			this.transferList.hbars = Arrays.copyOfRange(netAdjustsHere, 0, k);
-			this.transferList.accountIds = netChanged;
+			this.transferList.accountCodes = netChanged;
 		}
 
 		public static final Comparator<EntityId> ID_CMP = Comparator

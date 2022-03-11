@@ -21,17 +21,16 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -45,15 +44,15 @@ public class CurrencyAdjustments implements SelfSerializable {
 	static final int MAX_NUM_ADJUSTMENTS = 25;
 
 	long[] hbars = NO_ADJUSTMENTS;
-	List<EntityId> accountIds = Collections.emptyList();
+	long[] accountCodes = NO_ADJUSTMENTS;
 
 	public CurrencyAdjustments() {
 		/* For RuntimeConstructable */
 	}
 
-	public CurrencyAdjustments(long[] amounts, List<EntityId> parties) {
+	public CurrencyAdjustments(long[] amounts, long[] parties) {
 		hbars = amounts;
-		accountIds = parties;
+		accountCodes = parties;
 	}
 
 	public boolean isEmpty() {
@@ -73,13 +72,13 @@ public class CurrencyAdjustments implements SelfSerializable {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		accountIds = in.readSerializableList(MAX_NUM_ADJUSTMENTS, true, EntityId::new);
+		accountCodes = in.readLongArray(MAX_NUM_ADJUSTMENTS);
 		hbars = in.readLongArray(MAX_NUM_ADJUSTMENTS);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeSerializableList(accountIds, true, true);
+		out.writeLongArray(accountCodes);
 		out.writeLongArray(hbars);
 	}
 
@@ -94,14 +93,14 @@ public class CurrencyAdjustments implements SelfSerializable {
 		}
 
 		CurrencyAdjustments that = (CurrencyAdjustments) o;
-		return accountIds.equals(that.accountIds) && Arrays.equals(hbars, that.hbars);
+		return Arrays.equals(accountCodes, that.accountCodes) && Arrays.equals(hbars, that.hbars);
 	}
 
 	@Override
 	public int hashCode() {
 		int result = Long.hashCode(RUNTIME_CONSTRUCTABLE_ID);
 		result = result * 31 + Integer.hashCode(MERKLE_VERSION);
-		result = result * 31 + accountIds.hashCode();
+		result = result * 31 + Arrays.hashCode(accountCodes);
 		return result * 31 + Arrays.hashCode(hbars);
 	}
 
@@ -118,13 +117,19 @@ public class CurrencyAdjustments implements SelfSerializable {
 		IntStream.range(0, hbars.length)
 				.mapToObj(i -> AccountAmount.newBuilder()
 						.setAmount(hbars[i])
-						.setAccountID(EntityIdUtils.asAccount(accountIds.get(i))))
+						.setAccountID(EntityNum.fromLong(accountCodes[i]).toGrpcAccountId()))
 				.forEach(grpc::addAccountAmounts);
 		return grpc.build();
 	}
 
-	public static CurrencyAdjustments fromGrpc(TransferList grpc) {
-		return fromGrpc(grpc.getAccountAmountsList());
+	public static CurrencyAdjustments fromChanges(final long[] balanceChanges, final long[] changedAccounts) {
+		final var pojo = new CurrencyAdjustments();
+		final int n = balanceChanges.length;
+		if (n > 0) {
+			pojo.hbars = balanceChanges;
+			pojo.accountCodes = changedAccounts;
+		}
+		return pojo;
 	}
 
 	public static CurrencyAdjustments fromGrpc(List<AccountAmount> adjustments) {
@@ -132,15 +137,23 @@ public class CurrencyAdjustments implements SelfSerializable {
 		final int n = adjustments.size();
 		if (n > 0) {
 			final var amounts = new long[n];
-			final List<EntityId> accounts = new ArrayList<>(n);
+			final long[] accounts = { };
 			for (var i = 0; i < n; i++) {
 				final var adjustment = adjustments.get(i);
 				amounts[i] = adjustment.getAmount();
-				accounts.add(EntityId.fromGrpcAccountId(adjustment.getAccountID()));
+				ArrayUtils.add(accounts, adjustment.getAccountID().getAccountNum());
 			}
 			pojo.hbars = amounts;
-			pojo.accountIds = accounts;
+			pojo.accountCodes = accounts;
 		}
 		return pojo;
+	}
+
+	public long[] getHbars() {
+		return hbars;
+	}
+
+	public long[] getAccountCodes() {
+		return accountCodes;
 	}
 }

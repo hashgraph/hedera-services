@@ -21,6 +21,7 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
@@ -63,7 +64,8 @@ public class SideEffectsTracker {
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
 
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
-	private final TransferList.Builder netHbarChanges = TransferList.newBuilder();
+	private long[] changedAccounts = { };
+	private long[] balanceChanges = { };
 	private final List<Long> nftMints = new ArrayList<>();
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
@@ -304,7 +306,7 @@ public class SideEffectsTracker {
 	 */
 	public void trackHbarChange(final AccountID account, final long amount) {
 		netHbarChange += amount;
-		updateFungibleChanges(account, amount, netHbarChanges);
+		TransfersHelper.updateFungibleChanges(account.getAccountNum(), amount, balanceChanges, changedAccounts);
 	}
 
 	/**
@@ -354,9 +356,9 @@ public class SideEffectsTracker {
 	 *
 	 * @return the ordered net balance changes
 	 */
-	public TransferList getNetTrackedHbarChanges() {
-		purgeZeroAdjustments(netHbarChanges);
-		return netHbarChanges.build();
+	public CurrencyAdjustments getNetTrackedHbarChanges() {
+		TransfersHelper.purgeZeroAdjustments(balanceChanges, changedAccounts);
+		return CurrencyAdjustments.fromChanges(balanceChanges, changedAccounts);
 	}
 
 	public long getNetHbarChange() {
@@ -460,7 +462,8 @@ public class SideEffectsTracker {
 	 */
 	public void reset() {
 		resetTrackedTokenChanges();
-		netHbarChanges.clear();
+		changedAccounts = new long[] { };
+		balanceChanges = new long[] { };
 		netHbarChange = 0;
 		newAccountId = null;
 		newContractId = null;
