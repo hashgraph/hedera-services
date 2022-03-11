@@ -64,8 +64,8 @@ public class SideEffectsTracker {
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
 
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
-	private long[] changedAccounts = { };
-	private long[] balanceChanges = { };
+	private long[] changedAccounts = new long[100];
+	private long[] balanceChanges = new long[100];
 	private final List<Long> nftMints = new ArrayList<>();
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
@@ -74,6 +74,7 @@ public class SideEffectsTracker {
 	private int numTouches = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private long netHbarChange = 0;
+	private int numChanges = 0;
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
 	private ContractID newContractId = null;
@@ -306,8 +307,9 @@ public class SideEffectsTracker {
 	 */
 	public void trackHbarChange(final long account, final long amount) {
 		netHbarChange += amount;
-		final var output = TransfersHelper.updateFungibleChanges(account, amount,
-				changedAccounts, balanceChanges);
+		final var output = TransfersHelper.updateFungibleChanges
+				(account, amount, changedAccounts, balanceChanges, numChanges);
+		numChanges++;
 		balanceChanges = output.getLeft();
 		changedAccounts = output.getRight();
 	}
@@ -360,7 +362,8 @@ public class SideEffectsTracker {
 	 * @return the ordered net balance changes
 	 */
 	public CurrencyAdjustments getNetTrackedHbarChanges() {
-		final var updatedAdjustments = TransfersHelper.purgeZeroAdjustments(balanceChanges, changedAccounts);
+		final var updatedAdjustments = TransfersHelper.purgeZeroAdjustments(balanceChanges, changedAccounts,
+				numChanges);
 		balanceChanges = updatedAdjustments.getLeft();
 		changedAccounts = updatedAdjustments.getRight();
 		return CurrencyAdjustments.fromChanges(balanceChanges, changedAccounts);
@@ -469,6 +472,7 @@ public class SideEffectsTracker {
 		resetTrackedTokenChanges();
 		changedAccounts = new long[] { };
 		balanceChanges = new long[] { };
+		numChanges = 0;
 		netHbarChange = 0;
 		newAccountId = null;
 		newContractId = null;

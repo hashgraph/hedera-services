@@ -8,9 +8,12 @@ public class TransfersHelper {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
-	public static Pair<long[], long[]> updateFungibleChanges(final long account, final long amount,
+	public static Pair<long[], long[]> updateFungibleChanges(
+			final long account,
+			final long amount,
 			long[] changedAccounts,
-			long[] balanceChanges) {
+			long[] balanceChanges,
+			final int numChanges) {
 		int loc = 0;
 		int diff = -1;
 		for (; loc < changedAccounts.length; loc++) {
@@ -24,8 +27,8 @@ public class TransfersHelper {
 			balanceChanges[loc] = currentAmount + amount;
 		} else {
 			if (loc == balanceChanges.length) {
-				balanceChanges = ArrayUtils.add(balanceChanges, amount);
-				changedAccounts = ArrayUtils.add(changedAccounts, account);
+				balanceChanges[numChanges] = amount;
+				changedAccounts[numChanges] = account;
 			} else {
 				balanceChanges = ArrayUtils.insert(loc, balanceChanges, amount);
 				changedAccounts = ArrayUtils.insert(loc, changedAccounts, account);
@@ -34,7 +37,8 @@ public class TransfersHelper {
 		return Pair.of(balanceChanges, changedAccounts);
 	}
 
-	public static Pair<long[], long[]> purgeZeroAdjustments(long[] balanceChanges, long[] changedAccounts) {
+	public static Pair<long[], long[]> purgeZeroAdjustments(long[] balanceChanges, long[] changedAccounts,
+			int numChanges) {
 		int lastZeroRemoved;
 		do {
 			lastZeroRemoved = -1;
@@ -42,6 +46,7 @@ public class TransfersHelper {
 				if (balanceChanges[i] == 0) {
 					balanceChanges = ArrayUtils.remove(balanceChanges, i);
 					changedAccounts = ArrayUtils.remove(changedAccounts, i);
+					numChanges--;
 					lastZeroRemoved = i;
 					break;
 				}
