@@ -39,6 +39,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 	private static final TupleType allowanceOfType = TupleType.parse("(uint256)");
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
 	private static final TupleType ownerOfType = TupleType.parse("(address)");
+	private static final TupleType getApprovedType = TupleType.parse("(address)");
 	private static final TupleType nameType = TupleType.parse("(string)");
 	private static final TupleType symbolType = TupleType.parse("(string)");
 	private static final TupleType tokenUriType = TupleType.parse("(string)");
@@ -50,7 +51,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 	}
 
 	public enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, IS_APPROVED_FOR_ALL
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, GET_APPROVED, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, IS_APPROVED_FOR_ALL
 	}
 
 	private FunctionType functionType;
@@ -60,6 +61,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 	private long[] serialNumbers;
 	private int decimals;
 	private byte[] owner;
+	private byte[] approved;
 	private String name;
 	private String symbol;
 	private String metadata;
@@ -76,6 +78,7 @@ public class HTSPrecompileResult implements ContractCallResult {
 			case DECIMALS -> tupleType = decimalsType;
 			case BALANCE -> tupleType = balanceOfType;
 			case OWNER -> tupleType = ownerOfType;
+			case GET_APPROVED -> tupleType = getApprovedType;
 			case NAME -> tupleType = nameType;
 			case SYMBOL -> tupleType = symbolType;
 			case TOKEN_URI -> tupleType = tokenUriType;
@@ -115,6 +118,11 @@ public class HTSPrecompileResult implements ContractCallResult {
 
 	public HTSPrecompileResult withOwner(final byte[] address) {
 		this.owner = address;
+		return this;
+	}
+
+	public HTSPrecompileResult withApproved(final byte[] approved) {
+		this.approved = approved;
 		return this;
 	}
 
@@ -160,6 +168,9 @@ public class HTSPrecompileResult implements ContractCallResult {
 			case BALANCE -> result = Tuple.of(BigInteger.valueOf(balance));
 			case OWNER -> {
 				return Bytes.wrap(expandByteArrayTo32Length(owner));
+			}
+			case GET_APPROVED -> {
+				return Bytes.wrap(expandByteArrayTo32Length(approved));
 			}
 			case NAME -> result = Tuple.of(name);
 			case SYMBOL -> result = Tuple.of(symbol);

@@ -58,6 +58,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -74,6 +75,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 public class ERCPrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERCPrecompileSuite.class);
@@ -140,7 +142,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				getErc721TotalSupply(),
 //				getErc721TransferFrom(),
 				getErc721TokenURIFromErc20TokenFails(),
-				getErc721OwnerOfFromErc20TokenFails()
+				getErc721OwnerOfFromErc20TokenFails(),
+				erc721GetApproved()
 		);
 	}
 
@@ -1684,6 +1687,83 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged(),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec erc721GetApproved() {
+		final var theSpender = "spender";
+		final var theSpender2 = "spender2";
+		final var allowanceTxn = "allowanceTxn";
+
+		return defaultHapiSpec("ERC_20_ALLOWANCE_RETURNS_FAILURE")
+				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(OWNER)
+								.balance(100 * ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						cryptoCreate(theSpender),
+						cryptoCreate(theSpender2),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NON_FUNGIBLE_TOKEN)
+								.initialSupply(0)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey(MULTI_KEY)
+								.adminKey(MULTI_KEY)
+								.treasury(TOKEN_TREASURY),
+						fileCreate(ERC_721_CONTRACT_NAME),
+						updateLargeFile(OWNER, ERC_721_CONTRACT_NAME, extractByteCode(ContractResources.ERC_721_CONTRACT)),
+						contractCreate(ERC_721_CONTRACT_NAME)
+								.bytecode(ERC_721_CONTRACT_NAME)
+								.gas(300_000),
+						tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(
+								ByteString.copyFromUtf8("a")
+						)).via("nftTokenMint"),
+						cryptoTransfer(
+								movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, OWNER)
+						),
+						cryptoApproveAllowance()
+								.payingWith(DEFAULT_PAYER)
+								.addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, theSpender, false, List.of(1L))
+								.via("baseApproveTxn")
+								.logged()
+								.signedBy(DEFAULT_PAYER, OWNER)
+								.fee(ONE_HBAR)
+				).when(withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+
+												contractCall(ERC_721_CONTRACT_NAME,
+														ContractResources.ERC_721_GET_APPROVED_CALL,
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)), 1)
+														.payingWith(OWNER)
+														.via(allowanceTxn)
+														.hasKnownStatus(SUCCESS)
+										)
+						)
+				).then(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												childRecordsCheck(allowanceTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.GET_APPROVED)
+																						.withApproved(asAddress(spec.registry().getAccountID(theSpender)))
+																				)
+																)
+												)
+										)
+						),
+						getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}

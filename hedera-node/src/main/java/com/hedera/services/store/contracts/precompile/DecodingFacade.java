@@ -141,6 +141,11 @@ public class DecodingFacade {
 	private static final Bytes TOKEN_ALLOWANCE_SELECTOR = Bytes.wrap(TOKEN_ALLOWANCE_FUNCTION.selector());
 	private static final ABIType<Tuple> TOKEN_ALLOWANCE_DECODER = TypeFactory.create("(bytes32,bytes32)");
 
+	private static final Function GET_APPROVED_FUNCTION =
+			new Function("getApproved(uint256)", INT_OUTPUT);
+	private static final Bytes GET_APPROVED_FUNCTION_SELECTOR = Bytes.wrap(GET_APPROVED_FUNCTION.selector());
+	private static final ABIType<Tuple> GET_APPROVED_FUNCTION_DECODER = TypeFactory.create("(uint256)");
+
 	private static final Function IS_APPROVED_FOR_ALL =
 			new Function("isApprovedForAll(address,address)");
 	private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
@@ -253,6 +258,14 @@ public class DecodingFacade {
 		final var tokenId = (BigInteger) decodedArguments.get(0);
 
 		return new OwnerOfAndTokenURIWrapper(tokenId.longValue());
+	}
+
+	public GetApprovedWrapper decodeGetApproved(final Bytes input) {
+		final Tuple decodedArguments = decodeFunctionCall(input, GET_APPROVED_FUNCTION_SELECTOR, GET_APPROVED_FUNCTION_DECODER);
+
+		final var tokenId = (BigInteger) decodedArguments.get(0);
+
+		return new GetApprovedWrapper(tokenId.longValue());
 	}
 
 	public TokenAllowanceWrapper decodeTokenAllowance(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {

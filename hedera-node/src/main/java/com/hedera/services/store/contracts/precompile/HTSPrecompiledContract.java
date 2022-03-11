@@ -119,6 +119,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
@@ -247,7 +248,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//setApprovalForAll(address token, address operator, bool approved)
 	protected static final int ABI_ID_SET_APPROVAL_FOR_ALL = -0x5dd34b9b;
 	//getApproved(address token, uint256 tokenId)
-	protected static final int ABI_ID_GET_APPROVED = 0x81812fc;
+	protected static final int ABI_ID_GET_APPROVED = 0x081812fc;
 	//isApprovedForAll(address token, address owner, address operator)
 	protected static final int ABI_ID_IS_APPROVED_FOR_ALL = -0x167a163b;
 	//ownerOf(uint256 tokenId)
@@ -1404,18 +1405,37 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class GetApprovedPrecompile extends ERCReadOnlyAbstractPrecompile {
+		GetApprovedWrapper getApprovedWrapper;
+
 		public GetApprovedPrecompile(final TokenID tokenID) {
 			super(tokenID);
 		}
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+			final var nestedInput = input.slice(24);
+			getApprovedWrapper = decoder.decodeGetApproved(nestedInput);
+
 			return super.body(input, aliasResolver);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			return Bytes.EMPTY;
+			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
+			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(),
+					getApprovedWrapper.tokenId());
+			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
+			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
+			var allowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(owner.toGrpcAccountId(), NFT_ALLOWANCES);
+
+			validateFalse(allowances.size() > 1, FAIL_INVALID);
+
+			for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> e : allowances.entrySet()) {
+				var spender = e.getKey().getSpenderNum().toEvmAddress();
+				return encoder.encodeGetApproved(spender);
+			}
+
+			return encoder.encodeGetApproved(Address.fromHexString("0"));
 		}
 	}
 

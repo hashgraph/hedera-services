@@ -39,6 +39,7 @@ import static com.hedera.services.store.contracts.precompile.EncodingFacade.Func
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.BURN;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.DECIMALS;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.ERC_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.GET_APPROVED;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.IS_APPROVED_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.MINT;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.NAME;
@@ -59,6 +60,7 @@ public class EncodingFacade {
 	private static final TupleType allowanceOfType = TupleType.parse("(uint256)");
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
 	private static final TupleType ownerOfType = TupleType.parse("(address)");
+	private static final TupleType getApprovedType = TupleType.parse("(address)");
 	private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
@@ -95,6 +97,13 @@ public class EncodingFacade {
 		return functionResultBuilder()
 				.forFunction(FunctionType.OWNER)
 				.withOwner(address)
+				.build();
+	}
+
+	public Bytes encodeGetApproved(final Address approved) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.GET_APPROVED)
+				.withApproved(approved)
 				.build();
 	}
 
@@ -175,7 +184,7 @@ public class EncodingFacade {
 	}
 
 	protected enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, IS_APPROVED_FOR_ALL
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, GET_APPROVED, IS_APPROVED_FOR_ALL
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -194,6 +203,7 @@ public class EncodingFacade {
 		private long[] serialNumbers;
 		private int decimals;
 		private Address owner;
+		private Address approved;
 		private String name;
 		private String symbol;
 		private String metadata;
@@ -213,6 +223,8 @@ public class EncodingFacade {
 				tupleType = allowanceOfType;
 			} else if (functionType == FunctionType.OWNER) {
 				tupleType = ownerOfType;
+			} else if (functionType == FunctionType.GET_APPROVED) {
+				tupleType = getApprovedType;
 			} else if (functionType == FunctionType.NAME) {
 				tupleType = nameType;
 			} else if (functionType == FunctionType.SYMBOL) {
@@ -264,6 +276,11 @@ public class EncodingFacade {
 			return this;
 		}
 
+		private FunctionResultBuilder withApproved(final Address approved) {
+			this.approved = approved;
+			return this;
+		}
+
 		private FunctionResultBuilder withName(final String name) {
 			this.name = name;
 			return this;
@@ -306,6 +323,8 @@ public class EncodingFacade {
 				result = Tuple.of(BigInteger.valueOf(allowance));
 			} else if (OWNER.equals(functionType)) {
 				result = Tuple.of(convertBesuAddressToHeadlongAddress(owner));
+			}  else if (GET_APPROVED.equals(functionType)) {
+				result = Tuple.of(convertBesuAddressToHeadlongAddress(approved));
 			} else if (NAME.equals(functionType)) {
 				result = Tuple.of(name);
 			} else if (SYMBOL.equals(functionType)) {
