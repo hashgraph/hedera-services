@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
-import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -123,13 +122,12 @@ public class CurrencyAdjustments implements SelfSerializable {
 	}
 
 	public static CurrencyAdjustments fromChanges(final long[] balanceChanges, final long[] changedAccounts) {
-		final var pojo = new CurrencyAdjustments();
 		final int n = balanceChanges.length;
-		if (n > 0) {
-			pojo.hbars = balanceChanges;
-			pojo.accountCodes = changedAccounts;
+		final int m = changedAccounts.length;
+		if (n > 0 && m > 0 && n == m) {
+			return new CurrencyAdjustments(balanceChanges, changedAccounts);
 		}
-		return pojo;
+		return new CurrencyAdjustments();
 	}
 
 	public static CurrencyAdjustments fromGrpc(List<AccountAmount> adjustments) {
@@ -137,11 +135,11 @@ public class CurrencyAdjustments implements SelfSerializable {
 		final int n = adjustments.size();
 		if (n > 0) {
 			final var amounts = new long[n];
-			final long[] accounts = { };
+			final long[] accounts = new long[n];
 			for (var i = 0; i < n; i++) {
 				final var adjustment = adjustments.get(i);
 				amounts[i] = adjustment.getAmount();
-				ArrayUtils.add(accounts, adjustment.getAccountID().getAccountNum());
+				accounts[i] = adjustment.getAccountID().getAccountNum();
 			}
 			pojo.hbars = amounts;
 			pojo.accountCodes = accounts;

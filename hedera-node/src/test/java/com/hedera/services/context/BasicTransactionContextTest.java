@@ -113,8 +113,8 @@ class BasicTransactionContextTest {
 			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private final AccountID payer = asAccount("0.0.2");
 	private final AccountID anotherNodeAccount = asAccount("0.0.4");
-	private final AccountID created = asAccount("1.0.2");
-	private final AccountID another = asAccount("1.0.300");
+	private final AccountID created = asAccount("0.0.2");
+	private final AccountID another = asAccount("0.0.300");
 	private final CurrencyAdjustments transfers = CurrencyAdjustments.fromChanges(new long[] { -2L, 1L, 1L },
 			new long[] { payer.getAccountNum(), created.getAccountNum(), another.getAccountNum() });
 	private final TokenID tokenCreated = asToken("3.0.2");
@@ -377,6 +377,7 @@ class BasicTransactionContextTest {
 
 		setUpBuildingExpirableTxnRecord();
 		// expect:
+		final var transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
 		assertEquals(transfers, subject.recordSoFar().build().asGrpc().getTransferList());
 	}
 
