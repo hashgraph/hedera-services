@@ -178,15 +178,6 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	@Test
-	void supplyKeyThrowsWhenLedgersAreNull() {
-		assertThrows(IllegalArgumentException.class, () ->
-						subject.hasActiveSupplyKey(true,
-								PRETEND_TOKEN_ADDR,
-								PRETEND_SENDER_ADDR,
-								null));
-	}
-
-	@Test
 	void throwsIfAskedToVerifyMissingAccount() {
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.getImmutableRef(account)).willReturn(null);
@@ -213,16 +204,7 @@ class TxnAwareEvmSigsVerifierTest {
 
 		assertTrue(verdict);
 	}
-
-	@Test
-	void activeKeyThrowsWhenLedgersAreNull() {
-		assertThrows(IllegalArgumentException.class, () ->
-				subject.hasActiveKey(true,
-						PRETEND_TOKEN_ADDR,
-						PRETEND_SENDER_ADDR,
-						null));
-	}
-
+	
 	@Test
 	void filtersContracts() {
 		given(txnCtx.activePayer()).willReturn(payer);
