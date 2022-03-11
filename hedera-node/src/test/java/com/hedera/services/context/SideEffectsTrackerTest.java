@@ -162,7 +162,7 @@ class SideEffectsTrackerTest {
 		changedToken.setTotalSupply(newSupply);
 		changedToken.mintedUniqueTokens().add(new UniqueToken(Id.fromGrpcToken(cSN1.tokenId()), cSN1.serialNo()));
 
-		subject.trackHbarChange(aAccount, aFirstBalanceChange);
+		subject.trackHbarChange(aAccount.getAccountNum(), aFirstBalanceChange);
 		subject.trackTokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
 		subject.trackNftOwnerChange(cSN1, aAccount, bAccount);
 		subject.trackAutoAssociation(aToken, bAccount);
@@ -222,11 +222,11 @@ class SideEffectsTrackerTest {
 
 	@Test
 	void tracksAndResetsHbarChangesAsExpected() {
-		subject.trackHbarChange(cAccount, cOnlyBalanceChange);
-		subject.trackHbarChange(aAccount, aFirstBalanceChange);
-		subject.trackHbarChange(bAccount, bOnlyBalanceChange);
-		subject.trackHbarChange(aAccount, aSecondBalanceChange);
-		subject.trackHbarChange(bAccount, -bOnlyBalanceChange);
+		subject.trackHbarChange(cAccount.getAccountNum(), cOnlyBalanceChange);
+		subject.trackHbarChange(aAccount.getAccountNum(), aFirstBalanceChange);
+		subject.trackHbarChange(bAccount.getAccountNum(), bOnlyBalanceChange);
+		subject.trackHbarChange(aAccount.getAccountNum(), aSecondBalanceChange);
+		subject.trackHbarChange(bAccount.getAccountNum(), -bOnlyBalanceChange);
 
 		final var netChanges = subject.getNetTrackedHbarChanges();
 		assertEquals(2, netChanges.getAccountCodes().length);

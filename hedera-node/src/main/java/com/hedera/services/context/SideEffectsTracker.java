@@ -304,9 +304,9 @@ public class SideEffectsTracker {
 	 * @param amount
 	 * 		the incremental ℏ change to track
 	 */
-	public void trackHbarChange(final AccountID account, final long amount) {
+	public void trackHbarChange(final long account, final long amount) {
 		netHbarChange += amount;
-		final var output = TransfersHelper.updateFungibleChanges(account.getAccountNum(), amount,
+		final var output = TransfersHelper.updateFungibleChanges(account, amount,
 				changedAccounts, balanceChanges);
 		balanceChanges = output.getLeft();
 		changedAccounts = output.getRight();
