@@ -21,6 +21,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -37,8 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -71,20 +70,20 @@ class HederaCreate2OperationTest {
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
-	private BiFunction<MessageFrame, GasCalculator, Gas> creationGasFn;
+	private StorageGasCalculator storageGasCalculator;
 
 	private HederaCreate2Operation subject;
 
 	@BeforeEach
 	void setup() {
 		subject = new HederaCreate2Operation(
-				gasCalculator, creator, syntheticTxnFactory, recordsHistorian, dynamicProperties, creationGasFn);
+				gasCalculator, creator, syntheticTxnFactory, recordsHistorian, dynamicProperties, storageGasCalculator);
 	}
 
 	@Test
 	void computesExpectedCost() {
 		given(gasCalculator.create2OperationGasCost(frame)).willReturn(baseGas);
-		given(creationGasFn.apply(frame, gasCalculator)).willReturn(extraGas);
+		given(storageGasCalculator.creationGasCost(frame, gasCalculator)).willReturn(extraGas);
 
 		var actualGas = subject.cost(frame);
 

@@ -36,12 +36,11 @@ import java.util.Deque;
 
 import static com.hedera.services.contracts.execution.CreateEvmTxProcessor.EXPIRY_ORACLE_CONTEXT_KEY;
 import static com.hedera.services.contracts.execution.CreateEvmTxProcessor.SBH_CONTEXT_KEY;
-import static com.hedera.services.contracts.gascalculator.GasCostUtils.storageAndMemoryGasForCreation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-class GasCostUtilsTest {
+class StorageGasCalculatorTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
@@ -55,6 +54,8 @@ class GasCostUtilsTest {
 	@Mock
 	private StorageExpiry.Oracle oracle;
 
+	private StorageGasCalculator subject = new StorageGasCalculator();
+
 	@Test
 	void computesHappyPathAsExpected() {
 		setupFrame();
@@ -62,7 +63,7 @@ class GasCostUtilsTest {
 				.willReturn(memExpansionCost);
 
 		final var expected = Gas.of(storageCostTinybars / gasPrice.toLong()).plus(memExpansionCost);
-		final var actual = storageAndMemoryGasForCreation(frame, gasCalculator);
+		final var actual = subject.creationGasCost(frame, gasCalculator);
 
 		assertEquals(expected, actual);
 	}
@@ -75,7 +76,7 @@ class GasCostUtilsTest {
 		given(oracle.storageExpiryIn(frame)).willReturn(now - 1);
 
 		final var expected = Gas.of(0L).plus(memExpansionCost);
-		final var actual = storageAndMemoryGasForCreation(frame, gasCalculator);
+		final var actual = subject.creationGasCost(frame, gasCalculator);
 
 		assertEquals(expected, actual);
 	}

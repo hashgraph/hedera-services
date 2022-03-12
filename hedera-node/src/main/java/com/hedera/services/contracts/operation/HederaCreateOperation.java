@@ -22,6 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -32,7 +33,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 import javax.inject.Inject;
-import java.util.function.BiFunction;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.CreateOperation}.
@@ -42,7 +42,7 @@ import java.util.function.BiFunction;
  * Gas costs are based on the expiry of the parent and the provided storage bytes per hour variable
  */
 public class HederaCreateOperation extends AbstractRecordingCreateOperation {
-	private final BiFunction<MessageFrame, GasCalculator, Gas> creationGasFn;
+	private final StorageGasCalculator storageGasCalculator;
 
 	@Inject
 	public HederaCreateOperation(
@@ -50,7 +50,7 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 			final EntityCreator creator,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final AccountRecordsHistorian recordsHistorian,
-			final BiFunction<MessageFrame, GasCalculator, Gas> creationGasFn
+			final StorageGasCalculator storageGasCalculator
 	) {
 		super(
 				0xF0,
@@ -62,14 +62,14 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 				creator,
 				syntheticTxnFactory,
 				recordsHistorian);
-		this.creationGasFn = creationGasFn;
+		this.storageGasCalculator = storageGasCalculator;
 	}
 
 	@Override
 	public Gas cost(final MessageFrame frame) {
 		final var calculator = gasCalculator();
 		return calculator.createOperationGasCost(frame)
-				.plus(creationGasFn.apply(frame, calculator));
+				.plus(storageGasCalculator.creationGasCost(frame, calculator));
 	}
 
 	@Override

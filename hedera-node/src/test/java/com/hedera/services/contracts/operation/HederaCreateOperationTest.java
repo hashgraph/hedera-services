@@ -23,6 +23,7 @@ package com.hedera.services.contracts.operation;
  */
 
 
+import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
@@ -37,8 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
@@ -63,13 +62,14 @@ class HederaCreateOperationTest {
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
-	private BiFunction<MessageFrame, GasCalculator, Gas> creationGasFn;
+	private StorageGasCalculator storageGasCalculator;
 
 	private HederaCreateOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCreateOperation(gasCalculator, creator, syntheticTxnFactory, recordsHistorian, creationGasFn);
+		subject = new HederaCreateOperation(
+				gasCalculator, creator, syntheticTxnFactory, recordsHistorian, storageGasCalculator);
 	}
 
 	@Test
@@ -80,7 +80,7 @@ class HederaCreateOperationTest {
 	@Test
 	void computesExpectedCost() {
 		given(gasCalculator.createOperationGasCost(frame)).willReturn(baseGas);
-		given(creationGasFn.apply(frame, gasCalculator)).willReturn(extraGas);
+		given(storageGasCalculator.creationGasCost(frame, gasCalculator)).willReturn(extraGas);
 
 		var actualGas = subject.cost(frame);
 

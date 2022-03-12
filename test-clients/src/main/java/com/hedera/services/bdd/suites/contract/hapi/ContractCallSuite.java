@@ -71,6 +71,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_INSERT;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_REMOVE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.INDIRECT_CREATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.JURISDICTION_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.JURISDICTION_ISVALID_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_ADD_ABI;
@@ -216,13 +217,13 @@ public class ContractCallSuite extends HapiApiSuite {
 						contractCreate(toyMaker)
 								.bytecode(tmInitcode)
 								.exposingNumTo(num -> toyMakerMirror.set(
-										asHexedSolidityAddress(0, 0, num)))
-//						sourcing(() -> createLargeFile(
-//								DEFAULT_PAYER, icInitcode, literalInitcodeFor("CreateIndirectly"))),
-//						sourcing(() -> contractCreate(longLivedCreator)
-//								.autoRenewSecs(longLifetime)
-//								.payingWith(GENESIS)
-//								.bytecode(icInitcode))
+										asHexedSolidityAddress(0, 0, num))),
+						sourcing(() -> createLargeFile(
+								DEFAULT_PAYER, icInitcode, literalInitcodeFor("CreateIndirectly"))),
+						sourcing(() -> contractCreate(longLivedCreator)
+								.autoRenewSecs(longLifetime)
+								.payingWith(GENESIS)
+								.bytecode(icInitcode))
 				).when(
 						contractCall(toyMaker, TOYMAKER_MAKE_ABI)
 								.payingWith(normalPayer)
@@ -233,7 +234,11 @@ public class ContractCallSuite extends HapiApiSuite {
 						assertionsHold((spec, opLog) -> Assertions.assertEquals(
 								normalPayerGasUsed.get(),
 								longLivedPayerGasUsed.get(),
-								"Payer expiry should not affect create storage cost"))
+								"Payer expiry should not affect create storage cost")),
+						// Verify that we are still charged a "typical" amount despite the payer and
+						// the original sender contract having extremely long expiry dates
+						sourcing(() -> contractCall(longLivedCreator, INDIRECT_CREATE_ABI, toyMakerMirror.get())
+								.payingWith(longLivedPayer))
 				).then(
 						overriding("ledger.autoRenewPeriod.maxDuration", "" + defaultMaxAutoRenewPeriod)
 				);

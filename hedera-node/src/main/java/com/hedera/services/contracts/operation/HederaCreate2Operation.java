@@ -21,6 +21,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -35,16 +36,14 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 import javax.inject.Inject;
 
-import java.util.function.BiFunction;
-
 import static com.hedera.services.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 	private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
 
+	private final StorageGasCalculator storageGasCalculator;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final BiFunction<MessageFrame, GasCalculator, Gas> creationGasFn;
 
 	@Inject
 	public HederaCreate2Operation(
@@ -53,7 +52,7 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties,
-			final BiFunction<MessageFrame, GasCalculator, Gas> creationGasFn
+			final StorageGasCalculator storageGasCalculator
 	) {
 		super(
 				0xF5,
@@ -65,7 +64,7 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 				creator,
 				syntheticTxnFactory,
 				recordsHistorian);
-		this.creationGasFn = creationGasFn;
+		this.storageGasCalculator = storageGasCalculator;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -73,7 +72,7 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 	protected Gas cost(final MessageFrame frame) {
 		final var calculator = gasCalculator();
 		return calculator.create2OperationGasCost(frame)
-				.plus(creationGasFn.apply(frame, calculator));
+				.plus(storageGasCalculator.creationGasCost(frame, calculator));
 	}
 
 	@Override
