@@ -24,11 +24,11 @@ package com.hedera.services.contracts.operation;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV18;
+import com.hedera.services.contracts.gascalculator.GasCostUtils;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -40,6 +40,8 @@ import org.hyperledger.besu.evm.operation.Operation;
 
 import javax.inject.Inject;
 import java.util.Optional;
+
+import static com.hedera.services.contracts.execution.CreateEvmTxProcessor.SBH_CONTEXT_KEY;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SStoreOperation}.
@@ -83,11 +85,10 @@ public class HederaSStoreOperation extends AbstractOperation {
 			long durationInSeconds = Math.max(0,
 					(hederaAccount != null ? hederaAccount.getExpiry() : HederaOperationUtil.newContractExpiryIn(frame))
 							- frame.getBlockValues().getTimestamp());
-			long sbh = frame.getMessageFrameStack().getLast().getContextVariable("sbh");
-
-			Wei gasPrice = frame.getGasPrice();
-			gasCost = Gas.of(calculateStorageGasNeeded(
-					64 /*two 256-bit words*/, durationInSeconds, sbh, gasPrice.toLong()));
+			final long sbh = frame.getMessageFrameStack().getLast().getContextVariable(SBH_CONTEXT_KEY);
+			final var gasPrice = frame.getGasPrice();
+			gasCost = Gas.of(
+					GasCostUtils.computeSbhGasEquivalent(GasCostUtils.KV_PAIR_BYTES, durationInSeconds, sbh, gasPrice.toLong()));
 			((HederaWorldUpdater) frame.getWorldUpdater()).addSbhRefund(gasCost);
 		} else {
 			checkCalculator = true;
@@ -119,14 +120,4 @@ public class HederaSStoreOperation extends AbstractOperation {
 		return new Operation.OperationResult(optionalCost, Optional.empty());
 	}
 
-	@SuppressWarnings("unused")
-	public static long calculateStorageGasNeeded(
-			long numberOfBytes,
-			long durationInSeconds,
-			long byteHourCostIntinybars,
-			long gasPrice
-	) {
-		long storageCostTinyBars = (durationInSeconds * byteHourCostIntinybars) / 3600;
-		return Math.round((double) storageCostTinyBars / (double) gasPrice);
-	}
 }

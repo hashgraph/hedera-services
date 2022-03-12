@@ -79,6 +79,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OC_TOKEN_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SYMBOL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_ERC20_CONSTRUCTOR_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOYMAKER_MAKE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_FROM_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_CONS;
@@ -113,6 +114,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -131,6 +133,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractCallSuite extends HapiApiSuite {
+	private static final String defaultMaxAutoRenewPeriod =
+			HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.maxDuration");
+
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
 	private static final String CONTRACT_FROM = "CONTRACT_FROM";
 	private static final long depositAmount = 1000;
@@ -147,46 +152,91 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				resultSizeAffectsFees(),
-				payableSuccess(),
-				depositSuccess(),
-				depositDeleteSuccess(),
-				multipleDepositSuccess(),
-				payTestSelfDestructCall(),
-				multipleSelfDestructsAreSafe(),
-				smartContractInlineAssemblyCheck(),
-				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsedByContractCall(),
-				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-				HSCS_EVM_006_ContractHBarTransferToAccount(),
-				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-				HSCS_EVM_010_MultiSignatureAccounts(),
-				HSCS_EVM_010_ReceiverMustSignContractTx(),
-				insufficientGas(),
-				insufficientFee(),
-				nonPayable(),
-				invalidContract(),
-				smartContractFailFirst(),
-				contractTransferToSigReqAccountWithoutKeyFails(),
-				callingDestructedContractReturnsStatusDeleted(),
-				gasLimitOverMaxGasLimitFailsPrecheck(),
-				imapUserExercise(),
-				workingHoursDemo(),
-				deletedContractsCannotBeUpdated(),
-				sendHbarsToAddressesMultipleTimes(),
-				sendHbarsToDifferentAddresses(),
-				sendHbarsFromDifferentAddressessToAddress(),
-				sendHbarsFromAndToDifferentAddressess(),
-				transferNegativeAmountOfHbars(),
-				transferToCaller(),
-				transferZeroHbarsToCaller(),
-				transferZeroHbars(),
-				sendHbarsToOuterContractFromDifferentAddresses(),
-				sendHbarsToCallerFromDifferentAddresses(),
-				bitcarbonTestStillPasses()
+//				resultSizeAffectsFees(),
+//				payableSuccess(),
+//				depositSuccess(),
+//				depositDeleteSuccess(),
+//				multipleDepositSuccess(),
+//				payTestSelfDestructCall(),
+//				multipleSelfDestructsAreSafe(),
+//				smartContractInlineAssemblyCheck(),
+//				ocToken(),
+//				contractTransferToSigReqAccountWithKeySucceeds(),
+//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+//				minChargeIsTXGasUsedByContractCall(),
+//				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+//				HSCS_EVM_006_ContractHBarTransferToAccount(),
+//				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+//				HSCS_EVM_010_MultiSignatureAccounts(),
+//				HSCS_EVM_010_ReceiverMustSignContractTx(),
+//				insufficientGas(),
+//				insufficientFee(),
+//				nonPayable(),
+//				invalidContract(),
+//				smartContractFailFirst(),
+//				contractTransferToSigReqAccountWithoutKeyFails(),
+//				callingDestructedContractReturnsStatusDeleted(),
+//				gasLimitOverMaxGasLimitFailsPrecheck(),
+//				imapUserExercise(),
+//				workingHoursDemo(),
+//				deletedContractsCannotBeUpdated(),
+//				sendHbarsToAddressesMultipleTimes(),
+//				sendHbarsToDifferentAddresses(),
+//				sendHbarsFromDifferentAddressessToAddress(),
+//				sendHbarsFromAndToDifferentAddressess(),
+//				transferNegativeAmountOfHbars(),
+//				transferToCaller(),
+//				transferZeroHbarsToCaller(),
+//				transferZeroHbars(),
+//				sendHbarsToOuterContractFromDifferentAddresses(),
+//				sendHbarsToCallerFromDifferentAddresses(),
+//				bitcarbonTestStillPasses(),
+				contractCreationStoragePriceMatchesFinalExpiry(),
 		});
+	}
+
+	private HapiApiSpec contractCreationStoragePriceMatchesFinalExpiry() {
+		final var icInitcode = "icInitcode";
+		final var longLivedCreator = "longLivedCreator";
+		final var tmInitcode = "tmInitcode";
+		final var toyMaker = "toyMaker";
+		final var normalPayer = "normalPayer";
+		final var longLivedPayer = "longLivedPayer";
+		final var longLifetime = 100 * 7776000L;
+		final AtomicLong normalPayerGasUsed = new AtomicLong();
+		final AtomicLong longLivedPayerGasUsed = new AtomicLong();
+		final AtomicReference<String> toyMakerMirror = new AtomicReference<>();
+
+		return defaultHapiSpec("ContractCreationStoragePriceMatchesFinalExpiry")
+				.given(
+						overriding("ledger.autoRenewPeriod.maxDuration", "" + longLifetime),
+						cryptoCreate(normalPayer),
+						cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime),
+						fileCreate(tmInitcode).path(ContractResources.TOY_MAKER_PATH),
+						contractCreate(toyMaker)
+								.bytecode(tmInitcode)
+								.exposingNumTo(num -> toyMakerMirror.set(
+										asHexedSolidityAddress(0, 0, num)))
+//						sourcing(() -> createLargeFile(
+//								DEFAULT_PAYER, icInitcode, literalInitcodeFor("CreateIndirectly"))),
+//						sourcing(() -> contractCreate(longLivedCreator)
+//								.autoRenewSecs(longLifetime)
+//								.payingWith(GENESIS)
+//								.bytecode(icInitcode))
+				).when(
+						contractCall(toyMaker, TOYMAKER_MAKE_ABI)
+								.payingWith(normalPayer)
+								.exposingGasTo((status, gasUsed) -> normalPayerGasUsed.set(gasUsed)),
+						contractCall(toyMaker, TOYMAKER_MAKE_ABI)
+								.payingWith(longLivedPayer)
+								.exposingGasTo((status, gasUsed) -> longLivedPayerGasUsed.set(gasUsed)),
+						assertionsHold((spec, opLog) -> Assertions.assertEquals(
+								normalPayerGasUsed.get(),
+								longLivedPayerGasUsed.get(),
+								"Payer expiry should not affect create storage cost"))
+				).then(
+						overriding("ledger.autoRenewPeriod.maxDuration", "" + defaultMaxAutoRenewPeriod)
+				);
 	}
 
 	private HapiApiSpec bitcarbonTestStillPasses() {

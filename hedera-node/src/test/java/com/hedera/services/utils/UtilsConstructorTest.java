@@ -23,6 +23,7 @@ package com.hedera.services.utils;
 import com.hedera.services.context.domain.security.PermissionFileUtils;
 import com.hedera.services.context.properties.PropUtils;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
+import com.hedera.services.contracts.gascalculator.GasCostUtils;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaUtil;
 import com.hedera.services.contracts.operation.HederaOperationUtil;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
@@ -85,6 +86,7 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			GasCostUtils.class,
 			TokenMetaUtils.class,
 			MiscCryptoUtils.class,
 			NewRels.class,

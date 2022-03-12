@@ -32,9 +32,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 import javax.inject.Inject;
-
-import static com.hedera.services.contracts.operation.HederaOperationUtil.newContractExpiryIn;
-import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
+import java.util.function.BiFunction;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.CreateOperation}.
@@ -44,12 +42,15 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
  * Gas costs are based on the expiry of the parent and the provided storage bytes per hour variable
  */
 public class HederaCreateOperation extends AbstractRecordingCreateOperation {
+	private final BiFunction<MessageFrame, GasCalculator, Gas> creationGasFn;
+
 	@Inject
 	public HederaCreateOperation(
 			final GasCalculator gasCalculator,
 			final EntityCreator creator,
 			final SyntheticTxnFactory syntheticTxnFactory,
-			final AccountRecordsHistorian recordsHistorian
+			final AccountRecordsHistorian recordsHistorian,
+			final BiFunction<MessageFrame, GasCalculator, Gas> creationGasFn
 	) {
 		super(
 				0xF0,
@@ -61,34 +62,19 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 				creator,
 				syntheticTxnFactory,
 				recordsHistorian);
+		this.creationGasFn = creationGasFn;
 	}
 
 	@Override
 	public Gas cost(final MessageFrame frame) {
-		final var effGasCalculator = gasCalculator();
-
-		return effGasCalculator
-				.createOperationGasCost(frame)
-				.plus(storageAndMemoryGasForCreation(frame, effGasCalculator));
+		final var calculator = gasCalculator();
+		return calculator.createOperationGasCost(frame)
+				.plus(creationGasFn.apply(frame, calculator));
 	}
 
 	@Override
 	protected boolean isEnabled() {
 		return true;
-	}
-
-	public static Gas storageAndMemoryGasForCreation(final MessageFrame frame, final GasCalculator gasCalculator) {
-		final var initCodeOffset = clampedToLong(frame.getStackItem(1));
-		final var initCodeLength = clampedToLong(frame.getStackItem(2));
-		final var memoryGasCost = gasCalculator.memoryExpansionGasCost(frame, initCodeOffset, initCodeLength);
-
-		final long byteHourCostInTinybars = frame.getMessageFrameStack().getLast().getContextVariable("sbh");
-		final var durationInSeconds = Math.max(0, newContractExpiryIn(frame) - frame.getBlockValues().getTimestamp());
-		final var gasPrice = frame.getGasPrice().toLong();
-
-		final var storageCostTinyBars = (durationInSeconds * byteHourCostInTinybars) / 3600;
-		final var storageCost = storageCostTinyBars / gasPrice;
-		return Gas.of(storageCost).plus(memoryGasCost);
 	}
 
 	@Override

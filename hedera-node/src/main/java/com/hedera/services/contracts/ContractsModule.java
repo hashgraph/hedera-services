@@ -23,6 +23,7 @@ package com.hedera.services.contracts;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.annotations.BytecodeSource;
 import com.hedera.services.contracts.annotations.StorageSource;
+import com.hedera.services.contracts.gascalculator.GasCostUtils;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
@@ -33,8 +34,8 @@ import com.hedera.services.contracts.operation.HederaDelegateCallOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeCopyOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeHashOperation;
 import com.hedera.services.contracts.operation.HederaExtCodeSizeOperation;
-import com.hedera.services.contracts.operation.HederaSLoadOperation;
 import com.hedera.services.contracts.operation.HederaLogOperation;
+import com.hedera.services.contracts.operation.HederaSLoadOperation;
 import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
@@ -62,6 +63,7 @@ import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
 import dagger.multibindings.StringKey;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -69,6 +71,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 import javax.inject.Singleton;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -117,6 +120,12 @@ public interface ContractsModule {
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
 		return new MutableEntityAccess(ledger, aliasManager, txnCtx, storage, tokensLedger, bytecode);
+	}
+
+	@Provides
+	@Singleton
+	static BiFunction<MessageFrame, GasCalculator, Gas> provideCreationGasFn() {
+		return GasCostUtils::storageAndMemoryGasForCreation;
 	}
 
 	@Provides

@@ -65,7 +65,7 @@ public final class HederaOperationUtil {
 	 * @param frame Current message frame
 	 * @return Expiry to be used for new contracts
 	 */
-	public static long newContractExpiryIn(MessageFrame frame) {
+	public static long newContractExpiryIn(final MessageFrame frame) {
 		long expiry = 0;
 		HederaWorldState.WorldStateAccount hederaAccount;
 		Iterator<MessageFrame> framesIterator = frame.getMessageFrameStack().iterator();
