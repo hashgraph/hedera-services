@@ -63,6 +63,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 	private HapiApiSpec erc1155() {
 		final var PAYER_KEY = "payerKey";
 		final var FILE_KEY_LIST = "fileKeyList";
+
 		return defaultHapiSpec("ERC-1155")
 				.given(
 						newKeyNamed(PAYER_KEY),
@@ -79,12 +80,12 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 						getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
 						getAccountInfo(OPERATIONS_PAYER).savingSnapshot(OPERATIONS_PAYER + "Info"),
 						withOpContext((spec, log) -> {
-							var accountOneAddress = spec.registry().getAccountInfo(ACCOUNT1 + "Info").getContractAccountID();
-							var operationsPayerAddress = spec.registry().getAccountInfo(OPERATIONS_PAYER + "Info").getContractAccountID();
-							var ops = new ArrayList<HapiSpecOperation>();
+							final var accountOneAddress = spec.registry().getAccountInfo(ACCOUNT1 + "Info").getContractAccountID();
+							final var operationsPayerAddress = spec.registry().getAccountInfo(OPERATIONS_PAYER + "Info").getContractAccountID();
+							final var ops = new ArrayList<HapiSpecOperation>();
 
 							/* approve for other accounts */
-							var approveCall = contractCall(CONTRACT, "setApprovalForAll",
+							final var approveCall = contractCall(CONTRACT, "setApprovalForAll",
 									accountOneAddress, true
 							)
 									.via("acc1ApproveCall")
@@ -93,7 +94,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 							ops.add(approveCall);
 
 							/* mint to the contract owner */
-							var mintCall = contractCall(CONTRACT, "mintToken",
+							final var mintCall = contractCall(CONTRACT, "mintToken",
 									0, 10, operationsPayerAddress
 							)
 									.via("contractMintCall")
@@ -102,7 +103,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 							ops.add(mintCall);
 
 							/* transfer from - account to account */
-							var transferCall = contractCall(CONTRACT, "safeTransferFrom",
+							final var transferCall = contractCall(CONTRACT, "safeTransferFrom",
 									operationsPayerAddress, accountOneAddress,
 									0, // token id 
 									1, // amount 

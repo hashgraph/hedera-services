@@ -240,11 +240,17 @@ public class ERC20ContractInteractions extends HapiApiSuite {
 											))
 											.logged();
 
-							final var getNotEnoughBalanceTransferRecord = getTxnRecord(NOT_ENOUGH_BALANCE_TRANSFER_TX).exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
-							final var transferMoreThanApprovedRecord = getTxnRecord(TRANSFER_MORE_THAN_APPROVED_FROM_TX).exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
+									final var getNotEnoughBalanceTransferRecord = getTxnRecord(NOT_ENOUGH_BALANCE_TRANSFER_TX
+									)
+											.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
+									final var transferMoreThanApprovedRecord = getTxnRecord(TRANSFER_MORE_THAN_APPROVED_FROM_TX
+									)
+											.exposingTo(tr -> System.out.println(Bytes.of(tr.toByteArray())));
 
-							allRunFor(spec, transfer, notEnoughBalanceTransfer, approve, transferMoreThanApprovedFrom, transferFrom, getCreateRecord, getTransferRecord, getApproveRecord, getTransferFromRecord, getNotEnoughBalanceTransferRecord, transferMoreThanApprovedRecord);
-						})
+									allRunFor(spec, transfer, notEnoughBalanceTransfer, approve, transferMoreThanApprovedFrom,
+											transferFrom, getCreateRecord, getTransferRecord, getApproveRecord,
+											getTransferFromRecord, getNotEnoughBalanceTransferRecord, transferMoreThanApprovedRecord);
+								})
 				);
 	}
 }
