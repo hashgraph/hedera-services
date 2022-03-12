@@ -112,12 +112,13 @@ public class QueryVerbs {
 			final String contract,
 			final String functionName,
 			final Object... params) {
-		return new HapiContractCallLocal(getABIFor(FUNCTION, functionName, contract), contract, params);
+		final var abi = getABIFor(FUNCTION, functionName, contract);
+		return new HapiContractCallLocal(abi, contract, params);
 	}
 
 	/** This function provides for the proper execution of specs, which execute contract local calls with a function ABI
-	    instead of function name
-	*/
+	 instead of function name
+	 */
 	public static HapiContractCallLocal contractCallLocalWithFunctionAbi(final String contract,
 																		 final String abi,
 																		 final Object... params) {

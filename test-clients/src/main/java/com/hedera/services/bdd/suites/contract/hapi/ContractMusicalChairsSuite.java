@@ -43,7 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCrea
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
@@ -81,7 +81,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 						(spec, opLog) ->
 								allRunFor(
 										spec,
-										newContractCreate(contract, (Object) asAddress(spec.registry().getAccountID(dj))
+										newContractCreate(contract, asAddress(spec.registry().getAccountID(dj))
 										)
 												.payingWith(dj)
 								)
@@ -116,7 +116,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 										spec,
 										contractCallLocal(contract, "whoIsOnTheBubble")
 												.has(resultWith()
-														.resultThruAbi(getABIFor(FunctionType.FUNCTION, "whoIsOnTheBubble", contract),
+														.resultThruAbi(getABIFor(FUNCTION, "whoIsOnTheBubble", contract),
 																isLiteralResult(new Object[]{asAddress(
 																		spec.registry().getAccountID("Player13"))})))
 								)

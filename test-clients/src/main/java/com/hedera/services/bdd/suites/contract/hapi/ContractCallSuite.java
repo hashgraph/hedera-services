@@ -30,11 +30,6 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -62,23 +57,9 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.APPROVE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_OF_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DECIMALS_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.JURISDICTION_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.JURISDICTION_ISVALID_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_ADD_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_OWNER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_SEVEN_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OC_TOKEN_BYTECODE_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SYMBOL_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_ERC20_CONSTRUCTOR_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_FROM_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.literalInitcodeFor;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -95,12 +76,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
@@ -110,6 +90,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -143,8 +126,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
-				resultSizeAffectsFees(),
+		return List.of(resultSizeAffectsFees(),
 				payableSuccess(),
 				depositSuccess(),
 				depositDeleteSuccess(),
@@ -172,91 +154,79 @@ public class ContractCallSuite extends HapiApiSuite {
 				imapUserExercise(),
 				workingHoursDemo(),
 				deletedContractsCannotBeUpdated(),
-//				bitcarbonTestStillPasses()
-		});
+				bitcarbonTestStillPasses()
+		);
 	}
-	// TODO: Fix this failing test
-	private HapiApiSpec bitcarbonTestStillPasses() {
-		final var addressInitcode = "addressInitcode";
-		final var addressContract = "addressContract";
-		final var jurisdictionInitcode = "jurisdictionInitcode";
-		final var jurisdictionContract = "jurisdictionContract";
-		final var mintersInitcode = "mintersInitcode";
-		final var mintersContract = "mintersContract";
-		final var historicalAddress = "1234567890123456789012345678901234567890";
 
+	private HapiApiSpec bitcarbonTestStillPasses() {
+		final var addressBook = "AddressBook";
+		final var jurisdictions = "Jurisdictions";
+		final var minters = "Minters";
+		final var addJurisTxn = "addJurisTxn";
+		final var historicalAddress = "1234567890123456789012345678901234567890";
 		final AtomicReference<byte[]> nyJurisCode = new AtomicReference<>();
 		final AtomicReference<byte[]> defaultPayerMirror = new AtomicReference<>();
 		final AtomicReference<String> addressBookMirror = new AtomicReference<>();
 		final AtomicReference<String> jurisdictionMirror = new AtomicReference<>();
-		final var addJurisTxn = "addJurisTxn";
+
 
 		return defaultHapiSpec("BitcarbonTestStillPasses")
 				.given(
 						withOpContext((spec, opLog) -> defaultPayerMirror.set(
 								asSolidityAddress(spec.registry().getAccountID(DEFAULT_PAYER)))),
-						sourcing(() -> createLargeFile(
-								DEFAULT_PAYER, addressInitcode, literalInitcodeFor("AddressBook"))),
-						contractCreate(addressContract)
-								.bytecode(addressInitcode)
+						uploadInitCode(addressBook, jurisdictions),
+						newContractCreate(addressBook)
 								.exposingNumTo(num -> addressBookMirror.set(
 										asHexedSolidityAddress(0, 0, num))),
-						sourcing(() -> createLargeFile(
-								DEFAULT_PAYER, jurisdictionInitcode, literalInitcodeFor("Jurisdictions"))),
-						contractCreate(jurisdictionContract)
-								.bytecode(jurisdictionInitcode)
+						newContractCreate(jurisdictions)
 								.exposingNumTo(num -> jurisdictionMirror.set(
 										asHexedSolidityAddress(0, 0, num)))
 								.withExplicitParams(() -> explicitJurisdictionConsParams),
-						sourcing(() -> createLargeFile(
-								DEFAULT_PAYER, mintersInitcode,
+						sourcing(() -> createLargeFile(DEFAULT_PAYER, minters,
 								bookInterpolated(
-										literalInitcodeFor("Minters").toByteArray(),
+										literalInitcodeFor(minters).toByteArray(),
 										addressBookMirror.get()))),
-						contractCreate(mintersContract)
-								.bytecode(mintersInitcode)
+						newContractCreate(minters)
 								.withExplicitParams(() -> String.format(
 										explicitMinterConsParamsTpl, jurisdictionMirror.get()))
 				).when(
-						contractCall(mintersContract)
-								.withExplicitParams(() -> String.format(
-										explicitMinterConfigParamsTpl, jurisdictionMirror.get())),
-						contractCall(jurisdictionContract)
+						contractCall(minters)
+								.withExplicitParams(() -> String.format(explicitMinterConfigParamsTpl, jurisdictionMirror.get())),
+						contractCall(jurisdictions)
 								.withExplicitParams(() -> explicitJurisdictionsAddParams)
 								.via(addJurisTxn)
 								.gas(1_000_000),
 						getTxnRecord(addJurisTxn).exposingFilteredCallResultVia(
-								JURISDICTION_ABI,
+								getABIForContract(jurisdictions),
 								event -> event.name.equals("JurisdictionAdded"),
 								data -> nyJurisCode.set((byte[]) data.get(0))),
 						sourcing(() -> logIt("NY juris code is " + CommonUtils.hex(nyJurisCode.get())))
 				).then(
-						sourcing(() -> contractCallLocal(
-								jurisdictionContract, JURISDICTION_ISVALID_ABI, nyJurisCode.get()
-						).has(resultWith()
-								.resultThruAbi(
-										JURISDICTION_ISVALID_ABI, isLiteralResult(new Object[] { Boolean.TRUE })))),
-						contractCallLocal(
-								mintersContract, MINT_SEVEN_ABI
-						).has(resultWith()
-								.resultThruAbi(
-										MINT_SEVEN_ABI, isLiteralResult(new Object[] { BigInteger.valueOf(7L) }))),
-						sourcing(() -> contractCallLocal(
-								mintersContract, MINT_OWNER_ABI
-						).has(resultWith()
-								.resultThruAbi(
-										MINT_OWNER_ABI, isLiteralResult(new Object[] {
-												defaultPayerMirror.get()
-										})))),
-						sourcing(() -> contractCallLocal(
-								jurisdictionContract, MINT_OWNER_ABI
-						).has(resultWith()
-								.resultThruAbi(
-										MINT_OWNER_ABI, isLiteralResult(new Object[] {
-												defaultPayerMirror.get()
-										})))),
+						sourcing(() -> contractCallLocal(jurisdictions, "isValid", nyJurisCode.get())
+								.has(resultWith()
+										.resultThruAbi(getABIFor(FUNCTION, "isValid", jurisdictions),
+												isLiteralResult(new Object[]{Boolean.TRUE})))
+						),
+						contractCallLocal(minters, "seven")
+								.has(resultWith()
+										.resultThruAbi(getABIFor(FUNCTION, "seven", minters),
+												isLiteralResult(new Object[]{BigInteger.valueOf(7L)}))),
+						sourcing(() -> contractCallLocal(minters, "owner")
+								.has(resultWith()
+										.resultThruAbi(
+												getABIFor(FUNCTION, "owner", minters),
+												isLiteralResult(new Object[]{defaultPayerMirror.get()
+												})))
+						),
+						sourcing(() -> contractCallLocal(jurisdictions, "owner")
+								.has(resultWith()
+										.resultThruAbi(
+												getABIFor(FUNCTION, "owner", minters),
+												isLiteralResult(new Object[]{defaultPayerMirror.get()
+												})))
+						),
 						sourcing(() -> contractCall(
-								mintersContract, MINT_ADD_ABI, historicalAddress, "Peter", nyJurisCode.get())
+								minters, "add", historicalAddress, "Peter", nyJurisCode.get())
 								.gas(1_000_000))
 				);
 	}
@@ -391,8 +361,9 @@ public class ContractCallSuite extends HapiApiSuite {
 				);
 	}
 
-	// TODO: Refactor after figuring out how this spec works and where are the contracts assets
 	HapiApiSpec ocToken() {
+		final var contract = "OcToken";
+
 		return defaultHapiSpec("ocToken")
 				.given(
 						cryptoCreate("tokenIssuer").balance(1_000_000_000_000L),
@@ -407,74 +378,71 @@ public class ContractCallSuite extends HapiApiSuite {
 						getAccountInfo("Carol").savingSnapshot("CarolAcctInfo"),
 						getAccountInfo("Dave").savingSnapshot("DaveAcctInfo"),
 
-						fileCreate("bytecode")
-								.path(OC_TOKEN_BYTECODE_PATH),
-
-						contractCreate("tokenContract", TOKEN_ERC20_CONSTRUCTOR_ABI,
-								1_000_000L, "OpenCrowd Token", "OCT")
+						uploadInitCode(contract),
+						newContractCreate(contract, 1_000_000L, "OpenCrowd Token", "OCT")
 								.gas(250_000L)
 								.payingWith("tokenIssuer")
-								.bytecode("bytecode")
 								.via("tokenCreateTxn").logged()
 				).when(
 						assertionsHold((spec, ctxLog) -> {
-							String issuerEthAddress = spec.registry().getAccountInfo("tokenIssuerAcctInfo")
+							final var issuerEthAddress = spec.registry().getAccountInfo("tokenIssuerAcctInfo")
 									.getContractAccountID();
-							String aliceEthAddress = spec.registry().getAccountInfo("AliceAcctInfo")
+							final var aliceEthAddress = spec.registry().getAccountInfo("AliceAcctInfo")
 									.getContractAccountID();
-							String bobEthAddress = spec.registry().getAccountInfo("BobAcctInfo")
+							final var bobEthAddress = spec.registry().getAccountInfo("BobAcctInfo")
 									.getContractAccountID();
-							String carolEthAddress = spec.registry().getAccountInfo("CarolAcctInfo")
+							final var carolEthAddress = spec.registry().getAccountInfo("CarolAcctInfo")
 									.getContractAccountID();
-							String daveEthAddress = spec.registry().getAccountInfo("DaveAcctInfo")
+							final var daveEthAddress = spec.registry().getAccountInfo("DaveAcctInfo")
 									.getContractAccountID();
 
-							var subop1 = getContractInfo("tokenContract")
+							final var subop1 = getContractInfo(contract)
 									.nodePayment(10L)
 									.saveToRegistry("tokenContract");
 
-							var subop3 = contractCallLocalWithFunctionAbi("tokenContract", DECIMALS_ABI)
+							final var subop3 = contractCallLocal(contract, "decimals")
 									.saveResultTo("decimals")
 									.payingWith("tokenIssuer");
 
 							// Note: This contract call will cause a INSUFFICIENT_TX_FEE error, not sure why.
-							var subop4 = contractCallLocalWithFunctionAbi("tokenContract", SYMBOL_ABI)
+							final var subop4 = contractCallLocal(contract, "symbol")
 									.saveResultTo("token_symbol")
 									.payingWith("tokenIssuer")
 									.hasAnswerOnlyPrecheckFrom(OK, INSUFFICIENT_TX_FEE);
 
-							var subop5 = contractCallLocalWithFunctionAbi("tokenContract", BALANCE_OF_ABI, issuerEthAddress)
+							final var subop5 = contractCallLocal(contract, "balanceOf", issuerEthAddress)
 									.gas(250_000L)
 									.saveResultTo("issuerTokenBalance");
 
 							allRunFor(spec, subop1, subop3, subop4, subop5);
 
-							CallTransaction.Function funcSymbol =
-									CallTransaction.Function.fromJsonInterface(SYMBOL_ABI);
+							final var funcSymbol =
+									CallTransaction.Function.fromJsonInterface(getABIFor(FUNCTION, "symbol", contract));
 
-							String symbol = getValueFromRegistry(spec, "token_symbol", funcSymbol);
+							final var symbol = getValueFromRegistry(spec, "token_symbol", funcSymbol);
 
 							ctxLog.info("symbol: [{}]", symbol);
+
 							Assertions.assertEquals(
 									"", symbol,
 									"TokenIssuer's symbol should be fixed value"); // should be "OCT" as expected
 
-							CallTransaction.Function funcDecimals = CallTransaction.Function.fromJsonInterface(
-									DECIMALS_ABI);
+							final var funcDecimals = CallTransaction.Function.fromJsonInterface(
+									getABIFor(FUNCTION, "decimals", contract));
 
 							//long decimals = getLongValueFromRegistry(spec, "decimals", function);
-							BigInteger val = getValueFromRegistry(spec, "decimals", funcDecimals);
-							long decimals = val.longValue();
+							final BigInteger val = getValueFromRegistry(spec, "decimals", funcDecimals);
+							final var decimals = val.longValue();
 
 							ctxLog.info("decimals {}", decimals);
 							Assertions.assertEquals(
 									3, decimals,
 									"TokenIssuer's decimals should be fixed value");
 
-							long tokenMultiplier = (long) Math.pow(10, decimals);
+							final long tokenMultiplier = (long) Math.pow(10, decimals);
 
-							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(
-									BALANCE_OF_ABI);
+							final var function = CallTransaction.Function.fromJsonInterface(
+									getABIFor(FUNCTION, "balanceOf", contract));
 
 							long issuerBalance = ((BigInteger) getValueFromRegistry(spec, "issuerTokenBalance",
 									function)).longValue();
@@ -485,40 +453,40 @@ public class ContractCallSuite extends HapiApiSuite {
 									"TokenIssuer's initial token balance should be 1_000_000");
 
 							//  Do token transfers
-							var subop6 = contractCallWithFunctionAbi("tokenContract", TRANSFER_ABI,
+							final var subop6 = contractCall(contract, "transfer",
 									aliceEthAddress, 1000 * tokenMultiplier)
 									.gas(250_000L)
 									.payingWith("tokenIssuer");
 
-							var subop7 = contractCallWithFunctionAbi("tokenContract", TRANSFER_ABI,
+							final var subop7 = contractCall(contract, "transfer",
 									bobEthAddress, 2000 * tokenMultiplier)
 									.gas(250_000L)
 									.payingWith("tokenIssuer");
 
-							var subop8 = contractCallWithFunctionAbi("tokenContract", TRANSFER_ABI,
+							final var subop8 = contractCall(contract, "transfer",
 									carolEthAddress, 500 * tokenMultiplier)
 									.gas(250_000L)
 									.payingWith("Bob");
 
-							var subop9 = contractCallLocalWithFunctionAbi("tokenContract", BALANCE_OF_ABI, aliceEthAddress)
+							final var subop9 = contractCallLocal(contract, "balanceOf", aliceEthAddress)
 									.gas(250_000L)
 									.saveResultTo("aliceTokenBalance");
 
-							var subop10 = contractCallLocalWithFunctionAbi("tokenContract", BALANCE_OF_ABI, carolEthAddress)
+							final var subop10 = contractCallLocal(contract, "balanceOf", carolEthAddress)
 									.gas(250_000L)
 									.saveResultTo("carolTokenBalance");
 
-							var subop11 = contractCallLocalWithFunctionAbi("tokenContract", BALANCE_OF_ABI, bobEthAddress)
+							final var subop11 = contractCallLocal(contract, "balanceOf", bobEthAddress)
 									.gas(250_000L)
 									.saveResultTo("bobTokenBalance");
 
 							allRunFor(spec, subop6, subop7, subop8, subop9, subop10, subop11);
 
-							long aliceBalance = ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance",
+							var aliceBalance = ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance",
 									function)).longValue();
-							long bobBalance = ((BigInteger) getValueFromRegistry(spec, "bobTokenBalance",
+							var bobBalance = ((BigInteger) getValueFromRegistry(spec, "bobTokenBalance",
 									function)).longValue();
-							long carolBalance = ((BigInteger) getValueFromRegistry(spec, "carolTokenBalance",
+							var carolBalance = ((BigInteger) getValueFromRegistry(spec, "carolTokenBalance",
 									function)).longValue();
 
 							ctxLog.info("aliceBalance  {}", aliceBalance / tokenMultiplier);
@@ -529,40 +497,40 @@ public class ContractCallSuite extends HapiApiSuite {
 									1000, aliceBalance / tokenMultiplier,
 									"Alice's token balance should be 1_000");
 
-							var subop12 = contractCallWithFunctionAbi("tokenContract", APPROVE_ABI,
+							final var subop12 = contractCall(contract, "approve",
 									daveEthAddress, 200 * tokenMultiplier)
 									.gas(250_000L)
 									.payingWith("Alice");
 
-							var subop13 = contractCallWithFunctionAbi("tokenContract", TRANSFER_FROM_ABI,
+							final var subop13 = contractCall(contract, "transferFrom",
 									aliceEthAddress, bobEthAddress, 100 * tokenMultiplier)
 									.gas(250_000L)
 									.payingWith("Dave");
 
-							var subop14 = contractCallLocalWithFunctionAbi("tokenContract", BALANCE_OF_ABI, aliceEthAddress)
+							final var subop14 = contractCallLocal(contract, "balanceOf", aliceEthAddress)
 									.gas(250_000L)
 									.saveResultTo("aliceTokenBalance");
 
-							var subop15 = contractCallLocalWithFunctionAbi("tokenContract", BALANCE_OF_ABI, bobEthAddress)
+							final var subop15 = contractCallLocal(contract, "balanceOf", bobEthAddress)
 									.gas(250_000L)
 									.saveResultTo("bobTokenBalance");
 
-							var subop16 = contractCallLocalWithFunctionAbi("tokenContract", BALANCE_OF_ABI, carolEthAddress)
+							final var subop16 = contractCallLocal(contract, "balanceOf", carolEthAddress)
 									.gas(250_000L)
 									.saveResultTo("carolTokenBalance");
 
-							var subop17 = contractCallLocalWithFunctionAbi("tokenContract", BALANCE_OF_ABI, daveEthAddress)
+							final var subop17 = contractCallLocal(contract, "balanceOf", daveEthAddress)
 									.gas(250_000L)
 									.saveResultTo("daveTokenBalance");
 
-							var subop18 = contractCallLocalWithFunctionAbi("tokenContract", BALANCE_OF_ABI, issuerEthAddress)
+							final var subop18 = contractCallLocal(contract, "balanceOf", issuerEthAddress)
 									.gas(250_000L)
 									.saveResultTo("issuerTokenBalance");
 
 							allRunFor(spec, subop12, subop13, subop14, subop15, subop16, subop17,
 									subop18);
 
-							long daveBalance = ((BigInteger) getValueFromRegistry(spec, "daveTokenBalance",
+							final var daveBalance = ((BigInteger) getValueFromRegistry(spec, "daveTokenBalance",
 									function)).longValue();
 							aliceBalance = ((BigInteger) getValueFromRegistry(spec, "aliceTokenBalance",
 									function)).longValue();
@@ -597,8 +565,8 @@ public class ContractCallSuite extends HapiApiSuite {
 									"Dave's final balance should be 0");
 						})
 				).then(
-						getContractRecords("tokenContract").hasCostAnswerPrecheck(NOT_SUPPORTED),
-						getContractRecords("tokenContract").nodePayment(100L).hasAnswerOnlyPrecheck(NOT_SUPPORTED)
+						getContractRecords(contract).hasCostAnswerPrecheck(NOT_SUPPORTED),
+						getContractRecords(contract).nodePayment(100L).hasAnswerOnlyPrecheck(NOT_SUPPORTED)
 				);
 	}
 
@@ -627,36 +595,35 @@ public class ContractCallSuite extends HapiApiSuite {
 				).then(
 						assertionsHold((spec, ctxLog) -> {
 
-							var subop1 = getContractInfo(SIMPLE_STORAGE_CONTRACT)
+							final var subop1 = getContractInfo(SIMPLE_STORAGE_CONTRACT)
 									.nodePayment(10L)
 									.saveToRegistry("simpleStorageKey");
 
-							var subop2 = getAccountInfo("payer")
+							final var subop2 = getAccountInfo("payer")
 									.savingSnapshot("payerAccountInfo");
 							allRunFor(spec, subop1, subop2);
 
-							ContractGetInfoResponse.ContractInfo simpleStorageContractInfo =
-									spec.registry().getContractInfo(
-											"simpleStorageKey");
-							String contractAddress = simpleStorageContractInfo.getContractAccountID();
+							final var simpleStorageContractInfo =
+									spec.registry().getContractInfo("simpleStorageKey");
+							final var contractAddress = simpleStorageContractInfo.getContractAccountID();
 
-							var subop3 = contractCallLocal(inlineTestContract, "getCodeSize", contractAddress
+							final var subop3 = contractCallLocal(inlineTestContract, "getCodeSize", contractAddress
 							)
 									.saveResultTo("simpleStorageContractCodeSizeBytes")
 									.gas(300_000L);
 
 							allRunFor(spec, subop3);
 
-							byte[] result = spec.registry().getBytes("simpleStorageContractCodeSizeBytes");
+							var result = spec.registry().getBytes("simpleStorageContractCodeSizeBytes");
 
-							String funcJson = ContractResources.GET_CODE_SIZE_ABI.replaceAll("'", "\"");
-							CallTransaction.Function function = CallTransaction.Function.fromJsonInterface(funcJson);
+							final var funcJson = ContractResources.GET_CODE_SIZE_ABI.replaceAll("'", "\"");
+							final var function = CallTransaction.Function.fromJsonInterface(funcJson);
 
-							int codeSize = 0;
+							var codeSize = 0;
 							if (result != null && result.length > 0) {
-								Object[] retResults = function.decodeResult(result);
+								final var retResults = function.decodeResult(result);
 								if (retResults != null && retResults.length > 0) {
-									BigInteger retBi = (BigInteger) retResults[0];
+									final var retBi = (BigInteger) retResults[0];
 									codeSize = retBi.intValue();
 								}
 							}
@@ -667,11 +634,11 @@ public class ContractCallSuite extends HapiApiSuite {
 									"Real smart contract code size should be greater than 0");
 
 
-							CryptoGetInfoResponse.AccountInfo payerAccountInfo = spec.registry().getAccountInfo(
+							final var payerAccountInfo = spec.registry().getAccountInfo(
 									"payerAccountInfo");
-							String acctAddress = payerAccountInfo.getContractAccountID();
+							final var acctAddress = payerAccountInfo.getContractAccountID();
 
-							var subop4 = contractCallLocal(inlineTestContract, "getCodeSize", acctAddress
+							final var subop4 = contractCallLocal(inlineTestContract, "getCodeSize", acctAddress
 							)
 									.saveResultTo("fakeCodeSizeBytes")
 									.gas(300_000L);
@@ -681,9 +648,9 @@ public class ContractCallSuite extends HapiApiSuite {
 
 							codeSize = 0;
 							if (result != null && result.length > 0) {
-								Object[] retResults = function.decodeResult(result);
+								final var retResults = function.decodeResult(result);
 								if (retResults != null && retResults.length > 0) {
-									BigInteger retBi = (BigInteger) retResults[0];
+									final var retBi = (BigInteger) retResults[0];
 									codeSize = retBi.intValue();
 								}
 							}
@@ -741,12 +708,12 @@ public class ContractCallSuite extends HapiApiSuite {
 				.then(
 						withOpContext((spec, opLog) -> {
 							for (int i = 0; i < 10; i++) {
-								var subOp1 = balanceSnapshot("payerBefore", PAY_RECEIVABLE_CONTRACT);
-								var subOp2 = contractCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount
+								final var subOp1 = balanceSnapshot("payerBefore", PAY_RECEIVABLE_CONTRACT);
+								final var subOp2 = contractCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount
 								)
 										.via("payTxn")
 										.sending(depositAmount);
-								var subOp3 = getAccountBalance(PAY_RECEIVABLE_CONTRACT)
+								final var subOp3 = getAccountBalance(PAY_RECEIVABLE_CONTRACT)
 										.hasTinyBars(changeFromSnapshot("payerBefore", +depositAmount));
 								allRunFor(spec, subOp1, subOp2, subOp3);
 							}
@@ -755,7 +722,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec depositDeleteSuccess() {
-		long initBalance = 7890;
+		final var initBalance = 7890L;
 		return defaultHapiSpec("DepositDeleteSuccess")
 				.given(
 						cryptoCreate("beneficiary").balance(initBalance),
@@ -864,19 +831,20 @@ public class ContractCallSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec invalidContract() {
-		String invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
+		final var invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
+		final var function = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
 
 		return defaultHapiSpec("InvalidContract")
 				.given().when().then(
-						contractCallWithFunctionAbi(invalidContract, ContractResources.CREATE_CHILD_ABI)
+						contractCallWithFunctionAbi(invalidContract, function)
 								.hasKnownStatus(INVALID_CONTRACT_ID));
 	}
 
 	private HapiApiSpec resultSizeAffectsFees() {
 		final var contract = "VerboseDeposit";
-		final long TRANSFER_AMOUNT = 1_000L;
+		final var TRANSFER_AMOUNT = 1_000L;
 		BiConsumer<TransactionRecord, Logger> RESULT_SIZE_FORMATTER = (record, txnLog) -> {
-			ContractFunctionResult result = record.getContractCallResult();
+			final var result = record.getContractCallResult();
 			txnLog.info("Contract call result FeeBuilder size = "
 					+ FeeBuilder.getContractFunctionSize(result)
 					+ ", fee = " + record.getTransactionFee()
@@ -908,9 +876,9 @@ public class ContractCallSuite extends HapiApiSuite {
 							HapiGetTxnRecord logsLookup =
 									QueryVerbs.getTxnRecord("loggedCallTxn").loggedWith(RESULT_SIZE_FORMATTER);
 							allRunFor(spec, noLogsLookup, logsLookup);
-							TransactionRecord unloggedRecord =
+							final var unloggedRecord =
 									noLogsLookup.getResponse().getTransactionGetRecord().getTransactionRecord();
-							TransactionRecord loggedRecord =
+							final var loggedRecord =
 									logsLookup.getResponse().getTransactionGetRecord().getTransactionRecord();
 							assertLog.info("Fee for logged record   = " + loggedRecord.getTransactionFee());
 							assertLog.info("Fee for unlogged record = " + unloggedRecord.getTransactionFee());
@@ -930,9 +898,9 @@ public class ContractCallSuite extends HapiApiSuite {
 						uploadInitCode(SIMPLE_STORAGE_CONTRACT)
 				).when(
 						withOpContext((spec, ignore) -> {
-							var subop1 = balanceSnapshot("balanceBefore0", "payer");
+							final var subop1 = balanceSnapshot("balanceBefore0", "payer");
 
-							var subop2 =
+							final var subop2 =
 									newContractCreate(SIMPLE_STORAGE_CONTRACT)
 											.balance(0)
 											.payingWith("payer")
@@ -940,11 +908,11 @@ public class ContractCallSuite extends HapiApiSuite {
 											.hasKnownStatus(INSUFFICIENT_GAS)
 											.via("failInsufficientGas");
 
-							var subop3 = getTxnRecord("failInsufficientGas");
+							final var subop3 = getTxnRecord("failInsufficientGas");
 							allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
+							final var delta = subop3.getResponseRecord().getTransactionFee();
 
-							var subop4 = getAccountBalance("payer").hasTinyBars(
+							final var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore0", -delta));
 							allRunFor(spec, subop4);
 
@@ -952,20 +920,20 @@ public class ContractCallSuite extends HapiApiSuite {
 
 						withOpContext((spec, ignore) -> {
 
-							var subop1 = balanceSnapshot("balanceBefore1", "payer");
+							final var subop1 = balanceSnapshot("balanceBefore1", "payer");
 
-							var subop2 = newContractCreate(SIMPLE_STORAGE_CONTRACT)
+							final var subop2 = newContractCreate(SIMPLE_STORAGE_CONTRACT)
 									.balance(100_000_000_000L)
 									.payingWith("payer")
 									.gas(250_000L)
 									.via("failInvalidInitialBalance")
 									.hasKnownStatus(CONTRACT_REVERT_EXECUTED);
 
-							var subop3 = getTxnRecord("failInvalidInitialBalance");
+							final var subop3 = getTxnRecord("failInvalidInitialBalance");
 							allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
+							final var delta = subop3.getResponseRecord().getTransactionFee();
 
-							var subop4 = getAccountBalance("payer").hasTinyBars(
+							final var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore1", -delta));
 							allRunFor(spec, subop4);
 
@@ -973,20 +941,20 @@ public class ContractCallSuite extends HapiApiSuite {
 
 						withOpContext((spec, ignore) -> {
 
-							var subop1 = balanceSnapshot("balanceBefore2", "payer");
+							final var subop1 = balanceSnapshot("balanceBefore2", "payer");
 
-							var subop2 = newContractCreate(SIMPLE_STORAGE_CONTRACT)
+							final var subop2 = newContractCreate(SIMPLE_STORAGE_CONTRACT)
 									.balance(0L)
 									.payingWith("payer")
 									.gas(250_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("successWithZeroInitialBalance");
 
-							var subop3 = getTxnRecord("successWithZeroInitialBalance");
+							final var subop3 = getTxnRecord("successWithZeroInitialBalance");
 							allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
+							final var delta = subop3.getResponseRecord().getTransactionFee();
 
-							var subop4 = getAccountBalance("payer").hasTinyBars(
+							final var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore2", -delta));
 							allRunFor(spec, subop4);
 
@@ -994,19 +962,19 @@ public class ContractCallSuite extends HapiApiSuite {
 
 						withOpContext((spec, ignore) -> {
 
-							var subop1 = balanceSnapshot("balanceBefore3", "payer");
+							final var subop1 = balanceSnapshot("balanceBefore3", "payer");
 
-							var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "set", 999_999L)
+							final var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "set", 999_999L)
 									.payingWith("payer")
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("setValue");
 
-							var subop3 = getTxnRecord("setValue");
+							final var subop3 = getTxnRecord("setValue");
 							allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
+							final var delta = subop3.getResponseRecord().getTransactionFee();
 
-							var subop4 = getAccountBalance("payer").hasTinyBars(
+							final var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore3", -delta));
 							allRunFor(spec, subop4);
 
@@ -1014,19 +982,19 @@ public class ContractCallSuite extends HapiApiSuite {
 
 						withOpContext((spec, ignore) -> {
 
-							var subop1 = balanceSnapshot("balanceBefore4", "payer");
+							final var subop1 = balanceSnapshot("balanceBefore4", "payer");
 
-							var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "get")
+							final var subop2 = contractCall(SIMPLE_STORAGE_CONTRACT, "get")
 									.payingWith("payer")
 									.gas(300_000L)
 									.hasKnownStatus(SUCCESS)
 									.via("getValue");
 
-							var subop3 = getTxnRecord("getValue");
+							final var subop3 = getTxnRecord("getValue");
 							allRunFor(spec, subop1, subop2, subop3);
-							long delta = subop3.getResponseRecord().getTransactionFee();
+							final var delta = subop3.getResponseRecord().getTransactionFee();
 
-							var subop4 = getAccountBalance("payer").hasTinyBars(
+							final var subop4 = getAccountBalance("payer").hasTinyBars(
 									changeFromSnapshot("balanceBefore4", -delta));
 							allRunFor(spec, subop4);
 
@@ -1050,34 +1018,34 @@ public class ContractCallSuite extends HapiApiSuite {
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
-									var subop1 = contractCall(contract, "deposit", 1_000L
+									final var subop1 = contractCall(contract, "deposit", 1_000L
 									)
 											.payingWith("payer")
 											.gas(300_000L)
 											.via("deposit")
 											.sending(1_000L);
 
-									var subop2 = contractCall(contract, "getBalance"
+									final var subop2 = contractCall(contract, "getBalance"
 									)
 											.payingWith("payer")
 											.gas(300_000L)
 											.via("getBalance");
 
-									AccountID contractAccountId = asId(contract, spec);
-									var subop3 = contractCall(contract, "killMe", contractAccountId.getAccountNum()
+									final var contractAccountId = asId(contract, spec);
+									final var subop3 = contractCall(contract, "killMe", contractAccountId.getAccountNum()
 									)
 											.payingWith("payer")
 											.gas(300_000L)
 											.hasKnownStatus(OBTAINER_SAME_CONTRACT_ID);
 
-									var subop4 = contractCall(contract, "killMe", 999_999L
+									final var subop4 = contractCall(contract, "killMe", 999_999L
 									)
 											.payingWith("payer")
 											.gas(300_000L)
 											.hasKnownStatus(INVALID_SOLIDITY_ADDRESS);
 
-									AccountID receiverAccountId = asId("receiver", spec);
-									var subop5 = contractCall(contract, "killMe", receiverAccountId.getAccountNum()
+									final var receiverAccountId = asId("receiver", spec);
+									final var subop5 = contractCall(contract, "killMe", receiverAccountId.getAccountNum()
 									)
 											.payingWith("payer")
 											.gas(300_000L)
@@ -1117,23 +1085,23 @@ public class ContractCallSuite extends HapiApiSuite {
 						newContractCreate(TRANSFERRING_CONTRACT).gas(300_000L).balance(5000L)
 				).then(
 						withOpContext((spec, opLog) -> {
-							String accountAddress = spec.registry()
+							final var accountAddress = spec.registry()
 									.getAccountInfo("receivableSigReqAccountInfo").getContractAccountID();
-							Key receivableAccountKey = spec.registry()
+							final var receivableAccountKey = spec.registry()
 									.getAccountInfo("receivableSigReqAccountInfo").getKey();
-							Key contractCallerKey = spec.registry()
+							final var contractCallerKey = spec.registry()
 									.getAccountInfo("contractCallerInfo").getKey();
 							spec.registry().saveKey("receivableKey", receivableAccountKey);
 							spec.registry().saveKey("contractCallerKey", contractCallerKey);
 							/* if any of the keys are missing, INVALID_SIGNATURE is returned */
-							var call = contractCall(TRANSFERRING_CONTRACT, "transferToAddress",
+							final var call = contractCall(TRANSFERRING_CONTRACT, "transferToAddress",
 									accountAddress, 1
 							)
 									.payingWith("contractCaller")
 									.gas(300_000)
 									.alsoSigningWithFullPrefix("receivableKey");
 							/* calling with the receivableSigReqAccount should pass without adding keys */
-							var callWithReceivable = contractCall(TRANSFERRING_CONTRACT, "transferToAddress",
+							final var callWithReceivable = contractCall(TRANSFERRING_CONTRACT, "transferToAddress",
 									accountAddress, 1
 							)
 									.payingWith("receivableSigReqAccount")
@@ -1155,9 +1123,9 @@ public class ContractCallSuite extends HapiApiSuite {
 						newContractCreate(TRANSFERRING_CONTRACT).gas(300_000L).balance(5000L)
 				).then(
 						withOpContext((spec, opLog) -> {
-							String accountAddress = spec.registry()
+							final var accountAddress = spec.registry()
 									.getAccountInfo("receivableSigReqAccountInfo").getContractAccountID();
-							var call = contractCall(TRANSFERRING_CONTRACT,
+							final var call = contractCall(TRANSFERRING_CONTRACT,
 									"transferToAddress",
 									accountAddress, 1).gas(300_000).hasKnownStatus(INVALID_SIGNATURE);
 							allRunFor(spec, call);
@@ -1242,8 +1210,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				)
 				.when(
 						withOpContext((spec, log) -> {
-							var receiverAddr = spec.registry().getAccountInfo("receiverInfo").getContractAccountID();
-							var transferCall = contractCall(TRANSFERRING_CONTRACT, "transferToAddress",
+							final var receiverAddr = spec.registry().getAccountInfo("receiverInfo").getContractAccountID();
+							final var transferCall = contractCall(TRANSFERRING_CONTRACT, "transferToAddress",
 									receiverAddr, 10
 							)
 									.payingWith(ACCOUNT)
@@ -1370,14 +1338,14 @@ public class ContractCallSuite extends HapiApiSuite {
 				.then(
 						withOpContext(
 								(spec, log) -> {
-									var acc = spec.registry().getAccountInfo("accInfo").getContractAccountID();
-									var withoutReceiverSignature = contractCall(TRANSFERRING_CONTRACT,
+									final var acc = spec.registry().getAccountInfo("accInfo").getContractAccountID();
+									final var withoutReceiverSignature = contractCall(TRANSFERRING_CONTRACT,
 											"transferToAddress", acc, ONE_HUNDRED_HBARS / 2
 									)
 											.hasKnownStatus(INVALID_SIGNATURE);
 									allRunFor(spec, withoutReceiverSignature);
 
-									var withSignature = contractCall(TRANSFERRING_CONTRACT,
+									final var withSignature = contractCall(TRANSFERRING_CONTRACT,
 											"transferToAddress", acc, ONE_HUNDRED_HBARS / 2
 									)
 											.payingWith(ACCOUNT)
@@ -1422,8 +1390,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				.then(
 						withOpContext(
 								(spec, log) -> {
-									var acc = spec.registry().getAccountInfo("accInfo").getContractAccountID();
-									var assertionWithOnlyOneKey = contractCall(TRANSFERRING_CONTRACT,
+									final var acc = spec.registry().getAccountInfo("accInfo").getContractAccountID();
+									final var assertionWithOnlyOneKey = contractCall(TRANSFERRING_CONTRACT,
 											"transferToAddress", acc, 10
 									)
 											.payingWith(ACCOUNT)
@@ -1431,7 +1399,7 @@ public class ContractCallSuite extends HapiApiSuite {
 											.hasPrecheck(INVALID_SIGNATURE);
 									allRunFor(spec, assertionWithOnlyOneKey);
 
-									var assertionWithBothKeys = contractCall(TRANSFERRING_CONTRACT,
+									final var assertionWithBothKeys = contractCall(TRANSFERRING_CONTRACT,
 											"transferToAddress", acc, 10
 									)
 											.payingWith(ACCOUNT)

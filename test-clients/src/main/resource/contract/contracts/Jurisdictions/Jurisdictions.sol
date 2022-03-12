@@ -30,7 +30,7 @@ contract Jurisdictions is Ownable {
     /// @notice List of jurisdiction codes
     bytes32[] codes;
 
-	uint rate = 96711214693058;
+    uint rate = 96711214693058;
 
     /// @notice jurisdiction code => jurisdicton info
     mapping (bytes32 => Jurisdiction) public jurisdictions;
@@ -64,11 +64,11 @@ contract Jurisdictions is Ownable {
         require(!isBitcarbon[inventory], "Inventory address already in use");
         require(!isBitcarbon[reserve], "Reserve address already in use");
         Jurisdiction memory newJurisdiction = Jurisdiction({
-          code : code,
-          name : name,
-          taxRate : taxRate,
-          inventory : inventory,
-          reserve : reserve
+        code : code,
+        name : name,
+        taxRate : taxRate,
+        inventory : inventory,
+        reserve : reserve
         });
         jurisdictions[code] = newJurisdiction;
         codes.push(code);

@@ -55,9 +55,9 @@ contract Minters is Ownable {
         require(jurisdictions.isValid(jurisdiction), "Invalid jurisdiction code");
         AddressBook.addAddress(minterAddressbook, minter);
         Minter memory newMinter = Minter({
-            minter : minter,
-            name : name,
-            jurisdiction : jurisdiction
+        minter : minter,
+        name : name,
+        jurisdiction : jurisdiction
         });
         minters[minter] = newMinter;
         emit MinterAdded(minter, name, jurisdiction, now);

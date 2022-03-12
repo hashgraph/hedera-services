@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
@@ -44,6 +43,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -64,7 +65,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 						deletedContract(),
 						invalidContractID(),
 						impureCallFails(),
@@ -119,16 +120,17 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 
 	private HapiApiSpec invalidContractID() {
 		final var invalidContract = HapiSpecSetup.getDefaultInstance().invalidContractName();
+		final var functionAbi = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
 		return defaultHapiSpec("InvalidContractID")
 				.given(
 				)
 				.when(
 				)
 				.then(
-						contractCallLocalWithFunctionAbi(invalidContract, ContractResources.CREATE_CHILD_ABI)
+						contractCallLocalWithFunctionAbi(invalidContract, functionAbi)
 								.nodePayment(1_234_567)
 								.hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID),
-						contractCallLocalWithFunctionAbi("0.0.0", ContractResources.CREATE_CHILD_ABI)
+						contractCallLocalWithFunctionAbi("0.0.0", functionAbi)
 								.nodePayment(1_234_567)
 								.hasAnswerOnlyPrecheck(INVALID_CONTRACT_ID)
 				);
@@ -159,9 +161,9 @@ public class ContractCallLocalSuite extends HapiApiSuite {
 		return defaultHapiSpec("LowBalanceFails")
 				.given(
 						cryptoCreate("payer"),
+						cryptoCreate("payer").balance(adequateQueryPayment),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT),
-						cryptoCreate("payer").balance(adequateQueryPayment)
+						newContractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "create").gas(785_000)
 				).then(

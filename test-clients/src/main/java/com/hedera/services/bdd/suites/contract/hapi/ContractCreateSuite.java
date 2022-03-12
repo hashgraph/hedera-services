@@ -27,7 +27,6 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -52,8 +51,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_NTH_FIB_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
@@ -71,7 +68,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cloneContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -115,31 +112,30 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
-						createEmptyConstructor(),
-						insufficientPayerBalanceUponCreation(),
-						rejectsInvalidMemo(),
-						rejectsInsufficientFee(),
-						rejectsInvalidBytecode(),
-						revertsNonzeroBalance(),
-						createFailsIfMissingSigs(),
-						rejectsInsufficientGas(),
-						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-						cannotCreateTooLargeContract(),
-						revertedTryExtCallHasNoSideEffects(),
-						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-						cannotSendToNonExistentAccount(),
-						canCallPendingContractSafely(),
-						delegateContractIdRequiredForTransferInDelegateCall(),
-						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-						minChargeIsTXGasUsedByContractCreate(),
-						gasLimitOverMaxGasLimitFailsPrecheck(),
-						vanillaSuccess(),
-						propagatesNestedCreations(),
-						blockTimestampIsConsensusTime(),
-				}
+		return List.of(
+				createEmptyConstructor(),
+				insufficientPayerBalanceUponCreation(),
+				rejectsInvalidMemo(),
+				rejectsInsufficientFee(),
+				rejectsInvalidBytecode(),
+				revertsNonzeroBalance(),
+				createFailsIfMissingSigs(),
+				rejectsInsufficientGas(),
+				createsVanillaContractAsExpectedWithOmittedAdminKey(),
+				childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+				cannotCreateTooLargeContract(),
+				revertedTryExtCallHasNoSideEffects(),
+				getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+				receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+				cannotSendToNonExistentAccount(),
+				canCallPendingContractSafely(),
+				delegateContractIdRequiredForTransferInDelegateCall(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				minChargeIsTXGasUsedByContractCreate(),
+				gasLimitOverMaxGasLimitFailsPrecheck(),
+				vanillaSuccess(),
+				propagatesNestedCreations(),
+				blockTimestampIsConsensusTime()
 		);
 	}
 
@@ -158,38 +154,37 @@ public class ContractCreateSuite extends HapiApiSuite {
 				);
 	}
 
-	// TODO: Refactor failing test after all
 	private HapiApiSpec canCallPendingContractSafely() {
-		final int numSlots = 64;
-		final int createBurstSize = 500;
+		final var numSlots = 64;
+		final var createBurstSize = 500;
 		final int[] targets = {19, 24};
 		final AtomicLong createdFileNum = new AtomicLong();
 		final var callTxn = "callTxn";
-		final var initcode = "initcode";
+		final var contract = "FibonacciPlus";
 
 		return defaultHapiSpec("CanCallPendingContractSafely")
 				.given(
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
-						fileCreate(initcode)
+						fileCreate(contract)
 								.path(FIBONACCI_PLUS_PATH)
 								.payingWith(GENESIS)
 								.exposingNumTo(createdFileNum::set),
 						inParallel(IntStream.range(0, createBurstSize)
 								.mapToObj(i ->
-										contractCreate("contract" + i, FIBONACCI_PLUS_CONSTRUCTOR_ABI, numSlots)
+										cloneContract(contract, String.valueOf(i), numSlots)
 												.fee(ONE_HUNDRED_HBARS)
 												.gas(300_000L)
 												.payingWith(GENESIS)
 												.noLogging()
 												.deferStatusResolution()
-												.bytecode(initcode)
+												.bytecode(contract)
 												.adminKey(THRESHOLD))
 								.toArray(HapiSpecOperation[]::new))
 				).when().then(
 						sourcing(() ->
-								contractCall(
+								contractCallWithFunctionAbi(
 										"0.0." + (createdFileNum.get() + createBurstSize),
-										ADD_NTH_FIB_ABI, targets, 12
+										getABIFor(FUNCTION, "addNthFib", contract), targets, 12
 								)
 										.payingWith(GENESIS)
 										.gas(300_000L)
@@ -370,9 +365,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec createFailsIfMissingSigs() {
-		KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
-		SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
-		SigControl invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
+		final var shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
+		final var validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
+		final var invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 
 		return defaultHapiSpec("CreateFailsIfMissingSigs")
 				.given(
@@ -440,9 +435,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec revertsNonzeroBalance() {
 		return defaultHapiSpec("RevertsNonzeroBalance")
 				.given(
-						fileCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when().then(
-						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.balance(1L)
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 				);

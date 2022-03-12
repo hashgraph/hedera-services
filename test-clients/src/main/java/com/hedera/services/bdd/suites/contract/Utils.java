@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.CommonUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.Hash;
@@ -40,13 +41,14 @@ import org.json.JSONTokener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
-import static com.swirlds.common.CommonUtils.unhex;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
+import static com.swirlds.common.CommonUtils.unhex;
 import static java.lang.System.arraycopy;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
@@ -94,7 +96,7 @@ public class Utils {
 		}
 	}
 
-	public static String getABIFor(final FunctionType type, final String functionName, String contractName) {
+	public static String getABIFor(final FunctionType type, final String functionName, final String contractName) {
 		final var path = getResourcePath(contractName, ".json");
 		var ABI = EMPTY;
 		try (final var input = new FileInputStream(path)) {
@@ -113,6 +115,18 @@ public class Utils {
 		}
 		return ABI;
 	}
+
+	public static String getABIForContract(final String contractName) {
+		final var path = getResourcePath(contractName, ".json");
+		var ABI = EMPTY;
+		try {
+			ABI = FileUtils.readFileToString(new File(path), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return ABI;
+	}
+
 
 	public static String getResourcePath(final String resourceName, final String extension) {
 		final var path = String.format(RESOURCE_PATH + extension, resourceName);
