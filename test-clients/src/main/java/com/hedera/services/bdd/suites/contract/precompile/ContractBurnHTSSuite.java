@@ -210,7 +210,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 				.when(
 						withOpContext(
 								(spec, opLog) -> {
-									var serialNumbers = new ArrayList<>();
+									final var serialNumbers = new ArrayList<>();
 									serialNumbers.add(1L);
 									allRunFor(
 											spec,
@@ -344,7 +344,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 				.when(
 						withOpContext(
 								(spec, opLog) -> {
-									var serialNumbers = new ArrayList<>();
+									final var serialNumbers = new ArrayList<>();
 									serialNumbers.add(1L);
 									allRunFor(
 											spec,

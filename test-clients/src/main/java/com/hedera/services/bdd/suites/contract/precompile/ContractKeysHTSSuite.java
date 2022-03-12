@@ -228,7 +228,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec burnWithKeyAsPartOf1OfXThreshold() {
-		final String token = "Token";
+		final var token = "Token";
 		final var delegateContractKeyShape = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT);
 		final var contractKeyShape = KeyShape.threshOf(1, SIMPLE, KeyShape.CONTRACT);
 

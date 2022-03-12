@@ -293,7 +293,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		final var theRecipient = "recipient";
 		final var nonFungibleToken = "nonFungibleToken";
 		final var nestedTransferTxn = "nestedTransferTxn";
-		final long expectedGasUsage = 1_063_830L;
+		final var expectedGasUsage = 1_063_830L;
 
 		return defaultHapiSpec("TransferNftAfterNestedMint")
 				.given(

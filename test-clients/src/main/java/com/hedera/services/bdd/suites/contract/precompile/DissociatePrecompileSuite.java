@@ -111,13 +111,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 
 	/* -- Not specifically required in the HTS Precompile Test Plan -- */
 	public HapiApiSpec dissociatePrecompileHasExpectedSemanticsForDeletedTokens() {
-		final String tbdUniqToken = "UniqToBeDeleted";
-		final String zeroBalanceFrozen = "0bFrozen";
-		final String zeroBalanceUnfrozen = "0bUnfrozen";
-		final String nonZeroBalanceFrozen = "1bFrozen";
-		final String nonZeroBalanceUnfrozen = "1bUnfrozen";
-		final long initialSupply = 100L;
-		final long nonZeroXfer = 10L;
+		final var tbdUniqToken = "UniqToBeDeleted";
+		final var zeroBalanceFrozen = "0bFrozen";
+		final var zeroBalanceUnfrozen = "0bUnfrozen";
+		final var nonZeroBalanceFrozen = "1bFrozen";
+		final var nonZeroBalanceUnfrozen = "1bUnfrozen";
+		final var initialSupply = 100L;
+		final var nonZeroXfer = 10L;
 		final var firstMeta = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
 		final var secondMeta = ByteString.copyFrom("SECOND".getBytes(StandardCharsets.UTF_8));
 		final var thirdMeta = ByteString.copyFrom("THIRD".getBytes(StandardCharsets.UTF_8));
