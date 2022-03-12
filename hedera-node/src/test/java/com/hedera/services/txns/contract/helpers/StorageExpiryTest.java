@@ -39,7 +39,6 @@ import java.util.Deque;
 
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -144,7 +143,7 @@ class StorageExpiryTest {
 	void staticCallOracleIsUnusable() {
 		final var oracle = subject.hapiStaticCallOracle();
 
-		assertThrows(IllegalStateException.class, () -> oracle.storageExpiryIn(currentFrame));
+		assertEquals(0, oracle.storageExpiryIn(currentFrame));
 	}
 
 	private void setupStackWith(final Address bottomRecipient, final Address topRecipient) {

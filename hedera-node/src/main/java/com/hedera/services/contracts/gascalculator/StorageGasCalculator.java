@@ -57,7 +57,6 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
  *     <li>The Hedera {@code sbh} price (also in tinybar) is stored in the bottom stack frame's context
  *     under the {@link com.hedera.services.contracts.execution.CreateEvmTxProcessor#SBH_CONTEXT_KEY}.</li>
  * </ul>
- * </p>
  */
 @Singleton
 public class StorageGasCalculator {

@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 /**
  * Helper to efficiently get the expiration time for new storage being allocated in a {@link MessageFrame}.
  *
- * Note the allocating contract is given by {@link MessageFrame#getRecipientAddress()}. Now there are
+ * <p>Note the allocating contract is given by {@link MessageFrame#getRecipientAddress()}. Now there are
  * two cases: either the contract allocating the storage <i>already existed</i> at the start of the EVM
  * transaction; or we have created the allocating contract in the ongoing EVM transaction.
  *
@@ -52,7 +52,7 @@ import java.util.function.Supplier;
  * {@code MessageFrame} stack until we find a {@code recipient} contract that already existed; this will
  * be the source of expiries for the whole sponsor chain.
  *
- * <b>IMPORTANT:</b> if our stack walk never finds a {@code recipient} that already exists, the
+ * <p><b>IMPORTANT:</b> if our stack walk never finds a {@code recipient} that already exists, the
  * of the sponsor chain must begin with a contract that is <i>itself</i> being created this EVM
  * transaction. In this case, the HAPI {@code cryptoCreate} should be the ultimate source of the
  * storage expiry. So we need to option to configure the oracle with a {@code fallbackExpiryFromHapi}.
@@ -62,7 +62,9 @@ public class StorageExpiry {
 	private static final Logger log = LogManager.getLogger(StorageExpiry.class);
 
 	private static final long UNAVAILABLE_EXPIRY = 0;
-	private final UnusableStaticOracle UNUSABLE_STATIC_ORACLE = new UnusableStaticOracle();
+
+	private final Oracle callOracle = new Oracle(UNAVAILABLE_EXPIRY);
+	private final UnusableStaticOracle unusableStaticOracle = new UnusableStaticOracle();
 
 	private final AliasManager aliasManager;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
@@ -81,11 +83,11 @@ public class StorageExpiry {
 	}
 
 	public Oracle hapiCallOracle() {
-		return new Oracle(UNAVAILABLE_EXPIRY);
+		return callOracle;
 	}
 
 	public Oracle hapiStaticCallOracle() {
-		return UNUSABLE_STATIC_ORACLE;
+		return unusableStaticOracle;
 	}
 
 	public class Oracle {
@@ -106,6 +108,7 @@ public class StorageExpiry {
 			var expiry = effExpiryGiven(frame, curContracts);
 
 			if (expiry == UNAVAILABLE_EXPIRY) {
+				// The first frame in the deque is the top of the stack
 				final var iter = frame.getMessageFrameStack().iterator();
 				while (iter.hasNext() && expiry == UNAVAILABLE_EXPIRY ) {
 					final var nextFrame = iter.next();
@@ -114,10 +117,23 @@ public class StorageExpiry {
 			}
 
 			final var answer = (expiry == UNAVAILABLE_EXPIRY) ? fallbackExpiry : expiry;
-			if (answer == 0) {
+			if (answer == UNAVAILABLE_EXPIRY) {
 				log.warn("Using 0 as expiry for storage allocated by contract {}", frame::getRecipientAddress);
 			}
 			return answer;
+		}
+
+		private long effExpiryGiven(final MessageFrame frame, final MerkleMap<EntityNum, MerkleAccount> curContracts) {
+			final var recipientAddress = frame.getRecipientAddress().toArrayUnsafe();
+			final var recipientNum = aliasManager.isMirror(recipientAddress)
+					? EntityNum.fromMirror(recipientAddress)
+					: aliasManager.lookupIdBy(ByteString.copyFrom(recipientAddress));
+			if (curContracts.containsKey(recipientNum)) {
+				final var recipient = curContracts.get(recipientNum);
+				return recipient.getExpiry();
+			} else {
+				return UNAVAILABLE_EXPIRY;
+			}
 		}
 	}
 
@@ -128,19 +144,6 @@ public class StorageExpiry {
 
 		@Override
 		public long storageExpiryIn(final MessageFrame frame) {
-			throw new IllegalStateException("A static call should never ask about storage expiry");
-		}
-	}
-
-	private long effExpiryGiven(final MessageFrame frame, final MerkleMap<EntityNum, MerkleAccount> curContracts) {
-		final var recipientAddress = frame.getRecipientAddress().toArrayUnsafe();
-		final var recipientNum = aliasManager.isMirror(recipientAddress)
-				? EntityNum.fromMirror(recipientAddress)
-				: aliasManager.lookupIdBy(ByteString.copyFrom(recipientAddress));
-		if (curContracts.containsKey(recipientNum)) {
-			final var recipient = curContracts.get(recipientNum);
-			return recipient.getExpiry();
-		} else {
 			return UNAVAILABLE_EXPIRY;
 		}
 	}
