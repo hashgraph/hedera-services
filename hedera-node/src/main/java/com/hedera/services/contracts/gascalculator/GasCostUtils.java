@@ -76,6 +76,7 @@ public class GasCostUtils {
 
 	/**
 	 * Given a
+	 * 
 	 * @param numberOfBytes
 	 * @param lifetimeSecs
 	 * @param sbhPrice

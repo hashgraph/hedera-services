@@ -119,5 +119,4 @@ public class HederaSStoreOperation extends AbstractOperation {
 		frame.storageWasUpdated(key, value);
 		return new Operation.OperationResult(optionalCost, Optional.empty());
 	}
-
 }
