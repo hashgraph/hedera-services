@@ -317,11 +317,11 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractCreateWithNewOpInConstructorAbandoningParent")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate("AbandoningParent").via("AbandoningParentTxn")
+						newContractCreate(contract).via("AbandoningParentTxn")
 				).when().then(
 						getContractInfo(contract).saveToRegistry("AbandoningParentParentInfo").logged(),
 						getTxnRecord("AbandoningParentTxn")
-								.saveCreatedContractListToRegistry("AbandoningParent")
+								.saveCreatedContractListToRegistry(contract)
 								.logged(),
 						UtilVerbs.contractListWithPropertiesInheritedFrom("AbandoningParentCreateResult",
 								6, "AbandoningParentParentInfo")

@@ -102,7 +102,8 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
 
 							final var contractCodeResult = spec.registry().getBytes("contractCodeHash");
 							final var contractBytecode = spec.registry().getBytes("contractBytecode");
-							final var expectedContractCodeHash = ByteString.copyFrom(Hash.keccak256(Bytes.of(contractBytecode)).toArray()).toByteArray();
+							final var expectedContractCodeHash =
+									ByteString.copyFrom(Hash.keccak256(Bytes.of(contractBytecode)).toArray()).toByteArray();
 
 							Assertions.assertEquals(EXPECTED_ACCOUNT_HASH, recordResult.getContractCallResult());
 							Assertions.assertArrayEquals(EXPECTED_ACCOUNT_HASH.toByteArray(), accountCodeHash);

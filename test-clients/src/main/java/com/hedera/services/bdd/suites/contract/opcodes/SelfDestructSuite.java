@@ -54,7 +54,7 @@ public class SelfDestructSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 						HSCS_EVM_008_SelfDestructInConstructorWorks(),
 						HSCS_EVM_008_SelfDestructWhenCalling(),
 				}

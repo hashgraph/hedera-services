@@ -82,9 +82,9 @@ public class SStoreSuite extends HapiApiSuite {
 		return HapiApiSpec.defaultHapiSpec("Setup")
 				.given(
 						withOpContext((spec, opLog) -> {
-							var lookup = getFileContents(APP_PROPERTIES);
+							final var lookup = getFileContents(APP_PROPERTIES);
 							allRunFor(spec, lookup);
-							var contents = lookup.getResponse().getFileGetContents().getFileContents().getContents();
+							final var contents = lookup.getResponse().getFileGetContents().getFileContents().getContents();
 							legacyProps.set(contents);
 						}),
 						fileUpdate(APP_PROPERTIES)
@@ -123,7 +123,7 @@ public class SStoreSuite extends HapiApiSuite {
 							List<HapiSpecOperation> subOps = new ArrayList<>();
 
 							for (int sizeNow = step; sizeNow < MAX_CONTRACT_STORAGE_KB; sizeNow += step) {
-								var subOp1 = contractCall(contract, "growTo", sizeNow)
+								final var subOp1 = contractCall(contract, "growTo", sizeNow)
 										.gas(GAS_TO_OFFER)
 										.logged();
 								subOps.add(subOp1);
@@ -133,11 +133,11 @@ public class SStoreSuite extends HapiApiSuite {
 				)
 				.then(
 						withOpContext((spec, opLog) -> {
-							long numberOfIterations = 10;
+							final var numberOfIterations = 10;
 							List<HapiSpecOperation> subOps = new ArrayList<>();
 
 							for (int i = 0; i < numberOfIterations; i++) {
-								var subOp1 = contractCall(contract, "changeArray",
+								final var subOp1 = contractCall(contract, "changeArray",
 										ThreadLocalRandom.current().nextInt(1000))
 										.logged();
 								subOps.add(subOp1);
