@@ -61,7 +61,6 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.JvmSystemExits;
@@ -190,23 +189,21 @@ public interface StateModule {
 	@Provides
 	@Singleton
 	static StateView provideCurrentView(
-			TokenStore tokenStore,
-			ScheduleStore scheduleStore,
-			MutableStateChildren workingState,
-			NetworkInfo networkInfo
+			final ScheduleStore scheduleStore,
+			final MutableStateChildren workingState,
+			final NetworkInfo networkInfo
 	) {
-		return new StateView(tokenStore, scheduleStore, workingState, networkInfo);
+		return new StateView(scheduleStore, workingState, networkInfo);
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<StateView> provideStateViews(
-			TokenStore tokenStore,
-			ScheduleStore scheduleStore,
-			MutableStateChildren workingState,
-			NetworkInfo networkInfo
+			final ScheduleStore scheduleStore,
+			final MutableStateChildren workingState,
+			final NetworkInfo networkInfo
 	) {
-		return () -> new StateView(tokenStore, scheduleStore, workingState, networkInfo);
+		return () -> new StateView(scheduleStore, workingState, networkInfo);
 	}
 
 	@Provides

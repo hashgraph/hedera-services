@@ -76,7 +76,7 @@ class StateModuleTest {
 
 	@Test
 	void viewUsesWorkingStateChildren() {
-		final var viewFactory = provideStateViews(tokenStore, scheduleStore, workingState, networkInfo);
+		final var viewFactory = provideStateViews(scheduleStore, workingState, networkInfo);
 
 		assertDoesNotThrow(viewFactory::get);
 	}

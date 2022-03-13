@@ -183,7 +183,7 @@ class GetAccountInfoAnswerTest {
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
 
-		view = new StateView(tokenStore, scheduleStore, children, networkInfo);
+		view = new StateView(scheduleStore, children, networkInfo);
 
 		subject = new GetAccountInfoAnswer(optionValidator, aliasManager);
 	}

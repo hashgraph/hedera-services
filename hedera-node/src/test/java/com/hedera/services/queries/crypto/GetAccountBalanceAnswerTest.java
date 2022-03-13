@@ -84,7 +84,9 @@ class GetAccountBalanceAnswerTest {
 	private final TokenID cToken = IdUtils.asToken("0.0.5");
 	private final TokenID dToken = IdUtils.asToken("0.0.6");
 
-	private MerkleToken notDeleted, deleted;
+	private MerkleToken notDeleted;
+	private MerkleToken alsoNotDeleted;
+	private MerkleToken deleted;
 	private final MerkleAccount accountV = MerkleAccountFactory.newAccount()
 			.balance(balance)
 			.tokens(aToken, bToken, cToken, dToken)
@@ -92,6 +94,7 @@ class GetAccountBalanceAnswerTest {
 	private final MerkleAccount contractV = MerkleAccountFactory.newContract().balance(balance).get();
 
 	private MerkleMap accounts;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private StateView view;
 	private OptionValidator optionValidator;
@@ -110,6 +113,7 @@ class GetAccountBalanceAnswerTest {
 		notDeleted = mock(MerkleToken.class);
 		given(notDeleted.isDeleted()).willReturn(false);
 		given(notDeleted.decimals()).willReturn(1).willReturn(2);
+		alsoNotDeleted = mock(MerkleToken.class);
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(
@@ -130,21 +134,18 @@ class GetAccountBalanceAnswerTest {
 		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
 		given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);
 
-		tokenStore = mock(TokenStore.class);
-		given(tokenStore.exists(aToken)).willReturn(true);
-		given(tokenStore.exists(bToken)).willReturn(true);
-		given(tokenStore.exists(cToken)).willReturn(true);
-		given(tokenStore.exists(dToken)).willReturn(false);
-		given(tokenStore.get(aToken)).willReturn(notDeleted);
-		given(tokenStore.get(bToken)).willReturn(notDeleted);
-		given(tokenStore.get(cToken)).willReturn(deleted);
+		tokens = new MerkleMap<>();
+		tokens.put(EntityNum.fromTokenId(aToken), notDeleted);
+		tokens.put(EntityNum.fromTokenId(bToken), alsoNotDeleted);
+		tokens.put(EntityNum.fromTokenId(cToken), deleted);
 
 		scheduleStore = mock(ScheduleStore.class);
 
 		final MutableStateChildren children = new MutableStateChildren();
+		children.setTokens(tokens);
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
-		view = new StateView(tokenStore, scheduleStore, children, null);
+		view = new StateView(scheduleStore, children, null);
 
 		optionValidator = mock(OptionValidator.class);
 		aliasManager = mock(AliasManager.class);
