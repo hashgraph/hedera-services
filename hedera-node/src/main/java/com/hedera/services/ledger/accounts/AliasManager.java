@@ -20,10 +20,12 @@ package com.hedera.services.ledger.accounts;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,9 +34,10 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.forEach;
@@ -49,11 +52,11 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 
 	private static final String NON_TRANSACTIONAL_MSG = "Base alias manager does not buffer changes";
 
-	private Map<ByteString, EntityNum> aliases;
+	private final Supplier<FCHashMap<ByteString, EntityNum>> aliases;
 
 	@Inject
-	public AliasManager() {
-		this.aliases = new HashMap<>();
+	public AliasManager(final Supplier<FCHashMap<ByteString, EntityNum>> aliases) {
+		this.aliases = aliases;
 	}
 
 	@Override
@@ -87,7 +90,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 			return addressOrAlias;
 		}
 		final var aliasKey = ByteString.copyFrom(addressOrAlias.toArrayUnsafe());
-		final var contractNum = aliases.get(aliasKey);
+		final var contractNum = curAliases().get(aliasKey);
 		// If we cannot resolve to a mirror address, we return the missing alias and let a
 		// downstream component fail the transaction by returning null from its get() method.
 		// Cf. the address validator provided by ContractsModule#provideAddressValidator().
@@ -96,15 +99,15 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 
 	@Override
 	public boolean isInUse(final Address address) {
-		return aliases.containsKey(ByteString.copyFrom(address.toArrayUnsafe()));
+		return curAliases().containsKey(ByteString.copyFrom(address.toArrayUnsafe()));
 	}
 
 	public void link(final ByteString alias, final EntityNum num) {
-		aliases.put(alias, num);
+		curAliases().put(alias, num);
 	}
 
 	public void unlink(final ByteString alias) {
-		aliases.remove(alias);
+		curAliases().remove(alias);
 	}
 
 	/**
@@ -114,13 +117,19 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	 * @param accounts the current accounts
 	 */
 	public void rebuildAliasesMap(final MerkleMap<EntityNum, MerkleAccount> accounts) {
-		aliases.clear();
+		final var numCreate2Aliases = new AtomicInteger();
+		final var workingAliases = curAliases();
+		workingAliases.clear();
 		forEach(accounts, (k, v) -> {
 			if (!v.getAlias().isEmpty()) {
-				aliases.put(v.getAlias(), k);
+				workingAliases.put(v.getAlias(), k);
+				if (v.isSmartContract()) {
+					numCreate2Aliases.getAndIncrement();
+				}
 			}
 		});
-		log.info("Rebuild complete : No.of accounts with aliases {} ", aliases.size());
+		log.info("Rebuild complete, re-mapped {} aliases ({} from CREATE2)",
+				workingAliases::size, numCreate2Aliases::get);
 	}
 
 	/**
@@ -135,7 +144,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	public boolean forgetAliasIfPresent(final EntityNum expiredId, final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		final var alias = accounts.get(expiredId).getAlias();
 		if (!alias.isEmpty()) {
-			aliases.remove(alias);
+			curAliases().remove(alias);
 			return true;
 		}
 		return false;
@@ -148,7 +157,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	 * @return whether there is a linked account
 	 */
 	public boolean contains(final ByteString alias) {
-		return aliases.containsKey(alias);
+		return curAliases().containsKey(alias);
 	}
 
 	/**
@@ -159,15 +168,15 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	 * @return EntityNum mapped to the given alias.
 	 */
 	public EntityNum lookupIdBy(final ByteString alias) {
-		return aliases.getOrDefault(alias, MISSING_NUM);
+		return curAliases().getOrDefault(alias, MISSING_NUM);
 	}
 
-	/* --- Only used by unit tests --- */
-	void setAliases(final Map<ByteString, EntityNum> aliases) {
-		this.aliases = aliases;
+	private FCHashMap<ByteString, EntityNum> curAliases() {
+		return aliases.get();
 	}
 
+	@VisibleForTesting
 	Map<ByteString, EntityNum> getAliases() {
-		return aliases;
+		return curAliases();
 	}
 }

@@ -167,6 +167,8 @@ class SigReqsManagerTest {
 		final ArgumentCaptor<StateChildren> captor = ArgumentCaptor.forClass(StateChildren.class);
 
 		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
+		given(firstSignedState.isInitialized()).willReturn(true);
+		given(nextSignedState.isInitialized()).willReturn(true);
 		given(platform.getLastCompleteSwirldState())
 				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {
 				}))

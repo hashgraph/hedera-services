@@ -20,6 +20,7 @@ package com.hedera.services.state;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.annotations.CompositeProps;
@@ -76,6 +77,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -323,6 +325,14 @@ public interface StateModule {
 			final MutableStateChildren workingState
 	) {
 		return () -> workingState.networkCtx().seqNo();
+	}
+
+	@Provides
+	@Singleton
+	static Supplier<FCHashMap<ByteString, EntityNum>> provideWorkingAliases(
+			final MutableStateChildren workingState
+	) {
+		return workingState::aliases;
 	}
 
 	@Provides
