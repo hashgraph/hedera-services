@@ -246,7 +246,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		final var that = new ServicesState(this);
 		if (metadata != null) {
-			metadata.app().workingState().updateChildrenFrom(that);
+			metadata.app().workingState().updateFrom(that);
 		}
 
 		return that;
@@ -397,7 +397,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			networkCtx().setStateVersion(CURRENT_VERSION);
 
 			metadata = new StateMetadata(app);
-			app.workingState().updateChildrenFrom(this);
+			// This updates the working state accessor with our children
 			app.initializationFlow().runWith(this);
 
 			// Ensure the prefetch queue is created and thread pool is active instead of waiting

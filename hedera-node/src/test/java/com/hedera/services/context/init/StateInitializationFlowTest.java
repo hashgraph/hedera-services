@@ -23,9 +23,9 @@ package com.hedera.services.context.init;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.config.MockHederaNumbers;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -74,7 +74,7 @@ class StateInitializationFlowTest {
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
 	@Mock
-	private StateAccessor stateAccessor;
+	private MutableStateChildren workingState;
 	@Mock
 	private RecordStreamManager recordStreamManager;
 	@Mock
@@ -108,7 +108,7 @@ class StateInitializationFlowTest {
 				hfs,
 				defaultNumbers,
 				recordStreamManager,
-				stateAccessor,
+				workingState,
 				Set.of(aFileInterceptor, bFileInterceptor));
 	}
 
@@ -126,7 +126,7 @@ class StateInitializationFlowTest {
 
 		// then:
 		verify(staticNumbersHolder).accept(defaultNumbers);
-		verify(stateAccessor).updateChildrenFrom(activeState);
+		verify(workingState).updateFrom(activeState);
 		verify(recordStreamManager).setInitialHash(hash);
 		verify(hfs).register(aFileInterceptor);
 		verify(hfs).register(bFileInterceptor);
@@ -148,7 +148,7 @@ class StateInitializationFlowTest {
 		subject.runWith(activeState);
 
 		// then:
-		verify(stateAccessor).updateChildrenFrom(activeState);
+		verify(workingState).updateFrom(activeState);
 		verify(recordStreamManager).setInitialHash(hash);
 		verify(hfs, never()).register(any());
 		verify(staticNumbersHolder).accept(defaultNumbers);

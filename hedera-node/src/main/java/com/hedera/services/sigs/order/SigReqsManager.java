@@ -32,8 +32,6 @@ import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.StateChildrenSigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenMetaUtils;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
-import com.hedera.services.state.StateAccessor;
-import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -71,9 +69,9 @@ public class SigReqsManager {
 	private final Platform platform;
 	private final FileNumbers fileNumbers;
 	private final AliasManager aliasManager;
-	private final StateAccessor workingState;
 	private final ExpansionHelper expansionHelper;
 	private final SignatureWaivers signatureWaivers;
+	private final MutableStateChildren workingState;
 	private final GlobalDynamicProperties dynamicProperties;
 	/* Convenience wrapper for the latest state children received from Platform#getLastCompleteSwirldState() */
 	private final MutableStateChildren signedChildren = new MutableStateChildren();
@@ -93,7 +91,7 @@ public class SigReqsManager {
 			final AliasManager aliasManager,
 			final ExpansionHelper expansionHelper,
 			final SignatureWaivers signatureWaivers,
-			final @WorkingState StateAccessor workingState,
+			final MutableStateChildren workingState,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.platform = platform;
@@ -197,7 +195,7 @@ public class SigReqsManager {
 	private void ensureWorkingStateSigReqsIsConstructed() {
 		if (workingSigReqs == null) {
 			final var lookup = lookupsFactory.from(
-					fileNumbers, aliasManager, workingState.children(), TOKEN_META_TRANSFORM);
+					fileNumbers, aliasManager, workingState, TOKEN_META_TRANSFORM);
 			workingSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
 		}
 	}
