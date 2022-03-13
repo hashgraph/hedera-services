@@ -25,8 +25,6 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -51,7 +49,7 @@ public class RecordsSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 				bigCall(),
 				txRecordsContainValidTransfers()
 		});
@@ -59,7 +57,7 @@ public class RecordsSuite extends HapiApiSuite {
 
 	HapiApiSpec bigCall() {
 		final var contract = "BigBig";
-		int byteArraySize = (int) (87.5 * 1_024);
+		final int byteArraySize = (int) (87.5 * 1_024);
 
 		return defaultHapiSpec("BigRecord")
 				.given(
@@ -89,34 +87,34 @@ public class RecordsSuite extends HapiApiSuite {
 				).then(
 						assertionsHold(
 								(spec, ctxLog) -> {
-									var subop01 = getTxnRecord("createTx")
+									final var subop01 = getTxnRecord("createTx")
 											.saveTxnRecordToRegistry("createTxRec");
-									var subop02 = getTxnRecord("transferTx")
+									final var subop02 = getTxnRecord("transferTx")
 											.saveTxnRecordToRegistry("transferTxRec");
 									CustomSpecAssert.allRunFor(spec, subop01, subop02);
 
-									TransactionRecord createRecord = spec.registry().getTransactionRecord("createTxRec");
-									var parent = createRecord.getContractCreateResult().getCreatedContractIDs(0);
-									var child = createRecord.getContractCreateResult().getCreatedContractIDs(1);
+									final var createRecord = spec.registry().getTransactionRecord("createTxRec");
+									final var parent = createRecord.getContractCreateResult().getCreatedContractIDs(0);
+									final var child = createRecord.getContractCreateResult().getCreatedContractIDs(1);
 
 									// validate transfer list
-									List<AccountAmount> expectedTransfers = new ArrayList<>(2);
-									AccountAmount receiverTransfer = AccountAmount.newBuilder().setAccountID(
+									final List<AccountAmount> expectedTransfers = new ArrayList<>(2);
+									final var receiverTransfer = AccountAmount.newBuilder().setAccountID(
 													AccountID.newBuilder().setAccountNum(parent.getContractNum()).build())
 											.setAmount(-10_000L).build();
 									expectedTransfers.add(receiverTransfer);
-									AccountAmount contractTransfer = AccountAmount.newBuilder().setAccountID(
+									final var contractTransfer = AccountAmount.newBuilder().setAccountID(
 													AccountID.newBuilder().setAccountNum(child.getContractNum()).build())
 											.setAmount(10_000L).build();
 									expectedTransfers.add(contractTransfer);
 
-									TransactionRecord transferRecord = spec.registry().getTransactionRecord("transferTxRec");
+									final var transferRecord = spec.registry().getTransactionRecord("transferTxRec");
 
-									TransferList transferList = transferRecord.getTransferList();
+									final var transferList = transferRecord.getTransferList();
 									Assertions.assertNotNull(transferList);
 									Assertions.assertNotNull(transferList.getAccountAmountsList());
 									Assertions.assertTrue(transferList.getAccountAmountsList().containsAll(expectedTransfers));
-									long amountSum = sumAmountsInTransferList(transferList.getAccountAmountsList());
+									final var amountSum = sumAmountsInTransferList(transferList.getAccountAmountsList());
 									Assertions.assertEquals(0, amountSum);
 								}
 						)
@@ -124,7 +122,7 @@ public class RecordsSuite extends HapiApiSuite {
 	}
 
 	private long sumAmountsInTransferList(List<AccountAmount> transferList) {
-		long sumToReturn = 0L;
+		var sumToReturn = 0L;
 		for (AccountAmount currAccAmount : transferList) {
 			sumToReturn += currAccAmount.getAmount();
 		}
