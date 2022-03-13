@@ -46,8 +46,6 @@ public class ContractResources {
 	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
 	public static final String IMAP_USER_BYTECODE_PATH = bytecodePath("User");
 	public static final String FIBONACCI_PLUS_PATH = bytecodePath("FibonacciPlus");
-	public static final String TRACEABILITY_RECURSIVE_CALLS = bytecodePath("Traceability");
-	public static final String TRACEABILITY_RECURSIVE_CALLS_CALLCODE = bytecodePath("TraceabilityCallcode");
 	public static final String CREATE_DONOR_PATH = bytecodePath("CreateDonor");
 
 
@@ -60,53 +58,6 @@ public class ContractResources {
 			"\"name\":\"insert\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"size\"," +
 			"\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
-	public static final String TRACEABILITY_CONSTRUCTOR = "{\"inputs\":[{\"internalType\":\"uint256\"," +
-			"\"name\":\"_slot0\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_slot1\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_slot2\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
-	public static final String TRACEABILITY_EET_1 = "{\"inputs\":[{\"internalType\":\"address\"" +
-			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
-			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario1\"," +
-			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_2 = "{\"inputs\":[{\"internalType\":\"address\"," +
-			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
-			"type\":\"address\"}],\"name\":\"eetScenario2\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
-			"\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_3 = "{\"inputs\":[{\"internalType\":\"address\"" +
-			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
-			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario3\"," +
-			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_4 = "{\"inputs\":[{\"internalType\":\"address\"," +
-			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
-			"type\":\"address\"}],\"name\":\"eetScenario4\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
-			"\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_5 = "{\"inputs\":[{\"internalType\":\"address\"" +
-			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
-			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario5\"," +
-			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_6 = "{\"inputs\":[{\"internalType\":\"address\"," +
-			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
-			"type\":\"address\"}],\"name\":\"eetScenario6\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
-			"\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_7 = "{\"inputs\":[{\"internalType\":\"address\"" +
-			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
-			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario7\"," +
-			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_8 = "{\"inputs\":[{\"internalType\":\"address\"" +
-			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
-			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario8\"," +
-			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_9 = "{\"inputs\":[{\"internalType\":\"address\"" +
-			",\"name\":\"_contractBAddress\",\"type\":\"address\"},{\"internalType\":\"address\"" +
-			",\"name\":\"_contractCAddress\",\"type\":\"address\"}],\"name\":\"eetScenario9\"," +
-			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_10 = "{\"inputs\":[{\"internalType\":\"address\"," +
-			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
-			"type\":\"address\"}],\"name\":\"eetScenario10\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
-			"\"type\":\"function\"}";
-	public static final String TRACEABILITY_EET_11 = "{\"inputs\":[{\"internalType\":\"address\"," +
-			"\"name\":\"sibling1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sibling2\",\"" +
-			"type\":\"address\"}],\"name\":\"eetScenario11\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
-			"\"type\":\"function\"}";
-
 	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": " +
 			"\"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], " +
 			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
@@ -114,10 +65,12 @@ public class ContractResources {
 	public static final String FIBONACCI_PLUS_CONSTRUCTOR_ABI = "{\"inputs\":[{\"internalType\":\"uint32\"," +
 			"\"name\":\"numSlots\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"constructor\"}";
+
 	public static final String ADD_NTH_FIB_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32[]\"" +
 			",\"name\":\"at\",\"type\":\"uint32[]\"},{\"internalType\":\"uint32\",\"name\":\"n\",\"type\"" +
 			":\"uint32\"}],\"name\":\"addNthFib\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\"," +
 			"\"type\":\"function\"}";
+
 	public static final String CURRENT_FIB_SLOTS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"currentSlots\"," +
 			"\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"payable\":false," +
 			"\"stateMutability\":\"view\",\"type\":\"function\"}";
@@ -126,6 +79,7 @@ public class ContractResources {
 			"\"inputs\":[],\"name\":\"create\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
 	public static final String GET_CHILD_RESULT_ABI = "{\"constant\":true," +
 			"\"inputs\":[],\"name\":\"getIndirect\"," +
 			"\"outputs\":[{\"name\":\"value\",\"type\":\"uint256\"}]," +
@@ -135,6 +89,7 @@ public class ContractResources {
 			"\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"deposit\"," +
 			"\"outputs\":[]," +
 			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
+
 	public static final String GET_CODE_SIZE_ABI = "{\"constant\":true," +
 			"\"inputs\":[{\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"getCodeSize\"," +
 			"\"outputs\":[{\"name\":\"_size\",\"type\":\"uint256\"}]," +
@@ -144,23 +99,28 @@ public class ContractResources {
 			"\"inputs\":[{\"name\":\"x\",\"type\":\"uint256\"}],\"name\":\"set\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
 	public static final String SIMPLE_STORAGE_GETTER_ABI = "{\"constant\":true," +
 			"\"inputs\":[],\"name\":\"get\"," +
 			"\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+
 	public static final String SET_NODES_ABI = "{\"constant\":false," +
 			"\"inputs\":[{\"internalType\":\"uint64[]\",\"name\":\"accounts\",\"type\":\"uint64[]\"}],\"name\":\"setNodes\"," +
 			"\"outputs\":[]," +
 			"\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
 	public static final String RECEIVE_AND_SEND_ABI = "{\"constant\":false," +
 			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"keepAmountDivisor\",\"type\":\"uint32\"}," +
 			"{\"internalType\":\"uint256\",\"name\":\"stopBalance\",\"type\":\"uint256\"}],\"name\":\"receiveAndSend\"," +
 			"\"outputs\":[]," +
 			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
+
 	public static final String BALANCE_LOOKUP_ABI = "{\"constant\":true," +
 			"\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"accountNum\",\"type\":\"uint64\"}],\"name\":\"lookup\"," +
 			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
+
 	public static final String VERBOSE_DEPOSIT_ABI = "{\"constant\":false," +
 			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"amount\",\"type\":\"uint32\"}," +
 			"{\"internalType\":\"uint32\",\"name\":\"timesForEmphasis\",\"type\":\"uint32\"}," +

@@ -322,7 +322,8 @@ public class TxnVerbs {
 	}
 
 	public static HapiContractCall contractCall(String contract, String functionName, Object... params) {
-		return new HapiContractCall(getABIFor(FUNCTION, functionName, contract), contract, params);
+		final var abi = getABIFor(FUNCTION, functionName, contract);
+		return new HapiContractCall(abi, contract, params);
 	}
 
 	/** This function provides for the proper execution of specs, which execute contract calls with a function ABI instead of
@@ -416,7 +417,7 @@ public class TxnVerbs {
 	public static HapiContractCreate cloneContract(final String contractName, final String suffix, final Object... constructorParams) {
 		if (constructorParams.length > 0) {
 			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
-			return new HapiContractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);
+			return new HapiContractCreate(contractName + suffix, constructorABI, constructorParams).bytecode(contractName);
 		} else {
 			return new HapiContractCreate(contractName + suffix).bytecode(contractName);
 		}
