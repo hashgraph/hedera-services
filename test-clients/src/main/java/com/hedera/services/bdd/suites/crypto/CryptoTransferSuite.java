@@ -58,8 +58,6 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.i
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_PATH;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -71,16 +69,15 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -90,6 +87,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.allowanceTinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
@@ -107,13 +105,11 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureOneChildCreate2MetaFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -289,9 +285,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var counterparty = "counterparty";
 		final var partyCreation2 = "partyCreation2";
 		final var counterCreation2 = "counterCreation2";
-		final var initcode = "initcode";
-		final var createDonor = "createDonor";
 		final var multiKey = "multi";
+		final var contract = "CreateDonor";
 
 		final AtomicReference<String> partyAliasAddr = new AtomicReference<>();
 		final AtomicReference<String> partyMirrorAddr = new AtomicReference<>();
@@ -314,20 +309,18 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(initcode),
-						updateLargeFile(GENESIS, initcode, extractByteCode(CREATE_DONOR_PATH)),
-						contractCreate(createDonor)
+						uploadInitCode(contract),
+						newContractCreate(contract)
 								.adminKey(multiKey)
-								.payingWith(GENESIS)
-								.bytecode(initcode),
-						contractCall(createDonor, CREATE_DONOR_ABI, salt)
+								.payingWith(GENESIS),
+						contractCall(contract, "buildDonor", salt)
 								.sending(1000)
 								.payingWith(GENESIS)
 								.gas(2_000_000L)
 								.via(partyCreation2),
 						captureOneChildCreate2MetaFor(
 								party, partyCreation2, partyMirrorAddr, partyAliasAddr),
-						contractCall(createDonor, CREATE_DONOR_ABI, otherSalt)
+						contractCall(contract, "buildDonor", otherSalt)
 								.sending(1000)
 								.payingWith(GENESIS)
 								.gas(2_000_000L)

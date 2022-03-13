@@ -43,24 +43,7 @@ public class ContractResources {
 	public static final String MULTIPURPOSE_BYTECODE_PATH = bytecodePath("Multipurpose");
 	public static final String CHILD_STORAGE_BYTECODE_PATH = bytecodePath("ChildStorage");
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
-	public static final String BENCHMARK_CONTRACT = bytecodePath("Benchmark");
-	public static final String IMAP_USER_BYTECODE_PATH = bytecodePath("User");
 	public static final String FIBONACCI_PLUS_PATH = bytecodePath("FibonacciPlus");
-	public static final String CREATE_DONOR_PATH = bytecodePath("CreateDonor");
-
-
-	public static final String CREATE_DONOR_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
-			"\"type\":\"bytes32\"}],\"name\":\"buildDonor\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
-			"\"type\":\"function\"}";
-
-	public static final String IMAP_USER_INSERT = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"k\"," +
-			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v\",\"type\":\"uint256\"}]," +
-			"\"name\":\"insert\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"size\"," +
-			"\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-
-	public static final String TWO_SSTORES = "{ \"inputs\": [ { \"internalType\": \"bytes32\", \"name\": " +
-			"\"_singleProp\", \"type\": \"bytes32\" } ], \"name\": \"twoSSTOREs\", \"outputs\": [], " +
-			"\"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
 
 	public static final String FIBONACCI_PLUS_CONSTRUCTOR_ABI = "{\"inputs\":[{\"internalType\":\"uint32\"," +
 			"\"name\":\"numSlots\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"nonpayable\"," +
