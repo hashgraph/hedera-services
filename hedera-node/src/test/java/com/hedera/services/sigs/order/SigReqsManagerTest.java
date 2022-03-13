@@ -88,15 +88,14 @@ class SigReqsManagerTest {
 	void setUp() {
 		subject = new SigReqsManager(
 				platform,
-				fileNumbers, aliasManager, expansionHelper,
+				fileNumbers, expansionHelper,
 				signatureWaivers, workingState, dynamicProperties);
 		given(accessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
 	}
 
 	@Test
 	void usesWorkingStateLookupIfNoSignedState() {
-		given(lookupsFactory.from(fileNumbers, aliasManager, workingState, TOKEN_META_TRANSFORM))
-				.willReturn(lookup);
+		given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM)).willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
 		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
 		given(platform.getLastCompleteSwirldState())
@@ -116,8 +115,7 @@ class SigReqsManagerTest {
 
 	@Test
 	void usesWorkingStateLookupIfLastHandleTimeIsNull() {
-		given(lookupsFactory.from(fileNumbers, aliasManager, workingState, TOKEN_META_TRANSFORM))
-				.willReturn(lookup);
+		given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM)).willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
 		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
 		given(platform.getLastCompleteSwirldState())
@@ -133,8 +131,7 @@ class SigReqsManagerTest {
 
 	@Test
 	void usesWorkingStateLookupIfStateVersionIsDifferent() {
-		given(lookupsFactory.from(fileNumbers, aliasManager, workingState, TOKEN_META_TRANSFORM))
-				.willReturn(lookup);
+		given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM)).willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
 		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
 		given(platform.getLastCompleteSwirldState())
@@ -150,9 +147,26 @@ class SigReqsManagerTest {
 	}
 
 	@Test
+	void usesWorkingStateLookupIfStateIsUninitialized() {
+		given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM)).willReturn(lookup);
+		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
+		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
+		given(platform.getLastCompleteSwirldState())
+				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {
+				}));
+		given(firstSignedState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
+		given(firstSignedState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
+		subject.setLookupsFactory(lookupsFactory);
+		subject.setSigReqsFactory(sigReqsFactory);
+
+		subject.expandSigsInto(accessor);
+
+		verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+	}
+
+	@Test
 	void usesWorkingStateLookupIfPropertiesInsist() {
-		given(lookupsFactory.from(fileNumbers, aliasManager, workingState, TOKEN_META_TRANSFORM))
-				.willReturn(lookup);
+		given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM)).willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
 		subject.setLookupsFactory(lookupsFactory);
 		subject.setSigReqsFactory(sigReqsFactory);
@@ -178,8 +192,7 @@ class SigReqsManagerTest {
 		given(nextSignedState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(firstSignedState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
 		given(nextSignedState.getTimeOfLastHandledTxn()).willReturn(nextLastHandleTime);
-		given(lookupsFactory.from(
-				eq(fileNumbers), eq(aliasManager), captor.capture(), eq(TOKEN_META_TRANSFORM)))
+		given(lookupsFactory.from(eq(fileNumbers), captor.capture(), eq(TOKEN_META_TRANSFORM)))
 				.willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(signedStateSigReqs);
 		subject.setLookupsFactory(lookupsFactory);

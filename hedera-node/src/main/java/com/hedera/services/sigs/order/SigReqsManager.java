@@ -25,7 +25,6 @@ import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -62,33 +61,32 @@ import java.util.function.Function;
  */
 @Singleton
 public class SigReqsManager {
-	/* The token-to-signing-metadata transformation used to construct instances of SigRequirements */
+	// The token-to-signing-metadata transformation used to construct instances of SigRequirements
 	public static final Function<MerkleToken, TokenSigningMetadata> TOKEN_META_TRANSFORM =
 			TokenMetaUtils::signingMetaFrom;
 
 	private final Platform platform;
 	private final FileNumbers fileNumbers;
-	private final AliasManager aliasManager;
 	private final ExpansionHelper expansionHelper;
 	private final SignatureWaivers signatureWaivers;
 	private final MutableStateChildren workingState;
 	private final GlobalDynamicProperties dynamicProperties;
-	/* Convenience wrapper for the latest state children received from Platform#getLastCompleteSwirldState() */
+	// Convenience wrapper for the latest state children received from Platform#getLastCompleteSwirldState()
 	private final MutableStateChildren signedChildren = new MutableStateChildren();
 
 	private SigReqsFactory sigReqsFactory = SigRequirements::new;
 	private StateChildrenLookupsFactory lookupsFactory = StateChildrenSigMetadataLookup::new;
 
-	/* Used to expand signatures when `sigs.expandFromLastSignedState=true` and a signed state is available */
+	// Used to expand signatures when sigs.expandFromLastSignedState=true and an
+	// initialized, signed state of the current version is available
 	private SigRequirements signedSigReqs;
-	/* Used to expand signatures when `sigs.expandFromLastSignedState=false` or no signed state is available */
+	// Used to expand signatures when one or more of the above conditions is not met
 	private SigRequirements workingSigReqs;
 
 	@Inject
 	public SigReqsManager(
 			final Platform platform,
 			final FileNumbers fileNumbers,
-			final AliasManager aliasManager,
 			final ExpansionHelper expansionHelper,
 			final SignatureWaivers signatureWaivers,
 			final MutableStateChildren workingState,
@@ -96,7 +94,6 @@ public class SigReqsManager {
 	) {
 		this.platform = platform;
 		this.fileNumbers = fileNumbers;
-		this.aliasManager = aliasManager;
 		this.workingState = workingState;
 		this.expansionHelper = expansionHelper;
 		this.signatureWaivers = signatureWaivers;
@@ -143,16 +140,20 @@ public class SigReqsManager {
 			if (signedState == null) {
 				return false;
 			}
-			/* Since we can't get the enclosing platform SignedState, we don't know exactly
-			 * when this state was signed. So we just use, as a guaranteed lower bound, the
-			 * consensus time of its last-handled transaction. */
+			// Since we can't get the enclosing platform SignedState, we don't know exactly
+			// when this state was signed. So we just use, as a guaranteed lower bound, the
+			// consensus time of its last-handled transaction.
 			final var earliestSigningTime = signedState.getTimeOfLastHandledTxn();
 			if (earliestSigningTime == null) {
-				/* No transactions have been handled; abort now to avoid downstream NPE. */
+				// No transactions have been handled; abort now to avoid downstream NPE.
 				return false;
 			}
 			if (signedState.getStateVersion() != StateVersions.CURRENT_VERSION) {
-				/* We just upgraded and don't yet have a signed state from the current version. */
+				// We just upgraded and don't yet have a signed state from the current version.
+				return false;
+			}
+			if (!signedState.isInitialized()) {
+				// The aliases FCHashMap has not been rebuilt in an uninitialized state
 				return false;
 			}
 
@@ -194,16 +195,14 @@ public class SigReqsManager {
 
 	private void ensureWorkingStateSigReqsIsConstructed() {
 		if (workingSigReqs == null) {
-			final var lookup = lookupsFactory.from(
-					fileNumbers, aliasManager, workingState, TOKEN_META_TRANSFORM);
+			final var lookup = lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM);
 			workingSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
 		}
 	}
 
 	private void ensureSignedStateSigReqsIsConstructed() {
 		if (signedSigReqs == null) {
-			final var lookup = lookupsFactory.from(
-					fileNumbers, aliasManager, signedChildren, TOKEN_META_TRANSFORM);
+			final var lookup = lookupsFactory.from(fileNumbers, signedChildren, TOKEN_META_TRANSFORM);
 			signedSigReqs = sigReqsFactory.from(lookup, signatureWaivers);
 		}
 	}
@@ -219,7 +218,6 @@ public class SigReqsManager {
 	interface StateChildrenLookupsFactory {
 		SigMetadataLookup from(
 				FileNumbers fileNumbers,
-				AliasManager aliasManager,
 				StateChildren stateChildren,
 				Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform);
 	}
