@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
@@ -55,6 +56,7 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -129,6 +131,8 @@ class ServicesStateTest {
 	@Mock
 	private SigReqsManager sigReqsManager;
 	@Mock
+	private FCHashMap<ByteString, EntityNum> aliases;
+	@Mock
 	private MutableStateChildren workingState;
 	@Mock
 	private DualStateAccessor dualStateAccessor;
@@ -154,6 +158,20 @@ class ServicesStateTest {
 		if (APPS.includes(selfId.getId())) {
 			APPS.clear(selfId.getId());
 		}
+	}
+
+	@Test
+	void onlyInitializedIfMetadataIsSet() {
+		assertFalse(subject.isInitialized());
+		subject.setMetadata(metadata);
+		assertTrue(subject.isInitialized());
+	}
+
+	@Test
+	void getsAliasesFromMetadata() {
+		given(metadata.aliases()).willReturn(aliases);
+		subject.setMetadata(metadata);
+		assertSame(aliases, subject.aliases());
 	}
 
 	@Test

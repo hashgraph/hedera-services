@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -36,6 +37,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -67,4 +69,6 @@ public interface StateChildren {
 	MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens();
 
 	RecordsRunningHashLeaf runningHashLeaf();
+
+	FCHashMap<ByteString, EntityNum> aliases();
 }

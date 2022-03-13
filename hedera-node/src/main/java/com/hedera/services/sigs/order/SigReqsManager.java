@@ -187,7 +187,7 @@ public class SigReqsManager {
 		 * reconnect the latest signed state may have never received an init() call. In that
 		 * case, any "rebuilt" children of the ServicesState will be null. (This isn't a
 		 * problem for any existing SigRequirements code, however.) */
-		signedChildren.updateFromMaybeUninitializedState(signedState, earliestSigningTime);
+		signedChildren.updateFromSigned(signedState, earliestSigningTime);
 		ensureSignedStateSigReqsIsConstructed();
 		expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
 	}

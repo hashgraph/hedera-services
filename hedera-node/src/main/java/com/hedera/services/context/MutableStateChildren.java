@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -37,6 +38,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -45,11 +47,10 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * A {@link StateChildren} implementation appropriate for providing quick access to the children of the working state,
- * which are constantly changing.
- *
- * <b>Not</b> thread-safe, so ideally will only be used inside the synchronized {@link com.hedera.services.ServicesState}
- * methods {@code init()}, {@code copy()}, and {@code handleTransaction()}.
+ * A {@link StateChildren} implementation for providing cheap repeated access to the children of a
+ * {@link ServicesState}. (Experience shows that making repeated, indirect calls to
+ * {@link com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal#getChild(int)} is
+ * much more expensive, since the compiler does not seem to ever inline those calls.)
  */
 public class MutableStateChildren implements StateChildren {
 	private WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
@@ -64,14 +65,11 @@ public class MutableStateChildren implements StateChildren {
 	private WeakReference<AddressBook> addressBook;
 	private WeakReference<MerkleSpecialFiles> specialFiles;
 	private WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
+	private WeakReference<FCHashMap<ByteString, EntityNum>> aliases;
 	private Instant signedAt = Instant.EPOCH;
 
 	public MutableStateChildren() {
 		/* No-op */
-	}
-
-	public MutableStateChildren(final Instant signedAt) {
-		this.signedAt = signedAt;
 	}
 
 	@Override
@@ -114,7 +112,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
-                final var refStorage = storage.get();
+		final var refStorage = storage.get();
 		Objects.requireNonNull(refStorage);
 		return refStorage;
 	}
@@ -132,17 +130,13 @@ public class MutableStateChildren implements StateChildren {
 
 	public void setContractStorage(VirtualMap<ContractKey, ContractValue> contractStorage) {
 		this.contractStorage = new WeakReference<>(contractStorage);
-        }
+	}
 
 	@Override
 	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
 		final var refSchedules = schedules.get();
 		Objects.requireNonNull(refSchedules);
 		return refSchedules;
-	}
-
-	public void setSchedules(MerkleMap<EntityNum, MerkleSchedule> schedules) {
-		this.schedules = new WeakReference<>(schedules);
 	}
 
 	@Override
@@ -163,19 +157,11 @@ public class MutableStateChildren implements StateChildren {
 		return refNetworkCtx;
 	}
 
-	public void setNetworkCtx(MerkleNetworkContext networkCtx) {
-		this.networkCtx = new WeakReference<>(networkCtx);
-	}
-
 	@Override
 	public AddressBook addressBook() {
 		final var refAddressBook = addressBook.get();
 		Objects.requireNonNull(refAddressBook);
 		return refAddressBook;
-	}
-
-	public void setAddressBook(AddressBook addressBook) {
-		this.addressBook = new WeakReference<>(addressBook);
 	}
 
 	@Override
@@ -207,16 +193,22 @@ public class MutableStateChildren implements StateChildren {
 		return refRunningHashLeaf;
 	}
 
-	public void setRunningHashLeaf(RecordsRunningHashLeaf runningHashLeaf) {
-		this.runningHashLeaf = new WeakReference<>(runningHashLeaf);
+	@Override
+	public FCHashMap<ByteString, EntityNum> aliases() {
+		final var refAliases = aliases.get();
+		Objects.requireNonNull(refAliases);
+		return refAliases;
 	}
 
-	public void updateFromMaybeUninitializedState(final ServicesState signedState, final Instant signingTime) {
+	public void updateFromSigned(final ServicesState signedState, final Instant signingTime) {
+		updateFrom(signedState);
 		signedAt = signingTime;
-		updatePrimitiveChildrenFrom(signedState);
 	}
 
 	public void updateFrom(final ServicesState state) {
+		if (!state.isInitialized()) {
+			throw new IllegalArgumentException("State children require an initialized state to update");
+		}
 		updatePrimitiveChildrenFrom(state);
 	}
 
@@ -233,5 +225,6 @@ public class MutableStateChildren implements StateChildren {
 		specialFiles = new WeakReference<>(state.specialFiles());
 		uniqueTokens = new WeakReference<>(state.uniqueTokens());
 		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
+		aliases = new WeakReference<>(state.aliases());
 	}
 }
