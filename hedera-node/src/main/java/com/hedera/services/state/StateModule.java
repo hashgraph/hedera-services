@@ -76,7 +76,6 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -88,6 +87,7 @@ import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -326,7 +326,7 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	static Supplier<FCHashMap<ByteString, EntityNum>> provideWorkingAliases(
+	static Supplier<Map<ByteString, EntityNum>> provideWorkingAliases(
 			final MutableStateChildren workingState
 	) {
 		return workingState::aliases;
