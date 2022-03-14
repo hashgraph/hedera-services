@@ -58,7 +58,7 @@ class TopicResourceUsageTestBase {
         nodeProps = mock(NodeLocalProperties.class);
         final MutableStateChildren children = new MutableStateChildren();
         children.setTopics(topics);
-        view = new StateView(null, null, children, null);
+        view = new StateView(null, children, null);
     }
 
     protected void checkServicesFee(FeeData feeData, int extraRbh) {

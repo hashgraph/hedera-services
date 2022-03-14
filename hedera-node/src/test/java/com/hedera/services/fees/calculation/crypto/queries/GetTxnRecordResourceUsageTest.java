@@ -89,7 +89,7 @@ class GetTxnRecordResourceUsageTest {
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		recordCache = mock(RecordCache.class);
 		final var children = new MutableStateChildren();
-		view = new StateView(null, null, children, null);
+		view = new StateView(null, children, null);
 
 		answerFunctions = mock(AnswerFunctions.class);
 		given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnly))

@@ -44,7 +44,6 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
@@ -90,7 +89,6 @@ import java.util.function.BiFunction;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
-import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftAllowancesList;
@@ -120,10 +118,8 @@ public class StateView {
 	public static final MerkleToken REMOVED_TOKEN = new MerkleToken(
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
-	public static final StateView EMPTY_VIEW = new StateView(
-			null, null, null, null);
+	public static final StateView EMPTY_VIEW = new StateView(null, null, null);
 
-	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final StateChildren stateChildren;
 	private final NetworkInfo networkInfo;
@@ -133,12 +129,10 @@ public class StateView {
 	Map<FileID, HFileMeta> fileAttrs;
 
 	public StateView(
-			@Nullable final TokenStore tokenStore,
 			@Nullable final ScheduleStore scheduleStore,
 			@Nullable final StateChildren stateChildren,
 			final NetworkInfo networkInfo
 	) {
-		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
 		this.stateChildren = stateChildren;
 		this.networkInfo = networkInfo;
@@ -171,26 +165,27 @@ public class StateView {
 	}
 
 	public Optional<MerkleToken> tokenWith(final TokenID id) {
-		return tokenStore == null || !tokenStore.exists(id)
-				? Optional.empty()
-				: Optional.of(tokenStore.get(id));
+		if (stateChildren == null) {
+			return Optional.empty();
+		}
+		return Optional.ofNullable(stateChildren.tokens().get(EntityNum.fromTokenId(id)));
 	}
 
-	public Optional<TokenInfo> infoForToken(final TokenID tokenID) {
-		if (tokenStore == null) {
+	public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
+		if (stateChildren == null) {
 			return Optional.empty();
 		}
 		try {
-			var id = tokenStore.resolve(tokenID);
-			if (id == MISSING_TOKEN) {
+			final var tokens = stateChildren.tokens();
+			final var token = tokens.get(EntityNum.fromTokenId(tokenId));
+			if (token == null) {
 				return Optional.empty();
 			}
-			final var token = tokenStore.get(id);
 			final var info = TokenInfo.newBuilder()
 					.setLedgerId(networkInfo.ledgerId())
 					.setTokenTypeValue(token.tokenType().ordinal())
 					.setSupplyTypeValue(token.supplyType().ordinal())
-					.setTokenId(id)
+					.setTokenId(tokenId)
 					.setDeleted(token.isDeleted())
 					.setSymbol(token.symbol())
 					.setName(token.name())
@@ -240,7 +235,7 @@ public class StateView {
 		} catch (Exception unexpected) {
 			log.warn(
 					"Unexpected failure getting info for token {}!",
-					readableId(tokenID),
+					readableId(tokenId),
 					unexpected);
 			return Optional.empty();
 		}
@@ -361,28 +356,24 @@ public class StateView {
 		return uniqueTokens().containsKey(key);
 	}
 
-	public Optional<TokenType> tokenType(final TokenID tokenID) {
-		if (tokenStore == null) {
-			return Optional.empty();
-		}
+	public Optional<TokenType> tokenType(final TokenID tokenId) {
 		try {
-			final var id = tokenStore.resolve(tokenID);
-			if (id == MISSING_TOKEN) {
+			final var optionalToken = tokenWith(tokenId);
+			if (optionalToken.isEmpty()) {
 				return Optional.empty();
 			}
-			final var token = tokenStore.get(id);
-			return Optional.ofNullable(TokenType.forNumber(token.tokenType().ordinal()));
+			return optionalToken.map(token -> TokenType.forNumber(token.tokenType().ordinal()));
 		} catch (Exception unexpected) {
 			log.warn(
 					"Unexpected failure getting info for token {}!",
-					readableId(tokenID),
+					readableId(tokenId),
 					unexpected);
 			return Optional.empty();
 		}
 	}
 
 	public boolean tokenExists(final TokenID id) {
-		return tokenStore != null && tokenStore.resolve(id) != MISSING_TOKEN;
+		return stateChildren != null && stateChildren.tokens().containsKey(EntityNum.fromTokenId(id));
 	}
 
 	public boolean scheduleExists(final ScheduleID id) {
@@ -416,8 +407,10 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id,
-			final AliasManager aliasManager) {
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(
+			final AccountID id,
+			final AliasManager aliasManager
+	) {
 		final var accountEntityNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
 				: aliasManager.lookupIdBy(id.getAlias());
