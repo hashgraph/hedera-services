@@ -20,6 +20,7 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class VirtualMapFactoryTest {
@@ -45,6 +47,25 @@ class VirtualMapFactoryTest {
 	void propagatesUncheckedFromBuilder() {
 		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedBlobs());
 		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedStorage());
+		assertThrows(UncheckedIOException.class, () -> subject.newVirtualizedUniqueTokenStorage());
+	}
+
+	@Test
+	void virtualizedUniqueTokenStorage_whenEmpty_canProperlyInsertAndFetchValues() {
+		VirtualMapFactory subject = new VirtualMapFactory(JasperDbBuilder::new);
+
+		var map = subject.newVirtualizedUniqueTokenStorage();
+		assertThat(map.isEmpty()).isTrue();
+
+		map.put(new UniqueTokenKey(123L, 456L),
+				new UniqueTokenValue(789L, RichInstant.MISSING_INSTANT, "hello world".getBytes())
+		);
+
+		assertThat(map.get(new UniqueTokenKey(123L, 111L))).isNull();
+		var value = map.get(new UniqueTokenKey(123L, 456L));
+		assertThat(value).isNotNull();
+		assertThat(value.getOwnerAccountNum()).isEqualTo(789L);
+		assertThat(value.getMetadata()).isEqualTo("hello world".getBytes());
 	}
 
 	private static class ThrowingJdbFactoryBuilder implements VirtualMapFactory.JasperDbBuilderFactory {
