@@ -24,7 +24,6 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -59,12 +58,7 @@ class TopicResourceUsageTestBase {
         nodeProps = mock(NodeLocalProperties.class);
         final MutableStateChildren children = new MutableStateChildren();
         children.setTopics(topics);
-        view = new StateView(
-        		null,
-                null,
-                children,
-                EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-                null);
+        view = new StateView(null, children, null);
     }
 
     protected void checkServicesFee(FeeData feeData, int extraRbh) {

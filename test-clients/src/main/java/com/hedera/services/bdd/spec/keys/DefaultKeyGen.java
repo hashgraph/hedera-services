@@ -21,11 +21,12 @@ package com.hedera.services.bdd.spec.keys;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.client.util.KeyExpansion;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
 
 import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -51,10 +52,9 @@ public enum DefaultKeyGen implements KeyGenerator {
 		}
 	}
 
-
 	@Override
 	public Key genEd25519AndUpdateMap(Map<String, PrivateKey> mutablePkMap) {
-		return KeyExpansion.genSingleEd25519Key(mutablePkMap);
+		return genAndRememberEd25519Key(mutablePkMap);
 	}
 
 	@Override
@@ -69,5 +69,22 @@ public enum DefaultKeyGen implements KeyGenerator {
 
 		mutablePkMap.put(CommonUtils.hex(compressedPk), kp.getPrivate());
 		return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(compressedPk)).build();
+	}
+
+	public static Key genAndRememberEd25519Key(final Map<String, PrivateKey> hexedPublicToPrivateKeys) {
+		final var pair = new net.i2p.crypto.eddsa.KeyPairGenerator().generateKeyPair();
+		final var pubKey = remember(pair, hexedPublicToPrivateKeys);
+		return grpcEd25519KeyWith(pubKey);
+	}
+
+	private static Key grpcEd25519KeyWith(final byte[] pubKey) {
+		return Key.newBuilder().setEd25519(ByteString.copyFrom(pubKey)).build();
+	}
+
+	private static byte[] remember(final KeyPair pair, final Map<String, PrivateKey> hexedPublicToPrivateKeys) {
+		final var pubKey = ((EdDSAPublicKey) pair.getPublic()).getAbyte();
+		final var pubKeyHex = CommonUtils.hex(pubKey);
+		hexedPublicToPrivateKeys.put(pubKeyHex, pair.getPrivate());
+		return pubKey;
 	}
 }

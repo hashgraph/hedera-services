@@ -20,11 +20,12 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
-import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -55,7 +56,7 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.fchashmap.FCOneToManyRelation;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -130,7 +131,9 @@ class ServicesStateTest {
 	@Mock
 	private SigReqsManager sigReqsManager;
 	@Mock
-	private StateAccessor workingState;
+	private FCHashMap<ByteString, EntityNum> aliases;
+	@Mock
+	private MutableStateChildren workingState;
 	@Mock
 	private DualStateAccessor dualStateAccessor;
 	@Mock
@@ -155,6 +158,20 @@ class ServicesStateTest {
 		if (APPS.includes(selfId.getId())) {
 			APPS.clear(selfId.getId());
 		}
+	}
+
+	@Test
+	void onlyInitializedIfMetadataIsSet() {
+		assertFalse(subject.isInitialized());
+		subject.setMetadata(metadata);
+		assertTrue(subject.isInitialized());
+	}
+
+	@Test
+	void getsAliasesFromMetadata() {
+		given(metadata.aliases()).willReturn(aliases);
+		subject.setMetadata(metadata);
+		assertSame(aliases, subject.aliases());
 	}
 
 	@Test
@@ -396,7 +413,6 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
-		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 
@@ -450,7 +466,6 @@ class ServicesStateTest {
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-		given(app.workingState()).willReturn(workingState);
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
@@ -474,7 +489,6 @@ class ServicesStateTest {
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		assertNotNull(subject.specialFiles());
 		// and:
-		verify(workingState).updateChildrenFrom(subject);
 		verify(dualStateAccessor).setDualState(dualState);
 		verify(initFlow).runWith(subject);
 		verify(appBuilder).bootstrapProps(any());
@@ -496,7 +510,6 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
-		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -548,7 +561,6 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
-		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -571,7 +583,6 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
-		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -581,25 +592,6 @@ class ServicesStateTest {
 		subject.init(platform, addressBook, dualState);
 
 		verify(networkContext, never()).discardPreparedUpgradeMeta();
-	}
-
-	@Test
-	void forwardsFcomtrAsExpected() {
-		// setup:
-		final FCOneToManyRelation<EntityNum, Long> a = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<EntityNum, Long> b = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<EntityNum, Long> c = new FCOneToManyRelation<>();
-		// and:
-		subject.setMetadata(metadata);
-
-		given(metadata.getUniqueTokenAssociations()).willReturn(a);
-		given(metadata.getUniqueOwnershipAssociations()).willReturn(b);
-		given(metadata.getUniqueTreasuryOwnershipAssociations()).willReturn(c);
-
-		// expect:
-		assertSame(a, subject.uniqueTokenAssociations());
-		assertSame(b, subject.uniqueOwnershipAssociations());
-		assertSame(c, subject.uniqueTreasuryOwnershipAssociations());
 	}
 
 	@Test
@@ -624,7 +616,7 @@ class ServicesStateTest {
 		final var copy = subject.copy();
 
 		// then:
-		verify(workingState).updateChildrenFrom(copy);
+		verify(workingState).updateFrom(copy);
 	}
 
 	@Test

@@ -22,7 +22,7 @@ package com.hedera.test.forensics.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.swirlds.common.CommonUtils;
 
 import java.util.Collections;
@@ -48,7 +48,7 @@ public class PojoFunctionResult {
 	private List<String> creations = Collections.emptyList();
 	private List<PojoFunctionLog> logs = Collections.EMPTY_LIST;;
 
-	public static PojoFunctionResult from(SolidityFnResult value) {
+	public static PojoFunctionResult from(EvmFnResult value) {
 		var pojo = new PojoFunctionResult();
 		pojo.setId(PojoRecord.asString(value.getContractId()));
 		pojo.setGas(value.getGasUsed());

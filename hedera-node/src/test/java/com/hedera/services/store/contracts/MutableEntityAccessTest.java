@@ -40,6 +40,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -64,6 +65,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.function.Supplier;
 
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -256,15 +258,6 @@ class MutableEntityAccessTest {
 	}
 
 	@Test
-	void adjustsBalance() {
-		// when:
-		subject.adjustBalance(id, balance);
-
-		// then:
-		verify(ledger).adjustBalance(id, balance);
-	}
-
-	@Test
 	void getsBalance() {
 		// given:
 		given(ledger.getBalance(id)).willReturn(balance);
@@ -300,6 +293,18 @@ class MutableEntityAccessTest {
 
 		// and:
 		verify(ledger).exists(id);
+	}
+
+	@Test
+	void checksIfTokenAccount() {
+		// given:
+		given(tokensLedger.exists(EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr))).willReturn(true);
+
+		// when:
+		assertTrue(subject.isTokenAccount(fungibleTokenAddr));
+
+		// and:
+		verify(tokensLedger).exists(EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr));
 	}
 
 	@Test

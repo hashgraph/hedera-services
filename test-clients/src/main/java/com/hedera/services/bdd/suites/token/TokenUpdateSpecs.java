@@ -41,9 +41,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfos;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.queries.token.HapiTokenNftInfo.newTokenNftInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -102,7 +100,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						symbolChanges(),
 						standardImmutabilitySemanticsHold(),
@@ -678,14 +676,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
 								.logged(),
 						getTokenNftInfo("primary", 1)
 								.hasAccountID("newTokenTreasury")
-								.logged(),
-						getTokenNftInfos("primary", 0, 1)
-								.hasNfts(
-										newTokenNftInfo("primary", 1, "newTokenTreasury",
-												ByteString.copyFromUtf8("memo1"))
-								)
-								.logged(),
-						getTxnRecord("tokenUpdateTxn").logged()
+								.logged()
 				);
 	}
 

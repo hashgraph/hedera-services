@@ -83,7 +83,7 @@ public class R5BugChecks extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 //						genesisUpdatesFeesForFree(),
 //						canGetDeletedFileInfo(),

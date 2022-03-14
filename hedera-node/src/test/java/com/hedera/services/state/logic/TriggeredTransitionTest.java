@@ -59,20 +59,40 @@ class TriggeredTransitionTest {
 	@Mock
 	private NetworkCtxManager networkCtxManager;
 	@Mock
-	private ScreenedTransition screenedTransition;
+	private RequestedTransition requestedTransition;
 	@Mock
 	private TransactionContext txnCtx;
+	@Mock
+	private NetworkUtilization networkUtilization;
 
 	private TriggeredTransition subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new TriggeredTransition(
-				currentView, fees, chargingPolicy, txnCtx, networkCtxManager, screenedTransition);
+				currentView, fees, chargingPolicy, txnCtx, networkCtxManager, requestedTransition, networkUtilization);
 	}
 
 	@Test
 	void happyPathFlows() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensusNow);
+		given(txnCtx.activePayerKey()).willReturn(activePayerKey);
+		given(fees.computeFee(accessor, activePayerKey, currentView, consensusNow)).willReturn(fee);
+		given(chargingPolicy.applyForTriggered(fee)).willReturn(OK);
+		given(networkUtilization.screenForAvailableCapacity()).willReturn(true);
+
+		// when:
+		subject.run();
+
+		// then:
+		verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
+		verify(networkUtilization).trackUserTxn(accessor, consensusNow);
+		verify(requestedTransition).finishFor(accessor);
+	}
+
+	@Test
+	void doesntRunRequestedIfCapacityMissing() {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(txnCtx.activePayerKey()).willReturn(activePayerKey);
@@ -84,8 +104,8 @@ class TriggeredTransitionTest {
 
 		// then:
 		verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
-		verify(networkCtxManager).prepareForIncorporating(accessor);
-		verify(screenedTransition).finishFor(accessor);
+		verify(networkUtilization).trackUserTxn(accessor, consensusNow);
+		verify(requestedTransition, never()).finishFor(accessor);
 	}
 
 	@Test
@@ -101,8 +121,7 @@ class TriggeredTransitionTest {
 
 		// then:
 		verify(networkCtxManager).advanceConsensusClockTo(consensusNow);
-		verify(networkCtxManager).prepareForIncorporating(accessor);
 		verify(txnCtx).setStatus(INSUFFICIENT_TX_FEE);
-		verify(screenedTransition, never()).finishFor(accessor);
+		verify(requestedTransition, never()).finishFor(accessor);
 	}
 }

@@ -62,6 +62,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -95,7 +96,7 @@ class ContractCreateTransitionLogicTest {
 	private final FileID bytecodeSrc = IdUtils.asFile("0.0.75231");
 	private final byte[] bytecode =
 			("6080604052603e8060116000396000f3fe6080604052600080fdfea265627a7a723158209dcac4560f0f51610e07" +
-					"ac469a3401491cfed6040caf961950f8964fe5ca3fe264736f6c634300050b0032").getBytes();
+			 "ac469a3401491cfed6040caf961950f8964fe5ca3fe264736f6c634300050b0032").getBytes();
 
 	@Mock
 	private HederaFs hfs;
@@ -245,14 +246,14 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		final var result = TransactionProcessingResult
-				.successful(
+		final var result = TransactionProcessingResult.successful(
 						null,
 						1234L,
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress());
+						contractAccount.getId().asEvmAddress(),
+						Map.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -321,14 +322,14 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		final var result = TransactionProcessingResult
-				.successful(
+		final var result = TransactionProcessingResult.successful(
 						null,
 						1234L,
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress());
+						contractAccount.getId().asEvmAddress(),
+						Map.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -383,7 +384,8 @@ class ContractCreateTransitionLogicTest {
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		var result = TransactionProcessingResult.failed(1234L, 0L,
-				124L, Optional.empty(), Optional.empty());
+				124L, Optional.empty(), Optional.empty(),
+				Map.of());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -416,14 +418,14 @@ class ContractCreateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given (worldState.persistProvisionalContractCreations()).willReturn(secondaryCreations);
-		final var result = TransactionProcessingResult
-				.successful(
+		final var result = TransactionProcessingResult.successful(
 						null,
 						1234L,
 						0L,
 						124L,
 						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress());
+						contractAccount.getId().asEvmAddress(),
+						Map.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();

@@ -72,6 +72,11 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 				.plus(storageAndMemoryGasForCreation(frame, effGasCalculator));
 	}
 
+	@Override
+	protected boolean isEnabled() {
+		return true;
+	}
+
 	public static Gas storageAndMemoryGasForCreation(final MessageFrame frame, final GasCalculator gasCalculator) {
 		final var initCodeOffset = clampedToLong(frame.getStackItem(1));
 		final var initCodeLength = clampedToLong(frame.getStackItem(2));

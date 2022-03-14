@@ -39,6 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
@@ -82,15 +83,9 @@ class ExpandHandleSpanTest {
 	}
 
 	@Test
-	void expandsOnTracking() throws InvalidProtocolBufferException {
-		// when:
-		final var startAccessor = subject.track(validTxn);
-		// and:
-		final var endAccessor = subject.accessorFor(validTxn);
-
-		// then:
-		verify(handleSpanMap).expandSpan(startAccessor);
-		verify(handleSpanMap).rationalizeSpan(endAccessor);
+	void expandsOnTracking() {
+		assertDoesNotThrow(() -> subject.track(validTxn));
+		assertDoesNotThrow(() -> subject.accessorFor(validTxn));
 	}
 
 	@Test

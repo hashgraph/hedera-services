@@ -35,10 +35,12 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyGetAccountNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
@@ -118,6 +120,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
@@ -290,6 +293,14 @@ public class UtilVerbs {
 		return new VerifyGetBySolidityIdNotSupported();
 	}
 
+	public static VerifyGetAccountNftInfosNotSupported getAccountNftInfosNotSupported() {
+		return new VerifyGetAccountNftInfosNotSupported();
+	}
+
+	public static VerifyGetTokenNftInfosNotSupported getTokenNftInfosNotSupported() {
+		return new VerifyGetTokenNftInfosNotSupported();
+	}
+
 	public static RunLoadTest runLoadTest(Supplier<HapiSpecOperation[]> opSource) {
 		return new RunLoadTest(opSource);
 	}
@@ -314,6 +325,19 @@ public class UtilVerbs {
 		return fileUpdate(APP_PROPERTIES)
 				.payingWith(ADDRESS_BOOK_CONTROL)
 				.overridingProps(Map.of(property, "" + value));
+	}
+
+	public static HapiSpecOperation overridingTwo(
+			final String aProperty,
+			final String aValue,
+			final String bProperty,
+			final String bValue
+	) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(ADDRESS_BOOK_CONTROL)
+				.overridingProps(Map.of(
+						aProperty, aValue,
+						bProperty, bValue));
 	}
 
 	public static HapiSpecOperation resetAppPropertiesTo(String path) {
@@ -592,6 +616,17 @@ public class UtilVerbs {
 		}
 		var stylized = new String(baos.toByteArray());
 		return ByteString.copyFrom(serde.toRawFile(stylized));
+	}
+
+	public static HapiSpecOperation createLargeFile(
+			String payer,
+			String fileName,
+			ByteString byteString
+	) {
+		return blockingOrder(
+				fileCreate(fileName).payingWith(payer).contents(new byte[0]),
+				updateLargeFile(payer, fileName, byteString, false, OptionalLong.empty())
+		);
 	}
 
 	public static HapiSpecOperation updateLargeFile(

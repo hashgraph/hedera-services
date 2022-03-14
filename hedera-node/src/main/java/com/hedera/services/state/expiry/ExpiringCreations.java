@@ -33,7 +33,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -56,7 +56,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class ExpiringCreations implements EntityCreator {
-
 	private final ExpiryManager expiries;
 	private final NarratedCharging narratedCharging;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -151,9 +150,6 @@ public class ExpiringCreations implements EntityCreator {
 		if (sideEffectsTracker.hasTrackedNewTokenId()) {
 			receiptBuilder.setTokenId(EntityId.fromGrpcTokenId(sideEffectsTracker.getTrackedNewTokenId()));
 		}
-		if (sideEffectsTracker.hasTrackedContractCreation()) {
-			receiptBuilder.setContractId(EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId()));
-		}
 		if (sideEffectsTracker.hasTrackedTokenSupply()) {
 			receiptBuilder.setNewTotalSupply(sideEffectsTracker.getTrackedTokenSupply());
 		}
@@ -183,7 +179,11 @@ public class ExpiringCreations implements EntityCreator {
 			setTokensAndTokenAdjustments(baseRecord, tokenChanges);
 		}
 		if (sideEffectsTracker.hasTrackedContractCreation()) {
-			final var createResult = new SolidityFnResult();
+			final var newId = 	EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId());
+			receiptBuilder.setContractId(newId);
+			final var createResult = new EvmFnResult();
+			// A bit redundant, but set this for consistency with top-level records
+			createResult.setContractId(newId);
 			createResult.setEvmAddress(sideEffectsTracker.getNewEntityAlias().toByteArray());
 			baseRecord.setContractCreateResult(createResult);
 		}

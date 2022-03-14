@@ -33,7 +33,6 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
-import com.hedera.services.legacy.core.TestHelper;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -468,10 +467,8 @@ public class HapiApiSpec implements Runnable {
 
 	private static Map<String, String> ciPropOverrides() {
 		if (ciPropsSource == null) {
-			Properties appProps = TestHelper.getApplicationProperties();
-			String port = appProps.getProperty("port");
 			dynamicNodes = Stream.of(dynamicNodes.split(","))
-					.map(s -> s + ":" + port)
+					.map(s -> s + ":" + 50211)
 					.collect(joining(","));
 			String ciPropertiesMap = Optional.ofNullable(System.getenv("CI_PROPERTIES_MAP")).orElse("");
 			log.info("CI_PROPERTIES_MAP: " + ciPropertiesMap);

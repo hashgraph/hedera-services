@@ -166,7 +166,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
 			try {
 				final var entityAccess = new StaticEntityAccess(view, aliasManager, validator, dynamicProperties);
 				final var codeCache = new CodeCache(nodeProperties, entityAccess);
-				final var worldState = new HederaWorldState(ids, entityAccess, codeCache);
+				final var worldState = new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties);
 				callLocalEvmTxProcessor.setWorldState(worldState);
 
 				final var opResponse =

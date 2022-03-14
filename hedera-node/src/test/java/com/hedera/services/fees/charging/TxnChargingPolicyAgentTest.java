@@ -97,6 +97,13 @@ class TxnChargingPolicyAgentTest {
 	}
 
 	@Test
+	void delegatesRefund() {
+		subject.refundPayerServiceFee();
+
+		verify(chargingPolicy).refundPayerServiceFee();
+	}
+
+	@Test
 	void appliesForLackOfNodeDueDiligence() {
 		givenBaseCtx();
 		given(nodeDiligenceScreen.nodeIgnoredDueDiligence(BELIEVED_UNIQUE)).willReturn(true);

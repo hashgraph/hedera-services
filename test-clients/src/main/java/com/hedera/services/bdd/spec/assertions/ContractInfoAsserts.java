@@ -102,6 +102,13 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		return this;
 	}
 
+	public ContractInfoAsserts balance(long balance) {
+		registerProvider((spec, o) -> {
+			assertEquals(balance, object2ContractInfo(o).getBalance(), "Bad balance!");
+		});
+		return this;
+	}
+
 	public ContractInfoAsserts expiry(long expectedExpiry) {
 		registerProvider((spec, o) -> {
 			assertEquals(expectedExpiry, object2ContractInfo(o).getExpirationTime().getSeconds(),

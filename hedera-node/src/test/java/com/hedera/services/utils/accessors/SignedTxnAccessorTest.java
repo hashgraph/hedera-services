@@ -29,6 +29,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.usage.crypto.CryptoContextUtils;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
@@ -80,9 +81,9 @@ import java.util.function.Function;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMap;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMap;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -612,9 +613,9 @@ class SignedTxnAccessorTest {
 
 		assertEquals(128, expandedMeta.getMsgBytesUsed());
 		assertEquals(now, expandedMeta.getEffectiveNow());
-		assertEquals(convertToCryptoMap(List.of(cryptoAllowance1)), expandedMeta.getCryptoAllowances());
-		assertEquals(convertToTokenMap(List.of(tokenAllowance1)), expandedMeta.getTokenAllowances());
-		assertEquals(convertToNftMap(List.of(nftAllowance1)), expandedMeta.getNftAllowances());
+		assertEquals(CryptoContextUtils.convertToCryptoMap(List.of(cryptoAllowance1)), expandedMeta.getCryptoAllowances());
+		assertEquals(CryptoContextUtils.convertToTokenMap(List.of(tokenAllowance1)), expandedMeta.getTokenAllowances());
+		assertEquals(CryptoContextUtils.convertToNftMap(List.of(nftAllowance1)), expandedMeta.getNftAllowances());
 	}
 
 

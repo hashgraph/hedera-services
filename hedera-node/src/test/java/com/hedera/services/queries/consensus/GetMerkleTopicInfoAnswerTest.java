@@ -26,7 +26,6 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.topics.TopicFactory;
@@ -115,12 +114,7 @@ class GetMerkleTopicInfoAnswerTest {
 		networkInfo = mock(NetworkInfo.class);
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-		view = new StateView(
-				null,
-				null,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				networkInfo);
+		view = new StateView(null, children, networkInfo);
 		optionValidator = mock(OptionValidator.class);
 
 		subject = new GetTopicInfoAnswer(optionValidator);
@@ -274,7 +268,8 @@ class GetMerkleTopicInfoAnswerTest {
 		Response response = subject.responseGiven(query, view, OK, fee);
 
 		assertTrue(response.hasConsensusGetTopicInfo());
-		assertEquals(INVALID_TOPIC_ID, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(INVALID_TOPIC_ID,
+				response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test

@@ -32,6 +32,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
 
 public interface EntityAccess {
 	/**
@@ -53,11 +54,7 @@ public interface EntityAccess {
 	String currentManagedChangeSet();
 
 	/* --- Account access --- */
-	void spawn(AccountID id, long balance, HederaAccountCustomizer customizer);
-
 	void customize(AccountID id, HederaAccountCustomizer customizer);
-
-	void adjustBalance(AccountID id, long adjustment);
 
 	long getAutoRenew(AccountID id);
 
@@ -76,6 +73,8 @@ public interface EntityAccess {
 	boolean isDetached(AccountID id);
 
 	boolean isExtant(AccountID id);
+
+	boolean isTokenAccount(Address address);
 
 	ByteString alias(AccountID id);
 

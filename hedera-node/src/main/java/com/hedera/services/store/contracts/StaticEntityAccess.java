@@ -37,6 +37,7 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -44,6 +45,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Objects;
 
@@ -57,6 +59,7 @@ public class StaticEntityAccess implements EntityAccess {
 	private final MerkleMap<EntityNum, MerkleAccount> accounts;
 	private final VirtualMap<ContractKey, ContractValue> storage;
 	private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
+	private final StateView stateView;
 
 	public StaticEntityAccess(
 			final StateView stateView,
@@ -70,6 +73,7 @@ public class StaticEntityAccess implements EntityAccess {
 		this.bytecode = stateView.storage();
 		this.storage = stateView.contractStorage();
 		this.accounts = stateView.accounts();
+		this.stateView = stateView;
 	}
 
 	@Override
@@ -93,17 +97,7 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void spawn(AccountID id, long balance, HederaAccountCustomizer customizer) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public void customize(final AccountID id, final HederaAccountCustomizer customizer) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void adjustBalance(AccountID id, long adjustment) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -167,6 +161,11 @@ public class StaticEntityAccess implements EntityAccess {
 	@Override
 	public boolean isExtant(AccountID id) {
 		return accounts.get(fromAccountId(id)) != null;
+	}
+
+	@Override
+	public boolean isTokenAccount(Address address) {
+		return stateView.tokenExists(EntityIdUtils.tokenIdFromEvmAddress(address));
 	}
 
 	@Override
