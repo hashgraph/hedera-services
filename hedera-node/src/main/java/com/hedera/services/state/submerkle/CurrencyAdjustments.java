@@ -74,7 +74,7 @@ public class CurrencyAdjustments implements SelfSerializable {
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		if (version < RELEASE_0240_VERSION) {
 			final var accountIds = in.readSerializableList(MAX_NUM_ADJUSTMENTS, true, EntityId::new);
-			accountNums = accountIds.stream().mapToLong(a -> a.num()).toArray();
+			accountNums = accountIds.stream().mapToLong(EntityId::num).toArray();
 		} else {
 			accountNums = in.readLongArray(MAX_NUM_ADJUSTMENTS);
 		}
