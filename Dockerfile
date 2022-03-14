@@ -32,7 +32,7 @@ FROM base-runtime AS services-builder
 # Note: Java 17 requires Maven 3.8+ so the distro provided one just won't do
 RUN apt-get update && \
     apt-get install -y wget unzip && \
-    wget https://dlcdn.apache.org/maven/maven-3/3.8.5/binaries/apache-maven-3.8.5-bin.zip &&\
+    wget https://dlcdn.apache.org/maven/maven-3/3.8.5/binaries/apache-maven-3.8.5-bin.zip && \
     unzip apache-maven-3.8.5-bin.zip -d /opt && \
     rm apache-maven-3.8.5-bin.zip
 ENV PATH=/opt/apache-maven-3.8.5/bin:$PATH
