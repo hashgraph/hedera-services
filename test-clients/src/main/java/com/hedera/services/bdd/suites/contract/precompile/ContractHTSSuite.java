@@ -41,17 +41,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_COLLECTOR_CONSTRUCTOR;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_COLLECTOR_DISTRIBUTE;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_CONSTRUCTOR;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_DISTRIBUTE;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_DISTRIBUTE_STATIC_NESTED_CALL;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_NFT;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_NFTS;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_TOKENS;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_DEPOSIT_TOKENS;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_WITHDRAW_TOKENS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -679,11 +668,11 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.andAllChildRecords()
 								.logged()
 								.hasPriority(recordWith().transfers(including(
-										tinyBarsFromTo(CONTRACT, SECOND_RECEIVER, CUSTOM_HBAR_FEE_AMOUNT)))),
+										tinyBarsFromTo(outerContract, SECOND_RECEIVER, CUSTOM_HBAR_FEE_AMOUNT)))),
 						childRecordsCheck("distributeTx", SUCCESS,
 								recordWith()
 										.status(SUCCESS)
-										.transfers(including(tinyBarsFromTo(ACCOUNT, CONTRACT, CUSTOM_HBAR_FEE_AMOUNT)))
+										.transfers(including(tinyBarsFromTo(ACCOUNT, outerContract, CUSTOM_HBAR_FEE_AMOUNT)))
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, ACCOUNT, -AMOUNT_TO_SEND)

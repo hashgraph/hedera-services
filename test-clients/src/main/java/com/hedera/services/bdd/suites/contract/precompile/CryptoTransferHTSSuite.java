@@ -104,7 +104,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						nonNestedCryptoTransferForMultipleNonFungibleTokens(),
 						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
 						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-						repeatedTokenIdsAreAutomaticallyConsolidated()
+						repeatedTokenIdsAreAutomaticallyConsolidated(),
+						activeContractInFrameIsVerifiedWithoutNeedForSignature()
 				}
 		);
 	}
@@ -689,8 +690,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec activeContractInFrameIsVerifiedWithoutNeedForSignature() {
-		final var initcode = "cryptoTransferFileByteCode";
-		final var cryptoTransferContract = "cryptoTransferContract";
 		final var revertedFungibleTransferTxn = "revertedFungibleTransferTxn";
 		final var successfulFungibleTransferTxn = "successfulFungibleTransferTxn";
 		final var revertedNftTransferTxn = "revertedNftTransferTxn";
@@ -710,11 +709,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS).key(senderKey),
 						cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(initcode),
-						updateLargeFile(SENDER, initcode,
-								extractByteCode(ContractResources.CRYPTO_TRANSFER_CONTRACT)),
-						contractCreate(cryptoTransferContract, CRYPTO_TRANSFER_CONS_ABI)
-								.bytecode(initcode)
+						uploadInitCode(CONTRACT),
+						newContractCreate(CONTRACT)
 								.payingWith(GENESIS)
 								.adminKey(contractKey)
 								.gas(GAS_TO_OFFER),
@@ -732,23 +728,23 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						mintToken(NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
 						tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
-						tokenAssociate(cryptoTransferContract, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
+						tokenAssociate(CONTRACT, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
 						cryptoTransfer(moving(senderStartBalance, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
 						cryptoTransfer(movingUnique(NFT_TOKEN, 1L).between(TOKEN_TREASURY, SENDER)),
 						cryptoTransfer(moving(senderStartBalance, FUNGIBLE_TOKEN).between(TOKEN_TREASURY,
-								cryptoTransferContract), movingUnique(NFT_TOKEN, 2L).between(TOKEN_TREASURY,
-								cryptoTransferContract))
+								CONTRACT), movingUnique(NFT_TOKEN, 2L).between(TOKEN_TREASURY,
+								CONTRACT))
 				).when(
 						withOpContext((spec, opLog) -> {
 							final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
 							final var nftToken = spec.registry().getTokenID(NFT_TOKEN);
 							final var sender = spec.registry().getAccountID(SENDER);
 							final var receiver = spec.registry().getAccountID(RECEIVER);
-							final var contractId = spec.registry().getAccountID(cryptoTransferContract);
+							final var contractId = spec.registry().getAccountID(CONTRACT);
 							allRunFor(
 									spec,
-									contractCall(cryptoTransferContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST, Tuple.singleton(
-											new Tuple[] {
+									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
+											new Tuple[]{
 													tokenTransferList()
 															.forToken(token)
 															.isSingleList(false)
@@ -769,8 +765,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 											.via(revertedFungibleTransferTxn)
 											.gas(GAS_TO_OFFER)
 											.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-									contractCall(cryptoTransferContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST, Tuple.singleton(
-											new Tuple[] {
+									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
+											new Tuple[]{
 													tokenTransferList()
 															.forToken(token)
 															.isSingleList(false)
@@ -792,8 +788,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 											.via(successfulFungibleTransferTxn)
 											.gas(GAS_TO_OFFER)
 											.hasKnownStatus(SUCCESS),
-									contractCall(cryptoTransferContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST, Tuple.singleton(
-											new Tuple[] {
+									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
+											new Tuple[]{
 													tokenTransferList()
 															.forToken(nftToken)
 															.isSingleList(false)
@@ -810,8 +806,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 											.via(revertedNftTransferTxn)
 											.gas(GAS_TO_OFFER)
 											.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-									contractCall(cryptoTransferContract, CRYPTO_TRANSFER_FUNGIBLE_TOKENS_LIST, Tuple.singleton(
-											new Tuple[] {
+									contractCall(CONTRACT, "transferMultipleTokens", Tuple.singleton(
+											new Tuple[]{
 													tokenTransferList()
 															.forToken(nftToken)
 															.isSingleList(false)
@@ -837,7 +833,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						getAccountBalance(SENDER)
 								.hasTokenBalance(FUNGIBLE_TOKEN, senderStartBalance - toSendEachTuple)
 								.hasTokenBalance(NFT_TOKEN, 0L),
-						getAccountBalance(cryptoTransferContract)
+						getAccountBalance(CONTRACT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, senderStartBalance - toSendEachTuple)
 								.hasTokenBalance(NFT_TOKEN, 0L),
 						childRecordsCheck(revertedFungibleTransferTxn, CONTRACT_REVERT_EXECUTED, recordWith()
@@ -847,7 +843,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 								.tokenTransfers(
 										SomeFungibleTransfers.changingFungibleBalances()
 												.including(FUNGIBLE_TOKEN, SENDER, -toSendEachTuple)
-												.including(FUNGIBLE_TOKEN, cryptoTransferContract, -toSendEachTuple)
+												.including(FUNGIBLE_TOKEN, CONTRACT, -toSendEachTuple)
 												.including(FUNGIBLE_TOKEN, RECEIVER, 2 * toSendEachTuple)
 								)
 						),
@@ -858,7 +854,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 								.tokenTransfers(
 										NonFungibleTransfers.changingNFTBalances()
 												.including(NFT_TOKEN, SENDER, RECEIVER, 1L)
-												.including(NFT_TOKEN, cryptoTransferContract, RECEIVER, 2L)
+												.including(NFT_TOKEN, CONTRACT, RECEIVER, 2L)
 								)
 						)
 				);
