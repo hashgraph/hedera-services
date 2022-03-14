@@ -363,15 +363,8 @@ public class SideEffectsTracker {
 		numHbarChangesSoFar = purgeZeroChanges(changedAccounts, balanceChanges, numHbarChangesSoFar);
 
 		// copy the range of elements that are modified from balance changes and account numbers
-		final long[] changedBalances;
-		final long[] changedAccountNums;
-		if (numHbarChangesSoFar < balanceChanges.length) {
-			changedBalances = Arrays.copyOfRange(balanceChanges, 0, numHbarChangesSoFar);
-			changedAccountNums = Arrays.copyOfRange(changedAccounts, 0, numHbarChangesSoFar);
-		} else {
-			changedBalances = balanceChanges;
-			changedAccountNums = changedAccounts;
-		}
+		final long[] changedBalances = Arrays.copyOfRange(balanceChanges, 0, numHbarChangesSoFar);
+		final long[] changedAccountNums = Arrays.copyOfRange(changedAccounts, 0, numHbarChangesSoFar);
 		return CurrencyAdjustments.fromChanges(changedBalances, changedAccountNums);
 	}
 
