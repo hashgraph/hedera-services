@@ -362,9 +362,9 @@ class SideEffectsTrackerTest {
 	void resetsTouchedNumsCorrectly() {
 		subject.trackHbarChange(100L, 200L);
 		subject.trackHbarChange(200L, 200L);
-		assertEquals(2, subject.getNumHbarBalancesChangedSoFar());
+		assertEquals(2, subject.getNumHbarChangesSoFar());
 		subject.reset();
-		assertEquals(0, subject.getNumHbarBalancesChangedSoFar());
+		assertEquals(0, subject.getNumHbarChangesSoFar());
 	}
 
 	private static final long aFirstBalanceChange = 1_000L;

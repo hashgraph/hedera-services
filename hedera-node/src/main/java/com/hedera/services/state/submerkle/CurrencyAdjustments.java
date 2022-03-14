@@ -129,24 +129,12 @@ public class CurrencyAdjustments implements SelfSerializable {
 		return grpc.build();
 	}
 
-	public static CurrencyAdjustments fromChanges(final long[] balanceChanges, final long[] changedAccounts,
-			final int touchedSoFar) {
-		final long[] nonZeroBalanceChanges;
-		final long[] nonZeroAccountNums;
-
-		if (touchedSoFar != balanceChanges.length) {
-			nonZeroBalanceChanges = Arrays.copyOfRange(balanceChanges, 0, touchedSoFar);
-			nonZeroAccountNums = Arrays.copyOfRange(changedAccounts, 0, touchedSoFar);
-		} else {
-			nonZeroBalanceChanges = balanceChanges;
-			nonZeroAccountNums = changedAccounts;
-		}
-
-		final var n = nonZeroBalanceChanges.length;
-		final var m = nonZeroAccountNums.length;
+	public static CurrencyAdjustments fromChanges(final long[] balanceChanges, final long[] changedAccounts) {
+		final var n = balanceChanges.length;
+		final var m = changedAccounts.length;
 
 		if (n > 0 && m > 0 && n == m) {
-			return new CurrencyAdjustments(nonZeroBalanceChanges, nonZeroAccountNums);
+			return new CurrencyAdjustments(balanceChanges, changedAccounts);
 		}
 		return new CurrencyAdjustments();
 	}

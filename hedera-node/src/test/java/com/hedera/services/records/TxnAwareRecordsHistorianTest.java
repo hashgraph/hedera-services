@@ -88,7 +88,7 @@ class TxnAwareRecordsHistorianTest {
 			.build();
 	final private CurrencyAdjustments initialTransfers = CurrencyAdjustments.fromChanges(
 			new long[] { -1_000L, 500L, 501L, 01L },
-			new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum(), d.getAccountNum() }, 4);
+			new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum(), d.getAccountNum() });
 	final private ExpirableTxnRecord.Builder finalRecord = ExpirableTxnRecord.newBuilder()
 			.setTxnId(TxnId.fromGrpc(txnIdA))
 			.setTransferList(initialTransfers)

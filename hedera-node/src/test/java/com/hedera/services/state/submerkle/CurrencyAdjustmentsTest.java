@@ -58,12 +58,10 @@ class CurrencyAdjustmentsTest {
 
 	private static final CurrencyAdjustments grpcAdjustments = CurrencyAdjustments.fromChanges
 			(new long[] { aAmount, bAmount, cAmount },
-					new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum() },
-					3);
+					new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum() });
 	private static final CurrencyAdjustments otherGrpcAdjustments = CurrencyAdjustments.fromChanges
 			(new long[] { aAmount * 2, bAmount * 2, cAmount * 2 },
-					new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum() },
-					3);
+					new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum() });
 
 	private CurrencyAdjustments subject;
 
