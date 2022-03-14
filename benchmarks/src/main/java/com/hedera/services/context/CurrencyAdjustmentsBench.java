@@ -22,8 +22,10 @@ package com.hedera.services.context;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
@@ -33,25 +35,31 @@ import org.openjdk.jmh.infra.Blackhole;
 @Warmup(iterations = 1, time = 5)
 @Measurement(iterations = 5, time = 10)
 public class CurrencyAdjustmentsBench {
-	private final SideEffectsTracker tracker = new SideEffectsTracker();
+	@State(Scope.Benchmark)
+	public static class MyState {
+		@Setup(Level.Invocation)
+		public void setUp() {
+			tracker.reset();
+		}
+
+		public SideEffectsTracker tracker = new SideEffectsTracker();
+	}
 
 	@Benchmark
-	public void getTrackedCurrencyAdjustments(Blackhole blackhole) {
-		tracker.reset();
-
+	public void getTrackedCurrencyAdjustments(Blackhole blackhole, MyState state) {
 		var account = 1000;
 		var amount = 2000;
 		for (int i = 0; i < 10; i++) {
-			tracker.trackHbarChange(account, amount + 10);
-			tracker.trackHbarChange(account, amount - 10);
+			state.tracker.trackHbarChange(account, amount + 10);
+			state.tracker.trackHbarChange(account, amount - 10);
 			account++;
 		}
 		for (int i = 0; i < 5; i++) {
-			tracker.trackHbarChange(account, amount);
-			tracker.trackHbarChange(account, -1 * amount);
+			state.tracker.trackHbarChange(account, amount);
+			state.tracker.trackHbarChange(account, -1 * amount);
 			account++;
 		}
-		final var result = tracker.getNetTrackedHbarChanges();
+		final var result = state.tracker.getNetTrackedHbarChanges();
 		blackhole.consume(result);
 	}
 	
