@@ -412,19 +412,22 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
 	private HapiApiSpec autoAccountCreationsHappyPath() {
 		final var now = Instant.now().getEpochSecond();
+		final var civilian = "somebody";
+		final var autoCreateSponsor = "autoCreateSponsor";
 		return defaultHapiSpec("AutoAccountCreationsHappyPath")
 				.given(
 						newKeyNamed("validAlias"),
-						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
+						cryptoCreate(civilian),
+						cryptoCreate(autoCreateSponsor).balance(initialBalance * ONE_HBAR)
 				).when(
 						cryptoTransfer(
-								tinyBarsFromToWithAlias("payer", "validAlias", ONE_HUNDRED_HBARS)
-						).via("transferTxn")
+								tinyBarsFromToWithAlias(autoCreateSponsor, "validAlias", ONE_HUNDRED_HBARS)
+						).via("transferTxn").payingWith(civilian)
 				).then(
 						getReceipt("transferTxn")
 								.andAnyChildReceipts()
 								.hasChildAutoAccountCreations(1),
-						getAccountInfo("payer").has(
+						getAccountInfo(autoCreateSponsor).has(
 								accountWith()
 										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
 										.noAlias()),
@@ -434,10 +437,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 									.hasChildRecordCount(1)
 									.hasAliasInChildRecord("validAlias", 0);
 							allRunFor(spec, lookup);
-							final var payer = spec.registry().getAccountID("payer");
+							final var sponsor = spec.registry().getAccountID(autoCreateSponsor);
+							final var payer = spec.registry().getAccountID(civilian);
 							final var parent = lookup.getResponseRecord();
 							final var child = lookup.getChildRecord(0);
-							assertFeeInChildRecord(parent, child, payer, ONE_HUNDRED_HBARS);
+							assertFeeInChildRecord(parent, child, sponsor, payer, ONE_HUNDRED_HBARS);
 						}),
 						getAliasedAccountInfo("validAlias").has(
 										accountWith()
@@ -455,13 +459,14 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	private void assertFeeInChildRecord(
 			final TransactionRecord parent,
 			final TransactionRecord child,
-			final AccountID parentPayer,
+			final AccountID sponsor,
+			final AccountID defaultPayer,
 			final long newAccountFunding
 	) {
 		long receivedBalance = 0;
 		for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
 			final var id = adjust.getAccountID();
-			if (id.getAccountNum() < 100 || id.equals(parentPayer)) {
+			if (id.getAccountNum() < 100 || id.equals(sponsor) || id.equals(defaultPayer)) {
 				continue;
 			}
 			receivedBalance = adjust.getAmount();
