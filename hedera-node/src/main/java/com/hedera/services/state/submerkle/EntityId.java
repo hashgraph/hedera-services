@@ -91,6 +91,17 @@ public class EntityId implements SelfSerializable {
 		return new EntityId(DEFAULT_SHARD, DEFAULT_REALM, numFromCode(code));
 	}
 
+	/**
+	 * Builds an entity id from just the account number.
+	 *
+	 * @param accountNum
+	 * 		the account number of the entity id.
+	 * @return the equivalent entity id using the default shard and realm.
+	 */
+	public static EntityId fromAccountNum(long accountNum) {
+		return new EntityId(DEFAULT_SHARD, DEFAULT_REALM, accountNum);
+	}
+
 	/* --- SelfSerializable --- */
 	@Override
 	public long getClassId() {

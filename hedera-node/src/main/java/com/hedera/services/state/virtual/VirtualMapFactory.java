@@ -20,6 +20,7 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualInternalRecordSerializer;
@@ -37,6 +38,7 @@ public class VirtualMapFactory {
 
 	private static final String BLOBS_VM_NAME = "fileStore";
 	private static final String STORAGE_VM_NAME = "smartContractKvStore";
+	private static final String UNIQUE_TOKENS_VM_NAME = "uniqueTokenStore";
 
 	@FunctionalInterface
 	public interface JasperDbBuilderFactory {
@@ -97,5 +99,29 @@ public class VirtualMapFactory {
 				.preferDiskBasedIndexes(false)
 				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
 		return new VirtualMap<>(STORAGE_VM_NAME, dsBuilder);
+	}
+
+	public VirtualMap<UniqueTokenKey, UniqueTokenValue> newVirtualizedUniqueTokenStorage() {
+		var storageKeySerializer = new UniqueTokenKeySerializer();
+		VirtualLeafRecordSerializer<UniqueTokenKey, UniqueTokenValue> storageLeafRecordSerializer =
+				new VirtualLeafRecordSerializer<>(
+						CURRENT_SERIALIZATION_VERSION,
+						DigestType.SHA_384,
+						CURRENT_SERIALIZATION_VERSION,
+						storageKeySerializer.getSerializedSize(),
+						new UniqueTokenKeySupplier(),
+						CURRENT_SERIALIZATION_VERSION,
+						UniqueTokenValue.sizeInBytes(),
+						new UniqueTokenValueSupplier(),
+						true);
+		final JasperDbBuilder<UniqueTokenKey, UniqueTokenValue> dsBuilder = jdbBuilderFactory.newJdbBuilder();
+		dsBuilder
+				.virtualLeafRecordSerializer(storageLeafRecordSerializer)
+				.virtualInternalRecordSerializer(new VirtualInternalRecordSerializer())
+				.keySerializer(storageKeySerializer)
+				.maxNumOfKeys(MAX_STORAGE_ENTRIES)
+				.preferDiskBasedIndexes(false)
+				.internalHashesRamToDiskThreshold(MAX_IN_MEMORY_INTERNAL_HASHES);
+		return new VirtualMap<>(UNIQUE_TOKENS_VM_NAME, dsBuilder);
 	}
 }
