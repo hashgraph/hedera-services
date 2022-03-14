@@ -23,16 +23,18 @@ package com.hedera.services.bdd.suites.crypto;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -51,11 +53,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AutoAccountCreationSuite extends HapiApiSuite {
 	private static final long initialBalance = 1000L;
@@ -118,9 +123,9 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 								tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS)
 						)
 								/* Sort the transfer list so the accounts are created in a predictable order (the
-								* serialized bytes of an Ed25519 are always lexicographically prior to the serialized
-								* bytes of a secp256k1 key, so now the first child record will _always_ be for the
-								* ed25519 auto-creation). */
+								 * serialized bytes of an Ed25519 are always lexicographically prior to the serialized
+								 * bytes of a secp256k1 key, so now the first child record will _always_ be for the
+								 * ed25519 auto-creation). */
 								.payingWith(GENESIS)
 								.via(autoCreation)
 				).then(
@@ -172,13 +177,13 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 										.noAlias()
 						),
 						getAliasedAccountInfo("validAlias").has(
-										accountWith()
-												.key("validAlias")
-												.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
-												.alias("validAlias")
-												.autoRenew(THREE_MONTHS_IN_SECONDS)
-												.receiverSigReq(false)
-												.memo(AUTO_MEMO))
+								accountWith()
+										.key("validAlias")
+										.expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.05, 0.5)
+										.alias("validAlias")
+										.autoRenew(THREE_MONTHS_IN_SECONDS)
+										.receiverSigReq(false)
+										.memo(AUTO_MEMO))
 				);
 	}
 
@@ -319,7 +324,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 									accountWith().balance((initialBalance * ONE_HBAR) - (2 * ONE_HUNDRED_HBARS)));
 							final var op4 = getAliasedAccountInfo("transferAlias").has(
 									accountWith().expectedBalanceWithChargedUsd((2 * ONE_HUNDRED_HBARS), 0.05, 0.5));
-							CustomSpecAssert.allRunFor(spec, op, op2, op3, op4);
+							allRunFor(spec, op, op2, op3, op4);
 						}));
 
 	}
@@ -406,29 +411,34 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec autoAccountCreationsHappyPath() {
+		final var now = Instant.now().getEpochSecond();
 		return defaultHapiSpec("AutoAccountCreationsHappyPath")
 				.given(
 						newKeyNamed("validAlias"),
 						cryptoCreate("payer").balance(initialBalance * ONE_HBAR)
 				).when(
-						/* auto account is created */
 						cryptoTransfer(
-								tinyBarsFromToWithAlias("payer", "validAlias",
-										ONE_HUNDRED_HBARS)).via(
-								"transferTxn")
+								tinyBarsFromToWithAlias("payer", "validAlias", ONE_HUNDRED_HBARS)
+						).via("transferTxn")
 				).then(
-						/* get transaction record and validate the child record has alias bytes as expected */
 						getReceipt("transferTxn")
 								.andAnyChildReceipts()
-								.hasChildAutoAccountCreations(1)
-								.logged(),
-						getTxnRecord("transferTxn").andAllChildRecords().hasChildRecordCount(
-								1).hasAliasInChildRecord("validAlias", 0).logged(),
+								.hasChildAutoAccountCreations(1),
 						getAccountInfo("payer").has(
 								accountWith()
 										.balance((initialBalance * ONE_HBAR) - ONE_HUNDRED_HBARS)
-										.noAlias()
-						),
+										.noAlias()),
+						assertionsHold((spec, opLog) -> {
+							final var lookup = getTxnRecord("transferTxn")
+									.andAllChildRecords()
+									.hasChildRecordCount(1)
+									.hasAliasInChildRecord("validAlias", 0);
+							allRunFor(spec, lookup);
+							final var payer = spec.registry().getAccountID("payer");
+							final var parent = lookup.getResponseRecord();
+							final var child = lookup.getChildRecord(0);
+							assertFeeInChildRecord(parent, child, payer, ONE_HUNDRED_HBARS);
+						}),
 						getAliasedAccountInfo("validAlias").has(
 										accountWith()
 												.key("validAlias")
@@ -436,9 +446,29 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 												.alias("validAlias")
 												.autoRenew(THREE_MONTHS_IN_SECONDS)
 												.receiverSigReq(false)
+												.expiry(now + THREE_MONTHS_IN_SECONDS, 10)
 												.memo(AUTO_MEMO))
 								.logged()
 				);
+	}
+
+	private void assertFeeInChildRecord(
+			final TransactionRecord parent,
+			final TransactionRecord child,
+			final AccountID parentPayer,
+			final long newAccountFunding
+	) {
+		long receivedBalance = 0;
+		for (final var adjust : parent.getTransferList().getAccountAmountsList()) {
+			final var id = adjust.getAccountID();
+			if (id.getAccountNum() < 100 || id.equals(parentPayer)) {
+				continue;
+			}
+			receivedBalance = adjust.getAmount();
+			break;
+		}
+		final var fee = newAccountFunding - receivedBalance;
+		assertEquals(fee, child.getTransactionFee(), "Child record did not specify deducted fee");
 	}
 
 	private HapiApiSpec multipleAutoAccountCreations() {
