@@ -832,7 +832,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		protected TokenCreateWrapper tokenCreateOp;
 
-		final protected TransactionBody.Builder createSyntheticTokenCreateTransactionBody() {
+		protected final TransactionBody.Builder createSyntheticTokenCreateTransactionBody() {
 			try {
 				verifyKeys();
 				tokenCreateOp.setAllInheritedKeysTo((JKey) ledgers.accounts().get(
@@ -858,9 +858,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * is not `00000000`) and also that there are not multiple keys values for the
 		 * same key type (e.g. multiple `TokenKey` instances have the adminKey bit set)
 		 */
-		final protected void verifyKeys() {
+		protected final void verifyKeys() {
 			final var tokenKeys = tokenCreateOp.getTokenKeys();
-			if (tokenKeys.size() > 0) {
+			if (!tokenKeys.isEmpty()) {
 				for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
 					final var tokenKey = tokenKeys.get(i);
 					validateTrue(isKeyValueValid(tokenKey.key()), "Token key must have exactly 1 key value set.");
@@ -876,13 +876,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		private boolean isKeyValueValid(final TokenCreateWrapper.KeyValueWrapper key) {
 			if (key.isShouldInheritAccountKeySet()) {
-				return !key.isECDS_secp256k1KeySet() && !key.isDelegatableContractIdSet()
+				return !key.isEcdsSecp256k1KeySet() && !key.isDelegatableContractIdSet()
 						&& !key.isContractIDSet() && !key.isEd25519KeySet();
 			} else if (key.isContractIDSet()) {
-				return !key.isECDS_secp256k1KeySet() && !key.isDelegatableContractIdSet() && !key.isEd25519KeySet();
+				return !key.isEcdsSecp256k1KeySet() && !key.isDelegatableContractIdSet() && !key.isEd25519KeySet();
 			} else if (key.isEd25519KeySet()) {
-				return !key.isECDS_secp256k1KeySet() && !key.isDelegatableContractIdSet() ;
-			} else if (key.isECDS_secp256k1KeySet()) {
+				return !key.isEcdsSecp256k1KeySet() && !key.isDelegatableContractIdSet() ;
+			} else if (key.isEcdsSecp256k1KeySet()) {
 				return !key.isDelegatableContractIdSet();
 			}
 			return key.isDelegatableContractIdSet();

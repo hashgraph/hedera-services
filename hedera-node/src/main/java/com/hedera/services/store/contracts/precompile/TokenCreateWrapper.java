@@ -188,18 +188,18 @@ final class TokenCreateWrapper {
 		private final boolean shouldInheritAccountKey;
 		private final ContractID contractID;
 		private final byte[] ed25519;
-		private final byte[] ECDS_secp256k1;
+		private final byte[] ecdsSecp256k1;
 		private final ContractID delegatableContractID;
 
 		/* --- This field is populated only when `shouldInheritAccountKey` is true --- */
 		private Key inheritedKey;
 
 		public KeyValueWrapper(final boolean shouldInheritAccountKey, final ContractID contractID, final byte[] ed25519,
-							   final byte[] ECDS_secp256k1, final ContractID delegatableContractID) {
+							   final byte[] ecdsSecp256k1, final ContractID delegatableContractID) {
 			this.shouldInheritAccountKey = shouldInheritAccountKey;
 			this.contractID = contractID;
 			this.ed25519 = ed25519;
-			this.ECDS_secp256k1 = ECDS_secp256k1;
+			this.ecdsSecp256k1 = ecdsSecp256k1;
 			this.delegatableContractID = delegatableContractID;
 		}
 
@@ -219,8 +219,8 @@ final class TokenCreateWrapper {
 			return ed25519.length == 32;
 		}
 
-		boolean isECDS_secp256k1KeySet() {
-			return ECDS_secp256k1.length == 33;
+		boolean isEcdsSecp256k1KeySet() {
+			return ecdsSecp256k1.length == 33;
 		}
 
 		private void setInheritedKey(final Key key) {
@@ -234,8 +234,8 @@ final class TokenCreateWrapper {
 				return Key.newBuilder().setContractID(contractID).build();
 			} else if (ed25519.length == 32) {
 				return Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519)).build();
-			} else if (ECDS_secp256k1.length == 33) {
-				return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ECDS_secp256k1)).build();
+			} else if (ecdsSecp256k1.length == 33) {
+				return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsSecp256k1)).build();
 			} else if (delegatableContractID != null) {
 				return Key.newBuilder().setContractID((delegatableContractID)).build();
 			} else {

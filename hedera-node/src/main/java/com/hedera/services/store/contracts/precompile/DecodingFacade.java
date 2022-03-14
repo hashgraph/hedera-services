@@ -510,7 +510,7 @@ public class DecodingFacade {
 			final var tokenId = convertAddressBytesToTokenID((byte[]) fixedFeeTuple.get(1));
 			final var isTokenIdSet = (Boolean) fixedFeeTuple.get(2);
 			final var feeCollector = convertLeftPaddedAddressToAccountId((byte[]) fixedFeeTuple.get(3), aliasResolver);
-			fixedFees.add(new FixedFeeWrapper(amount, isTokenIdSet ? tokenId : null,
+			fixedFees.add(new FixedFeeWrapper(amount, Boolean.TRUE.equals(isTokenIdSet) ? tokenId : null,
 					feeCollector.getAccountNum() != 0 ? feeCollector : null));
 		}
 		return fixedFees;
