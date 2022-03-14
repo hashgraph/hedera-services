@@ -66,6 +66,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -309,7 +310,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		log.info(ctxSummary);
 	}
 
-	public FCHashMap<ByteString, EntityNum> aliases() {
+	public Map<ByteString, EntityNum> aliases() {
 		Objects.requireNonNull(metadata, "Cannot get aliases from an uninitialized state");
 		return metadata.aliases();
 	}

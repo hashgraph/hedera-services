@@ -27,6 +27,8 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.merkle.Archivable;
 import com.swirlds.fchashmap.FCHashMap;
 
+import java.util.Map;
+
 /**
  * Contains the part of the Hedera Services world state that does influence
  * handling of consensus transactions, but is not hashed or serialized.
@@ -40,7 +42,7 @@ public class StateMetadata implements FastCopyable, Archivable {
 		this.aliases = aliases;
 	}
 
-	private StateMetadata(StateMetadata that) {
+	private StateMetadata(final StateMetadata that) {
 		this.aliases = that.aliases.copy();
 		this.app = that.app;
 	}
@@ -51,6 +53,7 @@ public class StateMetadata implements FastCopyable, Archivable {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public StateMetadata copy() {
 		return new StateMetadata(this);
 	}
@@ -64,7 +67,7 @@ public class StateMetadata implements FastCopyable, Archivable {
 		return app;
 	}
 
-	public FCHashMap<ByteString, EntityNum> aliases() {
+	public Map<ByteString, EntityNum> aliases() {
 		return aliases;
 	}
 }

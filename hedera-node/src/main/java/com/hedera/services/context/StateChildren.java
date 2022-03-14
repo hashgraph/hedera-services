@@ -37,11 +37,11 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
-import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
 import java.time.Instant;
+import java.util.Map;
 
 public interface StateChildren {
 	Instant signedAt();
@@ -70,5 +70,5 @@ public interface StateChildren {
 
 	RecordsRunningHashLeaf runningHashLeaf();
 
-	FCHashMap<ByteString, EntityNum> aliases();
+	Map<ByteString, EntityNum> aliases();
 }

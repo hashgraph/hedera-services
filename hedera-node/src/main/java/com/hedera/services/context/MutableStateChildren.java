@@ -38,12 +38,12 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
-import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
 import java.lang.ref.WeakReference;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -65,7 +65,7 @@ public class MutableStateChildren implements StateChildren {
 	private WeakReference<AddressBook> addressBook;
 	private WeakReference<MerkleSpecialFiles> specialFiles;
 	private WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
-	private WeakReference<FCHashMap<ByteString, EntityNum>> aliases;
+	private WeakReference<Map<ByteString, EntityNum>> aliases;
 	private Instant signedAt = Instant.EPOCH;
 
 	public MutableStateChildren() {
@@ -90,9 +90,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleMap<EntityNum, MerkleTopic> topics() {
-		final var refTopics = topics.get();
-		Objects.requireNonNull(refTopics);
-		return refTopics;
+		return Objects.requireNonNull(topics.get());
 	}
 
 	public void setTopics(MerkleMap<EntityNum, MerkleTopic> topics) {
@@ -101,9 +99,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleMap<EntityNum, MerkleToken> tokens() {
-		final var refTokens = tokens.get();
-		Objects.requireNonNull(refTokens);
-		return refTokens;
+		return Objects.requireNonNull(tokens.get());
 	}
 
 	public void setTokens(MerkleMap<EntityNum, MerkleToken> tokens) {
@@ -112,9 +108,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
-		final var refStorage = storage.get();
-		Objects.requireNonNull(refStorage);
-		return refStorage;
+		return Objects.requireNonNull(storage.get());
 	}
 
 	public void setStorage(VirtualMap<VirtualBlobKey, VirtualBlobValue> storage) {
@@ -123,9 +117,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public VirtualMap<ContractKey, ContractValue> contractStorage() {
-		final var refContractStorage = contractStorage.get();
-		Objects.requireNonNull(refContractStorage);
-		return refContractStorage;
+		return Objects.requireNonNull(contractStorage.get());
 	}
 
 	public void setContractStorage(VirtualMap<ContractKey, ContractValue> contractStorage) {
@@ -134,16 +126,12 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
-		final var refSchedules = schedules.get();
-		Objects.requireNonNull(refSchedules);
-		return refSchedules;
+		return Objects.requireNonNull(schedules.get());
 	}
 
 	@Override
 	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
-		final var refTokenAssociations = tokenAssociations.get();
-		Objects.requireNonNull(refTokenAssociations);
-		return refTokenAssociations;
+		return Objects.requireNonNull(tokenAssociations.get());
 	}
 
 	public void setTokenAssociations(MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {
@@ -152,23 +140,17 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleNetworkContext networkCtx() {
-		final var refNetworkCtx = networkCtx.get();
-		Objects.requireNonNull(refNetworkCtx);
-		return refNetworkCtx;
+		return Objects.requireNonNull(networkCtx.get());
 	}
 
 	@Override
 	public AddressBook addressBook() {
-		final var refAddressBook = addressBook.get();
-		Objects.requireNonNull(refAddressBook);
-		return refAddressBook;
+		return Objects.requireNonNull(addressBook.get());
 	}
 
 	@Override
 	public MerkleSpecialFiles specialFiles() {
-		final var refSpecialFiles = specialFiles.get();
-		Objects.requireNonNull(refSpecialFiles);
-		return refSpecialFiles;
+		return Objects.requireNonNull(specialFiles.get());
 	}
 
 	public void setSpecialFiles(MerkleSpecialFiles specialFiles) {
@@ -177,9 +159,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-		final var refUniqueTokens = uniqueTokens.get();
-		Objects.requireNonNull(refUniqueTokens);
-		return refUniqueTokens;
+		return Objects.requireNonNull(uniqueTokens.get());
 	}
 
 	public void setUniqueTokens(MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
@@ -188,16 +168,12 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public RecordsRunningHashLeaf runningHashLeaf() {
-		final var refRunningHashLeaf = runningHashLeaf.get();
-		Objects.requireNonNull(refRunningHashLeaf);
-		return refRunningHashLeaf;
+		return Objects.requireNonNull(runningHashLeaf.get());
 	}
 
 	@Override
-	public FCHashMap<ByteString, EntityNum> aliases() {
-		final var refAliases = aliases.get();
-		Objects.requireNonNull(refAliases);
-		return refAliases;
+	public Map<ByteString, EntityNum> aliases() {
+		return Objects.requireNonNull(aliases.get());
 	}
 
 	public void updateFromSigned(final ServicesState signedState, final Instant signingTime) {

@@ -25,7 +25,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,10 +51,10 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 
 	private static final String NON_TRANSACTIONAL_MSG = "Base alias manager does not buffer changes";
 
-	private final Supplier<FCHashMap<ByteString, EntityNum>> aliases;
+	private final Supplier<Map<ByteString, EntityNum>> aliases;
 
 	@Inject
-	public AliasManager(final Supplier<FCHashMap<ByteString, EntityNum>> aliases) {
+	public AliasManager(final Supplier<Map<ByteString, EntityNum>> aliases) {
 		this.aliases = aliases;
 	}
 
@@ -171,7 +170,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 		return curAliases().getOrDefault(alias, MISSING_NUM);
 	}
 
-	private FCHashMap<ByteString, EntityNum> curAliases() {
+	private Map<ByteString, EntityNum> curAliases() {
 		return aliases.get();
 	}
 
