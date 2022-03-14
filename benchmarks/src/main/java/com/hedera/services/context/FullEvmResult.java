@@ -1,10 +1,10 @@
-package com.hedera.services.legacy.proto.utils;
+package com.hedera.services.context;
 
 /*-
  * ‌
- * Hedera Services API Utilities
+ * Hedera Services JMH benchmarks
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,26 +20,9 @@ package com.hedera.services.legacy.proto.utils;
  * ‍
  */
 
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 
-/**
- * Implements an atomic counter.
- */
-public class AtomicCounter {
-
-  private AtomicInteger c = new AtomicInteger(0);
-
-  public void increment() {
-    c.incrementAndGet();
-  }
-
-  public int value() {
-    return c.get();
-  }
-
-  @Override
-  public String toString() {
-    return "" + value();
-  }
+public record FullEvmResult(TransactionProcessingResult result, @Nullable byte[] evmAddress) {
 }

@@ -24,15 +24,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -78,6 +77,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 class GetAccountBalanceAnswerTest {
+	private final JKey multiKey = new JEd25519Key("01234578901234578901234578912".getBytes());
 	private final String accountIdLit = "0.0.12345";
 	private final AccountID target = asAccount(accountIdLit);
 	private final String contractIdLit = "0.0.12346";
@@ -92,7 +92,11 @@ class GetAccountBalanceAnswerTest {
 	private final TokenID cToken = IdUtils.asToken("0.0.5");
 	private final TokenID dToken = IdUtils.asToken("0.0.6");
 
-	private MerkleToken aMerkleToken, bMerkleToken, cMerkleToken, dMerkleToken;
+	private MerkleToken notDeleted = new MerkleToken();
+	private MerkleToken alsoNotDeleted = new MerkleToken();
+	private MerkleToken deleted = new MerkleToken();
+	private MerkleToken andAlsoNotDeleted = new MerkleToken();
+
 	private final MerkleAccount accountV = MerkleAccountFactory.newAccount()
 			.balance(balance)
 			.tokens(aToken, bToken, cToken, dToken)
@@ -104,14 +108,12 @@ class GetAccountBalanceAnswerTest {
 	private final MerkleTokenRelStatus dRel = new MerkleTokenRelStatus(dBalance, false, false, true);
 
 	private MerkleMap accounts;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
-	private MerkleMap tokens;
 	private StateView view;
 	private OptionValidator optionValidator;
-	private TokenStore tokenStore;
 	private AliasManager aliasManager;
 	private ScheduleStore scheduleStore;
-	private NodeLocalProperties nodeProps;
 	private GlobalDynamicProperties dynamicProperties;
 	private TokenRelationship aTokenRel;
 	private TokenRelationship bTokenRel;
@@ -122,30 +124,27 @@ class GetAccountBalanceAnswerTest {
 
 	@BeforeEach
 	private void setup() {
-		cMerkleToken = mock(MerkleToken.class);
-		given(cMerkleToken.isDeleted()).willReturn(true);
-		given(cMerkleToken.decimals()).willReturn(123);
-		given(cMerkleToken.symbol()).willReturn("deletedToken");
-		given(cMerkleToken.hasFreezeKey()).willReturn(true);
-		given(cMerkleToken.hasKycKey()).willReturn(true);
-		aMerkleToken = mock(MerkleToken.class);
-		given(aMerkleToken.isDeleted()).willReturn(false);
-		given(aMerkleToken.decimals()).willReturn(1);
-		given(aMerkleToken.symbol()).willReturn("existingToken");
-		given(aMerkleToken.hasFreezeKey()).willReturn(true);
-		given(aMerkleToken.hasKycKey()).willReturn(true);
-		bMerkleToken = mock(MerkleToken.class);
-		given(bMerkleToken.isDeleted()).willReturn(false);
-		given(bMerkleToken.decimals()).willReturn(2);
-		given(bMerkleToken.symbol()).willReturn("existingToken");
-		given(bMerkleToken.hasFreezeKey()).willReturn(true);
-		given(bMerkleToken.hasKycKey()).willReturn(true);
-		dMerkleToken = mock(MerkleToken.class);
-		given(dMerkleToken.isDeleted()).willReturn(false);
-		given(dMerkleToken.decimals()).willReturn(123);
-		given(dMerkleToken.symbol()).willReturn("existingToken");
-		given(dMerkleToken.hasFreezeKey()).willReturn(true);
-		given(dMerkleToken.hasKycKey()).willReturn(true);
+		deleted.setDeleted(true);
+		deleted.setDecimals(123);
+		deleted.setSymbol("deletedToken");
+		deleted.setFreezeKey(multiKey);
+		deleted.setKycKey(multiKey);
+
+		notDeleted.setDecimals(1);
+		notDeleted.setSymbol("existingToken");
+		notDeleted.setFreezeKey(multiKey);
+		notDeleted.setKycKey(multiKey);
+
+		alsoNotDeleted.setDecimals(2);
+		alsoNotDeleted.setSymbol("existingToken");
+		alsoNotDeleted.setFreezeKey(multiKey);
+		alsoNotDeleted.setKycKey(multiKey);
+
+		andAlsoNotDeleted.setDecimals(123);
+		andAlsoNotDeleted.setSymbol("existingToken");
+		andAlsoNotDeleted.setFreezeKey(multiKey);
+		andAlsoNotDeleted.setKycKey(multiKey);
+
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokenPerAccountBalanceInfo);
 
@@ -155,39 +154,28 @@ class GetAccountBalanceAnswerTest {
 		tokenRels.put(fromAccountTokenRel(target, cToken), cRel);
 		tokenRels.put(fromAccountTokenRel(target, dToken), dRel);
 
-		aTokenRel = setUpTokenRelationShip(aToken, aRel, aMerkleToken);
-		bTokenRel = setUpTokenRelationShip(bToken, bRel, bMerkleToken);
-		cTokenRel = setUpTokenRelationShip(cToken, cRel, cMerkleToken);
-		dTokenRel = setUpTokenRelationShip(dToken, dRel, dMerkleToken);
+		aTokenRel = setUpTokenRelationShip(aToken, aRel, notDeleted);
+		bTokenRel = setUpTokenRelationShip(bToken, bRel, alsoNotDeleted);
+		cTokenRel = setUpTokenRelationShip(cToken, cRel, deleted);
+		dTokenRel = setUpTokenRelationShip(dToken, dRel, andAlsoNotDeleted);
 
 		accounts = mock(MerkleMap.class);
-		nodeProps = mock(NodeLocalProperties.class);
 		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
 		given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);
 
-		tokens = mock(MerkleMap.class);
-
-		tokenStore = mock(TokenStore.class);
-		given(tokenStore.exists(aToken)).willReturn(true);
-		given(tokenStore.exists(bToken)).willReturn(true);
-		given(tokenStore.exists(cToken)).willReturn(true);
-		given(tokenStore.exists(dToken)).willReturn(false);
-		given(tokenStore.get(aToken)).willReturn(aMerkleToken);
-		given(tokenStore.get(bToken)).willReturn(bMerkleToken);
-		given(tokenStore.get(cToken)).willReturn(cMerkleToken);
+		tokens = new MerkleMap<>();
+		tokens.put(EntityNum.fromTokenId(aToken), notDeleted);
+		tokens.put(EntityNum.fromTokenId(bToken), alsoNotDeleted);
+		tokens.put(EntityNum.fromTokenId(cToken), deleted);
+		tokens.put(EntityNum.fromTokenId(dToken), andAlsoNotDeleted);
 
 		scheduleStore = mock(ScheduleStore.class);
 
 		final MutableStateChildren children = new MutableStateChildren();
+		children.setTokens(tokens);
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
-		children.setTokens(tokens);
-		view = new StateView(
-				tokenStore,
-				scheduleStore,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				null);
+		view = new StateView(scheduleStore, children, null);
 
 		optionValidator = mock(OptionValidator.class);
 		aliasManager = mock(AliasManager.class);
@@ -346,7 +334,7 @@ class GetAccountBalanceAnswerTest {
 				List.of(tokenBalanceWith(aToken, aBalance, 1),
 						tokenBalanceWith(bToken, bBalance, 2),
 						tokenBalanceWith(cToken, cBalance, 123),
-						tokenBalanceWith(dToken, dBalance, 0)
+						tokenBalanceWith(dToken, dBalance, 123)
 				),
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);
@@ -380,7 +368,7 @@ class GetAccountBalanceAnswerTest {
 				List.of(tokenBalanceWith(aToken, aBalance, 1),
 						tokenBalanceWith(bToken, bBalance, 2),
 						tokenBalanceWith(cToken, cBalance, 123),
-						tokenBalanceWith(dToken, dBalance, 0)
+						tokenBalanceWith(dToken, dBalance, 123)
 				),
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);
@@ -415,7 +403,7 @@ class GetAccountBalanceAnswerTest {
 				List.of(tokenBalanceWith(aToken, aBalance, 1),
 						tokenBalanceWith(bToken, bBalance, 2),
 						tokenBalanceWith(cToken, cBalance, 123),
-						tokenBalanceWith(dToken, dBalance, 0)
+						tokenBalanceWith(dToken, dBalance, 123)
 				),
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);

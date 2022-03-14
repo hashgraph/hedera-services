@@ -39,7 +39,6 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -82,8 +81,6 @@ class TypedTokenStoreTest {
 	@Mock
 	private AccountStore accountStore;
 	@Mock
-	private UniqueTokenViewsManager uniqueTokenViewsManager;
-	@Mock
 	private BackingStore<TokenID, MerkleToken> tokens;
 	@Mock
 	private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
@@ -107,7 +104,6 @@ class TypedTokenStoreTest {
 				tokens,
 				uniqueTokens,
 				tokenRels,
-				uniqueTokenViewsManager,
 				tokenStore::addKnownTreasury,
 				legacyStore::removeKnownTreasuryForToken,
 				sideEffectsTracker);
@@ -449,8 +445,6 @@ class TypedTokenStoreTest {
 		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
 		verify(uniqueTokens).put(NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo), expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
-		verify(uniqueTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId), autoRenewId.asEntityId());
-		verify(uniqueTokenViewsManager).wipeNotice(EntityNumPair.fromNftId(expectedPastUniqTokenId), treasuryId);
 
 		// when:
 		modelToken = subject.loadToken(tokenId);
@@ -473,8 +467,6 @@ class TypedTokenStoreTest {
 		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId2, expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId2);
-		verify(uniqueTokenViewsManager).mintNotice(EntityNumPair.fromNftId(expectedNewUniqTokenId2), treasuryId);
-		verify(uniqueTokenViewsManager).burnNotice(EntityNumPair.fromNftId(expectedPastUniqTokenId2), treasuryId);
 	}
 
 	@Test

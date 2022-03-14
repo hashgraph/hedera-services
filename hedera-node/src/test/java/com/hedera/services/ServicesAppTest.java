@@ -21,6 +21,7 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
@@ -34,7 +35,6 @@ import com.hedera.services.grpc.NettyGrpcServerManager;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
-import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;
 import com.hedera.services.state.exports.ToStringAccountsExporter;
 import com.hedera.services.state.forensics.HashLogger;
@@ -132,7 +132,7 @@ class ServicesAppTest {
 	void objectGraphRootsAreAvailable() {
 		assertThat(subject.logic(), instanceOf(StandardProcessLogic.class));
 		assertThat(subject.hashLogger(), instanceOf(HashLogger.class));
-		assertThat(subject.workingState(), instanceOf(StateAccessor.class));
+		assertThat(subject.workingState(), instanceOf(MutableStateChildren.class));
 		assertThat(subject.expandHandleSpan(), instanceOf(ExpandHandleSpan.class));
 		assertThat(subject.dualStateAccessor(), instanceOf(DualStateAccessor.class));
 		assertThat(subject.initializationFlow(), instanceOf(ServicesInitFlow.class));

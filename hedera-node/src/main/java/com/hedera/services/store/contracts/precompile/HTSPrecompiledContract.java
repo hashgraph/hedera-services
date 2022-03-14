@@ -52,9 +52,9 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
@@ -63,7 +63,6 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
@@ -76,7 +75,6 @@ import com.hedera.services.utils.SignedTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -134,7 +132,6 @@ import static com.hedera.services.store.contracts.precompile.PrecompilePricingUt
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
-import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
@@ -152,6 +149,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 	public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
 			Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
+	public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID = EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
@@ -470,7 +468,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return tokenStoreFactory.newTokenStore(
 				accountStore,
 				ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
-				NOOP_VIEWS_MANAGER, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
+				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
 				sideEffects);
 	}
 
@@ -533,13 +531,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final Optional<ResponseCodeEnum> errorStatus
 	) {
 		if (dynamicProperties.shouldExportPrecompileResults()) {
-			final var contractCallResult = ContractFunctionResult.newBuilder()
-					.setContractID(HTS_PRECOMPILE_MIRROR_ID)
-					.setGasUsed(this.gasRequirement.toLong())
-					.setContractCallResult(
-							result != null ? ByteString.copyFrom(result.toArrayUnsafe()) : ByteString.EMPTY);
-			errorStatus.ifPresent(status -> contractCallResult.setErrorMessage(status.name()));
-			childRecord.setContractCallResult(SolidityFnResult.fromGrpc(contractCallResult.build()));
+			final var evmFnResult = new EvmFnResult(
+					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
+					result != null ? result.toArrayUnsafe() : EvmFnResult.EMPTY,
+					errorStatus.map(ResponseCodeEnum::name).orElse(null),
+					EvmFnResult.EMPTY,
+					this.gasRequirement.toLong(),
+					Collections.emptyList(),
+					Collections.emptyList(),
+					EvmFnResult.EMPTY,
+					Collections.emptyMap());
+			childRecord.setContractCallResult(evmFnResult);
 		}
 	}
 
@@ -578,7 +580,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 				HederaTokenStore tokenStore,
 				SideEffectsTracker sideEffectsTracker,
-				UniqueTokenViewsManager tokenViewsManager,
 				GlobalDynamicProperties dynamicProperties,
 				OptionValidator validator,
 				AutoCreationLogic autoCreationLogic,
@@ -600,7 +601,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				BackingStore<TokenID, MerkleToken> tokens,
 				BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
 				BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-				UniqueTokenViewsManager uniqTokenViewsManager,
 				TypedTokenStore.LegacyTreasuryAdder treasuryAdder,
 				TypedTokenStore.LegacyTreasuryRemover treasuryRemover,
 				SideEffectsTracker sideEffectsTracker);
@@ -612,7 +612,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				EntityIdSource ids,
 				OptionValidator validator,
 				SideEffectsTracker sideEffectsTracker,
-				UniqueTokenViewsManager uniqueTokenViewsManager,
 				GlobalDynamicProperties properties,
 				TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 				TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
@@ -804,7 +803,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					ids,
 					validator,
 					sideEffectsTracker,
-					NOOP_VIEWS_MANAGER,
 					dynamicProperties,
 					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
 		}
@@ -857,7 +855,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var transferLogic = transferLogicFactory.newLogic(
 					ledgers.accounts(), ledgers.nfts(), ledgers.tokenRels(), hederaTokenStore,
 					sideEffectsTracker,
-					NOOP_VIEWS_MANAGER,
 					dynamicProperties,
 					validator,
 					null,

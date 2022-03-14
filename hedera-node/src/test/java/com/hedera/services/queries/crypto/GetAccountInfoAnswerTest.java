@@ -36,8 +36,6 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -96,8 +94,6 @@ import static org.mockito.Mockito.mock;
 class GetAccountInfoAnswerTest {
 	private StateView view;
 	@Mock
-	private TokenStore tokenStore;
-	@Mock
 	private ScheduleStore scheduleStore;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
@@ -119,6 +115,8 @@ class GetAccountInfoAnswerTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private TokenAssociationMetadata tokenAssociationMetadata;
+
+	private final MutableStateChildren children = new MutableStateChildren();
 
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	private final int maxTokensPerAccountInfo = 10;
@@ -201,17 +199,11 @@ class GetAccountInfoAnswerTest {
 				.nftAllowances(nftAllowances)
 				.get();
 
-		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
 		children.setTokens(tokens);
 
-		view = new StateView(
-				tokenStore,
-				scheduleStore,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				networkInfo);
+		view = new StateView(scheduleStore, children, networkInfo);
 
 		subject = new GetAccountInfoAnswer(optionValidator, aliasManager, dynamicProperties);
 	}
@@ -265,8 +257,12 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void getsTheAccountInfo() throws Throwable {
 		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
+		final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
+		children.setTokens(tokens);
+
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.decimals())

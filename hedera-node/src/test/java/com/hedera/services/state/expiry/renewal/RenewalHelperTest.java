@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -340,7 +341,8 @@ class RenewalHelperTest {
 		expiredAccountZeroBalance.setTokenAssociationMetadata(tokenAssociationMetadata);
 		given(tokenAssociationMetadata.lastAssociation()).willReturn(EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
 
-		AliasManager liveAliasManager = new AliasManager();
+		final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
+		AliasManager liveAliasManager = new AliasManager(() -> aliases);
 		linkWellKnownEntities(liveAliasManager);
 
 		final var backingAccounts = new BackingAccounts(() -> accountsMap);
