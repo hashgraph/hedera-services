@@ -35,14 +35,16 @@ import java.util.List;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
 
 public class CurrencyAdjustments implements SelfSerializable {
-	static final int MERKLE_VERSION = 1;
+	static final int PRE_0240_VERSION = 1;
+	static final int RELEASE_0240_VERSION = 2;
+	static final int CURRENT_VERSION = RELEASE_0240_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd8b06bd46e12a466L;
 
 	private static final long[] NO_ADJUSTMENTS = new long[0];
 	static final int MAX_NUM_ADJUSTMENTS = 25;
 
 	long[] hbars = NO_ADJUSTMENTS;
-	long[] accountCodes = NO_ADJUSTMENTS;
+	long[] accountNums = NO_ADJUSTMENTS;
 
 	public CurrencyAdjustments() {
 		/* For RuntimeConstructable */
@@ -50,7 +52,7 @@ public class CurrencyAdjustments implements SelfSerializable {
 
 	public CurrencyAdjustments(long[] amounts, long[] parties) {
 		hbars = amounts;
-		accountCodes = parties;
+		accountNums = parties;
 	}
 
 	public boolean isEmpty() {
@@ -65,18 +67,24 @@ public class CurrencyAdjustments implements SelfSerializable {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
 	}
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		accountCodes = in.readLongArray(MAX_NUM_ADJUSTMENTS);
+		if (version < RELEASE_0240_VERSION) {
+			final var accountIds = in.readSerializableList(MAX_NUM_ADJUSTMENTS, true, EntityId::new);
+			accountNums = accountIds.stream().mapToLong(a -> a.num()).toArray();
+		} else {
+			accountNums = in.readLongArray(MAX_NUM_ADJUSTMENTS);
+		}
+
 		hbars = in.readLongArray(MAX_NUM_ADJUSTMENTS);
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeLongArray(accountCodes);
+		out.writeLongArray(accountNums);
 		out.writeLongArray(hbars);
 	}
 
@@ -91,14 +99,14 @@ public class CurrencyAdjustments implements SelfSerializable {
 		}
 
 		CurrencyAdjustments that = (CurrencyAdjustments) o;
-		return Arrays.equals(accountCodes, that.accountCodes) && Arrays.equals(hbars, that.hbars);
+		return Arrays.equals(accountNums, that.accountNums) && Arrays.equals(hbars, that.hbars);
 	}
 
 	@Override
 	public int hashCode() {
 		int result = Long.hashCode(RUNTIME_CONSTRUCTABLE_ID);
-		result = result * 31 + Integer.hashCode(MERKLE_VERSION);
-		result = result * 31 + Arrays.hashCode(accountCodes);
+		result = result * 31 + Integer.hashCode(CURRENT_VERSION);
+		result = result * 31 + Arrays.hashCode(accountNums);
 		return result * 31 + Arrays.hashCode(hbars);
 	}
 
@@ -115,7 +123,7 @@ public class CurrencyAdjustments implements SelfSerializable {
 		for (int i = 0; i < hbars.length; i++) {
 			grpc.addAccountAmounts(AccountAmount.newBuilder()
 					.setAmount(hbars[i])
-					.setAccountID(EntityNum.fromLong(accountCodes[i]).toGrpcAccountId())
+					.setAccountID(EntityNum.fromLong(accountNums[i]).toGrpcAccountId())
 					.build());
 		}
 		return grpc.build();
@@ -155,7 +163,7 @@ public class CurrencyAdjustments implements SelfSerializable {
 				accounts[i] = adjustment.getAccountID().getAccountNum();
 			}
 			pojo.hbars = amounts;
-			pojo.accountCodes = accounts;
+			pojo.accountNums = accounts;
 		}
 		return pojo;
 	}
@@ -164,7 +172,7 @@ public class CurrencyAdjustments implements SelfSerializable {
 		return hbars;
 	}
 
-	public long[] getAccountCodes() {
-		return accountCodes;
+	public long[] getAccountNums() {
+		return accountNums;
 	}
 }

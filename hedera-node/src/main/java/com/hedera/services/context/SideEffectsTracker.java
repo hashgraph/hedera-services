@@ -62,20 +62,20 @@ import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 public class SideEffectsTracker {
 	private static final long INAPPLICABLE_NEW_SUPPLY = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
-	private static final int BALANCE_CHANGES_LENGTH = 1024;
+	private static final int BALANCE_CHANGES_LENGTH = 64;
 
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
-	private long[] changedAccounts = new long[BALANCE_CHANGES_LENGTH];
-	private long[] balanceChanges = new long[BALANCE_CHANGES_LENGTH];
+	private final long[] changedAccounts = new long[BALANCE_CHANGES_LENGTH];
+	private final long[] balanceChanges = new long[BALANCE_CHANGES_LENGTH];
 	private final List<Long> nftMints = new ArrayList<>();
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
 	private final Map<TokenID, TokenTransferList.Builder> nftOwnerChanges = new HashMap<>();
 
-	private int numTouches = 0;
+	private int numTokensChangedSoFar = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private long netHbarChange = 0;
-	private int touchedSoFar = 0;
+	private int numHbarBalancesChangedSoFar = 0;
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
 	private ContractID newContractId = null;
@@ -308,7 +308,8 @@ public class SideEffectsTracker {
 	 */
 	public void trackHbarChange(final long account, final long amount) {
 		netHbarChange += amount;
-		touchedSoFar = includeOrderedFungibleChange(changedAccounts, balanceChanges, touchedSoFar, account, amount);
+		numHbarBalancesChangedSoFar = includeOrderedFungibleChange(changedAccounts, balanceChanges,
+				numHbarBalancesChangedSoFar, account, amount);
 	}
 
 	/**
@@ -325,7 +326,7 @@ public class SideEffectsTracker {
 	 * 		the incremental unit change to track
 	 */
 	public void trackTokenUnitsChange(final TokenID token, final AccountID account, final long amount) {
-		tokensTouched[numTouches++] = token;
+		tokensTouched[numTokensChangedSoFar++] = token;
 		final var unitChanges = netTokenChanges.computeIfAbsent(token, ignore -> TransferList.newBuilder());
 		updateFungibleChanges(account, amount, unitChanges);
 	}
@@ -346,7 +347,7 @@ public class SideEffectsTracker {
 	 */
 	public void trackNftOwnerChange(final NftId nftId, final AccountID from, AccountID to) {
 		final var token = nftId.tokenId();
-		tokensTouched[numTouches++] = token;
+		tokensTouched[numTokensChangedSoFar++] = token;
 		var xfers = nftOwnerChanges.computeIfAbsent(token, ignore -> TokenTransferList.newBuilder());
 		xfers.addNftTransfers(nftTransferBuilderWith(from, to, nftId.serialNo()));
 	}
@@ -359,8 +360,8 @@ public class SideEffectsTracker {
 	 * @return the ordered net balance changes
 	 */
 	public CurrencyAdjustments getNetTrackedHbarChanges() {
-		touchedSoFar = purgeZeroChanges(changedAccounts, balanceChanges, touchedSoFar);
-		return CurrencyAdjustments.fromChanges(balanceChanges, changedAccounts, touchedSoFar);
+		numHbarBalancesChangedSoFar = purgeZeroChanges(changedAccounts, balanceChanges, numHbarBalancesChangedSoFar);
+		return CurrencyAdjustments.fromChanges(balanceChanges, changedAccounts, numHbarBalancesChangedSoFar);
 	}
 
 	public long getNetHbarChange() {
@@ -383,12 +384,12 @@ public class SideEffectsTracker {
 			return explicitNetTokenUnitOrOwnershipChanges;
 		}
 
-		if (numTouches == 0) {
+		if (numTokensChangedSoFar == 0) {
 			return Collections.emptyList();
 		}
 		final List<TokenTransferList> all = new ArrayList<>();
-		Arrays.sort(tokensTouched, 0, numTouches, TOKEN_ID_COMPARATOR);
-		for (int i = 0; i < numTouches; i++) {
+		Arrays.sort(tokensTouched, 0, numTokensChangedSoFar, TOKEN_ID_COMPARATOR);
+		for (int i = 0; i < numTokensChangedSoFar; i++) {
 			var token = tokensTouched[i];
 			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
 				final var uniqueTransfersHere = nftOwnerChanges.get(token);
@@ -464,7 +465,7 @@ public class SideEffectsTracker {
 	 */
 	public void reset() {
 		resetTrackedTokenChanges();
-		touchedSoFar = 0;
+		numHbarBalancesChangedSoFar = 0;
 		netHbarChange = 0;
 		newAccountId = null;
 		newContractId = null;
@@ -483,7 +484,7 @@ public class SideEffectsTracker {
 	 * </ul>
 	 */
 	public void resetTrackedTokenChanges() {
-		for (int i = 0; i < numTouches; i++) {
+		for (int i = 0; i < numTokensChangedSoFar; i++) {
 			final var fungibleBuilder = netTokenChanges.get(tokensTouched[i]);
 			if (fungibleBuilder != null) {
 				fungibleBuilder.clearAccountAmounts();
@@ -491,7 +492,7 @@ public class SideEffectsTracker {
 				nftOwnerChanges.get(tokensTouched[i]).clearNftTransfers();
 			}
 		}
-		numTouches = 0;
+		numTokensChangedSoFar = 0;
 
 		newSupply = INAPPLICABLE_NEW_SUPPLY;
 		newTokenId = null;
@@ -639,7 +640,7 @@ public class SideEffectsTracker {
 		return touchedSoFar - zerosSkippedSoFar;
 	}
 
-	public int getTouchedSoFar() {
-		return touchedSoFar;
+	public int getNumHbarBalancesChangedSoFar() {
+		return numHbarBalancesChangedSoFar;
 	}
 }

@@ -176,8 +176,8 @@ class SideEffectsTrackerTest {
 		assertTrue(subject.getTrackedAutoAssociations().isEmpty());
 		assertSame(Collections.emptyList(), subject.getNetTrackedTokenUnitAndOwnershipChanges());
 		final var netChanges = subject.getNetTrackedHbarChanges();
-		assertEquals(1, netChanges.getAccountCodes().length);
-		assertEquals(aAccount.getAccountNum(), netChanges.getAccountCodes()[0]);
+		assertEquals(1, netChanges.getAccountNums().length);
+		assertEquals(aAccount.getAccountNum(), netChanges.getAccountNums()[0]);
 		assertEquals(aFirstBalanceChange, netChanges.getHbars()[0]);
 	}
 
@@ -229,16 +229,16 @@ class SideEffectsTrackerTest {
 		subject.trackHbarChange(bAccount.getAccountNum(), -bOnlyBalanceChange);
 
 		final var netChanges = subject.getNetTrackedHbarChanges();
-		assertEquals(2, netChanges.getAccountCodes().length);
+		assertEquals(2, netChanges.getAccountNums().length);
 		assertEquals(2, netChanges.getHbars().length);
-		assertEquals(aAccount.getAccountNum(), netChanges.getAccountCodes()[0]);
+		assertEquals(aAccount.getAccountNum(), netChanges.getAccountNums()[0]);
 		assertEquals(aFirstBalanceChange + aSecondBalanceChange, netChanges.getHbars()[0]);
-		assertEquals(cAccount.getAccountNum(), netChanges.getAccountCodes()[1]);
+		assertEquals(cAccount.getAccountNum(), netChanges.getAccountNums()[1]);
 		assertEquals(cOnlyBalanceChange, netChanges.getHbars()[1]);
 
 		assertEquals(aFirstBalanceChange + aSecondBalanceChange + cOnlyBalanceChange, subject.getNetHbarChange());
 		subject.reset();
-		assertEquals(0, subject.getNetTrackedHbarChanges().getAccountCodes().length);
+		assertEquals(0, subject.getNetTrackedHbarChanges().getAccountNums().length);
 		assertEquals(0, subject.getNetTrackedHbarChanges().getHbars().length);
 		assertEquals(0, subject.getNetHbarChange());
 	}
@@ -362,9 +362,9 @@ class SideEffectsTrackerTest {
 	void resetsTouchedNumsCorrectly() {
 		subject.trackHbarChange(100L, 200L);
 		subject.trackHbarChange(200L, 200L);
-		assertEquals(2, subject.getTouchedSoFar());
+		assertEquals(2, subject.getNumHbarBalancesChangedSoFar());
 		subject.reset();
-		assertEquals(0, subject.getTouchedSoFar());
+		assertEquals(0, subject.getNumHbarBalancesChangedSoFar());
 	}
 
 	private static final long aFirstBalanceChange = 1_000L;

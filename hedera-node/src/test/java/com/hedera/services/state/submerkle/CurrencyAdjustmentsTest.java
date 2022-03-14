@@ -31,12 +31,17 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.booleanThat;
+import static org.mockito.ArgumentMatchers.intThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.inOrder;
@@ -65,7 +70,7 @@ class CurrencyAdjustmentsTest {
 	@BeforeEach
 	void setup() {
 		subject = new CurrencyAdjustments();
-		subject.accountCodes = new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum() };
+		subject.accountNums = new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum() };
 		subject.hbars = new long[] { aAmount, bAmount, cAmount };
 	}
 
@@ -122,19 +127,37 @@ class CurrencyAdjustmentsTest {
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(CurrencyAdjustments.MERKLE_VERSION, subject.getVersion());
+		assertEquals(CurrencyAdjustments.CURRENT_VERSION, subject.getVersion());
 		assertEquals(CurrencyAdjustments.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+	}
+
+	@Test
+	void deserializeWorksForPre0240Version() throws IOException {
+		final var in = mock(SerializableDataInputStream.class);
+		given(in.readSerializableList(
+				intThat(i -> i == CurrencyAdjustments.MAX_NUM_ADJUSTMENTS),
+				booleanThat(Boolean.TRUE::equals),
+				(Supplier<EntityId>) any()))
+				.willReturn(Arrays.stream(subject.accountNums)
+						.mapToObj(a -> EntityId.fromIdentityCode((int) a))
+						.toList());
+		given(in.readLongArray(CurrencyAdjustments.MAX_NUM_ADJUSTMENTS)).willReturn(subject.hbars);
+
+		final var readSubject = new CurrencyAdjustments();
+		readSubject.deserialize(in, CurrencyAdjustments.PRE_0240_VERSION);
+
+		assertEquals(readSubject, subject);
 	}
 
 	@Test
 	void deserializeWorks() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		given(in.readLongArray(CurrencyAdjustments.MAX_NUM_ADJUSTMENTS))
-				.willReturn(subject.accountCodes)
+				.willReturn(subject.accountNums)
 				.willReturn(subject.hbars);
 
 		final var readSubject = new CurrencyAdjustments();
-		readSubject.deserialize(in, CurrencyAdjustments.MERKLE_VERSION);
+		readSubject.deserialize(in, CurrencyAdjustments.RELEASE_0240_VERSION);
 
 		assertEquals(readSubject, subject);
 	}
@@ -150,7 +173,7 @@ class CurrencyAdjustmentsTest {
 		inOrder.verify(out, times(2)).writeLongArray(captor.capture());
 		final var capturedValues = captor.getAllValues();
 
-		assertArrayEquals(subject.accountCodes, capturedValues.get(0));
+		assertArrayEquals(subject.accountNums, capturedValues.get(0));
 		assertArrayEquals(subject.hbars, capturedValues.get(1));
 
 	}

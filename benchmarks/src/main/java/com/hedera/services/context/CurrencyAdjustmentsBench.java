@@ -33,12 +33,14 @@ import org.openjdk.jmh.infra.Blackhole;
 @Warmup(iterations = 1, time = 5)
 @Measurement(iterations = 5, time = 10)
 public class CurrencyAdjustmentsBench {
+	private final SideEffectsTracker tracker = new SideEffectsTracker();
+
 	@Benchmark
 	public void getTrackedCurrencyAdjustments(Blackhole blackhole) {
+		tracker.reset();
+
 		var account = 1000;
 		var amount = 2000;
-
-		SideEffectsTracker tracker = new SideEffectsTracker();
 		for (int i = 0; i < 10; i++) {
 			tracker.trackHbarChange(account, amount + 10);
 			tracker.trackHbarChange(account, amount - 10);

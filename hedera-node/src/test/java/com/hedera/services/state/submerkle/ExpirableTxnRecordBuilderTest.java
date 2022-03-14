@@ -136,7 +136,7 @@ class ExpirableTxnRecordBuilderTest {
 		final var expectedAccounts = new long[] {
 				inThisButNotThat.num(), firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num() };
 		assertArrayEquals(expectedChanges, subject.getTransferList().hbars);
-		assertArrayEquals(expectedAccounts, subject.getTransferList().accountCodes);
+		assertArrayEquals(expectedAccounts, subject.getTransferList().accountNums);
 	}
 
 	@Test
@@ -163,7 +163,7 @@ class ExpirableTxnRecordBuilderTest {
 				firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num()
 		};
 		assertArrayEquals(expectedChanges, subject.getTransferList().hbars);
-		assertArrayEquals(expectedAccounts, subject.getTransferList().accountCodes);
+		assertArrayEquals(expectedAccounts, subject.getTransferList().accountNums);
 	}
 
 	@Test
@@ -192,7 +192,7 @@ class ExpirableTxnRecordBuilderTest {
 		final var expectedAccounts = new long[] {
 				firstInThisButNotThat.num(), firstInBoth.num(), secondInBoth.num(), secondInThisButNotThat.num() };
 		assertArrayEquals(expectedChanges, subject.getTransferList().hbars);
-		assertArrayEquals(expectedAccounts, subject.getTransferList().accountCodes);
+		assertArrayEquals(expectedAccounts, subject.getTransferList().accountNums);
 	}
 
 	@Test

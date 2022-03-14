@@ -917,8 +917,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			final var adjustsHere = this.transferList.hbars.length;
 			final var adjustsThere = that.transferList.hbars.length;
 			final var maxAdjusts = adjustsHere + adjustsThere;
-			final var changedHere = this.transferList.accountCodes;
-			final var changedThere = that.transferList.accountCodes;
+			final var changedHere = this.transferList.accountNums;
+			final var changedThere = that.transferList.accountNums;
 			final var maxAccountCodes = changedHere.length + changedThere.length;
 
 
@@ -928,7 +928,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			var i = 0;
 			var j = 0;
 			var k = 0;
-			var m = 0;
 			while (i < adjustsHere && j < adjustsThere) {
 				final var iId = changedHere[i];
 				final var jId = changedThere[j];
@@ -936,32 +935,32 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				if (cmp == 0) {
 					final var net = this.transferList.hbars[i++] - that.transferList.hbars[j++];
 					if (net != 0) {
-						netAdjustsHere[k++] = net;
-						netChanged[m++] = iId;
+						netAdjustsHere[k] = net;
+						netChanged[k++] = iId;
 					}
 				} else if (cmp < 0) {
-					netAdjustsHere[k++] = this.transferList.hbars[i++];
-					netChanged[m++] = iId;
+					netAdjustsHere[k] = this.transferList.hbars[i++];
+					netChanged[k++] = iId;
 				} else {
-					netAdjustsHere[k++] = -that.transferList.hbars[j++];
-					netChanged[m++] = jId;
+					netAdjustsHere[k] = -that.transferList.hbars[j++];
+					netChanged[k++] = jId;
 				}
 			}
 			/* Note that at most one of these loops can iterate a non-zero number of times,
 			 * since if both did we could not have exited the prior loop. */
 			while (i < adjustsHere) {
 				final var iId = changedHere[i];
-				netAdjustsHere[k++] = this.transferList.hbars[i++];
-				netChanged[m++] = iId;
+				netAdjustsHere[k] = this.transferList.hbars[i++];
+				netChanged[k++] = iId;
 			}
 			while (j < adjustsThere) {
 				final var jId = changedThere[j];
-				netAdjustsHere[k++] = -that.transferList.hbars[j++];
-				netChanged[m++] = jId;
+				netAdjustsHere[k] = -that.transferList.hbars[j++];
+				netChanged[k++] = jId;
 			}
 
 			this.transferList.hbars = Arrays.copyOfRange(netAdjustsHere, 0, k);
-			this.transferList.accountCodes = Arrays.copyOfRange(netChanged, 0, m);
+			this.transferList.accountNums = Arrays.copyOfRange(netChanged, 0, k);
 		}
 
 		private void nullOutSideEffectFields(boolean removeCallResult) {
