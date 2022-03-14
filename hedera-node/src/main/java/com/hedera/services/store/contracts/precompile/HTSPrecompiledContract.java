@@ -44,6 +44,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
@@ -92,6 +93,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -247,11 +249,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//createFungibleToken(HederaToken memory token, uint initialTotalSupply, uint decimals)
 	protected static final int ABI_ID_CREATE_FUNGIBLE_TOKEN = 0x7812a04b;
 	//createFungibleTokenWithCustomFees(HederaToken memory token, uint initialTotalSupply, uint decimals, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees)
-	protected static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES = 0x4b37e995;
+	protected static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES = 0x96c37b8b;
 	//createNonFungibleToken(HederaToken memory token)
 	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN = 0x9dc711e0;
 	//createNonFungibleTokenWithCustomFees(HederaToken memory token, FixedFee[] memory fixedFees, RoyaltyFee[] memory royaltyFees)
-	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES = 0x9c1fba6b;
+	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES = 0x3ed53448;
 
 	//Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
 	//Transfer(address indexed from, address indexed to, uint256 value)
@@ -261,6 +263,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private int functionId;
 	private Precompile precompile;
 	private TransactionBody.Builder transactionBody;
+	private MessageFrame messageFrame;
 	private final Provider<FeeCalculator> feeCalculator;
 	private Gas gasRequirement = Gas.ZERO;
 	private final StateView currentView;
@@ -314,6 +317,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
+		this.messageFrame = messageFrame;
 		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
 
 		if (messageFrame.isStatic() && !isRedirectProxy) {
@@ -328,8 +332,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		gasRequirement = Gas.of(dynamicProperties.htsDefaultGasCost());
 
+
 		if (this.precompile == null) {
 			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
+			return null;
+		} else if (this.messageFrame.getRevertReason().isPresent()) {
 			return null;
 		}
 
@@ -820,23 +827,91 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	protected class FungibleTokenCreatePrecompile implements Precompile {
-		private TokenCreateWrapper tokenCreateOp;
+	private abstract class AbstractCreatePrecompile implements Precompile {
+		//TODO: if possible, use this class for all token create scenarios as is done in @TransferPrecompile
+
+		protected TokenCreateWrapper tokenCreateOp;
+
+		final protected TransactionBody.Builder createSyntheticTokenCreateTransactionBody() {
+			try {
+				verifyKeys();
+				tokenCreateOp.setAllInheritedKeysTo((JKey) ledgers.accounts().get(
+						EntityIdUtils.accountIdFromEvmAddress(senderAddress), AccountProperty.KEY));
+				return syntheticTxnFactory.createTokenCreate(tokenCreateOp);
+			} catch (InvalidTransactionException e) {
+				return null;
+			} catch (DecoderException e) {
+				final var errorMessage = "Sender key could not be decoded - " + e.getMessage();
+				messageFrame.setRevertReason(Bytes.wrap(errorMessage.getBytes()));
+				return null;
+			}
+		}
+
+		/*
+		 * Check keys validity. The `TokenKey` struct in `IHederaTokenService.sol`
+		 * defines a `keyType` bit field, which smart contract developers will use to
+		 * set the type of key the `KeyValue` field will be used for. For example, if the
+		 * `keyType` field is set to `00000001`, then the key value will be used for adminKey.
+		 * If it is set to `00000011` the key value will be used for both adminKey and kycKey.
+		 * Since an array of `TokenKey` structs is passed to the precompile, we have to
+		 * check if each one specifies the type of key it applies to (that the bit field
+		 * is not `00000000`) and also that there are not multiple keys values for the
+		 * same key type (e.g. multiple `TokenKey` instances have the adminKey bit set)
+		 */
+		final protected void verifyKeys() {
+			final var tokenKeys = tokenCreateOp.getTokenKeys();
+			if (tokenKeys.size() > 0) {
+				for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
+					final var tokenKey = tokenKeys.get(i);
+					validateTrue(isKeyValueValid(tokenKey.key()), "Token key must have exactly 1 key value set.");
+					final var tokenKeyBitField = tokenKey.keyType().intValue();
+					validateTrue(tokenKeyBitField != 0, "Key passed without key type to apply it to.");
+					for (int j = i + 1; j < tokenKeysSize; j++) {
+						validateTrue((tokenKeyBitField & tokenKeys.get(j).keyType().intValue()) == 0,
+								"Multiple keys supplied for the same key type.");
+					}
+				}
+			}
+		}
+
+		private boolean isKeyValueValid(final TokenCreateWrapper.KeyValueWrapper key) {
+			if (key.isShouldInheritAccountKeySet()) {
+				return !key.isECDS_secp256k1KeySet() && !key.isDelegatableContractIdSet()
+						&& !key.isContractIDSet() && !key.isEd25519KeySet();
+			} else if (key.isContractIDSet()) {
+				return !key.isECDS_secp256k1KeySet() && !key.isDelegatableContractIdSet() && !key.isEd25519KeySet();
+			} else if (key.isEd25519KeySet()) {
+				return !key.isECDS_secp256k1KeySet() && !key.isDelegatableContractIdSet() ;
+			} else if (key.isECDS_secp256k1KeySet()) {
+				return !key.isDelegatableContractIdSet();
+			}
+			return key.isDelegatableContractIdSet();
+		}
+
+		private void validateTrue(final boolean flag, final String revertMessage) {
+			if (!flag) {
+				messageFrame.setRevertReason(Bytes.of(revertMessage.getBytes()));
+				throw new InvalidTransactionException(FAIL_INVALID);
+			}
+		}
+	}
+
+	protected class FungibleTokenCreatePrecompile extends AbstractCreatePrecompile {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, UnaryOperator<byte[]> aliasResolver) {
-			tokenCreateOp = decoder.decodeTokenCreate(input);
-			return syntheticTxnFactory.createTokenCreate(tokenCreateOp);
+			tokenCreateOp = decoder.decodeFungibleCreate(input, aliasResolver);
+			return createSyntheticTokenCreateTransactionBody();
 		}
 
 		@Override
-		public ExpirableTxnRecord.Builder run(
-				final MessageFrame frame
-		) {
+		public ExpirableTxnRecord.Builder run(final MessageFrame frame) {
 			Objects.requireNonNull(tokenCreateOp);
 
 			/* --- Check required signatures --- */
 			// TODO: Perform proper validations before any further action
+			// TODO: Treasury account and admin key (if specified) are also required to have signed the txn
+			// TODO: Perform token create validations as done in `TokenCreateTransitionLogic`
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var sideEffects = sideEffectsFactory.get();
@@ -865,7 +940,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public void addImplicitCostsIn(TxnAccessor accessor) {
 			// TODO: Modify for implicit costs addition
-			Precompile.super.addImplicitCostsIn(accessor);
+			super.addImplicitCostsIn(accessor);
 		}
 
 		// TODO: Review whether we need the getSuccessResult to be custom made
@@ -885,11 +960,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	protected class FungibleTokenCreateWithFeesPrecompile implements Precompile {
+	protected class FungibleTokenCreateWithFeesPrecompile extends AbstractCreatePrecompile {
 
 		@Override
 		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-			return null;
+			tokenCreateOp = decoder.decodeFungibleCreateWithFees(input, aliasResolver);
+			return createSyntheticTokenCreateTransactionBody();
 		}
 
 		@Override
@@ -904,25 +980,26 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public void addImplicitCostsIn(TxnAccessor accessor) {
-			Precompile.super.addImplicitCostsIn(accessor);
+			super.addImplicitCostsIn(accessor);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			return Precompile.super.getSuccessResultFor(childRecord);
+			return super.getSuccessResultFor(childRecord);
 		}
 
 		@Override
 		public Bytes getFailureResultFor(ResponseCodeEnum status) {
-			return Precompile.super.getFailureResultFor(status);
+			return super.getFailureResultFor(status);
 		}
 	}
 
-	protected class NonFungibleTokenCreatePrecompile implements Precompile {
+	protected class NonFungibleTokenCreatePrecompile extends AbstractCreatePrecompile {
 
 		@Override
 		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-			return null;
+			tokenCreateOp = decoder.decodeNonFungibleTokenCreate(input, aliasResolver);
+			return createSyntheticTokenCreateTransactionBody();
 		}
 
 		@Override
@@ -937,25 +1014,26 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public void addImplicitCostsIn(TxnAccessor accessor) {
-			Precompile.super.addImplicitCostsIn(accessor);
+			super.addImplicitCostsIn(accessor);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			return Precompile.super.getSuccessResultFor(childRecord);
+			return super.getSuccessResultFor(childRecord);
 		}
 
 		@Override
 		public Bytes getFailureResultFor(ResponseCodeEnum status) {
-			return Precompile.super.getFailureResultFor(status);
+			return super.getFailureResultFor(status);
 		}
 	}
 
-	protected class NonFungibleTokenCreateWithFeesPrecompile implements Precompile {
+	protected class NonFungibleTokenCreateWithFeesPrecompile extends AbstractCreatePrecompile {
 
 		@Override
 		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
-			return null;
+			tokenCreateOp = decoder.decodeNonFungibleTokenCreateWithFees(input, aliasResolver);
+			return createSyntheticTokenCreateTransactionBody();
 		}
 
 		@Override
@@ -970,17 +1048,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public void addImplicitCostsIn(TxnAccessor accessor) {
-			Precompile.super.addImplicitCostsIn(accessor);
+			super.addImplicitCostsIn(accessor);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			return Precompile.super.getSuccessResultFor(childRecord);
+			return super.getSuccessResultFor(childRecord);
 		}
 
 		@Override
 		public Bytes getFailureResultFor(ResponseCodeEnum status) {
-			return Precompile.super.getFailureResultFor(status);
+			return super.getFailureResultFor(status);
 		}
 	}
 

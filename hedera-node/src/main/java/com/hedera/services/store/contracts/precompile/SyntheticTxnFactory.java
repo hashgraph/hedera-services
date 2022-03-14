@@ -30,13 +30,16 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -99,14 +102,6 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setTokenMint(builder);
 	}
 
-	public TransactionBody.Builder createTokenCreate(final TokenCreateWrapper tokenCreateWrapper) {
-		final var builder = TokenCreateTransactionBody.newBuilder();
-
-		// TODO: Fill in the proper synthetic token create transaction body with all its data.
-
-		return TransactionBody.newBuilder().setTokenCreation(builder);
-	}
-
 	/**
 	 * Given a list of {@link TokenTransferWrapper}s, where each wrapper gives changes scoped to a particular
 	 * {@link TokenID}, returns a synthetic {@code CryptoTransfer} whose {@link CryptoTransferTransactionBody}
@@ -157,6 +152,46 @@ public class SyntheticTxnFactory {
 		builder.addAllTokens(dissociation.tokenIds());
 
 		return TransactionBody.newBuilder().setTokenDissociate(builder);
+	}
+
+	public TransactionBody.Builder createTokenCreate(final TokenCreateWrapper tokenCreateWrapper) {
+		final var txnBodyBuilder = TokenCreateTransactionBody.newBuilder();
+		txnBodyBuilder.setName(tokenCreateWrapper.getName());
+		txnBodyBuilder.setSymbol(tokenCreateWrapper.getSymbol());
+		txnBodyBuilder.setDecimals(tokenCreateWrapper.getDecimals().intValue());
+		txnBodyBuilder.setTokenType(tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : NON_FUNGIBLE_UNIQUE);
+		txnBodyBuilder.setSupplyType(tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
+		txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
+		txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValue());
+		txnBodyBuilder.setTreasury(tokenCreateWrapper.getTreasury());
+		txnBodyBuilder.setFreezeDefault(tokenCreateWrapper.isFreezeDefault());
+		txnBodyBuilder.setMemo(tokenCreateWrapper.getMemo());
+		if (tokenCreateWrapper.getExpiry().second() != 0)
+			txnBodyBuilder.setExpiry(Timestamp.newBuilder().setSeconds(tokenCreateWrapper.getExpiry().second()).build());
+		if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null)
+			txnBodyBuilder.setAutoRenewAccount(tokenCreateWrapper.getExpiry().autoRenewAccount());
+		if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != 0)
+			txnBodyBuilder.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
+		tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
+			final var key = tokenKeyWrapper.key().asGrpc();
+			if (tokenKeyWrapper.isUsedForAdminKey()) txnBodyBuilder.setAdminKey(key);
+			if (tokenKeyWrapper.isUsedForKycKey()) txnBodyBuilder.setKycKey(key);
+			if (tokenKeyWrapper.isUsedForFreezeKey()) txnBodyBuilder.setFreezeKey(key);
+			if (tokenKeyWrapper.isUsedForWipeKey()) txnBodyBuilder.setWipeKey(key);
+			if (tokenKeyWrapper.isUsedForSupplyKey()) txnBodyBuilder.setSupplyKey(key);
+			if (tokenKeyWrapper.isUsedForFeeScheduleKey()) txnBodyBuilder.setFeeScheduleKey(key);
+			if (tokenKeyWrapper.isUsedForPauseKey()) txnBodyBuilder.setPauseKey(key);
+		});
+		txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFixedFees().stream()
+				.map(TokenCreateWrapper.FixedFeeWrapper::asGrpc)
+				.toList());
+		txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getFractionalFees().stream()
+				.map(TokenCreateWrapper.FractionalFeeWrapper::asGrpc)
+				.toList());
+		txnBodyBuilder.addAllCustomFees(tokenCreateWrapper.getRoyaltyFees().stream()
+				.map(TokenCreateWrapper.RoyaltyFeeWrapper::asGrpc)
+				.toList());
+		return TransactionBody.newBuilder().setTokenCreation(txnBodyBuilder);
 	}
 
 	public TransactionBody.Builder createAccount(final Key alias, final long balance) {
