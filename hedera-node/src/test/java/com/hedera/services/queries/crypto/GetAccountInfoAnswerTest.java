@@ -35,7 +35,6 @@ import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -94,8 +93,6 @@ import static org.mockito.Mockito.mock;
 class GetAccountInfoAnswerTest {
 	private StateView view;
 	@Mock
-	private TokenStore tokenStore;
-	@Mock
 	private ScheduleStore scheduleStore;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
@@ -111,6 +108,8 @@ class GetAccountInfoAnswerTest {
 	private NetworkInfo networkInfo;
 	@Mock
 	private AliasManager aliasManager;
+
+	private final MutableStateChildren children = new MutableStateChildren();
 
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	private String node = "0.0.3";
@@ -179,7 +178,6 @@ class GetAccountInfoAnswerTest {
 				.get();
 		payerAccount.setTokens(tokens);
 
-		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
 
@@ -237,7 +235,11 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void getsTheAccountInfo() throws Throwable {
+		final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
+		children.setTokens(tokens);
+
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.decimals())
@@ -245,15 +247,10 @@ class GetAccountInfoAnswerTest {
 				.willReturn(1).willReturn(2).willReturn(3);
 		given(deletedToken.decimals()).willReturn(4);
 
-		given(tokenStore.exists(firstToken)).willReturn(true);
-		given(tokenStore.exists(secondToken)).willReturn(true);
-		given(tokenStore.exists(thirdToken)).willReturn(true);
-		given(tokenStore.exists(fourthToken)).willReturn(true);
-		given(tokenStore.exists(missingToken)).willReturn(false);
-		given(tokenStore.get(firstToken)).willReturn(token);
-		given(tokenStore.get(secondToken)).willReturn(token);
-		given(tokenStore.get(thirdToken)).willReturn(token);
-		given(tokenStore.get(fourthToken)).willReturn(deletedToken);
+		given(tokens.get(EntityNum.fromTokenId(firstToken))).willReturn(token);
+		given(tokens.get(EntityNum.fromTokenId(secondToken))).willReturn(token);
+		given(tokens.get(EntityNum.fromTokenId(thirdToken))).willReturn(token);
+		given(tokens.get(EntityNum.fromTokenId(fourthToken))).willReturn(deletedToken);
 		given(token.symbol()).willReturn("HEYMA");
 		given(deletedToken.symbol()).willReturn("THEWAY");
 		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
