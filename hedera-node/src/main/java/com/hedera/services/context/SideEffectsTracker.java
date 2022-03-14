@@ -308,11 +308,6 @@ public class SideEffectsTracker {
 	 */
 	public void trackHbarChange(final long account, final long amount) {
 		netHbarChange += amount;
-//		final var output = TransfersHelper.updateFungibleChanges(account, amount,
-//				changedAccounts, balanceChanges, touchedSoFar);
-//		balanceChanges = output.getLeft();
-//		changedAccounts = output.getMiddle();
-//		touchedSoFar = output.getRight();
 		touchedSoFar = includeOrderedFungibleChange(changedAccounts, balanceChanges, touchedSoFar, account, amount);
 	}
 
@@ -364,10 +359,6 @@ public class SideEffectsTracker {
 	 * @return the ordered net balance changes
 	 */
 	public CurrencyAdjustments getNetTrackedHbarChanges() {
-//		final var updatedAdjustments = TransfersHelper.purgeZeroAdjustments(balanceChanges, changedAccounts,
-//				touchedSoFar);
-//		balanceChanges = updatedAdjustments.getLeft();
-//		changedAccounts = updatedAdjustments.getRight();
 		touchedSoFar = purgeZeroChanges(changedAccounts, balanceChanges, touchedSoFar);
 		return CurrencyAdjustments.fromChanges(balanceChanges, changedAccounts, touchedSoFar);
 	}
@@ -473,8 +464,6 @@ public class SideEffectsTracker {
 	 */
 	public void reset() {
 		resetTrackedTokenChanges();
-		changedAccounts = new long[BALANCE_CHANGES_LENGTH];
-		balanceChanges = new long[BALANCE_CHANGES_LENGTH];
 		touchedSoFar = 0;
 		netHbarChange = 0;
 		newAccountId = null;
@@ -642,10 +631,15 @@ public class SideEffectsTracker {
 				zerosSkippedSoFar++;
 				retracedI--;
 			} else if (zerosSkippedSoFar > 0) {
+				// shift the elements in array to left replacing zero changes
 				accountNums[retracedI] = accountNums[i];
 				balanceChanges[retracedI] = balanceChanges[i];
 			}
 		}
 		return touchedSoFar - zerosSkippedSoFar;
+	}
+
+	public int getTouchedSoFar() {
+		return touchedSoFar;
 	}
 }

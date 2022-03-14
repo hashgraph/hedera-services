@@ -338,6 +338,35 @@ class SideEffectsTrackerTest {
 		assertEquals(fungibleAllowances, subject.getFungibleTokenAllowances());
 	}
 
+	@Test
+	void purgesZeroChangesSuccessfully() {
+		final var accountNums = new long[] { 100L, 200L, 300L, 400L, 200L };
+		final var balanceChanges = new long[] { 1000L, 2000L, 0L, 300L, -100L };
+		final var result = subject.purgeZeroChanges(accountNums, balanceChanges, 4);
+		assertEquals(3, result);
+	}
+
+	@Test
+	void includesOrderedFungibleChanges() {
+		final var accountNums = new long[] { 100L, 200L, 300L, 400L, 200L };
+		final var balanceChanges = new long[] { 1000L, 2000L, 0L, 300L, -100L };
+		var result = subject.includeOrderedFungibleChange(accountNums, balanceChanges,
+				4, 300L, 100L);
+		assertEquals(4, result);
+		result = subject.includeOrderedFungibleChange(accountNums, balanceChanges,
+				4, 500L, 100L);
+		assertEquals(5, result);
+	}
+
+	@Test
+	void resetsTouchedNumsCorrectly() {
+		subject.trackHbarChange(100L, 200L);
+		subject.trackHbarChange(200L, 200L);
+		assertEquals(2, subject.getTouchedSoFar());
+		subject.reset();
+		assertEquals(0, subject.getTouchedSoFar());
+	}
+
 	private static final long aFirstBalanceChange = 1_000L;
 	private static final long aSecondBalanceChange = 9_000L;
 	private static final long bOnlyBalanceChange = 7_777L;

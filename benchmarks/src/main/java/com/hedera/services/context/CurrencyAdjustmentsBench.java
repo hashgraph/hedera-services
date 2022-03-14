@@ -55,33 +55,7 @@ public class CurrencyAdjustmentsBench {
 	
 	/*
 	RESULT : 
-	1. Using TransferList  79217.113 ops/s
-	2. using List<Long> in SideEffectsTracker 870563.418 ops/s
-	3. using long[] array in SideEffectsTracker 107402.684 ops.s
+	1. Using TransferList 102379.684 ops/s
+	2. using long[] array in SideEffectsTracker 505066 ops.s
 	*/
-
-	/*
-	BEFORE THE CHANGE --- FOR REF, WILL BE DELETED BEFORE MERGING
-		@Benchmark
-	public void getTrackedCurrencyAdjustments(Blackhole blackhole) {
-		var acc = 1000;
-		var amount = 2000;
-		SideEffectsTracker tracker = new SideEffectsTracker();
-		for (int i = 0; i < 10; i++) {
-			var account = AccountID.newBuilder().setAccountNum(acc).build();
-			tracker.trackHbarChange(account, amount + 10);
-			tracker.trackHbarChange(account, amount - 10);
-			acc++;
-		}
-		for (int i = 0; i < 5; i++) {
-			var account = AccountID.newBuilder().setAccountNum(acc).build();
-			tracker.trackHbarChange(account, amount);
-			tracker.trackHbarChange(account, -1 * amount);
-			acc++;
-		}
-		final var netChanges = tracker.getNetTrackedHbarChanges();
-		final var result = CurrencyAdjustments.fromGrpc(netChanges);
-		blackhole.consume(result);
-	}
-	 */
 }
