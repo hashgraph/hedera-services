@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -40,6 +41,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
 import java.time.Instant;
+import java.util.Map;
 
 public interface StateChildren {
 	Instant signedAt();
@@ -67,4 +69,6 @@ public interface StateChildren {
 	MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens();
 
 	RecordsRunningHashLeaf runningHashLeaf();
+
+	Map<ByteString, EntityNum> aliases();
 }

@@ -22,12 +22,8 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.AccountsCommitInterceptor;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.TokenRelsCommitInterceptor;
-import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
@@ -46,8 +42,10 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.fchashmap.FCHashMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -198,7 +196,8 @@ class WorldLedgersTest {
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>());
-		final var liveAliases = new AliasManager();
+		final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
+		final var liveAliases = new AliasManager(() -> aliases);
 
 		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
 		assertTrue(source.areMutable());
@@ -247,7 +246,8 @@ class WorldLedgersTest {
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>());
-		final var liveAliases = new AliasManager();
+		final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
+		final var liveAliases = new AliasManager(() -> aliases);
 
 		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
 		assertTrue(source.areMutable());

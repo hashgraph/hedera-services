@@ -82,7 +82,7 @@ class GetAccountRecordsResourceUsageTest {
 		aValue.records().offer(recordTwo());
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
-		view = new StateView(null, null, children, null);
+		view = new StateView(null, children, null);
 
 		subject = new GetAccountRecordsResourceUsage(new AnswerFunctions(dynamicProperties), usageEstimator);
 	}

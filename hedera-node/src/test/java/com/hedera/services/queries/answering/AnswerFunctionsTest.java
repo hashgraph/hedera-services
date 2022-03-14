@@ -176,7 +176,7 @@ class AnswerFunctionsTest {
 	private void setupAccountsView() {
 		final var children = new MutableStateChildren();
 		children.setAccounts(accounts);
-		view = new StateView(null, null, children, null);
+		view = new StateView(null, children, null);
 	}
 
 	private void givenRecordCount(final int n) {

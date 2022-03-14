@@ -20,9 +20,14 @@ package com.hedera.services.state.org;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesApp;
+import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.merkle.Archivable;
+import com.swirlds.fchashmap.FCHashMap;
+
+import java.util.Map;
 
 /**
  * Contains the part of the Hedera Services world state that does influence
@@ -30,31 +35,39 @@ import com.swirlds.common.merkle.Archivable;
  */
 public class StateMetadata implements FastCopyable, Archivable {
 	private final ServicesApp app;
+	private final FCHashMap<ByteString, EntityNum> aliases;
 
-	public StateMetadata(ServicesApp app) {
+	public StateMetadata(final ServicesApp app, final FCHashMap<ByteString, EntityNum> aliases) {
 		this.app = app;
+		this.aliases = aliases;
 	}
 
-	private StateMetadata(StateMetadata that) {
+	private StateMetadata(final StateMetadata that) {
+		this.aliases = that.aliases.copy();
 		this.app = that.app;
 	}
 
 	@Override
 	public void archive() {
-		// No-op
+		release();
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public StateMetadata copy() {
 		return new StateMetadata(this);
 	}
 
 	@Override
 	public void release() {
-		// No-op
+		aliases.release();
 	}
 
 	public ServicesApp app() {
 		return app;
+	}
+
+	public Map<ByteString, EntityNum> aliases() {
+		return aliases;
 	}
 }
