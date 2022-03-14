@@ -40,9 +40,22 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_COLLECTOR_CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_COLLECTOR_DISTRIBUTE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_DISTRIBUTE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_DISTRIBUTE_STATIC_NESTED_CALL;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_NFT;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_NFTS;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VERSATILE_TRANSFERS_TOKENS;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_DEPOSIT_TOKENS;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ZENOS_BANK_WITHDRAW_TOKENS;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -51,6 +64,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCrea
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -120,14 +134,15 @@ public class ContractHTSSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
-		return List.of(
-				distributeMultipleTokens(),
-				depositAndWithdrawFungibleTokens(),
-				transferNft(),
-				transferMultipleNfts(),
-				tokenTransferFromFeeCollector(),
-				tokenTransferFromFeeCollectorStaticNestedCall(),
-				hbarTransferFromFeeCollector()
+		return List.of(new HapiApiSpec[] {
+						distributeMultipleTokens(),
+						depositAndWithdrawFungibleTokens(),
+						transferNft(),
+						transferMultipleNfts(),
+						tokenTransferFromFeeCollector(),
+						tokenTransferFromFeeCollectorStaticNestedCall(),
+						hbarTransferFromFeeCollector()
+				}
 		);
 	}
 
@@ -660,9 +675,15 @@ public class ContractHTSSuite extends HapiApiSuite {
 								}
 						)
 				).then(
+						getTxnRecord("distributeTx")
+								.andAllChildRecords()
+								.logged()
+								.hasPriority(recordWith().transfers(including(
+										tinyBarsFromTo(CONTRACT, SECOND_RECEIVER, CUSTOM_HBAR_FEE_AMOUNT)))),
 						childRecordsCheck("distributeTx", SUCCESS,
 								recordWith()
 										.status(SUCCESS)
+										.transfers(including(tinyBarsFromTo(ACCOUNT, CONTRACT, CUSTOM_HBAR_FEE_AMOUNT)))
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, ACCOUNT, -AMOUNT_TO_SEND)

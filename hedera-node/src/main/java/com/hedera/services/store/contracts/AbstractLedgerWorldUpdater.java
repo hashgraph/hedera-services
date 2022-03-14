@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -224,9 +225,9 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		recordsHistorian.trackFollowingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar);
 	}
 
-	public WorldLedgers wrappedTrackingLedgers() {
-		final var wrappedLedgers = trackingLedgers.wrapped();
-		wrappedLedgers.accounts().setCommitInterceptor(this::onAccountPropertyChange);
+	public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {
+		final var wrappedLedgers = trackingLedgers.wrapped(sideEffectsTracker);
+		wrappedLedgers.accounts().setPropertyChangeObserver(this::onAccountPropertyChange);
 		return wrappedLedgers;
 	}
 
@@ -255,7 +256,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			}
 
 			final var newBalance = (long) newValue;
-			updatedAccount.setBalanceFromCommitInterceptor(Wei.of(newBalance));
+			updatedAccount.setBalanceFromPropertyChangeObserver(Wei.of(newBalance));
 		}
 	}
 

@@ -1,0 +1,20 @@
+{
+  "erc20TokenNames": [
+    "Air Superiority Blue",
+    "Banana Mania",
+    "Catawba",
+    "Deep Space Sparkle",
+    "Ecru",
+    "Fuzzy Wuzzy"
+  ],
+  "numTraders": 5,
+  "numLiquidityProviders": 1,
+  "millisBetweenSwaps": 20,
+  "millisBetweenMints": 2000,
+  "checkSwapRecords": true,
+  "checkMintRecords": true,
+  "gasOfferPerMint": 1000000,
+  "gasOfferPerSwap": 250000,
+  "numStartupMints": 10,
+  "opsBetweenBalanceDisplay": 20
+}

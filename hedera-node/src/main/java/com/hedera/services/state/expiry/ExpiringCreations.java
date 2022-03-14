@@ -33,7 +33,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
@@ -181,7 +181,7 @@ public class ExpiringCreations implements EntityCreator {
 		if (sideEffectsTracker.hasTrackedContractCreation()) {
 			final var newId = 	EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId());
 			receiptBuilder.setContractId(newId);
-			final var createResult = new SolidityFnResult();
+			final var createResult = new EvmFnResult();
 			// A bit redundant, but set this for consistency with top-level records
 			createResult.setContractId(newId);
 			createResult.setEvmAddress(sideEffectsTracker.getNewEntityAlias().toByteArray());

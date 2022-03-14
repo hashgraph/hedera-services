@@ -104,8 +104,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private TxnReceipt receipt;
 	private RichInstant consensusTimestamp;
 	private CurrencyAdjustments hbarAdjustments;
-	private SolidityFnResult contractCallResult;
-	private SolidityFnResult contractCreateResult;
+	private EvmFnResult contractCallResult;
+	private EvmFnResult contractCreateResult;
 	/* IMPORTANT: This class depends on the invariant that if any of the
 	three token-related lists below (tokens, tokenAdjustments, and
 	nftTokenAdjustments) is non-null, then it has the same length as any
@@ -542,11 +542,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return fee;
 	}
 
-	public SolidityFnResult getContractCallResult() {
+	public EvmFnResult getContractCallResult() {
 		return contractCallResult;
 	}
 
-	public SolidityFnResult getContractCreateResult() {
+	public EvmFnResult getContractCreateResult() {
 		return contractCreateResult;
 	}
 
@@ -755,8 +755,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private long packedParentConsensusTime = MISSING_PARENT_CONSENSUS_TIMESTAMP;
 		private short numChildRecords = NO_CHILD_TRANSACTIONS;
 		private CurrencyAdjustments transferList;
-		private SolidityFnResult contractCallResult;
-		private SolidityFnResult contractCreateResult;
+		private EvmFnResult contractCallResult;
+		private EvmFnResult contractCreateResult;
 		private List<EntityId> tokens;
 		private List<CurrencyAdjustments> tokenAdjustments;
 		private List<NftAdjustments> nftTokenAdjustments;
@@ -810,12 +810,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
-		public Builder setContractCallResult(SolidityFnResult contractCallResult) {
+		public Builder setContractCallResult(EvmFnResult contractCallResult) {
 			this.contractCallResult = contractCallResult;
 			return this;
 		}
 
-		public Builder setContractCreateResult(SolidityFnResult contractCreateResult) {
+		public Builder setContractCreateResult(EvmFnResult contractCreateResult) {
 			this.contractCreateResult = contractCreateResult;
 			return this;
 		}
@@ -985,11 +985,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return transferList;
 		}
 
-		public SolidityFnResult getContractCallResult() {
+		public EvmFnResult getContractCallResult() {
 			return contractCallResult;
 		}
 
-		public SolidityFnResult getContractCreateResult() {
+		public EvmFnResult getContractCreateResult() {
 			return contractCreateResult;
 		}
 
