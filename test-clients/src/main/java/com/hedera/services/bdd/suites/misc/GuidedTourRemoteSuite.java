@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.misc;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -47,14 +46,17 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -79,32 +81,31 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 //				updateWithInvalidatedKeyFailsInHandle()
 //				topLevelHederaKeyMustBeActive()
 //				topLevelListBehavesAsRevocationService()
-//				balanceLookupContractWorks()
+				balanceLookupContractWorks()
 		);
 	}
 
 	private HapiApiSpec balanceLookupContractWorks() {
 		final long ACTUAL_BALANCE = 1_234L;
+		final var contract = "BalanceLookup";
 
 		return customHapiSpec("BalanceLookupContractWorks")
 				.withProperties(Map.of("host", "34.74.191.8"))
 				.given(
 						cryptoCreate("targetAccount").balance(ACTUAL_BALANCE),
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("balanceLookup").bytecode("bytecode")
+						uploadInitCode(contract),
+						newContractCreate(contract)
 				).when().then(
 						/* This contract (c.f. src/main/resource/contract/contracts/BalanceLookup/BalanceLookup.sol) assumes
 						   a shard and realm of 0; accepts just the sequence number of an account. */
-						contractCallLocal(
-								"balanceLookup",
-								ContractResources.BALANCE_LOOKUP_ABI,
-								spec -> new Object[] {
+						contractCallLocal(contract, "lookup",
+								spec -> new Object[]{
 										spec.registry().getAccountID("targetAccount").getAccountNum()
 								}
 						).has(
 								resultWith().resultThruAbi(
-										ContractResources.BALANCE_LOOKUP_ABI,
-										isLiteralResult(new Object[] { BigInteger.valueOf(ACTUAL_BALANCE) })
+										getABIFor(FUNCTION, "lookup", contract),
+										isLiteralResult(new Object[]{BigInteger.valueOf(ACTUAL_BALANCE)})
 								)
 						)
 				);
@@ -154,7 +155,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 						newKeyNamed("newKey"),
 						cryptoCreate("target")
 								.key("oldKey")
-				) .when(
+				).when(
 						cryptoUpdate("target")
 								.key("newKey")
 								.deferStatusResolution()
@@ -174,7 +175,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 				.withProperties(Map.of("host", "34.74.191.8"))
 				.given(
 						newKeyNamed("invalidPayerKey").shape(keyShape)
-				) .when().then(
+				).when().then(
 						cryptoUpdate(SYSTEM_ADMIN)
 								.receiverSigRequired(true)
 								.signedBy("invalidPayerKey")
@@ -189,9 +190,9 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 				.withProperties(Map.of("host", "34.74.191.8"))
 				.given(
 						cryptoCreate("targetAccount").balance(0L)
-				) .when(
+				).when(
 						cryptoTransfer(
-							tinyBarsFromTo(GENESIS, "targetAccount", AMOUNT)
+								tinyBarsFromTo(GENESIS, "targetAccount", AMOUNT)
 						)
 				).then(
 						getAccountBalance("targetAccount").hasTinyBars(AMOUNT),

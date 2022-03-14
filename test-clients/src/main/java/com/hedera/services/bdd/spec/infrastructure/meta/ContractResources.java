@@ -31,11 +31,9 @@ import java.nio.file.Paths;
 public class ContractResources {
 	public static final String SIMPLE_STORAGE_BYTECODE_PATH = bytecodePath("simpleStorage");
 	public static final String PAYABLE_CONTRACT_BYTECODE_PATH = bytecodePath("PayReceivable");
-	public static final String DELEGATING_CONTRACT_BYTECODE_PATH = bytecodePath("CreateTrivial");
 	public static final String BALANCE_LOOKUP_BYTECODE_PATH = bytecodePath("BalanceLookup");
 	public static final String CIRCULAR_TRANSFERS_BYTECODE_PATH = bytecodePath("CircularTransfers");
 	public static final String VALID_BYTECODE_PATH = HapiSpecSetup.getDefaultInstance().defaultContractPath();
-	public static final String VERBOSE_DEPOSIT_BYTECODE_PATH = bytecodePath("VerboseDeposit");
 	public static final String BIG_ARRAY_BYTECODE_PATH = bytecodePath("BigArray");
 	public static final String EMIT_EVENT_BYTECODE_PATH = bytecodePath("EmitEvent");
 	public static final String FUSE_BYTECODE_PATH = bytecodePath("Fuse");
@@ -44,19 +42,6 @@ public class ContractResources {
 	public static final String CHILD_STORAGE_BYTECODE_PATH = bytecodePath("ChildStorage");
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 	public static final String FIBONACCI_PLUS_PATH = bytecodePath("FibonacciPlus");
-
-	public static final String FIBONACCI_PLUS_CONSTRUCTOR_ABI = "{\"inputs\":[{\"internalType\":\"uint32\"," +
-			"\"name\":\"numSlots\",\"type\":\"uint32\"}],\"payable\":false,\"stateMutability\":\"nonpayable\"," +
-			"\"type\":\"constructor\"}";
-
-	public static final String ADD_NTH_FIB_ABI = "{\"constant\":false,\"inputs\":[{\"internalType\":\"uint32[]\"" +
-			",\"name\":\"at\",\"type\":\"uint32[]\"},{\"internalType\":\"uint32\",\"name\":\"n\",\"type\"" +
-			":\"uint32\"}],\"name\":\"addNthFib\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\"," +
-			"\"type\":\"function\"}";
-
-	public static final String CURRENT_FIB_SLOTS_ABI = "{\"constant\":true,\"inputs\":[],\"name\":\"currentSlots\"," +
-			"\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"payable\":false," +
-			"\"stateMutability\":\"view\",\"type\":\"function\"}";
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
@@ -103,13 +88,6 @@ public class ContractResources {
 			"\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"accountNum\",\"type\":\"uint64\"}],\"name\":\"lookup\"," +
 			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
 			"\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}";
-
-	public static final String VERBOSE_DEPOSIT_ABI = "{\"constant\":false," +
-			"\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"amount\",\"type\":\"uint32\"}," +
-			"{\"internalType\":\"uint32\",\"name\":\"timesForEmphasis\",\"type\":\"uint32\"}," +
-			"{\"internalType\":\"string\",\"name\":\"memo\",\"type\":\"string\"}],\"name\":\"deposit\"," +
-			"\"outputs\":[]," +
-			"\"payable\":true,\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	public static final String BIG_ARRAY_CHANGE_ARRAY_ABI = "{ \"constant\": false," +
 			" \"inputs\": [ { \"internalType\": \"uint256\", \"name\": \"_value\", \"type\": \"uint256\" } ], " +

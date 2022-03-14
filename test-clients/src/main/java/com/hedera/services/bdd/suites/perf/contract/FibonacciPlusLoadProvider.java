@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.perf.contract;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,22 +53,20 @@ import java.util.function.Supplier;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralArrayResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_NTH_FIB_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CURRENT_FIB_SLOTS_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTime;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfBooleanProp;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.mgmtOfIntProp;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
@@ -89,6 +87,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	private static final long SECS_TO_RUN = 600;
 	private static final long MS_TO_DRAIN_QUEUE = 60_000L;
 	private static final long GAS_TO_OFFER = 300_000L;
+	private static final String CONTRACT = "FibonacciPlus";
 
 	private static final String SUITE_PROPS_PREFIX = "fibplus_";
 
@@ -143,7 +142,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 //						justDoOne(),
 						addFibNums(),
 				}
@@ -187,6 +186,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 	}
 
 	private HapiSpecOperation doStorageValidation() {
+		final var currentSlots = getABIFor(FUNCTION, "currentSlots", CONTRACT);
 		return withOpContext((spec, opLog) -> {
 			for (var contract : createdSoFar) {
 				final var expectedStorage = contractStorage.get(contract);
@@ -194,12 +194,11 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 						"Expecting {} to have storage slots {}",
 						contract,
 						Arrays.toString(expectedStorage));
-				final var lookup = contractCallLocal(contract, CURRENT_FIB_SLOTS_ABI)
+				final var lookup = contractCallLocal(contract, currentSlots)
 						.payingWith(GENESIS)
 						.nodePayment(ONE_HBAR)
 						.gas(GAS_TO_OFFER)
-						.has(resultWith().resultThruAbi(CURRENT_FIB_SLOTS_ABI,
-								isLiteralArrayResult(expectedStorage)));
+						.has(resultWith().resultThruAbi(currentSlots, isLiteralArrayResult(expectedStorage)));
 				allRunFor(spec, lookup);
 			}
 		});
@@ -255,10 +254,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				final List<HapiSpecOperation> inits = new ArrayList<>();
-				inits.add(fileCreate(bytecode)
-						.path(FIBONACCI_PLUS_PATH)
-						.noLogging()
-						.payingWith(GENESIS));
+				inits.add(uploadInitCode(CONTRACT));
 				inits.add(cryptoCreate(civilian).balance(100 * ONE_MILLION_HBARS).payingWith(GENESIS));
 				return inits;
 			}
@@ -287,7 +283,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 								choice, targetsDesc, fibN.get());
 					}
 
-					op = contractCall(choice, ADD_NTH_FIB_ABI, targets, fibN.get())
+					op = contractCall(CONTRACT, "addNthFib", targets, fibN.get())
 							.noLogging()
 							.payingWith(civilian)
 							.gas(GAS_TO_OFFER)
@@ -311,8 +307,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 							.deferStatusResolution();
 				} else {
 					final var numSlots = contractSlots.get(choice);
-					op = contractCreate(choice, FIBONACCI_PLUS_CONSTRUCTOR_ABI, numSlots)
-							.bytecode(bytecode)
+					op = newContractCreate(CONTRACT, numSlots)
 							.payingWith(civilian)
 							.balance(0L)
 							.gas(GAS_TO_OFFER)
@@ -345,8 +340,8 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 		final var civilian = "civilian";
 		final var bytecode = "bytecode";
 		final var contract = "fibPlus";
-		final int[] firstTargets = { 19, 24 };
-		final int[] secondTargets = { 30, 31 };
+		final int[] firstTargets = {19, 24};
+		final int[] secondTargets = {30, 31};
 		final var firstCallTxn = "firstCall";
 		final var secondCallTxn = "secondCall";
 		final var createTxn = "creation";
@@ -356,14 +351,10 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 
 		return defaultHapiSpec("JustDoOne")
 				.given(
-						fileCreate(bytecode)
-								.path(FIBONACCI_PLUS_PATH)
-								.noLogging()
-								.payingWith(GENESIS),
+						uploadInitCode(CONTRACT),
 						cryptoCreate(civilian).balance(100 * ONE_MILLION_HBARS).payingWith(GENESIS)
 				).when(
-						contractCreate(contract, FIBONACCI_PLUS_CONSTRUCTOR_ABI, 32)
-								.bytecode(bytecode)
+						newContractCreate(CONTRACT, 32)
 								.payingWith(civilian)
 								.balance(0L)
 								.gas(300_000L)
@@ -377,7 +368,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 							callStart.set(Instant.now());
 							return noOp();
 						}),
-						contractCall(contract, ADD_NTH_FIB_ABI, firstTargets, FIBONACCI_NUM_TO_USE)
+						contractCall(CONTRACT, "addNthFib", firstTargets, FIBONACCI_NUM_TO_USE)
 								.payingWith(civilian)
 								.gas(300_000L)
 								.exposingGasTo((code, gas) -> {
@@ -388,7 +379,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 									callStart.set(done);
 								}).via(firstCallTxn),
 						getExecTime(firstCallTxn).logged(),
-						contractCall(contract, ADD_NTH_FIB_ABI, secondTargets, FIBONACCI_NUM_TO_USE)
+						contractCall(CONTRACT, "addNthFib", secondTargets, FIBONACCI_NUM_TO_USE)
 								.payingWith(civilian)
 								.gas(300_000L)
 								.exposingGasTo((code, gas) -> {

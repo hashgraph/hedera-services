@@ -34,15 +34,14 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -66,7 +65,7 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 //						reviewObjects(),
 //						checkTls(),
 //						doSomething(),
@@ -100,7 +99,7 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 	}
 
 	public HapiApiSpec previewnetCryptoCreatePrice() {
-		final var initcode = "initcode";
+		final var contract = "FibonacciPlus";
 		final var txn = "creation";
 		final var wellKnown = "wellKnown";
 		final var burstSize = 5;
@@ -118,18 +117,16 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 //						cryptoCreate("civilian")
 //								.key(wellKnown)
 //								.balance(2 * ONE_HUNDRED_HBARS),
-//						fileCreate(initcode)
-//								.path(FIBONACCI_PLUS_PATH)
-//								.payingWith(GENESIS)
-//								.exposingNumTo(l -> log.info("Created initcode file 0.0.{}", l)),
+//						withOpContext((spec, noOp) -> uploadInitCode(contract, spec)
+//								.exposingNumTo(l -> log.info("Created initcode file 0.0.{}", l)).execFor(spec)),
 						inParallel(IntStream.range(0, burstSize).mapToObj(i ->
-										contractCreate("contract", FIBONACCI_PLUS_CONSTRUCTOR_ABI, 64)
-												.fee(ONE_HUNDRED_HBARS)
-												.payingWith(GENESIS)
-												.bytecode("0.0.26011")
-												.gas(4_000_000L)
-								).toArray(HapiSpecOperation[]::new))
-//						contractCreate("contract", FIBONACCI_PLUS_CONSTRUCTOR_ABI, 64)
+								newContractCreate(contract, 64)
+										.fee(ONE_HUNDRED_HBARS)
+										.payingWith(GENESIS)
+										.bytecode("0.0.26011")
+										.gas(4_000_000L)
+						).toArray(HapiSpecOperation[]::new))
+//						newContractCreate(contract, 64)
 //								.fee(ONE_HUNDRED_HBARS)
 //								.signedBy(wellKnown)
 //								.payingWith("0.0.26010")

@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.misc;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -39,13 +38,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
@@ -78,34 +78,33 @@ public final class MemoValidation extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		setUpByteArrays();
 		return List.of(
-				cryptoOps(),
-				topicOps(),
-				scheduleOps(),
-				tokenOps(),
+//				cryptoOps(),
+//				topicOps(),
+//				scheduleOps(),
+//				tokenOps(),
 				contractOps()
 		);
 	}
 
 	private HapiApiSpec contractOps() {
+		final var contract = "CreateTrivial";
 		return defaultHapiSpec("MemoValidationsOnContractOps")
 				.given(
-						fileCreate("contractFile")
-								.path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate(primary)
+						uploadInitCode(contract),
+						newContractCreate(contract)
 								.omitAdminKey()
-								.bytecode("contractFile")
 				)
 				.when(
-						contractCall(primary, ContractResources.CREATE_CHILD_ABI)
+						contractCall(contract, "create")
 								.memo(longMemo)
 								.hasPrecheck(MEMO_TOO_LONG),
-						contractCall(primary, ContractResources.CREATE_CHILD_ABI)
+						contractCall(contract, "create")
 								.memo(ZERO_BYTE_MEMO)
 								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-						contractCall(primary, ContractResources.CREATE_CHILD_ABI)
+						contractCall(contract, "create")
 								.memo(inValidMemoWithMultiByteChars)
 								.hasPrecheck(MEMO_TOO_LONG),
-						contractCall(primary, ContractResources.CREATE_CHILD_ABI)
+						contractCall(contract, "create")
 								.memo(stringOf49Bytes + SINGLE_BYTE_CHAR + MULTI_BYTE_CHAR + stringOf49Bytes)
 								.hasPrecheck(MEMO_TOO_LONG)
 				)

@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.file;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -49,7 +48,6 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -107,6 +105,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class FileUpdateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
+	private static final String CONTRACT = "CreateTrivial";
 
 	private static final String INDIVIDUAL_KV_LIMIT_PROP = "contracts.maxKvPairs.individual";
 	private static final String AGGREGATE_KV_LIMIT_PROP = "contracts.maxKvPairs.aggregate";
@@ -402,13 +401,13 @@ public class FileUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("MaxRefundIsEnforced")
 				.given(
 						overriding("contracts.maxRefundPercentOfGasLimit", "5"),
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
+						uploadInitCode(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCall(CONTRACT, "create")
 								.gas(1_000_000L)
 				).then(
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+						contractCallLocal(CONTRACT, "getIndirect")
 								.gas(300_000L)
 								.has(resultWith().gasUsed(285_000L)),
 						resetAppPropertiesTo("src/main/resource/bootstrap.properties")
@@ -419,13 +418,13 @@ public class FileUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
 				.given(
 						overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode")
+						uploadInitCode(CONTRACT),
+						newContractCreate(CONTRACT)
 				).when(
-						contractCall("parentDelegate", ContractResources.CREATE_CHILD_ABI)
+						contractCall(CONTRACT, "create")
 								.gas(1_000_000L)
 				).then(
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI)
+						contractCallLocal(CONTRACT, "getIndirect")
 								.gas(300_000L)
 								.has(resultWith().gasUsed(26_451)),
 						resetAppPropertiesTo("src/main/resource/bootstrap.properties")
@@ -435,11 +434,11 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
 		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
 				.given(
-						fileCreate("parentDelegateBytecode").path(ContractResources.DELEGATING_CONTRACT_BYTECODE_PATH),
-						contractCreate("parentDelegate").bytecode("parentDelegateBytecode"),
+						uploadInitCode(CONTRACT),
+						newContractCreate(CONTRACT),
 						overriding("contracts.maxGas", "100")
 				).when().then(
-						contractCallLocal("parentDelegate", ContractResources.GET_CHILD_RESULT_ABI).gas(101L)
+						contractCallLocal(CONTRACT, "getIndirect").gas(101L)
 								.hasCostAnswerPrecheck(MAX_GAS_LIMIT_EXCEEDED),
 						resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);

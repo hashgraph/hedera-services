@@ -40,12 +40,6 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_LOOKUP_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_LOOKUP_BYTECODE_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BELIEVE_IN_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CONSPICUOUS_DONATION_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.LUCKY_NO_LOOKUP_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MULTIPURPOSE_BYTECODE_PATH;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
@@ -55,16 +49,18 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static java.util.stream.Collectors.toList;
 
 public class CostOfEverythingSuite extends HapiApiSuite {
@@ -85,13 +81,13 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 //				cryptoGetAccountInfoPaths(),
 //				cryptoGetAccountRecordsPaths(),
 //				transactionGetRecordPaths(),
-//				miscContractCreatesAndCalls(),
-				canonicalScheduleOpsHaveExpectedUsdFees()
+				miscContractCreatesAndCalls()
+//				canonicalScheduleOpsHaveExpectedUsdFees()
 		).map(Stream::of).reduce(Stream.empty(), Stream::concat).collect(toList());
 	}
 
 	HapiApiSpec[] transactionGetRecordPaths() {
-		return new HapiApiSpec[] {
+		return new HapiApiSpec[]{
 				txnGetCreateRecord(),
 				txnGetSmallTransferRecord(),
 				txnGetLargeTransferRecord(),
@@ -145,42 +141,34 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec miscContractCreatesAndCalls() {
-		Object[] donationArgs = new Object[] { 2, "Hey, Ma!" };
+		Object[] donationArgs = new Object[]{2, "Hey, Ma!"};
+		final var multipurposeContract = "Multipurpose";
+		final var lookupContract = "BalanceLookup";
 
 		return customHapiSpec("MiscContractCreatesAndCalls")
 				.withProperties(Map.of("cost.snapshot.mode", costSnapshotMode.toString()))
 				.given(
 						cryptoCreate("civilian")
 								.balance(ONE_HUNDRED_HBARS),
-						fileCreate("multiBytecode")
-								.payingWith("civilian")
-								.path(MULTIPURPOSE_BYTECODE_PATH),
-						fileCreate("lookupBytecode")
-								.payingWith("civilian")
-								.path(BALANCE_LOOKUP_BYTECODE_PATH)
+						uploadInitCode(multipurposeContract, lookupContract)
 				).when(
-						contractCreate("multi")
+						newContractCreate(multipurposeContract)
 								.payingWith("civilian")
-								.bytecode("multiBytecode")
 								.balance(652),
-						contractCreate("lookup")
+						newContractCreate(lookupContract)
 								.payingWith("civilian")
-								.bytecode("lookupBytecode")
 								.balance(256)
 				).then(
-						contractCall("multi", BELIEVE_IN_ABI, 256)
+						contractCall(multipurposeContract, "believeIn", 256)
 								.payingWith("civilian"),
-						contractCallLocal("multi", LUCKY_NO_LOOKUP_ABI)
+						contractCallLocal(multipurposeContract, "pick")
 								.payingWith("civilian").logged()
-								.has(resultWith().resultThruAbi(
-										LUCKY_NO_LOOKUP_ABI,
-										isLiteralResult(new Object[] { BigInteger.valueOf(256) }))),
-						contractCall("multi", CONSPICUOUS_DONATION_ABI, donationArgs)
+								.has(resultWith().resultThruAbi(getABIFor(FUNCTION, "pick", multipurposeContract),
+										isLiteralResult(new Object[]{BigInteger.valueOf(256)}))),
+						contractCall(multipurposeContract, "donate", donationArgs)
 								.payingWith("civilian"),
-						contractCallLocal(
-								"lookup",
-								BALANCE_LOOKUP_ABI,
-								spec -> new Object[] {
+						contractCallLocal(lookupContract, getABIFor(FUNCTION, "lookup", lookupContract),
+								spec -> new Object[]{
 										spec.registry().getAccountID("civilian").getAccountNum()
 								}
 						).payingWith("civilian").logged()
@@ -249,7 +237,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec[] cryptoGetAccountRecordsPaths() {
-		return new HapiApiSpec[] {
+		return new HapiApiSpec[]{
 				cryptoGetRecordsHappyPathS(),
 				cryptoGetRecordsHappyPathM(),
 				cryptoGetRecordsHappyPathL(),
@@ -302,7 +290,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec[] cryptoGetAccountInfoPaths() {
-		return new HapiApiSpec[] {
+		return new HapiApiSpec[]{
 				cryptoGetAccountInfoHappyPath()
 		};
 	}
@@ -330,7 +318,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec[] cryptoCreatePaths() {
-		return new HapiApiSpec[] {
+		return new HapiApiSpec[]{
 				cryptoCreateSimpleKey(),
 		};
 	}
@@ -348,7 +336,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec[] cryptoTransferPaths() {
-		return new HapiApiSpec[] {
+		return new HapiApiSpec[]{
 				cryptoTransferGenesisToFunding(),
 		};
 	}

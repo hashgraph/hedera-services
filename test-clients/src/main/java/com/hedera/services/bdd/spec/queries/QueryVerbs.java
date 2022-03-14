@@ -130,8 +130,9 @@ public class QueryVerbs {
 	}
 
 	public static HapiContractCallLocal contractCallLocal(
-			final String contract, final String abi, final Function<HapiApiSpec, Object[]> fn
+			final String contract, final String functionName, final Function<HapiApiSpec, Object[]> fn
 	) {
+		final var abi = getABIFor(FUNCTION, functionName, contract);
 		return new HapiContractCallLocal(abi, contract, fn);
 	}
 
