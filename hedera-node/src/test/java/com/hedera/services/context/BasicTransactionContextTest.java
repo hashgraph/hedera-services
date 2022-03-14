@@ -116,7 +116,7 @@ class BasicTransactionContextTest {
 	private final AccountID created = asAccount("0.0.2");
 	private final AccountID another = asAccount("0.0.300");
 	private final CurrencyAdjustments transfers = CurrencyAdjustments.fromChanges(new long[] { -2L, 1L, 1L },
-			new long[] { payer.getAccountNum(), created.getAccountNum(), another.getAccountNum() });
+			new long[] { payer.getAccountNum(), created.getAccountNum(), another.getAccountNum() }, 3);
 	private final TokenID tokenCreated = asToken("3.0.2");
 	private final ScheduleID scheduleCreated = asSchedule("0.0.10");
 	private final TokenTransferList tokenTransfers = TokenTransferList.newBuilder()

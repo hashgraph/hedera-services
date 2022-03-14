@@ -75,7 +75,7 @@ public class SideEffectsTracker {
 	private int numTouches = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
 	private long netHbarChange = 0;
-	private int numChanges = 0;
+	private int touchedSoFar = 0;
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
 	private ContractID newContractId = null;
@@ -308,11 +308,12 @@ public class SideEffectsTracker {
 	 */
 	public void trackHbarChange(final long account, final long amount) {
 		netHbarChange += amount;
-		final var output = TransfersHelper.updateFungibleChanges(account, amount, changedAccounts, balanceChanges,
-				numChanges);
-		balanceChanges = output.getLeft();
-		changedAccounts = output.getMiddle();
-		numChanges = output.getRight();
+//		final var output = TransfersHelper.updateFungibleChanges(account, amount,
+//				changedAccounts, balanceChanges, touchedSoFar);
+//		balanceChanges = output.getLeft();
+//		changedAccounts = output.getMiddle();
+//		touchedSoFar = output.getRight();
+		touchedSoFar = includeOrderedFungibleChange(changedAccounts, balanceChanges, touchedSoFar, account, amount);
 	}
 
 	/**
@@ -363,11 +364,12 @@ public class SideEffectsTracker {
 	 * @return the ordered net balance changes
 	 */
 	public CurrencyAdjustments getNetTrackedHbarChanges() {
-		final var updatedAdjustments = TransfersHelper.purgeZeroAdjustments(balanceChanges, changedAccounts,
-				numChanges);
-		balanceChanges = updatedAdjustments.getLeft();
-		changedAccounts = updatedAdjustments.getRight();
-		return CurrencyAdjustments.fromChanges(balanceChanges, changedAccounts);
+//		final var updatedAdjustments = TransfersHelper.purgeZeroAdjustments(balanceChanges, changedAccounts,
+//				touchedSoFar);
+//		balanceChanges = updatedAdjustments.getLeft();
+//		changedAccounts = updatedAdjustments.getRight();
+		touchedSoFar = purgeZeroChanges(changedAccounts, balanceChanges, touchedSoFar);
+		return CurrencyAdjustments.fromChanges(balanceChanges, changedAccounts, touchedSoFar);
 	}
 
 	public long getNetHbarChange() {
@@ -473,7 +475,7 @@ public class SideEffectsTracker {
 		resetTrackedTokenChanges();
 		changedAccounts = new long[BALANCE_CHANGES_LENGTH];
 		balanceChanges = new long[BALANCE_CHANGES_LENGTH];
-		numChanges = 0;
+		touchedSoFar = 0;
 		netHbarChange = 0;
 		newAccountId = null;
 		newContractId = null;
@@ -560,5 +562,90 @@ public class SideEffectsTracker {
 
 	private AccountAmount.Builder aaBuilderWith(final AccountID account, final long amount) {
 		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
+	}
+
+	/**
+	 * Incorporates a balance change for a target account into two parallel {@code long[]} arrays
+	 * that represent all the cumulative balance changes so far to all touched accounts, <b>in
+	 * ascending order of account number</b>.
+	 *
+	 * Returns the new number of touched accounts after incorporating this change.
+	 *
+	 * <b>IMPORTANT:</b> This method assumes the parallel arrays are large enough to include a
+	 * new balance change without resizing. (It takes care of shifting larger-numbered accounts
+	 * to the right if needed.)
+	 *
+	 * @param accountNums
+	 * 		an array of account numbers whose balances have changed so far
+	 * @param balanceChanges
+	 * 		the parallel array of balance changes
+	 * @param touchedSoFar
+	 * 		how many slots in the accountNums array were actually touched so far
+	 * @param targetNum
+	 * 		the account number for the new balance change
+	 * @param newChange
+	 * 		an additional change to incorporate into the target account's balance
+	 * @return how many slots in the accountNums array are now actually touched
+	 */
+	public static int includeOrderedFungibleChange(
+			final long[] accountNums,
+			final long[] balanceChanges,
+			final int touchedSoFar,
+			final long targetNum,
+			final long newChange
+	) {
+		var i = touchedSoFar - 1;
+		// Start from the rightmost touched account, skip accounts larger than our target
+		while (i >= 0 && accountNums[i] > targetNum) {
+			i--;
+		}
+		if (i == -1 || accountNums[i] != targetNum) {
+			// The target num wasn't already present, so we need to shift all larger accounts one to the right
+			for (int j = touchedSoFar - 1; j > i; j--) {
+				accountNums[j + 1] = accountNums[j];
+				balanceChanges[j + 1] = balanceChanges[j];
+			}
+			// And now insert our new change
+			i++;
+			accountNums[i] = targetNum;
+			balanceChanges[i] = newChange;
+			return touchedSoFar + 1;
+		} else {
+			// The target num was already present, so just update the balance
+			balanceChanges[i] += newChange;
+			return touchedSoFar;
+		}
+	}
+
+	/**
+	 * Removes any zero-impact balance changes from two parallel {@code long[]} arrays that represent
+	 * all the cumulative balance changes so far to all touched accounts; returns the new number of
+	 * touched accounts after zero balances have been purged.
+	 *
+	 * @param accountNums
+	 * 		an array of account numbers whose balances have changed so far
+	 * @param balanceChanges
+	 * 		the parallel array of balance changes
+	 * @param touchedSoFar
+	 * 		how many slots in the accountNums array were actually touched so far
+	 * @return how many slots in the accountNums array are now actually touched
+	 */
+	public static int purgeZeroChanges(
+			final long[] accountNums,
+			final long[] balanceChanges,
+			final int touchedSoFar
+	) {
+		var zerosSkippedSoFar = 0;
+		var retracedI = 0;
+		for (int i = 0; i < touchedSoFar; i++, retracedI++) {
+			if (balanceChanges[i] == 0) {
+				zerosSkippedSoFar++;
+				retracedI--;
+			} else if (zerosSkippedSoFar > 0) {
+				accountNums[retracedI] = accountNums[i];
+				balanceChanges[retracedI] = balanceChanges[i];
+			}
+		}
+		return touchedSoFar - zerosSkippedSoFar;
 	}
 }
