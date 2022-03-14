@@ -38,7 +38,6 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -108,8 +107,6 @@ class TransferLogicTest {
 	@Mock
 	private AutoCreationLogic autoCreationLogic;
 	@Mock
-	private UniqueTokenViewsManager tokenViewsManager;
-	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
 	private AccountsCommitInterceptor accountsCommitInterceptor;
@@ -123,7 +120,7 @@ class TransferLogicTest {
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 		subject = new TransferLogic(
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
-				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,
+				sideEffectsTracker, dynamicProperties, TEST_VALIDATOR,
 				autoCreationLogic, recordsHistorian);
 	}
 
@@ -135,7 +132,7 @@ class TransferLogicTest {
 
 		subject = new TransferLogic(
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
-				sideEffectsTracker, tokenViewsManager, dynamicProperties, TEST_VALIDATOR,
+				sideEffectsTracker, dynamicProperties, TEST_VALIDATOR,
 				null, recordsHistorian);
 
 		final var triggerList = List.of(inappropriateTrigger);

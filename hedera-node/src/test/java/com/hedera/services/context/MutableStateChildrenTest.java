@@ -48,7 +48,6 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -90,9 +89,6 @@ class MutableStateChildrenTest {
 
 		assertChildrenAreExpectedMocks();
 		assertEquals(signedAt, subject.signedAt());
-		assertThrows(NullPointerException.class, subject::uniqueTokenAssociations);
-		assertThrows(NullPointerException.class, subject::uniqueOwnershipAssociations);
-		assertThrows(NullPointerException.class, subject::uniqueOwnershipTreasuryAssociations);
 	}
 
 	private void givenStateWithMockChildren() {

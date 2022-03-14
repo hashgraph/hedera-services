@@ -62,11 +62,11 @@ import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 public class SideEffectsTracker {
 	private static final long INAPPLICABLE_NEW_SUPPLY = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
-	private static final int INITIAL_BALANCE_CHANGES_LENGTH = 10;
+	private static final int BALANCE_CHANGES_LENGTH = 1024;
 
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
-	private long[] changedAccounts = new long[INITIAL_BALANCE_CHANGES_LENGTH];
-	private long[] balanceChanges = new long[INITIAL_BALANCE_CHANGES_LENGTH];
+	private long[] changedAccounts = new long[BALANCE_CHANGES_LENGTH];
+	private long[] balanceChanges = new long[BALANCE_CHANGES_LENGTH];
 	private final List<Long> nftMints = new ArrayList<>();
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
@@ -471,8 +471,8 @@ public class SideEffectsTracker {
 	 */
 	public void reset() {
 		resetTrackedTokenChanges();
-		changedAccounts = new long[INITIAL_BALANCE_CHANGES_LENGTH];
-		balanceChanges = new long[INITIAL_BALANCE_CHANGES_LENGTH];
+		changedAccounts = new long[BALANCE_CHANGES_LENGTH];
+		balanceChanges = new long[BALANCE_CHANGES_LENGTH];
 		numChanges = 0;
 		netHbarChange = 0;
 		newAccountId = null;

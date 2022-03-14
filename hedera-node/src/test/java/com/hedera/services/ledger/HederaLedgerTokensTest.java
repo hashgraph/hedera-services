@@ -23,7 +23,6 @@ package com.hedera.services.ledger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +43,6 @@ import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
 class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
@@ -148,17 +146,12 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void delegatesTokenChangeDrop() {
-		final var manager = mock(UniqueTokenViewsManager.class);
-		subject.setTokenViewsManager(manager);
-
 		given(nftsLedger.isInTransaction()).willReturn(true);
-		given(manager.isInTransaction()).willReturn(true);
 
 		subject.dropPendingTokenChanges();
 
 		verify(tokenRelsLedger).rollback();
 		verify(nftsLedger).rollback();
-		verify(manager).rollback();
 		verify(accountsLedger).undoChangesOfType(List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS));
 		verify(sideEffectsTracker).resetTrackedTokenChanges();
 	}
@@ -166,7 +159,6 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void onlyRollsbackIfTokenRelsLedgerInTxn() {
 		given(tokenRelsLedger.isInTransaction()).willReturn(false);
-		subject.setTokenViewsManager(mock(UniqueTokenViewsManager.class));
 
 		subject.dropPendingTokenChanges();
 
@@ -175,13 +167,10 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void forwardsTransactionalSemanticsToTokenLedgersIfPresent() {
-		final var manager = mock(UniqueTokenViewsManager.class);
-		final var inOrder = inOrder(tokenRelsLedger, nftsLedger, manager);
+		final var inOrder = inOrder(tokenRelsLedger, nftsLedger);
 		given(tokenRelsLedger.isInTransaction()).willReturn(true);
 		given(tokensLedger.isInTransaction()).willReturn(true);
 		given(nftsLedger.isInTransaction()).willReturn(true);
-		given(manager.isInTransaction()).willReturn(true);
-		subject.setTokenViewsManager(manager);
 		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(new CurrencyAdjustments());
 
 		subject.begin();
@@ -191,22 +180,16 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 		inOrder.verify(tokenRelsLedger).begin();
 		inOrder.verify(nftsLedger).begin();
-		inOrder.verify(manager).begin();
 		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).commit();
 		inOrder.verify(nftsLedger).isInTransaction();
 		inOrder.verify(nftsLedger).commit();
-		inOrder.verify(manager).isInTransaction();
-		inOrder.verify(manager).commit();
 
 		inOrder.verify(tokenRelsLedger).begin();
 		inOrder.verify(nftsLedger).begin();
-		inOrder.verify(manager).begin();
 		inOrder.verify(tokenRelsLedger).isInTransaction();
 		inOrder.verify(tokenRelsLedger).rollback();
 		inOrder.verify(nftsLedger).isInTransaction();
 		inOrder.verify(nftsLedger).rollback();
-		inOrder.verify(manager).isInTransaction();
-		inOrder.verify(manager).rollback();
 	}
 }

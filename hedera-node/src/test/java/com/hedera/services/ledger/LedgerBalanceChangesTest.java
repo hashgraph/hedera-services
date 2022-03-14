@@ -46,7 +46,6 @@ import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -57,7 +56,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,10 +91,6 @@ class LedgerBalanceChangesTest {
 			new HashMapBackingTokenRels();
 	private BackingStore<TokenID, MerkleToken> backingTokens = new HashMapBackingTokens();
 	private HederaTokenStore tokenStore;
-	private final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations = new FCOneToManyRelation<>();
-	private final FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations =
-			new FCOneToManyRelation<>();
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -115,8 +109,6 @@ class LedgerBalanceChangesTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private AccountRecordsHistorian historian;
-	@Mock
-	private UniqueTokenViewsManager tokenViewsManager;
 	@Mock
 	private MutableEntityAccess mutableEntityAccess;
 	@Mock
@@ -152,23 +144,17 @@ class LedgerBalanceChangesTest {
 		backingTokens.put(bNftKey.toGrpcTokenId(), nonFungibleTokenWithTreasury(bModel));
 
 		final var sideEffectsTracker = new SideEffectsTracker();
-		final var viewManager = new UniqueTokenViewsManager(
-				() -> uniqueTokenOwnerships,
-				() -> uniqueOwnershipAssociations,
-				() -> uniqueOwnershipTreasuryAssociations,
-				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
 				sideEffectsTracker,
-				viewManager,
 				dynamicProperties,
 				tokenRelsLedger,
 				nftsLedger,
 				backingTokens);
 		transferLogic = new TransferLogic(
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
-				sideEffectsTracker, tokenViewsManager, dynamicProperties, validator,
+				sideEffectsTracker, dynamicProperties, validator,
 				autoCreationLogic, historian);
 		tokenStore.rebuildViews();
 
@@ -177,7 +163,6 @@ class LedgerBalanceChangesTest {
 				dynamicProperties, accountsLedger, transferLogic, autoCreationLogic);
 		subject.setMutableEntityAccess(mutableEntityAccess);
 		subject.setTokenRelsLedger(tokenRelsLedger);
-		subject.setTokenViewsManager(tokenViewsManager);
 	}
 
 	@Test
@@ -257,16 +242,10 @@ class LedgerBalanceChangesTest {
 		backingTokens.put(anotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		backingTokens.put(yetAnotherTokenKey.toGrpcTokenId(), fungibleTokenWithTreasury(aModel));
 		final var sideEffectsTracker = new SideEffectsTracker();
-		final var viewManager = new UniqueTokenViewsManager(
-				() -> uniqueOwnershipAssociations,
-				() -> uniqueOwnershipTreasuryAssociations,
-				() -> uniqueOwnershipTreasuryAssociations,
-				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				validator,
 				sideEffectsTracker,
-				viewManager,
 				dynamicProperties,
 				tokenRelsLedger,
 				nftsLedger,
@@ -274,12 +253,11 @@ class LedgerBalanceChangesTest {
 
 		transferLogic = new TransferLogic(
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
-				sideEffectsTracker, viewManager, dynamicProperties, validator, autoCreationLogic, historian);
+				sideEffectsTracker, dynamicProperties, validator, autoCreationLogic, historian);
 		subject = new HederaLedger(
 				tokenStore, ids, creator, validator, sideEffectsTracker, historian,
 				dynamicProperties, accountsLedger, transferLogic, autoCreationLogic);
 		subject.setTokenRelsLedger(tokenRelsLedger);
-		subject.setTokenViewsManager(viewManager);
 		subject.setMutableEntityAccess(mutableEntityAccess);
 		tokenStore.rebuildViews();
 
