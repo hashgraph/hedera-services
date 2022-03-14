@@ -23,13 +23,11 @@ package com.hedera.services.queries.crypto;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -84,7 +82,9 @@ class GetAccountBalanceAnswerTest {
 	private final TokenID cToken = IdUtils.asToken("0.0.5");
 	private final TokenID dToken = IdUtils.asToken("0.0.6");
 
-	private MerkleToken notDeleted, deleted;
+	private MerkleToken notDeleted;
+	private MerkleToken alsoNotDeleted;
+	private MerkleToken deleted;
 	private final MerkleAccount accountV = MerkleAccountFactory.newAccount()
 			.balance(balance)
 			.tokens(aToken, bToken, cToken, dToken)
@@ -92,24 +92,24 @@ class GetAccountBalanceAnswerTest {
 	private final MerkleAccount contractV = MerkleAccountFactory.newContract().balance(balance).get();
 
 	private MerkleMap accounts;
+	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private StateView view;
 	private OptionValidator optionValidator;
-	private TokenStore tokenStore;
 	private AliasManager aliasManager;
 	private ScheduleStore scheduleStore;
-	private NodeLocalProperties nodeProps;
 
 	private GetAccountBalanceAnswer subject;
 
 	@BeforeEach
 	private void setup() {
-		deleted = mock(MerkleToken.class);
-		given(deleted.isDeleted()).willReturn(true);
-		given(deleted.decimals()).willReturn(123);
-		notDeleted = mock(MerkleToken.class);
-		given(notDeleted.isDeleted()).willReturn(false);
-		given(notDeleted.decimals()).willReturn(1).willReturn(2);
+		deleted = new MerkleToken();
+		deleted.setDeleted(true);
+		deleted.setDecimals(123);
+		notDeleted = new MerkleToken();
+		notDeleted.setDecimals(1);
+		alsoNotDeleted = new MerkleToken();
+		alsoNotDeleted.setDecimals(2);
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(
@@ -126,25 +126,21 @@ class GetAccountBalanceAnswerTest {
 				new MerkleTokenRelStatus(dBalance, false, false, true));
 
 		accounts = mock(MerkleMap.class);
-		nodeProps = mock(NodeLocalProperties.class);
 		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
 		given(accounts.get(fromContractId(asContract(contractIdLit)))).willReturn(contractV);
 
-		tokenStore = mock(TokenStore.class);
-		given(tokenStore.exists(aToken)).willReturn(true);
-		given(tokenStore.exists(bToken)).willReturn(true);
-		given(tokenStore.exists(cToken)).willReturn(true);
-		given(tokenStore.exists(dToken)).willReturn(false);
-		given(tokenStore.get(aToken)).willReturn(notDeleted);
-		given(tokenStore.get(bToken)).willReturn(notDeleted);
-		given(tokenStore.get(cToken)).willReturn(deleted);
+		tokens = new MerkleMap<>();
+		tokens.put(EntityNum.fromTokenId(aToken), notDeleted);
+		tokens.put(EntityNum.fromTokenId(bToken), alsoNotDeleted);
+		tokens.put(EntityNum.fromTokenId(cToken), deleted);
 
 		scheduleStore = mock(ScheduleStore.class);
 
 		final MutableStateChildren children = new MutableStateChildren();
+		children.setTokens(tokens);
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
-		view = new StateView(tokenStore, scheduleStore, children, null);
+		view = new StateView(scheduleStore, children, null);
 
 		optionValidator = mock(OptionValidator.class);
 		aliasManager = mock(AliasManager.class);

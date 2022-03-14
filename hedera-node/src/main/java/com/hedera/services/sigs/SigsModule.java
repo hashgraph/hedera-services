@@ -21,12 +21,12 @@ package com.hedera.services.sigs;
  */
 
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.metadata.StateChildrenSigMetadataLookup;
@@ -36,8 +36,6 @@ import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.SyncVerifier;
-import com.hedera.services.state.StateAccessor;
-import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.logic.PayerSigValidity;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -80,12 +78,11 @@ public interface SigsModule {
 	@WorkingStateSigReqs
 	static SigRequirements provideWorkingStateSigReqs(
 			final FileNumbers fileNumbers,
-			final AliasManager aliasManager,
 			final SignatureWaivers signatureWaivers,
-			final @WorkingState StateAccessor workingState
+			final MutableStateChildren workingState
 	) {
 		final var sigMetaLookup = new StateChildrenSigMetadataLookup(
-				fileNumbers, aliasManager, workingState.children(), TokenMetaUtils::signingMetaFrom);
+				fileNumbers, workingState, TokenMetaUtils::signingMetaFrom);
 		return new SigRequirements(sigMetaLookup, signatureWaivers);
 	}
 
