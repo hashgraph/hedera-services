@@ -38,7 +38,6 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
@@ -78,12 +77,6 @@ class StateAccessorTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	@Mock
-	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
-	@Mock
-	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
-	@Mock
-	private FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations;
-	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
 
 	private StateAccessor subject;
@@ -120,9 +113,6 @@ class StateAccessorTest {
 		mutableChildren.setAddressBook(state.addressBook());
 		mutableChildren.setSpecialFiles(state.specialFiles());
 		mutableChildren.setUniqueTokens(state.uniqueTokens());
-		mutableChildren.setUniqueTokenAssociations(state.uniqueTokenAssociations());
-		mutableChildren.setUniqueOwnershipAssociations(state.uniqueOwnershipAssociations());
-		mutableChildren.setUniqueOwnershipTreasuryAssociations(state.uniqueTreasuryOwnershipAssociations());
 		mutableChildren.setRunningHashLeaf(state.runningHashLeaf());
 
 		assertChildrenAreExpectedMocks();
@@ -139,9 +129,6 @@ class StateAccessorTest {
 		assertSame(addressBook, subject.addressBook());
 		assertSame(specialFiles, subject.specialFiles());
 		assertSame(uniqueTokens, subject.uniqueTokens());
-		assertSame(uniqueTokenAssociations, subject.uniqueTokenAssociations());
-		assertSame(uniqueOwnershipAssociations, subject.uniqueOwnershipAssociations());
-		assertSame(uniqueTreasuryOwnershipAssociations, subject.uniqueOwnershipTreasuryAssociations());
 		assertSame(runningHashLeaf, subject.runningHashLeaf());
 		assertSame(contractStorage, subject.contractStorage());
 	}
@@ -157,9 +144,6 @@ class StateAccessorTest {
 		given(state.addressBook()).willReturn(addressBook);
 		given(state.specialFiles()).willReturn(specialFiles);
 		given(state.uniqueTokens()).willReturn(uniqueTokens);
-		given(state.uniqueTokenAssociations()).willReturn(uniqueTokenAssociations);
-		given(state.uniqueOwnershipAssociations()).willReturn(uniqueOwnershipAssociations);
-		given(state.uniqueTreasuryOwnershipAssociations()).willReturn(uniqueTreasuryOwnershipAssociations);
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
 		given(state.contractStorage()).willReturn(contractStorage);
 	}

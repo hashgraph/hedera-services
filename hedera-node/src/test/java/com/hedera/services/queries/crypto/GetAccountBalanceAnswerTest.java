@@ -30,7 +30,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -145,12 +144,7 @@ class GetAccountBalanceAnswerTest {
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
-		view = new StateView(
-				tokenStore,
-				scheduleStore,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				null);
+		view = new StateView(tokenStore, scheduleStore, children, null);
 
 		optionValidator = mock(OptionValidator.class);
 		aliasManager = mock(AliasManager.class);

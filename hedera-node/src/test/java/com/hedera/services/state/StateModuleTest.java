@@ -21,12 +21,10 @@ package com.hedera.services.state;
  */
 
 import com.hedera.services.config.NetworkInfo;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.swirlds.common.CommonUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,10 +47,6 @@ class StateModuleTest {
 	private TokenStore tokenStore;
 	@Mock
 	private ScheduleStore scheduleStore;
-	@Mock
-	private NodeLocalProperties nodeLocalProperties;
-	@Mock
-	private UniqTokenViewFactory uniqTokenViewFactory;
 	@Mock
 	private StateAccessor workingState;
 	@Mock
@@ -82,14 +76,10 @@ class StateModuleTest {
 
 	@Test
 	void viewUsesWorkingStateChildren() {
-		// given:
-		final var viewFactory =
-				provideStateViews(tokenStore, scheduleStore, uniqTokenViewFactory, workingState, networkInfo);
+		final var viewFactory = provideStateViews(tokenStore, scheduleStore, workingState, networkInfo);
 
-		// when:
 		viewFactory.get();
 
-		// then:
 		verify(workingState).children();
 	}
 
