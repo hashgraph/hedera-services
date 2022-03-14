@@ -328,6 +328,72 @@ public class UniqueTokenValueTest {
 		assertThat(value1.asReadOnly().hashCode()).isEqualTo(value1.hashCode());
 	}
 
+	@Test
+	public void equals_whenSameDataOrCopies_matches() {
+		UniqueTokenValue value1 = new UniqueTokenValue(
+				1234L,
+				new RichInstant(456, 789),
+				"hello world".getBytes());
+
+		UniqueTokenValue value2 = new UniqueTokenValue(
+				1234L,
+				new RichInstant(456, 789),
+				"hello world".getBytes());
+
+		assertThat(value1).isEqualTo(value1);
+		assertThat(value1).isEqualTo(value1.copy());
+		assertThat(value1).isEqualTo(value1.asReadOnly());
+
+		assertThat(value1).isEqualTo(value2);
+		assertThat(value1).isEqualTo(value2.copy());
+		assertThat(value1).isEqualTo(value2.asReadOnly());
+	}
+
+	@Test
+	public void equals_whenDifferentData_doesNotMatch() {
+		UniqueTokenValue value1 = new UniqueTokenValue(
+				1234L,
+				new RichInstant(456, 789),
+				"hello world".getBytes());
+
+		UniqueTokenValue value2 = new UniqueTokenValue(
+				1233L,
+				new RichInstant(456, 789),
+				"hello world".getBytes());
+
+		UniqueTokenValue value3 = new UniqueTokenValue(
+				1234L,
+				new RichInstant(457, 789),
+				"hello world".getBytes());
+
+		UniqueTokenValue value4 = new UniqueTokenValue(
+				1234L,
+				new RichInstant(456, 780),
+				"hello world".getBytes());
+
+		UniqueTokenValue value5 = new UniqueTokenValue(
+				1234L,
+				new RichInstant(456, 789),
+				"hello w0rld".getBytes());
+
+		assertThat(value1.equals(value2)).isFalse();
+		assertThat(value1.equals(value3)).isFalse();
+		assertThat(value1.equals(value4)).isFalse();
+		assertThat(value1.equals(value5)).isFalse();
+	}
+
+	@Test
+	public void equals_whenDifferentTypes_doesNotMatch() {
+		UniqueTokenValue value = new UniqueTokenValue();
+		assertThat(value.equals(new UniqueTokenKey())).isFalse();
+	}
+
+	@Test
+	public void equals_whenNull_doesNotMatch() {
+		UniqueTokenValue value = new UniqueTokenValue();
+		assertThat(value.equals(null)).isFalse();
+	}
+
 	// Test invariants. The below tests are designed to fail if one accidentally modifies specified constants.
 	@Test
 	public void reportedSize_isVariable() {

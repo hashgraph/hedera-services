@@ -184,6 +184,17 @@ public class UniqueTokenValue implements VirtualValue {
 				.toString();
 	}
 
+	@Override
+	public boolean equals(final Object obj) {
+		if (obj != null && obj instanceof UniqueTokenValue) {
+			UniqueTokenValue other = (UniqueTokenValue) obj;
+			return other.ownerAccountNum == this.ownerAccountNum
+					&& other.packedCreationTime == this.packedCreationTime
+					&& Arrays.equals(other.metadata, this.metadata);
+		}
+		return false;
+	}
+
 	public long getOwnerAccountNum() {
 		return ownerAccountNum;
 	}
