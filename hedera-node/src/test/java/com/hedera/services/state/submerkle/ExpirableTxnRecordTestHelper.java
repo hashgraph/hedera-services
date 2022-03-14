@@ -19,6 +19,7 @@ package com.hedera.services.state.submerkle;
  * limitations under the License.
  * ‍
  */
+
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.SerdeUtils;
@@ -62,7 +63,7 @@ public class ExpirableTxnRecordTestHelper {
 				? record.getAssessedCustomFeesList().stream().map(FcAssessedCustomFee::fromGrpc).collect(toList())
 				: null;
 		final var newTokenAssociations =
-				 record.getAutomaticTokenAssociationsList().stream().map(FcTokenAssociation::fromGrpc).collect(toList());
+				record.getAutomaticTokenAssociationsList().stream().map(FcTokenAssociation::fromGrpc).collect(toList());
 		final var builder = ExpirableTxnRecord.newBuilder()
 				.setReceipt(TxnReceipt.fromGrpc(record.getReceipt()))
 				.setTxnHash(record.getTransactionHash().toByteArray())
@@ -71,7 +72,8 @@ public class ExpirableTxnRecordTestHelper {
 				.setMemo(record.getMemo())
 				.setFee(record.getTransactionFee())
 				.setTransferList(
-						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(record.getTransferList()) : null)
+						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(
+								record.getTransferList().getAccountAmountsList()) : null)
 				.setContractCallResult(record.hasContractCallResult() ? SerdeUtils.fromGrpc(
 						record.getContractCallResult()) : null)
 				.setContractCreateResult(record.hasContractCreateResult() ? SerdeUtils.fromGrpc(
