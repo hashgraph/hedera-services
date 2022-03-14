@@ -38,7 +38,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -84,12 +83,10 @@ import java.util.Optional;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
-import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ERC_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ERC_TRANSFER_FROM;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_OWNER_OF_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
@@ -112,7 +109,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenTransferChanges;
-import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -201,8 +197,6 @@ class ERC20PrecompilesTest {
     @Mock
     private ContractAliases aliases;
     @Mock
-    private TxnReceipt.Builder txnReceipt;
-    @Mock
     private UsagePricesProvider resourceCosts;
     @Mock
     private BlockValues blockValues;
@@ -248,7 +242,7 @@ class ERC20PrecompilesTest {
         given(nestedPretendArguments.getInt(0)).willReturn(0);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         final var result = subject.compute(pretendArguments, frame);
         assertNull(result);
@@ -277,7 +271,7 @@ class ERC20PrecompilesTest {
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.compute(pretendArguments, frame);
@@ -304,13 +298,12 @@ class ERC20PrecompilesTest {
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(true, true);
 
         given(hederaTokenStoreFactory.newHederaTokenStore(
-                ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+                ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);
 
         given(transferLogicFactory.newLogic(
                 accounts, nfts, tokenRels, hederaTokenStore,
                 sideEffects,
-                NOOP_VIEWS_MANAGER,
                 dynamicProperties,
                 validator,
                 null,
@@ -340,12 +333,10 @@ class ERC20PrecompilesTest {
         given(worldUpdater.aliases()).willReturn(aliases);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
-        given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
-        given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.compute(pretendArguments, frame);
@@ -379,7 +370,7 @@ class ERC20PrecompilesTest {
         given(encoder.encodeName(any())).willReturn(successResult);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -414,7 +405,7 @@ class ERC20PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -451,7 +442,7 @@ class ERC20PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -487,7 +478,7 @@ class ERC20PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -531,7 +522,7 @@ class ERC20PrecompilesTest {
 
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -558,13 +549,12 @@ class ERC20PrecompilesTest {
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(true, true);
 
         given(hederaTokenStoreFactory.newHederaTokenStore(
-                ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+                ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);
 
         given(transferLogicFactory.newLogic(
                 accounts, nfts, tokenRels, hederaTokenStore,
                 sideEffects,
-                NOOP_VIEWS_MANAGER,
                 dynamicProperties,
                 validator,
                 null,
@@ -594,10 +584,8 @@ class ERC20PrecompilesTest {
         given(worldUpdater.aliases()).willReturn(aliases);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
-        given(mockRecordBuilder.getReceiptBuilder()).willReturn(txnReceipt);
-        given(txnReceipt.getStatus()).willReturn(SUCCESS_LITERAL);
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -623,7 +611,7 @@ class ERC20PrecompilesTest {
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
         given(sigsVerifier.hasActiveKey(any(), any(), any(), any(), any())).willReturn(false);
         given(hederaTokenStoreFactory.newHederaTokenStore(
-                ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+                ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);
 
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
@@ -649,7 +637,7 @@ class ERC20PrecompilesTest {
         given(worldUpdater.aliases()).willReturn(aliases);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
@@ -665,7 +653,7 @@ class ERC20PrecompilesTest {
 
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArguments, а -> а));
@@ -679,7 +667,7 @@ class ERC20PrecompilesTest {
 
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_TOKEN_URI_NFT);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
-        subject.prepareFieldsFromFrame(frame);
+        subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArguments, а -> а));
@@ -690,7 +678,7 @@ class ERC20PrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
-        given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(pretendArguments.getInt(0)).willReturn(ABI_ID_REDIRECT_FOR_TOKEN);
         given(pretendArguments.slice(4, 20)).willReturn(fungibleTokenAddr);
         given(pretendArguments.slice(24)).willReturn(nestedPretendArguments);
@@ -698,7 +686,7 @@ class ERC20PrecompilesTest {
 
     private void givenMinimalFrameContextWithoutParentUpdater() {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(pretendArguments.getInt(0)).willReturn(ABI_ID_REDIRECT_FOR_TOKEN);
         given(pretendArguments.slice(4, 20)).willReturn(fungibleTokenAddr);
         given(pretendArguments.slice(24)).willReturn(nestedPretendArguments);

@@ -180,7 +180,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						allowanceTransfersWorkAsExpected(),
 						allowanceTransfersWithComplexTransfersWork(),
 						canUseMirrorAliasesForNonContractXfers(),
-						canUseEip1014AliasesForXfers(),
+						canUseEip1014AliasesForXfers()
 				}
 		);
 	}
@@ -1522,9 +1522,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(
 								tinyBarsFromTo(GENESIS, "receiver", 1_000L)
 						).payingWith("payer").sigControl(
-								forKey("payer", payerSigs),
-								forKey("receiver", receiverSigs)
-						).hasKnownStatus(SUCCESS)
+										forKey("payer", payerSigs),
+										forKey("receiver", receiverSigs)
+								).hasKnownStatus(SUCCESS)
 								.fee(ONE_HUNDRED_HBARS)
 				);
 	}

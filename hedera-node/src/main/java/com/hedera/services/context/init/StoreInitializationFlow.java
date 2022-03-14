@@ -31,7 +31,6 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -49,7 +48,6 @@ public class StoreInitializationFlow {
 	private final ScheduleStore scheduleStore;
 	private final StateAccessor stateAccessor;
 	private final AliasManager aliasManager;
-	private final UniqueTokenViewsManager uniqTokenViewsManager;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 	private final BackingStore<TokenID, MerkleToken> backingTokens;
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts;
@@ -61,7 +59,6 @@ public class StoreInitializationFlow {
 			final ScheduleStore scheduleStore,
 			final AliasManager aliasManager,
 			final @WorkingState StateAccessor stateAccessor,
-			final UniqueTokenViewsManager uniqTokenViewsManager,
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
 			final BackingStore<TokenID, MerkleToken> backingTokens,
 			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
@@ -75,7 +72,6 @@ public class StoreInitializationFlow {
 		this.backingNfts = backingNfts;
 		this.backingTokenRels = backingTokenRels;
 		this.aliasManager = aliasManager;
-		this.uniqTokenViewsManager = uniqTokenViewsManager;
 	}
 
 	public void run() {
@@ -88,9 +84,6 @@ public class StoreInitializationFlow {
 		tokenStore.rebuildViews();
 		scheduleStore.rebuildViews();
 		log.info("Store internal views rebuilt");
-
-		uniqTokenViewsManager.rebuildNotice(stateAccessor.tokens(), stateAccessor.uniqueTokens());
-		log.info("Unique token views rebuilt");
 
 		aliasManager.rebuildAliasesMap(stateAccessor.accounts());
 		log.info("Account aliases map rebuilt");

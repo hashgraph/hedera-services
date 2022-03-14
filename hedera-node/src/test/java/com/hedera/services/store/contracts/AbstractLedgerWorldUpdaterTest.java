@@ -21,7 +21,10 @@ package com.hedera.services.store.contracts;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.TokenRelsCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
@@ -102,6 +105,12 @@ class AbstractLedgerWorldUpdaterTest {
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
+	@Mock
+	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
+	@Mock
+	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -242,7 +251,7 @@ class AbstractLedgerWorldUpdaterTest {
 	@Test
 	void commitsToWrappedTrackingAccountsRejectChangesToMissingAccountBalances() {
 		/* Get the wrapped accounts for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedAccounts = wrappedLedgers.accounts();
 
 		/* Make an illegal change to them...well-behaved HTS precompiles should not create accounts! */
@@ -263,7 +272,7 @@ class AbstractLedgerWorldUpdaterTest {
 		subject.deleteAccount(aAddress);
 
 		/* Get the wrapped accounts for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedAccounts = wrappedLedgers.accounts();
 
 		/* Make an illegal change to them---this should never happen from a well-behaved HTS
@@ -279,12 +288,14 @@ class AbstractLedgerWorldUpdaterTest {
 		final var mockNftsOwned = 1_234_567L;
 		setupWellKnownAccounts();
 		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
+		given(aliases.resolveForEvm(bAddress)).willReturn(bAddress);
 
 		/* Make some pending changes to one of the well-known accounts */
 		subject.getAccount(aAddress).getMutable().setBalance(Wei.of(aHbarBalance + 1));
+		subject.getAccount(bAddress).getMutable().setBalance(Wei.of(bHbarBalance - 1));
 
 		/* Get the wrapped accounts for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedAccounts = wrappedLedgers.accounts();
 
 		/* Make some changes to them (e.g. as part of an HTS precompile) */
@@ -311,7 +322,27 @@ class AbstractLedgerWorldUpdaterTest {
 		setupWellKnownNfts();
 
 		/* Get the wrapped nfts for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
+		final var wrappedNfts = wrappedLedgers.nfts();
+
+		/* Make some changes to them (e.g. as part of an HTS precompile) */
+		wrappedNfts.destroy(aNft);
+		wrappedNfts.set(bNft, OWNER, aEntityId);
+
+		/* Commit the changes */
+		wrappedLedgers.commit();
+
+		/* And they should be present in the underlying ledgers */
+		assertFalse(ledgers.nfts().contains(aNft));
+		assertEquals(aEntityId, ledgers.nfts().get(bNft, OWNER));
+	}
+
+	@Test
+	void commitsToWrappedTrackingLedgersWithSetSideEffectsTrackerAreRespected() {
+		final var aEntityId = EntityId.fromGrpcAccountId(aAccount);
+		setupWellKnownNfts();
+		/* Get the wrapped nfts for the updater */
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedNfts = wrappedLedgers.nfts();
 
 		/* Make some changes to them (e.g. as part of an HTS precompile) */
@@ -331,7 +362,7 @@ class AbstractLedgerWorldUpdaterTest {
 		setupWellKnownTokenRels();
 
 		/* Get the wrapped token rels for the updater */
-		final var wrappedLedgers = subject.wrappedTrackingLedgers();
+		final var wrappedLedgers = subject.wrappedTrackingLedgers(sideEffectsTracker);
 		final var wrappedTokenRels = wrappedLedgers.tokenRels();
 
 		/* Make some changes to them (e.g. as part of an HTS precompile) */
@@ -443,6 +474,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	private void setupWellKnownNfts() {
 		final var trackingNfts = ledgers.nfts();
+		trackingNfts.setCommitInterceptor(uniqueTokensCommitInterceptor);
 		trackingNfts.create(aNft);
 		trackingNfts.set(aNft, OWNER, EntityId.fromGrpcAccountId(aAccount));
 		trackingNfts.create(bNft);
@@ -453,6 +485,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	private void setupWellKnownTokenRels() {
 		final var trackingRels = ledgers.tokenRels();
+		trackingRels.setCommitInterceptor(tokenRelsCommitInterceptor);
 		trackingRels.create(aaRel);
 		trackingRels.set(aaRel, TOKEN_BALANCE, aaBalance);
 		trackingRels.create(abRel);

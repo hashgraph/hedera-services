@@ -47,8 +47,7 @@ public class HederaStackedWorldStateUpdater
 	public HederaStackedWorldStateUpdater(
 			final AbstractLedgerWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
 			final HederaMutableWorldState worldState,
-			final WorldLedgers trackingLedgers
-	) {
+			final WorldLedgers trackingLedgers) {
 		super(updater, trackingLedgers);
 		this.worldState = worldState;
 	}

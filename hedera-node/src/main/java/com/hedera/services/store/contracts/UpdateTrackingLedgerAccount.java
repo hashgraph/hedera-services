@@ -165,7 +165,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
 		}
 	}
 
-	public void setBalanceFromCommitInterceptor(final Wei value) {
+	public void setBalanceFromPropertyChangeObserver(final Wei value) {
 		this.balance = value;
 	}
 

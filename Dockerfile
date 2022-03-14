@@ -51,6 +51,8 @@ RUN mkdir /opt/hedera/services/hedera-node
 COPY hedera-node /opt/hedera/services/hedera-node
 RUN mkdir /opt/hedera/services/test-clients
 COPY test-clients /opt/hedera/services/test-clients
+RUN mkdir /opt/hedera/services/benchmarks
+COPY benchmarks /opt/hedera/services/benchmarks
 RUN mvn install -pl hedera-node -am -DskipTests -Dmaven.gitcommitid.skip=true
 
 ## Finishes by copying the Services JAR to the base runtime

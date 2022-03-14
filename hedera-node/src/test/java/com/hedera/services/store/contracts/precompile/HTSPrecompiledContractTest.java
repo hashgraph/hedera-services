@@ -201,7 +201,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -224,7 +224,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -243,7 +243,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -262,7 +262,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -281,7 +281,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -300,7 +300,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -320,7 +320,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -340,7 +340,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -363,7 +363,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -386,7 +386,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -409,7 +409,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -431,7 +431,7 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
@@ -459,7 +459,7 @@ class HTSPrecompiledContractTest {
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -475,7 +475,7 @@ class HTSPrecompiledContractTest {
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -491,7 +491,7 @@ class HTSPrecompiledContractTest {
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -507,7 +507,7 @@ class HTSPrecompiledContractTest {
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -523,7 +523,7 @@ class HTSPrecompiledContractTest {
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -538,7 +538,7 @@ class HTSPrecompiledContractTest {
 		given(decoder.decodeMint(any())).willReturn(fungibleMint);
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -553,7 +553,7 @@ class HTSPrecompiledContractTest {
 		given(decoder.decodeBurn(any())).willReturn(fungibleBurn);
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -572,7 +572,7 @@ class HTSPrecompiledContractTest {
 				.willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -587,7 +587,7 @@ class HTSPrecompiledContractTest {
 		given(decoder.decodeAssociation(any(), any())).willReturn(associateOp);
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -607,7 +607,7 @@ class HTSPrecompiledContractTest {
 				TransactionBody.newBuilder().setTokenDissociate(builder));
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -646,7 +646,7 @@ class HTSPrecompiledContractTest {
 		given(decoder.decodeDissociate(any(), any())).willReturn(dissociateToken);
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 
 		// then
@@ -660,7 +660,7 @@ class HTSPrecompiledContractTest {
 		given(input.getInt(0)).willReturn(0x00000000);
 
 		// when
-		subject.prepareFieldsFromFrame(messageFrame);
+		subject.prepareFields(messageFrame);
 		subject.prepareComputation(input, а -> а);
 		var result = subject.compute(input, messageFrame);
 
@@ -670,6 +670,6 @@ class HTSPrecompiledContractTest {
 
 	private void givenFrameContext() {
 		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-		given(worldUpdater.wrappedTrackingLedgers()).willReturn(wrappedLedgers);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 	}
 }
