@@ -37,8 +37,8 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -58,7 +58,7 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 public class WorldLedgers {
 	private final ContractAliases aliases;
 	private final StaticEntityAccess staticEntityAccess;
-	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
 	private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
@@ -74,7 +74,7 @@ public class WorldLedgers {
 			final ContractAliases aliases,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+			final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger,
 			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger
 	) {
 		this.tokenRelsLedger = tokenRelsLedger;
@@ -230,7 +230,7 @@ public class WorldLedgers {
 		return accountsLedger;
 	}
 
-	public TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts() {
+	public TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nfts() {
 		return nftsLedger;
 	}
 

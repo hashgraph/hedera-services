@@ -20,44 +20,44 @@ package com.hedera.services.ledger.properties;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public enum NftProperty implements BeanProperty<MerkleUniqueToken> {
+public enum NftProperty implements BeanProperty<UniqueTokenValue> {
 	OWNER {
 		@Override
-		public BiConsumer<MerkleUniqueToken, Object> setter() {
+		public BiConsumer<UniqueTokenValue, Object> setter() {
 			return (t, o) -> t.setOwner((EntityId) o);
 		}
 
 		@Override
-		public Function<MerkleUniqueToken, Object> getter() {
-			return MerkleUniqueToken::getOwner;
+		public Function<UniqueTokenValue, Object> getter() {
+			return UniqueTokenValue::getOwner;
 		}
 	},
 	CREATION_TIME {
 		@Override
-		public BiConsumer<MerkleUniqueToken, Object> setter() {
+		public BiConsumer<UniqueTokenValue, Object> setter() {
 			return (t, o) -> t.setPackedCreationTime((long) o);
 		}
 
 		@Override
-		public Function<MerkleUniqueToken, Object> getter() {
-			return MerkleUniqueToken::getPackedCreationTime;
+		public Function<UniqueTokenValue, Object> getter() {
+			return UniqueTokenValue::getPackedCreationTime;
 		}
 	},
 	METADATA {
 		@Override
-		public BiConsumer<MerkleUniqueToken, Object> setter() {
+		public BiConsumer<UniqueTokenValue, Object> setter() {
 			return (t, o) -> t.setMetadata((byte[]) o);
 		}
 
 		@Override
-		public Function<MerkleUniqueToken, Object> getter() {
-			return MerkleUniqueToken::getMetadata;
+		public Function<UniqueTokenValue, Object> getter() {
+			return UniqueTokenValue::getMetadata;
 		}
 	}
 }

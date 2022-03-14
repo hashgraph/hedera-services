@@ -54,7 +54,7 @@ class UniqueTokenValueTest {
 		UniqueTokenValue value2 = new UniqueTokenValue();
 		value2.deserialize(byteBuffer, UniqueTokenValue.CURRENT_VERSION);
 		assertThat(value2.getOwnerAccountNum()).isEqualTo(1234L);
-		assertThat(value2.getCreationTime().toEpochMilli()).isEqualTo(1_000_000L);
+		assertThat(value2.getCreationTime().toJava().toEpochMilli()).isEqualTo(1_000_000L);
 		assertThat(value2.getMetadata()).isEqualTo("hello world".getBytes());
 	}
 
@@ -71,7 +71,7 @@ class UniqueTokenValueTest {
 		UniqueTokenValue value2 = new UniqueTokenValue();
 		value2.deserialize(byteBuffer, UniqueTokenValue.CURRENT_VERSION);
 		assertThat(value2.getOwnerAccountNum()).isEqualTo(1234L);
-		assertThat(value2.getCreationTime().toEpochMilli()).isEqualTo(1_000_000L);
+		assertThat(value2.getCreationTime().toJava().toEpochMilli()).isEqualTo(1_000_000L);
 		assertThat(value2.getMetadata()).isEmpty();
 	}
 
@@ -88,7 +88,7 @@ class UniqueTokenValueTest {
 		UniqueTokenValue value2 = new UniqueTokenValue();
 		value2.deserialize(new SerializableDataInputStream(stream2), UniqueTokenValue.CURRENT_VERSION);
 		assertThat(value2.getOwnerAccountNum()).isEqualTo(1234L);
-		assertThat(value2.getCreationTime().toEpochMilli()).isEqualTo(1_000_000L);
+		assertThat(value2.getCreationTime().toJava().toEpochMilli()).isEqualTo(1_000_000L);
 		assertThat(value2.getMetadata()).isEqualTo("hello world".getBytes());
 	}
 
@@ -105,7 +105,7 @@ class UniqueTokenValueTest {
 		UniqueTokenValue value2 = new UniqueTokenValue();
 		value2.deserialize(new SerializableDataInputStream(stream2), UniqueTokenValue.CURRENT_VERSION);
 		assertThat(value2.getOwnerAccountNum()).isEqualTo(1234L);
-		assertThat(value2.getCreationTime().toEpochMilli()).isEqualTo(1_000_000L);
+		assertThat(value2.getCreationTime().toJava().toEpochMilli()).isEqualTo(1_000_000L);
 		assertThat(value2.getMetadata()).isEmpty();
 	}
 
@@ -210,12 +210,12 @@ class UniqueTokenValueTest {
 		// Make sure parent is immutable and not modified.
 		assertThat(src.isImmutable()).isTrue();
 		assertThat(src.getOwnerAccountNum()).isEqualTo(1234L);
-		assertThat(src.getCreationTime()).isEqualTo(Instant.ofEpochSecond(456, 789));
+		assertThat(src.getCreationTime()).isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
 		assertThat(src.getMetadata()).isEqualTo("hello world".getBytes());
 		src.release();
 
 		assertThat(copy.getOwnerAccountNum()).isEqualTo(1234L);
-		assertThat(copy.getCreationTime()).isEqualTo(Instant.ofEpochSecond(456, 789));
+		assertThat(copy.getCreationTime()).isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
 		assertThat(copy.getMetadata()).isEqualTo("hello world".getBytes());
 	}
 
@@ -239,7 +239,7 @@ class UniqueTokenValueTest {
 
 		assertThat(readOnlyCopy.isImmutable()).isTrue();
 		assertThat(readOnlyCopy.getOwnerAccountNum()).isEqualTo(1234L);
-		assertThat(readOnlyCopy.getCreationTime()).isEqualTo(Instant.ofEpochSecond(456, 789));
+		assertThat(readOnlyCopy.getCreationTime()).isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
 		assertThat(readOnlyCopy.getMetadata()).isEqualTo("hello world".getBytes());
 	}
 

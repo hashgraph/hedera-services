@@ -26,7 +26,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -49,7 +49,7 @@ public class StoreInitializationFlow {
 	private final MutableStateChildren workingState;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 	private final BackingStore<TokenID, MerkleToken> backingTokens;
-	private final BackingStore<NftId, MerkleUniqueToken> backingNfts;
+	private final BackingStore<NftId, UniqueTokenValue> backingNfts;
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
 
 	@Inject
@@ -60,7 +60,7 @@ public class StoreInitializationFlow {
 			final MutableStateChildren workingState,
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
 			final BackingStore<TokenID, MerkleToken> backingTokens,
-			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
+			final BackingStore<NftId, UniqueTokenValue> backingNfts,
 			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels
 	) {
 		this.tokenStore = tokenStore;

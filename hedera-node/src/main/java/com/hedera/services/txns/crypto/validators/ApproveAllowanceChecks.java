@@ -22,19 +22,19 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenSupplyType;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -61,12 +61,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUN
 public class ApproveAllowanceChecks implements AllowanceChecks {
 	protected final TypedTokenStore tokenStore;
 	protected final AccountStore accountStore;
-	protected final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nftsMap;
+	protected final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> nftsMap;
 	protected final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public ApproveAllowanceChecks(
-			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nftsMap,
+			final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> nftsMap,
 			final TypedTokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties,
 			final AccountStore accountStore) {
@@ -235,11 +235,11 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 
 		for (var serial : serialNums) {
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serial);
-			if (serial <= 0 || !nftsMap.get().containsKey(EntityNumPair.fromNftId(nftId))) {
+			if (serial <= 0 || !nftsMap.get().containsKey(UniqueTokenKey.fromNftId(nftId))) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
 
-			final var nft = nftsMap.get().get(EntityNumPair.fromNftId(nftId));
+			final var nft = nftsMap.get().get(UniqueTokenKey.fromNftId(nftId));
 			if (!validOwner(nft, ownerAccount, token)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}

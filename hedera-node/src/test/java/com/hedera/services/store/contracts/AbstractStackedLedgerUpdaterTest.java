@@ -35,8 +35,8 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -216,7 +216,7 @@ class AbstractStackedLedgerUpdaterTest {
 				new ChangeSummaryManager<>());
 		final var nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
-				MerkleUniqueToken::new,
+				UniqueTokenValue::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
 		final var tokensLedger = new TransactionalLedger<>(

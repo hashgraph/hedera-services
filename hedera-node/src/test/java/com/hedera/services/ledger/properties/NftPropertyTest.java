@@ -20,9 +20,9 @@ package com.hedera.services.ledger.properties;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
@@ -39,7 +39,7 @@ class NftPropertyTest {
 	@Test
 	void gettersWork() {
 		// given:
-		final var aSubject = new MerkleUniqueToken(aEntity, aMeta, aInstant);
+		final var aSubject = new UniqueTokenValue(aEntity.num(), aInstant, aMeta);
 
 		// expect:
 		assertEquals(aEntity, NftProperty.OWNER.getter().apply(aSubject));
@@ -49,8 +49,8 @@ class NftPropertyTest {
 
 	@Test
 	void setterWorks() {
-		final var aSubject = new MerkleUniqueToken(aEntity, aMeta, aInstant);
-		final var bSubject = new MerkleUniqueToken(bEntity, bMeta, bInstant);
+		final var aSubject = new UniqueTokenValue(aEntity.num(), aInstant, aMeta);
+		final var bSubject = new UniqueTokenValue(bEntity.num(), bInstant, bMeta);
 
 		NftProperty.OWNER.setter().accept(aSubject, bEntity);
 		NftProperty.CREATION_TIME.setter().accept(aSubject, packedTime(bInstant.getSeconds(), bInstant.getNanos()));

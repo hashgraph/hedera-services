@@ -40,8 +40,8 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -85,7 +85,7 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class LedgerBalanceChangesTest {
-	private final BackingStore<NftId, MerkleUniqueToken> backingNfts = new HashMapBackingNfts();
+	private final BackingStore<NftId, UniqueTokenValue> backingNfts = new HashMapBackingNfts();
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts = new HashMapBackingAccounts();
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels =
 			new HashMapBackingTokenRels();
@@ -96,7 +96,7 @@ class LedgerBalanceChangesTest {
 			Pair<AccountID, TokenID>,
 			TokenRelProperty,
 			MerkleTokenRelStatus> tokenRelsLedger;
-	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
 	private TransferLogic transferLogic;
 
 	@Mock
@@ -131,7 +131,7 @@ class LedgerBalanceChangesTest {
 		tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class, MerkleTokenRelStatus::new, backingRels, new ChangeSummaryManager<>());
 		nftsLedger = new TransactionalLedger<>(
-				NftProperty.class, MerkleUniqueToken::new, backingNfts, new ChangeSummaryManager<>());
+				NftProperty.class, UniqueTokenValue::new, backingNfts, new ChangeSummaryManager<>());
 		nftsLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
 
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
@@ -472,13 +472,13 @@ class LedgerBalanceChangesTest {
 
 		backingNfts.put(
 				aaNft,
-				new MerkleUniqueToken(EntityId.fromGrpcAccountId(aModel), "aa".getBytes(), MISSING_INSTANT));
+				new UniqueTokenValue(EntityId.fromGrpcAccountId(aModel).num(), MISSING_INSTANT, "aa".getBytes()));
 		backingNfts.put(
 				baNft,
-				new MerkleUniqueToken(EntityId.fromGrpcAccountId(bModel), "ba".getBytes(), MISSING_INSTANT));
+				new UniqueTokenValue(EntityId.fromGrpcAccountId(bModel).num(), MISSING_INSTANT, "ba".getBytes()));
 		backingNfts.put(
 				bbNft,
-				new MerkleUniqueToken(EntityId.fromGrpcAccountId(cModel), "bb".getBytes(), MISSING_INSTANT));
+				new UniqueTokenValue(EntityId.fromGrpcAccountId(cModel).num(), MISSING_INSTANT, "bb".getBytes()));
 
 		backingRels.rebuildFromSources();
 	}

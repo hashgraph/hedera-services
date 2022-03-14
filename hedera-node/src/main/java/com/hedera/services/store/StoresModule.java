@@ -40,7 +40,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
@@ -66,7 +66,7 @@ public interface StoresModule {
 
 	@Binds
 	@Singleton
-	BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(BackingNfts backingNfts);
+	BackingStore<NftId, UniqueTokenValue> bindBackingNfts(BackingNfts backingNfts);
 
 	@Binds
 	@Singleton
@@ -79,13 +79,13 @@ public interface StoresModule {
 
 	@Provides
 	@Singleton
-	static TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> provideNftsLedger(
-			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
+	static TransactionalLedger<NftId, NftProperty, UniqueTokenValue> provideNftsLedger(
+			final BackingStore<NftId, UniqueTokenValue> backingNfts,
 			final SideEffectsTracker sideEffectsTracker
 	) {
 		final var uniqueTokensLedger =  new TransactionalLedger<>(
 				NftProperty.class,
-				MerkleUniqueToken::new,
+				UniqueTokenValue::new,
 				backingNfts,
 				new ChangeSummaryManager<>());
 		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor(sideEffectsTracker);

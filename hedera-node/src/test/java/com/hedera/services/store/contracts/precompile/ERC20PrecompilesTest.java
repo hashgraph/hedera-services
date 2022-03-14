@@ -43,8 +43,8 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
@@ -159,7 +159,7 @@ class ERC20PrecompilesTest {
     @Mock
     private WorldLedgers wrappedLedgers;
     @Mock
-    private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nfts;
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
     @Mock
@@ -241,7 +241,7 @@ class ERC20PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         final var result = subject.compute(pretendArguments, frame);
         assertNull(result);
     }
@@ -270,7 +270,7 @@ class ERC20PrecompilesTest {
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.compute(pretendArguments, frame);
 
@@ -335,7 +335,7 @@ class ERC20PrecompilesTest {
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.compute(pretendArguments, frame);
 
@@ -369,7 +369,7 @@ class ERC20PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -404,7 +404,7 @@ class ERC20PrecompilesTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -441,7 +441,7 @@ class ERC20PrecompilesTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -477,7 +477,7 @@ class ERC20PrecompilesTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -522,7 +522,7 @@ class ERC20PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -593,7 +593,7 @@ class ERC20PrecompilesTest {
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -645,7 +645,7 @@ class ERC20PrecompilesTest {
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -663,7 +663,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
-                () -> subject.prepareComputation(pretendArguments, а -> а));
+                () -> subject.prepareComputation(pretendArguments, a -> a));
         assertEquals(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, exception.getMessage());
     }
 
@@ -677,7 +677,7 @@ class ERC20PrecompilesTest {
         subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
-                () -> subject.prepareComputation(pretendArguments, а -> а));
+                () -> subject.prepareComputation(pretendArguments, a -> a));
         assertEquals(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, exception.getMessage());
     }
 

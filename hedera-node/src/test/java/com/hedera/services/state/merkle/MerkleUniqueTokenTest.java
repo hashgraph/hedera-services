@@ -237,7 +237,7 @@ class MerkleUniqueTokenTest {
 	void setsAndGetsOwner() {
 		// setup:
 		final var smallNumOwner = new EntityId(0, 0, 1);
-		final var largeNumOwner = new EntityId(0, 0, MAX_NUM_ALLOWED);
+		final var largeNumOwner = new EntityId(0, 0, Integer.MAX_VALUE);
 
 		// expect:
 		subject.setOwner(smallNumOwner);

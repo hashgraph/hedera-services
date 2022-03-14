@@ -21,7 +21,7 @@ package com.hedera.services.txns.crypto.validators;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -197,7 +197,7 @@ public interface AllowanceChecks {
 		}
 	}
 
-	default boolean validOwner(final MerkleUniqueToken nft,
+	default boolean validOwner(final UniqueTokenValue nft,
 			final Account ownerAccount, final Token token) {
 		final var listedOwner = nft.getOwner();
 		return MISSING_ENTITY_ID.equals(listedOwner)

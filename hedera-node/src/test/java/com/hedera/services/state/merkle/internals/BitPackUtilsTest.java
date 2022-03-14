@@ -48,7 +48,7 @@ class BitPackUtilsTest {
 	@Test
 	void numFromCodeWorks() {
 		// expect:
-		assertEquals(MAX_NUM_ALLOWED, BitPackUtils.numFromCode((int) MAX_NUM_ALLOWED));
+		assertEquals(Integer.MAX_VALUE, BitPackUtils.numFromCode(Integer.MAX_VALUE));
 	}
 
 	@Test
@@ -75,7 +75,7 @@ class BitPackUtilsTest {
 	@Test
 	void timePackingWorks() {
 		// given:
-		final var distantFuture = Instant.ofEpochSecond(MAX_NUM_ALLOWED, 999_999_999);
+		final var distantFuture = Instant.ofEpochSecond(Integer.MAX_VALUE, 999_999_999);
 
 		// when:
 		final var packed = packedTime(distantFuture.getEpochSecond(), distantFuture.getNano());
@@ -89,8 +89,8 @@ class BitPackUtilsTest {
 	@Test
 	void longPackingWorks() {
 		// setup:
-		final long bigNumA = MAX_NUM_ALLOWED;
-		final long bigNumB = MAX_NUM_ALLOWED - 1;
+		final long bigNumA = Integer.MAX_VALUE;
+		final long bigNumB = Integer.MAX_VALUE - 1;
 
 		// given:
 		final var packed = BitPackUtils.packedNums(bigNumA, bigNumB);

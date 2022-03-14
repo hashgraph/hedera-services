@@ -30,7 +30,7 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -39,6 +39,8 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -81,6 +83,7 @@ import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTE
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0240_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0250_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
@@ -164,13 +167,21 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
+		boolean migrationProcessed = false;
 		if (deserializedVersionFromState < RELEASE_0240_VERSION) {
 			stakeFundingMigrator.accept(this);
 			if (deserializedVersionFromState < RELEASE_0220_VERSION) {
 				// Remove after confirming no regression tests use 0.21.x states
-				blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
-				init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
+				blobMigrator.migrate(this, deserializedVersionFromState);
+				migrationProcessed = true;
 			}
+		}
+		if (deserializedVersionFromState < RELEASE_0250_VERSION) {
+			uniqueTokenMigrator.migrate(this, deserializedVersionFromState);
+			migrationProcessed = true;
+		}
+		if (migrationProcessed) {
+			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
 	}
 
@@ -187,6 +198,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			return;
 		}
 
+		if (deserializedVersion < RELEASE_0250_VERSION && platform != platformForDeferredInit) {
+			platformForDeferredInit = platform;
+			dualStateForDeferredInit = dualState;
+			addressBookForDeferredInit = addressBook;
+			log.info("Deferring init for 0.24.x -> 0.25.x upgrade on Services node {}", platform.getSelfId());
+			return;
+		}
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
 		/* Immediately override the address book from the saved state */
@@ -274,7 +292,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		tokens().archive();
 		accounts().archive();
 		scheduleTxs().archive();
-		uniqueTokens().archive();
 		tokenAssociations().archive();
 	}
 
@@ -362,7 +379,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 
-	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
+	public VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens() {
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
@@ -453,7 +470,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
 		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 
-		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
+		setChild(StateChildIndices.UNIQUE_TOKENS, virtualMapFactory.newVirtualizedUniqueTokenStorage());
 		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
 		setChild(StateChildIndices.TOPICS, new MerkleMap<>());
 		setChild(StateChildIndices.STORAGE, virtualMapFactory.newVirtualizedBlobs());
@@ -482,12 +499,14 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@FunctionalInterface
-	interface BinaryObjectStoreMigrator {
-		void migrateFromBinaryObjectStore(ServicesState initializingState, int deserializedVersion);
+	interface StoreMigrator {
+		void migrate(ServicesState initializingState, int deserializedVersion);
 	}
 
 	private static Consumer<ServicesState> stakeFundingMigrator = ReleaseTwentyFourMigration::ensureStakingFundAccounts;
-	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore;
+	private static StoreMigrator blobMigrator = ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore;
+	private static StoreMigrator uniqueTokenMigrator = ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap;
+
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
 	/* --- Only used by unit tests --- */
@@ -507,11 +526,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		ServicesState.appBuilder = appBuilder;
 	}
 
-	static void setBlobMigrator(final BinaryObjectStoreMigrator blobMigrator) {
+	static void setBlobMigrator(final StoreMigrator blobMigrator) {
 		ServicesState.blobMigrator = blobMigrator;
 	}
 
 	static void setStakeFundingMigrator(final Consumer<ServicesState> stakeFundingMigrator) {
 		ServicesState.stakeFundingMigrator = stakeFundingMigrator;
+	}
+
+	static void setUniqueTokenMigrator(StoreMigrator uniqueTokenMigrator) {
+		ServicesState.uniqueTokenMigrator = uniqueTokenMigrator;
 	}
 }

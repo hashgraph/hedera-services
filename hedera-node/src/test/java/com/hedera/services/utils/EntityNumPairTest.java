@@ -76,8 +76,6 @@ class EntityNumPairTest {
 
 	@Test
 	void returnsMissingNumPairIfInvalidLong() {
-		assertEquals(MISSING_NUM_PAIR, fromLongs(Long.MAX_VALUE, 2));
-		assertEquals(MISSING_NUM_PAIR, fromLongs(Long.MAX_VALUE, Long.MAX_VALUE));
 		assertEquals(MISSING_NUM_PAIR, fromLongs(-1L, 2));
 		assertEquals(MISSING_NUM_PAIR, fromLongs(-1L, Long.MAX_VALUE));
 	}

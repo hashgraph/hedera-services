@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.common.truth.Truth;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.MutableStateChildren;
@@ -33,11 +34,14 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
@@ -59,9 +63,11 @@ import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -87,8 +93,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -143,19 +152,32 @@ class ServicesStateTest {
 	@Mock
 	private ServicesApp.Builder appBuilder;
 	@Mock
-	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
+	private ServicesState.StoreMigrator blobMigrator;
+	@Mock
+	private ServicesState.StoreMigrator uniqueTokenMigrator;
+	@Mock
+	private Consumer<ServicesState> stakeFundingMigrator;
 	@Mock
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private Consumer<ServicesState> mockMigrator;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens;
+	@Mock
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private ServicesState subject = new ServicesState();
 
+	@BeforeEach
+	void setUp() {
+		// Ensure migrator static properties are reset.
+		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
+		ServicesState.setUniqueTokenMigrator(ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap);
+	}
 
 	@AfterEach
 	void cleanup() {
@@ -262,7 +284,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(metadata).archive();
-		verify(mockMm, times(6)).archive();
+		verify(mockMm, times(5)).archive();
 	}
 
 	@Test
@@ -426,20 +448,23 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesntMigrateWhenInitializingFromRelease0220() {
-		ServicesState.setStakeFundingMigrator(mockMigrator);
+	void doesntMigrateWhenInitializingFromCurrentRelease() {
+		ServicesState.setStakeFundingMigrator(stakeFundingMigrator);
+		ServicesState.setBlobMigrator(blobMigrator);
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
 
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
-
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.CURRENT_VERSION);
 		assertDoesNotThrow(subject::migrate);
-
-		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
+		verifyNoInteractions(stakeFundingMigrator);
+		verifyNoInteractions(blobMigrator);
+		verifyNoInteractions(uniqueTokenMigrator);
 	}
 
 	@Test
 	void migratesWhenInitializingFromRelease0210() {
-		ServicesState.setStakeFundingMigrator(mockMigrator);
+		ServicesState.setStakeFundingMigrator(stakeFundingMigrator);
 		ServicesState.setBlobMigrator(blobMigrator);
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
 
 		subject = mock(ServicesState.class);
 		doCallRealMethod().when(subject).migrate();
@@ -450,16 +475,18 @@ class ServicesStateTest {
 
 		subject.migrate();
 
-		verify(blobMigrator).migrateFromBinaryObjectStore(
-				subject, StateVersions.RELEASE_0210_VERSION);
+		verify(blobMigrator).migrate(subject, StateVersions.RELEASE_0210_VERSION);
+		verify(uniqueTokenMigrator).migrate(subject, StateVersions.RELEASE_0210_VERSION);
+		verify(stakeFundingMigrator).accept(subject);
+
 		verify(subject).init(platform, addressBook, dualState);
-		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
-		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
 	}
 
 	@Test
 	void migratesWhenInitializingFromRelease0230() {
-		ServicesState.setStakeFundingMigrator(mockMigrator);
+		ServicesState.setStakeFundingMigrator(stakeFundingMigrator);
+		ServicesState.setBlobMigrator(blobMigrator);
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
 
 		subject = mock(ServicesState.class);
 		doCallRealMethod().when(subject).migrate();
@@ -467,8 +494,71 @@ class ServicesStateTest {
 
 		subject.migrate();
 
-		verify(mockMigrator).accept(subject);
-		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
+		verifyNoInteractions(blobMigrator);
+		verify(stakeFundingMigrator).accept(subject);
+		verify(uniqueTokenMigrator).migrate(subject, StateVersions.RELEASE_0230_VERSION);
+	}
+
+	@Test
+	void migratesWhenInitializingFromRelease0240() {
+		ServicesState.setBlobMigrator(blobMigrator);
+		ServicesState.setStakeFundingMigrator(stakeFundingMigrator);
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
+
+		subject = mock(ServicesState.class);
+		doCallRealMethod().when(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0240_VERSION);
+		given(subject.getPlatformForDeferredInit()).willReturn(platform);
+		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
+		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
+
+		subject.migrate();
+
+		verifyNoInteractions(blobMigrator);
+		verifyNoInteractions(stakeFundingMigrator);
+		verify(uniqueTokenMigrator).migrate(subject, StateVersions.RELEASE_0240_VERSION);
+		verify(subject).init(platform, addressBook, dualState);
+	}
+
+	private class ExpectedThrowable extends RuntimeException {
+		ExpectedThrowable() {}
+	}
+
+	@Test
+	void unmigratedDataInRelease0240SkipsInitUntilMigrated() {
+		ServicesState.setBlobMigrator(blobMigrator);
+		ServicesState.setStakeFundingMigrator(stakeFundingMigrator);
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
+
+		subject = mock(ServicesState.class);
+		doCallRealMethod().when(subject).migrate();
+		doCallRealMethod().when(subject).init(any(), any(), any());
+		doCallRealMethod().when(subject).getPlatformForDeferredInit();
+		doCallRealMethod().when(subject).getAddressBookForDeferredInit();
+		doCallRealMethod().when(subject).getDualStateForDeferredInit();
+		doCallRealMethod().when(subject).setDeserializedVersion(anyInt());
+
+		doThrow(new ExpectedThrowable()).when(subject).setChild(anyInt(), any());
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0240_VERSION);
+		subject.setDeserializedVersion(StateVersions.RELEASE_0240_VERSION);
+
+		subject.init(platform, addressBook, dualState);
+
+		verify(subject, never()).setChild(anyInt(), any());
+		verify(subject, never()).setChild(anyInt(), any(), any(), anyBoolean());
+
+		assertThrows(ExpectedThrowable.class, subject::migrate);
+
+		verify(subject, times(2)).init(platform, addressBook, dualState);
+	}
+
+	@Test
+	void uniqueTokensFetchesCorrectStore() {
+		subject = mock(ServicesState.class);
+		doCallRealMethod().when(subject).uniqueTokens();
+		given(subject.getChild(StateChildIndices.UNIQUE_TOKENS)).willReturn(uniqueTokens);
+
+		Truth.assertThat(subject.uniqueTokens()).isSameInstanceAs(uniqueTokens);
 	}
 
 	@Test
@@ -700,7 +790,7 @@ class ServicesStateTest {
 	private List<MerkleNode> legacyChildrenWith(
 			AddressBook addressBook,
 			MerkleNetworkContext networkContext,
-			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts,
+			VirtualMap<UniqueTokenKey, UniqueTokenValue> nfts,
 			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
 			boolean withNfts
 	) {

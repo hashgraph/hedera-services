@@ -29,9 +29,9 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
@@ -73,13 +73,13 @@ public class TransferLogic {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final MerkleAccountScopedCheck scopedCheck;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
 	private final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 
 	@Inject
 	public TransferLogic(
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+			final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			final TokenStore tokenStore,
 			final SideEffectsTracker sideEffectsTracker,
@@ -169,7 +169,7 @@ public class TransferLogic {
 
 	public static void dropTokenChanges(
 			final SideEffectsTracker sideEffectsTracker,
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
+			final TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
 	) {
