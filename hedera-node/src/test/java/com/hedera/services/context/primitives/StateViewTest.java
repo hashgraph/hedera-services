@@ -924,7 +924,7 @@ class StateViewTest {
 
 		final var token = new MerkleToken();
 		token.setTreasury(EntityId.fromGrpcAccountId(tokenAccountId));
-		given(tokens.get(targetNftKey.getHiPhi())).willReturn(token);
+		given(tokens.get(targetNftKey.getHiOrderAsNum())).willReturn(token);
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		final var optionalNftInfo = subject.infoForNft(targetNftId);

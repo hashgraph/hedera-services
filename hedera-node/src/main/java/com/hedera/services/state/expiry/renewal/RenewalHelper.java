@@ -33,7 +33,6 @@ import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -45,8 +44,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
@@ -144,9 +143,8 @@ public class RenewalHelper {
 				Pair.of(new ArrayList<>(), new ArrayList<>());
 		final var curTokens = tokens.get();
 		final var curTokenRels = tokenRels.get();
-		final var grpcId = lastClassifiedEntityId.toGrpcAccountId();
 		doBoundedIteration(curTokenRels, curTokens, lastClassifiedAccount, (token, rel) ->
-				doReturnToTreasury(grpcId, token.grpcId(), displacements, curTokens));
+				doReturnToTreasury(rel, token, curTokenRels, displacements));
 
 		// Remove the entry from auto created accounts map if there is an entry in the map
 		if (aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get())) {
@@ -186,45 +184,31 @@ public class RenewalHelper {
 	}
 
 	private void doReturnToTreasury(
-			final MerkleTokenRelStatus
-			final AccountID expired,
-			final TokenID scopedToken,
-			final Pair<List<EntityId>, List<CurrencyAdjustments>> displacements,
-			final MerkleMap<EntityNum, MerkleToken> currentTokens
+			final MerkleTokenRelStatus expiredRel,
+			final MerkleToken token,
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> curTokenRels,
+			final Pair<List<EntityId>, List<CurrencyAdjustments>> displacements
 	) {
-		final var currentTokenRels = tokenRels.get();
-		final var expiredRel = fromAccountTokenRel(expired, scopedToken);
-		final var relStatus = currentTokenRels.get(expiredRel);
-		final long balance = relStatus.getBalance();
+		final long balance = expiredRel.getBalance();
+		final var relKey = expiredRel.getKey();
+		curTokenRels.remove(relKey);
 
-		currentTokenRels.remove(expiredRel);
-
-		final var tKey = EntityNum.fromTokenId(scopedToken);
-		if (!currentTokens.containsKey(tKey)) {
+		if (token == REMOVED_TOKEN || token.isDeleted() || balance == 0) {
 			return;
 		}
 
-		final var token = currentTokens.get(tKey);
-		if (token.isDeleted()) {
-			return;
-		}
-
-		if (balance == 0L) {
-			return;
-		}
-
-		final var treasury = token.treasury().toGrpcAccountId();
-		final boolean expiredFirst = ACCOUNT_ID_COMPARATOR.compare(expired, treasury) < 0;
-		displacements.getLeft().add(EntityId.fromGrpcTokenId(scopedToken));
-		final var expiredId = EntityId.fromGrpcAccountId(expired);
-		final var treasuryId = EntityId.fromGrpcAccountId(treasury);
+		final var expiredId = relKey.getHiOrderAsNum().toEntityId();
+		final var treasuryId = token.treasury();
+		final var tokenId = relKey.getLoOrderAsNum().toEntityId();
+		final boolean expiredFirst = expiredId.num() < treasuryId.num();
+		displacements.getLeft().add(tokenId);
 		displacements.getRight().add(new CurrencyAdjustments(
 				expiredFirst ? new long[] { -balance, +balance } : new long[] { +balance, -balance },
 				expiredFirst ? List.of(expiredId, treasuryId) : List.of(treasuryId, expiredId)
 		));
 
-		final var treasuryRel = fromAccountTokenRel(treasury, scopedToken);
-		final var mutableTreasuryRelStatus = currentTokenRels.getForModify(treasuryRel);
+		final var treasuryRel = fromAccountTokenRel(treasuryId.toGrpcAccountId(), token.grpcId());
+		final var mutableTreasuryRelStatus = curTokenRels.getForModify(treasuryRel);
 		final long newTreasuryBalance = mutableTreasuryRelStatus.getBalance() + balance;
 		mutableTreasuryRelStatus.setBalance(newTreasuryBalance);
 	}

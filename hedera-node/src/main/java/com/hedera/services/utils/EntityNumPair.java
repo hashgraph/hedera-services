@@ -58,8 +58,12 @@ public record EntityNumPair(long value) {
 		return fromLongs(id.num(), id.serialNo());
 	}
 
-	public EntityNum getHiPhi() {
+	public EntityNum getHiOrderAsNum() {
 		return EntityNum.fromLong(unsignedHighOrder32From(value));
+	}
+
+	public EntityNum getLoOrderAsNum() {
+		return EntityNum.fromLong(unsignedLowOrder32From(value));
 	}
 
 	public static EntityNumPair fromModelRel(TokenRelationship tokenRelationship) {

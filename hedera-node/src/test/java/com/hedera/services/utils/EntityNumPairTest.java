@@ -116,7 +116,7 @@ class EntityNumPairTest {
 		final var expected = EntityNum.fromLong(bigNum);
 		final var subject = fromLongs(bigNum, 1);
 
-		final var hi = subject.getHiPhi();
+		final var hi = subject.getHiOrderAsNum();
 
 		assertEquals(expected, hi);
 	}

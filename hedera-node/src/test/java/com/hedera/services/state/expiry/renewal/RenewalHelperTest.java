@@ -442,8 +442,6 @@ class RenewalHelperTest {
 
 	private void givenTokenPresent(EntityNum id, MerkleToken token) {
 		given(tokens.getOrDefault(id, REMOVED_TOKEN)).willReturn(token);
-		given(tokens.get(id)).willReturn(token);
-		given(tokens.containsKey(id)).willReturn(true);
 		token.setKey(id);
 	}
 
