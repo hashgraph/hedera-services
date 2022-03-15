@@ -996,13 +996,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-4N-2C:
-    triggers:
-      - schedule:
-          cron: "30 22 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1675,10 +1668,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "regression-test"
       workflow-name:
         type: string
         default: ""
