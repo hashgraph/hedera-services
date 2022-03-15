@@ -1035,6 +1035,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 					!TxnReceipt.SUCCESS_LITERAL.equals(receiptBuilder.getStatus());
 		}
 
+		public long getFee() {
+			return fee;
+		}
+
 		public void onlyExternalizeIfSuccessful() {
 			onlyExternalizedIfSuccessful = true;
 		}
