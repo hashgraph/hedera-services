@@ -1861,6 +1861,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.bytecode(ERC_721_CONTRACT_NAME)
 								.gas(300_000),
 						tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+						tokenAssociate(ERC_721_CONTRACT_NAME, NON_FUNGIBLE_TOKEN),
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(
 								ByteString.copyFromUtf8("a")
 						)).via("nftTokenMint"),

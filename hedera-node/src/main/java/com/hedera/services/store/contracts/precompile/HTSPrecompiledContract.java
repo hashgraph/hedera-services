@@ -1500,6 +1500,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var accountStore = createAccountStore();
+			final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
+
+			final var checkResponseCode = allowanceChecks.allowancesValidation(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
+					transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
+					transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
+					payerAccount,
+					dynamicProperties.maxAllowanceLimitPerTransaction());
+
+			validateTrue(OK.equals(checkResponseCode), checkResponseCode);
 
 			/* --- Execute the transaction and capture its results --- */
 			final var adjustAllowanceLogic = adjustAllowanceLogicFactory.newAdjustAllowanceLogic(
