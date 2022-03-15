@@ -25,7 +25,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -43,6 +42,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 
+import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
@@ -59,7 +59,8 @@ public class GetAccountBalanceAnswer implements AnswerService {
 	public GetAccountBalanceAnswer(
 			final AliasManager aliasManager,
 			final OptionValidator optionValidator,
-			final GlobalDynamicProperties dynamicProperties) {
+			final GlobalDynamicProperties dynamicProperties
+	) {
 		this.aliasManager = aliasManager;
 		this.optionValidator = optionValidator;
 		this.dynamicProperties = dynamicProperties;
@@ -96,17 +97,14 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			final var key = EntityNum.fromAccountId(id);
 			final var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
-			final var tokenRelationships = StateView.getAssociatedTokenRels(
-					view.tokenAssociations(), account, view.tokens(), dynamicProperties.maxTokensPerInfoQuery());
-			for (var relationship : tokenRelationships) {
-				final var tId = relationship.getTokenId();
-				var decimals = view.tokenWith(tId).map(MerkleToken::decimals).orElse(0);
-				opAnswer.addTokenBalances(TokenBalance.newBuilder()
-						.setTokenId(tId)
-						.setBalance(relationship.getBalance())
-						.setDecimals(decimals)
-						.build());
-			}
+			final var maxRels = dynamicProperties.maxTokensPerInfoQuery();
+			final var firstRel = account.getLastAssociation();
+			doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) ->
+					opAnswer.addTokenBalances(TokenBalance.newBuilder()
+							.setTokenId(token.grpcId())
+							.setDecimals(token.decimals())
+							.setBalance(rel.getBalance())
+							.build()));
 		}
 
 		return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();

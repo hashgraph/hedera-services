@@ -37,11 +37,8 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.test.mocks.TestContextValidator;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,9 +76,6 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new HashMapBackingAccounts(),
 				new ChangeSummaryManager<>());
 		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
-		final FCOneToManyRelation<EntityNum, Long> uniqueTokenOwnerships = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<EntityNum, Long> uniqueTokenAccountOwnerships = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<EntityNum, Long> uniqueTokenTreasuryOwnerships = new FCOneToManyRelation<>();
 
 		nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
@@ -96,16 +90,10 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		tokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
-		final var viewManager = new UniqueTokenViewsManager(
-				() -> uniqueTokenOwnerships,
-				() -> uniqueTokenAccountOwnerships,
-				() -> uniqueTokenTreasuryOwnerships,
-				false, true);
 		tokenStore = new HederaTokenStore(
 				ids,
 				TestContextValidator.TEST_VALIDATOR,
 				liveSideEffects,
-				viewManager,
 				new MockGlobalDynamicProps(),
 				tokenRelsLedger,
 				nftsLedger,
@@ -121,10 +109,12 @@ class HederaLedgerLiveTest extends BaseHederaLedgerTestHelper {
 		subject.begin();
 		final var a = subject.create(genesis, 1_000L, new HederaAccountCustomizer().memo("a"));
 		subject.delete(a, genesis);
-		final var numNetTransfers = subject.netTransfersInTxn().getAccountAmountsCount();
+		final var numNetTransfersAccounts = subject.netTransfersInTxn().getAccountNums().length;
+		final var numNetTransfersBalances = subject.netTransfersInTxn().getHbars().length;
 		subject.commit();
 
-		assertEquals(0, numNetTransfers);
+		assertEquals(0, numNetTransfersAccounts);
+		assertEquals(0, numNetTransfersBalances);
 		assertTrue(subject.exists(a));
 		assertEquals(GENESIS_BALANCE, subject.getBalance(genesis));
 	}

@@ -20,7 +20,6 @@ package com.hedera.services.ledger;
  * ‍
  */
 
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -42,7 +40,6 @@ class HederaLedgerTokenXfersTest extends BaseHederaLedgerTestHelper {
 	private void setup() {
 		commonSetup();
 		setupWithMockLedger();
-		subject.setTokenViewsManager(mock(UniqueTokenViewsManager.class));
 	}
 
 	@Test

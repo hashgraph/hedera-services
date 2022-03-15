@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -37,6 +38,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Test;
@@ -79,20 +81,25 @@ class MutableStateChildrenTest {
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
+	@Mock
+	private FCHashMap<ByteString, EntityNum> aliases;
 
 	private MutableStateChildren subject = new MutableStateChildren();
 
 	@Test
+	void refusesToUpdateFromUninitializedState() {
+		assertThrows(IllegalArgumentException.class, () -> subject.updateFromSigned(state, signedAt));
+	}
+
+	@Test
 	void childrenGetUpdatedAsExpected() {
 		givenStateWithMockChildren();
+		given(state.isInitialized()).willReturn(true);
 
-		subject.updateFromMaybeUninitializedState(state, signedAt);
+		subject.updateFromSigned(state, signedAt);
 
 		assertChildrenAreExpectedMocks();
 		assertEquals(signedAt, subject.signedAt());
-		assertThrows(NullPointerException.class, subject::uniqueTokenAssociations);
-		assertThrows(NullPointerException.class, subject::uniqueOwnershipAssociations);
-		assertThrows(NullPointerException.class, subject::uniqueOwnershipTreasuryAssociations);
 	}
 
 	private void givenStateWithMockChildren() {
@@ -108,6 +115,7 @@ class MutableStateChildrenTest {
 		given(state.specialFiles()).willReturn(specialFiles);
 		given(state.uniqueTokens()).willReturn(uniqueTokens);
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
+		given(state.aliases()).willReturn(aliases);
 	}
 
 	private void assertChildrenAreExpectedMocks() {
@@ -123,6 +131,7 @@ class MutableStateChildrenTest {
 		assertSame(specialFiles, subject.specialFiles());
 		assertSame(uniqueTokens, subject.uniqueTokens());
 		assertSame(runningHashLeaf, subject.runningHashLeaf());
+		assertSame(aliases, subject.aliases());
 	}
 
 	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);

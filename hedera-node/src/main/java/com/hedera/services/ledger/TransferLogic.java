@@ -34,7 +34,6 @@ import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -70,7 +69,6 @@ public class TransferLogic {
 	private final TokenStore tokenStore;
 	private final AutoCreationLogic autoCreationLogic;
 	private final SideEffectsTracker sideEffectsTracker;
-	private final UniqueTokenViewsManager tokenViewsManager;
 	private final AccountRecordsHistorian recordsHistorian;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final MerkleAccountScopedCheck scopedCheck;
@@ -85,7 +83,6 @@ public class TransferLogic {
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 			final TokenStore tokenStore,
 			final SideEffectsTracker sideEffectsTracker,
-			final UniqueTokenViewsManager tokenViewsManager,
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator,
 			final @Nullable AutoCreationLogic autoCreationLogic,
@@ -96,7 +93,6 @@ public class TransferLogic {
 		this.accountsLedger = accountsLedger;
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.recordsHistorian = recordsHistorian;
-		this.tokenViewsManager = tokenViewsManager;
 		this.autoCreationLogic = autoCreationLogic;
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
@@ -139,7 +135,7 @@ public class TransferLogic {
 				autoCreationLogic.submitRecordsTo(recordsHistorian);
 			}
 		} else {
-			dropTokenChanges(sideEffectsTracker, tokenViewsManager, nftsLedger, accountsLedger, tokenRelsLedger);
+			dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
 			if (autoCreationLogic != null && autoCreationLogic.reclaimPendingAliases()) {
 				accountsLedger.undoCreations();
 			}
@@ -173,7 +169,6 @@ public class TransferLogic {
 
 	public static void dropTokenChanges(
 			final SideEffectsTracker sideEffectsTracker,
-			final UniqueTokenViewsManager tokenViewsManager,
 			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger
@@ -183,9 +178,6 @@ public class TransferLogic {
 		}
 		if (nftsLedger.isInTransaction()) {
 			nftsLedger.rollback();
-		}
-		if (tokenViewsManager.isInTransaction()) {
-			tokenViewsManager.rollback();
 		}
 		accountsLedger.undoChangesOfType(TOKEN_TRANSFER_SIDE_EFFECTS);
 		sideEffectsTracker.resetTrackedTokenChanges();

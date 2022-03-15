@@ -125,7 +125,7 @@ public class RenewalRecordsHelper {
 	private CurrencyAdjustments feeXfers(final long amount, final AccountID payer) {
 		return new CurrencyAdjustments(
 				new long[] { amount, -amount },
-				List.of(EntityId.fromGrpcAccountId(funding), EntityId.fromGrpcAccountId(payer))
+				new long[] { funding.getAccountNum(), payer.getAccountNum() }
 		);
 	}
 
@@ -136,7 +136,8 @@ public class RenewalRecordsHelper {
 		receipt.setAccountId(id);
 
 		/* FUTURE WORK - determine if, and how, the nonce should be altered here. */
-		final var txnId = new TxnId(EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
+		final var txnId = new TxnId(EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false,
+				USER_TRANSACTION_NONCE);
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(txnId)
 				.setReceipt(receipt)

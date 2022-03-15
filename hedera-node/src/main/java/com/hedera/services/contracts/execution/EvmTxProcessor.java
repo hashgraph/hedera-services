@@ -29,6 +29,7 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -38,6 +39,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
 import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -58,7 +60,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -70,22 +71,26 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
  * instantiation. Provides a base
- * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, OptionalLong, Address)}
+ * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, StorageExpiry.Oracle, Address)}
  * method that handles the end-to-end execution of a EVM transaction.
  */
 abstract class EvmTxProcessor {
+	private static final int MAX_STACK_SIZE = 1024;
+	private static final int MAX_CODE_SIZE = 0x6000;
+	private static final List<ContractValidationRule> VALIDATION_RULES =
+			List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE), PrefixCodeRule.of());
+
 	static final Hash UNAVAILABLE_BLOCK_HASH = Hash.fromHexStringLenient("0x");
 	static final Function<Long, Hash> ALWAYS_UNAVAILABLE_BLOCK_HASH = n -> UNAVAILABLE_BLOCK_HASH;
 
-	private static final int MAX_STACK_SIZE = 1024;
-	private static final int MAX_CODE_SIZE = 0x6000;
+	public static final String SBH_CONTEXT_KEY = "sbh";
+	public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
 
 	private HederaMutableWorldState worldState;
 	private final GasCalculator gasCalculator;
 	private final LivePricesSource livePricesSource;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
-
 	protected final GlobalDynamicProperties dynamicProperties;
 
 	protected EvmTxProcessor(
@@ -95,7 +100,13 @@ abstract class EvmTxProcessor {
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap
 	) {
-		this(null, livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
+		this(
+				null,
+				livePricesSource,
+				dynamicProperties,
+				gasCalculator,
+				hederaOperations,
+				precompiledContractMap);
 	}
 
 	protected void setWorldState(HederaMutableWorldState worldState) {
@@ -124,13 +135,10 @@ abstract class EvmTxProcessor {
 		final PrecompileContractRegistry precompileContractRegistry = new PrecompileContractRegistry();
 		MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
 
-		this.messageCallProcessor = new HederaMessageCallProcessor(evm, precompileContractRegistry, precompiledContractMap);
+		this.messageCallProcessor = new HederaMessageCallProcessor(
+				evm, precompileContractRegistry, precompiledContractMap);
 		this.contractCreationProcessor = new ContractCreationProcessor(
-				gasCalculator,
-				evm,
-				true,
-				List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE), PrefixCodeRule.of()),
-				1);
+				gasCalculator, evm, true, VALIDATION_RULES, 1);
 	}
 
 	/**
@@ -155,8 +163,8 @@ abstract class EvmTxProcessor {
 	 * 		Current consensus time
 	 * @param isStatic
 	 * 		Whether or not the execution is static
-	 * @param expiry
-	 * 		In the case of Create transactions, the expiry of the top-level contract being created
+	 * @param expiryOracle
+	 * 		the oracle to use when determining the expiry of newly allocated storage
 	 * @param mirrorReceiver
 	 * 		the mirror form of the receiving {@link Address}; or the newly created address
 	 * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
@@ -171,7 +179,7 @@ abstract class EvmTxProcessor {
 			final boolean contractCreation,
 			final Instant consensusTime,
 			final boolean isStatic,
-			final OptionalLong expiry,
+			final StorageExpiry.Oracle expiryOracle,
 			final Address mirrorReceiver
 	) {
 		final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
@@ -220,7 +228,7 @@ abstract class EvmTxProcessor {
 						.contextVariables(Map.of(
 								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
 								"HederaFunctionality", getFunctionType(),
-								"expiry", expiry));
+								EXPIRY_ORACLE_CONTEXT_KEY, expiryOracle));
 
 		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, updater, receiver, payload);
 		messageFrameStack.addFirst(initialFrame);
@@ -268,8 +276,7 @@ abstract class EvmTxProcessor {
 					gasPrice,
 					initialFrame.getOutputData(),
 					mirrorReceiver,
-					stateChanges,
-					dynamicProperties.shouldEnableTraceability());
+					stateChanges);
 		} else {
 			return TransactionProcessingResult.failed(
 					gasUsedByTransaction.toLong(),
@@ -277,8 +284,7 @@ abstract class EvmTxProcessor {
 					gasPrice,
 					initialFrame.getRevertReason(),
 					initialFrame.getExceptionalHaltReason(),
-					stateChanges,
-					dynamicProperties.shouldEnableTraceability());
+					stateChanges);
 		}
 	}
 

@@ -31,11 +31,11 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.SolidityFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -46,7 +46,6 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -60,7 +59,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,6 +88,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -100,7 +99,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class BasicTransactionContextTest {
 	private final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
@@ -114,9 +113,10 @@ class BasicTransactionContextTest {
 			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private final AccountID payer = asAccount("0.0.2");
 	private final AccountID anotherNodeAccount = asAccount("0.0.4");
-	private final AccountID created = asAccount("1.0.2");
-	private final AccountID another = asAccount("1.0.300");
-	private final TransferList transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
+	private final AccountID created = asAccount("0.0.2");
+	private final AccountID another = asAccount("0.0.300");
+	private final CurrencyAdjustments transfers = CurrencyAdjustments.fromChanges(new long[] { -2L, 1L, 1L },
+			new long[] { payer.getAccountNum(), created.getAccountNum(), another.getAccountNum() });
 	private final TokenID tokenCreated = asToken("3.0.2");
 	private final ScheduleID scheduleCreated = asSchedule("0.0.10");
 	private final TokenTransferList tokenTransfers = TokenTransferList.newBuilder()
@@ -136,8 +136,6 @@ class BasicTransactionContextTest {
 			.setTransactionValidStart(Timestamp.newBuilder().setSeconds(txnValidStart))
 			.setAccountID(payer)
 			.build();
-	private final ContractFunctionResult result = ContractFunctionResult.newBuilder().setContractID(
-			contractCreated).build();
 	private ExpirableTxnRecord record;
 
 	@Mock
@@ -164,6 +162,8 @@ class BasicTransactionContextTest {
 	private SideEffectsTracker sideEffectsTracker;
 	@Mock
 	private EntityIdSource ids;
+	@Mock
+	private EvmFnResult result;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -352,8 +352,7 @@ class BasicTransactionContextTest {
 		setUpBuildingExpirableTxnRecord();
 		record = subject.recordSoFar().build();
 
-		// expect:
-		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCallResult());
+		assertSame(result, record.getContractCallResult());
 	}
 
 	@Test
@@ -367,8 +366,7 @@ class BasicTransactionContextTest {
 		subject.setCreateResult(result);
 		record = subject.recordSoFar().build();
 
-		// expect:
-		assertEquals(SolidityFnResult.fromGrpc(result), record.getContractCreateResult());
+		assertSame(result, record.getContractCreateResult());
 	}
 
 	@Test
@@ -379,6 +377,7 @@ class BasicTransactionContextTest {
 
 		setUpBuildingExpirableTxnRecord();
 		// expect:
+		final var transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
 		assertEquals(transfers, subject.recordSoFar().build().asGrpc().getTransferList());
 	}
 
@@ -602,7 +601,6 @@ class BasicTransactionContextTest {
 
 	@Test
 	void hasContractResultWorksForCreateWithResult() {
-		ContractFunctionResult result = ContractFunctionResult.newBuilder().build();
 		subject.setCreateResult(result);
 		assertTrue(subject.hasContractResult());
 	}
@@ -614,16 +612,18 @@ class BasicTransactionContextTest {
 
 	@Test
 	void getGasUsedForContractTXWorksForCreate() {
-		ContractFunctionResult result = ContractFunctionResult.newBuilder().setGasUsed(123456789L).build();
+		final var gasUsed = 123456789L;
+		given(result.getGasUsed()).willReturn(gasUsed);
 		subject.setCreateResult(result);
-		assertEquals(123456789L, subject.getGasUsedForContractTxn());
+		assertEquals(gasUsed, subject.getGasUsedForContractTxn());
 	}
 
 	@Test
 	void getGasUsedForContractTXWorksForCall() {
-		ContractFunctionResult result = ContractFunctionResult.newBuilder().setGasUsed(123456789L).build();
+		final var gasUsed = 123456789L;
+		given(result.getGasUsed()).willReturn(gasUsed);
 		subject.setCallResult(result);
-		assertEquals(123456789L, subject.getGasUsedForContractTxn());
+		assertEquals(gasUsed, subject.getGasUsedForContractTxn());
 	}
 
 	private ExpirableTxnRecord.Builder buildExpectedRecord(
@@ -634,7 +634,6 @@ class BasicTransactionContextTest {
 			TxnReceipt receipt
 	) {
 		long amount = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
-		TransferList transfersList = transfers;
 		List<TokenTransferList> tokenTransferList = List.of(tokenTransfers);
 
 		var builder = ExpirableTxnRecord.newBuilder()
@@ -644,8 +643,7 @@ class BasicTransactionContextTest {
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setMemo(accessor.getTxn().getMemo())
 				.setFee(amount)
-				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(
-						transfersList) : null)
+				.setTransferList(transfers)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
 				.setNewTokenAssociations(newTokenAssociations);
 

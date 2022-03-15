@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -37,20 +38,19 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.AddressBook;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
 import java.lang.ref.WeakReference;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Objects;
 
 /**
- * A {@link StateChildren} implementation appropriate for providing quick access to the children of the working state,
- * which are constantly changing.
- *
- * <b>Not</b> thread-safe, so ideally will only be used inside the synchronized {@link com.hedera.services.ServicesState}
- * methods {@code init()}, {@code copy()}, and {@code handleTransaction()}.
+ * A {@link StateChildren} implementation for providing cheap repeated access to the children of a
+ * {@link ServicesState}. (Experience shows that making repeated, indirect calls to
+ * {@link com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal#getChild(int)} is
+ * much more expensive, since the compiler does not seem to ever inline those calls.)
  */
 public class MutableStateChildren implements StateChildren {
 	private WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
@@ -61,21 +61,15 @@ public class MutableStateChildren implements StateChildren {
 	private WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
 	private WeakReference<VirtualMap<ContractKey, ContractValue>> contractStorage;
 	private WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
-	private WeakReference<FCOneToManyRelation<EntityNum, Long>> uniqueTokenAssociations;
-	private WeakReference<FCOneToManyRelation<EntityNum, Long>> uniqueOwnershipAssociations;
-	private WeakReference<FCOneToManyRelation<EntityNum, Long>> uniqueOwnershipTreasuryAssociations;
 	private WeakReference<MerkleNetworkContext> networkCtx;
 	private WeakReference<AddressBook> addressBook;
 	private WeakReference<MerkleSpecialFiles> specialFiles;
 	private WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
+	private WeakReference<Map<ByteString, EntityNum>> aliases;
 	private Instant signedAt = Instant.EPOCH;
 
 	public MutableStateChildren() {
 		/* No-op */
-	}
-
-	public MutableStateChildren(final Instant signedAt) {
-		this.signedAt = signedAt;
 	}
 
 	@Override
@@ -96,9 +90,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleMap<EntityNum, MerkleTopic> topics() {
-		final var refTopics = topics.get();
-		Objects.requireNonNull(refTopics);
-		return refTopics;
+		return Objects.requireNonNull(topics.get());
 	}
 
 	public void setTopics(MerkleMap<EntityNum, MerkleTopic> topics) {
@@ -107,9 +99,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleMap<EntityNum, MerkleToken> tokens() {
-		final var refTokens = tokens.get();
-		Objects.requireNonNull(refTokens);
-		return refTokens;
+		return Objects.requireNonNull(tokens.get());
 	}
 
 	public void setTokens(MerkleMap<EntityNum, MerkleToken> tokens) {
@@ -118,9 +108,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public VirtualMap<VirtualBlobKey, VirtualBlobValue> storage() {
-                final var refStorage = storage.get();
-		Objects.requireNonNull(refStorage);
-		return refStorage;
+		return Objects.requireNonNull(storage.get());
 	}
 
 	public void setStorage(VirtualMap<VirtualBlobKey, VirtualBlobValue> storage) {
@@ -129,31 +117,21 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public VirtualMap<ContractKey, ContractValue> contractStorage() {
-		final var refContractStorage = contractStorage.get();
-		Objects.requireNonNull(refContractStorage);
-		return refContractStorage;
+		return Objects.requireNonNull(contractStorage.get());
 	}
 
 	public void setContractStorage(VirtualMap<ContractKey, ContractValue> contractStorage) {
 		this.contractStorage = new WeakReference<>(contractStorage);
-        }
+	}
 
 	@Override
 	public MerkleMap<EntityNum, MerkleSchedule> schedules() {
-		final var refSchedules = schedules.get();
-		Objects.requireNonNull(refSchedules);
-		return refSchedules;
-	}
-
-	public void setSchedules(MerkleMap<EntityNum, MerkleSchedule> schedules) {
-		this.schedules = new WeakReference<>(schedules);
+		return Objects.requireNonNull(schedules.get());
 	}
 
 	@Override
 	public MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations() {
-		final var refTokenAssociations = tokenAssociations.get();
-		Objects.requireNonNull(refTokenAssociations);
-		return refTokenAssociations;
+		return Objects.requireNonNull(tokenAssociations.get());
 	}
 
 	public void setTokenAssociations(MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations) {
@@ -162,31 +140,17 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleNetworkContext networkCtx() {
-		final var refNetworkCtx = networkCtx.get();
-		Objects.requireNonNull(refNetworkCtx);
-		return refNetworkCtx;
-	}
-
-	public void setNetworkCtx(MerkleNetworkContext networkCtx) {
-		this.networkCtx = new WeakReference<>(networkCtx);
+		return Objects.requireNonNull(networkCtx.get());
 	}
 
 	@Override
 	public AddressBook addressBook() {
-		final var refAddressBook = addressBook.get();
-		Objects.requireNonNull(refAddressBook);
-		return refAddressBook;
-	}
-
-	public void setAddressBook(AddressBook addressBook) {
-		this.addressBook = new WeakReference<>(addressBook);
+		return Objects.requireNonNull(addressBook.get());
 	}
 
 	@Override
 	public MerkleSpecialFiles specialFiles() {
-		final var refSpecialFiles = specialFiles.get();
-		Objects.requireNonNull(refSpecialFiles);
-		return refSpecialFiles;
+		return Objects.requireNonNull(specialFiles.get());
 	}
 
 	public void setSpecialFiles(MerkleSpecialFiles specialFiles) {
@@ -195,9 +159,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
-		final var refUniqueTokens = uniqueTokens.get();
-		Objects.requireNonNull(refUniqueTokens);
-		return refUniqueTokens;
+		return Objects.requireNonNull(uniqueTokens.get());
 	}
 
 	public void setUniqueTokens(MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens) {
@@ -205,67 +167,25 @@ public class MutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations() {
-		final var refUniqueTokenAssociations = uniqueTokenAssociations.get();
-		Objects.requireNonNull(refUniqueTokenAssociations);
-		return refUniqueTokenAssociations;
-	}
-
-	public void setUniqueTokenAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations) {
-		this.uniqueTokenAssociations = new WeakReference<>(uniqueTokenAssociations);
-	}
-
-	@Override
-	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations() {
-		final var refUniqueOwnershipAssociations = uniqueOwnershipAssociations.get();
-		Objects.requireNonNull(refUniqueOwnershipAssociations);
-		return refUniqueOwnershipAssociations;
-	}
-
-	public void setUniqueOwnershipAssociations(
-			FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations
-	) {
-		this.uniqueOwnershipAssociations = new WeakReference<>(uniqueOwnershipAssociations);
-	}
-
-	@Override
-	public FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations() {
-		final var refUniqueOwnershipTreasuryAssociations = uniqueOwnershipTreasuryAssociations.get();
-		Objects.requireNonNull(refUniqueOwnershipTreasuryAssociations);
-		return refUniqueOwnershipTreasuryAssociations;
-	}
-
-	public void setUniqueOwnershipTreasuryAssociations(
-			FCOneToManyRelation<EntityNum, Long> uniqueOwnershipTreasuryAssociations
-	) {
-		this.uniqueOwnershipTreasuryAssociations = new WeakReference<>(uniqueOwnershipTreasuryAssociations);
-	}
-
-	@Override
 	public RecordsRunningHashLeaf runningHashLeaf() {
-		final var refRunningHashLeaf = runningHashLeaf.get();
-		Objects.requireNonNull(refRunningHashLeaf);
-		return refRunningHashLeaf;
+		return Objects.requireNonNull(runningHashLeaf.get());
 	}
 
-
-	public void setRunningHashLeaf(RecordsRunningHashLeaf runningHashLeaf) {
-		this.runningHashLeaf = new WeakReference<>(runningHashLeaf);
+	@Override
+	public Map<ByteString, EntityNum> aliases() {
+		return Objects.requireNonNull(aliases.get());
 	}
 
-	public void updateFromMaybeUninitializedState(final ServicesState signedState, final Instant signingTime) {
+	public void updateFromSigned(final ServicesState signedState, final Instant signingTime) {
+		updateFrom(signedState);
 		signedAt = signingTime;
-		updatePrimitiveChildrenFrom(signedState);
-		uniqueTokenAssociations = new WeakReference<>(null);
-		uniqueOwnershipAssociations = new WeakReference<>(null);
-		uniqueOwnershipTreasuryAssociations = new WeakReference<>(null);
 	}
 
 	public void updateFrom(final ServicesState state) {
+		if (!state.isInitialized()) {
+			throw new IllegalArgumentException("State children require an initialized state to update");
+		}
 		updatePrimitiveChildrenFrom(state);
-		uniqueTokenAssociations = new WeakReference<>(state.uniqueTokenAssociations());
-		uniqueOwnershipAssociations = new WeakReference<>(state.uniqueOwnershipAssociations());
-		uniqueOwnershipTreasuryAssociations = new WeakReference<>(state.uniqueTreasuryOwnershipAssociations());
 	}
 
 	public void updatePrimitiveChildrenFrom(final ServicesState state) {
@@ -281,5 +201,6 @@ public class MutableStateChildren implements StateChildren {
 		specialFiles = new WeakReference<>(state.specialFiles());
 		uniqueTokens = new WeakReference<>(state.uniqueTokens());
 		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
+		aliases = new WeakReference<>(state.aliases());
 	}
 }

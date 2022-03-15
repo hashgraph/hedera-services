@@ -20,16 +20,16 @@ package com.hedera.services.state.org;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesApp;
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.fchashmap.FCOneToManyRelation;
+import com.swirlds.fchashmap.FCHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -39,79 +39,44 @@ class StateMetadataTest {
 	@Mock
 	private ServicesApp app;
 	@Mock
-	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
+	private FCHashMap<ByteString, EntityNum> aliases;
 	@Mock
-	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
-	@Mock
-	private FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations;
+	private FCHashMap<ByteString, EntityNum> copyAliases;
 
 	private StateMetadata subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new StateMetadata(app);
+		subject = new StateMetadata(app, aliases);
 	}
 
 	@Test
 	void copyAsExpected() {
-		setupWithMockFcotmr();
+		given(aliases.copy()).willReturn(copyAliases);
 
-		given(uniqueTokenAssociations.copy()).willReturn(uniqueTokenAssociations);
-		given(uniqueOwnershipAssociations.copy()).willReturn(uniqueOwnershipAssociations);
-		given(uniqueTreasuryOwnershipAssociations.copy()).willReturn(uniqueTreasuryOwnershipAssociations);
-
-		// when:
 		final var copy = subject.copy();
 
-		// then:
 		assertSame(app, copy.app());
-		// and:
-		assertSame(uniqueTokenAssociations, copy.getUniqueTokenAssociations());
-		verify(uniqueTokenAssociations).copy();
-		assertSame(uniqueOwnershipAssociations, copy.getUniqueOwnershipAssociations());
-		verify(uniqueOwnershipAssociations).copy();
-		assertSame(uniqueTreasuryOwnershipAssociations, copy.getUniqueTreasuryOwnershipAssociations());
-		verify(uniqueTreasuryOwnershipAssociations).copy();
+		assertSame(copyAliases, copy.aliases());
 	}
 
 	@Test
-	void releaseOnArchival() {
-		setupWithMockFcotmr();
-
-		// when:
-		subject.archive();
-
-		// then:
-		verify(uniqueTokenAssociations).release();
-		verify(uniqueOwnershipAssociations).release();
-		verify(uniqueTreasuryOwnershipAssociations).release();
-	}
-
-	@Test
-	void releaseOnRelease() {
-		setupWithMockFcotmr();
-
-		// when:
+	void releasesAliasesOnRelease() {
 		subject.release();
 
-		// then:
-		verify(uniqueTokenAssociations).release();
-		verify(uniqueOwnershipAssociations).release();
-		verify(uniqueTreasuryOwnershipAssociations).release();
+		verify(aliases).release();
 	}
 
-	private void setupWithMockFcotmr() {
-		subject.setUniqueTokenAssociations(uniqueTokenAssociations);
-		subject.setUniqueOwnershipAssociations(uniqueOwnershipAssociations);
-		subject.setUniqueTreasuryOwnershipAssociations(uniqueTreasuryOwnershipAssociations);
+	@Test
+	void releasesAliasesOnArchive() {
+		subject.archive();
+
+		verify(aliases).release();
 	}
 
 	@Test
 	void gettersWork() {
 		// expect:
 		assertSame(app, subject.app());
-		assertNotNull(subject.getUniqueTokenAssociations());
-		assertNotNull(subject.getUniqueOwnershipAssociations());
-		assertNotNull(subject.getUniqueTreasuryOwnershipAssociations());
 	}
 }

@@ -25,7 +25,6 @@ package com.hedera.services.contracts.operation;
 import com.hedera.services.contracts.sources.SoliditySigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.utils.BytesComparator;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.tuweni.bytes.Bytes;
@@ -40,10 +39,8 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -52,43 +49,8 @@ import java.util.function.Supplier;
  * Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation}
  */
 public final class HederaOperationUtil {
-
 	private HederaOperationUtil() {
 		throw new UnsupportedOperationException("Utility Class");
-	}
-
-	/**
-	 * Returns the expiry to be used for a new contract. Climbs the {@link MessageFrame} and searches for the parent
-	 * {@link com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount}. The expiry to be used is
-	 * the expiry of the first account found in the stack
-	 *
-	 * @param frame Current message frame
-	 * @return Expiry to be used for new contracts
-	 */
-	public static long newContractExpiryIn(MessageFrame frame) {
-		long expiry = 0;
-		HederaWorldState.WorldStateAccount hederaAccount;
-		Iterator<MessageFrame> framesIterator = frame.getMessageFrameStack().iterator();
-		MessageFrame messageFrame;
-		while (framesIterator.hasNext()) {
-			messageFrame = framesIterator.next();
-			/* if this is the initial frame from the deque, check context vars first */
-			if (!framesIterator.hasNext()) {
-				OptionalLong expiryOptional = messageFrame.getContextVariable("expiry");
-				if (expiryOptional.isPresent()) {
-					expiry = expiryOptional.getAsLong();
-					break;
-				}
-			}
-			/* check if this messageFrame's sender account can be retrieved from state */
-			final var updater = (HederaWorldUpdater) messageFrame.getWorldUpdater();
-			hederaAccount = updater.getHederaAccount(frame.getSenderAddress());
-			if (hederaAccount != null) {
-				expiry = hederaAccount.getExpiry();
-				break;
-			}
-		}
-		return expiry;
 	}
 
 	/**
@@ -194,7 +156,6 @@ public final class HederaOperationUtil {
 
 		return supplierExecution.get();
 	}
-
 
 	public static void cacheExistingValue(
 			final MessageFrame frame,

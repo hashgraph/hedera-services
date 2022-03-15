@@ -44,9 +44,6 @@ import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenView;
-import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
@@ -75,7 +72,6 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
@@ -83,7 +79,6 @@ import com.swirlds.virtualmap.VirtualValue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,10 +86,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
-import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
-import static com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftAllowancesList;
@@ -117,19 +111,15 @@ public class StateView {
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_FCM = new MerkleMap<>();
 	static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
-	static final FCOneToManyRelation<?, ?> EMPTY_FCOTMR = new FCOneToManyRelation<>();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
 	public static final MerkleToken REMOVED_TOKEN = new MerkleToken(
 			0L, 0L, 0, "", "",
 			false, false, MISSING_ENTITY_ID);
-	public static final StateView EMPTY_VIEW = new StateView(
-			null, null, null, EMPTY_UNIQ_TOKEN_VIEW_FACTORY, null);
+	public static final StateView EMPTY_VIEW = new StateView(null, null, null);
 
-	private final TokenStore tokenStore;
 	private final ScheduleStore scheduleStore;
 	private final StateChildren stateChildren;
-	private final UniqTokenView uniqTokenView;
 	private final NetworkInfo networkInfo;
 
 	Map<byte[], byte[]> contractBytecode;
@@ -137,24 +127,13 @@ public class StateView {
 	Map<FileID, HFileMeta> fileAttrs;
 
 	public StateView(
-			@Nullable final TokenStore tokenStore,
 			@Nullable final ScheduleStore scheduleStore,
 			@Nullable final StateChildren stateChildren,
-			final UniqTokenViewFactory uniqTokenViewFactory,
 			final NetworkInfo networkInfo
 	) {
-		this.tokenStore = tokenStore;
 		this.scheduleStore = scheduleStore;
 		this.stateChildren = stateChildren;
 		this.networkInfo = networkInfo;
-
-		this.uniqTokenView = uniqTokenViewFactory.viewFor(
-				tokenStore,
-				this::tokens,
-				this::uniqueTokens,
-				this::nftsByType,
-				this::nftsByOwner,
-				this::treasuryNftsByType);
 
 		final Map<String, byte[]> blobStore = unmodifiableMap(new FcBlobsBytesStore(this::storage));
 
@@ -184,26 +163,27 @@ public class StateView {
 	}
 
 	public Optional<MerkleToken> tokenWith(final TokenID id) {
-		return tokenStore == null || !tokenStore.exists(id)
-				? Optional.empty()
-				: Optional.of(tokenStore.get(id));
+		if (stateChildren == null) {
+			return Optional.empty();
+		}
+		return Optional.ofNullable(stateChildren.tokens().get(EntityNum.fromTokenId(id)));
 	}
 
-	public Optional<TokenInfo> infoForToken(final TokenID tokenID) {
-		if (tokenStore == null) {
+	public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
+		if (stateChildren == null) {
 			return Optional.empty();
 		}
 		try {
-			var id = tokenStore.resolve(tokenID);
-			if (id == MISSING_TOKEN) {
+			final var tokens = stateChildren.tokens();
+			final var token = tokens.get(EntityNum.fromTokenId(tokenId));
+			if (token == null) {
 				return Optional.empty();
 			}
-			final var token = tokenStore.get(id);
 			final var info = TokenInfo.newBuilder()
 					.setLedgerId(networkInfo.ledgerId())
 					.setTokenTypeValue(token.tokenType().ordinal())
 					.setSupplyTypeValue(token.supplyType().ordinal())
-					.setTokenId(id)
+					.setTokenId(tokenId)
 					.setDeleted(token.isDeleted())
 					.setSymbol(token.symbol())
 					.setName(token.name())
@@ -253,7 +233,7 @@ public class StateView {
 		} catch (Exception unexpected) {
 			log.warn(
 					"Unexpected failure getting info for token {}!",
-					readableId(tokenID),
+					readableId(tokenId),
 					unexpected);
 			return Optional.empty();
 		}
@@ -374,28 +354,24 @@ public class StateView {
 		return uniqueTokens().containsKey(key);
 	}
 
-	public Optional<TokenType> tokenType(final TokenID tokenID) {
-		if (tokenStore == null) {
-			return Optional.empty();
-		}
+	public Optional<TokenType> tokenType(final TokenID tokenId) {
 		try {
-			final var id = tokenStore.resolve(tokenID);
-			if (id == MISSING_TOKEN) {
+			final var optionalToken = tokenWith(tokenId);
+			if (optionalToken.isEmpty()) {
 				return Optional.empty();
 			}
-			final var token = tokenStore.get(id);
-			return Optional.ofNullable(TokenType.forNumber(token.tokenType().ordinal()));
+			return optionalToken.map(token -> TokenType.forNumber(token.tokenType().ordinal()));
 		} catch (Exception unexpected) {
 			log.warn(
 					"Unexpected failure getting info for token {}!",
-					readableId(tokenID),
+					readableId(tokenId),
 					unexpected);
 			return Optional.empty();
 		}
 	}
 
 	public boolean tokenExists(final TokenID id) {
-		return tokenStore != null && tokenStore.resolve(id) != MISSING_TOKEN;
+		return stateChildren != null && stateChildren.tokens().containsKey(EntityNum.fromTokenId(id));
 	}
 
 	public boolean scheduleExists(final ScheduleID id) {
@@ -429,17 +405,20 @@ public class StateView {
 		return Optional.of(info.build());
 	}
 
-	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(final AccountID id,
-			final AliasManager aliasManager, final int maxTokensForAccountInfo) {
-		final var accountEntityNum = id.getAlias().isEmpty()
+	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(
+			final AccountID id,
+			final AliasManager aliasManager,
+			final int maxTokensForAccountInfo
+	) {
+		final var accountNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
 				: aliasManager.lookupIdBy(id.getAlias());
-		final var account = accounts().get(accountEntityNum);
+		final var account = accounts().get(accountNum);
 		if (account == null) {
 			return Optional.empty();
 		}
 
-		final AccountID accountID = id.getAlias().isEmpty() ? id : accountEntityNum.toGrpcAccountId();
+		final AccountID accountID = id.getAlias().isEmpty() ? id : accountNum.toGrpcAccountId();
 		final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setLedgerId(networkInfo.ledgerId())
 				.setKey(asKeyUnchecked(account.getAccountKey()))
@@ -457,7 +436,7 @@ public class StateView {
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
-		final var tokenRels = tokenRels(this, accountEntityNum, maxTokensForAccountInfo);
+		final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -478,27 +457,6 @@ public class StateView {
 			return 0L;
 		}
 		return account.getNftsOwned();
-	}
-
-	public Optional<List<TokenNftInfo>> infoForAccountNfts(@Nonnull final AccountID aid, final long start,
-			final long end) {
-		final var account = accounts().get(fromAccountId(aid));
-		if (account == null) {
-			return Optional.empty();
-		}
-		final var answer = uniqTokenView.ownedAssociations(aid, start, end);
-		final var infoWithLedgerId = addLedgerIdToTokenNftInfoList(answer);
-		return Optional.of(infoWithLedgerId);
-	}
-
-	public Optional<List<TokenNftInfo>> infosForTokenNfts(@Nonnull final TokenID tid, final long start,
-			final long end) {
-		if (!tokenExists(tid)) {
-			return Optional.empty();
-		}
-		final var answer = uniqTokenView.typedAssociations(tid, start, end);
-		final var infoWithLedgerId = addLedgerIdToTokenNftInfoList(answer);
-		return Optional.of(infoWithLedgerId);
 	}
 
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
@@ -529,7 +487,7 @@ public class StateView {
 		} else {
 			info.setContractAccountID(asHexedEvmAddress(mirrorId));
 		}
-		final var tokenRels = tokenRels(this, contractId, maxTokensForAccountInfo);
+		final var tokenRels = tokenRels(this, contract, maxTokensForAccountInfo);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -576,28 +534,6 @@ public class StateView {
 		return stateChildren == null ? emptyMm() : stateChildren.tokens();
 	}
 
-	FCOneToManyRelation<EntityNum, Long> nftsByType() {
-		return stateChildren == null ? emptyFcotmr() : stateChildren.uniqueTokenAssociations();
-	}
-
-	FCOneToManyRelation<EntityNum, Long> nftsByOwner() {
-		return stateChildren == null ? emptyFcotmr() : stateChildren.uniqueOwnershipAssociations();
-	}
-
-	FCOneToManyRelation<EntityNum, Long> treasuryNftsByType() {
-		return stateChildren == null ? emptyFcotmr() : stateChildren.uniqueOwnershipTreasuryAssociations();
-	}
-
-	UniqTokenView uniqTokenView() {
-		return uniqTokenView;
-	}
-
-	private List<TokenNftInfo> addLedgerIdToTokenNftInfoList(final List<TokenNftInfo> tokenNftInfoList) {
-		return tokenNftInfoList.stream()
-				.map(info -> info.toBuilder().setLedgerId(networkInfo.ledgerId()).build())
-				.toList();
-	}
-
 	private TokenFreezeStatus tfsFor(final boolean flag) {
 		return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
 	}
@@ -610,8 +546,11 @@ public class StateView {
 		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
-	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id, final int maxTokensPerAccountInfo) {
-		final var account = view.accounts().get(id);
+	static List<TokenRelationship> tokenRels(
+			final StateView view,
+			final MerkleAccount account,
+			final int maxTokensPerAccountInfo
+	) {
 		return getAssociatedTokenRels(view.tokenAssociations(), account, view.tokens(), maxTokensPerAccountInfo);
 	}
 
@@ -619,94 +558,78 @@ public class StateView {
 	 * Traverse the linkedList of the token relationships associated to the account and build a list of
 	 * TokenRelationship whose size is limited by maxTokensPerAccountInfo.
 	 *
-	 * @param allTokenAssociations
+	 * @param tokenRels
 	 * 		MerkleMap of all token associations in the state.
 	 * @param account
 	 * 		MerkelAccount for which the associations have to be looked up.
-	 * @param maxTokensPerAccountInfo
+	 * @param maxRels
 	 * 		maximum number of token associations to be fetched.
 	 * @return A list of TokenRelationships associated to the account.
 	 */
 	public static List<TokenRelationship> getAssociatedTokenRels(
-			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
 			final MerkleAccount account,
 			final MerkleMap<EntityNum, MerkleToken> tokens,
-			final int maxTokensPerAccountInfo) {
-		final List<TokenRelationship> listOfAssociatedTokens = new ArrayList<>();
-		var startKey = account.getLastAssociation();
+			final int maxRels
+	) {
+		final List<TokenRelationship> grpcRels = new ArrayList<>();
+		var firstRel = account.getLastAssociation();
+		doBoundedIteration(tokenRels, tokens, firstRel, maxRels, (token, rel) -> {
+			final var grpcRel = new RawTokenRelationship(
+					rel.getBalance(),
+					STATIC_PROPERTIES.getShard(),
+					STATIC_PROPERTIES.getRealm(),
+					rel.getRelatedTokenNum(),
+					rel.isFrozen(),
+					rel.isKycGranted(),
+					rel.isAutomaticAssociation()
+			).asGrpcFor(token);
+			grpcRels.add(grpcRel);
+		});
 
-		doBoundedIteration(allTokenAssociations, tokens, startKey, maxTokensPerAccountInfo, (tokenId, rel) ->
-				listOfAssociatedTokens.add(rel));
-
-		return listOfAssociatedTokens;
+		return grpcRels;
 	}
 
-	/**
-	 * Traverse the linkedList of the token relationships associated to the account and build a list of
-	 * TokenIds whose size is limited by maxTokensPerAccountInfo.
-	 *
-	 * @param allTokenAssociations
-	 * 		MerkleMap of all token associations in the state.
-	 * @param account
-	 * 		MerkelAccount for which the associations have to be looked up.
-	 * @param maxTokensPerAccountInfo
-	 * 		maximum number of token associations to be fetched.
-	 * @return A list of TokenIds associated to the account.
-	 */
-	public static List<TokenID> getAssociatedTokenIds(
+	public static void doBoundedIteration(
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
+			final MerkleMap<EntityNum, MerkleToken> tokens,
 			final MerkleAccount account,
-			final int maxTokensPerAccountInfo) {
-		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
-		final var startKey = account.getLastAssociation();
-
-		doBoundedIteration(allTokenAssociations, null, startKey, maxTokensPerAccountInfo, (tokenId, rel) ->
-				listOfAssociatedTokens.add(tokenId));
-
-		return listOfAssociatedTokens;
+			final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor
+	) {
+		final var maxRels = account.getNumAssociations();
+		final var firstRel = account.getLastAssociation();
+		doBoundedIteration(allTokenAssociations, tokens, firstRel, maxRels, visitor);
 	}
 
-	private static void doBoundedIteration(
+	public static void doBoundedIteration(
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
 			final MerkleMap<EntityNum, MerkleToken> tokens,
 			final EntityNumPair startKey,
 			final int maxRelsToVisit,
-			final BiConsumer<TokenID, TokenRelationship> visitor
+			final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor
 	) {
-		TokenRelationship relToAdd = TokenRelationship.getDefaultInstance();
-		var currKey = startKey;
+		var key = startKey;
 		var counter = 0;
-		while (!currKey.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRelsToVisit) {
-			final var currRel = allTokenAssociations.get(currKey);
-			final var relTokenId = currKey.getLowOrderAsTokenId();
+		while (!key.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRelsToVisit) {
+			var token = REMOVED_TOKEN;
+			final var rel = allTokenAssociations.get(key);
+			final var tokenId = key.getLowOrderAsTokenId();
 			if (tokens != null) {
-				final var tokenNum = EntityNum.fromTokenId(relTokenId);
-				final var token = tokens.getOrDefault(tokenNum, REMOVED_TOKEN);
-				relToAdd = new RawTokenRelationship(
-						currRel.getBalance(),
-						relTokenId.getShardNum(),
-						relTokenId.getRealmNum(),
-						relTokenId.getTokenNum(),
-						currRel.isFrozen(),
-						currRel.isKycGranted(),
-						currRel.isAutomaticAssociation()
-				).asGrpcFor(token);
+				token = tokens.getOrDefault(EntityNum.fromTokenId(tokenId), REMOVED_TOKEN);
 			}
-			visitor.accept(relTokenId, relToAdd);
-			currKey = currRel.nextKey();
+			visitor.accept(token, rel);
+			key = rel.nextKey();
 			counter++;
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> emptyMm() {
 		return (MerkleMap<K, V>) EMPTY_FCM;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
-	}
-
-	private static <K, V> FCOneToManyRelation<K, V> emptyFcotmr() {
-		return (FCOneToManyRelation<K, V>) EMPTY_FCOTMR;
 	}
 }

@@ -37,12 +37,12 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -51,7 +51,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Comparator;
@@ -125,7 +124,6 @@ public class HederaLedger {
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	private MutableEntityAccess mutableEntityAccess;
-	private UniqueTokenViewsManager tokenViewsManager = null;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = null;
 	private TransactionalLedger<
 			Pair<AccountID, TokenID>,
@@ -166,10 +164,6 @@ public class HederaLedger {
 		this.mutableEntityAccess = mutableEntityAccess;
 	}
 
-	public void setTokenViewsManager(final UniqueTokenViewsManager tokenViewsManager) {
-		this.tokenViewsManager = tokenViewsManager;
-	}
-
 	public void setNftsLedger(final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
 		this.nftsLedger = nftsLedger;
 	}
@@ -203,9 +197,6 @@ public class HederaLedger {
 		if (nftsLedger != null) {
 			nftsLedger.begin();
 		}
-		if (tokenViewsManager != null) {
-			tokenViewsManager.begin();
-		}
 	}
 
 	public void rollback() {
@@ -216,9 +207,6 @@ public class HederaLedger {
 		}
 		if (nftsLedger != null && nftsLedger.isInTransaction()) {
 			nftsLedger.rollback();
-		}
-		if (tokenViewsManager != null && tokenViewsManager.isInTransaction()) {
-			tokenViewsManager.rollback();
 		}
 	}
 
@@ -234,9 +222,6 @@ public class HederaLedger {
 		}
 		if (nftsLedger != null && nftsLedger.isInTransaction()) {
 			nftsLedger.commit();
-		}
-		if (tokenViewsManager != null && tokenViewsManager.isInTransaction()) {
-			tokenViewsManager.commit();
 		}
 	}
 
@@ -314,7 +299,7 @@ public class HederaLedger {
 	}
 
 	public void dropPendingTokenChanges() {
-		dropTokenChanges(sideEffectsTracker, tokenViewsManager, nftsLedger, accountsLedger, tokenRelsLedger);
+		dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
 	}
 
 	public ResponseCodeEnum doTokenTransfer(
@@ -480,7 +465,7 @@ public class HederaLedger {
 	}
 
 	/* -- Only used by unit tests --- */
-	TransferList netTransfersInTxn() {
+	CurrencyAdjustments netTransfersInTxn() {
 		accountsLedger.throwIfNotInTxn();
 		return sideEffectsTracker.getNetTrackedHbarChanges();
 	}

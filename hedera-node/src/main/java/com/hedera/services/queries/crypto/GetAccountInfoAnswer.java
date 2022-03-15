@@ -52,7 +52,6 @@ public class GetAccountInfoAnswer implements AnswerService {
 	private final AliasManager aliasManager;
 	private final GlobalDynamicProperties dynamicProperties;
 
-
 	@Inject
 	public GetAccountInfoAnswer(
 			final OptionValidator optionValidator,
@@ -73,9 +72,14 @@ public class GetAccountInfoAnswer implements AnswerService {
 	}
 
 	@Override
-	public Response responseGiven(final Query query, final StateView view, final ResponseCodeEnum validity, final long cost) {
+	public Response responseGiven(
+			final Query query,
+			final StateView view,
+			final ResponseCodeEnum validity,
+			final long cost
+	) {
 		final CryptoGetInfoQuery op = query.getCryptoGetInfo();
-		CryptoGetInfoResponse.Builder response = CryptoGetInfoResponse.newBuilder();
+		final CryptoGetInfoResponse.Builder response = CryptoGetInfoResponse.newBuilder();
 
 		final ResponseType type = op.getHeader().getResponseType();
 		if (validity != OK) {
@@ -85,7 +89,8 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				var optionalInfo = view.infoForAccount(id, aliasManager, dynamicProperties.maxTokensPerInfoQuery());
+				var optionalInfo = view.infoForAccount(
+						id, aliasManager, dynamicProperties.maxTokensPerInfoQuery());
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());
@@ -112,7 +117,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 	@Override
 	public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
 		Transaction paymentTxn = query.getCryptoGetInfo().getHeader().getPayment();
-		return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
+		return Optional.of(SignedTxnAccessor.uncheckedFrom(paymentTxn));
 	}
 
 	@Override

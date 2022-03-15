@@ -59,9 +59,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 
+import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.EntityNum.fromTokenId;
 
 @Singleton
 public class SignedStateBalancesExporter implements BalancesExporter {
@@ -239,16 +239,14 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 			final MerkleMap<EntityNum, MerkleToken> tokens,
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
 	) {
-		final var tokenRelationships = StateView.getAssociatedTokenRels(tokenAssociations, account, tokens, Integer.MAX_VALUE);
-		for (final var relationship : tokenRelationships) {
-			final var token = tokens.get(fromTokenId(relationship.getTokenId()));
-			if (token != null) {
-				sabBuilder.addTokenUnitBalances(tb(relationship.getTokenId(), relationship.getBalance()));
+		doBoundedIteration(tokenAssociations, tokens, account, (token, rel) -> {
+			if (token != StateView.REMOVED_TOKEN) {
+				sabBuilder.addTokenUnitBalances(unitBalanceFrom(token.grpcId(), rel.getBalance()));
 			}
-		}
+		});
 	}
 
-	private TokenUnitBalance tb(TokenID id, long balance) {
+	private TokenUnitBalance unitBalanceFrom(final TokenID id, final long balance) {
 		return TokenUnitBalance.newBuilder().setTokenId(id).setBalance(balance).build();
 	}
 
