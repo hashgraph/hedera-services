@@ -177,7 +177,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void copiedResults_parentModifiedByDeserialization_copyStillSame() throws IOException {
+	public void copiedResults_parentReleased_copyStillSame() throws IOException {
 		ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
 		new UniqueTokenValue().serialize(encodedEmpty);
 
@@ -187,12 +187,12 @@ public class UniqueTokenValueTest {
 				"hello world".getBytes());
 		UniqueTokenValue copy = (UniqueTokenValue) src.copy();
 
-		// Mutate src via a de-serialize call
-		src.deserialize(encodedEmpty, UniqueTokenValue.CURRENT_VERSION);
-
-		assertThat(src.getMetadata()).isEmpty();
-		assertThat(src.getOwnerAccountNum()).isEqualTo(0);
-		assertThat(src.getCreationTime()).isEqualTo(Instant.ofEpochMilli(0));
+		// Make sure parent is immutable and not modified.
+		assertThat(src.isImmutable()).isTrue();
+		assertThat(src.getOwnerAccountNum()).isEqualTo(1234L);
+		assertThat(src.getCreationTime()).isEqualTo(Instant.ofEpochSecond(456, 789));
+		assertThat(src.getMetadata()).isEqualTo("hello world".getBytes());
+		src.release();
 
 		assertThat(copy.getOwnerAccountNum()).isEqualTo(1234L);
 		assertThat(copy.getCreationTime()).isEqualTo(Instant.ofEpochSecond(456, 789));

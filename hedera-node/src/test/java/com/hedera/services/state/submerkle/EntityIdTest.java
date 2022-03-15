@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.swirlds.common.CommonUtils.unhex;
@@ -239,5 +241,13 @@ class EntityIdTest {
 		assertFalse(subject.matches(diffShard));
 		assertFalse(subject.matches(diffRealm));
 		assertFalse(subject.matches(diffNum));
+	}
+
+	@Test
+	void fromNumWorks() {
+		EntityId entityId = EntityId.fromNum(123L);
+		assertThat(entityId.num()).isEqualTo(123L);
+		assertThat(entityId.realm()).isEqualTo(StaticPropertiesHolder.STATIC_PROPERTIES.getRealm());
+		assertThat(entityId.shard()).isEqualTo(StaticPropertiesHolder.STATIC_PROPERTIES.getShard());
 	}
 }

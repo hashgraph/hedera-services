@@ -9,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -18,129 +19,100 @@ public class UniqueTokenKeyTest {
 
 	@Test
 	public void constructedKey_returnsValue() {
-		UniqueTokenKey key = new UniqueTokenKey(123L);
-		assertThat(key.getTokenNum()).isEqualTo(123L);
+		UniqueTokenKey key = new UniqueTokenKey(123L, 456L);
+		assertThat(key.getNum()).isEqualTo(123L);
+		assertThat(key.getTokenSerial()).isEqualTo(456L);
 	}
 
 	@Test
 	public void serializing_withDifferentTokenNums_yieldSmallerBufferPositionForLeadingZeros() throws IOException {
-		UniqueTokenKey key1 = new UniqueTokenKey(0x000F);  // 1 byte
-		UniqueTokenKey key2 = new UniqueTokenKey(0xFFFF);  // 2 bytes
-		UniqueTokenKey key3 = new UniqueTokenKey(0xFFFFFFFF); // 4 bytes
+		UniqueTokenKey key1 = new UniqueTokenKey(0, 0);       // 1 byte
+		UniqueTokenKey key2 = new UniqueTokenKey(0, 0xFF);    // 2 bytes
+		UniqueTokenKey key3 = new UniqueTokenKey(0xFFFF, 0);  // 3 bytes
+		UniqueTokenKey key4 = new UniqueTokenKey(0xFFFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL); // 17 bytes
 
 		ByteBuffer buffer1 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
 		ByteBuffer buffer2 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
 		ByteBuffer buffer3 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
+		ByteBuffer buffer4 = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
 
 		key1.serialize(buffer1);
 		key2.serialize(buffer2);
 		key3.serialize(buffer3);
+		key4.serialize(buffer4);
 
 		assertThat(buffer1.position()).isLessThan(buffer2.position());
 		assertThat(buffer2.position()).isLessThan(buffer3.position());
+		assertThat(buffer3.position()).isLessThan(buffer4.position());
 	}
 
-	private static ByteBuffer serializeToByteBuffer(long keyValue) throws IOException {
+	private static ByteBuffer serializeToByteBuffer(long num, long serial) throws IOException {
 		ByteBuffer buffer = ByteBuffer.wrap(new byte[UniqueTokenKey.ESTIMATED_SIZE_BYTES]);
-		new UniqueTokenKey(keyValue).serialize(buffer);
+		new UniqueTokenKey(num, serial).serialize(buffer);
 		return buffer.rewind();
+	}
+
+	private static UniqueTokenKey checkSerializeAndDeserializeByteBuffer(long num, long serial) throws IOException {
+		UniqueTokenKey key = new UniqueTokenKey();
+		key.deserialize(serializeToByteBuffer(num, serial), UniqueTokenKey.CURRENT_VERSION);
+		assertThat(key.getNum()).isEqualTo(num);
+		assertThat(key.getTokenSerial()).isEqualTo(serial);
+		return key;
 	}
 
 	@Test
 	public void deserializingByteBuffer_whenCurrentVersion_restoresValueAndRegeneratesHash() throws IOException {
-		UniqueTokenKey key0 = new UniqueTokenKey();
-		UniqueTokenKey key1 = new UniqueTokenKey();
-		UniqueTokenKey key2 = new UniqueTokenKey();
-		UniqueTokenKey key3 = new UniqueTokenKey();
-		UniqueTokenKey key4 = new UniqueTokenKey();
-		UniqueTokenKey key5 = new UniqueTokenKey();
-		UniqueTokenKey key6 = new UniqueTokenKey();
-		UniqueTokenKey key7 = new UniqueTokenKey();
-		UniqueTokenKey key8 = new UniqueTokenKey();
+		List<Long> valuesToTest = List.of(0L, 0xFFL, 0xFFFFL, 0xFF_FFFFL, 0xFFFF_FFFFL, 0xFF_FFFF_FFFFL,
+				0xFFFF_FFFF_FFFFL, 0xFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL);
+		List<Integer> hashCodes = new ArrayList<>();
+		for (long num : valuesToTest) {
+			for (long serial : valuesToTest) {
+				UniqueTokenKey key = checkSerializeAndDeserializeByteBuffer(num, serial);
+				hashCodes.add(key.hashCode());
+			}
+		}
 
-		key0.deserialize(serializeToByteBuffer(0L), UniqueTokenKey.CURRENT_VERSION);
-		key1.deserialize(serializeToByteBuffer(0xFFL), UniqueTokenKey.CURRENT_VERSION);
-		key2.deserialize(serializeToByteBuffer(0xFF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key3.deserialize(serializeToByteBuffer(0xFF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key4.deserialize(serializeToByteBuffer(0xFF_FF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key5.deserialize(serializeToByteBuffer(0xFF_FF_FF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key6.deserialize(serializeToByteBuffer(0xFF_FF_FF_FF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key7.deserialize(serializeToByteBuffer(0xFF_FF_FF_FF_FF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key8.deserialize(serializeToByteBuffer(0xFF_FF_FF_FF_FF_FF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-
-		assertThat(key0.getTokenNum()).isEqualTo(0L);
-		assertThat(key1.getTokenNum()).isEqualTo(0xFFL);
-		assertThat(key2.getTokenNum()).isEqualTo(0xFF_FFL);
-		assertThat(key3.getTokenNum()).isEqualTo(0xFF_FF_FFL);
-		assertThat(key4.getTokenNum()).isEqualTo(0xFF_FF_FF_FFL);
-		assertThat(key5.getTokenNum()).isEqualTo(0xFF_FF_FF_FF_FFL);
-		assertThat(key6.getTokenNum()).isEqualTo(0xFF_FF_FF_FF_FF_FFL);
-		assertThat(key7.getTokenNum()).isEqualTo(0xFF_FF_FF_FF_FF_FF_FFL);
-		assertThat(key8.getTokenNum()).isEqualTo(0xFF_FF_FF_FF_FF_FF_FF_FFL);
-
-		// Also confirm that the hash codes are mostly unique. It should be better or equal to simple int truncation
-		// which will yield 5 different hashes.
-		assertThat(new HashSet<>(List.of(
-						key0.hashCode(), key1.hashCode(), key2.hashCode(),
-						key3.hashCode(), key4.hashCode(), key5.hashCode(),
-						key6.hashCode(), key7.hashCode(), key8.hashCode()))
-				.size()).isAtLeast(5);
+		// Also confirm that the hash codes are mostly unique.
+		assertThat(new HashSet<>(hashCodes).size()).isAtLeast((int) (0.7 * hashCodes.size()));
 	}
 
-	private static SerializableDataInputStream serializeToStream(long keyValue) throws IOException {
+	private static SerializableDataInputStream serializeToStream(long num, long serial) throws IOException {
 		ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream(UniqueTokenKey.ESTIMATED_SIZE_BYTES);
 		SerializableDataOutputStream outputStream = new SerializableDataOutputStream(byteOutputStream);
-		new UniqueTokenKey(keyValue).serialize(outputStream);
+		new UniqueTokenKey(num, serial).serialize(outputStream);
 
 		ByteArrayInputStream inputStream = new ByteArrayInputStream(byteOutputStream.toByteArray());
 		return new SerializableDataInputStream(inputStream);
 	}
 
+	private static UniqueTokenKey checkSerializeAndDeserializeStream(long num, long serial) throws IOException {
+		UniqueTokenKey key = new UniqueTokenKey();
+		key.deserialize(serializeToStream(num, serial), UniqueTokenKey.CURRENT_VERSION);
+		assertThat(key.getNum()).isEqualTo(num);
+		assertThat(key.getTokenSerial()).isEqualTo(serial);
+		return key;
+	}
+
 	@Test
 	public void deserializingStream_whenCurrentVersion_restoresValueAndRegeneratesHash() throws IOException {
-		UniqueTokenKey key0 = new UniqueTokenKey();
-		UniqueTokenKey key1 = new UniqueTokenKey();
-		UniqueTokenKey key2 = new UniqueTokenKey();
-		UniqueTokenKey key3 = new UniqueTokenKey();
-		UniqueTokenKey key4 = new UniqueTokenKey();
-		UniqueTokenKey key5 = new UniqueTokenKey();
-		UniqueTokenKey key6 = new UniqueTokenKey();
-		UniqueTokenKey key7 = new UniqueTokenKey();
-		UniqueTokenKey key8 = new UniqueTokenKey();
+		List<Long> valuesToTest = List.of(0L, 0xFFL, 0xFFFFL, 0xFF_FFFFL, 0xFFFF_FFFFL, 0xFF_FFFF_FFFFL,
+				0xFFFF_FFFF_FFFFL, 0xFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL);
+		List<Integer> hashCodes = new ArrayList<>();
+		for (long num : valuesToTest) {
+			for (long serial : valuesToTest) {
+				UniqueTokenKey key = checkSerializeAndDeserializeByteBuffer(num, serial);
+				hashCodes.add(key.hashCode());
+			}
+		}
 
-		key0.deserialize(serializeToStream(0L), UniqueTokenKey.CURRENT_VERSION);
-		key1.deserialize(serializeToStream(0xFFL), UniqueTokenKey.CURRENT_VERSION);
-		key2.deserialize(serializeToStream(0xFF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key3.deserialize(serializeToStream(0xFF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key4.deserialize(serializeToStream(0xFF_FF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key5.deserialize(serializeToStream(0xFF_FF_FF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key6.deserialize(serializeToStream(0xFF_FF_FF_FF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key7.deserialize(serializeToStream(0xFF_FF_FF_FF_FF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-		key8.deserialize(serializeToStream(0xFF_FF_FF_FF_FF_FF_FF_FFL), UniqueTokenKey.CURRENT_VERSION);
-
-		assertThat(key0.getTokenNum()).isEqualTo(0L);
-		assertThat(key1.getTokenNum()).isEqualTo(0xFFL);
-		assertThat(key2.getTokenNum()).isEqualTo(0xFF_FFL);
-		assertThat(key3.getTokenNum()).isEqualTo(0xFF_FF_FFL);
-		assertThat(key4.getTokenNum()).isEqualTo(0xFF_FF_FF_FFL);
-		assertThat(key5.getTokenNum()).isEqualTo(0xFF_FF_FF_FF_FFL);
-		assertThat(key6.getTokenNum()).isEqualTo(0xFF_FF_FF_FF_FF_FFL);
-		assertThat(key7.getTokenNum()).isEqualTo(0xFF_FF_FF_FF_FF_FF_FFL);
-		assertThat(key8.getTokenNum()).isEqualTo(0xFF_FF_FF_FF_FF_FF_FF_FFL);
-
-		// Also confirm that the hash codes are mostly unique. It should be better or equal to simple int truncation
-		// which will yield 5 different hashes.
-		assertThat(new HashSet<>(List.of(
-				key0.hashCode(), key1.hashCode(), key2.hashCode(),
-				key3.hashCode(), key4.hashCode(), key5.hashCode(),
-				key6.hashCode(), key7.hashCode(), key8.hashCode()))
-				.size()).isAtLeast(5);
+		// Also confirm that the hash codes are mostly unique.
+		assertThat(new HashSet<>(hashCodes).size()).isAtLeast((int) (0.7 * hashCodes.size()));
 	}
 
 	@Test
 	public void deserializing_withWrongVersion_throwsException() throws IOException {
-		ByteBuffer byteBuffer = serializeToByteBuffer(0xFFL);
-		SerializableDataInputStream inputStream  = serializeToStream(0xFFL);
+		ByteBuffer byteBuffer = serializeToByteBuffer(0xFFL, 0xFFL);
+		SerializableDataInputStream inputStream  = serializeToStream(0xFFL, 0xFFL);
 
 		UniqueTokenKey key = new UniqueTokenKey();
 		Assertions.assertThrows(AssertionError.class,
@@ -152,44 +124,64 @@ public class UniqueTokenKeyTest {
 
 	@Test
 	public void equals_whenNull_isFalse() {
-		UniqueTokenKey key = new UniqueTokenKey(123L);
+		UniqueTokenKey key = new UniqueTokenKey();
 		assertThat(key.equals(null)).isFalse();
 	}
 
 	@Test
 	public void equals_whenDifferentType_isFalse() {
-		UniqueTokenKey key = new UniqueTokenKey(123L);
+		UniqueTokenKey key = new UniqueTokenKey();
 		assertThat(key.equals(123L)).isFalse();
 	}
 
 	@Test
 	public void equals_whenSameType_matchesContentCorrectly() {
-		UniqueTokenKey key = new UniqueTokenKey(123L);
-		assertThat(key.equals(new UniqueTokenKey(123L))).isTrue();
-		assertThat(key.equals(new UniqueTokenKey(456L))).isFalse();
+		UniqueTokenKey key = new UniqueTokenKey(123L, 456L);
+		assertThat(key.equals(new UniqueTokenKey(123L, 456L))).isTrue();
+		assertThat(key.equals(new UniqueTokenKey(456L, 123L))).isFalse();
 		assertThat(key.equals(new UniqueTokenKey())).isFalse();
 	}
 
 	@Test
 	public void comparing_comparesProperly() {
-		UniqueTokenKey key1 = new UniqueTokenKey(123L);
-		UniqueTokenKey key2 = new UniqueTokenKey(456L);
-		UniqueTokenKey key3 = new UniqueTokenKey(789L);
+		UniqueTokenKey key1 = new UniqueTokenKey(123L, 789L);
+		UniqueTokenKey key2 = new UniqueTokenKey(456L, 789L);
+		UniqueTokenKey key3 = new UniqueTokenKey(123L, 456L);
+		UniqueTokenKey key4 = new UniqueTokenKey(123L, 456L);
 
-		assertThat(key1).isLessThan(key2);
-		assertThat(key2).isLessThan(key3);
-		assertThat(key3).isGreaterThan(key1);
-		assertThat(key3).isGreaterThan(key2);
-		assertThat(key2).isGreaterThan(key1);
-		assertThat(key1).isEqualTo(key1);
+		// Check equality works
+		assertThat(key1).isEqualTo(key1);   // same instance
+		assertThat(key3).isEqualTo(key4);   // differing instances
+
+		// Check less-than result is valid
+		assertThat(key1).isLessThan(key2);  // due to num field
+		assertThat(key3).isLessThan(key1);  // due to serial field
+
+		// Check greater-than result is valid
+		assertThat(key2).isGreaterThan(key1);  // due to num field
+		assertThat(key1).isGreaterThan(key3);  // due to serial field
 
 		// In case above isEqualTo is a reference comparison, we also do the following to confirm
-		assertThat(key1.compareTo(key1)).isEqualTo(0);
+		assertThat(key1.compareTo(key1)).isEqualTo(0);    // same instance
+		assertThat(key3.compareTo(key4)).isEqualTo(0);    // differing instances
+	}
+
+	private static ByteBuffer asByteBuffer(int value) {
+		return ByteBuffer.wrap(new byte[] { (byte) value});
+	}
+
+	@Test
+	public void deserializeKeySize_withVariousPackedLengths_returnsTheCorrectLengths() {
+		assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0))).isEqualTo(1);
+		assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x8))).isEqualTo(9);
+		assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x80))).isEqualTo(9);
+		assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x34))).isEqualTo(8);
+		assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x88))).isEqualTo(17);
 	}
 
 	@Test
 	public void getVersion_isCurrent() {
-		UniqueTokenKey key1 = new UniqueTokenKey(123L);
+		UniqueTokenKey key1 = new UniqueTokenKey();
 		// This will fail if the version number changes and force user to update the version number here.
 		assertThat(key1.getVersion()).isEqualTo(1);
 
@@ -200,13 +192,15 @@ public class UniqueTokenKeyTest {
 	@Test
 	public void getClassId_isExpected() {
 		// Make sure the class id isn't accidentally changed.
-		UniqueTokenKey key1 = new UniqueTokenKey(123L);
+		UniqueTokenKey key1 = new UniqueTokenKey();
 		assertThat(key1.getClassId()).isEqualTo(0x17f77b311f6L);
 	}
 
 	@Test
 	public void toString_shouldContain_tokenValue() {
-		assertThat(new UniqueTokenKey(123L).toString()).contains("123");
-		assertThat(new UniqueTokenKey(456L).toString()).contains("456");
+		assertThat(new UniqueTokenKey(123L, 789L).toString()).contains("123");
+		assertThat(new UniqueTokenKey(123L, 789L).toString()).contains("789");
+		assertThat(new UniqueTokenKey(456L, 789L).toString()).contains("456");
+		assertThat(new UniqueTokenKey(456L, 789L).toString()).contains("789");
 	}
 }

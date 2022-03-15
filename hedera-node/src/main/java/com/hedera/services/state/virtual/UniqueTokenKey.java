@@ -1,5 +1,6 @@
 package com.hedera.services.state.virtual;
 
+import com.google.common.base.MoreObjects;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -7,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 /**
  * Represents a key for a unique token (NFT).
@@ -18,37 +20,49 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 	/* package */ static final int CURRENT_VERSION = 1;
 
 	/**
-	 * Expected maximum number of bytes this class will serialize to. Serialization will format will be:
-	 *  - (1 byte) number of bytes, 1-255, following this byte that will contain the token number.
-	 *  - (variable, up to 8 bytes)  the non-leading zero-bytes representing the token number.
+	 * Expected maximum number of bytes this class will serialize to. Serialization format will be:
+	 *  - (1 byte) number of bytes for next two fields:
+	 *    - The higher 4-bits will contain a number (0 - 8) indicating number of bytes needed for the entity number.
+	 *    - The lower 4-bits will contain a number (0 - 8) indicating number of bytes needed for the serial number.
+	 *  - (variable, 0 to 8 bytes) the non-leading zero-bytes representing the entity number.
+	 *  - (variable, 0 to 8 bytes) the non-leading zero-bytes representing the serial number.
 	 */
-	public static final int ESTIMATED_SIZE_BYTES = Long.BYTES + 1;
+	public static final int ESTIMATED_SIZE_BYTES = Long.BYTES + Long.BYTES + 1;
 
+	/** The entity number of the token.*/
+	private long entityNum;
 
-	/** The token number from the address will be used as the key.*/
-	private long tokenNum;
+	/** Serial number of the token.*/
+	private long tokenSerial;
+
 	/** Hashcode will be updated whenever tokenNum changes.*/
 	private int hashCode;
 
 	public UniqueTokenKey() {}
 
-	public UniqueTokenKey(long tokenNum) {
-		setTokenNum(tokenNum);
+	public UniqueTokenKey(long entityNum, long tokenSerial) {
+		setTokenId(entityNum, tokenSerial);
 	}
 
-	public long getTokenNum() {
-		return tokenNum;
+	public long getNum() {
+		return entityNum;
 	}
 
-	private void setTokenNum(long tokenNum) {
-		this.tokenNum = tokenNum;
-		this.hashCode = Long.hashCode(tokenNum);
+	public long getTokenSerial() {
+		return tokenSerial;
+	}
+
+	private void setTokenId(long entityNum, long tokenSerial) {
+		this.entityNum = entityNum;
+		this.tokenSerial = tokenSerial;
+		// TODO: Consider using NonCryptographicHashing.hash64(long1, long2) when made available.
+		this.hashCode = Objects.hash(entityNum, tokenSerial);
 	}
 
 	private static int computeNonZeroBytes(long value) {
-		// The value returned from this will range in [1, 8].
+		// The value returned from this will range in [0, 8].
 		if (value == 0) {
-			return 1;
+			return 0;
 		}
 
 		// Max value here is (64 - 0)/8 = 8
@@ -61,20 +75,69 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 		if (this == other) {
 			return 0;
 		}
-		return Long.compare(this.tokenNum, other.tokenNum);
+		// Sort by entity num first, followed by token serial number.
+		if (this.entityNum == other.entityNum) {
+			return Long.compare(this.tokenSerial, other.tokenSerial);
+		}
+		return Long.compare(this.entityNum, other.entityNum);
 	}
 
-	/* package */ static interface ByteConsumer {
+	/* package */ interface ByteConsumer {
 		void accept(byte b) throws IOException;
 	}
 
-	/* package */ int serializeTo(ByteConsumer output) throws IOException {
-		int numOfBytes = computeNonZeroBytes(tokenNum);
-		output.accept((byte) numOfBytes);
-		for (int b = numOfBytes - 1; b >= 0; b--) {
-			output.accept((byte) (tokenNum >> (b * 8)));
+	private static byte packLengths(int upper, int lower) {
+		return (byte) ((upper << 4) | (lower & 0x0F));
+	}
+
+	private static int unpackUpperLength(int packed) {
+		return (packed >> 4) & 0x0F;
+	}
+
+	private static int unpackLowerLength(int packed) {
+		return packed & 0x0F;
+	}
+
+	private static void writePartial(long value, int numBytes, ByteConsumer output) throws IOException {
+		for (int b = numBytes - 1; b >= 0; b--) {
+			output.accept((byte) (value >> (b * 8)));
 		}
-		return numOfBytes + 1;
+	}
+
+	/**
+	 * Fetch the key size (including the stored byte length) from a ByteBuffer containing the serialized bytes.
+	 *
+	 * Note: This method will update the position of the provided byteBuffer.
+	 *
+	 * @param byteBuffer the ByteBuffer to fetch data from.
+	 * @return the number of bytes the key occupies (including the byte for the length field).
+	 */
+	/* package */ static int deserializeKeySize(ByteBuffer byteBuffer) {
+		byte packedLength = byteBuffer.get();
+		return 1 + unpackLowerLength(packedLength) + unpackUpperLength(packedLength);
+	}
+
+	/**
+	 * Serializes the instance into a stream of bytes and write to the provided output.
+	 *
+	 * @param output  provides a function that is called to write an output byte.
+	 * @return the number of bytes written out.
+	 * @throws IOException if an error is encountered while trying to write to output.
+	 */
+	/* package */ int serializeTo(ByteConsumer output) throws IOException {
+		int entityLen = computeNonZeroBytes(entityNum);
+		int tokenSerialLen = computeNonZeroBytes(tokenSerial);
+
+		// packed format: nnnnssss
+		// - nnnn contains bits representing the entity length
+		// - ssss contains bits representing the token serial length
+		byte packedLengths = packLengths(entityLen, tokenSerialLen);
+
+		output.accept(packedLengths);
+		writePartial(entityNum, entityLen, output);
+		writePartial(tokenSerial, tokenSerialLen, output);
+
+		return entityLen + tokenSerialLen + 1;
 	}
 
 	@Override
@@ -87,34 +150,42 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 		serializeTo(outputStream::write);
 	}
 
-	/* package */ static interface ByteSupplier {
+	private interface ByteSupplier {
 		byte get() throws IOException;
 	}
 
-	/* package */ static long deserializeFrom(ByteSupplier input, int dataVersion) throws IOException {
-		assert dataVersion == CURRENT_VERSION : "dataVersion=" + dataVersion + " != getVersion()=" + CURRENT_VERSION;
-		byte numOfBytes = input.get();
+	private static long decodeVariableField(ByteSupplier input, int numBytes) throws IOException {
 		long value = 0;
-		if (numOfBytes >= 8) value |= ((long) input.get() & 255) << 56;
-		if (numOfBytes >= 7) value |= ((long) input.get() & 255) << 48;
-		if (numOfBytes >= 6) value |= ((long) input.get() & 255) << 40;
-		if (numOfBytes >= 5) value |= ((long) input.get() & 255) << 32;
-		if (numOfBytes >= 4) value |= ((long) input.get() & 255) << 24;
-		if (numOfBytes >= 3) value |= ((long) input.get() & 255) << 16;
-		if (numOfBytes >= 2) value |= ((long) input.get() & 255) << 8;
-		if (numOfBytes >= 1) value |= ((long) input.get() & 255);
+		if (numBytes >= 8) value |= ((long) input.get() & 255) << 56;
+		if (numBytes >= 7) value |= ((long) input.get() & 255) << 48;
+		if (numBytes >= 6) value |= ((long) input.get() & 255) << 40;
+		if (numBytes >= 5) value |= ((long) input.get() & 255) << 32;
+		if (numBytes >= 4) value |= ((long) input.get() & 255) << 24;
+		if (numBytes >= 3) value |= ((long) input.get() & 255) << 16;
+		if (numBytes >= 2) value |= ((long) input.get() & 255) << 8;
+		if (numBytes >= 1) value |= ((long) input.get() & 255);
 		return value;
+	}
+
+	private void deserializeFrom(ByteSupplier input, int dataVersion) throws IOException {
+		assert dataVersion == CURRENT_VERSION : "dataVersion=" + dataVersion + " != getVersion()=" + CURRENT_VERSION;
+		byte packedLengths = input.get();
+		int numEntityBytes = unpackUpperLength(packedLengths);
+		int numSerialBytes = unpackLowerLength(packedLengths);
+		long entityNum = decodeVariableField(input, numEntityBytes);
+		long tokenSerial = decodeVariableField(input, numSerialBytes);
+		setTokenId(entityNum, tokenSerial);
 	}
 
 	@Override
 	public void deserialize(ByteBuffer byteBuffer, int dataVersion) throws IOException {
-		setTokenNum(deserializeFrom(byteBuffer::get, dataVersion));
+		deserializeFrom(byteBuffer::get, dataVersion);
 	}
 
 
 	@Override
 	public void deserialize(SerializableDataInputStream inputStream, int dataVersion) throws IOException {
-		setTokenNum(deserializeFrom(inputStream::readByte, dataVersion));
+		deserializeFrom(inputStream::readByte, dataVersion);
 	}
 
 	@Override
@@ -135,7 +206,9 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 	@Override
 	public boolean equals(Object obj) {
 		if (obj != null && obj instanceof UniqueTokenKey) {
-			return ((UniqueTokenKey) obj).tokenNum == tokenNum;
+			UniqueTokenKey other = (UniqueTokenKey) obj;
+			return this.entityNum == other.entityNum
+					&& this.tokenSerial == other.tokenSerial;
 		}
 		return false;
 	}
@@ -147,6 +220,9 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 
 	@Override
 	public String toString() {
-		return "UniqueTokenKey{tokenNum=" + tokenNum + "}";
+		return MoreObjects.toStringHelper(UniqueTokenKey.class)
+				.add("entityNum", entityNum)
+				.add("tokenSerial", tokenSerial)
+				.toString();
 	}
 }

@@ -30,6 +30,7 @@ public class UniqueTokenValue implements VirtualValue {
 
 	/** The account number field of the owner's account id. */
 	private long ownerAccountNum;
+
 	/**
 	 * The compressed creation time of the token:
 	 *  - the higher 32-bits represents an unsigned integer value containing the number of seconds since the epoch
@@ -40,7 +41,7 @@ public class UniqueTokenValue implements VirtualValue {
 	private long packedCreationTime;
 	/** The metadata associated with the unique token, the maximum number of bytes for this field is 100 bytes. */
 	private byte[] metadata = new byte[0];
-	/** Whether this instance is immutable (e.g. from fast copy operation). */
+	/** Whether this instance is immutable (e.g., the ownerAccountNum field may only be mutated when this is false). */
 	private boolean isImmutable = false;
 
 	public UniqueTokenValue() {}
@@ -58,6 +59,7 @@ public class UniqueTokenValue implements VirtualValue {
 		ownerAccountNum = other.ownerAccountNum;
 		packedCreationTime = other.packedCreationTime;
 		metadata = other.metadata;
+		// Do not copy over the isImmutable field.
 	}
 
 	/**
@@ -69,6 +71,8 @@ public class UniqueTokenValue implements VirtualValue {
 
 	@Override
 	public VirtualValue copy() {
+		// Make parent immutable as defined by the FastCopyable contract.
+		this.isImmutable = true;
 		return new UniqueTokenValue(this);
 	}
 
@@ -174,8 +178,8 @@ public class UniqueTokenValue implements VirtualValue {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(MerkleUniqueToken.class)
-				.add("owner", EntityId.fromAccountNum(ownerAccountNum).toAbbrevString())
+		return MoreObjects.toStringHelper(UniqueTokenValue.class)
+				.add("owner", EntityId.fromNum(ownerAccountNum).toAbbrevString())
 				.add("creationTime", Instant.ofEpochSecond(
 						unsignedHighOrder32From(packedCreationTime),
 						signedLowOrder32From(packedCreationTime)))

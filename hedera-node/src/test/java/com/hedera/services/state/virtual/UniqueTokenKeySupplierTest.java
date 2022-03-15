@@ -1,6 +1,12 @@
 package com.hedera.services.state.virtual;
 
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -24,5 +30,19 @@ public class UniqueTokenKeySupplierTest {
 	@Test
 	public void checkCurrentVersion_isExpected() {
 		assertThat(new UniqueTokenKeySupplier().getVersion()).isEqualTo(1);
+	}
+
+
+	@Test
+	public void noopFunctions_forTestCoverage() throws IOException {
+		UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();
+		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+		SerializableDataOutputStream dataOutputStream = new SerializableDataOutputStream(outputStream);
+		supplier.serialize(dataOutputStream);
+		assertThat(outputStream.toByteArray()).isEmpty();
+
+		SerializableDataInputStream dataInputStream = new SerializableDataInputStream(
+				new ByteArrayInputStream(outputStream.toByteArray()));
+		supplier.deserialize(dataInputStream, 1);
 	}
 }

@@ -23,6 +23,7 @@ package com.hedera.services.state.submerkle;
 import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -92,14 +93,17 @@ public class EntityId implements SelfSerializable {
 	}
 
 	/**
-	 * Builds an entity id from just the account number.
+	 * Builds an entity id from just the entity number.
 	 *
-	 * @param accountNum
-	 * 		the account number of the entity id.
-	 * @return the equivalent entity id using the default shard and realm.
+	 * @param num
+	 * 		the number of the entity id.
+	 * @return the equivalent entity id using the node's shard and realm.
 	 */
-	public static EntityId fromAccountNum(long accountNum) {
-		return new EntityId(DEFAULT_SHARD, DEFAULT_REALM, accountNum);
+	public static EntityId fromNum(long num) {
+		return new EntityId(
+				StaticPropertiesHolder.STATIC_PROPERTIES.getShard(),
+				StaticPropertiesHolder.STATIC_PROPERTIES.getRealm(),
+				num);
 	}
 
 	/* --- SelfSerializable --- */
