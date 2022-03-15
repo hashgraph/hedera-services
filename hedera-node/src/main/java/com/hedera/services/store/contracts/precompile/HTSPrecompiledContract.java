@@ -1391,15 +1391,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
-			var account = accountsLedger.getImmutableRef(EntityIdUtils.accountIdFromEvmAddress(senderAddress));
+			final var accountId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
+			final var fungibleTokenAllowances = (Map<FcTokenAllowanceId, Long>) ledgers.accounts().get(accountId, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES);
 
 			final var nestedInput = input.slice(24);
 			approveOp = decoder.decodeTokenApprove(nestedInput, token, isFungible, aliasResolver);
 
 			if (isFungible) {
 				long value = 0;
-				for (Map.Entry<FcTokenAllowanceId, Long> e : account.getFungibleTokenAllowances().entrySet()) {
+				for (Map.Entry<FcTokenAllowanceId, Long> e : fungibleTokenAllowances.entrySet()) {
 					if (approveOp.spender().getAccountNum() == e.getKey().getSpenderNum().longValue()) {
 						value = e.getValue();
 					}
