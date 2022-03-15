@@ -91,9 +91,13 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
 		var contractCallTxn = txnCtx.accessor().getTxn();
+		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
+		doStateTransitionOperation(contractCallTxn, senderId);
+	}
+
+	public void doStateTransitionOperation(final TransactionBody contractCallTxn, final Id senderId) {
 		var op = contractCallTxn.getContractCall();
 		final var target = targetOf(op);
-		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
 		final var contractId = target.toId();
 
 		/* --- Load the model objects --- */
@@ -153,6 +157,10 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	@Override
 	public void preFetch(final TxnAccessor accessor) {
 		final var op = accessor.getTxn().getContractCall();
+		preFetchOperation(op);
+	}
+
+	public void preFetchOperation(final ContractCallTransactionBody op) {
 		final var id = targetOf(op);
 		final var address = id.toEvmAddress();
 

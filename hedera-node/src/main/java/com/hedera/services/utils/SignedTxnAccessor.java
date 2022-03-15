@@ -27,6 +27,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.services.txns.ethereum.EthTxData;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
@@ -66,6 +67,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAppro
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -389,6 +391,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setCryptoApproveUsageMeta();
 		} else if (function == CryptoAdjustAllowance) {
 			setCryptoAdjustUsageMeta();
+		} else if (function == EthereumTransaction) {
+			setEthTxDataMeta();
 		}
 	}
 
@@ -474,6 +478,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(txn.getCryptoAdjustAllowance(),
 				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SPAN_MAP_ACCESSOR.setCryptoAdjustMeta(this, cryptoAdjustMeta);
+	}
+
+	private void setEthTxDataMeta() {
+		var hapiTx = txn.getEthereumTransaction();
+		final var ethTxData = EthTxData.populateEthTxData(hapiTx.getEthereumData().toByteArray());
+		SPAN_MAP_ACCESSOR.setEthTxDataMeta(this, ethTxData);
 	}
 
 	private void setBaseUsageMeta() {

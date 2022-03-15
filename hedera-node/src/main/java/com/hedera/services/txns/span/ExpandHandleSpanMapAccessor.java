@@ -21,6 +21,8 @@ package com.hedera.services.txns.span;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.services.txns.ethereum.EthTxData;
+import com.hedera.services.txns.ethereum.EthTxSigs;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
@@ -34,6 +36,7 @@ import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -56,6 +59,9 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 	private static final String CRYPTO_APPROVE_META_KEY = "cryptoApproveMeta";
 	private static final String CRYPTO_ADJUST_META_KEY = "cryptoAdjustMeta";
+	private static final String ETH_TX_DATA_META_KEY = "ethTxDataMeta";
+	private static final String ETH_TX_SIGS_META_KEY = "ethTxSigsMeta";
+	private static final String ETH_TX_BODY_META_KEY = "ethTxBodyMeta";
 
 	@Inject
 	public ExpandHandleSpanMapAccessor() {
@@ -164,5 +170,29 @@ public class ExpandHandleSpanMapAccessor {
 
 	public CryptoAdjustAllowanceMeta getCryptoAdjustMeta(TxnAccessor accessor) {
 		return (CryptoAdjustAllowanceMeta) accessor.getSpanMap().get(CRYPTO_ADJUST_META_KEY);
+	}
+
+	public void setEthTxDataMeta(TxnAccessor accessor, EthTxData ethTxData) {
+		accessor.getSpanMap().put(ETH_TX_DATA_META_KEY, ethTxData);
+	}
+
+	public EthTxData getEthTxDataMeta(TxnAccessor accessor) {
+		return (EthTxData) accessor.getSpanMap().get(ETH_TX_DATA_META_KEY);
+	}
+
+	public void setEthTxSigsMeta(TxnAccessor accessor, EthTxSigs ethTxSigs) {
+		accessor.getSpanMap().put(ETH_TX_SIGS_META_KEY, ethTxSigs);
+	}
+
+	public EthTxSigs getEthTxSigsMeta(TxnAccessor accessor) {
+		return (EthTxSigs) accessor.getSpanMap().get(ETH_TX_SIGS_META_KEY);
+	}
+
+	public void setEthTxBodyMeta(TxnAccessor accessor, TransactionBody txBody) {
+		accessor.getSpanMap().put(ETH_TX_BODY_META_KEY, txBody);
+	}
+
+	public TransactionBody getEthTxBodyMeta(TxnAccessor accessor) {
+		return (TransactionBody) accessor.getSpanMap().get(ETH_TX_BODY_META_KEY);
 	}
 }

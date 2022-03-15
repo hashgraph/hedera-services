@@ -325,6 +325,11 @@
 		</dependency>
 		<dependency>
 			<groupId>org.hyperledger.besu</groupId>
+			<artifactId>secp256k1</artifactId>
+			<version>${besu-native.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hyperledger.besu</groupId>
 			<artifactId>evm</artifactId>
 			<version>${besu.version}</version>
 		</dependency>

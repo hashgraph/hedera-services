@@ -64,6 +64,7 @@ import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
 import com.hedera.services.txns.crypto.CryptoLogicModule;
+import com.hedera.services.txns.ethereum.EthereumLogicModule;
 import com.hedera.services.txns.file.FileLogicModule;
 import com.hedera.services.txns.network.NetworkLogicModule;
 import com.hedera.services.txns.schedule.ScheduleLogicModule;
@@ -147,7 +148,8 @@ class UtilsConstructorTest {
 			CallLocalExecutor.class,
 			HederaOperationUtil.class,
 			GasCalculatorHederaUtil.class,
-			SerializationUtils.class
+			SerializationUtils.class,
+			EthereumLogicModule.class
 	));
 
 	@Test
