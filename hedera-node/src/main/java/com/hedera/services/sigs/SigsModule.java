@@ -23,8 +23,8 @@ package com.hedera.services.sigs;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -55,7 +55,7 @@ import static com.hedera.services.state.logic.TerminalSigStatuses.TERMINAL_SIG_S
 public interface SigsModule {
 	@Binds
 	@Singleton
-	SoliditySigsVerifier provideSoliditySigsVerifier(TxnAwareSoliditySigsVerifier txnAwareSoliditySigsVerifier);
+	EvmSigsVerifier provideSoliditySigsVerifier(TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier);
 
 	@Binds
 	@Singleton

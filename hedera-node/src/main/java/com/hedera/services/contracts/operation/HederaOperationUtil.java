@@ -22,7 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.utils.BytesComparator;
@@ -109,7 +109,7 @@ public final class HederaOperationUtil {
 	 * @return The operation result of the execution
 	 */
 	public static Operation.OperationResult addressSignatureCheckExecution(
-			final SoliditySigsVerifier sigsVerifier,
+			final EvmSigsVerifier sigsVerifier,
 			final MessageFrame frame,
 			final Address address,
 			final Supplier<Gas> supplierHaltGasCost,
@@ -134,19 +134,15 @@ public final class HederaOperationUtil {
 		// if this is a delegate call activeContract should be the recipient address
 		// otherwise it should be the contract address
 		if (isDelegateCall) {
-			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(true,
 					account.getAddress(),
 					frame.getRecipientAddress(),
-					frame.getContractAddress(),
-					frame.getRecipientAddress(),
-					updater.aliases());
+					updater.trackingLedgers());
 		} else {
-			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(false,
 					account.getAddress(),
-					frame.getRecipientAddress(),
 					frame.getContractAddress(),
-					frame.getContractAddress(),
-					updater.aliases());
+					updater.trackingLedgers());
 		}
 		if (!sigReqIsMet) {
 			return new Operation.OperationResult(

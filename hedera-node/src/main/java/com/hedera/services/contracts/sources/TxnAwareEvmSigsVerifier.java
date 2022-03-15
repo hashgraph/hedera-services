@@ -23,111 +23,99 @@ package com.hedera.services.contracts.sources;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.store.models.Id;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.merkle.map.MerkleMap;
 import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.function.BiPredicate;
-import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_SUPPLY_KEY;
 
 @Singleton
-public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
+public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 	private final ActivationTest activationTest;
 	private final TransactionContext txnCtx;
 	private final BiPredicate<JKey, TransactionSignature> cryptoValidity;
-	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
-	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
-	public TxnAwareSoliditySigsVerifier(
+	public TxnAwareEvmSigsVerifier(
 			final ActivationTest activationTest,
 			final TransactionContext txnCtx,
-			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
 			final BiPredicate<JKey, TransactionSignature> cryptoValidity
 	) {
 		this.txnCtx = txnCtx;
-		this.tokens = tokens;
-		this.accounts = accounts;
 		this.activationTest = activationTest;
 		this.cryptoValidity = cryptoValidity;
 	}
 
 	@Override
 	public boolean hasActiveKey(
-			final Address accountAddress,
-			final Address recipient,
-			final Address contract,
-			final Address activeContract,
-			final ContractAliases aliases
+			final boolean isDelegateCall,
+			@NotNull final Address accountAddress,
+			@NotNull final Address activeContract,
+			@NotNull final WorldLedgers worldLedgers
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
-		final var simpleId = Id.fromGrpcAccount(accountId);
-		final var entityNum = simpleId.asEntityNum();
-		final var account = accounts.get().get(entityNum);
-		validateTrue(account != null, INVALID_ACCOUNT_ID);
+		validateTrue(worldLedgers.accounts().exists(accountId), INVALID_ACCOUNT_ID);
 
 		if (accountAddress.equals(activeContract)) {
 			return true;
 		}
 
-		return isActiveInFrame(account.getAccountKey(), recipient, contract, activeContract, aliases);
+		final var accountKey = (JKey) worldLedgers.accounts().get(accountId, AccountProperty.KEY);
+		return accountKey != null && isActiveInFrame(accountKey, isDelegateCall,
+				activeContract,
+				worldLedgers.aliases());
 	}
 
 	@Override
 	public boolean hasActiveSupplyKey(
-			final Address tokenAddress,
-			final Address recipient,
-			final Address contract,
-			final Address activeContract,
-			final ContractAliases aliases
+			final boolean isDelegateCall,
+			@NotNull final Address tokenAddress,
+			@NotNull final Address activeContract,
+			@NotNull final WorldLedgers worldLedgers
 	) {
 		final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress);
-		final var simpleId = Id.fromGrpcToken(tokenId);
-		final var entityNum = simpleId.asEntityNum();
-		final var token = tokens.get().get(entityNum);
-		validateTrue(token != null, INVALID_TOKEN_ID);
-		validateTrue(token.hasSupplyKey(), TOKEN_HAS_NO_SUPPLY_KEY);
-		return isActiveInFrame(token.getSupplyKey(), recipient, contract, activeContract, aliases);
+		validateTrue(worldLedgers.tokens().exists(tokenId), INVALID_TOKEN_ID);
+
+		final var supplyKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.SUPPLY_KEY);
+		validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
+
+		return isActiveInFrame(supplyKey, isDelegateCall, activeContract, worldLedgers.aliases());
 	}
 
 	@Override
 	public boolean hasActiveKeyOrNoReceiverSigReq(
-			final Address target,
-			final Address recipient,
-			final Address contract,
-			final Address activeContract,
-			final ContractAliases aliases
+			final boolean isDelegateCall,
+			@NotNull final Address target,
+			@NotNull final Address activeContract,
+			@NotNull final WorldLedgers worldLedgers
 	) {
 		final var accountId = EntityIdUtils.accountIdFromEvmAddress(target);
 		if (txnCtx.activePayer().equals(accountId)) {
 			return true;
 		}
-		final var requiredKey = receiverSigKeyIfAnyOf(accountId);
+		final var requiredKey = receiverSigKeyIfAnyOf(accountId, worldLedgers);
 		return requiredKey.map(key ->
-				isActiveInFrame(key, recipient, contract, activeContract, aliases)).orElse(true);
+				isActiveInFrame(key, isDelegateCall, activeContract, worldLedgers.aliases())).orElse(true);
 	}
 
 	private boolean isActiveInFrame(
 			final JKey key,
-			final Address recipient,
-			final Address contract,
+			final boolean isDelegateCall,
 			final Address activeContract,
 			final ContractAliases aliases
 	) {
@@ -135,17 +123,14 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		return activationTest.test(
 				key,
 				pkToCryptoSigsFn,
-				validityTestFor(recipient, contract, activeContract, aliases));
+				validityTestFor(isDelegateCall, activeContract, aliases));
 	}
 
 	BiPredicate<JKey, TransactionSignature> validityTestFor(
-			final Address recipient,
-			final Address contract,
+			final boolean isDelegateCall,
 			final Address activeContract,
 			final ContractAliases aliases
 	) {
-		final var isDelegateCall = !contract.equals(recipient);
-
 		/* Note that when this observer is used directly above in isActiveInFrame(), it will be
 		 * called  with each primitive key in the top-level Hedera key of interest, along with
 		 * that key's verified cryptographic signature (if any was available in the sigMap). */
@@ -170,10 +155,14 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 		};
 	}
 
-	private Optional<JKey> receiverSigKeyIfAnyOf(final AccountID id) {
-		return Optional.ofNullable(accounts.get().get(fromAccountId(id)))
-				.filter(account -> !account.isSmartContract())
-				.filter(MerkleAccount::isReceiverSigRequired)
-				.map(MerkleAccount::getAccountKey);
+	private Optional<JKey> receiverSigKeyIfAnyOf(final AccountID id, final WorldLedgers worldLedgers) {
+		final var merkleAccount = worldLedgers.accounts() != null ?
+				Optional.ofNullable(worldLedgers.accounts().getImmutableRef(id)) :
+				Optional.empty();
+
+		return merkleAccount
+				.filter(account -> !((MerkleAccount)account).isSmartContract())
+				.filter(account -> ((MerkleAccount)account).isReceiverSigRequired())
+				.map(account -> ((MerkleAccount)account).getAccountKey());
 	}
 }
