@@ -267,12 +267,14 @@ class StateViewTest {
 				"UnfrozenToken", "UnfrozenTokenName", true, true,
 				EntityId.fromGrpcTokenId(tokenId));
 		setUpToken(token);
+		token.setKey(tokenNum);
 		token.setTokenType(TokenType.FUNGIBLE_COMMON);
 
 		nft = new MerkleToken(Long.MAX_VALUE, 100, 1,
 				"UnfrozenToken", "UnfrozenTokenName", true, true,
 				EntityId.fromGrpcTokenId(nftTokenId));
 		setUpToken(nft);
+		nft.setKey(EntityNum.fromTokenId(nftTokenId));
 		nft.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		token.setSupplyType(TokenSupplyType.FINITE);

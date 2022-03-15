@@ -52,7 +52,6 @@ public class GetAccountInfoAnswer implements AnswerService {
 	private final AliasManager aliasManager;
 	private final GlobalDynamicProperties dynamicProperties;
 
-
 	@Inject
 	public GetAccountInfoAnswer(
 			final OptionValidator optionValidator,
@@ -112,7 +111,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 	@Override
 	public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
 		Transaction paymentTxn = query.getCryptoGetInfo().getHeader().getPayment();
-		return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
+		return Optional.of(SignedTxnAccessor.uncheckedFrom(paymentTxn));
 	}
 
 	@Override

@@ -86,6 +86,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
@@ -407,7 +408,7 @@ public class StateView {
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(
 			final AccountID id,
 			final AliasManager aliasManager,
-                        final int maxTokensForAccountInfo
+			final int maxTokensForAccountInfo
 	) {
 		final var accountEntityNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
@@ -545,7 +546,11 @@ public class StateView {
 		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
-	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id, final int maxTokensPerAccountInfo) {
+	static List<TokenRelationship> tokenRels(
+			final StateView view,
+			final EntityNum id,
+			final int maxTokensPerAccountInfo
+	) {
 		final var account = view.accounts().get(id);
 		return getAssociatedTokenRels(view.tokenAssociations(), account, view.tokens(), maxTokensPerAccountInfo);
 	}
@@ -566,12 +571,22 @@ public class StateView {
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
 			final MerkleAccount account,
 			final MerkleMap<EntityNum, MerkleToken> tokens,
-			final int maxTokensPerAccountInfo) {
+			final int maxTokensPerAccountInfo
+	) {
 		final List<TokenRelationship> listOfAssociatedTokens = new ArrayList<>();
 		var startKey = account.getLastAssociation();
-
-		doBoundedIteration(allTokenAssociations, tokens, startKey, maxTokensPerAccountInfo, (tokenId, rel) ->
-				listOfAssociatedTokens.add(rel));
+		doBoundedIteration(allTokenAssociations, tokens, startKey, maxTokensPerAccountInfo, (token, rel) -> {
+			final var grpcRel = new RawTokenRelationship(
+					rel.getBalance(),
+					STATIC_PROPERTIES.getShard(),
+					STATIC_PROPERTIES.getRealm(),
+					token.entityNum(),
+					rel.isFrozen(),
+					rel.isKycGranted(),
+					rel.isAutomaticAssociation()
+			).asGrpcFor(token);
+			listOfAssociatedTokens.add(grpcRel);
+		});
 
 		return listOfAssociatedTokens;
 	}
@@ -595,40 +610,41 @@ public class StateView {
 		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
 		final var startKey = account.getLastAssociation();
 
-		doBoundedIteration(allTokenAssociations, null, startKey, maxTokensPerAccountInfo, (tokenId, rel) ->
-				listOfAssociatedTokens.add(tokenId));
+		doBoundedIteration(allTokenAssociations, null, startKey, maxTokensPerAccountInfo, (token, rel) ->
+				listOfAssociatedTokens.add(token.grpcId()));
 
 		return listOfAssociatedTokens;
 	}
 
-	private static void doBoundedIteration(
+	public static void doBoundedIteration(
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
+			final MerkleMap<EntityNum, MerkleToken> tokens,
+			final MerkleAccount account,
+			final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor
+	) {
+		final var maxRels = account.getNumAssociations();
+		final var firstRel = account.getLastAssociation();
+		doBoundedIteration(allTokenAssociations, tokens, firstRel, maxRels, visitor);
+	}
+
+	public static void doBoundedIteration(
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
 			final MerkleMap<EntityNum, MerkleToken> tokens,
 			final EntityNumPair startKey,
 			final int maxRelsToVisit,
-			final BiConsumer<TokenID, TokenRelationship> visitor
+			final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor
 	) {
-		TokenRelationship relToAdd = TokenRelationship.getDefaultInstance();
-		var currKey = startKey;
+		var key = startKey;
 		var counter = 0;
-		while (!currKey.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRelsToVisit) {
-			final var currRel = allTokenAssociations.get(currKey);
-			final var relTokenId = currKey.getLowOrderAsTokenId();
+		while (!key.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRelsToVisit) {
+			var token = REMOVED_TOKEN;
+			final var rel = allTokenAssociations.get(key);
+			final var tokenId = key.getLowOrderAsTokenId();
 			if (tokens != null) {
-				final var tokenNum = EntityNum.fromTokenId(relTokenId);
-				final var token = tokens.getOrDefault(tokenNum, REMOVED_TOKEN);
-				relToAdd = new RawTokenRelationship(
-						currRel.getBalance(),
-						relTokenId.getShardNum(),
-						relTokenId.getRealmNum(),
-						relTokenId.getTokenNum(),
-						currRel.isFrozen(),
-						currRel.isKycGranted(),
-						currRel.isAutomaticAssociation()
-				).asGrpcFor(token);
+				token = tokens.getOrDefault(EntityNum.fromTokenId(tokenId), REMOVED_TOKEN);
 			}
-			visitor.accept(relTokenId, relToAdd);
-			currKey = currRel.nextKey();
+			visitor.accept(token, rel);
+			key = rel.nextKey();
 			counter++;
 		}
 	}

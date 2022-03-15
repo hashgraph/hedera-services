@@ -45,7 +45,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.context.primitives.StateView.getAssociatedTokenIds;
+import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
+import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
@@ -140,17 +141,18 @@ public class RenewalHelper {
 			throw new IllegalStateException("Cannot remove the last classified account, has non-zero balance!");
 		}
 
-		Pair<List<EntityId>, List<CurrencyAdjustments>> displacements = Pair.of(new ArrayList<>(), new ArrayList<>());
-		final var associatedTokens = getAssociatedTokenIds(tokenRels.get(), lastClassifiedAccount, Integer.MAX_VALUE);
-		if (!associatedTokens.isEmpty()) {
-			final var grpcId = lastClassifiedEntityId.toGrpcAccountId();
-			final var currentTokens = tokens.get();
-			for (var tId : associatedTokens) {
-				doReturnToTreasury(grpcId, tId, displacements, currentTokens);
+		final Pair<List<EntityId>, List<CurrencyAdjustments>> displacements =
+				Pair.of(new ArrayList<>(), new ArrayList<>());
+		final var curTokens = tokens.get();
+		final var curTokenRels = tokenRels.get();
+		final var grpcId = lastClassifiedEntityId.toGrpcAccountId();
+		doBoundedIteration(curTokenRels, curTokens, lastClassifiedAccount, (token, rel) -> {
+			if (token != REMOVED_TOKEN) {
+				doReturnToTreasury(grpcId, token.grpcId(), displacements, curTokens);
 			}
-		}
+		});
 
-		/* Remove the entry from auto created accounts map if there is an entry in the map */
+		// Remove the entry from auto created accounts map if there is an entry in the map
 		if (aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get())) {
 			sigImpactHistorian.markAliasChanged(lastClassifiedAccount.getAlias());
 		}
