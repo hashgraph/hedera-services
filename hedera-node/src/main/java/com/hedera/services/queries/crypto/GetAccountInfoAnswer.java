@@ -72,9 +72,14 @@ public class GetAccountInfoAnswer implements AnswerService {
 	}
 
 	@Override
-	public Response responseGiven(final Query query, final StateView view, final ResponseCodeEnum validity, final long cost) {
+	public Response responseGiven(
+			final Query query,
+			final StateView view,
+			final ResponseCodeEnum validity,
+			final long cost
+	) {
 		final CryptoGetInfoQuery op = query.getCryptoGetInfo();
-		CryptoGetInfoResponse.Builder response = CryptoGetInfoResponse.newBuilder();
+		final CryptoGetInfoResponse.Builder response = CryptoGetInfoResponse.newBuilder();
 
 		final ResponseType type = op.getHeader().getResponseType();
 		if (validity != OK) {
@@ -84,7 +89,8 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				var optionalInfo = view.infoForAccount(id, aliasManager, dynamicProperties.maxTokensPerInfoQuery());
+				var optionalInfo = view.infoForAccount(
+						id, aliasManager, dynamicProperties.maxTokensPerInfoQuery());
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());

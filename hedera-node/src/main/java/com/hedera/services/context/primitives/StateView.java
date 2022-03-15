@@ -410,15 +410,15 @@ public class StateView {
 			final AliasManager aliasManager,
 			final int maxTokensForAccountInfo
 	) {
-		final var accountEntityNum = id.getAlias().isEmpty()
+		final var accountNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
 				: aliasManager.lookupIdBy(id.getAlias());
-		final var account = accounts().get(accountEntityNum);
+		final var account = accounts().get(accountNum);
 		if (account == null) {
 			return Optional.empty();
 		}
 
-		final AccountID accountID = id.getAlias().isEmpty() ? id : accountEntityNum.toGrpcAccountId();
+		final AccountID accountID = id.getAlias().isEmpty() ? id : accountNum.toGrpcAccountId();
 		final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setLedgerId(networkInfo.ledgerId())
 				.setKey(asKeyUnchecked(account.getAccountKey()))
@@ -436,7 +436,7 @@ public class StateView {
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
-		final var tokenRels = tokenRels(this, accountEntityNum, maxTokensForAccountInfo);
+		final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -487,7 +487,7 @@ public class StateView {
 		} else {
 			info.setContractAccountID(asHexedEvmAddress(mirrorId));
 		}
-		final var tokenRels = tokenRels(this, contractId, maxTokensForAccountInfo);
+		final var tokenRels = tokenRels(this, contract, maxTokensForAccountInfo);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -548,10 +548,9 @@ public class StateView {
 
 	static List<TokenRelationship> tokenRels(
 			final StateView view,
-			final EntityNum id,
+			final MerkleAccount account,
 			final int maxTokensPerAccountInfo
 	) {
-		final var account = view.accounts().get(id);
 		return getAssociatedTokenRels(view.tokenAssociations(), account, view.tokens(), maxTokensPerAccountInfo);
 	}
 
@@ -559,61 +558,36 @@ public class StateView {
 	 * Traverse the linkedList of the token relationships associated to the account and build a list of
 	 * TokenRelationship whose size is limited by maxTokensPerAccountInfo.
 	 *
-	 * @param allTokenAssociations
+	 * @param tokenRels
 	 * 		MerkleMap of all token associations in the state.
 	 * @param account
 	 * 		MerkelAccount for which the associations have to be looked up.
-	 * @param maxTokensPerAccountInfo
+	 * @param maxRels
 	 * 		maximum number of token associations to be fetched.
 	 * @return A list of TokenRelationships associated to the account.
 	 */
 	public static List<TokenRelationship> getAssociatedTokenRels(
-			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
 			final MerkleAccount account,
 			final MerkleMap<EntityNum, MerkleToken> tokens,
-			final int maxTokensPerAccountInfo
+			final int maxRels
 	) {
-		final List<TokenRelationship> listOfAssociatedTokens = new ArrayList<>();
-		var startKey = account.getLastAssociation();
-		doBoundedIteration(allTokenAssociations, tokens, startKey, maxTokensPerAccountInfo, (token, rel) -> {
+		final List<TokenRelationship> grpcRels = new ArrayList<>();
+		var firstRel = account.getLastAssociation();
+		doBoundedIteration(tokenRels, tokens, firstRel, maxRels, (token, rel) -> {
 			final var grpcRel = new RawTokenRelationship(
 					rel.getBalance(),
 					STATIC_PROPERTIES.getShard(),
 					STATIC_PROPERTIES.getRealm(),
-					token.entityNum(),
+					rel.getRelatedTokenNum(),
 					rel.isFrozen(),
 					rel.isKycGranted(),
 					rel.isAutomaticAssociation()
 			).asGrpcFor(token);
-			listOfAssociatedTokens.add(grpcRel);
+			grpcRels.add(grpcRel);
 		});
 
-		return listOfAssociatedTokens;
-	}
-
-	/**
-	 * Traverse the linkedList of the token relationships associated to the account and build a list of
-	 * TokenIds whose size is limited by maxTokensPerAccountInfo.
-	 *
-	 * @param allTokenAssociations
-	 * 		MerkleMap of all token associations in the state.
-	 * @param account
-	 * 		MerkelAccount for which the associations have to be looked up.
-	 * @param maxTokensPerAccountInfo
-	 * 		maximum number of token associations to be fetched.
-	 * @return A list of TokenIds associated to the account.
-	 */
-	public static List<TokenID> getAssociatedTokenIds(
-			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
-			final MerkleAccount account,
-			final int maxTokensPerAccountInfo) {
-		final List<TokenID> listOfAssociatedTokens = new ArrayList<>();
-		final var startKey = account.getLastAssociation();
-
-		doBoundedIteration(allTokenAssociations, null, startKey, maxTokensPerAccountInfo, (token, rel) ->
-				listOfAssociatedTokens.add(token.grpcId()));
-
-		return listOfAssociatedTokens;
+		return grpcRels;
 	}
 
 	public static void doBoundedIteration(
@@ -649,10 +623,12 @@ public class StateView {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> emptyMm() {
 		return (MerkleMap<K, V>) EMPTY_FCM;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
 	}

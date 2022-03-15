@@ -67,7 +67,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -172,7 +172,6 @@ class GetAccountInfoAnswerTest {
 		tokenRels.put(thirdRelKey, thirdRel);
 		tokenRels.put(fourthRelKey, fourthRel);
 		tokenRels.put(missingRelKey, missingRel);
-
 
 		var tokenAllowanceKey = FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
 		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
@@ -333,20 +332,24 @@ class GetAccountInfoAnswerTest {
 				List.of(
 						new RawTokenRelationship(
 								firstBalance, 0, 0,
-								firstToken.getTokenNum(), true, true, true).asGrpcFor(token),
+								firstToken.getTokenNum(), true, true, true
+						).asGrpcFor(token),
 						new RawTokenRelationship(
 								secondBalance, 0, 0,
-								secondToken.getTokenNum(), false, false, true).asGrpcFor(token),
+								secondToken.getTokenNum(), false, false, true
+						).asGrpcFor(token),
 						new RawTokenRelationship(
 								thirdBalance, 0, 0,
-								thirdToken.getTokenNum(), true, true, false).asGrpcFor(token),
+								thirdToken.getTokenNum(), true, true, false
+						).asGrpcFor(token),
 						new RawTokenRelationship(
 								fourthBalance, 0, 0,
-								fourthToken.getTokenNum(), false, false, true).asGrpcFor(deletedToken),
+								fourthToken.getTokenNum(), false, false, true
+						).asGrpcFor(deletedToken),
 						new RawTokenRelationship(
 								missingBalance, 0, 0,
-								missingToken.getTokenNum(), false, false, false).asGrpcFor(REMOVED_TOKEN)),
-
+								missingToken.getTokenNum(), false, false, false
+						).asGrpcFor(REMOVED_TOKEN)),
 				info.getTokenRelationshipsList());
 	}
 

@@ -543,7 +543,7 @@ class StateViewTest {
 						.setBalance(321L)
 						.build());
 		mockedStatic = mockStatic(StateView.class);
-		mockedStatic.when(() -> StateView.tokenRels(subject, target, maxTokensFprAccountInfo)).thenReturn(rels);
+		mockedStatic.when(() -> StateView.tokenRels(subject, contract, maxTokensFprAccountInfo)).thenReturn(rels);
 
 		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).get();
 
@@ -578,7 +578,7 @@ class StateViewTest {
 						.setBalance(321L)
 						.build());
 		mockedStatic = mockStatic(StateView.class);
-		mockedStatic.when(() -> StateView.tokenRels(subject, target, maxTokensFprAccountInfo)).thenReturn(rels);
+		mockedStatic.when(() -> StateView.tokenRels(subject, contract, maxTokensFprAccountInfo)).thenReturn(rels);
 
 		final var info = subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).get();
 
@@ -599,8 +599,6 @@ class StateViewTest {
 
 	@Test
 	void getTokenRelationship() {
-		final var targetId = EntityNum.fromAccountId(tokenAccountId);
-		given(contracts.get(targetId)).willReturn(tokenAccount);
 		given(tokens.getOrDefault(tokenNum, REMOVED_TOKEN)).willReturn(token);
 		given(tokens.getOrDefault(EntityNum.fromTokenId(nftTokenId), REMOVED_TOKEN)).willReturn(nft);
 
@@ -624,7 +622,7 @@ class StateViewTest {
 						.setDecimals(1)
 						.build());
 
-		final var actualRels = StateView.tokenRels(subject, targetId, maxTokensFprAccountInfo);
+		final var actualRels = StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo);
 
 		assertEquals(expectedRels, actualRels);
 	}
@@ -667,7 +665,7 @@ class StateViewTest {
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 
 		mockedStatic = mockStatic(StateView.class);
-		mockedStatic.when(() -> StateView.tokenRels(subject, EntityNum.fromAccountId(tokenAccountId), maxTokensFprAccountInfo))
+		mockedStatic.when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
 				.thenReturn(Collections.emptyList());
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
@@ -698,7 +696,7 @@ class StateViewTest {
 		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
 		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
 		mockedStatic = mockStatic(StateView.class);
-		mockedStatic.when(() -> StateView.tokenRels(subject, EntityNum.fromAccountId(tokenAccountId), maxTokensFprAccountInfo))
+		mockedStatic.when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
 				.thenReturn(Collections.emptyList());
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
 

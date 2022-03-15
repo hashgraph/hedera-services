@@ -51,7 +51,6 @@ import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassificati
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.EXPIRED_ACCOUNT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 /**
@@ -197,17 +196,17 @@ public class RenewalHelper {
 			return;
 		}
 
-		final var expiredId = relKey.getHiOrderAsNum().toEntityId();
+		final var expiredId = relKey.getHighOrderAsEntityId();
 		final var treasuryId = token.treasury();
-		final var tokenId = relKey.getLoOrderAsNum().toEntityId();
 		final boolean expiredFirst = expiredId.num() < treasuryId.num();
+		final var tokenId = relKey.getLowOrderAsEntityId();
 		displacements.getLeft().add(tokenId);
 		displacements.getRight().add(new CurrencyAdjustments(
 				expiredFirst ? new long[] { -balance, +balance } : new long[] { +balance, -balance },
 				expiredFirst ? List.of(expiredId, treasuryId) : List.of(treasuryId, expiredId)
 		));
 
-		final var treasuryRel = fromAccountTokenRel(treasuryId.toGrpcAccountId(), token.grpcId());
+		final var treasuryRel = EntityNumPair.fromLongs(treasuryId.num(), tokenId.num());
 		final var mutableTreasuryRelStatus = curTokenRels.getForModify(treasuryRel);
 		final long newTreasuryBalance = mutableTreasuryRelStatus.getBalance() + balance;
 		mutableTreasuryRelStatus.setBalance(newTreasuryBalance);

@@ -57,7 +57,7 @@ import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassificati
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
 import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.adjustmentsFrom;
 import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.tokensFrom;
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;

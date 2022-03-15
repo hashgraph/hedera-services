@@ -203,6 +203,10 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		this.automaticAssociation = automaticAssociation;
 	}
 
+	public long getRelatedTokenNum() {
+		return getKey().getLowOrderAsLong();
+	}
+
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleTokenRelStatus copy() {
