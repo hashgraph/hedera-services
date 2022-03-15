@@ -45,7 +45,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT;
@@ -146,11 +145,8 @@ public class RenewalHelper {
 		final var curTokens = tokens.get();
 		final var curTokenRels = tokenRels.get();
 		final var grpcId = lastClassifiedEntityId.toGrpcAccountId();
-		doBoundedIteration(curTokenRels, curTokens, lastClassifiedAccount, (token, rel) -> {
-			if (token != REMOVED_TOKEN) {
-				doReturnToTreasury(grpcId, token.grpcId(), displacements, curTokens);
-			}
-		});
+		doBoundedIteration(curTokenRels, curTokens, lastClassifiedAccount, (token, rel) ->
+				doReturnToTreasury(grpcId, token.grpcId(), displacements, curTokens));
 
 		// Remove the entry from auto created accounts map if there is an entry in the map
 		if (aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get())) {
@@ -190,10 +186,11 @@ public class RenewalHelper {
 	}
 
 	private void doReturnToTreasury(
-			AccountID expired,
-			TokenID scopedToken,
-			Pair<List<EntityId>, List<CurrencyAdjustments>> displacements,
-			MerkleMap<EntityNum, MerkleToken> currentTokens
+			final MerkleTokenRelStatus
+			final AccountID expired,
+			final TokenID scopedToken,
+			final Pair<List<EntityId>, List<CurrencyAdjustments>> displacements,
+			final MerkleMap<EntityNum, MerkleToken> currentTokens
 	) {
 		final var currentTokenRels = tokenRels.get();
 		final var expiredRel = fromAccountTokenRel(expired, scopedToken);

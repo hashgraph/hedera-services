@@ -256,12 +256,15 @@ class RenewalHelperTest {
 	void shortCircuitsToJustRemovingRelIfZeroBalance() {
 		// setup:
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
+		final var expiredMeta = new TokenAssociationMetadata(
+				3, 0, EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
 
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
-		expiredAccountZeroBalance.setTokenAssociationMetadata(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(deletedAssociationId);
+		expiredAccountZeroBalance.setTokenAssociationMetadata(expiredMeta);
 		givenTokenPresent(deletedTokenId, deletedToken);
 		givenTokenPresent(survivedTokenId, longLivedToken);
+		final var missingTokenNum = EntityNum.fromTokenId(missingTokenGrpcId);
+		given(tokens.getOrDefault(missingTokenNum, REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
 		givenRelPresentWith(expiredKey, deletedTokenId, 0,
 				deletedAssociationId,
 				survivedAssociationId,
@@ -270,7 +273,7 @@ class RenewalHelperTest {
 				survivedAssociationId,
 				missingAssociationId,
 				deletedAssociationId);
-		givenRelPresentWith(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0,
+		givenRelPresentWith(expiredKey, missingTokenNum, 0,
 				missingAssociationId,
 				EntityNumPair.MISSING_NUM_PAIR,
 				survivedAssociationId);
