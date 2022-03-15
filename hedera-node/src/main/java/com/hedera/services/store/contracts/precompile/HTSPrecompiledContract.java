@@ -62,11 +62,13 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.AdjustAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.DissociateLogic;
@@ -278,6 +280,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Address senderAddress;
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
+	private AdjustAllowanceChecks allowanceChecks;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -295,8 +298,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final Provider<FeeCalculator> feeCalculator,
 			final StateView currentView,
 			final PrecompilePricingUtils precompilePricingUtils,
-			final UsagePricesProvider resourceCosts
-	) {
+			final UsagePricesProvider resourceCosts,
+			final AdjustAllowanceChecks allowanceChecks
+			) {
 		super("HTS", gasCalculator);
 		this.decoder = decoder;
 		this.encoder = encoder;
@@ -312,6 +316,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.currentView = currentView;
 		this.precompilePricingUtils = precompilePricingUtils;
 		this.resourceCosts = resourceCosts;
+		this.allowanceChecks = allowanceChecks;
 	}
 
 	@Override
@@ -1415,9 +1420,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public void run(final MessageFrame frame) {
 			Objects.requireNonNull(approveOp);
-
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var accountStore = createAccountStore();
+			final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
+
+			final var checkResponseCode = allowanceChecks.allowancesValidation(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
+					transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
+					transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
+					payerAccount,
+					dynamicProperties.maxAllowanceLimitPerTransaction());
+
+			if (!OK.equals(checkResponseCode)) {
+				throw new InvalidTransactionException(checkResponseCode);
+			}
 
 			/* --- Execute the transaction and capture its results --- */
 			final var adjustAllowanceLogic = adjustAllowanceLogicFactory.newAdjustAllowanceLogic(

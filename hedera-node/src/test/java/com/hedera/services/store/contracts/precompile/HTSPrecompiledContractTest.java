@@ -42,6 +42,7 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -151,6 +152,8 @@ class HTSPrecompiledContractTest {
 	private UsagePricesProvider resourceCosts;
 	@Mock
 	private HederaWorldState.WorldStateAccount worldStateAccount;
+	@Mock
+	private AdjustAllowanceChecks allowanceChecks;
 
 	private HTSPrecompiledContract subject;
 
@@ -167,7 +170,7 @@ class HTSPrecompiledContractTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, allowanceChecks);
 	}
 
 	@Test

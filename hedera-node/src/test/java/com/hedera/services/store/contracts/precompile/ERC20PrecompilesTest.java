@@ -49,6 +49,7 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
+import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
@@ -199,6 +200,8 @@ class ERC20PrecompilesTest {
     private UsagePricesProvider resourceCosts;
     @Mock
     private BlockValues blockValues;
+    @Mock
+    private AdjustAllowanceChecks allowanceChecks;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -210,7 +213,7 @@ class ERC20PrecompilesTest {
                 validator, dynamicProperties, gasCalculator,
                 recordsHistorian, sigsVerifier, decoder, encoder,
                 syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
+                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, allowanceChecks);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
