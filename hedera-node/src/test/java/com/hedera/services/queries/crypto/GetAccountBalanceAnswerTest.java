@@ -142,7 +142,7 @@ class GetAccountBalanceAnswerTest {
 		andAlsoNotDeleted.setKycKey(multiKey);
 
 		dynamicProperties = mock(GlobalDynamicProperties.class);
-		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokenPerAccountBalanceInfo);
+		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerAccountBalanceInfo);
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(aKey, aRel);

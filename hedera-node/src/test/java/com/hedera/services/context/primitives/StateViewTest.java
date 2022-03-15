@@ -954,14 +954,14 @@ class StateViewTest {
 	void viewAdaptToNullChildren() {
 		subject = new StateView(null, null, null);
 
-		assertSame(StateView.EMPTY_FCM, subject.tokens());
+		assertSame(StateView.EMPTY_MM, subject.tokens());
 		assertSame(StateView.EMPTY_VM, subject.storage());
 		assertSame(StateView.EMPTY_VM, subject.contractStorage());
-		assertSame(StateView.EMPTY_FCM, subject.uniqueTokens());
-		assertSame(StateView.EMPTY_FCM, subject.tokenAssociations());
-		assertSame(StateView.EMPTY_FCM, subject.contracts());
-		assertSame(StateView.EMPTY_FCM, subject.accounts());
-		assertSame(StateView.EMPTY_FCM, subject.topics());
+		assertSame(StateView.EMPTY_MM, subject.uniqueTokens());
+		assertSame(StateView.EMPTY_MM, subject.tokenAssociations());
+		assertSame(StateView.EMPTY_MM, subject.contracts());
+		assertSame(StateView.EMPTY_MM, subject.accounts());
+		assertSame(StateView.EMPTY_MM, subject.topics());
 		assertTrue(subject.contentsOf(target).isEmpty());
 		assertTrue(subject.infoForFile(target).isEmpty());
 		assertTrue(subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).isEmpty());

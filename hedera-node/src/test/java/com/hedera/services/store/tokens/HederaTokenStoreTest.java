@@ -304,7 +304,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(newTreasuryNft, TOKEN_BALANCE)).willReturn(1L);
 
 		properties = mock(GlobalDynamicProperties.class);
-		given(properties.maxTokensPerInfoQuery()).willReturn(MAX_TOKENS_PER_ACCOUNT);
+		given(properties.maxTokensRelsPerInfoQuery()).willReturn(MAX_TOKENS_PER_ACCOUNT);
 		given(properties.maxTokenSymbolUtf8Bytes()).willReturn(MAX_TOKEN_SYMBOL_UTF8_BYTES);
 		given(properties.maxTokenNameUtf8Bytes()).willReturn(MAX_TOKEN_NAME_UTF8_BYTES);
 		given(properties.maxCustomFeesAllowed()).willReturn(maxCustomFees);

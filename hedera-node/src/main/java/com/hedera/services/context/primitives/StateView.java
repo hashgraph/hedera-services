@@ -109,7 +109,7 @@ public class StateView {
 	public static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
 
 	static final byte[] EMPTY_BYTES = new byte[0];
-	static final MerkleMap<?, ?> EMPTY_FCM = new MerkleMap<>();
+	static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
 	static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
@@ -546,35 +546,26 @@ public class StateView {
 		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
+	/**
+	 * Returns the most recent token relationships formed by the given account in the given view
+	 * of the state, up to maximum of {@code maxRels} relationships.
+	 *
+	 * @param view
+	 * 		a view of the world state
+	 * @param account
+	 * 		the account of interest
+	 * @param maxRels
+	 * 		the maximum token relationships to return
+	 * @return a list of the account's newest token relationships up to the given limit
+	 */
 	static List<TokenRelationship> tokenRels(
 			final StateView view,
 			final MerkleAccount account,
-			final int maxTokensPerAccountInfo
-	) {
-		return getAssociatedTokenRels(view.tokenAssociations(), account, view.tokens(), maxTokensPerAccountInfo);
-	}
-
-	/**
-	 * Traverse the linkedList of the token relationships associated to the account and build a list of
-	 * TokenRelationship whose size is limited by maxTokensPerAccountInfo.
-	 *
-	 * @param tokenRels
-	 * 		MerkleMap of all token associations in the state.
-	 * @param account
-	 * 		MerkelAccount for which the associations have to be looked up.
-	 * @param maxRels
-	 * 		maximum number of token associations to be fetched.
-	 * @return A list of TokenRelationships associated to the account.
-	 */
-	public static List<TokenRelationship> getAssociatedTokenRels(
-			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
-			final MerkleAccount account,
-			final MerkleMap<EntityNum, MerkleToken> tokens,
 			final int maxRels
 	) {
 		final List<TokenRelationship> grpcRels = new ArrayList<>();
 		var firstRel = account.getLastAssociation();
-		doBoundedIteration(tokenRels, tokens, firstRel, maxRels, (token, rel) -> {
+		doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) -> {
 			final var grpcRel = new RawTokenRelationship(
 					rel.getBalance(),
 					STATIC_PROPERTIES.getShard(),
@@ -590,33 +581,60 @@ public class StateView {
 		return grpcRels;
 	}
 
+	/**
+	 * Given tokens and account-token relationships, iterates the "map-value-linked-list" of token relationships
+	 * for the given account, exposing its token relationships to the given Visitor in reverse chronological order.
+	 *
+	 * @param tokenRels
+	 * 		the source of token relationship information
+	 * @param tokens
+	 * 		the source of token information
+	 * @param account
+	 * 		the account of interest
+	 * @param visitor
+	 * 		a consumer of token and token relationship information
+	 */
 	public static void doBoundedIteration(
-			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
 			final MerkleMap<EntityNum, MerkleToken> tokens,
 			final MerkleAccount account,
 			final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor
 	) {
 		final var maxRels = account.getNumAssociations();
 		final var firstRel = account.getLastAssociation();
-		doBoundedIteration(allTokenAssociations, tokens, firstRel, maxRels, visitor);
+		doBoundedIteration(tokenRels, tokens, firstRel, maxRels, visitor);
 	}
 
+	/**
+	 * Given tokens and account-token relationships, iterates the "map-value-linked-list" of token relationships
+	 * starting from a given key exposing token relationships to the given Visitor in reverse chronological order.
+	 * Terminates when there are no more reachable relationships, or the maximum number have been visited.
+	 *
+	 * @param tokenRels
+	 * 		the source of token relationship information
+	 * @param tokens
+	 * 		the source of token information
+	 * @param firstRel
+	 * 		the first relationship of interest
+	 * @param maxRels
+	 * 		the maximum number of relationships to visit
+	 * @param visitor
+	 * 		a consumer of token and token relationship information
+	 */
 	public static void doBoundedIteration(
-			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> allTokenAssociations,
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
 			final MerkleMap<EntityNum, MerkleToken> tokens,
-			final EntityNumPair startKey,
-			final int maxRelsToVisit,
+			final EntityNumPair firstRel,
+			final int maxRels,
 			final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor
 	) {
-		var key = startKey;
+		var key = firstRel;
 		var counter = 0;
-		while (!key.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRelsToVisit) {
+		while (!key.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRels) {
 			var token = REMOVED_TOKEN;
-			final var rel = allTokenAssociations.get(key);
+			final var rel = tokenRels.get(key);
 			final var tokenId = key.getLowOrderAsTokenId();
-			if (tokens != null) {
-				token = tokens.getOrDefault(EntityNum.fromTokenId(tokenId), REMOVED_TOKEN);
-			}
+			token = tokens.getOrDefault(EntityNum.fromTokenId(tokenId), REMOVED_TOKEN);
 			visitor.accept(token, rel);
 			key = rel.nextKey();
 			counter++;
@@ -625,7 +643,7 @@ public class StateView {
 
 	@SuppressWarnings("unchecked")
 	private static <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> emptyMm() {
-		return (MerkleMap<K, V>) EMPTY_FCM;
+		return (MerkleMap<K, V>) EMPTY_MM;
 	}
 
 	@SuppressWarnings("unchecked")

@@ -109,7 +109,7 @@ class GetContractInfoAnswerTest {
 
 	@Test
 	void getsTheInfo() throws Throwable {
-		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokenPerContractInfo);
+		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
 		given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo)).willReturn(Optional.of(info));
@@ -151,7 +151,7 @@ class GetContractInfoAnswerTest {
 
 	@Test
 	void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
-		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokenPerContractInfo);
+		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
 		given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo)).willReturn(Optional.empty());

@@ -104,7 +104,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
+								.overridingProps(Map.of("tokens.maxRelsPerInfoQuery", "" + 1)),
 						newKeyNamed(aKey),
 						cryptoCreate(account)
 								.balance(ONE_HUNDRED_HBARS),
@@ -198,7 +198,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 				.then(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + infoLimit)),
+								.overridingProps(Map.of("tokens.maxRelsPerInfoQuery", "" + infoLimit)),
 						getAccountInfo(account)
 								.hasTokenRelationShipCount(infoLimit)
 								.logged()

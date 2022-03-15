@@ -42,7 +42,7 @@ public class GlobalDynamicProperties {
 	private int maxNftTransfersLen;
 	private int maxBatchSizeWipe;
 	private long maxNftQueryRange;
-	private int maxTokensPerInfoQuery;
+	private int maxTokenRelsPerInfoQuery;
 	private int maxCustomFeesAllowed;
 	private int maxTokenSymbolUtf8Bytes;
 	private int maxTokenNameUtf8Bytes;
@@ -121,7 +121,7 @@ public class GlobalDynamicProperties {
 		maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
 		maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
 		maxNftQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
-		maxTokensPerInfoQuery = properties.getIntProperty("tokens.maxPerAccount");
+		maxTokenRelsPerInfoQuery = properties.getIntProperty("tokens.maxRelsPerInfoQuery");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
@@ -190,8 +190,8 @@ public class GlobalDynamicProperties {
 		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
 	}
 
-	public int maxTokensPerInfoQuery() {
-		return maxTokensPerInfoQuery;
+	public int maxTokensRelsPerInfoQuery() {
+		return maxTokenRelsPerInfoQuery;
 	}
 
 	public int maxCustomFeesAllowed() {

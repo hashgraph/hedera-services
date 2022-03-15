@@ -47,7 +47,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public int maxTokensPerInfoQuery() {
+	public int maxTokensRelsPerInfoQuery() {
 		return 1_000;
 	}
 

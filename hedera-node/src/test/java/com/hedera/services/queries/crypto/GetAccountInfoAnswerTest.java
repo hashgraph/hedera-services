@@ -239,7 +239,7 @@ class GetAccountInfoAnswerTest {
 
 	@Test
 	void identifiesFailInvalid() throws Throwable {
-		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
+		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 		// and:
 		StateView view = mock(StateView.class);
@@ -258,7 +258,7 @@ class GetAccountInfoAnswerTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	void getsTheAccountInfo() throws Throwable {
-		given(dynamicProperties.maxTokensPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
+		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
 		children.setTokens(tokens);
 

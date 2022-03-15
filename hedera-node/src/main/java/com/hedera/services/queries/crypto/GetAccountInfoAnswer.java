@@ -90,7 +90,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 			} else {
 				AccountID id = op.getAccountID();
 				var optionalInfo = view.infoForAccount(
-						id, aliasManager, dynamicProperties.maxTokensPerInfoQuery());
+						id, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());
