@@ -1440,18 +1440,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void addImplicitCostsIn(TxnAccessor accessor) {
-			Precompile.super.addImplicitCostsIn(accessor);
-		}
-
-		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			return encoder.encodeApprove(true);
-		}
-
-		@Override
-		public Bytes getFailureResultFor(ResponseCodeEnum status) {
-			return Precompile.super.getFailureResultFor(status);
 		}
 
 		private Log getLogForFungibleAdjustAllowance(final Address logger) {
@@ -1467,7 +1457,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					.forEventSignature(APPROVAL_EVENT)
 					.forIndexedArgument(senderAddress)
 					.forIndexedArgument(asTypedEvmAddress(approveOp.spender()))
-					.forIndexedArgument(BigInteger.valueOf(approveOp.amount().longValue())).build();
+					.forIndexedArgument(BigInteger.valueOf(approveOp.serialNumber().longValue())).build();
 		}
 	}
 
