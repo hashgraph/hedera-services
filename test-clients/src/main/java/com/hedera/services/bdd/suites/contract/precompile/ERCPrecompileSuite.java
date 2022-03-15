@@ -1731,7 +1731,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
 						tokenAssociate(ACCOUNT, List.of(NON_FUNGIBLE_TOKEN)),
 						tokenAssociate(RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
-						tokenAssociate(ERC_721_CONTRACT_NAME, List.of(NON_FUNGIBLE_TOKEN))
+						tokenAssociate(ERC_721_CONTRACT_NAME, List.of(NON_FUNGIBLE_TOKEN)),
+						cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, ERC_721_CONTRACT_NAME)
+						)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
