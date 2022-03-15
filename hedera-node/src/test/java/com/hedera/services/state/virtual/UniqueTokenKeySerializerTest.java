@@ -15,7 +15,7 @@ import java.nio.ByteBuffer;
 
 import static com.google.common.truth.Truth.assertThat;
 
-public class UniqueTokenKeySerializerTest {
+class UniqueTokenKeySerializerTest {
 	private static final long EXAMPLE_SERIAL = 0xFAFF_FFFF_FFFF_FFFFL;
 
 	@Test

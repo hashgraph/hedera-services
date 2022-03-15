@@ -15,7 +15,7 @@ import java.util.List;
 
 import static com.google.common.truth.Truth.assertThat;
 
-public class UniqueTokenKeyTest {
+class UniqueTokenKeyTest {
 
 	@Test
 	void constructedKey_returnsValue() {

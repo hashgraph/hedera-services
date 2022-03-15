@@ -20,7 +20,7 @@ import java.util.List;
 
 import static com.google.common.truth.Truth.assertThat;
 
-public class UniqueTokenValueTest {
+class UniqueTokenValueTest {
 	@Test
 	void deserializeByteBuffer_withMetadata_returnsCorrespondingData() throws IOException {
 		ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[1024]);

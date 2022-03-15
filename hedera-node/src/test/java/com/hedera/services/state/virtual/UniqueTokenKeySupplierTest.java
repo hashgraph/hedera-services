@@ -6,11 +6,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
 import static com.google.common.truth.Truth.assertThat;
 
-public class UniqueTokenKeySupplierTest {
+class UniqueTokenKeySupplierTest {
 	@Test
 	void tokenSupplier_whenCalledMultipleTimes_producesNewCopies() {
 		UniqueTokenKeySupplier supplier = new UniqueTokenKeySupplier();

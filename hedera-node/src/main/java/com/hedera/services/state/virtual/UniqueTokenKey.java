@@ -156,14 +156,9 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 
 	private static long decodeVariableField(ByteSupplier input, int numBytes) throws IOException {
 		long value = 0;
-		if (numBytes >= 8) value |= ((long) input.get() & 255) << 56;
-		if (numBytes >= 7) value |= ((long) input.get() & 255) << 48;
-		if (numBytes >= 6) value |= ((long) input.get() & 255) << 40;
-		if (numBytes >= 5) value |= ((long) input.get() & 255) << 32;
-		if (numBytes >= 4) value |= ((long) input.get() & 255) << 24;
-		if (numBytes >= 3) value |= ((long) input.get() & 255) << 16;
-		if (numBytes >= 2) value |= ((long) input.get() & 255) << 8;
-		if (numBytes >= 1) value |= ((long) input.get() & 255);
+		for (int n = Math.min(8, numBytes), shift = 8 * (n - 1); n > 0; n--, shift -= 8) {
+			value |= ((long) input.get() & 0xFF) << shift;
+		}
 		return value;
 	}
 
