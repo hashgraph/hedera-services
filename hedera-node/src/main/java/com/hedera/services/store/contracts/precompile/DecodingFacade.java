@@ -151,6 +151,11 @@ public class DecodingFacade {
 	private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
 	private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create("(bytes32,bytes32)");
 
+	private static final Function SET_APPROVAL_FOR_ALL =
+			new Function("setApprovalForAll(address,bool)");
+	private static final Bytes SET_APPROVAL_FOR_ALL_SELECTOR = Bytes.wrap(SET_APPROVAL_FOR_ALL.selector());
+	private static final ABIType<Tuple> SET_APPROVAL_FOR_ALL_DECODER = TypeFactory.create("(bytes32,bool)");
+
 	private static final Function TOKEN_APPROVE_FUNCTION =
 			new Function("approve(address,uint256)", BOOL_OUTPUT);
 	private static final Bytes TOKEN_APPROVE_SELECTOR = Bytes.wrap(TOKEN_APPROVE_FUNCTION.selector());
@@ -289,6 +294,15 @@ public class DecodingFacade {
 		final var amount = (BigInteger) decodedArguments.get(1);
 
 		return new ApproveWrapper(token, spender, amount, BigInteger.ZERO, isFungible);
+	}
+
+	public SetApprovalForAllWrapper decodeSetApprovalForAll(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, SET_APPROVAL_FOR_ALL_SELECTOR, SET_APPROVAL_FOR_ALL_DECODER);
+
+		final var to = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var approved = (boolean) decodedArguments.get(1);
+
+		return new SetApprovalForAllWrapper(to, approved);
 	}
 
 	public MintWrapper decodeMint(final Bytes input) {

@@ -265,6 +265,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	//Approval(address indexed owner, address indexed spender, uint256 value)
 	//Approval(address indexed owner, address indexed approved, uint256 indexed tokenId)
 	private static final Bytes APPROVAL_EVENT = Bytes.fromHexString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925");
+	//ApprovalForAll(address indexed owner, address indexed operator, bool approved)
+	private static final Bytes APPROVAL_FOR_ALL_EVENT = Bytes.fromHexString("17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31");
 
 	private int functionId;
 	private Precompile precompile;
@@ -1478,20 +1480,56 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
-	protected class SetApprovalForAllPrecompile extends ERCReadOnlyAbstractPrecompile {
+	protected class SetApprovalForAllPrecompile implements Precompile {
+		protected TokenID tokenID;
+		private SetApprovalForAllWrapper setApprovalForAllWrapper;
+
 		public SetApprovalForAllPrecompile(final TokenID tokenID) {
-			super(tokenID);
+			this.tokenID = tokenID;
 		}
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			return super.body(input, aliasResolver);
+			final var nestedInput = input.slice(24);
+			setApprovalForAllWrapper = decoder.decodeSetApprovalForAll(nestedInput, aliasResolver);
+
+			return syntheticTxnFactory.createAdjustAllowanceForAllNFT(setApprovalForAllWrapper, tokenID);
 		}
 
 		@Override
-		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			return Bytes.EMPTY;
+		public void run(MessageFrame frame) {
+			Objects.requireNonNull(setApprovalForAllWrapper);
+
+			/* --- Build the necessary infrastructure to execute the transaction --- */
+			final var accountStore = createAccountStore();
+
+			/* --- Execute the transaction and capture its results --- */
+			final var adjustAllowanceLogic = adjustAllowanceLogicFactory.newAdjustAllowanceLogic(
+					accountStore, dynamicProperties, sideEffectsTracker);
+			adjustAllowanceLogic.adjustAllowance(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
+					transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
+					transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
+					EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
+
+
+			final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
+
+			frame.addLog(getLogForSetApprovalForAll(precompileAddress));
 		}
+
+		@Override
+		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+			return 0;
+		}
+
+		private Log getLogForSetApprovalForAll(final Address logger) {
+			return EncodingFacade.LogBuilder.logBuilder().forLogger(logger)
+					.forEventSignature(APPROVAL_FOR_ALL_EVENT)
+					.forIndexedArgument(senderAddress)
+					.forIndexedArgument(asTypedEvmAddress(setApprovalForAllWrapper.to()))
+					.forDataItem(setApprovalForAllWrapper.approved()).build();
+		}
+
 	}
 
 	protected class GetApprovedPrecompile extends ERCReadOnlyAbstractPrecompile {

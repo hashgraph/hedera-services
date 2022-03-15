@@ -123,6 +123,18 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setCryptoAdjustAllowance(builder);
 	}
 
+	public TransactionBody.Builder createAdjustAllowanceForAllNFT(final SetApprovalForAllWrapper setApprovalForAllWrapper, TokenID tokenID) {
+		final var builder = CryptoAdjustAllowanceTransactionBody.newBuilder();
+
+		builder.addNftAllowances(NftAllowance.newBuilder()
+				.setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
+				.setTokenId(tokenID)
+				.setSpender(setApprovalForAllWrapper.to())
+				.build());
+
+		return TransactionBody.newBuilder().setCryptoAdjustAllowance(builder);
+	}
+
 	/**
 	 * Given a list of {@link TokenTransferWrapper}s, where each wrapper gives changes scoped to a particular
 	 * {@link TokenID}, returns a synthetic {@code CryptoTransfer} whose {@link CryptoTransferTransactionBody}
