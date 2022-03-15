@@ -107,7 +107,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokens
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferList;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListReceiverOnly;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokensTransferListSenderOnly;
-import static com.hedera.services.store.tokens.views.UniqueTokenViewsManager.NOOP_VIEWS_MANAGER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -277,13 +276,12 @@ class TransferPrecompilesTest {
 				.willReturn(Collections.singletonList(tokensTransferList));
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
 
 		given(transferLogicFactory.newLogic(
 				accounts, nfts, tokenRels, hederaTokenStore,
 				sideEffects,
-				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
 				null,
@@ -380,13 +378,12 @@ class TransferPrecompilesTest {
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
 
 		given(transferLogicFactory.newLogic(
 				accounts, nfts, tokenRels, hederaTokenStore,
 				sideEffects,
-				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
 				null,
@@ -441,13 +438,12 @@ class TransferPrecompilesTest {
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
 
 		given(transferLogicFactory.newLogic(
 				accounts, nfts, tokenRels, hederaTokenStore,
 				sideEffects,
-				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
 				null,
@@ -503,13 +499,12 @@ class TransferPrecompilesTest {
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
 
 		given(transferLogicFactory.newLogic(
 				accounts, nfts, tokenRels, hederaTokenStore,
 				sideEffects,
-				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
 				null,
@@ -569,14 +564,13 @@ class TransferPrecompilesTest {
 
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
 		given(worldUpdater.aliases()).willReturn(aliases);
 
 		given(transferLogicFactory.newLogic(
 				accounts, nfts, tokenRels, hederaTokenStore,
 				sideEffects,
-				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
 				null,
@@ -642,13 +636,12 @@ class TransferPrecompilesTest {
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
 
 		given(transferLogicFactory.newLogic(
 				accounts, nfts, tokenRels, hederaTokenStore,
 				sideEffects,
-				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
 				null,
@@ -700,13 +693,12 @@ class TransferPrecompilesTest {
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
 		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, NOOP_VIEWS_MANAGER, dynamicProperties, tokenRels, nfts, tokens
+				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
 		)).willReturn(hederaTokenStore);
 
 		given(transferLogicFactory.newLogic(
 				accounts, nfts, tokenRels, hederaTokenStore,
 				sideEffects,
-				NOOP_VIEWS_MANAGER,
 				dynamicProperties,
 				validator,
 				null,

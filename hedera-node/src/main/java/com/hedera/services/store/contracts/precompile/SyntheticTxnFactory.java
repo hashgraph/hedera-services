@@ -117,7 +117,7 @@ public class SyntheticTxnFactory {
 					.setApprovedForAll(BoolValue.of(false))
 					.setTokenId(approveWrapper.token())
 					.setSpender(approveWrapper.spender())
-					.addSerialNumbers(approveWrapper.amount().longValue())
+					.addSerialNumbers(approveWrapper.serialNumber().longValue())
 					.build());
 		}
 		return TransactionBody.newBuilder().setCryptoAdjustAllowance(builder);

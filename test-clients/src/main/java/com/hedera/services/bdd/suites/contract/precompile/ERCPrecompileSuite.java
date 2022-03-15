@@ -1042,7 +1042,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.bytecode(ERC_20_CONTRACT_NAME)
 								.gas(300_000),
 						tokenAssociate(OWNER, FUNGIBLE_TOKEN),
-						tokenAssociate(theSpender, FUNGIBLE_TOKEN),
 						tokenAssociate(ERC_20_CONTRACT_NAME, FUNGIBLE_TOKEN)
 				).when(withOpContext(
 								(spec, opLog) ->

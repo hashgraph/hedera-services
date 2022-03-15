@@ -28,9 +28,6 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.annotations.NftsByOwner;
-import com.hedera.services.state.annotations.NftsByType;
-import com.hedera.services.state.annotations.TreasuryNftsByType;
 import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.exports.AccountsExporter;
@@ -64,7 +61,6 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqTokenViewFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.JvmSystemExits;
@@ -80,7 +76,6 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.NotificationFactory;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
-import com.swirlds.fchashmap.FCOneToManyRelation;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -195,16 +190,10 @@ public interface StateModule {
 	static StateView provideCurrentView(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
-			UniqTokenViewFactory uniqTokenViewFactory,
 			@WorkingState StateAccessor workingState,
 			NetworkInfo networkInfo
 	) {
-		return new StateView(
-				tokenStore,
-				scheduleStore,
-				workingState.children(),
-				uniqTokenViewFactory,
-				networkInfo);
+		return new StateView(tokenStore, scheduleStore, workingState.children(), networkInfo);
 	}
 
 	@Provides
@@ -212,16 +201,10 @@ public interface StateModule {
 	static Supplier<StateView> provideStateViews(
 			TokenStore tokenStore,
 			ScheduleStore scheduleStore,
-			UniqTokenViewFactory uniqTokenViewFactory,
 			@WorkingState StateAccessor workingState,
 			NetworkInfo networkInfo
 	) {
-		return () -> new StateView(
-				tokenStore,
-				scheduleStore,
-				workingState.children(),
-				uniqTokenViewFactory,
-				networkInfo);
+		return () -> new StateView(tokenStore, scheduleStore, workingState.children(), networkInfo);
 	}
 
 	@Provides
@@ -285,33 +268,6 @@ public interface StateModule {
 			@WorkingState StateAccessor accessor
 	) {
 		return accessor::uniqueTokens;
-	}
-
-	@Provides
-	@Singleton
-	@NftsByType
-	static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByType(
-			@WorkingState StateAccessor accessor
-	) {
-		return accessor::uniqueTokenAssociations;
-	}
-
-	@Provides
-	@Singleton
-	@NftsByOwner
-	static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingNftsByOwner(
-			@WorkingState StateAccessor accessor
-	) {
-		return accessor::uniqueOwnershipAssociations;
-	}
-
-	@Provides
-	@Singleton
-	@TreasuryNftsByType
-	static Supplier<FCOneToManyRelation<EntityNum, Long>> provideWorkingTreasuryNftsByType(
-			@WorkingState StateAccessor accessor
-	) {
-		return accessor::uniqueOwnershipTreasuryAssociations;
 	}
 
 	@Provides

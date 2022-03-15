@@ -291,9 +291,14 @@ public class DecodingFacade {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_APPROVE_SELECTOR, TOKEN_APPROVE_DECODER);
 
 		final var spender = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
-		final var amount = (BigInteger) decodedArguments.get(1);
 
-		return new ApproveWrapper(token, spender, amount, BigInteger.ZERO, isFungible);
+		if (isFungible) {
+			final var amount = (BigInteger) decodedArguments.get(1);
+			return new ApproveWrapper(token, spender, amount, BigInteger.ZERO, BigInteger.ZERO, isFungible);
+		} else {
+			final var serialNumber = (BigInteger) decodedArguments.get(1);
+			return new ApproveWrapper(token, spender, BigInteger.ZERO, serialNumber, BigInteger.ZERO, isFungible);
+		}
 	}
 
 	public SetApprovalForAllWrapper decodeSetApprovalForAll(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
