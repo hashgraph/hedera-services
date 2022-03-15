@@ -633,8 +633,7 @@ public class StateView {
 		while (!key.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRels) {
 			var token = REMOVED_TOKEN;
 			final var rel = tokenRels.get(key);
-			final var tokenId = key.getLowOrderAsTokenId();
-			token = tokens.getOrDefault(EntityNum.fromTokenId(tokenId), REMOVED_TOKEN);
+			token = tokens.getOrDefault(key.getLowOrderAsNum(), REMOVED_TOKEN);
 			visitor.accept(token, rel);
 			key = rel.nextKey();
 			counter++;

@@ -101,8 +101,8 @@ public record EntityNumPair(long value) {
 				unsignedLowOrder32From(value));
 	}
 
-	public TokenID getLowOrderAsTokenId() {
-		return STATIC_PROPERTIES.scopedTokenWith(unsignedLowOrder32From(value));
+	public EntityNum getLowOrderAsNum() {
+		return EntityNum.fromLong(unsignedLowOrder32From(value));
 	}
 
 	@Override
