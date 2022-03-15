@@ -144,7 +144,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				getErc721TokenURIFromErc20TokenFails(),
 				getErc721OwnerOfFromErc20TokenFails(),
 				erc721TokenApprove(),
-				erc721GetApproved()
+				erc721GetApproved(),
+				erc721SetApprovalForAll()
 		);
 	}
 
@@ -1758,7 +1759,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var theSpender2 = "spender2";
 		final var allowanceTxn = "allowanceTxn";
 
-		return defaultHapiSpec("ERC_20_ALLOWANCE_RETURNS_FAILURE")
+		return defaultHapiSpec("ERC_721_GET_APPROVED")
 				.given(
 						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
 						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
@@ -1829,6 +1830,67 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
+
+	private HapiApiSpec erc721SetApprovalForAll() {
+		final var theSpender = "spender";
+		final var theSpender2 = "spender2";
+		final var allowanceTxn = "allowanceTxn";
+
+		return defaultHapiSpec("ERC_721_SET_APPROVAL_FOR_ALL")
+				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(OWNER)
+								.balance(100 * ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						cryptoCreate(theSpender),
+						cryptoCreate(theSpender2),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NON_FUNGIBLE_TOKEN)
+								.initialSupply(0)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey(MULTI_KEY)
+								.adminKey(MULTI_KEY)
+								.treasury(TOKEN_TREASURY),
+						fileCreate(ERC_721_CONTRACT_NAME),
+						updateLargeFile(OWNER, ERC_721_CONTRACT_NAME, extractByteCode(ContractResources.ERC_721_CONTRACT)),
+						contractCreate(ERC_721_CONTRACT_NAME)
+								.bytecode(ERC_721_CONTRACT_NAME)
+								.gas(300_000),
+						tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(
+								ByteString.copyFromUtf8("a")
+						)).via("nftTokenMint"),
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(
+								ByteString.copyFromUtf8("b")
+						)),
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(
+								ByteString.copyFromUtf8("c")
+						)),
+						cryptoTransfer(
+								movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L).between(TOKEN_TREASURY, OWNER)
+						)
+				).when(withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+
+												contractCall(ERC_721_CONTRACT_NAME,
+														ContractResources.ERC_721_SET_APPROVAL_FOR_ALL_CALL,
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(theSpender)), true)
+														.payingWith(OWNER)
+														.via(allowanceTxn)
+														.hasKnownStatus(SUCCESS)
+										)
+						)
+				).then(
+						getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
 
 	@Override
 	protected Logger getResultsLogger() {
