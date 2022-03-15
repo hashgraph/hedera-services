@@ -161,6 +161,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
+	private static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
 	/* Precompiles cannot change treasury accounts */
 	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
@@ -1061,6 +1062,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
+		public Bytes getFailureResultFor(ResponseCodeEnum status) {
+			return null;
+		}
+
+		@Override
 		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			return 100;
 		}
@@ -1220,11 +1226,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
 			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(),
 					tokenUriWrapper.tokenId());
-			var metaData = (byte[]) nftsLedger.get(nftId, METADATA);
+			/* if the serial num specified as input arg is not existing, we return the standard ERC error message */
+			var metaData = nftsLedger.exists(nftId) ? new String(((byte[]) nftsLedger.get(nftId, METADATA))) :
+					URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 
-			String metaDataString = new String(metaData);
-
-			return encoder.encodeTokenUri(metaDataString);
+			return encoder.encodeTokenUri(metaData);
 		}
 	}
 
@@ -1274,7 +1280,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = ledgers.tokenRels();
 			final var relationship = asTokenRel(balanceWrapper.accountId(), tokenID);
-			final var balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+
+			final var balance = tokenRelsLedger.exists(relationship) ? (long) tokenRelsLedger.get(relationship,
+					TOKEN_BALANCE) : 0L;
 
 			return encoder.encodeBalance(balance);
 		}
