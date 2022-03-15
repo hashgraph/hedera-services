@@ -100,7 +100,7 @@ public class UniqueTokenKeyTest {
 		List<Integer> hashCodes = new ArrayList<>();
 		for (long num : valuesToTest) {
 			for (long serial : valuesToTest) {
-				UniqueTokenKey key = checkSerializeAndDeserializeByteBuffer(num, serial);
+				UniqueTokenKey key = checkSerializeAndDeserializeStream(num, serial);
 				hashCodes.add(key.hashCode());
 			}
 		}
@@ -139,6 +139,7 @@ public class UniqueTokenKeyTest {
 		UniqueTokenKey key = new UniqueTokenKey(123L, 456L);
 		assertThat(key.equals(new UniqueTokenKey(123L, 456L))).isTrue();
 		assertThat(key.equals(new UniqueTokenKey(456L, 123L))).isFalse();
+		assertThat(key.equals(new UniqueTokenKey(123L, 333L))).isFalse();
 		assertThat(key.equals(new UniqueTokenKey())).isFalse();
 	}
 
