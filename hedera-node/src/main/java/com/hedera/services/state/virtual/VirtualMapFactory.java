@@ -20,7 +20,6 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.jasperdb.VirtualInternalRecordSerializer;

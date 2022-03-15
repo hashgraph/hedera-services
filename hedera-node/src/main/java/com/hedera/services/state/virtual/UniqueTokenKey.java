@@ -55,7 +55,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 	private void setTokenId(long entityNum, long tokenSerial) {
 		this.entityNum = entityNum;
 		this.tokenSerial = tokenSerial;
-		// TODO: Consider using NonCryptographicHashing.hash64(long1, long2) when made available.
+		// Consider using NonCryptographicHashing.hash64(long1, long2) when made available.
 		this.hashCode = Objects.hash(entityNum, tokenSerial);
 	}
 
@@ -67,7 +67,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 
 		// Max value here is (64 - 0)/8 = 8
 		// Min value here is ceil((64 - 63)/8) = 1
-		return (int) Math.ceil((double) (Long.SIZE - Long.numberOfLeadingZeros(value)) / 8D);
+		return (int) Math.ceil((Long.SIZE - Long.numberOfLeadingZeros(value)) / 8D);
 	}
 
 	@Override
@@ -205,8 +205,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj != null && obj instanceof UniqueTokenKey) {
-			UniqueTokenKey other = (UniqueTokenKey) obj;
+		if (obj instanceof UniqueTokenKey other) {
 			return this.entityNum == other.entityNum
 					&& this.tokenSerial == other.tokenSerial;
 		}

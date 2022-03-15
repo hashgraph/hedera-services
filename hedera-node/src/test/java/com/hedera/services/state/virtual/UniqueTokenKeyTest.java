@@ -18,14 +18,14 @@ import static com.google.common.truth.Truth.assertThat;
 public class UniqueTokenKeyTest {
 
 	@Test
-	public void constructedKey_returnsValue() {
+	void constructedKey_returnsValue() {
 		UniqueTokenKey key = new UniqueTokenKey(123L, 456L);
 		assertThat(key.getNum()).isEqualTo(123L);
 		assertThat(key.getTokenSerial()).isEqualTo(456L);
 	}
 
 	@Test
-	public void serializing_withDifferentTokenNums_yieldSmallerBufferPositionForLeadingZeros() throws IOException {
+	void serializing_withDifferentTokenNums_yieldSmallerBufferPositionForLeadingZeros() throws IOException {
 		UniqueTokenKey key1 = new UniqueTokenKey(0, 0);       // 1 byte
 		UniqueTokenKey key2 = new UniqueTokenKey(0, 0xFF);    // 2 bytes
 		UniqueTokenKey key3 = new UniqueTokenKey(0xFFFF, 0);  // 3 bytes
@@ -61,7 +61,7 @@ public class UniqueTokenKeyTest {
 	}
 
 	@Test
-	public void deserializingByteBuffer_whenCurrentVersion_restoresValueAndRegeneratesHash() throws IOException {
+	void deserializingByteBuffer_whenCurrentVersion_restoresValueAndRegeneratesHash() throws IOException {
 		List<Long> valuesToTest = List.of(0L, 0xFFL, 0xFFFFL, 0xFF_FFFFL, 0xFFFF_FFFFL, 0xFF_FFFF_FFFFL,
 				0xFFFF_FFFF_FFFFL, 0xFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL);
 		List<Integer> hashCodes = new ArrayList<>();
@@ -94,7 +94,7 @@ public class UniqueTokenKeyTest {
 	}
 
 	@Test
-	public void deserializingStream_whenCurrentVersion_restoresValueAndRegeneratesHash() throws IOException {
+	void deserializingStream_whenCurrentVersion_restoresValueAndRegeneratesHash() throws IOException {
 		List<Long> valuesToTest = List.of(0L, 0xFFL, 0xFFFFL, 0xFF_FFFFL, 0xFFFF_FFFFL, 0xFF_FFFF_FFFFL,
 				0xFFFF_FFFF_FFFFL, 0xFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL);
 		List<Integer> hashCodes = new ArrayList<>();
@@ -110,7 +110,7 @@ public class UniqueTokenKeyTest {
 	}
 
 	@Test
-	public void deserializing_withWrongVersion_throwsException() throws IOException {
+	void deserializing_withWrongVersion_throwsException() throws IOException {
 		ByteBuffer byteBuffer = serializeToByteBuffer(0xFFL, 0xFFL);
 		SerializableDataInputStream inputStream  = serializeToStream(0xFFL, 0xFFL);
 
@@ -123,19 +123,19 @@ public class UniqueTokenKeyTest {
 	}
 
 	@Test
-	public void equals_whenNull_isFalse() {
+	void equals_whenNull_isFalse() {
 		UniqueTokenKey key = new UniqueTokenKey();
 		assertThat(key.equals(null)).isFalse();
 	}
 
 	@Test
-	public void equals_whenDifferentType_isFalse() {
+	void equals_whenDifferentType_isFalse() {
 		UniqueTokenKey key = new UniqueTokenKey();
 		assertThat(key.equals(123L)).isFalse();
 	}
 
 	@Test
-	public void equals_whenSameType_matchesContentCorrectly() {
+	void equals_whenSameType_matchesContentCorrectly() {
 		UniqueTokenKey key = new UniqueTokenKey(123L, 456L);
 		assertThat(key.equals(new UniqueTokenKey(123L, 456L))).isTrue();
 		assertThat(key.equals(new UniqueTokenKey(456L, 123L))).isFalse();
@@ -144,7 +144,7 @@ public class UniqueTokenKeyTest {
 	}
 
 	@Test
-	public void comparing_comparesProperly() {
+	void comparing_comparesProperly() {
 		UniqueTokenKey key1 = new UniqueTokenKey(123L, 789L);
 		UniqueTokenKey key2 = new UniqueTokenKey(456L, 789L);
 		UniqueTokenKey key3 = new UniqueTokenKey(123L, 456L);
@@ -172,7 +172,7 @@ public class UniqueTokenKeyTest {
 	}
 
 	@Test
-	public void deserializeKeySize_withVariousPackedLengths_returnsTheCorrectLengths() {
+	void deserializeKeySize_withVariousPackedLengths_returnsTheCorrectLengths() {
 		assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0))).isEqualTo(1);
 		assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x8))).isEqualTo(9);
 		assertThat(UniqueTokenKey.deserializeKeySize(asByteBuffer(0x80))).isEqualTo(9);
@@ -181,7 +181,7 @@ public class UniqueTokenKeyTest {
 	}
 
 	@Test
-	public void getVersion_isCurrent() {
+	void getVersion_isCurrent() {
 		UniqueTokenKey key1 = new UniqueTokenKey();
 		// This will fail if the version number changes and force user to update the version number here.
 		assertThat(key1.getVersion()).isEqualTo(1);
@@ -191,14 +191,14 @@ public class UniqueTokenKeyTest {
 	}
 
 	@Test
-	public void getClassId_isExpected() {
+	void getClassId_isExpected() {
 		// Make sure the class id isn't accidentally changed.
 		UniqueTokenKey key1 = new UniqueTokenKey();
 		assertThat(key1.getClassId()).isEqualTo(0x17f77b311f6L);
 	}
 
 	@Test
-	public void toString_shouldContain_tokenValue() {
+	void toString_shouldContain_tokenValue() {
 		assertThat(new UniqueTokenKey(123L, 789L).toString()).contains("123");
 		assertThat(new UniqueTokenKey(123L, 789L).toString()).contains("789");
 		assertThat(new UniqueTokenKey(456L, 789L).toString()).contains("456");

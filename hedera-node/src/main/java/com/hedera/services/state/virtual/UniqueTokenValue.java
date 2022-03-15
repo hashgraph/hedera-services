@@ -1,7 +1,6 @@
 package com.hedera.services.state.virtual;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -15,7 +14,9 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.*;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static java.lang.Math.min;
 
 /**
@@ -190,8 +191,7 @@ public class UniqueTokenValue implements VirtualValue {
 
 	@Override
 	public boolean equals(final Object obj) {
-		if (obj != null && obj instanceof UniqueTokenValue) {
-			UniqueTokenValue other = (UniqueTokenValue) obj;
+		if (obj instanceof UniqueTokenValue other) {
 			return other.ownerAccountNum == this.ownerAccountNum
 					&& other.packedCreationTime == this.packedCreationTime
 					&& Arrays.equals(other.metadata, this.metadata);

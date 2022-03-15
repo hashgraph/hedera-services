@@ -177,7 +177,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void copiedResults_parentReleased_copyStillSame() throws IOException {
+	void copiedResults_parentReleased_copyStillSame() throws IOException {
 		ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
 		new UniqueTokenValue().serialize(encodedEmpty);
 
@@ -200,7 +200,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void asReadOnly_mutableObject_shouldMakeItImmutable() throws IOException {
+	void asReadOnly_mutableObject_shouldMakeItImmutable() throws IOException {
 		ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
 		new UniqueTokenValue().serialize(encodedEmpty);
 
@@ -224,7 +224,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void asReadOnly_immutableObject_shouldStayImmutable() {
+	void asReadOnly_immutableObject_shouldStayImmutable() {
 		UniqueTokenValue src = new UniqueTokenValue(
 				1234L,
 				new RichInstant(456, 789),
@@ -235,7 +235,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void deserializing_whenObjectImmutable_shouldThrowException() throws IOException {
+	void deserializing_whenObjectImmutable_shouldThrowException() throws IOException {
 		ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
 		new UniqueTokenValue().serialize(encodedEmpty);
 
@@ -250,7 +250,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void deserializingByteBuffer_withUnsupportedVersion_shouldThrowException() throws IOException {
+	void deserializingByteBuffer_withUnsupportedVersion_shouldThrowException() throws IOException {
 		ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
 		new UniqueTokenValue().serialize(encodedEmpty);
 		UniqueTokenValue value = new UniqueTokenValue();
@@ -259,7 +259,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void deserializingDataStream_withUnsupportedVersion_shouldThrowException() throws IOException {
+	void deserializingDataStream_withUnsupportedVersion_shouldThrowException() throws IOException {
 		ByteBuffer encodedEmpty = ByteBuffer.wrap(new byte[128]);
 		new UniqueTokenValue().serialize(encodedEmpty);
 		SerializableDataInputStream stream = new SerializableDataInputStream(
@@ -270,7 +270,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void toString_containsContents() {
+	void toString_containsContents() {
 		UniqueTokenValue value = new UniqueTokenValue(
 				1234L,
 				new RichInstant(456, 789),
@@ -281,7 +281,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void hashCode_mostlyUnique() {
+	void hashCode_mostlyUnique() {
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
 				new RichInstant(456, 789),
@@ -309,7 +309,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void hashCode_forCopies_areTheSame() {
+	void hashCode_forCopies_areTheSame() {
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
 				new RichInstant(456, 789),
@@ -331,7 +331,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void equals_whenSameDataOrCopies_matches() {
+	void equals_whenSameDataOrCopies_matches() {
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
 				new RichInstant(456, 789),
@@ -352,7 +352,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void equals_whenDifferentData_doesNotMatch() {
+	void equals_whenDifferentData_doesNotMatch() {
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
 				new RichInstant(456, 789),
@@ -385,26 +385,26 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void equals_whenDifferentTypes_doesNotMatch() {
+	void equals_whenDifferentTypes_doesNotMatch() {
 		UniqueTokenValue value = new UniqueTokenValue();
 		assertThat(value.equals(new UniqueTokenKey())).isFalse();
 	}
 
 	@Test
-	public void equals_whenNull_doesNotMatch() {
+	void equals_whenNull_doesNotMatch() {
 		UniqueTokenValue value = new UniqueTokenValue();
 		assertThat(value.equals(null)).isFalse();
 	}
 
 	// Test invariants. The below tests are designed to fail if one accidentally modifies specified constants.
 	@Test
-	public void reportedSize_isVariable() {
+	void reportedSize_isVariable() {
 		// This will fail if the size is accidentally swapped to a non-variable size.
 		assertThat(UniqueTokenValue.sizeInBytes()).isEqualTo(DataFileCommon.VARIABLE_DATA_SIZE);
 	}
 
 	@Test
-	public void checkVersion_isCurrent() {
+	void checkVersion_isCurrent() {
 		UniqueTokenValue value = new UniqueTokenValue();
 		// This will fail if the version number changes and force user to update the version number here.
 		assertThat(value.getVersion()).isEqualTo(1);
@@ -414,7 +414,7 @@ public class UniqueTokenValueTest {
 	}
 
 	@Test
-	public void getClassId_isExpected() {
+	void getClassId_isExpected() {
 		UniqueTokenValue value = new UniqueTokenValue();
 		// Make sure the class id isn't accidentally changed.
 		assertThat(value.getClassId()).isEqualTo(0xefa8762aa03ce697L);
