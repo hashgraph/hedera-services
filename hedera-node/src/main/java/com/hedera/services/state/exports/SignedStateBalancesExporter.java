@@ -60,7 +60,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 

@@ -99,13 +99,12 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			opAnswer.setBalance(account.getBalance());
 			final var maxRels = dynamicProperties.maxTokensPerInfoQuery();
 			final var firstRel = account.getLastAssociation();
-			doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) -> {
-				opAnswer.addTokenBalances(TokenBalance.newBuilder()
-								.setTokenId(token.grpcId())
-								.setDecimals(token.decimals())
-								.setBalance(rel.getBalance())
-						.build());
-			});
+			doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) ->
+					opAnswer.addTokenBalances(TokenBalance.newBuilder()
+							.setTokenId(token.grpcId())
+							.setDecimals(token.decimals())
+							.setBalance(rel.getBalance())
+							.build()));
 		}
 
 		return Response.newBuilder().setCryptogetAccountBalance(opAnswer).build();
