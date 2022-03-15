@@ -1590,8 +1590,8 @@ jobs:
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform.git;
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
-            git submodule update --init --recursive --checkout;
             git checkout -b 02132-D-fix-service-regression origin/02132-D-fix-service-regression;            
+            git submodule update --init --recursive --checkout;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
