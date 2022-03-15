@@ -172,9 +172,9 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 		byte packedLengths = input.get();
 		int numEntityBytes = unpackUpperLength(packedLengths);
 		int numSerialBytes = unpackLowerLength(packedLengths);
-		long entityNum = decodeVariableField(input, numEntityBytes);
-		long tokenSerial = decodeVariableField(input, numSerialBytes);
-		setTokenId(entityNum, tokenSerial);
+		long num = decodeVariableField(input, numEntityBytes);
+		long serial = decodeVariableField(input, numSerialBytes);
+		setTokenId(num, serial);
 	}
 
 	@Override

@@ -11,10 +11,10 @@ public class UniqueTokenValueSupplier implements SelfSerializableSupplier<Unique
     static final int CURRENT_VERSION = 1;
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {}
+    public void deserialize(SerializableDataInputStream in, int version) {}
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {}
+    public void serialize(SerializableDataOutputStream out) {}
 
     @Override
     public long getClassId() {
