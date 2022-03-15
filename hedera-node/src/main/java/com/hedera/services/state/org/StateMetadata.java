@@ -60,7 +60,9 @@ public class StateMetadata implements FastCopyable, Archivable {
 
 	@Override
 	public void release() {
-		aliases.release();
+		if (!aliases.isReleased()) {
+			aliases.release();
+		}
 	}
 
 	public ServicesApp app() {
