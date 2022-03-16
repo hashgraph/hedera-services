@@ -21,10 +21,11 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingAccountException;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -56,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -75,18 +77,21 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	private final OptionValidator validator;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final TransactionContext txnCtx;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public CryptoUpdateTransitionLogic(
 			final HederaLedger ledger,
 			final OptionValidator validator,
 			final SigImpactHistorian sigImpactHistorian,
-			final TransactionContext txnCtx
+			final TransactionContext txnCtx,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.ledger = ledger;
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.sigImpactHistorian = sigImpactHistorian;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -142,6 +147,9 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 			final long newMax = (int) changes.get(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
 			if (newMax < ledger.alreadyUsedAutomaticAssociations(target)) {
 				return EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
+			}
+			if (newMax > dynamicProperties.maxTokensPerAccount()) {
+				return REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 			}
 		}
 

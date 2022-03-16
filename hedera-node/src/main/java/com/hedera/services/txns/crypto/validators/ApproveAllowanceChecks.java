@@ -149,7 +149,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateTokenBasics(ownerAccount, spenderId, token, tokenStore);
+			validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
 			if (validity != OK) {
 				return validity;
 			}
@@ -189,7 +189,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 
-			var validity = validateTokenBasics(ownerAccount, spenderId, token, tokenStore);
+			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
 			if (validity != OK) {
 				return validity;
 			}

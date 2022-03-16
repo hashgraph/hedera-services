@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 
 public class RandomToken implements OpProvider {
 	private static final int FREEZE_KEY_INDEX = 4;
@@ -69,6 +70,8 @@ public class RandomToken implements OpProvider {
 	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
 			/* Auto-renew account might be deleted by the time our TokenCreate reaches consensus */
 			INVALID_AUTORENEW_ACCOUNT,
+			/* The randomly chosen treasury might already have tokens.maxPerAccount associated tokens */
+			TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED,
 			/* Treasury account might be deleted by the time our TokenCreate reaches consensus */
 			INVALID_TREASURY_ACCOUNT_FOR_TOKEN
 	);

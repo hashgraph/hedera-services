@@ -23,7 +23,6 @@ package com.hedera.services.txns.crypto.validators;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -31,6 +30,7 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
+import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
@@ -142,12 +142,11 @@ public interface AllowanceChecks {
 	default ResponseCodeEnum validateTokenBasics(
 			final Account ownerAccount,
 			final Id spenderId,
-			final Token token,
-			final TypedTokenStore tokenStore) {
+			final TokenID tokenId) {
 		if (ownerAccount.getId().equals(spenderId)) {
 			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
-		if (!tokenStore.hasAssociation(token, ownerAccount)) {
+		if (!ownerAccount.isAssociatedWith(Id.fromGrpcToken(tokenId))) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 		}
 		return OK;

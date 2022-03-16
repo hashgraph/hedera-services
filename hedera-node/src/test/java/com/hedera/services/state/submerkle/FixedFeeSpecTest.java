@@ -88,7 +88,7 @@ class FixedFeeSpecTest {
 				new Id(0, 0, otherDenom.num()),
 				INVALID_TOKEN_ID_IN_CUSTOM_FEES)).willReturn(token);
 		given(token.isFungibleCommon()).willReturn(true);
-		given(tokenStore.hasAssociation(token, feeCollector)).willReturn(true);
+		given(feeCollector.isAssociatedWith(otherDenom.asId())).willReturn(true);
 
 		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
 
@@ -114,7 +114,7 @@ class FixedFeeSpecTest {
 		given(tokenStore.loadTokenOrFailWith(
 				new Id(0, 0, otherDenom.num()),
 				INVALID_TOKEN_ID_IN_CUSTOM_FEES)).willReturn(token);
-		given(tokenStore.hasAssociation(token, feeCollector)).willReturn(true);
+		given(feeCollector.isAssociatedWith(otherDenom.asId())).willReturn(true);
 
 		final var otherDenomSubject = new FixedFeeSpec(123, otherDenom);
 

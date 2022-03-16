@@ -21,18 +21,15 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -579,14 +576,6 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 					amount, maxSupply));
 		}
 		totalSupply += amount;
-	}
-
-	public long entityNum() {
-		return BitPackUtils.numFromCode(number);
-	}
-
-	public TokenID grpcId() {
-		return StaticPropertiesHolder.STATIC_PROPERTIES.scopedTokenWith(entityNum());
 	}
 
 	public JKey getSupplyKey() {

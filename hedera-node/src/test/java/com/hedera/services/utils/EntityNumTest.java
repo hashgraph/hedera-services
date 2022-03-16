@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -105,7 +104,6 @@ class EntityNumTest {
 		assertEquals(123, subject.toGrpcAccountId().getAccountNum());
 		assertEquals(123, subject.toGrpcTokenId().getTokenNum());
 		assertEquals(123, subject.toGrpcScheduleId().getScheduleNum());
-		assertEquals(new EntityId(0, 0, 123), subject.toEntityId());
 		assertTrue(subject.toIdString().endsWith(".123"));
 	}
 

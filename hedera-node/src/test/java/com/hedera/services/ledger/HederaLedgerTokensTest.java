@@ -20,9 +20,10 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
-import com.hedera.services.utils.EntityNumPair;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,8 +31,9 @@ import java.util.List;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -42,13 +44,21 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.when;
 
 class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	@BeforeEach
 	private void setup() {
 		commonSetup();
 		setupWithMockLedger();
+	}
+
+	@Test
+	void delegatesToSetTokens() {
+		final var tokens = new MerkleAccountTokens();
+
+		subject.setAssociatedTokens(genesis, tokens);
+
+		verify(accountsLedger).set(genesis, TOKENS, tokens);
 	}
 
 	@Test
@@ -64,6 +74,13 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
+	void ignoresNonZeroBalanceOfDeletedToken() {
+		given(frozenToken.isDeleted()).willReturn(true);
+
+		assertTrue(subject.allTokenBalancesVanish(misc));
+	}
+
+	@Test
 	void throwsIfSubjectHasNoUsableTokenRelsLedger() {
 		subject.setTokenRelsLedger(null);
 
@@ -72,10 +89,17 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void recognizesAccountWithZeroTokenBalances() {
-		when(accountsLedger.get(deletable, TOKEN_ASSOCIATION_METADATA)).thenReturn(
-				new TokenAssociationMetadata(2, 2, EntityNumPair.MISSING_NUM_PAIR));
-
 		assertTrue(subject.allTokenBalancesVanish(deletable));
+	}
+
+	@Test
+	void refusesToAdjustWrongly() {
+		given(tokenStore.adjustBalance(misc, tokenId, 555))
+				.willReturn(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
+		final var status = subject.adjustTokenBalance(misc, tokenId, 555);
+
+		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
 	}
 
 	@Test
@@ -93,6 +117,16 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		verify(tokenStore).setAccountsLedger(accountsLedger);
 		verify(tokenStore).setHederaLedger(subject);
 		verify(creator).setLedger(subject);
+	}
+
+	@Test
+	void delegatesToGetTokens() {
+		final var tokens = new MerkleAccountTokens();
+		given(accountsLedger.get(genesis, AccountProperty.TOKENS)).willReturn(tokens);
+
+		final var actual = subject.getAssociatedTokens(genesis);
+
+		Assertions.assertSame(tokens, actual);
 	}
 
 	@Test
@@ -118,7 +152,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 		verify(tokenRelsLedger).rollback();
 		verify(nftsLedger).rollback();
-		verify(accountsLedger).undoChangesOfType(List.of(TOKEN_ASSOCIATION_METADATA, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS));
+		verify(accountsLedger).undoChangesOfType(List.of(TOKENS, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS));
 		verify(sideEffectsTracker).resetTrackedTokenChanges();
 	}
 
