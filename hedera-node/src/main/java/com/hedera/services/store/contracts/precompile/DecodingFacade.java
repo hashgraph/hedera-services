@@ -142,41 +142,60 @@ public class DecodingFacade {
 	private static final Bytes ERC_TRANSFER_FROM_SELECTOR = Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
 	private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER = TypeFactory.create("(bytes32,bytes32,uint256)");
 
+	/* --- Token Create Structs --- */
+	private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
+	private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
+
+	private static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
+	private static final String TOKEN_KEY_DECODER = "(uint256," + KEY_VALUE_DECODER + ")";
+
+	private static final String EXPIRY = "(uint32,address,uint32)";
+	private static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
+
+	private static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
+	private static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
+
+	private static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
+	private static final String FRACTIONAL_FEE_DECODER = "(int64,int64,int64,int64,bool,bytes32)";
+
+	private static final String ROYALTY_FEE = "(uint32,uint32,(uint32,address,bool,bool,address),address)";
+	private static final String ROYALTY_FEE_DECODER = "(int64,int64,(int64,bytes32,bool,bool,bytes32),bytes32)";
+
+	private static final String TOKEN_CREATE_STRUCT = "(string,string,address,string,bool,uint32,bool,"
+			+ TOKEN_KEY + "[]," + EXPIRY + ")";
+	private static final String TOKEN_CREATE_STRUCT_DECODER =
+			"(string,string,bytes32,string,bool,int64,bool," + TOKEN_KEY_DECODER + "[]," + EXPIRY_DECODER + ")";
+
 	private static final Function TOKEN_CREATE_FUNGIBLE_FUNCTION =
-			new Function("createFungibleToken((string,string,address,string,bool,uint32,bool," +
-					"(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),uint256,uint256)");
+			new Function("createFungibleToken(" + TOKEN_CREATE_STRUCT + ",uint256,uint256)");
 	private static final Bytes TOKEN_CREATE_FUNGIBLE_SELECTOR = Bytes.wrap(TOKEN_CREATE_FUNGIBLE_FUNCTION.selector());
-	private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_DECODER = TypeFactory.create("((string,string," +
-			"bytes32,string,bool,int64,bool,(uint256,(bool,bytes32,bytes,bytes,bytes32))[],(int64,bytes32,int64))," +
-			"uint256,uint256)");
+	private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_DECODER =
+			TypeFactory.create("(" + TOKEN_CREATE_STRUCT_DECODER + ",uint256,uint256)");
 
 	private static final Function TOKEN_CREATE_NON_FUNGIBLE_FUNCTION =
-			new Function("createNonFungibleToken((string,string,address,string,bool,uint32,bool," +
-					"(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)))");
+			new Function("createNonFungibleToken(" + TOKEN_CREATE_STRUCT + ")");
 	private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_SELECTOR =
 			Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_FUNCTION.selector());
-	private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_DECODER = TypeFactory.create("((string,string," +
-			"bytes32,string,bool,int64,bool,(uint256,(bool,bytes32,bytes,bytes,bytes32))[],(int64,bytes32,int64)))");
+	private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_DECODER = TypeFactory.create("(" +
+			TOKEN_CREATE_STRUCT_DECODER + ")");
 
 	private static final Function TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION =
-			new Function("createFungibleTokenWithCustomFees((string,string,address,string,bool,uint32,bool," +
-					"(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),uint256,uint256,(uint32," +
-					"address,bool,bool,address)[],(uint32,uint32,uint32,uint32,bool,address)[])");
+			new Function("createFungibleTokenWithCustomFees(" + TOKEN_CREATE_STRUCT + ",uint256,uint256," +
+					FIXED_FEE + "[]," + FRACTIONAL_FEE + "[])");
 	private static final Bytes TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR =
 			Bytes.wrap(TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION.selector());
-	private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER = TypeFactory.create("((string," +
-			"string,bytes32,string,bool,int64,bool,(uint256,(bool,bytes32,bytes,bytes,bytes32))[],(int64,bytes32," +
-			"int64)),uint256,uint256,(int64,bytes32,bool,bool,bytes32)[],(int64,int64,int64,int64,bool,bytes32)[])");
+	private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER =
+			TypeFactory.create("(" + TOKEN_CREATE_STRUCT_DECODER + ",uint256,uint256," + FIXED_FEE_DECODER + "[],"
+					+ FRACTIONAL_FEE_DECODER + "[])");
 
 	private static final Function TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION =
-			new Function("createNonFungibleTokenWithCustomFees((string,string,address,string,bool,uint32," +
-					"bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),(uint32,address," +
-					"bool,bool,address)[],(uint32,uint32,(uint32,address,bool,bool,address),address)[])");
+			new Function("createNonFungibleTokenWithCustomFees(" + TOKEN_CREATE_STRUCT + "," + FIXED_FEE + "[],"
+					+ ROYALTY_FEE + "[])");
 	private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR =
 			Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION.selector());
-	private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER = TypeFactory.create("((string," +
-			"string,bytes32,string,bool,int64,bool,(uint256,(bool,bytes32,bytes,bytes,bytes32))[],(int64,bytes32," +
-			"int64)),(int64,bytes32,bool,bool,bytes32)[],(int64,int64,(int64,bytes32,bool,bool,bytes32),bytes32)[])");
+	private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER =
+			TypeFactory.create("(" + TOKEN_CREATE_STRUCT_DECODER + "," + FIXED_FEE_DECODER + "[]," + ROYALTY_FEE_DECODER
+					+ "[])");
 
 	@Inject
 	public DecodingFacade() {
