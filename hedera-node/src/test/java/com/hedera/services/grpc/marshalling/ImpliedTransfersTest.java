@@ -79,11 +79,10 @@ class ImpliedTransfersTest {
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5, " +
 				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, maxNestedCustomFees=1, " +
 				"maxXferBalanceChanges=20, areNftsEnabled=true, isAutoCreationEnabled=true, " +
-				"tokenFeeSchedules=[CustomFeeMeta[tokenId=Id[shard=0, realm=0, num=123], treasuryId=Id[shard=2, " +
-				"realm=3, num=4], customFees=[]]]}, changes=[BalanceChange{token=Id[shard=1, realm=2, num=3], " +
-				"account=Id[shard=4, realm=5, num=6], alias=, units=7, expectedDecimals=-1}], " +
-				"tokenFeeSchedules=[CustomFeeMeta[tokenId=Id[shard=0, realm=0, num=123], treasuryId=Id[shard=2, " +
-				"realm=3, num=4], customFees=[]]], assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, " +
+				"tokenFeeSchedules=[CustomFeeMeta[tokenId=0.0.123, treasuryId=2.3.4, customFees=[]]]}, " +
+				"changes=[BalanceChange{token=1.2.3, account=4.5.6, alias=, units=7, expectedDecimals=-1}], " +
+				"tokenFeeSchedules=[CustomFeeMeta[tokenId=0.0.123, treasuryId=2.3.4, customFees=[]]], " +
+				"assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, " +
 				"realm=0, num=123}, account=EntityId{shard=0, realm=0, num=124}, units=123, effective payer " +
 				"accounts=[123]}], resolvedAliases={}, numAutoCreations=0}";
 

@@ -65,6 +65,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -125,6 +126,22 @@ class TypedTokenStoreTest {
 	}
 
 	@Test
+	void detectsRelationships() {
+		final var aNum = EntityNum.fromInt(123);
+		final var kNum = EntityNum.fromInt(234);
+		final var uNum = EntityNum.fromInt(345);
+		final var account = new Account(aNum.toId());
+		final var knownToken = new Token(kNum.toId());
+		final var unknownToken = new Token(uNum.toId());
+
+		given(tokenRels.contains(Pair.of(aNum.toGrpcAccountId(), kNum.toGrpcTokenId()))).willReturn(true);
+		given(tokenRels.contains(Pair.of(aNum.toGrpcAccountId(), uNum.toGrpcTokenId()))).willReturn(false);
+
+		assertTrue(subject.hasAssociation(knownToken, account));
+		assertFalse(subject.hasAssociation(unknownToken, account));
+	}
+
+	@Test
 	void loadPossiblyDeletedTokenRelationshipReturnsNullAsExpected() {
 		assertNull(subject.loadPossiblyMissingTokenRelationship(token, miscAccount));
 	}
@@ -140,12 +157,25 @@ class TypedTokenStoreTest {
 		assertEquals(miscTokenRel, actualTokenRel);
 	}
 
+	@Test
+	void loadsExpectedLatestRelationShipFromAccountsLastAssociatedToken() {
+		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
+		givenToken(merkleTokenId, merkleToken);
+		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
+		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
+		miscAccount.setLastAssociatedToken(miscTokenRelId);
+
+		final var actualTokenRel = subject.getLatestTokenRelationship(miscAccount);
+
+		assertEquals(miscTokenRel, actualTokenRel);
+	}
+
 	/* --- Token relationship saving --- */
 	@Test
 	void persistsExtantTokenRelAsExpected() {
 		// setup:
 		final var expectedReplacementTokenRel = new MerkleTokenRelStatus(balance * 2, !frozen, !kycGranted, automaticAssociation);
-
+		expectedReplacementTokenRel.setKey(miscTokenRelId);
 		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
 		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
 
@@ -192,10 +222,10 @@ class TypedTokenStoreTest {
 	void persistsNewTokenRelAsExpected() {
 		// setup:
 		final var expectedNewTokenRel = new MerkleTokenRelStatus(balance * 2, false, true, false);
-
+		expectedNewTokenRel.setKey(miscTokenRelId);
 		// given:
 		final var newTokenRel = new TokenRelationship(token, miscAccount);
-
+		newTokenRel.setKey(miscTokenRelId);
 		// when:
 		newTokenRel.setKycGranted(true);
 		newTokenRel.setBalance(balance * 2);
@@ -557,11 +587,17 @@ class TypedTokenStoreTest {
 
 	private void setupTokenRel() {
 		miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
+		miscTokenMerkleRel.setKey(miscTokenRelId);
+		miscTokenMerkleRel.setPrevKey(EntityNumPair.MISSING_NUM_PAIR);
+		miscTokenMerkleRel.setNextKey(EntityNumPair.MISSING_NUM_PAIR);
 		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
 		miscTokenRel.setAutomaticAssociation(automaticAssociation);
 		miscTokenRel.markAsPersisted();
+		miscTokenRel.setKey(miscTokenRelId);
+		miscTokenRel.setPrevKey(EntityNumPair.MISSING_NUM_PAIR);
+		miscTokenRel.setNextKey(EntityNumPair.MISSING_NUM_PAIR);
 	}
 
 	private final long expiry = 1_234_567L;
