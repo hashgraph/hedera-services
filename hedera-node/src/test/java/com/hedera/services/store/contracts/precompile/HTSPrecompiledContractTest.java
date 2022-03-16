@@ -94,6 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -664,6 +665,15 @@ class HTSPrecompiledContractTest {
 
 		// then
 		assertNull(result);
+	}
+
+	@Test
+	void prepareFieldsWithAliasedMessageSender() {
+		givenFrameContext();
+		given(worldUpdater.unaliased(contractAddress.toArray())).willReturn("0x000000000000000123".getBytes());
+		subject.prepareFields(messageFrame);
+
+		verify(messageFrame, times(1)).getSenderAddress();
 	}
 
 	private void givenFrameContext() {
