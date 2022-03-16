@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -132,10 +131,6 @@ public class EntityNum implements Comparable<EntityNum> {
 
 	public AccountID toGrpcAccountId() {
 		return STATIC_PROPERTIES.scopedAccountWith(numFromCode(value));
-	}
-
-	public EntityId toEntityId() {
-		return STATIC_PROPERTIES.scopedEntityIdWith(numFromCode(value));
 	}
 
 	public Id toId() {

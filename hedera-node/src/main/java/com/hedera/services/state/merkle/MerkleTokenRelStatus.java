@@ -27,7 +27,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 
@@ -37,19 +36,16 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	static final int RELEASE_090_VERSION = 1;
 	static final int RELEASE_0180_PRE_SDK_VERSION = 2;
 	static final int RELEASE_0180_VERSION = 3;
-	static final int RELEASE_0240_VERSION = 4;
-	static final int CURRENT_VERSION = RELEASE_0240_VERSION;
+
+	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
-
 
 	private long numbers;
 	private long balance;
 	private boolean frozen;
 	private boolean kycGranted;
 	private boolean automaticAssociation;
-	private long nextKey;
-	private long prevKey;
 
 	public MerkleTokenRelStatus() {
 		/* RuntimeConstructable */
@@ -81,16 +77,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		this.automaticAssociation = automaticAssociation;
 	}
 
-	private MerkleTokenRelStatus(MerkleTokenRelStatus that) {
-		this.balance = that.balance;
-		this.frozen = that.frozen;
-		this.kycGranted = that.kycGranted;
-		this.numbers = that.numbers;
-		this.automaticAssociation = that.automaticAssociation;
-		this.prevKey = that.prevKey;
-		this.nextKey = that.nextKey;
-	}
-
 	/* --- MerkleLeaf --- */
 	@Override
 	public long getClassId() {
@@ -113,10 +99,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		if (version >= RELEASE_0180_VERSION) {
 			numbers = in.readLong();
 		}
-		if (version >= RELEASE_0240_VERSION) {
-			nextKey = in.readLong();
-			prevKey = in.readLong();
-		}
 	}
 
 	@Override
@@ -126,8 +108,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		out.writeBoolean(kycGranted);
 		out.writeBoolean(automaticAssociation);
 		out.writeLong(numbers);
-		out.writeLong(nextKey);
-		out.writeLong(prevKey);
 	}
 
 	/* --- Object --- */
@@ -145,9 +125,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 				&& this.frozen == that.frozen
 				&& this.kycGranted == that.kycGranted
 				&& this.numbers == that.numbers
-				&& this.automaticAssociation == that.automaticAssociation
-				&& this.nextKey == that.nextKey
-				&& this.prevKey == that.prevKey;
+				&& this.automaticAssociation == that.automaticAssociation;
 	}
 
 	@Override
@@ -157,9 +135,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 				.append(frozen)
 				.append(kycGranted)
 				.append(automaticAssociation)
-				.append(numbers)
-				.append(nextKey)
-				.append(prevKey)
 				.toHashCode();
 	}
 
@@ -203,15 +178,11 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		this.automaticAssociation = automaticAssociation;
 	}
 
-	public long getRelatedTokenNum() {
-		return getKey().getLowOrderAsLong();
-	}
-
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleTokenRelStatus copy() {
 		setImmutable(true);
-		return new MerkleTokenRelStatus(this);
+		return new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
 	}
 
 	@Override
@@ -222,12 +193,9 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 				.add("hasKycGranted", kycGranted)
 				.add("key", numbers + " <-> " + asRelationshipLiteral(numbers))
 				.add("isAutomaticAssociation", automaticAssociation)
-				.add("nextKey", nextKey + " <-> " + asRelationshipLiteral(nextKey))
-				.add("prevKey", prevKey + " <-> " + asRelationshipLiteral(prevKey))
 				.toString();
 	}
 
-	/* --- Keyed --- */
 	@Override
 	public EntityNumPair getKey() {
 		return new EntityNumPair(numbers);
@@ -236,21 +204,5 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	@Override
 	public void setKey(EntityNumPair numbers) {
 		this.numbers = numbers.value();
-	}
-
-	public EntityNumPair prevKey() {
-		return new EntityNumPair(prevKey);
-	}
-
-	public EntityNumPair nextKey() {
-		return new EntityNumPair(nextKey);
-	}
-
-	public void setPrevKey(@NotNull final EntityNumPair prevKey) {
-		this.prevKey = prevKey.value();
-	}
-
-	public void setNextKey(@NotNull final EntityNumPair nextKey) {
-		this.nextKey = nextKey.value();
 	}
 }

@@ -101,11 +101,6 @@ public record Id(long shard, long realm, long num) {
 		return (int) perm64(perm64(perm64(shard) ^ realm) ^ num);
 	}
 
-	@Override
-	public String toString() {
-		return String.format("%d.%d.%d", shard, realm, num);
-	}
-
 	public EntityId asEntityId() {
 		return new EntityId(shard, realm, num);
 	}

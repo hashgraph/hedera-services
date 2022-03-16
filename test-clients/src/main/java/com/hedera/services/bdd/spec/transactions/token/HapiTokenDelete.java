@@ -104,7 +104,7 @@ public class HapiTokenDelete extends HapiTxnOp<HapiTokenDelete> {
 
 	@Override
 	protected void updateStateOf(HapiApiSpec spec) {
-		if (!shouldPurge || actualStatus != SUCCESS) {
+		if (actualStatus != SUCCESS || !shouldPurge) {
 			return;
 		}
 		var registry = spec.registry();

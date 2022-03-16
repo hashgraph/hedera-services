@@ -547,17 +547,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
 										relationshipWith(VANILLA_TOKEN)
 												.kyc(KycNotApplicable)
 												.freeze(FreezeNotApplicable))
-								.logged(),
-						cryptoCreate("test"),
-						tokenAssociate("test", KNOWABLE_TOKEN),
-						tokenAssociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT),
-						tokenAssociate("test", FREEZABLE_TOKEN_ON_BY_DEFAULT),
-						tokenAssociate("test", VANILLA_TOKEN),
-						getAccountInfo("test").logged(),
-						tokenDissociate("test", VANILLA_TOKEN),
-						getAccountInfo("test").logged(),
-						tokenDissociate("test", FREEZABLE_TOKEN_OFF_BY_DEFAULT).logged(),
-						getAccountInfo("test").logged()
+								.logged()
 				);
 	}
 

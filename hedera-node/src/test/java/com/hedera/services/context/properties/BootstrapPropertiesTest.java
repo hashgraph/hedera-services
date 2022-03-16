@@ -172,7 +172,7 @@ class BootstrapPropertiesTest {
 			entry("netty.tlsCrt.path", "hedera.crt"),
 			entry("netty.tlsKey.path", "hedera.key"),
 			entry("queries.blob.lookupRetries", 3),
-			entry("tokens.maxRelsPerInfoQuery", 1_000),
+			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolUtf8Bytes", 100),
 			entry("tokens.maxTokenNameUtf8Bytes", 100),
 			entry("tokens.maxCustomFeesAllowed", 10),
@@ -272,7 +272,7 @@ class BootstrapPropertiesTest {
 
 		subject.ensureProps();
 
-		assertEquals(30, subject.getProperty("tokens.maxRelsPerInfoQuery"));
+		assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
 	}
 
 	@Test

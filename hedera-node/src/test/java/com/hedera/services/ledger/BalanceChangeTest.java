@@ -55,9 +55,11 @@ class BalanceChangeTest {
 		final var tokenChange = IdUtils.tokenChange(t, a, delta);
 		final var nftChange = changingNftOwnership(t, t.asGrpcToken(), nftXfer(a, b, serialNo), payer);
 		// and:
-		final var hbarRepr = "BalanceChange{token=ℏ, account=1.2.3, alias=, units=-1234, expectedDecimals=-1}";
-		final var tokenRepr = "BalanceChange{token=1.2.3, account=1.2.3, alias=, units=-1234, expectedDecimals=-1}";
-		final var nftRepr = "BalanceChange{nft=1.2.3, serialNo=1234, from=1.2.3, to=2.3.4}";
+		final var hbarRepr = "BalanceChange{token=ℏ, account=Id[shard=1, realm=2, num=3], alias=, units=-1234, expectedDecimals=-1}";
+		final var tokenRepr = "BalanceChange{token=Id[shard=1, realm=2, num=3], account=Id[shard=1, realm=2, num=3], " +
+				"alias=, units=-1234, expectedDecimals=-1}";
+		final var nftRepr = "BalanceChange{nft=Id[shard=1, realm=2, num=3], serialNo=1234, " +
+				"from=Id[shard=1, realm=2, num=3], to=Id[shard=2, realm=3, num=4]}";
 
 		// expect:
 		assertFalse(nftChange.isApprovedAllowance());

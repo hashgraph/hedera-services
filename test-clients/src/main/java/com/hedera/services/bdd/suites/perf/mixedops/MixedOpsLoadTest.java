@@ -73,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
@@ -206,7 +207,7 @@ public class MixedOpsLoadTest extends LoadTest {
 										"hapi.throttling.ops.consensusUpdateTopic.capacityRequired", "1.0",
 										"hapi.throttling.ops.consensusGetTopicInfo.capacityRequired", "1.0",
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired", "1.0",
-										"tokens.maxRelsPerInfoQuery", "10000000")),
+										"tokens.maxPerAccount", "10000000")),
 						cryptoCreate(sender)
 								.balance(initialBalance.getAsLong())
 								.withRecharging()
@@ -258,6 +259,7 @@ public class MixedOpsLoadTest extends LoadTest {
 												TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
 												INVALID_TOKEN_ID,
 												TRANSACTION_EXPIRED,
+												TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED,
 												OK)
 										.fee(ONE_HUNDRED_HBARS)
 										.suppressStats(true)
