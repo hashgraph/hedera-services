@@ -52,7 +52,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	@Override
 	public void preview(final List<EntityChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
 		for (final var changeToCommit : changesToCommit) {
-			final var account = changeToCommit.id();
+			final var account = changeToCommit.id().getAccountNum();
 			final var merkleAccount = changeToCommit.entity();
 			final var changedProperties = changeToCommit.changes();
 
@@ -63,7 +63,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 
 	private void trackBalanceChangeIfAny(
 			final Map<AccountProperty, Object> changedProperties,
-			final AccountID account,
+			final long account,
 			final MerkleAccount merkleAccount
 	) {
 		if (changedProperties.containsKey(AccountProperty.BALANCE)) {

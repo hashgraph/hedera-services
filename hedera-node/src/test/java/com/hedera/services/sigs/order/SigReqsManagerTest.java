@@ -29,7 +29,6 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
@@ -45,7 +44,6 @@ import java.time.Instant;
 
 import static com.hedera.services.sigs.order.SigReqsManager.TOKEN_META_TRANSFORM;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -59,8 +57,6 @@ class SigReqsManagerTest {
 	private FileNumbers fileNumbers;
 	@Mock
 	private AliasManager aliasManager;
-	@Mock
-	private StateAccessor workingState;
 	@Mock
 	private SignatureWaivers signatureWaivers;
 	@Mock
@@ -92,16 +88,14 @@ class SigReqsManagerTest {
 	void setUp() {
 		subject = new SigReqsManager(
 				platform,
-				fileNumbers, aliasManager, expansionHelper,
+				fileNumbers, expansionHelper,
 				signatureWaivers, workingState, dynamicProperties);
 		given(accessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
 	}
 
 	@Test
 	void usesWorkingStateLookupIfNoSignedState() {
-		given(workingState.children()).willReturn(workingChildren);
-		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
-				.willReturn(lookup);
+		given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM)).willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
 		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
 		given(platform.getLastCompleteSwirldState())
@@ -121,9 +115,7 @@ class SigReqsManagerTest {
 
 	@Test
 	void usesWorkingStateLookupIfLastHandleTimeIsNull() {
-		given(workingState.children()).willReturn(workingChildren);
-		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
-				.willReturn(lookup);
+		given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM)).willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
 		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
 		given(platform.getLastCompleteSwirldState())
@@ -139,9 +131,7 @@ class SigReqsManagerTest {
 
 	@Test
 	void usesWorkingStateLookupIfStateVersionIsDifferent() {
-		given(workingState.children()).willReturn(workingChildren);
-		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
-				.willReturn(lookup);
+		given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM)).willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
 		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
 		given(platform.getLastCompleteSwirldState())
@@ -157,10 +147,26 @@ class SigReqsManagerTest {
 	}
 
 	@Test
+	void usesWorkingStateLookupIfStateIsUninitialized() {
+		given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM)).willReturn(lookup);
+		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
+		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
+		given(platform.getLastCompleteSwirldState())
+				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {
+				}));
+		given(firstSignedState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
+		given(firstSignedState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
+		subject.setLookupsFactory(lookupsFactory);
+		subject.setSigReqsFactory(sigReqsFactory);
+
+		subject.expandSigsInto(accessor);
+
+		verify(expansionHelper).expandIn(accessor, workingStateSigReqs, pubKeyToSigBytes);
+	}
+
+	@Test
 	void usesWorkingStateLookupIfPropertiesInsist() {
-		given(workingState.children()).willReturn(workingChildren);
-		given(lookupsFactory.from(fileNumbers, aliasManager, workingChildren, TOKEN_META_TRANSFORM))
-				.willReturn(lookup);
+		given(lookupsFactory.from(fileNumbers, workingState, TOKEN_META_TRANSFORM)).willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(workingStateSigReqs);
 		subject.setLookupsFactory(lookupsFactory);
 		subject.setSigReqsFactory(sigReqsFactory);
@@ -175,6 +181,8 @@ class SigReqsManagerTest {
 		final ArgumentCaptor<StateChildren> captor = ArgumentCaptor.forClass(StateChildren.class);
 
 		given(dynamicProperties.expandSigsFromLastSignedState()).willReturn(true);
+		given(firstSignedState.isInitialized()).willReturn(true);
+		given(nextSignedState.isInitialized()).willReturn(true);
 		given(platform.getLastCompleteSwirldState())
 				.willReturn(new AutoCloseableWrapper<>(firstSignedState, () -> {
 				}))
@@ -184,8 +192,7 @@ class SigReqsManagerTest {
 		given(nextSignedState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(firstSignedState.getTimeOfLastHandledTxn()).willReturn(lastHandleTime);
 		given(nextSignedState.getTimeOfLastHandledTxn()).willReturn(nextLastHandleTime);
-		given(lookupsFactory.from(
-				eq(fileNumbers), eq(aliasManager), captor.capture(), eq(TOKEN_META_TRANSFORM)))
+		given(lookupsFactory.from(eq(fileNumbers), captor.capture(), eq(TOKEN_META_TRANSFORM)))
 				.willReturn(lookup);
 		given(sigReqsFactory.from(lookup, signatureWaivers)).willReturn(signedStateSigReqs);
 		subject.setLookupsFactory(lookupsFactory);
@@ -203,5 +210,5 @@ class SigReqsManagerTest {
 
 	private static final Instant lastHandleTime = Instant.ofEpochSecond(1_234_567, 890);
 	private static final Instant nextLastHandleTime = lastHandleTime.plusSeconds(2);
-	private static final MutableStateChildren workingChildren = new MutableStateChildren();
+	private static final MutableStateChildren workingState = new MutableStateChildren();
 }

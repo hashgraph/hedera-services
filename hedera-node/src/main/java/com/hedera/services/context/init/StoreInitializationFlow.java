@@ -20,10 +20,9 @@ package com.hedera.services.context.init;
  * ‍
  */
 
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.StateAccessor;
-import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -45,9 +44,9 @@ public class StoreInitializationFlow {
 	private static final Logger log = LogManager.getLogger(StoreInitializationFlow.class);
 
 	private final TokenStore tokenStore;
-	private final ScheduleStore scheduleStore;
-	private final StateAccessor stateAccessor;
 	private final AliasManager aliasManager;
+	private final ScheduleStore scheduleStore;
+	private final MutableStateChildren workingState;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 	private final BackingStore<TokenID, MerkleToken> backingTokens;
 	private final BackingStore<NftId, MerkleUniqueToken> backingNfts;
@@ -58,7 +57,7 @@ public class StoreInitializationFlow {
 			final TokenStore tokenStore,
 			final ScheduleStore scheduleStore,
 			final AliasManager aliasManager,
-			final @WorkingState StateAccessor stateAccessor,
+			final MutableStateChildren workingState,
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
 			final BackingStore<TokenID, MerkleToken> backingTokens,
 			final BackingStore<NftId, MerkleUniqueToken> backingNfts,
@@ -68,7 +67,7 @@ public class StoreInitializationFlow {
 		this.scheduleStore = scheduleStore;
 		this.backingAccounts = backingAccounts;
 		this.backingTokens = backingTokens;
-		this.stateAccessor = stateAccessor;
+		this.workingState = workingState;
 		this.backingNfts = backingNfts;
 		this.backingTokenRels = backingTokenRels;
 		this.aliasManager = aliasManager;
@@ -85,7 +84,7 @@ public class StoreInitializationFlow {
 		scheduleStore.rebuildViews();
 		log.info("Store internal views rebuilt");
 
-		aliasManager.rebuildAliasesMap(stateAccessor.accounts());
+		aliasManager.rebuildAliasesMap(workingState.accounts());
 		log.info("Account aliases map rebuilt");
 	}
 }

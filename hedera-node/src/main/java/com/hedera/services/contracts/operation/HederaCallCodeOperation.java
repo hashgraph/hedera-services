@@ -22,7 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -47,13 +47,13 @@ import java.util.function.BiPredicate;
  * active, the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
 public class HederaCallCodeOperation extends CallCodeOperation {
-	private final SoliditySigsVerifier sigsVerifier;
+	private final EvmSigsVerifier sigsVerifier;
 	private final BiPredicate<Address, MessageFrame> addressValidator;
 	private final Map<String, PrecompiledContract> precompiledContractMap;
 
 	@Inject
 	public HederaCallCodeOperation(
-            final SoliditySigsVerifier sigsVerifier, 
+            final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator, 
             final BiPredicate<Address, MessageFrame> addressValidator,
 			final Map<String, PrecompiledContract> precompiledContractMap

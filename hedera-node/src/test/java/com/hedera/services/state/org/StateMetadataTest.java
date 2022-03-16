@@ -20,41 +20,68 @@ package com.hedera.services.state.org;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesApp;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.fchashmap.FCHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class StateMetadataTest {
 	@Mock
 	private ServicesApp app;
+	@Mock
+	private FCHashMap<ByteString, EntityNum> aliases;
+	@Mock
+	private FCHashMap<ByteString, EntityNum> copyAliases;
 
 	private StateMetadata subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new StateMetadata(app);
+		subject = new StateMetadata(app, aliases);
 	}
 
 	@Test
 	void copyAsExpected() {
-		// when:
+		given(aliases.copy()).willReturn(copyAliases);
+
 		final var copy = subject.copy();
 
-		// then:
 		assertSame(app, copy.app());
+		assertSame(copyAliases, copy.aliases());
 	}
 
 	@Test
-	void releaseOnRelease() {
-		assertDoesNotThrow(subject::release);
-		assertDoesNotThrow(subject::archive);
+	void releasesUnreleasedAliasesOnRelease() {
+		subject.release();
+
+		verify(aliases).release();
+	}
+
+	@Test
+	void doesntReleaseAlreadyReleasedAliasesOnRelease() {
+		given(aliases.isReleased()).willReturn(true);
+
+		subject.release();
+
+		verify(aliases, never()).release();
+	}
+
+	@Test
+	void releasesAliasesOnArchive() {
+		subject.archive();
+
+		verify(aliases).release();
 	}
 
 	@Test

@@ -20,7 +20,9 @@ package com.hedera.services.state;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.PropertySource;
@@ -28,7 +30,6 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -60,7 +61,6 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.JvmSystemExits;
@@ -87,6 +87,7 @@ import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -188,142 +189,147 @@ public interface StateModule {
 	@Provides
 	@Singleton
 	static StateView provideCurrentView(
-			TokenStore tokenStore,
-			ScheduleStore scheduleStore,
-			@WorkingState StateAccessor workingState,
-			NetworkInfo networkInfo
+			final ScheduleStore scheduleStore,
+			final MutableStateChildren workingState,
+			final NetworkInfo networkInfo
 	) {
-		return new StateView(tokenStore, scheduleStore, workingState.children(), networkInfo);
+		return new StateView(scheduleStore, workingState, networkInfo);
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<StateView> provideStateViews(
-			TokenStore tokenStore,
-			ScheduleStore scheduleStore,
-			@WorkingState StateAccessor workingState,
-			NetworkInfo networkInfo
+			final ScheduleStore scheduleStore,
+			final MutableStateChildren workingState,
+			final NetworkInfo networkInfo
 	) {
-		return () -> new StateView(tokenStore, scheduleStore, workingState.children(), networkInfo);
+		return () -> new StateView(scheduleStore, workingState, networkInfo);
 	}
 
 	@Provides
 	@Singleton
-	@WorkingState
-	static StateAccessor provideWorkingState() {
-		return new StateAccessor();
+	static MutableStateChildren provideWorkingState() {
+		return new MutableStateChildren();
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<MerkleMap<EntityNum, MerkleAccount>> provideWorkingAccounts(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return accessor::accounts;
+		return workingState::accounts;
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> provideWorkingStorage(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return accessor::storage;
+		return workingState::storage;
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<MerkleMap<EntityNum, MerkleTopic>> provideWorkingTopics(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return accessor::topics;
+		return workingState::topics;
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<MerkleMap<EntityNum, MerkleToken>> provideWorkingTokens(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return accessor::tokens;
+		return workingState::tokens;
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> provideWorkingTokenAssociations(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return accessor::tokenAssociations;
+		return workingState::tokenAssociations;
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<MerkleMap<EntityNum, MerkleSchedule>> provideWorkingSchedules(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return accessor::schedules;
+		return workingState::schedules;
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> provideWorkingNfts(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return accessor::uniqueTokens;
+		return workingState::uniqueTokens;
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<MerkleSpecialFiles> provideWorkingSpecialFiles(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return accessor::specialFiles;
+		return workingState::specialFiles;
 	}
 
 	@Provides
 	@Singleton
-	public static Supplier<VirtualMap<ContractKey, ContractValue>> provideWorkingContractStorage(
-			@WorkingState StateAccessor accessor
+	static Supplier<VirtualMap<ContractKey, ContractValue>> provideWorkingContractStorage(
+			final MutableStateChildren workingState
 	) {
-		return accessor::contractStorage;
+		return workingState::contractStorage;
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<MerkleNetworkContext> provideWorkingNetworkCtx(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return accessor::networkCtx;
+		return workingState::networkCtx;
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<AddressBook> provideWorkingAddressBook(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return accessor::addressBook;
+		return workingState::addressBook;
 	}
 
 	@Provides
 	@Singleton
 	static EntityIdSource provideWorkingEntityIdSource(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return new SeqNoEntityIdSource(() -> accessor.networkCtx().seqNo());
+		return new SeqNoEntityIdSource(() -> workingState.networkCtx().seqNo());
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<ExchangeRates> provideWorkingMidnightRates(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return () -> accessor.networkCtx().midnightRates();
+		return () -> workingState.networkCtx().midnightRates();
 	}
 
 	@Provides
 	@Singleton
 	static Supplier<SequenceNumber> provideWorkingSeqNo(
-			@WorkingState StateAccessor accessor
+			final MutableStateChildren workingState
 	) {
-		return () -> accessor.networkCtx().seqNo();
+		return () -> workingState.networkCtx().seqNo();
+	}
+
+	@Provides
+	@Singleton
+	static Supplier<Map<ByteString, EntityNum>> provideWorkingAliases(
+			final MutableStateChildren workingState
+	) {
+		return workingState::aliases;
 	}
 
 	@Provides
