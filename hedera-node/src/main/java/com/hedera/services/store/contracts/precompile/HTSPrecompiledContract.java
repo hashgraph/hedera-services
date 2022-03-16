@@ -62,7 +62,6 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -1565,13 +1564,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			validateFalse(allowances.size() > 1, FAIL_INVALID);
 
-			for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> e : allowances.entrySet()) {
-				var spender = e.getKey().getSpenderNum().toEvmAddress();
+			Address spender;
+
+			Optional<Map.Entry<FcTokenAllowanceId, FcTokenAllowance>> allowance = allowances.entrySet().stream().findFirst();
+			if (allowance.isPresent()) {
+				spender = allowance.get().getKey().getSpenderNum().toEvmAddress();
 				return encoder.encodeGetApproved(spender);
 			}
 
 			return encoder.encodeGetApproved(Address.fromHexString("0"));
 		}
+
 	}
 
 	protected class IsApprovedForAllPrecompile extends ERCReadOnlyAbstractPrecompile {

@@ -54,20 +54,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class EncodingFacade {
 	private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 	private static final String STRING_RETURN_TYPE = "(string)";
+	public static final String UINT256_RETURN_TYPE = "(uint256)";
+	public static final String BOOL_RETURN_TYPE = "(bool)";
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
-	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
-	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
-	private static final TupleType allowanceOfType = TupleType.parse("(uint256)");
-	private static final TupleType approveOfType = TupleType.parse("(bool)");
+	private static final TupleType totalSupplyType = TupleType.parse(UINT256_RETURN_TYPE);
+	private static final TupleType balanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+	private static final TupleType allowanceOfType = TupleType.parse(UINT256_RETURN_TYPE);
+	private static final TupleType approveOfType = TupleType.parse(BOOL_RETURN_TYPE);
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
 	private static final TupleType ownerOfType = TupleType.parse("(address)");
 	private static final TupleType getApprovedType = TupleType.parse("(address)");
 	private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
 	private static final TupleType tokenUriType = TupleType.parse(STRING_RETURN_TYPE);
-	private static final TupleType ercTransferType = TupleType.parse("(bool)");
-	private static final TupleType isApprovedForAllType = TupleType.parse("(bool)");
+	private static final TupleType ercTransferType = TupleType.parse(BOOL_RETURN_TYPE);
+	private static final TupleType isApprovedForAllType = TupleType.parse(BOOL_RETURN_TYPE);
 
 	@Inject
 	public EncodingFacade() {

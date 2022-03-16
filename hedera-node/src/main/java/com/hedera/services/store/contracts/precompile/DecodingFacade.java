@@ -51,6 +51,7 @@ public class DecodingFacade {
 	private static final String INT_OUTPUT = "(int)";
 	private static final String BOOL_OUTPUT = "(bool)";
 	private static final String STRING_OUTPUT = "(string)";
+	private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
 
 	private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
 	private static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
@@ -99,7 +100,7 @@ public class DecodingFacade {
 	private static final Function ASSOCIATE_TOKEN_FUNCTION =
 			new Function("associateToken(address,address)", INT_OUTPUT);
 	private static final Bytes ASSOCIATE_TOKEN_SELECTOR = Bytes.wrap(ASSOCIATE_TOKEN_FUNCTION.selector());
-	private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32)");
+	private static final ABIType<Tuple> ASSOCIATE_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
 	private static final Function DISSOCIATE_TOKENS_FUNCTION =
 			new Function("dissociateTokens(address,address[])", INT_OUTPUT);
@@ -109,7 +110,7 @@ public class DecodingFacade {
 	private static final Function DISSOCIATE_TOKEN_FUNCTION =
 			new Function("dissociateToken(address,address)", INT_OUTPUT);
 	private static final Bytes DISSOCIATE_TOKEN_SELECTOR = Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
-	private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32)");
+	private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
 	private static final Function TOKEN_URI_NFT_FUNCTION =
 			new Function("tokenURI(uint256)", STRING_OUTPUT);
@@ -139,7 +140,7 @@ public class DecodingFacade {
 	private static final Function TOKEN_ALLOWANCE_FUNCTION =
 			new Function("allowance(address,address)", INT_OUTPUT);
 	private static final Bytes TOKEN_ALLOWANCE_SELECTOR = Bytes.wrap(TOKEN_ALLOWANCE_FUNCTION.selector());
-	private static final ABIType<Tuple> TOKEN_ALLOWANCE_DECODER = TypeFactory.create("(bytes32,bytes32)");
+	private static final ABIType<Tuple> TOKEN_ALLOWANCE_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
 	private static final Function GET_APPROVED_FUNCTION =
 			new Function("getApproved(uint256)", INT_OUTPUT);
@@ -149,7 +150,7 @@ public class DecodingFacade {
 	private static final Function IS_APPROVED_FOR_ALL =
 			new Function("isApprovedForAll(address,address)");
 	private static final Bytes IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(IS_APPROVED_FOR_ALL.selector());
-	private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create("(bytes32,bytes32)");
+	private static final ABIType<Tuple> IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
 	private static final Function SET_APPROVAL_FOR_ALL =
 			new Function("setApprovalForAll(address,bool)");

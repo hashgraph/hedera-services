@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -66,7 +67,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class AdjustAllowanceLogicTest {
+class AdjustAllowanceLogicTest {
     @Mock
     private AccountStore accountStore;
     @Mock
@@ -226,11 +227,13 @@ public class AdjustAllowanceLogicTest {
 
 		givenValidTxnCtx();
 
-		var exception = assertThrows(InvalidTransactionException.class, () ->
+		Executable adjustAllowance = () ->
 				subject.adjustAllowance(op.getCryptoAllowancesList(),
-										op.getTokenAllowancesList(),
-										op.getNftAllowancesList(),
-										fromGrpcAccount(ownerId).asGrpcAccount()));
+						op.getTokenAllowancesList(),
+						op.getNftAllowancesList(),
+						fromGrpcAccount(ownerId).asGrpcAccount());
+
+		var exception = assertThrows(InvalidTransactionException.class, adjustAllowance);
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
 		assertEquals(0, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
