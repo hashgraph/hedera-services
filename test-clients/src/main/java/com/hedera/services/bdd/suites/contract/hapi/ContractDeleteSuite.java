@@ -31,7 +31,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cloneContract;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -136,7 +136,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(PAYABLE_CONSTRUCTOR),
 						contractCreate(PAYABLE_CONSTRUCTOR).balance(0L),
-						cloneContract(PAYABLE_CONSTRUCTOR, suffix).balance(1L)
+						contractCustomCreate(PAYABLE_CONSTRUCTOR, suffix).balance(1L)
 				).when(
 						contractDelete(PAYABLE_CONSTRUCTOR).transferContract(PAYABLE_CONSTRUCTOR + suffix)
 				).then(

@@ -96,6 +96,12 @@ public class Utils {
 		}
 	}
 
+	/** This method extracts the function ABI by the name of the desired function and the name of the respective contract.
+	 * Depending on the desired function type, it can deliver either a constructor ABI, or function ABI from the contract ABI
+	 * @param type accepts {@link FunctionType} - enum, either CONSTRUCTOR, or FUNCTION
+	 * @param functionName the name of the function. If the desired function is constructor, the function name must be EMPTY ("")
+	 * @param contractName the name of the contract
+	 */
 	public static String getABIFor(final FunctionType type, final String functionName, final String contractName) {
 		final var path = getResourcePath(contractName, ".json");
 		var ABI = EMPTY;
@@ -116,6 +122,9 @@ public class Utils {
 		return ABI;
 	}
 
+	/** Delivers the entire contract ABI by contract name
+	 * @param contractName the name of the contract
+	 */
 	public static String getABIForContract(final String contractName) {
 		final var path = getResourcePath(contractName, ".json");
 		var ABI = EMPTY;
@@ -128,6 +137,10 @@ public class Utils {
 	}
 
 
+	/** Generates a path to a desired contract resource
+	 * @param resourceName the name of the contract
+	 * @param extension the type of the desired contract resource (.bin or .json)
+	 */
 	public static String getResourcePath(final String resourceName, final String extension) {
 		final var path = String.format(RESOURCE_PATH + extension, resourceName);
 		final var file = new File(path);

@@ -108,6 +108,12 @@ public class QueryVerbs {
 		return new HapiGetContractRecords(contract);
 	}
 
+	/** This method allows the developer to invoke a contract function by the name of the called contract and the name
+	 * of the desired function
+	 * @param contract the name of the contract
+	 * @param functionName the name of the function
+	 * @param params the arguments (if any) passed to the contract's function
+	 */
 	public static HapiContractCallLocal contractCallLocal(
 			final String contract,
 			final String functionName,
@@ -116,8 +122,11 @@ public class QueryVerbs {
 		return new HapiContractCallLocal(abi, contract, params);
 	}
 
-	/** This function provides for the proper execution of specs, which execute contract local calls with a function ABI
-	 instead of function name
+	/** This method provides for the proper execution of specs, which execute contract local calls with a function ABI instead of
+	 * function name
+	 * @param contract the name of the contract
+	 * @param abi the contract's function ABI
+	 * @param params the arguments (if any) passed to the contract's function
 	 */
 	public static HapiContractCallLocal contractCallLocalWithFunctionAbi(final String contract,
 																		 final String abi,

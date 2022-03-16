@@ -72,7 +72,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cloneContract;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -177,7 +177,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.exposingNumTo(createdFileNum::set),
 						inParallel(IntStream.range(0, createBurstSize)
 								.mapToObj(i ->
-										cloneContract(contract, String.valueOf(i), numSlots)
+										contractCustomCreate(contract, String.valueOf(i), numSlots)
 												.fee(ONE_HUNDRED_HBARS)
 												.gas(300_000L)
 												.payingWith(GENESIS)
@@ -561,7 +561,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.via(creation),
 						getTxnRecord(creation).providingFeeTo(baseCreationFee::set).logged()
 				).then(
-						sourcing(() -> cloneContract(EMPTY_CONSTRUCTOR_CONTRACT, "Clone")
+						sourcing(() -> contractCustomCreate(EMPTY_CONSTRUCTOR_CONTRACT, "Clone")
 								.gas(80_000L)
 								.payingWith(civilian)
 								.balance(ONE_HUNDRED_HBARS - 2 * baseCreationFee.get())

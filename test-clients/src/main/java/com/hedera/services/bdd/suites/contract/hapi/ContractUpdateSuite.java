@@ -40,7 +40,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cloneContract;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
@@ -302,7 +302,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						contractCreate(contract)
 								.payingWith("payer")
 								.omitAdminKey(),
-						cloneContract(contract, suffix)
+						contractCustomCreate(contract, suffix)
 								.payingWith("payer")
 								.adminKey("initialAdminKey")
 								.entityMemo(INITIAL_MEMO),

@@ -43,7 +43,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cloneContract;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -569,7 +569,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 															final int slot1,
 															final int slot2) {
 		if (suffix.equals(FIRST)) return contractCreate(contract, slot0, slot1, slot2).gas(300_000);
-		return cloneContract(contract, suffix, slot0, slot1, slot2).gas(300_000);
+		return contractCustomCreate(contract, suffix, slot0, slot1, slot2).gas(300_000);
 	}
 
 

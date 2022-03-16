@@ -62,13 +62,13 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
@@ -158,15 +158,15 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[]{
 						create2FactoryWorksAsExpected(),
-						canDeleteViaAlias(),
-						cannotSelfDestructToMirrorAddress(),
-						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
-						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-						canUseAliasesInPrecompilesAndContractKeys(),
-						inlineCreateCanFailSafely(),
-						inlineCreate2CanFailSafely(),
-						allLogOpcodesResolveExpectedContractId(),
+//						canDeleteViaAlias(),
+//						cannotSelfDestructToMirrorAddress(),
+//						priorityAddressIsCreate2ForStaticHapiCalls(),
+//						priorityAddressIsCreate2ForInternalMessages(),
+//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+//						canUseAliasesInPrecompilesAndContractKeys(),
+//						inlineCreateCanFailSafely(),
+//						inlineCreate2CanFailSafely(),
+//						allLogOpcodesResolveExpectedContractId(),
 				}
 		);
 	}

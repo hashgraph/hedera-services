@@ -70,7 +70,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cloneContract;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -109,7 +109,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractCallSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
-	private static final String CONTRACT_FROM = "CONTRACT_FROM";
 	private static final long depositAmount = 1000;
 
 	private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
@@ -1310,7 +1309,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						uploadInitCode(TRANSFERRING_CONTRACT),
 						contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
-						cloneContract(TRANSFERRING_CONTRACT, to).balance(10_000L).payingWith(ACCOUNT),
+						contractCustomCreate(TRANSFERRING_CONTRACT, to).balance(10_000L).payingWith(ACCOUNT),
 						getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry("contract_from"),
 						getContractInfo(TRANSFERRING_CONTRACT + to).saveToRegistry("contract_to"),
 						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo")
@@ -1499,8 +1498,8 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("receiver").balance(10_000L),
 						uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_CONTRACT),
-						cloneContract(NESTED_CONTRACT, "1").balance(10_000L).payingWith(ACCOUNT),
-						cloneContract(NESTED_CONTRACT, "2").balance(10_000L).payingWith(ACCOUNT),
+						contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L).payingWith(ACCOUNT),
+						contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L).payingWith(ACCOUNT),
 						getAccountInfo("receiver").savingSnapshot("receiverInfo")
 				)
 				.when(
@@ -1535,8 +1534,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_CONTRACT),
-						cloneContract(NESTED_CONTRACT, "1").balance(10_000L).payingWith(ACCOUNT),
-						cloneContract(NESTED_CONTRACT, "2").balance(10_000L).payingWith(ACCOUNT)
+						contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L).payingWith(ACCOUNT),
+						contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L).payingWith(ACCOUNT)
 				)
 				.when(
 						withOpContext((spec, log) -> {
@@ -1570,8 +1569,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_CONTRACT),
-						cloneContract(NESTED_CONTRACT, "1").balance(10_000L).payingWith(ACCOUNT),
-						cloneContract(NESTED_CONTRACT, "2").balance(10_000L).payingWith(ACCOUNT),
+						contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L).payingWith(ACCOUNT),
+						contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L).payingWith(ACCOUNT),
 						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo").payingWith(GENESIS)
 				)
 				.when(
@@ -1621,8 +1620,8 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate("receiver2").balance(10_000L),
 						cryptoCreate("receiver3").balance(10_000L),
 						uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_CONTRACT),
-						cloneContract(NESTED_CONTRACT, "1").balance(10_000L).payingWith(ACCOUNT),
-						cloneContract(NESTED_CONTRACT, "2").balance(10_000L).payingWith(ACCOUNT),
+						contractCustomCreate(NESTED_CONTRACT, "1").balance(10_000L).payingWith(ACCOUNT),
+						contractCustomCreate(NESTED_CONTRACT, "2").balance(10_000L).payingWith(ACCOUNT),
 
 						getAccountInfo("receiver1").savingSnapshot("receiver1Info"),
 						getAccountInfo("receiver2").savingSnapshot("receiver2Info"),
