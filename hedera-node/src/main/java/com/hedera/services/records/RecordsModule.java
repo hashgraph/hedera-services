@@ -21,14 +21,13 @@ package com.hedera.services.records;
  */
 
 import com.google.common.cache.Cache;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.annotations.StaticAccountMemo;
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.state.StateAccessor;
-import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stream.CurrentRecordStreamType;
-import com.hedera.services.stream.RecordStreamType;
 import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.services.stream.RecordStreamType;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.Hash;
@@ -68,8 +67,8 @@ public interface RecordsModule {
 
 	@Provides
 	@Singleton
-	static Consumer<RunningHash> provideRunningHashUpdate(@WorkingState StateAccessor stateAccessor) {
-		return runningHash -> stateAccessor.runningHashLeaf().setRunningHash(runningHash);
+	static Consumer<RunningHash> provideRunningHashUpdate(MutableStateChildren workingState) {
+		return runningHash -> workingState.runningHashLeaf().setRunningHash(runningHash);
 	}
 
 	@Provides

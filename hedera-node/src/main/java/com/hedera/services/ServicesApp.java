@@ -22,6 +22,7 @@ package com.hedera.services;
 
 import com.hedera.services.context.ContextModule;
 import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.annotations.BootstrapProps;
 import com.hedera.services.context.annotations.StaticAccountMemo;
@@ -44,9 +45,7 @@ import com.hedera.services.records.RecordsModule;
 import com.hedera.services.sigs.SigsModule;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
-import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.StateModule;
-import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.forensics.HashLogger;
@@ -122,7 +121,7 @@ public interface ServicesApp {
 	RecordStreamManager recordStreamManager();
 	NodeLocalProperties nodeLocalProperties();
 	GlobalDynamicProperties globalDynamicProperties();
-	@WorkingState StateAccessor workingState();
+	MutableStateChildren workingState();
 	PrefetchProcessor prefetchProcessor();
 
 	/* Needed by ServicesMain */

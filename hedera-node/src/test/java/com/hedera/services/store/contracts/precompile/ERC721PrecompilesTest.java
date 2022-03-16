@@ -22,22 +22,17 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.TransferLogic;
-import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -56,7 +51,6 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -107,7 +101,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -127,7 +120,7 @@ class ERC721PrecompilesTest {
     @Mock
     private MessageFrame frame;
     @Mock
-    private TxnAwareSoliditySigsVerifier sigsVerifier;
+    private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock
     private AccountRecordsHistorian recordsHistorian;
     @Mock
@@ -179,26 +172,11 @@ class ERC721PrecompilesTest {
     @Mock
     private FeeObject mockFeeObject;
     @Mock
-    private ImpliedTransfers impliedTransfers;
-    @Mock
-    private ImpliedTransfersMeta impliedTransfersMeta;
-    @Mock
-    private TransferLogic transferLogic;
-    @Mock
-    private CryptoTransferTransactionBody cryptoTransferTransactionBody;
-    @Mock
-    private HederaTokenStore hederaTokenStore;
-    @Mock
-    private ContractAliases aliases;
-    @Mock
-    private TxnReceipt.Builder txnReceipt;
-    @Mock
     private UsagePricesProvider resourceCosts;
     @Mock
     private AdjustAllowanceChecks allowanceChecks;
 
     private HTSPrecompiledContract subject;
-    private final EntityIdSource ids = NOOP_ID_SOURCE;
     private MockedStatic<EntityIdUtils> entityIdUtils;
 
     @BeforeEach

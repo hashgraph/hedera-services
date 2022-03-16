@@ -22,10 +22,9 @@ package com.hedera.services.context.init;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.HederaNumbers;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.state.StateAccessor;
-import com.hedera.services.state.annotations.WorkingState;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.stream.RecordStreamManager;
 import org.apache.logging.log4j.LogManager;
@@ -44,8 +43,8 @@ public class StateInitializationFlow {
 
 	private final HederaFs hfs;
 	private final HederaNumbers hederaNums;
-	private final StateAccessor stateAccessor;
 	private final RecordStreamManager recordStreamManager;
+	private final MutableStateChildren workingState;
 	private final Set<FileUpdateInterceptor> fileUpdateInterceptors;
 
 	@Inject
@@ -53,12 +52,12 @@ public class StateInitializationFlow {
 			final HederaFs hfs,
 			final HederaNumbers hederaNums,
 			final RecordStreamManager recordStreamManager,
-			final @WorkingState StateAccessor stateAccessor,
+			final MutableStateChildren workingState,
 			final Set<FileUpdateInterceptor> fileUpdateInterceptors
 	) {
 		this.hfs = hfs;
 		this.hederaNums = hederaNums;
-		this.stateAccessor = stateAccessor;
+		this.workingState = workingState;
 		this.recordStreamManager = recordStreamManager;
 		this.fileUpdateInterceptors = fileUpdateInterceptors;
 	}
@@ -66,7 +65,7 @@ public class StateInitializationFlow {
 	public void runWith(ServicesState activeState) {
 		staticNumbersHolder.accept(hederaNums);
 
-		stateAccessor.updateChildrenFrom(activeState);
+		workingState.updateFrom(activeState);
 		log.info("Context updated with working state");
 		log.info("  (@ {}) # NFTs               = {}",
 				StateChildIndices.UNIQUE_TOKENS,
