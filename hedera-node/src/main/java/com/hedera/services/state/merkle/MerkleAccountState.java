@@ -27,7 +27,9 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -46,7 +48,9 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.services.state.submerkle.TokenAssociationMetadata.EMPTY_TOKEN_ASSOCIATION_META;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
+import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
@@ -67,7 +71,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0210_VERSION = 8;
 	static final int RELEASE_0220_VERSION = 9;
 	static final int RELEASE_0230_VERSION = 10;
-	private static final int CURRENT_VERSION = RELEASE_0230_VERSION;
+	static final int RELEASE_0240_VERSION = 11;
+	private static final int CURRENT_VERSION = RELEASE_0240_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -89,6 +94,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private ByteString alias = DEFAULT_ALIAS;
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
+	private TokenAssociationMetadata tokenAssociationMetaData = EMPTY_TOKEN_ASSOCIATION_META;
 
 	// As per the issue https://github.com/hashgraph/hedera-services/issues/2842 these maps will
 	// be modified to use MapValueLinkedList in the future
@@ -179,6 +185,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
 			nftAllowances = deserializeNftAllowances(in);
 		}
+		if (version >= RELEASE_0240_VERSION) {
+			tokenAssociationMetaData =
+					new TokenAssociationMetadata(in.readInt(), in.readInt(), new EntityNumPair(in.readLong()));
+		}
 	}
 
 	@Override
@@ -200,6 +210,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		serializeCryptoAllowances(out, cryptoAllowances);
 		serializeTokenAllowances(out, fungibleTokenAllowances);
 		serializeNftAllowance(out, nftAllowances);
+		out.writeInt(tokenAssociationMetaData.numAssociations());
+		out.writeInt(tokenAssociationMetaData.numZeroBalances());
+		out.writeLong(tokenAssociationMetaData.lastAssociation().value());
 	}
 
 	/* --- Copyable --- */
@@ -223,6 +236,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				fungibleTokenAllowances,
 				nftAllowances);
 		copied.setNftsOwned(nftsOwned);
+		copied.setTokenAssociationMetadata(tokenAssociationMetaData);
 		return copied;
 	}
 
@@ -253,7 +267,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Objects.equals(this.alias, that.alias) &&
 				Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
 				Objects.equals(this.fungibleTokenAllowances, that.fungibleTokenAllowances) &&
-				Objects.equals(this.nftAllowances, that.nftAllowances);
+				Objects.equals(this.nftAllowances, that.nftAllowances) &&
+				this.tokenAssociationMetaData.equals(that.tokenAssociationMetaData);
 	}
 
 	@Override
@@ -274,7 +289,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				alias,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				nftAllowances,
+				tokenAssociationMetaData);
 	}
 
 	/* --- Bean --- */
@@ -299,6 +315,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("nftAllowances", nftAllowances)
+				.add("numAssociations", tokenAssociationMetaData.numAssociations())
+				.add("numZeroBalances", tokenAssociationMetaData.numZeroBalances())
+				.add("lastAssociation", tokenAssociationMetaData.lastAssociation().value()
+						+ "<->" + asRelationshipLiteral(tokenAssociationMetaData.lastAssociation().value()))
 				.toString();
 	}
 
@@ -406,6 +426,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setNftsOwned(long nftsOwned) {
 		assertMutable("nftsOwned");
 		this.nftsOwned = nftsOwned;
+	}
+
+	public TokenAssociationMetadata getTokenAssociationMetadata() {
+		return tokenAssociationMetaData;
+	}
+
+	public void setTokenAssociationMetadata(final TokenAssociationMetadata tokenAssociationMetaData) {
+		assertMutable("tokenAssociationMetaData");
+		this.tokenAssociationMetaData = tokenAssociationMetaData;
 	}
 
 	public int getNumContractKvPairs() {

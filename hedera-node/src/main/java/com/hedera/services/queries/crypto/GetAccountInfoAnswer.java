@@ -21,6 +21,7 @@ package com.hedera.services.queries.crypto;
  */
 
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -49,11 +50,16 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 public class GetAccountInfoAnswer implements AnswerService {
 	private final OptionValidator optionValidator;
 	private final AliasManager aliasManager;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public GetAccountInfoAnswer(final OptionValidator optionValidator, final AliasManager aliasManager) {
+	public GetAccountInfoAnswer(
+			final OptionValidator optionValidator,
+			final AliasManager aliasManager,
+			final GlobalDynamicProperties dynamicProperties) {
 		this.optionValidator = optionValidator;
 		this.aliasManager = aliasManager;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -66,9 +72,14 @@ public class GetAccountInfoAnswer implements AnswerService {
 	}
 
 	@Override
-	public Response responseGiven(final Query query, final StateView view, final ResponseCodeEnum validity, final long cost) {
+	public Response responseGiven(
+			final Query query,
+			final StateView view,
+			final ResponseCodeEnum validity,
+			final long cost
+	) {
 		final CryptoGetInfoQuery op = query.getCryptoGetInfo();
-		CryptoGetInfoResponse.Builder response = CryptoGetInfoResponse.newBuilder();
+		final CryptoGetInfoResponse.Builder response = CryptoGetInfoResponse.newBuilder();
 
 		final ResponseType type = op.getHeader().getResponseType();
 		if (validity != OK) {
@@ -78,7 +89,8 @@ public class GetAccountInfoAnswer implements AnswerService {
 				response.setHeader(costAnswerHeader(OK, cost));
 			} else {
 				AccountID id = op.getAccountID();
-				var optionalInfo = view.infoForAccount(id, aliasManager);
+				var optionalInfo = view.infoForAccount(
+						id, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
 				if (optionalInfo.isPresent()) {
 					response.setHeader(answerOnlyHeader(OK));
 					response.setAccountInfo(optionalInfo.get());
@@ -105,7 +117,7 @@ public class GetAccountInfoAnswer implements AnswerService {
 	@Override
 	public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
 		Transaction paymentTxn = query.getCryptoGetInfo().getHeader().getPayment();
-		return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
+		return Optional.of(SignedTxnAccessor.uncheckedFrom(paymentTxn));
 	}
 
 	@Override
