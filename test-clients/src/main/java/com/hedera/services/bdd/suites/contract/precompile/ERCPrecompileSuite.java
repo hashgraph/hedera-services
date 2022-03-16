@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -114,7 +115,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				getErc20TokenDecimalsFromErc721TokenFails(),
 				transferErc20TokenFromErc721TokenFails(),
 				transferErc20TokenReceiverContract(),
-				transferErc20TokenSenderAccount()
+				transferErc20TokenSenderAccount(),
+				transferErc20TokenAliasedSender()
 		);
 	}
 
@@ -626,6 +628,107 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						getAccountBalance(RECIPIENT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 2),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec transferErc20TokenAliasedSender() {
+		final var aliasedTransferTxn = "aliasedTransferTxn";
+		final var addLiquidityTxn = "addLiquidityTxn";
+		final var create2Txn = "create2Txn";
+		final var associateTxn = "associateTxn";
+
+		final var ACCOUNT_A = "AccountA";
+		final var ACCOUNT_B = "AccountB";
+		final var TOKEN_A = "TokenA";
+
+		final var ALIASED_TRANSFER = "aliasedTransfer";
+		final byte[][] ALIASED_ADDRESS = new byte[1][1];
+
+		final AtomicReference<String> childMirror = new AtomicReference<>();
+		final AtomicReference<String> childEip1014 = new AtomicReference<>();
+
+		return defaultHapiSpec("ERC_20_TRANSFER_ALIASED_SENDER")
+				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(OWNER),
+						cryptoCreate(ACCOUNT),
+						cryptoCreate(ACCOUNT_A).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
+						cryptoCreate(ACCOUNT_B).balance(ONE_MILLION_HBARS),
+						tokenCreate("TokenA")
+								.adminKey(MULTI_KEY)
+								.initialSupply(10000)
+								.treasury(ACCOUNT_A),
+						tokenAssociate(ACCOUNT_B, TOKEN_A),
+						fileCreate(ALIASED_TRANSFER),
+						updateLargeFile(OWNER, ALIASED_TRANSFER,
+								extractByteCode(ContractResources.ALIASED_TRANSFER_CONTRACT)),
+						contractCreate(ALIASED_TRANSFER)
+								.bytecode(ALIASED_TRANSFER)
+								.gas(300_000),
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										contractCall(ALIASED_TRANSFER,
+												ContractResources.ALIASED_TRANSFER_INITIALIZE_ABI,
+												asAddress(spec.registry().getTokenID(TOKEN_A)))
+												.exposingResultTo(result -> {
+													final var res = (byte[])result[0];
+													ALIASED_ADDRESS[0] = res;
+												})
+												.payingWith(ACCOUNT)
+												.alsoSigningWithFullPrefix(MULTI_KEY)
+												.via(create2Txn).gas(GAS_TO_OFFER)
+												.hasKnownStatus(SUCCESS)
+								)
+						)
+				).when(
+//						captureChildCreate2MetaFor(
+//								1, 0,
+//								"setup", create2Txn, childMirror, childEip1014),
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										contractCall(ALIASED_TRANSFER,
+												ContractResources.ALIASED_ASSOCIATE_ABI)
+												.payingWith(ACCOUNT)
+												.alsoSigningWithFullPrefix(MULTI_KEY)
+												.via(associateTxn).gas(GAS_TO_OFFER)
+												.hasKnownStatus(SUCCESS)
+								)
+						),
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										contractCall(ALIASED_TRANSFER,
+												ContractResources.ALIASED_ADD_LIQUIDITY_ABI,
+												asAddress(spec.registry().getTokenID(TOKEN_A)),
+												asAddress(spec.registry().getAccountID(ACCOUNT_A)),
+												1500)
+												.payingWith(ACCOUNT)
+												.alsoSigningWithFullPrefix(MULTI_KEY)
+												.via(addLiquidityTxn).gas(GAS_TO_OFFER)
+												.hasKnownStatus(SUCCESS)
+								)
+						),
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										contractCall(ALIASED_TRANSFER,
+												ContractResources.ALIASED_TRANSFER_ABI,
+												asAddress(spec.registry().getAccountID(ACCOUNT_B)),
+												1000)
+												.payingWith(ACCOUNT)
+												.alsoSigningWithFullPrefix(MULTI_KEY)
+												.via(aliasedTransferTxn).gas(GAS_TO_OFFER)
+												.hasKnownStatus(SUCCESS)
+								))
+				).then(
+//						sourcing(
+//								() -> getAliasedAccountInfo(childEip1014.get()).logged()
+//						)
 				);
 	}
 
