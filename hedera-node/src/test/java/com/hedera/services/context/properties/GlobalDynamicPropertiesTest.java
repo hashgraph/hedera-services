@@ -131,7 +131,7 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// then:
-		assertEquals(1, subject.maxTokensRelsPerInfoQuery());
+		assertEquals(1, subject.maxTokensPerAccount());
 		assertEquals(2, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(6, subject.maxFileSizeKb());
 		assertEquals(15, subject.maxTransferListSize());
@@ -214,7 +214,7 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// then:
-		assertEquals(2, subject.maxTokensRelsPerInfoQuery());
+		assertEquals(2, subject.maxTokensPerAccount());
 		assertEquals(3, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(7, subject.maxFileSizeKb());
 		assertEquals(9, subject.cacheRecordsTtl());
@@ -284,7 +284,7 @@ class GlobalDynamicPropertiesTest {
 	}
 
 	private void givenPropsWithSeed(int i) {
-		given(properties.getIntProperty("tokens.maxRelsPerInfoQuery")).willReturn(i);
+		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolUtf8Bytes")).willReturn(i + 1);
 		given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
 		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long) i + 2);

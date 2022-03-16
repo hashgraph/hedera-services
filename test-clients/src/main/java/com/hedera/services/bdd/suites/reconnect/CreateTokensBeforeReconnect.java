@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.suites.reconnect.CreateAccountsBeforeRecon
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
@@ -72,7 +73,8 @@ public class CreateTokensBeforeReconnect extends HapiApiSuite {
 		return tokenCreate("token" + token)
 				.noLogging()
 				.hasRetryPrecheckFrom(BUSY, PLATFORM_TRANSACTION_NOT_CREATED)
-				.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, UNKNOWN)
+				.hasKnownStatusFrom(SUCCESS, TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
+						TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, UNKNOWN)
 				.deferStatusResolution();
 	}
 

@@ -42,7 +42,7 @@ public class GlobalDynamicProperties {
 	private int maxNftTransfersLen;
 	private int maxBatchSizeWipe;
 	private long maxNftQueryRange;
-	private int maxTokenRelsPerInfoQuery;
+	private int maxTokensPerAccount;
 	private int maxCustomFeesAllowed;
 	private int maxTokenSymbolUtf8Bytes;
 	private int maxTokenNameUtf8Bytes;
@@ -122,7 +122,7 @@ public class GlobalDynamicProperties {
 		maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
 		maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
 		maxNftQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
-		maxTokenRelsPerInfoQuery = properties.getIntProperty("tokens.maxRelsPerInfoQuery");
+		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
@@ -192,8 +192,8 @@ public class GlobalDynamicProperties {
 		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
 	}
 
-	public int maxTokensRelsPerInfoQuery() {
-		return maxTokenRelsPerInfoQuery;
+	public int maxTokensPerAccount() {
+		return maxTokensPerAccount;
 	}
 
 	public int maxCustomFeesAllowed() {

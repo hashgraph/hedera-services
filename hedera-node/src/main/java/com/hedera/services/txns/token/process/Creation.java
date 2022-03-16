@@ -68,14 +68,14 @@ public class Creation {
 
 	@FunctionalInterface
 	public interface NewRelsListing {
-		List<TokenRelationship> listFrom(Token provisionalToken, TypedTokenStore tokenStore);
+		List<TokenRelationship> listFrom(Token provisionalToken, int maxTokensPerAccount);
 	}
 
 	private Id provisionalId;
 	private Token provisionalToken;
 	private Account treasury;
 	private Account autoRenew;
-	private List<TokenRelationship> newAndUpdatedRels;
+	private List<TokenRelationship> newRels;
 
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
@@ -120,28 +120,21 @@ public class Creation {
 		provisionalToken = modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now);
 		provisionalToken.getCustomFees().forEach(fee ->
 				fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore));
-		final var hasExistingAssociations = treasury.getLastAssociatedToken().value() != 0;
-		newAndUpdatedRels = listing.listFrom(provisionalToken, tokenStore);
+		newRels = listing.listFrom(provisionalToken, dynamicProperties.maxTokensPerAccount());
 		if (op.getInitialSupply() > 0) {
-			// When we created the new relationship for a treasury that already had a last-added relationship,
-			// we had to _first_ update the prev pointer on that relationship; so it will come first in the list of
-			// newAndUpdatedRels --- and the new relationship with this token will come second
-			provisionalToken.mint(
-					hasExistingAssociations ? newAndUpdatedRels.get(1) : newAndUpdatedRels.get(0),
-					op.getInitialSupply(),
-					true);
+			provisionalToken.mint(newRels.get(0), op.getInitialSupply(), true);
 		}
 		provisionalToken.getCustomFees().forEach(FcCustomFee::nullOutCollector);
 	}
 
 	public void persist() {
 		tokenStore.persistNew(provisionalToken);
-		tokenStore.commitTokenRelationships(newAndUpdatedRels);
-		newAndUpdatedRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
+		tokenStore.commitTokenRelationships(newRels);
+		newRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
 	}
 
 	public List<FcTokenAssociation> newAssociations() {
-		return newAndUpdatedRels.stream().map(TokenRelationship::asAutoAssociation).toList();
+		return newRels.stream().map(TokenRelationship::asAutoAssociation).toList();
 	}
 
 	public Id newTokenId() {
@@ -166,8 +159,8 @@ public class Creation {
 		this.autoRenew = autoRenew;
 	}
 
-	void setNewAndUpdatedRels(List<TokenRelationship> newAndUpdatedRels) {
-		this.newAndUpdatedRels = newAndUpdatedRels;
+	void setNewRels(List<TokenRelationship> newRels) {
+		this.newRels = newRels;
 	}
 
 	Account getTreasury() {

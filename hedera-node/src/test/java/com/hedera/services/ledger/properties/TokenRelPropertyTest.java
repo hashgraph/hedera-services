@@ -21,42 +21,29 @@ package com.hedera.services.ledger.properties;
  */
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.EntityNumPair;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_AUTOMATIC_ASSOCIATION;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
-import static com.hedera.services.ledger.properties.TokenRelProperty.KEY;
-import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
-import static com.hedera.services.ledger.properties.TokenRelProperty.PREV_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TokenRelPropertyTest {
-	private final long balance = 123, newBalance = 321;
-	private final EntityNumPair key = new EntityNumPair(1234566);
-	private final EntityNumPair nextKey = new EntityNumPair(1234567);
-	private final EntityNumPair prevKey = new EntityNumPair(1234565);
-	private final boolean frozen = true;
-	private final boolean kycGranted = false;
-	private final boolean automaticAssociation = false;
+	long balance = 123, newBalance = 321;
+	boolean frozen = true;
+	boolean kycGranted = false;
+	boolean automaticAssociation = false;
 
-	private final MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
+	MerkleTokenRelStatus target = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 
 	@Test
 	void gettersWork() {
-		target.setKey(key);
-		target.setNextKey(nextKey);
-		target.setPrevKey(prevKey);
 		// expect:
 		assertEquals(balance, TOKEN_BALANCE.getter().apply(target));
 		assertEquals(frozen, IS_FROZEN.getter().apply(target));
 		assertEquals(kycGranted, IS_KYC_GRANTED.getter().apply(target));
 		assertEquals(automaticAssociation, IS_AUTOMATIC_ASSOCIATION.getter().apply(target));
-		assertEquals(key, KEY.getter().apply(target));
-		assertEquals(nextKey, NEXT_KEY.getter().apply(target));
-		assertEquals(prevKey, PREV_KEY.getter().apply(target));
 	}
 
 	@Test
@@ -66,17 +53,11 @@ class TokenRelPropertyTest {
 		IS_FROZEN.setter().accept(target, !frozen);
 		IS_KYC_GRANTED.setter().accept(target, !kycGranted);
 		IS_AUTOMATIC_ASSOCIATION.setter().accept(target, !automaticAssociation);
-		KEY.setter().accept(target, key);
-		NEXT_KEY.setter().accept(target, nextKey);
-		PREV_KEY.setter().accept(target, prevKey);
 
 		// expect:
 		assertEquals(newBalance, TOKEN_BALANCE.getter().apply(target));
 		assertEquals(!frozen, IS_FROZEN.getter().apply(target));
 		assertEquals(!kycGranted, IS_KYC_GRANTED.getter().apply(target));
 		assertEquals(!automaticAssociation, IS_AUTOMATIC_ASSOCIATION.getter().apply(target));
-		assertEquals(key, KEY.getter().apply(target));
-		assertEquals(nextKey, NEXT_KEY.getter().apply(target));
-		assertEquals(prevKey, PREV_KEY.getter().apply(target));
 	}
 }

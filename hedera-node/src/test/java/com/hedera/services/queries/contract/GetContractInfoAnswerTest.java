@@ -22,7 +22,6 @@ package com.hedera.services.queries.contract;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -63,7 +62,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -72,7 +70,6 @@ import static org.mockito.Mockito.never;
 @ExtendWith(MockitoExtension.class)
 class GetContractInfoAnswerTest {
 	private Transaction paymentTxn;
-	private final int maxTokenPerContractInfo = 10;
 	private final String node = "0.0.3";
 	private final String payer = "0.0.12345";
 	private final String target = "0.0.123";
@@ -87,8 +84,6 @@ class GetContractInfoAnswerTest {
 	private StateView view;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
 
 	ContractGetInfoResponse.ContractInfo info;
 
@@ -104,15 +99,15 @@ class GetContractInfoAnswerTest {
 				.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
 				.build();
 
-		subject = new GetContractInfoAnswer(aliasManager, optionValidator, dynamicProperties);
+		subject = new GetContractInfoAnswer(aliasManager, optionValidator);
 	}
 
 	@Test
 	void getsTheInfo() throws Throwable {
-		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
+		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo)).willReturn(Optional.of(info));
+		given(view.infoForContract(asContract(target), aliasManager)).willReturn(Optional.of(info));
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -146,15 +141,15 @@ class GetContractInfoAnswerTest {
 		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
 		assertSame(info, opResponse.getContractInfo());
 		// and:
-		verify(view, never()).infoForContract(any(), any(), anyInt());
+		verify(view, never()).infoForContract(any(), any());
 	}
 
 	@Test
 	void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
-		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
+		// setup:
 		Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
-		given(view.infoForContract(asContract(target), aliasManager, maxTokenPerContractInfo)).willReturn(Optional.empty());
+		given(view.infoForContract(asContract(target), aliasManager)).willReturn(Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
@@ -177,7 +172,7 @@ class GetContractInfoAnswerTest {
 		ContractGetInfoResponse opResponse = response.getContractGetInfo();
 		assertTrue(opResponse.hasHeader(), "Missing response header!");
 		assertEquals(INVALID_CONTRACT_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		verify(view, never()).infoForContract(any(), any(), anyInt());
+		verify(view, never()).infoForContract(any(), any());
 	}
 
 	@Test

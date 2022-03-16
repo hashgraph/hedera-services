@@ -36,6 +36,7 @@ import java.util.Set;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
@@ -53,6 +54,7 @@ public class RandomTokenAssociation implements OpProvider {
 
 	private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(
 			TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT,
+			TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED,
 			TOKEN_WAS_DELETED,
 			ACCOUNT_DELETED
 	);
