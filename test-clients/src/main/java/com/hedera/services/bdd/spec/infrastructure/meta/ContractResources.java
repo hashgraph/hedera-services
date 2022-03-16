@@ -1247,18 +1247,19 @@ public class ContractResources {
 	public static final String STATIC_MINT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
 			"{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}]," +
 			"\"name\": \"mintStaticCall\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
-	public static final String ALIASED_TRANSFER_INITIALIZE_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"" +
-			"token\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[{\"internalType\":\"address\",\"name" +
-			"\":\"operator\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String ALIASED_TRANSFER_DEPLOY_WITH_CREATE2_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name" +
+			"\":\"token\",\"type\":\"address\"}],\"name\":\"deployWithCREATE2\",\"outputs\":[{\"internalType\":\"address" +
+			"\",\"name\":\"operator\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
 	public static final String ALIASED_TRANSFER_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"" +
 			"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"" +
 			"transfer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String ALIASED_ASSOCIATE_ABI = "{\"inputs\":[],\"name\":\"associateOperator\",\"outputs\":[],\"" +
+
+	public static final String ALIASED_GIVE_TOKENS_TO_OPERATOR_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token" +
+			"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType" +
+			"\":\"int64\",\"name\":\"value\",\"type\":\"int64\"}],\"name\":\"giveTokensToOperator\",\"outputs\":[],\"" +
 			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
-	public static final String ALIASED_ADD_LIQUIDITY_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token" +
-			"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"" +
-			"internalType\":\"int64\",\"name\":\"value\",\"type\":\"int64\"}],\"name\":\"addLiquidity\",\"outputs" +
-			"\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 
 	public static String bytecodePath(String bytecode) {

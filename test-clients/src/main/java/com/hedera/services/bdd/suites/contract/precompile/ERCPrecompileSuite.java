@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -37,6 +38,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -57,12 +60,14 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -635,7 +640,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var aliasedTransferTxn = "aliasedTransferTxn";
 		final var addLiquidityTxn = "addLiquidityTxn";
 		final var create2Txn = "create2Txn";
-		final var associateTxn = "associateTxn";
 
 		final var ACCOUNT_A = "AccountA";
 		final var ACCOUNT_B = "AccountB";
@@ -672,7 +676,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								(spec, opLog) -> allRunFor(
 										spec,
 										contractCall(ALIASED_TRANSFER,
-												ContractResources.ALIASED_TRANSFER_INITIALIZE_ABI,
+												ContractResources.ALIASED_TRANSFER_DEPLOY_WITH_CREATE2_ABI,
 												asAddress(spec.registry().getTokenID(TOKEN_A)))
 												.exposingResultTo(result -> {
 													final var res = (byte[])result[0];
@@ -685,25 +689,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								)
 						)
 				).when(
-//						captureChildCreate2MetaFor(
-//								1, 0,
-//								"setup", create2Txn, childMirror, childEip1014),
+						captureChildCreate2MetaFor(
+								2, 0,
+								"setup", create2Txn, childMirror, childEip1014),
 						withOpContext(
 								(spec, opLog) -> allRunFor(
 										spec,
 										contractCall(ALIASED_TRANSFER,
-												ContractResources.ALIASED_ASSOCIATE_ABI)
-												.payingWith(ACCOUNT)
-												.alsoSigningWithFullPrefix(MULTI_KEY)
-												.via(associateTxn).gas(GAS_TO_OFFER)
-												.hasKnownStatus(SUCCESS)
-								)
-						),
-						withOpContext(
-								(spec, opLog) -> allRunFor(
-										spec,
-										contractCall(ALIASED_TRANSFER,
-												ContractResources.ALIASED_ADD_LIQUIDITY_ABI,
+												ContractResources.ALIASED_GIVE_TOKENS_TO_OPERATOR_ABI,
 												asAddress(spec.registry().getTokenID(TOKEN_A)),
 												asAddress(spec.registry().getAccountID(ACCOUNT_A)),
 												1500)
@@ -726,9 +719,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 												.hasKnownStatus(SUCCESS)
 								))
 				).then(
-//						sourcing(
-//								() -> getAliasedAccountInfo(childEip1014.get()).logged()
-//						)
+						sourcing(
+								() -> getContractInfo(asContractString(
+										contractIdFromHexedMirrorAddress(childMirror.get())))
+										.hasToken(ExpectedTokenRel.relationshipWith(TOKEN_A).balance(500))
+										.logged()
+						),
+						getAccountBalance(ACCOUNT_B).hasTokenBalance(TOKEN_A, 1000),
+						getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_A, 8500)
 				);
 	}
 

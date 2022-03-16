@@ -7,13 +7,15 @@ contract AliasedTransfer {
 
     constructor() public {}
 
-    function initialize(address token) external returns (address operator) {
+    function deployWithCREATE2(address token) external returns (address operator) {
         bytes memory bytecode = type(AliasedOperator).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token));
         assembly {
             operator := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
         AliasedOperator(operator).initialize(token);
+        AliasedOperator(operator).associate();
+
         aliasedOperator = operator;
     }
 
@@ -21,11 +23,7 @@ contract AliasedTransfer {
         AliasedOperator(aliasedOperator).transfer(to, value);
     }
 
-    function associateOperator() public {
-        AliasedOperator(aliasedOperator).associate();
-    }
-
-    function addLiquidity(address token, address sender, int64 value) public {
+    function giveTokensToOperator(address token, address sender, int64 value) public {
         address(0x167).call(abi.encodeWithSignature("transferToken(address,address,address,int64)", token, sender, aliasedOperator, value));
     }
 }
