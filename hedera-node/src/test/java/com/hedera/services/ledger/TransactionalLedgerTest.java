@@ -20,25 +20,24 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.TestAccountCommitInterceptor;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.LongStream;
 
@@ -58,9 +57,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
@@ -74,7 +76,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
+class TransactionalLedgerTest {
 	private final Object[] things = { "a", "b", "c", "d" };
 	private final TestAccount account1 = new TestAccount(1L, things[1], false, 667L,
 			TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK);
@@ -85,43 +87,562 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
 	@Mock
-	private PropertyChangeObserver<Long, TestAccountProperty> commitObserver;
+	private PropertyChangeObserver<Long, TestAccountProperty> propertyChangeObserver;
+	@Mock
+	private CommitInterceptor<Long, TestAccount, TestAccountProperty> testInterceptor;
 
 	private LedgerCheck<TestAccount, TestAccountProperty> scopedCheck;
-	private TransactionalLedger<Long, TestAccountProperty, TestAccount> subject;
+	private TransactionalLedger<Long, TestAccountProperty, TestAccount> testLedger;
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
-	@BeforeEach
-	private void setup() {
-		scopedCheck = new TestAccountScopedCheck();
+	@Test
+	void settingInterceptorAlsoInitializesPendingChanges() {
+		setupTestLedger();
 
+		assertNull(testLedger.getPendingChanges());
+
+		testLedger.setCommitInterceptor(testInterceptor);
+
+		assertNotNull(testLedger.getPendingChanges());
+	}
+
+	@Test
+	void beginningClearsPendingChanges() {
+		setupInterceptedTestLedger();
+		final var statefulChanges = testLedger.getPendingChanges();
+
+		statefulChanges.include(1L, account1, Map.of(FLAG, true));
+		testLedger.begin();
+
+		assertEquals(0, statefulChanges.size());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void committingIncludesOnlyNonZombieCreations() {
+		final ArgumentCaptor<EntityChangeSet<Long, TestAccount, TestAccountProperty>> captor =
+				forClass(EntityChangeSet.class);
+		setupInterceptedTestLedger();
+
+		testLedger.begin();
+		testLedger.create(1L);
+		testLedger.set(1L, OBJ, things);
+		testLedger.set(1L, FLAG, true);
+		testLedger.create(2L);
+		testLedger.set(2L, OBJ, things);
+		testLedger.destroy(2L);
+		testLedger.commit();
+
+		verify(testInterceptor).preview(captor.capture());
+		final var changes = captor.getValue();
+		assertEquals(1, changes.size());
+		assertEquals(1L, changes.key(0));
+		assertNull(changes.entity(0));
+		assertEquals(Map.of(OBJ, things, FLAG, true), changes.changes(0));
+	}
+
+	@Test
+	void commitObserverWorks() {
+		setupTestLedger();
+		testLedger.setPropertyChangeObserver(propertyChangeObserver);
+
+		testLedger.begin();
+		testLedger.create(1L);
+		testLedger.set(1L, OBJ, things);
+		testLedger.set(1L, FLAG, true);
+		testLedger.commit();
+
+		verify(propertyChangeObserver).newProperty(1L, OBJ, things);
+		verify(propertyChangeObserver).newProperty(1L, FLAG, true);
+		verifyNoMoreInteractions(propertyChangeObserver);
+	}
+
+	@Test
+	void canUndoCreations() {
+		setupTestLedger();
+
+		testLedger.begin();
+		testLedger.create(2L);
+		testLedger.undoCreations();
+		testLedger.commit();
+
+		verify(backingTestAccounts, never()).put(any(), any());
+	}
+
+	@Test
+	void canUndoCreationsOnlyInTxn() {
+		setupTestLedger();
+
+		assertThrows(IllegalStateException.class, testLedger::undoCreations);
+	}
+
+	@Test
+	void rollbackClearsChanges() {
+		setupTestLedger();
+
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		testLedger.begin();
+		testLedger.set(1L, OBJ, new Object());
+		testLedger.rollback();
+
+		assertTrue(testLedger.getChanges().isEmpty());
+	}
+
+	@Test
+	void getUsesMutableRefIfPendingChanges() {
+		setupTestLedger();
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		final var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag, account1.tokenThing,
+				account1.validHbarAllowances, account1.validFungibleAllowances, account1.validNftAllowances);
+		testLedger.begin();
+		testLedger.set(1L, FLAG, !account1.flag);
+		var account = testLedger.getFinalized(1L);
+
+		assertEquals(newAccount1, account);
+		verify(backingTestAccounts).getRef(1L);
+	}
+
+	@Test
+	void zombieIsResurrectedIfPutAgain() {
+		setupTestLedger();
+
+		testLedger.begin();
+		testLedger.create(1L);
+		testLedger.destroy(1L);
+		testLedger.put(1L, account1);
+		testLedger.commit();
+
+		verify(backingTestAccounts).put(1L, account1);
+	}
+
+	@Test
+	void putsInOrderOfChanges() {
+		setupTestLedger();
+
+		final int M = 2, N = 100;
+		final var inOrder = inOrder(backingTestAccounts);
+		final List<Long> ids = LongStream.range(M, N).boxed().collect(toList());
+
+		testLedger.begin();
+		ids.forEach(id -> testLedger.create(id));
+		testLedger.commit();
+
+		LongStream.range(M, N).boxed().forEach(id ->
+				inOrder.verify(backingTestAccounts).put(argThat(id::equals), any()));
+	}
+
+	@Test
+	void destroysInOrder() {
+		setupTestLedger();
+
+		final int M = 2, N = 100;
+		final var inOrder = inOrder(backingTestAccounts);
+		final List<Long> ids = LongStream.range(M, N).boxed().collect(toList());
+
+		testLedger.begin();
+		ids.forEach(id -> testLedger.create(id));
+		testLedger.commit();
+		testLedger.begin();
+		ids.forEach(id -> testLedger.destroy(id));
+		testLedger.commit();
+
+		LongStream.range(M, N).boxed().forEach(id ->
+				inOrder.verify(backingTestAccounts).put(argThat(id::equals), any()));
+		LongStream.range(M, N).boxed().forEach(id ->
+				inOrder.verify(backingTestAccounts).remove(id));
+	}
+
+	@Test
+	void requiresManualRollbackIfCommitFails() {
+		setupTestLedger();
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		willThrow(IllegalStateException.class).given(backingTestAccounts).put(any(), any());
+
+		testLedger.begin();
+		testLedger.set(1L, OBJ, things[0]);
+		testLedger.create(2L);
+
+		assertThrows(IllegalStateException.class, () -> testLedger.commit());
+		assertTrue(testLedger.isInTransaction());
+	}
+
+	@Test
+	void recognizesPendingCreates() {
+		setupTestLedger();
+
+		testLedger.begin();
+		testLedger.create(2L);
+
+		assertTrue(testLedger.existsPending(2L));
+		assertFalse(testLedger.existsPending(1L));
+	}
+
+	@Test
+	void reportsDeadAccountsIndividually() {
+		setupTestLedger();
+
+		testLedger.begin();
+		testLedger.destroy(1L);
+
+		assertEquals("{*DEAD* 1}", testLedger.changeSetSoFar());
+	}
+
+	@Test
+	void existsIfNotMissingAndNotDestroyed() {
+		setupTestLedger();
+
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.contains(2L)).willReturn(false);
+		given(backingTestAccounts.contains(3L)).willReturn(false);
+
+		testLedger.begin();
+		testLedger.create(2L);
+		testLedger.create(3L);
+		testLedger.destroy(3L);
+
+		boolean has1 = testLedger.exists(1L);
+		boolean has2 = testLedger.exists(2L);
+		boolean has3 = testLedger.exists(3L);
+
+		assertTrue(has1);
+		assertTrue(has2);
+		assertFalse(has3);
+	}
+
+	@Test
+	void delegatesDestroyToRemove() {
+		setupTestLedger();
+
+		testLedger.begin();
+
+		testLedger.destroy(1L);
+		testLedger.commit();
+
+		verify(backingTestAccounts).remove(1L);
+	}
+
+	@Test
+	void throwsIfNotInTransaction() {
+		setupTestLedger();
+
+		assertThrows(IllegalStateException.class, () -> testLedger.set(1L, OBJ, things[0]));
+		assertThrows(IllegalStateException.class, () -> testLedger.create(2L));
+		assertThrows(IllegalStateException.class, () -> testLedger.destroy(1L));
+	}
+
+	@Test
+	void throwsOnMutationToMissingAccount() {
+		setupTestLedger();
+
+		testLedger.begin();
+
+		assertThrows(MissingAccountException.class, () -> testLedger.set(0L, OBJ, things[0]));
+	}
+
+	@Test
+	void throwsOnCreationWithExistingAccountId() {
+		setupTestLedger();
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		testLedger.begin();
+
+		assertThrows(IllegalArgumentException.class, () -> testLedger.create(1L));
+	}
+
+	@Test
+	void throwsOnGettingPropOfMissingAccount() {
+		setupTestLedger();
+
+		assertThrows(IllegalArgumentException.class, () -> testLedger.get(2L, OBJ));
+	}
+
+	@Test
+	void returnsPendingChangePropertiesOfExistingAccounts() {
+		setupTestLedger();
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		testLedger.begin();
+		testLedger.set(1L, LONG, 3L);
+
+		final long value = (long) testLedger.get(1L, LONG);
+
+		verify(backingTestAccounts, times(2)).contains(1L);
+		assertEquals(3L, value);
+	}
+
+	@Test
+	void incorporatesMutationToPendingNewAccount() {
+		setupTestLedger();
+
+		testLedger.begin();
+		testLedger.create(2L);
+		testLedger.set(2L, OBJ, things[2]);
+
+		assertEquals(new TestAccount(0L, things[2], false), testLedger.getFinalized(2L));
+	}
+
+	@Test
+	void returnsSetPropertiesOfPendingNewAccounts() {
+		setupTestLedger();
+
+		testLedger.begin();
+		testLedger.create(2L);
+		testLedger.set(2L, OBJ, things[2]);
+
+		Object thing = testLedger.get(2L, OBJ);
+
+		assertEquals(things[2], thing);
+	}
+
+	@Test
+	void returnsDefaultForUnsetPropertiesOfPendingNewAccounts() {
+		setupTestLedger();
+
+		testLedger.begin();
+		testLedger.create(2L);
+		testLedger.set(2L, OBJ, things[2]);
+
+		final var flag = (boolean) testLedger.get(2L, FLAG);
+
+		assertFalse(flag);
+	}
+
+	@Test
+	void reflectsChangeToExistingAccountIfInTransaction() {
+		setupTestLedger();
+
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		final var expected = new TestAccount(account1.value, things[0], account1.flag, 667L,
+				account1.validHbarAllowances, account1.validFungibleAllowances, account1.validNftAllowances);
+
+		testLedger.begin();
+		testLedger.set(1L, OBJ, things[0]);
+
+		assertEquals(expected, testLedger.getFinalized(1L));
+	}
+
+	@Test
+	void canUndoSpecificChange() {
+		setupTestLedger();
+
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+		ArgumentCaptor<TestAccount> captor = forClass(TestAccount.class);
+		final var changesToUndo = List.of(FLAG);
+
+		assertThrows(IllegalStateException.class, () -> testLedger.undoChangesOfType(changesToUndo));
+
+		testLedger.begin();
+		testLedger.set(1L, OBJ, things[0]);
+		testLedger.set(1L, FLAG, true);
+		testLedger.undoChangesOfType(List.of(FLAG));
+		testLedger.commit();
+
+		verify(backingTestAccounts).put(longThat(l -> l == 1L), captor.capture());
+		final var committed = captor.getValue();
+		assertSame(things[0], committed.getThing());
+		assertFalse(committed.isFlag());
+	}
+
+	@Test
+	void throwsIfTxnAlreadyBegun() {
+		setupTestLedger();
+
+		testLedger.begin();
+
+		assertThrows(IllegalStateException.class, () -> testLedger.begin());
+	}
+
+	@Test
+	void throwsOnRollbackWithoutActiveTxn() {
+		setupTestLedger();
+
+		assertThrows(IllegalStateException.class, () -> testLedger.rollback());
+	}
+
+	@Test
+	void throwsOnCommitWithoutActiveTxn() {
+		setupTestLedger();
+
+		assertThrows(IllegalStateException.class, () -> testLedger.commit());
+	}
+
+	@Test
+	void dropsPendingChangesAfterRollback() {
+		setupTestLedger();
+
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		testLedger.begin();
+		testLedger.set(1L, OBJ, things[0]);
+		testLedger.create(2L);
+		testLedger.set(2L, OBJ, things[2]);
+		testLedger.rollback();
+
+		assertFalse(testLedger.isInTransaction());
+		assertEquals(account1, testLedger.getFinalized(1L));
+		assertFalse(testLedger.exists(2L));
+	}
+
+	@Test
+	void persistsPendingChangesAndDestroysDeadAccountsAfterCommit() {
+		setupTestLedger();
+
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		final var expected2 = new TestAccount(2L, things[2], false);
+
+		testLedger.begin();
+		testLedger.set(1L, OBJ, things[0]);
+		testLedger.create(2L);
+		testLedger.set(2L, OBJ, things[2]);
+		testLedger.set(2L, LONG, 2L);
+		testLedger.create(3L);
+		testLedger.set(3L, OBJ, things[3]);
+		testLedger.destroy(3L);
+		testLedger.commit();
+
+		assertFalse(testLedger.isInTransaction());
+		assertEquals("{}", testLedger.changeSetSoFar());
+		verify(backingTestAccounts).put(2L, expected2);
+		verify(backingTestAccounts).put(1L, new TestAccount(1L, things[0], false, 667L,
+				TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK));
+		verify(backingTestAccounts, never()).put(3L, new TestAccount(0L, things[3], false));
+		verify(backingTestAccounts).remove(3L);
+	}
+
+	@Test
+	void reflectsUnchangedAccountIfNoChanges() {
+		setupTestLedger();
+
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+		assertEquals(account1, testLedger.getFinalized(1L));
+	}
+
+	@Test
+	void validateHappyPath() {
+		setupCheckableTestLedger();
+
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		testLedger.begin();
+		testLedger.set(1L, LONG, 123L);
+		testLedger.set(1L, FLAG, false);
+		testLedger.set(1L, OBJ, "DEFAULT");
+		testLedger.commit();
+
+		assertEquals(OK, testLedger.validate(1L, scopedCheck));
+	}
+
+	@Test
+	void validationFailsForMissingAccount() {
+		setupCheckableTestLedger();
+
+		assertEquals(INVALID_ACCOUNT_ID, testLedger.validate(2L, scopedCheck));
+	}
+
+	@Test
+	void validationFailsAsExpected() {
+		setupCheckableTestLedger();
+
+		TestAccount account2 = new TestAccount(321L, things[1], false, 667L);
+		TestAccount account3 = new TestAccount(123L, things[1], true, 667L);
+		TestAccount account4 = new TestAccount(123L, "RANDOM", false, 667L);
+
+		when(backingTestAccounts.contains(2L)).thenReturn(true);
+		when(backingTestAccounts.getImmutableRef(2L)).thenReturn(account2);
+		when(backingTestAccounts.contains(3L)).thenReturn(true);
+		when(backingTestAccounts.getImmutableRef(3L)).thenReturn(account3);
+		when(backingTestAccounts.contains(4L)).thenReturn(true);
+		when(backingTestAccounts.getImmutableRef(4L)).thenReturn(account4);
+
+		assertEquals(ACCOUNT_IS_NOT_GENESIS_ACCOUNT, testLedger.validate(2L, scopedCheck));
+		assertEquals(ACCOUNT_IS_TREASURY, testLedger.validate(3L, scopedCheck));
+		assertEquals(ACCOUNT_STILL_OWNS_NFTS, testLedger.validate(4L, scopedCheck));
+	}
+
+	@Test
+	void validationFailsWithMissingHbarAllowance() {
+		setupCheckableTestLedger();
+
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		testLedger.begin();
+		testLedger.set(1L, LONG, 123L);
+		testLedger.set(1L, FLAG, false);
+		testLedger.set(1L, OBJ, "DEFAULT");
+		testLedger.set(1L, HBAR_ALLOWANCES, MISSING);
+		testLedger.commit();
+
+		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, testLedger.validate(1L, scopedCheck));
+	}
+
+	@Test
+	void validationFailsWithInsufficientHbarAllowance() {
+		setupCheckableTestLedger();
+
+		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+
+		testLedger.begin();
+		testLedger.set(1L, LONG, 123L);
+		testLedger.set(1L, FLAG, false);
+		testLedger.set(1L, OBJ, "DEFAULT");
+		testLedger.set(1L, HBAR_ALLOWANCES, INSUFFICIENT);
+		testLedger.commit();
+
+		assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, testLedger.validate(1L, scopedCheck));
+	}
+
+	@Test
+	void idSetPropagatesCallToEntities() {
+		setupTestLedger();
+
+		final Set<Long> idSet = Set.of(1L, 2L, 3L);
+		given(backingTestAccounts.idSet()).willReturn(idSet);
+
+		assertEquals(idSet, testLedger.idSet());
+		verify(backingTestAccounts).idSet();
+	}
+
+	@Test
+	void sizePropagatesCallToEntities() {
+		setupTestLedger();
+
+		final var size = 23L;
+		given(backingTestAccounts.size()).willReturn(size);
+
+		assertEquals(size, testLedger.size());
+		verify(backingTestAccounts).size();
+	}
+
+	private void setupAccountsLedger() {
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class,
 				MerkleAccount::new,
 				backingAccounts,
 				new ChangeSummaryManager<>());
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor(new SideEffectsTracker());
-		accountsLedger.setCommitInterceptor(accountsCommitInterceptor);
-
-		subject = new TransactionalLedger<>(
-				TestAccountProperty.class, TestAccount::new, backingTestAccounts, changeManager);
-		final var testAccountCommitInterceptor = new TestAccountCommitInterceptor(new SideEffectsTracker());
-		subject.setCommitInterceptor(testAccountCommitInterceptor);
-	}
-
-	@Test
-	void throwsOnCommittingNegativeAdjustments() {
-		accountsLedger.begin();
-
-		accountsLedger.create(rand);
-		accountsLedger.set(rand, AccountProperty.BALANCE, -1L);
-		accountsLedger.create(deletable);
-		accountsLedger.set(deletable, AccountProperty.BALANCE, -5L);
-
-		assertThrows(IllegalStateException.class, () -> accountsLedger.commit());
 	}
 
 	@Test
 	void throwsOnCommittingInconsistentAdjustments() {
+		setupInterceptedAccountsLedger();
+
 		when(backingAccounts.contains(rand)).thenReturn(true);
 		when(backingAccounts.getRef(rand)).thenReturn(randMerkleAccount);
 		when(backingAccounts.contains(aliasAccountId)).thenReturn(true);
@@ -134,518 +655,31 @@ class TransactionalLedgerTest extends BaseHederaLedgerTestHelper {
 		assertThrows(IllegalStateException.class, () -> accountsLedger.commit());
 	}
 
-	@Test
-	void commitObserverWorks() {
-		subject.setPropertyChangeObserver(commitObserver);
-
-		subject.begin();
-		subject.create(1L);
-		subject.set(1L, OBJ, things);
-		subject.set(1L, FLAG, true);
-		subject.commit();
-
-		verify(commitObserver).newProperty(1L, OBJ, things);
-		verify(commitObserver).newProperty(1L, FLAG, true);
-		verifyNoMoreInteractions(commitObserver);
+	private void setupInterceptedAccountsLedger() {
+		setupAccountsLedger();
+		final var liveIntercepter = new AccountsCommitInterceptor(new SideEffectsTracker());
+		accountsLedger.setCommitInterceptor(liveIntercepter);
 	}
 
-	@Test
-	void canUndoCreations() {
-		subject.begin();
-
-		subject.create(2L);
-
-		subject.undoCreations();
-
-		subject.commit();
-
-		verify(backingTestAccounts, never()).put(any(), any());
+	private void setupTestLedger() {
+		testLedger = new TransactionalLedger<>(
+				TestAccountProperty.class, TestAccount::new, backingTestAccounts, changeManager);
 	}
 
-	@Test
-	void canUndoCreationsOnlyInTxn() {
-		assertThrows(IllegalStateException.class, subject::undoCreations);
+	private void setupInterceptedTestLedger() {
+		testLedger = new TransactionalLedger<>(
+				TestAccountProperty.class, TestAccount::new, backingTestAccounts, changeManager);
+		testLedger.setCommitInterceptor(testInterceptor);
 	}
 
-	@Test
-	void rollbackClearsChanges() {
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		// given:
-		subject.begin();
-
-		// when:
-		subject.set(1L, OBJ, new Object());
-		// and:
-		subject.rollback();
-
-		// then:
-		assertTrue(subject.getChanges().isEmpty());
+	private void setupCheckableTestLedger() {
+		setupTestLedger();
+		scopedCheck = new TestAccountScopedCheck();
 	}
 
-	@Test
-	void getUsesMutableRefIfPendingChanges() {
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		// given:
-		var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag, account1.tokenThing,
-				account1.validHbarAllowances, account1.validFungibleAllowances, account1.validNftAllowances);
-		// and:
-		subject.begin();
-		subject.set(1L, FLAG, !account1.flag);
-
-		// when:
-		var account = subject.getFinalized(1L);
-
-		// then:
-		assertEquals(newAccount1, account);
-		// and:
-		verify(backingTestAccounts).getRef(1L);
-	}
-
-	@Test
-	void zombieIsResurrectedIfPutAgain() {
-		subject.begin();
-
-		subject.create(1L);
-		subject.destroy(1L);
-		subject.put(1L, account1);
-
-		subject.commit();
-		verify(backingTestAccounts).put(1L, account1);
-	}
-
-	@Test
-	void putsInOrderOfChanges() {
-		// setup:
-		int M = 2, N = 100;
-		InOrder inOrder = inOrder(backingTestAccounts);
-		List<Long> ids = LongStream.range(M, N).boxed().collect(toList());
-
-		// when:
-		subject.begin();
-		ids.forEach(id -> subject.create(id));
-		subject.commit();
-
-		// then:
-		LongStream.range(M, N).boxed().forEach(id -> {
-			inOrder.verify(backingTestAccounts).put(argThat(id::equals), any());
-		});
-	}
-
-	@Test
-	void destroysInOrder() {
-		// setup:
-		int M = 2, N = 100;
-		InOrder inOrder = inOrder(backingTestAccounts);
-		List<Long> ids = LongStream.range(M, N).boxed().collect(toList());
-
-		// when:
-		subject.begin();
-		ids.forEach(id -> subject.create(id));
-		subject.commit();
-		// and:
-		subject.begin();
-		ids.forEach(id -> subject.destroy(id));
-		subject.commit();
-
-		// then:
-		LongStream.range(M, N).boxed().forEach(id -> {
-			inOrder.verify(backingTestAccounts).put(argThat(id::equals), any());
-		});
-		// and:
-		LongStream.range(M, N).boxed().forEach(id -> {
-			inOrder.verify(backingTestAccounts).remove(id);
-		});
-	}
-
-	@Test
-	void requiresManualRollbackIfCommitFails() {
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		willThrow(IllegalStateException.class).given(backingTestAccounts).put(any(), any());
-
-		// when:
-		subject.begin();
-		subject.set(1L, OBJ, things[0]);
-		subject.create(2L);
-
-		// then:
-		assertThrows(IllegalStateException.class, () -> subject.commit());
-		assertTrue(subject.isInTransaction());
-	}
-
-	@Test
-	void recognizesPendingCreates() {
-		// when:
-		subject.begin();
-		subject.create(2L);
-
-		// then:
-		assertTrue(subject.existsPending(2L));
-		assertFalse(subject.existsPending(1L));
-	}
-
-	@Test
-	void reportsDeadAccountsIndividually() {
-		// when:
-		subject.begin();
-		subject.destroy(1L);
-
-		// then:
-		assertEquals("{*DEAD* 1}", subject.changeSetSoFar());
-	}
-
-	@Test
-	void existsIfNotMissingAndNotDestroyed() {
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-		given(backingTestAccounts.contains(2L)).willReturn(false);
-		given(backingTestAccounts.contains(3L)).willReturn(false);
-
-		// given:
-		subject.begin();
-		subject.create(2L);
-		subject.create(3L);
-		subject.destroy(3L);
-
-		// when:
-		boolean has1 = subject.exists(1L);
-		boolean has2 = subject.exists(2L);
-		boolean has3 = subject.exists(3L);
-
-		// then:
-		assertTrue(has1);
-		assertTrue(has2);
-		assertFalse(has3);
-	}
-
-	@Test
-	void delegatesDestroyToRemove() {
-		// given:
-		subject.begin();
-
-		// when:
-		subject.destroy(1L);
-		// and:
-		subject.commit();
-
-		// then:
-		verify(backingTestAccounts).remove(1L);
-	}
-
-	@Test
-	void throwsIfNotInTransaction() {
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.set(1L, OBJ, things[0]));
-		assertThrows(IllegalStateException.class, () -> subject.create(2L));
-		assertThrows(IllegalStateException.class, () -> subject.destroy(1L));
-	}
-
-	@Test
-	void throwsOnMutationToMissingAccount() {
-		// given:
-		subject.begin();
-
-		// expect:
-		assertThrows(MissingAccountException.class, () -> subject.set(0L, OBJ, things[0]));
-	}
-
-	@Test
-	void throwsOnGettingMissingAccount() {
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.getFinalized(2L));
-	}
-
-	@Test
-	void throwsOnCreationWithExistingAccountId() {
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		// given:
-		subject.begin();
-
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.create(1L));
-	}
-
-	@Test
-	void throwsOnGettingPropOfMissingAccount() {
-		// expect:
-		assertThrows(IllegalArgumentException.class, () -> subject.get(2L, OBJ));
-	}
-
-	@Test
-	void returnsPendingChangePropertiesOfExistingAccounts() {
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		// given:
-		subject.begin();
-		subject.set(1L, LONG, 3L);
-
-		// when:
-		long value = (long) subject.get(1L, LONG);
-
-		// then:
-		verify(backingTestAccounts, times(2)).contains(1L);
-		assertEquals(3L, value);
-	}
-
-	@Test
-	void incorporatesMutationToPendingNewAccount() {
-		// given:
-		subject.begin();
-		subject.create(2L);
-
-		// when:
-		subject.set(2L, OBJ, things[2]);
-
-		// then:
-		assertEquals(new TestAccount(0L, things[2], false), subject.getFinalized(2L));
-	}
-
-	@Test
-	void returnsSetPropertiesOfPendingNewAccounts() {
-		// given:
-		subject.begin();
-		subject.create(2L);
-		subject.set(2L, OBJ, things[2]);
-
-		// when:
-		Object thing = subject.get(2L, OBJ);
-
-		// then:
-		assertEquals(things[2], thing);
-	}
-
-	@Test
-	void returnsDefaultForUnsetPropertiesOfPendingNewAccounts() {
-		// given:
-		subject.begin();
-		subject.create(2L);
-		subject.set(2L, OBJ, things[2]);
-
-		// when:
-		boolean flag = (boolean) subject.get(2L, FLAG);
-
-		// then:
-		assertFalse(flag);
-	}
-
-	@Test
-	void reflectsChangeToExistingAccountIfInTransaction() {
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		final var expected = new TestAccount(account1.value, things[0], account1.flag, 667L,
-				account1.validHbarAllowances, account1.validFungibleAllowances, account1.validNftAllowances);
-
-		// given:
-		subject.begin();
-
-		// when:
-		subject.set(1L, OBJ, things[0]);
-
-		// expect:
-		assertEquals(expected, subject.getFinalized(1L));
-	}
-
-	@Test
-	void canUndoSpecificChange() {
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-		// setup:
-		ArgumentCaptor<TestAccount> captor = ArgumentCaptor.forClass(TestAccount.class);
-		final var changesToUndo = List.of(FLAG);
-
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.undoChangesOfType(changesToUndo));
-		// given:
-		subject.begin();
-
-		// when:
-		subject.set(1L, OBJ, things[0]);
-		subject.set(1L, FLAG, true);
-		// and:
-		subject.undoChangesOfType(List.of(FLAG));
-		// and:
-		subject.commit();
-
-		// expect:
-		verify(backingTestAccounts).put(longThat(l -> l == 1L), captor.capture());
-		// and:
-		final var committed = captor.getValue();
-		assertSame(things[0], committed.getThing());
-		assertFalse(committed.isFlag());
-	}
-
-	@Test
-	void throwsIfTxnAlreadyBegun() {
-		// given:
-		subject.begin();
-
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.begin());
-	}
-
-	@Test
-	void throwsOnRollbackWithoutActiveTxn() {
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.rollback());
-	}
-
-	@Test
-	void throwsOnCommitWithoutActiveTxn() {
-		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.commit());
-	}
-
-	@Test
-	void dropsPendingChangesAfterRollback() {
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		// given:
-		subject.begin();
-
-		// when:
-		subject.set(1L, OBJ, things[0]);
-		subject.create(2L);
-		subject.set(2L, OBJ, things[2]);
-		// and:
-		subject.rollback();
-
-		// expect:
-		assertFalse(subject.isInTransaction());
-		assertEquals(account1, subject.getFinalized(1L));
-		assertThrows(IllegalArgumentException.class, () -> subject.getFinalized(2L));
-	}
-
-	@Test
-	void persistsPendingChangesAndDestroysDeadAccountsAfterCommit() {
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		// setup:
-		var expected2 = new TestAccount(2L, things[2], false);
-
-		// given:
-		subject.begin();
-
-		// when:
-		subject.set(1L, OBJ, things[0]);
-		subject.create(2L);
-		subject.set(2L, OBJ, things[2]);
-		subject.set(2L, LONG, 2L);
-		subject.create(3L);
-		subject.set(3L, OBJ, things[3]);
-		subject.destroy(3L);
-		// and:
-		subject.commit();
-
-		// expect:
-		assertFalse(subject.isInTransaction());
-		assertEquals("{}", subject.changeSetSoFar());
-		// and:
-		verify(backingTestAccounts).put(2L, expected2);
-		verify(backingTestAccounts).put(1L, new TestAccount(1L, things[0], false, 667L,
-				TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK));
-		verify(backingTestAccounts, never()).put(3L, new TestAccount(0L, things[3], false));
-		verify(backingTestAccounts).remove(3L);
-	}
-
-	@Test
-	void reflectsUnchangedAccountIfNoChanges() {
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-		assertEquals(account1, subject.getFinalized(1L));
-	}
-
-	@Test
-	void validateHappyPath() {
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		subject.begin();
-		subject.set(1L, LONG, 123L);
-		subject.set(1L, FLAG, false);
-		subject.set(1L, OBJ, "DEFAULT");
-		subject.commit();
-
-		assertEquals(OK, subject.validate(1L, scopedCheck));
-	}
-
-	@Test
-	void validationFailsForMissingAccount() {
-		assertEquals(INVALID_ACCOUNT_ID, subject.validate(2L, scopedCheck));
-	}
-
-	@Test
-	void validationFailsAsExpected() {
-		TestAccount account2 = new TestAccount(321L, things[1], false, 667L);
-		TestAccount account3 = new TestAccount(123L, things[1], true, 667L);
-		TestAccount account4 = new TestAccount(123L, "RANDOM", false, 667L);
-
-		when(backingTestAccounts.contains(2L)).thenReturn(true);
-		when(backingTestAccounts.getImmutableRef(2L)).thenReturn(account2);
-		when(backingTestAccounts.contains(3L)).thenReturn(true);
-		when(backingTestAccounts.getImmutableRef(3L)).thenReturn(account3);
-		when(backingTestAccounts.contains(4L)).thenReturn(true);
-		when(backingTestAccounts.getImmutableRef(4L)).thenReturn(account4);
-
-		assertEquals(ACCOUNT_IS_NOT_GENESIS_ACCOUNT, subject.validate(2L, scopedCheck));
-		assertEquals(ACCOUNT_IS_TREASURY, subject.validate(3L, scopedCheck));
-		assertEquals(ACCOUNT_STILL_OWNS_NFTS, subject.validate(4L, scopedCheck));
-	}
-
-	@Test
-	void validationFailsWithMissingHbarAllowance() {
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		subject.begin();
-		subject.set(1L, LONG, 123L);
-		subject.set(1L, FLAG, false);
-		subject.set(1L, OBJ, "DEFAULT");
-		subject.set(1L, HBAR_ALLOWANCES, MISSING);
-		subject.commit();
-
-		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.validate(1L, scopedCheck));
-	}
-
-	@Test
-	void validationFailsWithInsufficientHbarAllowance() {
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
-		given(backingTestAccounts.contains(1L)).willReturn(true);
-
-		subject.begin();
-		subject.set(1L, LONG, 123L);
-		subject.set(1L, FLAG, false);
-		subject.set(1L, OBJ, "DEFAULT");
-		subject.set(1L, HBAR_ALLOWANCES, INSUFFICIENT);
-		subject.commit();
-
-		assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, subject.validate(1L, scopedCheck));
-	}
-
-	@Test
-	void idSetPropagatesCallToEntities() {
-		Set<Long> idSet = Set.of(1L, 2L, 3L);
-		given(backingTestAccounts.idSet()).willReturn(idSet);
-
-		assertEquals(idSet, subject.idSet());
-		verify(backingTestAccounts).idSet();
-	}
-
-	@Test
-	void sizePropagatesCallToEntities() {
-		var size = 23L;
-		given(backingTestAccounts.size()).willReturn(size);
-
-		assertEquals(size, subject.size());
-		verify(backingTestAccounts).size();
-	}
+	private static final ByteString alias = ByteString.copyFromUtf8("These aren't the droids you're looking for");
+	private static final AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
+	private static final AccountID aliasAccountId = AccountID.newBuilder().setAlias(alias).build();
+	private static final MerkleAccount randMerkleAccount = new MerkleAccount();
+	private static final MerkleAccount aliasMerkleAccount = new MerkleAccount();
 }

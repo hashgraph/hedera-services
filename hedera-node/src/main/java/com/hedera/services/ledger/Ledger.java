@@ -56,14 +56,6 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	void destroy(K id);
 
 	/**
-	 * Gets the account with the specified id.
-	 *
-	 * @param id the id of the relevant account.
-	 * @return the account.
-	 */
-	A getFinalized(K id);
-
-	/**
 	 * Gets the current property value of the specified account. This value
 	 * need not be persisted to a durable backing store.
 	 *

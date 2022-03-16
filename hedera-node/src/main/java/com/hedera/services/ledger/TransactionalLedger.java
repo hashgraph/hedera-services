@@ -20,15 +20,16 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -36,7 +37,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -62,7 +62,7 @@ import static java.util.stream.Collectors.joining;
  */
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		implements Ledger<K, P, A>, BackingStore<K, A> {
-	private static final int MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN = 42;
+	public static final int MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN = 42;
 
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
@@ -80,18 +80,18 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
 	private final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
-	private final List<EntityChanges<K, A, P>> entityChanges = new ArrayList<>();
 
 	private boolean isInTransaction = false;
+	private Function<K, String> keyToString = null;
+	private EntityChangeSet<K, A, P> pendingChanges = null;
+	private CommitInterceptor<K, A, P> commitInterceptor = null;
 	private PropertyChangeObserver<K, P> propertyChangeObserver = null;
-	private Optional<Function<K, String>> keyToString = Optional.empty();
-	private CommitInterceptor<K, A, P> commitInterceptor;
 
 	public TransactionalLedger(
-			Class<P> propertyType,
-			Supplier<A> newEntity,
-			BackingStore<K, A> entities,
-			ChangeSummaryManager<A, P> changeManager
+			final Class<P> propertyType,
+			final Supplier<A> newEntity,
+			final BackingStore<K, A> entities,
+			final ChangeSummaryManager<A, P> changeManager
 	) {
 		this.entities = entities;
 		this.allProps = propertyType.getEnumConstants();
@@ -105,10 +105,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		} else {
 			this.entitiesLedger = null;
 		}
-	}
-
-	public void setCommitInterceptor(final CommitInterceptor<K, A, P> commitInterceptor) {
-		this.commitInterceptor = commitInterceptor;
 	}
 
 	/**
@@ -138,8 +134,51 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return wrapper;
 	}
 
+	public boolean isInTransaction() {
+		return isInTransaction;
+	}
+
+	public String changeSetSoFar() {
+		final var desc = new StringBuilder("{");
+		final var isFirstChange = new AtomicBoolean(true);
+		changes.forEach((id, value) -> {
+			if (!isFirstChange.get()) {
+				desc.append(", ");
+			}
+			final var accountInDeadAccounts = deadEntities.contains(id) ? "*DEAD* " : "";
+			final var accountNotInDeadAccounts = deadEntities.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
+			final var prefix = entities.contains(id)
+					? accountInDeadAccounts
+					: accountNotInDeadAccounts;
+			desc.append(prefix)
+					.append(readable(id))
+					.append(": [");
+			desc.append(
+					value.entrySet().stream()
+							.map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
+							.collect(joining(", ")));
+			desc.append("]");
+			isFirstChange.set(false);
+		});
+		deadEntities.stream()
+				.filter(id -> !changes.containsKey(id))
+				.forEach(id -> {
+					if (!isFirstChange.get()) {
+						desc.append(", ");
+					}
+					desc.append("*DEAD* ").append(readable(id));
+					isFirstChange.set(false);
+				});
+		return desc.append("}").toString();
+	}
+
 	public void setKeyToString(final Function<K, String> keyToString) {
-		this.keyToString = Optional.of(keyToString);
+		this.keyToString = keyToString;
+	}
+
+	public void setCommitInterceptor(final CommitInterceptor<K, A, P> commitInterceptor) {
+		this.commitInterceptor = commitInterceptor;
+		pendingChanges = new EntityChangeSet<>();
 	}
 
 	public void setPropertyChangeObserver(final PropertyChangeObserver<K, P> propertyChangeObserver) {
@@ -151,7 +190,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 			throw new IllegalStateException("A transaction is already active!");
 		}
 		isInTransaction = true;
-		entityChanges.clear();
+		if (pendingChanges != null) {
+			pendingChanges.clear();
+		}
 	}
 
 	public void undoChangesOfType(List<P> properties) {
@@ -199,13 +240,12 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		try {
 			if (commitInterceptor != null) {
 				computePendingEntityChanges();
-				commitInterceptor.preview(entityChanges);
+				commitInterceptor.preview(pendingChanges);
 			}
 
 			flushListed(changedKeys);
 			flushListed(createdKeys);
 			changes.clear();
-			entityChanges.clear();
 
 			if (!deadEntities.isEmpty()) {
 				perishedKeys.forEach(entities::remove);
@@ -244,24 +284,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 			changedKeys.add(id);
 			return changeFactory.apply(id);
 		}), property, value);
-	}
-
-	@Override
-	public A getFinalized(K id) {
-		throwIfMissing(id);
-
-		final EnumMap<P, Object> changeSet = changes.get(id);
-		final boolean hasPendingChanges = changeSet != null;
-		final A entity = entities.contains(id) ? entities.getRef(id) : newEntity.get();
-		if (hasPendingChanges) {
-			if (propertyChangeObserver != null) {
-				changeManager.persistWithObserver(id, changeSet, entity, propertyChangeObserver);
-			} else {
-				changeManager.persist(changeSet, entity);
-			}
-		}
-
-		return entity;
 	}
 
 	@Override
@@ -381,7 +403,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return entities.size();
 	}
 
-	/* --- Helpers --- */
 	public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
 		if (!exists(id)) {
 			return INVALID_ACCOUNT_ID;
@@ -397,6 +418,23 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 			final var extantProps = extantLedgerPropsFor(id);
 			return ledgerCheck.checkUsing(extantProps, changeSet);
 		}
+	}
+
+	/* --- Helpers --- */
+	A getFinalized(final K id) {
+		final A entity = entities.contains(id) ? entities.getRef(id) : newEntity.get();
+		return finalized(id, entity, changes.get(id));
+	}
+
+	private A finalized(final K id, final A entity, @Nullable final EnumMap<P, Object> changes) {
+		if (changes != null) {
+			if (propertyChangeObserver != null) {
+				changeManager.persistWithObserver(id, changes, entity, propertyChangeObserver);
+			} else {
+				changeManager.persist(changes, entity);
+			}
+		}
+		return entity;
 	}
 
 	private void setPropsWithSource(final K id, final A entity, final Function<P, Object> extantProps) {
@@ -415,45 +453,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return entitiesLedger.contains(id)
 				? prop -> entitiesLedger.get(id, prop)
 				: newDefaultPropertySource();
-	}
-
-	public boolean isInTransaction() {
-		return isInTransaction;
-	}
-
-	public String changeSetSoFar() {
-		StringBuilder desc = new StringBuilder("{");
-		AtomicBoolean isFirstChange = new AtomicBoolean(true);
-		changes.entrySet().forEach(change -> {
-			if (!isFirstChange.get()) {
-				desc.append(", ");
-			}
-			K id = change.getKey();
-			var accountInDeadAccounts = deadEntities.contains(id) ? "*DEAD* " : "";
-			var accountNotInDeadAccounts = deadEntities.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
-			var prefix = entities.contains(id)
-					? accountInDeadAccounts
-					: accountNotInDeadAccounts;
-			desc.append(prefix)
-					.append(keyToString.orElse(EntityIdUtils::readableId).apply(id))
-					.append(": [");
-			desc.append(
-					change.getValue().entrySet().stream()
-							.map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
-							.collect(joining(", ")));
-			desc.append("]");
-			isFirstChange.set(false);
-		});
-		deadEntities.stream()
-				.filter(id -> !changes.containsKey(id))
-				.forEach(id -> {
-					if (!isFirstChange.get()) {
-						desc.append(", ");
-					}
-					desc.append("*DEAD* ").append(readableId(id));
-					isFirstChange.set(false);
-				});
-		return desc.append("}").toString();
 	}
 
 	void throwIfNotInTxn() {
@@ -522,16 +521,17 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return prop -> prop.getter().apply(defaultEntity);
 	}
 
-	private List<EntityChanges<K, A, P>> computePendingEntityChanges() {
-		for (final var change : changes.entrySet()) {
-			final var id = change.getKey();
-			final var entityProperties = change.getValue();
-			final var entity = entities.contains(id) ? entities.getRef(id) : null;
-			final var entityChange = new EntityChanges<>(id, entity, entityProperties);
-			entityChanges.add(entityChange);
-		}
+	private void computePendingEntityChanges() {
+		changes.forEach((id, entityChanges) -> {
+			if (!deadEntities.contains(id)) {
+				final var entity = entities.contains(id) ? entities.getRef(id) : null;
+				pendingChanges.include(id, entity, entityChanges);
+			}
+		});
+	}
 
-		return entityChanges;
+	String readable(final K id) {
+		return (keyToString == null) ? readableId(id) : keyToString.apply(id);
 	}
 
 	ChangeSummaryManager<A, P> getChangeManager() {
@@ -546,8 +546,14 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return propertyType;
 	}
 
-	/* --- Only used by unit tests --- */
+	// --- Only used by unit tests ---
+	@VisibleForTesting
 	public TransactionalLedger<K, P, A> getEntitiesLedger() {
 		return entitiesLedger;
+	}
+
+	@VisibleForTesting
+	EntityChangeSet<K, A, P> getPendingChanges() {
+		return pendingChanges;
 	}
 }

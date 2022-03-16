@@ -25,7 +25,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,15 +49,16 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	 * 		if these changes are invalid
 	 */
 	@Override
-	public void preview(final List<EntityChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
-		for (final var changeToCommit : changesToCommit) {
-			final var account = changeToCommit.id().getAccountNum();
-			final var merkleAccount = changeToCommit.entity();
-			final var changedProperties = changeToCommit.changes();
-
-			trackBalanceChangeIfAny(changedProperties, account, merkleAccount);
-		}
-		assertZeroSum();
+	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+//		for (final var changeToCommit : pendingChanges) {
+//			final var account = changeToCommit.id().getAccountNum();
+//			final var merkleAccount = changeToCommit.entity();
+//			final var changedProperties = changeToCommit.changes();
+//
+//			trackBalanceChangeIfAny(changedProperties, account, merkleAccount);
+//		}
+//		assertZeroSum();
+		throw new AssertionError("Not implemented");
 	}
 
 	private void trackBalanceChangeIfAny(

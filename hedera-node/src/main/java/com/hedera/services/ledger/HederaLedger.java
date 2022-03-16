@@ -455,10 +455,6 @@ public class HederaLedger {
 		return accountsLedger.existsPending(id);
 	}
 
-	public MerkleAccount get(AccountID id) {
-		return accountsLedger.getFinalized(id);
-	}
-
 	/* -- HELPERS -- */
 	private boolean isLegalToAdjust(long balance, long adjustment) {
 		return (balance + adjustment >= 0);
