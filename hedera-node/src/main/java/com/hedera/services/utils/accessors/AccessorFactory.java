@@ -22,13 +22,14 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.common.SwirldTransaction;
 
 import javax.inject.Inject;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
-import static com.hedera.services.utils.accessors.SignedTxnAccessor.functionExtractor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 
 public class AccessorFactory {
@@ -39,13 +40,38 @@ public class AccessorFactory {
 		this.aliasManager = aliasManager;
 	}
 
-	public PlatformTxnAccessor constructFrom(SwirldTransaction transaction) throws InvalidProtocolBufferException {
-		final var body = extractTransactionBody(Transaction.parseFrom(transaction.getContents()));
-		final var function = functionExtractor.apply(body);
+	public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
+		subtype.setTriggered(false);
+		subtype.setScheduleRef(null);
+		return subtype;
+	}
+
+	public TxnAccessor triggeredTxn(byte[] signedTxnWrapperBytes, final AccountID payer,
+			ScheduleID parent) throws InvalidProtocolBufferException {
+		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
+		subtype.setTriggered(true);
+		subtype.setScheduleRef(parent);
+		subtype.setPayer(payer);
+		return subtype;
+	}
+
+	/**
+	 * parse the signedTxnWrapperBytes, figure out what specialized implementation to use
+	 * construct the subtype instance
+	 *
+	 * @param signedTxnWrapperBytes
+	 * @return
+	 * @throws InvalidProtocolBufferException
+	 */
+	private TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
+			throws InvalidProtocolBufferException {
+		final var body = extractTransactionBody(Transaction.parseFrom(signedTxnWrapperBytes));
+		final var function = MiscUtils.functionExtractor.apply(body);
 		if (function == TokenAccountWipe) {
-			return new TokenWipeAccessor(transaction, aliasManager);
+			return new TokenWipeAccessor(signedTxnWrapperBytes, aliasManager);
 		}
-		return new PlatformTxnAccessor(transaction, aliasManager);
+		return SignedTxnAccessor.from(signedTxnWrapperBytes);
 	}
 }
 

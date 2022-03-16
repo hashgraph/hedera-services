@@ -28,9 +28,9 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 public enum BadPayerScenarios implements TxnHandlingScenario {
 	INVALID_PAYER_ID_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedCryptoCreate().payer(MISSING_ACCOUNT_ID).get()
-			), aliasManager());
+			));
 		}
 	}
 }

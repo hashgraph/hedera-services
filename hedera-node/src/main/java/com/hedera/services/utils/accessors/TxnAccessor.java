@@ -53,36 +53,12 @@ public interface TxnAccessor {
     SignatureMap getSigMap();
     void setExpandedSigStatus(ResponseCodeEnum status);
     ResponseCodeEnum getExpandedSigStatus();
-    default PubKeyToSigBytes getPkToSigsFn() {
-        throw new UnsupportedOperationException();
-    }
-    default void setSigMeta(RationalizedSigMeta sigMeta) {
-        throw new UnsupportedOperationException();
-    }
-    default RationalizedSigMeta getSigMeta() {
-        throw new UnsupportedOperationException();
-    }
-    default Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
-    	final var sigMeta = getSigMeta();
-    	if (!sigMeta.couldRationalizeOthers()) {
-    	    throw new IllegalStateException("Public-key-to-crypto-sig mapping is unusable after rationalization failed");
-        }
-    	return sigMeta.pkToVerifiedSigFn();
-    }
-
-    default BaseTransactionMeta baseUsageMeta() {
-        throw new UnsupportedOperationException();
-    }
-    default CryptoTransferMeta availXferUsageMeta() {
-        throw new UnsupportedOperationException();
-    }
-    default SubmitMessageMeta availSubmitUsageMeta() {
-        throw new UnsupportedOperationException();
-    }
+    PubKeyToSigBytes getPkToSigsFn();
 
     long getOfferedFee();
     AccountID getPayer();
     TransactionID getTxnId();
+
     HederaFunctionality getFunction();
     SubType getSubType();
 
@@ -99,25 +75,13 @@ public interface TxnAccessor {
     boolean canTriggerTxn();
     boolean isTriggeredTxn();
     ScheduleID getScheduleRef();
+    void setTriggered(boolean b);
+    void setScheduleRef(ScheduleID parent);
+    void setPayer(AccountID payer);
 
-    /**
-     * Extracts the gasLimit value from a {@link HederaFunctionality#ContractCall} or a
-     * {@link HederaFunctionality#ContractCreate} transaction
-     * @return - the gasLimit value of the transaction
-     */
     long getGasLimitForContractTx();
-
-    default SwirldTransaction getPlatformTxn() {
-        throw new UnsupportedOperationException();
-    }
-
-    default Map<String, Object> getSpanMap() {
-        throw new UnsupportedOperationException();
-    }
-
-    default ExpandHandleSpanMapAccessor getSpanMapAccessor() {
-        throw new UnsupportedOperationException();
-    }
+    Map<String, Object> getSpanMap();
+    ExpandHandleSpanMapAccessor getSpanMapAccessor();
 
     void setNumAutoCreations(int numAutoCreations);
     int getNumAutoCreations();
@@ -126,4 +90,5 @@ public interface TxnAccessor {
 
     void setLinkedRefs(LinkedRefs linkedRefs);
     LinkedRefs getLinkedRefs();
+    Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn();
 }

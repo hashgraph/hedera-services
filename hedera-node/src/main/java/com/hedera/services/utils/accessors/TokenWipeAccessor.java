@@ -23,22 +23,26 @@ package com.hedera.services.utils.accessors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
-import com.swirlds.common.SwirldTransaction;
 
 import java.util.List;
 
-public class TokenWipeAccessor extends PlatformTxnAccessor {
+public class TokenWipeAccessor extends SignedTxnAccessor {
 	final TokenWipeAccountTransactionBody body;
+	private AliasManager aliasManager;
 
-	public TokenWipeAccessor(final SwirldTransaction txn,
-			final AliasManager aliasManager) throws InvalidProtocolBufferException {
-		super(txn, aliasManager);
+	public TokenWipeAccessor(final byte[] txn, final AliasManager aliasManager) throws InvalidProtocolBufferException {
+		super(txn);
 		this.body = getTxn().getTokenWipe();
+		this.aliasManager = aliasManager;
 	}
 
 	public Id accountToWipe() {
-		return unaliased(body.getAccount()).toId();
+		return aliasManager.unaliased(body.getAccount()).toId();
 	}
 
 	public Id targetToken() {
@@ -51,5 +55,13 @@ public class TokenWipeAccessor extends PlatformTxnAccessor {
 
 	public long amount() {
 		return body.getAmount();
+	}
+
+	protected EntityNum unaliased(AccountID grpcId) {
+		return aliasManager.unaliased(grpcId);
+	}
+
+	protected EntityNum unaliased(ContractID grpcId) {
+		return EntityIdUtils.unaliased(grpcId, aliasManager);
 	}
 }

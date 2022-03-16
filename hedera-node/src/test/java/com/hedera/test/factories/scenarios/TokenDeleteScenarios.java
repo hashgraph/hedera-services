@@ -29,31 +29,31 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
 	DELETE_WITH_KNOWN_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenDelete()
 							.deleting(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	DELETE_WITH_MISSING_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenDelete()
 							.deleting(MISSING_TOKEN)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	DELETE_WITH_MISSING_TOKEN_ADMIN_KEY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenDelete()
 							.deleting(KNOWN_TOKEN_IMMUTABLE)
 							.get()
-			), aliasManager());
+			));
 		}
 	}
 }

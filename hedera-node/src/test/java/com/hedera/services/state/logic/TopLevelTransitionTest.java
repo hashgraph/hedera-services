@@ -22,7 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +51,7 @@ class TopLevelTransitionTest {
 	@Mock
 	private TxnChargingPolicyAgent chargingPolicyAgent;
 	@Mock
-	private TxnAccessor accessor;
+	private PlatformTxnAccessor accessor;
 	@Mock
 	private RequestedTransition requestedTransition;
 	@Mock

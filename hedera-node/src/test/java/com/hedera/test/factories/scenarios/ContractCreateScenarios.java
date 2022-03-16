@@ -28,23 +28,23 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 public enum ContractCreateScenarios implements TxnHandlingScenario {
 	CONTRACT_CREATE_WITH_ADMIN_KEY {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedContractCreate().useAdminKey(true).get()
-			), aliasManager());
+			));
 		}
 	},
 	CONTRACT_CREATE_NO_ADMIN_KEY {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedContractCreate().useAdminKey(false).get()
-			), aliasManager());
+			));
 		}
 	},
 	CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedContractCreate().useDeprecatedAdminKey(true).get()
-			), aliasManager());
+			));
 		}
 	}
 }

@@ -28,16 +28,16 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 public enum ConsensusDeleteTopicScenarios implements TxnHandlingScenario {
 	CONSENSUS_DELETE_TOPIC_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedConsensusDeleteTopic(EXISTING_TOPIC_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	CONSENSUS_DELETE_TOPIC_MISSING_TOPIC_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedConsensusDeleteTopic(MISSING_TOPIC_ID).get()
-			), aliasManager());
+			));
 		}
 	}
 }

@@ -64,11 +64,11 @@ class AccessorFactoryTest {
 				new SwirldTransaction(Transaction.newBuilder()
 						.setBodyBytes(someTxn.toByteString())
 						.build().toByteArray());
-		assertTrue(subject.constructFrom(platformTxn) instanceof PlatformTxnAccessor);
+		assertTrue(subject.nonTriggeredTxn(platformTxn.getContentsDirect()) instanceof PlatformTxnAccessor);
 
 		SwirldTransaction wipeTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(tokenWipeTxn.toByteString())
 				.build().toByteArray());
-		assertTrue(subject.constructFrom(wipeTxn) instanceof TokenWipeAccessor);
+		assertTrue(subject.nonTriggeredTxn(wipeTxn.getContentsDirect()) instanceof TokenWipeAccessor);
 	}
 }

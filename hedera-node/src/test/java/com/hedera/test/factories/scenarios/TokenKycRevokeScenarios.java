@@ -29,34 +29,34 @@ public enum TokenKycRevokeScenarios implements TxnHandlingScenario {
 	VALID_REVOKE_WITH_EXTANT_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenRevokeKyc()
 							.revoking(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	REVOKE_WITH_MISSING_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenRevokeKyc()
 							.revoking(MISSING_TOKEN, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	REVOKE_FOR_TOKEN_WITHOUT_KYC {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenRevokeKyc()
 							.revoking(KNOWN_TOKEN_WITH_FREEZE, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 }

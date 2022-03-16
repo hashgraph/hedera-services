@@ -29,32 +29,32 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
 	BURN_WITH_SUPPLY_KEYED_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenBurn()
 							.burning(KNOWN_TOKEN_WITH_SUPPLY)
 							.nonPayerKts(TOKEN_SUPPLY_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	BURN_WITH_MISSING_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenBurn()
 							.burning(MISSING_TOKEN)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	BURN_FOR_TOKEN_WITHOUT_SUPPLY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenBurn()
 							.burning(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 }

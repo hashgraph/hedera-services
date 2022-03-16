@@ -28,6 +28,7 @@ import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.RationalizedSigMeta;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.sigs.SigWrappers;
@@ -237,7 +238,7 @@ class HederaKeyActivationTest {
 
 	@Test
 	void immediatelyReturnsFalseForNoRationalizedPayerData() {
-		final var accessor = mock(TxnAccessor.class);
+		final var accessor = mock(PlatformTxnAccessor.class);
 
 		given(accessor.getSigMeta()).willReturn(RationalizedSigMeta.noneAvailable());
 

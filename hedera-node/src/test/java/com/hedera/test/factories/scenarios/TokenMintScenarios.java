@@ -29,32 +29,32 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
 	MINT_WITH_SUPPLY_KEYED_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenMint()
 							.minting(KNOWN_TOKEN_WITH_SUPPLY)
 							.nonPayerKts(TOKEN_SUPPLY_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	MINT_WITH_MISSING_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenMint()
 							.minting(MISSING_TOKEN)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	MINT_FOR_TOKEN_WITHOUT_SUPPLY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenMint()
 							.minting(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 }

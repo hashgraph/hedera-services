@@ -30,50 +30,50 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 public enum FileAppendScenarios implements TxnHandlingScenario {
 	VANILLA_FILE_APPEND_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileAppend(MISC_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	SYSTEM_FILE_APPEND_WITH_PRIVILEGD_PAYER {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileAppend(SYS_FILE_ID)
 							.payer(MASTER_PAYER_ID)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TREASURY_SYS_FILE_APPEND_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileAppend(SYS_FILE_ID)
 							.payer(TREASURY_PAYER_ID)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	MASTER_SYS_FILE_APPEND_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileAppend(SYS_FILE_ID)
 							.payer(MASTER_PAYER_ID)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	IMMUTABLE_FILE_APPEND_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileAppend(IMMUTABLE_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	FILE_APPEND_MISSING_TARGET_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileAppend(MISSING_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	}
 }

@@ -88,7 +88,7 @@ class HederaToPlatformSigOpsTest {
 		allSigBytes = mock(PubKeyToSigBytes.class);
 		keyOrdering = mock(SigRequirements.class);
 		aliasManager = mock(AliasManager.class);
-		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.from(newSignedSystemDelete().get()), aliasManager);
+		platformTxn = PlatformTxnAccessor.from(PlatformTxnFactory.from(newSignedSystemDelete().get()));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -246,8 +246,7 @@ class HederaToPlatformSigOpsTest {
 	@Test
 	void doesNothingToTxnIfAllSigsAreRational() throws Exception {
 		wellBehavedOrdersAndSigSources();
-		platformTxn = new PlatformTxnAccessor(PlatformTxnFactory.withClearFlag(platformTxn.getPlatformTxn()),
-				aliasManager);
+		platformTxn = PlatformTxnAccessor.from(PlatformTxnFactory.withClearFlag(platformTxn.getPlatformTxn()));
 		platformTxn.getPlatformTxn().addAll(
 				asValid(expectedSigsWithNoErrors()).toArray(new TransactionSignature[0]));
 		final SyncVerifier syncVerifier = l -> {

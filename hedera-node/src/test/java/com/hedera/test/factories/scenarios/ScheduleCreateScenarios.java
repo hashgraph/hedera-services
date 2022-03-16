@@ -32,26 +32,26 @@ import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 	SCHEDULE_CREATE_NESTED_SCHEDULE_SIGN {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleCreate()
 							.missingAdmin()
 							.creating(newSignedScheduleSign().signing(KNOWN_SCHEDULE_IMMUTABLE).get())
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	SCHEDULE_CREATE_NONSENSE {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleCreate()
 							.schedulingNonsense()
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	SCHEDULE_CREATE_XFER_NO_ADMIN {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleCreate()
 							.missingAdmin()
 							.creating(newSignedCryptoTransfer()
@@ -59,12 +59,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	SCHEDULE_CREATE_INVALID_XFER {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleCreate()
 							.missingAdmin()
 							.creating(newSignedCryptoTransfer()
@@ -72,24 +72,24 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISSING_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	SCHEDULE_CREATE_XFER_WITH_ADMIN {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleCreate()
 							.creating(newSignedCryptoTransfer()
 									.skipPayerSig()
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleCreate()
 							.designatingPayer(DILIGENT_SIGNING_PAYER)
 							.creating(newSignedCryptoTransfer()
@@ -97,12 +97,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_SELF {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleCreate()
 							.designatingPayer(DEFAULT_PAYER)
 							.creating(newSignedCryptoTransfer()
@@ -110,12 +110,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	SCHEDULE_CREATE_XFER_WITH_MISSING_PAYER {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleCreate()
 							.missingAdmin()
 							.designatingPayer(MISSING_ACCOUNT)
@@ -124,7 +124,7 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
 									.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1_000L))
 									.get())
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 }

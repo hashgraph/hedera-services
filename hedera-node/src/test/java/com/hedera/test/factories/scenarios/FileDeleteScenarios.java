@@ -28,23 +28,23 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 public enum FileDeleteScenarios implements TxnHandlingScenario {
 	VANILLA_FILE_DELETE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileDelete(MISC_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	IMMUTABLE_FILE_DELETE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileDelete(IMMUTABLE_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	MISSING_FILE_DELETE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileDelete(MISSING_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	}
 }

@@ -21,7 +21,6 @@ package com.hedera.services.utils.accessors;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.order.LinkedRefs;
@@ -37,7 +36,10 @@ import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -47,6 +49,7 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,7 +61,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
-import static com.hedera.services.utils.MiscUtils.functionOf;
+import static com.hedera.services.utils.MiscUtils.functionExtractor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
@@ -66,7 +69,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAppro
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
@@ -114,13 +116,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private BaseTransactionMeta txnUsageMeta;
 	private HederaFunctionality function;
 
-	static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
-		try {
-			return functionOf(trans);
-		} catch (UnknownHederaFunctionality ignore) {
-			return NONE;
-		}
-	};
+	private AccountID payer;
+	private ScheduleID scheduleRef;
+	private AliasManager aliasManager;
+	private boolean isTriggered;
 
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
@@ -131,7 +130,16 @@ public class SignedTxnAccessor implements TxnAccessor {
 		}
 	}
 
-	public SignedTxnAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+	public static SignedTxnAccessor from(byte[] signedTxnWrapperBytes) {
+		try {
+			return new SignedTxnAccessor(signedTxnWrapperBytes);
+		} catch (Exception illegal) {
+			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
+			throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
+		}
+	}
+
+	protected SignedTxnAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
 		this.signedTxnWrapperBytes = signedTxnWrapperBytes;
 		signedTxnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
 
@@ -155,10 +163,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 		numSigPairs = sigMap.getSigPairCount();
 		utf8MemoBytes = StringUtils.getBytesUtf8(memo);
 		memoHasZeroByte = Arrays.contains(utf8MemoBytes, (byte) 0);
+		payer = getTxnId().getAccountID();
 
 		getFunction();
 		setBaseUsageMeta();
-		setOpUsageMeta();
+		setOpUsageMeta(); // TODO : delete when custom accessors are completed
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
@@ -178,6 +187,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public LinkedRefs getLinkedRefs() {
 		return linkedRefs;
+	}
+
+	@Override
+	public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -221,23 +235,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	@Override
-	public SubType getSubType() {
-		if (function == CryptoTransfer) {
-			return xferUsageMeta.getSubType();
-		} else if (function == TokenCreate) {
-			return SPAN_MAP_ACCESSOR.getTokenCreateMeta(this).getSubType();
-		} else if (function == TokenMint) {
-			final var op = getTxn().getTokenMint();
-			return op.getMetadataCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
-		} else if (function == TokenBurn) {
-			return SPAN_MAP_ACCESSOR.getTokenBurnMeta(this).getSubType();
-		} else if (function == TokenAccountWipe) {
-			return SPAN_MAP_ACCESSOR.getTokenWipeMeta(this).getSubType();
-		}
-		return SubType.DEFAULT;
-	}
-
-	@Override
 	public long getOfferedFee() {
 		return txn.getTransactionFee();
 	}
@@ -264,7 +261,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public AccountID getPayer() {
-		return getTxnId().getAccountID();
+		return payer;
 	}
 
 	@Override
@@ -309,20 +306,33 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public boolean isTriggeredTxn() {
-		return false;
+		return isTriggered;
 	}
 
 	@Override
 	public ScheduleID getScheduleRef() {
-		throw new UnsupportedOperationException("Only the TriggeredTxnAccessor implementation can refer to a schedule");
+		return scheduleRef;
 	}
 
 	@Override
+	public void setTriggered(final boolean isTriggered) {
+		this.isTriggered = isTriggered;
+	}
+
+	@Override
+	public void setScheduleRef(final ScheduleID scheduleRef) {
+		this.scheduleRef = scheduleRef;
+	}
+
+	@Override
+	public void setPayer(final AccountID payer) {
+		this.payer = payer;
+	}
+
 	public BaseTransactionMeta baseUsageMeta() {
 		return txnUsageMeta;
 	}
 
-	@Override
 	public CryptoTransferMeta availXferUsageMeta() {
 		if (function != CryptoTransfer) {
 			throw new IllegalStateException("Cannot get CryptoTransfer metadata for a " + function + ACCESSOR_LITERAL);
@@ -330,7 +340,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return xferUsageMeta;
 	}
 
-	@Override
 	public SubmitMessageMeta availSubmitUsageMeta() {
 		if (function != ConsensusSubmitMessage) {
 			throw new IllegalStateException(
@@ -360,6 +369,25 @@ public class SignedTxnAccessor implements TxnAccessor {
 				getTxn().getContractCall().getGas();
 	}
 
+	private void setBaseUsageMeta() {
+		if (function == CryptoTransfer) {
+			txnUsageMeta = new BaseTransactionMeta(
+					utf8MemoBytes.length,
+					txn.getCryptoTransfer().getTransfers().getAccountAmountsCount());
+		} else {
+			txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
+		}
+	}
+
+	protected EntityNum unaliased(AccountID grpcId) {
+		return aliasManager.unaliased(grpcId);
+	}
+
+	protected EntityNum unaliased(ContractID grpcId) {
+		return EntityIdUtils.unaliased(grpcId, aliasManager);
+	}
+
+	/*------------- TODO : This section should be deleted after custom accessors are complete --------------*/
 	private void setOpUsageMeta() {
 		if (function == CryptoTransfer) {
 			setXferUsageMeta();
@@ -476,13 +504,20 @@ public class SignedTxnAccessor implements TxnAccessor {
 		SPAN_MAP_ACCESSOR.setCryptoAdjustMeta(this, cryptoAdjustMeta);
 	}
 
-	private void setBaseUsageMeta() {
+	@Override
+	public SubType getSubType() {
 		if (function == CryptoTransfer) {
-			txnUsageMeta = new BaseTransactionMeta(
-					utf8MemoBytes.length,
-					txn.getCryptoTransfer().getTransfers().getAccountAmountsCount());
-		} else {
-			txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
+			return xferUsageMeta.getSubType();
+		} else if (function == TokenCreate) {
+			return SPAN_MAP_ACCESSOR.getTokenCreateMeta(this).getSubType();
+		} else if (function == TokenMint) {
+			final var op = getTxn().getTokenMint();
+			return op.getMetadataCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
+		} else if (function == TokenBurn) {
+			return SPAN_MAP_ACCESSOR.getTokenBurnMeta(this).getSubType();
+		} else if (function == TokenAccountWipe) {
+			return SPAN_MAP_ACCESSOR.getTokenWipeMeta(this).getSubType();
 		}
+		return SubType.DEFAULT;
 	}
 }

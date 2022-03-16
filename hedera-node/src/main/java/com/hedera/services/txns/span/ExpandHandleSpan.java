@@ -88,8 +88,8 @@ public class ExpandHandleSpan {
 	}
 
 	private PlatformTxnAccessor spanAccessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
-		final var accessor = factory.constructFrom(transaction);
+		final var accessor = factory.nonTriggeredTxn(transaction.getContentsDirect());
 		spanMapManager.expandSpan(accessor);
-		return accessor;
+		return PlatformTxnAccessor.from(accessor, transaction);
 	}
 }

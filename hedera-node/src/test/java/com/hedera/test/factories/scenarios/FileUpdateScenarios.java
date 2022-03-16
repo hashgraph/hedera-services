@@ -30,65 +30,65 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 public enum FileUpdateScenarios implements TxnHandlingScenario {
 	VANILLA_FILE_UPDATE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileUpdate(MISC_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	TREASURY_SYS_FILE_UPDATE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileUpdate(SYS_FILE_ID)
 							.payer(TREASURY_PAYER_ID)
 							.newWaclKt(SIMPLE_NEW_WACL_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TREASURY_SYS_FILE_UPDATE_SCENARIO_NO_NEW_KEY {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileUpdate(SYS_FILE_ID)
 							.payer(TREASURY_PAYER_ID)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	MASTER_SYS_FILE_UPDATE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileUpdate(SYS_FILE_ID)
 							.payer(MASTER_PAYER_ID)
 							.newWaclKt(SIMPLE_NEW_WACL_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	IMMUTABLE_FILE_UPDATE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileUpdate(IMMUTABLE_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	FILE_UPDATE_NEW_WACL_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileUpdate(MISC_FILE_ID)
 							.payer(TREASURY_PAYER_ID)
 							.newWaclKt(SIMPLE_NEW_WACL_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	FILE_UPDATE_MISSING_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileUpdate(MISSING_FILE_ID)
 							.payer(TREASURY_PAYER_ID)
 							.newWaclKt(SIMPLE_NEW_WACL_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	}
 }

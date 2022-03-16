@@ -29,31 +29,31 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 public enum CryptoCreateScenarios implements TxnHandlingScenario {
 	CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedCryptoCreate().receiverSigRequired(false).get()
-			), aliasManager());
+			));
 		}
 	},
 	CRYPTO_CREATE_RECEIVER_SIG_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedCryptoCreate()
 							.receiverSigRequired(true)
 							.nonPayerKts(DEFAULT_ACCOUNT_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedCryptoCreate()
 							.payer(COMPLEX_KEY_ACCOUNT_ID)
 							.payerKt(COMPLEX_KEY_ACCOUNT_KT)
 							.receiverSigRequired(true)
 							.nonPayerKts(DEFAULT_ACCOUNT_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	}
 }

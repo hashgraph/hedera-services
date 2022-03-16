@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -73,7 +74,7 @@ public class TopLevelTransition implements Runnable {
 
 	@Override
 	public void run() {
-		final var accessor = txnCtx.accessor();
+		final var accessor = (PlatformTxnAccessor) txnCtx.accessor();
 		final var now = txnCtx.consensusTime();
 		networkCtxManager.advanceConsensusClockTo(now);
 

@@ -29,6 +29,7 @@ import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
@@ -96,7 +97,7 @@ public class AccessorBasedUsages {
 			throw new IllegalArgumentException("Usage estimation for " + function + " not yet migrated");
 		}
 
-		final var baseMeta = accessor.baseUsageMeta();
+		final var baseMeta = ((SignedTxnAccessor) accessor).baseUsageMeta();
 		if (function == CryptoTransfer) {
 			estimateCryptoTransfer(sigUsage, accessor, baseMeta, into);
 		} else if (function == CryptoCreate) {
@@ -164,7 +165,7 @@ public class AccessorBasedUsages {
 			BaseTransactionMeta baseMeta,
 			UsageAccumulator into
 	) {
-		final var xferMeta = accessor.availXferUsageMeta();
+		final var xferMeta = ((SignedTxnAccessor) accessor).availXferUsageMeta();
 		xferMeta.setTokenMultiplier(dynamicProperties.feesTokenTransferUsageMultiplier());
 		cryptoOpsUsage.cryptoTransferUsage(sigUsage, xferMeta, baseMeta, into);
 	}
@@ -206,7 +207,7 @@ public class AccessorBasedUsages {
 			BaseTransactionMeta baseMeta,
 			UsageAccumulator into
 	) {
-		final var submitMeta = accessor.availSubmitUsageMeta();
+		final var submitMeta = ((SignedTxnAccessor) accessor).availSubmitUsageMeta();
 		consensusOpsUsage.submitMessageUsage(sigUsage, submitMeta, baseMeta, into);
 	}
 

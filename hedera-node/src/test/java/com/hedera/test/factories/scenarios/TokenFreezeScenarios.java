@@ -29,12 +29,12 @@ public enum TokenFreezeScenarios implements TxnHandlingScenario {
 	VALID_FREEZE_WITH_EXTANT_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenFreeze()
 							.freezing(KNOWN_TOKEN_WITH_FREEZE)
 							.nonPayerKts(TOKEN_FREEZE_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 }

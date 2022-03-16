@@ -28,9 +28,9 @@ import static com.hedera.test.factories.txns.SystemUndeleteFactory.newSignedSyst
 public enum SystemUndeleteScenarios implements TxnHandlingScenario {
 	SYSTEM_UNDELETE_FILE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedSystemUndelete().file(MISC_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	}
 }
