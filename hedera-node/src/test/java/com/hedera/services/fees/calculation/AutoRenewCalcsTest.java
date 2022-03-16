@@ -27,7 +27,6 @@ import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -77,7 +76,6 @@ class AutoRenewCalcsTest {
 			.setHbarEquiv(1)
 			.setCentEquiv(10)
 			.build();
-	private final int associatedTokensCount = 123;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -190,7 +188,7 @@ class AutoRenewCalcsTest {
 				.setCurrentKey(MiscUtils.asKeyUnchecked(expiredAccount.getAccountKey()))
 				.setCurrentlyHasProxy(true)
 				.setCurrentMemo(expiredAccount.getMemo())
-				.setCurrentNumTokenRels(associatedTokensCount)
+				.setCurrentNumTokenRels(expiredAccount.tokens().numAssociations())
 				.setCurrentMaxAutomaticAssociations(expiredAccount.getMaxAutomaticAssociations())
 				.setCurrentCryptoAllowances(getCryptoAllowancesList(expiredAccount))
 				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(expiredAccount))
@@ -258,8 +256,6 @@ class AutoRenewCalcsTest {
 				.tokens(asToken("1.2.3"), asToken("2.3.4"), asToken("3.4.5"))
 				.proxy(asAccount("0.0.12345"))
 				.memo("SHOCKED, I tell you!")
-				.associatedTokensCount(associatedTokensCount)
-				.lastAssociatedToken(EntityNumPair.fromLongs(2, 5).value())
 				.get();
 	}
 

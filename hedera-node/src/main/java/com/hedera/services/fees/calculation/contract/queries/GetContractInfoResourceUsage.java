@@ -21,7 +21,6 @@ package com.hedera.services.fees.calculation.contract.queries;
  */
 
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.contract.ContractGetInfoUsage;
@@ -42,14 +41,10 @@ public final class GetContractInfoResourceUsage implements QueryResourceUsageEst
 	private static final Function<Query, ContractGetInfoUsage> factory = ContractGetInfoUsage::newEstimate;
 
 	private final AliasManager aliasManager;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public GetContractInfoResourceUsage(
-			AliasManager aliasManager,
-			GlobalDynamicProperties dynamicProperties) {
+	public GetContractInfoResourceUsage(AliasManager aliasManager) {
 		this.aliasManager = aliasManager;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -60,8 +55,7 @@ public final class GetContractInfoResourceUsage implements QueryResourceUsageEst
 	@Override
 	public FeeData usageGiven(final Query query, final StateView view, @Nullable final Map<String, Object> queryCtx) {
 		final var op = query.getContractGetInfo();
-		final var tentativeInfo =
-				view.infoForContract(op.getContractID(), aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
+		final var tentativeInfo = view.infoForContract(op.getContractID(), aliasManager);
 		if (tentativeInfo.isPresent()) {
 			final var info = tentativeInfo.get();
 			putIfNotNull(queryCtx, CONTRACT_INFO_CTX_KEY, info);

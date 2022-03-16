@@ -164,7 +164,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateTokenBasics(ownerAccount, spender, token, tokenStore);
+			validity = validateTokenBasics(ownerAccount, spender, tokenId);
 			if (validity != OK) {
 				return validity;
 			}
@@ -212,7 +212,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 
-			var validity = validateTokenBasics(ownerAccount, spender, token, tokenStore);
+			var validity = validateTokenBasics(ownerAccount, spender, tokenId);
 			if (validity != OK) {
 				return validity;
 			}

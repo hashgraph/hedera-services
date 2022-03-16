@@ -49,7 +49,6 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetAccountInfo.class);
@@ -67,7 +66,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 	Optional<Integer> maxAutomaticAssociations = Optional.empty();
 	Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
 	private Optional<Consumer<AccountID>> idObserver = Optional.empty();
-	private Optional<Integer> tokenAssociationsCount = Optional.empty();
 	private boolean assertAliasKeyMatches = false;
 	private boolean assertAccountIDIsNotAlias = false;
 	private ReferenceType referenceType;
@@ -140,11 +138,6 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		return this;
 	}
 
-	public HapiGetAccountInfo hasTokenRelationShipCount(int count) {
-		tokenAssociationsCount = Optional.of(count);
-		return this;
-	}
-
 	public HapiGetAccountInfo hasOwnedNfts(long ownedNftsLen) {
 		this.ownedNfts = Optional.of(ownedNftsLen);
 		return this;
@@ -171,14 +164,14 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		if (assertAliasKeyMatches) {
 			Objects.requireNonNull(aliasKeySource);
 			final var expected = spec.registry().getKey(aliasKeySource).toByteString();
-			assertEquals(expected, actualInfo.getAlias());
+			Assertions.assertEquals(expected, actualInfo.getAlias());
 		}
 		if (assertAccountIDIsNotAlias) {
 			Objects.requireNonNull(aliasKeySource);
 			final var expectedKeyForAccount = spec.registry().getKey(aliasKeySource).toByteString().toStringUtf8();
 			final var expectedID = spec.registry().getAccountID(expectedKeyForAccount);
 			Assertions.assertNotEquals(actualInfo.getAlias(), actualInfo.getAccountID().getAccountNum());
-			assertEquals(expectedID, actualInfo.getAccountID());
+			Assertions.assertEquals(expectedID, actualInfo.getAccountID());
 		}
 		if (expectations.isPresent()) {
 			ErroringAsserts<AccountInfo> asserts = expectations.get().assertsFor(spec);
@@ -190,11 +183,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 		ExpectedTokenRel.assertNoUnexpectedRels(account, absentRelationships, actualTokenRels, spec);
 
 		var actualOwnedNfts = actualInfo.getOwnedNfts();
-		ownedNfts.ifPresent(nftsOwned -> assertEquals((long) nftsOwned, actualOwnedNfts));
+		ownedNfts.ifPresent(nftsOwned -> Assertions.assertEquals((long) nftsOwned, actualOwnedNfts));
 
 		var actualMaxAutoAssociations = actualInfo.getMaxAutomaticTokenAssociations();
 		maxAutomaticAssociations.ifPresent(maxAutoAssociations ->
-				assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
+				Assertions.assertEquals((int) maxAutoAssociations, actualMaxAutoAssociations));
 		alreadyUsedAutomaticAssociations.ifPresent(usedCount -> {
 			int actualCount = 0;
 			for (var rel : actualTokenRels) {
@@ -202,11 +195,9 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 					actualCount++;
 				}
 			}
-			assertEquals(actualCount, usedCount);
+			Assertions.assertEquals(actualCount, usedCount);
 		});
-		expectedLedgerId.ifPresent(id -> assertEquals(rationalize(id), actualInfo.getLedgerId()));
-
-		tokenAssociationsCount.ifPresent(count -> assertEquals(count, actualInfo.getTokenRelationshipsCount()));
+		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
 	}
 
 	@Override

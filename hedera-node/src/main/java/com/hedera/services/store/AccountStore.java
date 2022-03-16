@@ -24,7 +24,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -142,6 +141,7 @@ public class AccountStore {
 		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
+		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
 		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
@@ -158,10 +158,6 @@ public class AccountStore {
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
 		account.setNftAllowances(merkleAccount.getNftAllowances());
-		final var tokenAssociationMetadata = merkleAccount.getTokenAssociationMetadata();
-		account.setLastAssociatedToken(tokenAssociationMetadata.lastAssociation());
-		account.setNumAssociations(tokenAssociationMetadata.numAssociations());
-		account.setNumZeroBalances(tokenAssociationMetadata.numZeroBalances());
 
 		return account;
 	}
@@ -177,6 +173,7 @@ public class AccountStore {
 		final var grpcId = id.asGrpcAccount();
 		final var mutableAccount = accounts.getRef(grpcId);
 		mapModelToMutable(account, mutableAccount);
+		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 		accounts.put(grpcId, mutableAccount);
 	}
 
@@ -197,9 +194,6 @@ public class AccountStore {
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
 		mutableAccount.setNftAllowances(model.getMutableNftAllowances());
-		final var tokenAssociationMetadata = new TokenAssociationMetadata(
-				model.getNumAssociations(), model.getNumZeroBalances(), model.getLastAssociatedToken());
-		mutableAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,

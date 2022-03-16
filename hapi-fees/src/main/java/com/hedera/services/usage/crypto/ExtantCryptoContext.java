@@ -198,9 +198,9 @@ public class ExtantCryptoContext {
 		}
 	}
 
-	public record AllowanceMapKey(Long tokenNum, Long spenderNum) {
+	record AllowanceMapKey(Long tokenNum, Long spenderNum) {
 	}
 
-	public record AllowanceMapValue(Boolean approvedForAll, List<Long> serialNums) {
+	record AllowanceMapValue(Boolean approvedForAll, List<Long> serialNums) {
 	}
 }

@@ -61,11 +61,11 @@ public class DissociateLogic {
 		}
 
 		/* --- Do the business logic --- */
-		final var touchedRels = account.dissociateUsing(dissociations, tokenStore, validator);
+		account.dissociateUsing(dissociations, validator);
 
 		/* --- Persist the updated models --- */
 		accountStore.commitAccount(account);
-		final List<TokenRelationship> allUpdatedRels = new ArrayList<>(touchedRels);
+		final List<TokenRelationship> allUpdatedRels = new ArrayList<>();
 		for (var dissociation : dissociations) {
 			dissociation.addUpdatedModelRelsTo(allUpdatedRels);
 		}

@@ -20,7 +20,6 @@ package com.hedera.services.txns.token.process;
  * ‍
  */
 
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -31,18 +30,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public final class NewRels {
-	public static List<TokenRelationship> listFrom(Token provisionalToken, TypedTokenStore tokenStore) {
+public class NewRels {
+	public static List<TokenRelationship> listFrom(Token provisionalToken, int maxTokensPerAccount) {
 		final var treasury = provisionalToken.getTreasury();
 		final Set<Id> associatedSoFar = new HashSet<>();
 		final List<TokenRelationship> newRels = new ArrayList<>();
 
-		associateGiven(provisionalToken, treasury, tokenStore, associatedSoFar, newRels);
+		associateGiven(maxTokensPerAccount, provisionalToken, treasury, associatedSoFar, newRels);
 
 		for (final var customFee : provisionalToken.getCustomFees()) {
 			if (customFee.requiresCollectorAutoAssociation()) {
 				final var collector = customFee.getValidatedCollector();
-				associateGiven(provisionalToken, collector, tokenStore, associatedSoFar, newRels);
+				associateGiven(maxTokensPerAccount, provisionalToken, collector, associatedSoFar, newRels);
 			}
 		}
 
@@ -50,9 +49,9 @@ public final class NewRels {
 	}
 
 	private static void associateGiven(
+			final int maxTokensPerAccount,
 			final Token provisionalToken,
 			final Account account,
-			final TypedTokenStore tokenStore,
 			final Set<Id> associatedSoFar,
 			final List<TokenRelationship> newRelations
 	)  {
@@ -61,7 +60,9 @@ public final class NewRels {
 			return;
 		}
 
-		newRelations.addAll(account.associateWith(List.of(provisionalToken), tokenStore, false, true));
+		final var newRel = provisionalToken.newEnabledRelationship(account);
+		account.associateWith(List.of(provisionalToken), maxTokensPerAccount, false);
+		newRelations.add(newRel);
 		associatedSoFar.add(accountId);
 	}
 

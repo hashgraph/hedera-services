@@ -35,11 +35,11 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
@@ -70,7 +70,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -264,6 +264,14 @@ public class HederaLedger {
 	}
 
 	/* --- TOKEN MANIPULATION --- */
+	public MerkleAccountTokens getAssociatedTokens(AccountID aId) {
+		return (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
+	}
+
+	public void setAssociatedTokens(AccountID aId, MerkleAccountTokens tokens) {
+		accountsLedger.set(aId, TOKENS, tokens);
+	}
+
 	public long getTokenBalance(AccountID aId, TokenID tId) {
 		var relationship = asTokenRel(aId, tId);
 		return (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
@@ -274,8 +282,18 @@ public class HederaLedger {
 			throw new IllegalStateException("Ledger has no manageable token relationships!");
 		}
 
-		final var tokenAssociationMetadata = (TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
-		return tokenAssociationMetadata.hasNoTokenBalances();
+		var tokens = (MerkleAccountTokens) accountsLedger.get(aId, TOKENS);
+		for (TokenID tId : tokens.asTokenIds()) {
+			if (tokenStore.get(tId).isDeleted()) {
+				continue;
+			}
+			var relationship = asTokenRel(aId, tId);
+			var balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
+			if (balance > 0) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public boolean isKnownTreasury(AccountID aId) {

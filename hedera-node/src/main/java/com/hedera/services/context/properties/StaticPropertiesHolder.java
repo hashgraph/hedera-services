@@ -22,7 +22,6 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -72,10 +71,6 @@ public class StaticPropertiesHolder {
 
 	public Id scopedIdWith(final long num) {
 		return new Id(shard, realm, num);
-	}
-
-	public EntityId scopedEntityIdWith(final long num) {
-		return new EntityId(shard, realm, num);
 	}
 
 	public FileID scopedFileWith(final long num) {

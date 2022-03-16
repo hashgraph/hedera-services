@@ -55,13 +55,13 @@ import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOW
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class TransferLogic {
 	public static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS = List.of(
-			TOKEN_ASSOCIATION_METADATA,
+			TOKENS,
 			NUM_NFTS_OWNED,
 			ALREADY_USED_AUTOMATIC_ASSOCIATIONS
 	);

@@ -22,7 +22,6 @@ package com.hedera.services.state.exports;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -59,9 +58,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 
-import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
+import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
 
 @Singleton
 public class SignedStateBalancesExporter implements BalancesExporter {
@@ -224,7 +224,7 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 				SingleAccountBalances.Builder sabBuilder = SingleAccountBalances.newBuilder();
 				sabBuilder.setHbarBalance(balance).setAccountID(accountId);
 				if (dynamicProperties.shouldExportTokenBalances()) {
-					addTokenBalances(account, sabBuilder, tokens, tokenAssociations);
+					addTokenBalances(accountId, account, sabBuilder, tokens, tokenAssociations);
 				}
 				accountBalances.add(sabBuilder.build());
 			}
@@ -234,19 +234,23 @@ public class SignedStateBalancesExporter implements BalancesExporter {
 	}
 
 	private void addTokenBalances(
-			final MerkleAccount account,
-			final SingleAccountBalances.Builder sabBuilder,
-			final MerkleMap<EntityNum, MerkleToken> tokens,
-			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
+			AccountID id,
+			MerkleAccount account,
+			SingleAccountBalances.Builder sabBuilder,
+			MerkleMap<EntityNum, MerkleToken> tokens,
+			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations
 	) {
-		doBoundedIteration(tokenAssociations, tokens, account, (token, rel) -> {
-			if (token != StateView.REMOVED_TOKEN) {
-				sabBuilder.addTokenUnitBalances(unitBalanceFrom(token.grpcId(), rel.getBalance()));
+		var accountTokens = account.tokens();
+		for (TokenID tokenId : accountTokens.asTokenIds()) {
+			var token = tokens.get(fromTokenId(tokenId));
+			if (token != null) {
+				var relationship = tokenAssociations.get(fromAccountTokenRel(id, tokenId));
+				sabBuilder.addTokenUnitBalances(tb(tokenId, relationship.getBalance()));
 			}
-		});
+		}
 	}
 
-	private TokenUnitBalance unitBalanceFrom(final TokenID id, final long balance) {
+	private TokenUnitBalance tb(TokenID id, long balance) {
 		return TokenUnitBalance.newBuilder().setTokenId(id).setBalance(balance).build();
 	}
 
