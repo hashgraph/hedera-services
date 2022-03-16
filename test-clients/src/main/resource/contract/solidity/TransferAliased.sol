@@ -14,7 +14,6 @@ contract AliasedTransfer {
             operator := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
         AliasedOperator(operator).initialize(token);
-        AliasedOperator(operator).associate();
 
         aliasedOperator = operator;
     }
