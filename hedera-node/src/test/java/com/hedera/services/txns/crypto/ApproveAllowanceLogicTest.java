@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -183,7 +184,9 @@ class ApproveAllowanceLogicTest {
 
         givenValidTxnCtx();
 
-        var exception = assertThrows(InvalidTransactionException.class, () -> subject.approveAllowance(op, fromGrpcAccount(payerId).asGrpcAccount()));
+        Executable approveAllowance = () -> subject.approveAllowance(op, fromGrpcAccount(payerId).asGrpcAccount());
+
+        var exception = assertThrows(InvalidTransactionException.class, approveAllowance);
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
 		assertEquals(0, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());

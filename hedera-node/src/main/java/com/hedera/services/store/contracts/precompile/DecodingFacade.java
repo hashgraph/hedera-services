@@ -52,6 +52,7 @@ public class DecodingFacade {
 	private static final String BOOL_OUTPUT = "(bool)";
 	private static final String STRING_OUTPUT = "(string)";
 	private static final String ADDRESS_PAIR_RAW_TYPE = "(bytes32,bytes32)";
+	public static final String UINT256_RAW_TYPE = "(uint256)";
 
 	private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
 	private static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
@@ -115,7 +116,7 @@ public class DecodingFacade {
 	private static final Function TOKEN_URI_NFT_FUNCTION =
 			new Function("tokenURI(uint256)", STRING_OUTPUT);
 	private static final Bytes TOKEN_URI_NFT_SELECTOR = Bytes.wrap(TOKEN_URI_NFT_FUNCTION.selector());
-	private static final ABIType<Tuple> TOKEN_URI_NFT_DECODER = TypeFactory.create("(uint256)");
+	private static final ABIType<Tuple> TOKEN_URI_NFT_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
 
 	private static final Function BALANCE_OF_TOKEN_FUNCTION =
 			new Function("balanceOf(address)", INT_OUTPUT);
@@ -125,7 +126,7 @@ public class DecodingFacade {
 	private static final Function OWNER_OF_NFT_FUNCTION =
 			new Function("ownerOf(uint256)", INT_OUTPUT);
 	private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
-	private static final ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create("(uint256)");
+	private static final ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
 
 	private static final Function ERC_TRANSFER_FUNCTION =
 			new Function("transfer(address,uint256)", BOOL_OUTPUT);
@@ -145,7 +146,7 @@ public class DecodingFacade {
 	private static final Function GET_APPROVED_FUNCTION =
 			new Function("getApproved(uint256)", INT_OUTPUT);
 	private static final Bytes GET_APPROVED_FUNCTION_SELECTOR = Bytes.wrap(GET_APPROVED_FUNCTION.selector());
-	private static final ABIType<Tuple> GET_APPROVED_FUNCTION_DECODER = TypeFactory.create("(uint256)");
+	private static final ABIType<Tuple> GET_APPROVED_FUNCTION_DECODER = TypeFactory.create(UINT256_RAW_TYPE);
 
 	private static final Function IS_APPROVED_FOR_ALL =
 			new Function("isApprovedForAll(address,address)");
