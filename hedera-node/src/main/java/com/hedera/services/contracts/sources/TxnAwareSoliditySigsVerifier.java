@@ -124,6 +124,19 @@ public class TxnAwareSoliditySigsVerifier implements SoliditySigsVerifier {
 				isActiveInFrame(key, recipient, contract, activeContract, aliases)).orElse(true);
 	}
 
+	@Override
+	public boolean keyIsActive(final JKey key) {
+		return isActiveInFrame(key);
+	}
+
+	private boolean isActiveInFrame(final JKey key) {
+		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
+		return activationTest.test(
+				key,
+				pkToCryptoSigsFn,
+				cryptoValidity);
+	}
+
 	private boolean isActiveInFrame(
 			final JKey key,
 			final Address recipient,

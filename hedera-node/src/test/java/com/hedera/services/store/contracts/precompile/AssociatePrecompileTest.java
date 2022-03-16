@@ -30,6 +30,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -49,6 +50,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -176,6 +178,10 @@ class AssociatePrecompileTest {
 	private UsagePricesProvider resourceCosts;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private CreateChecks createChecks;
+	@Mock
+	private EntityIdSource entityIdSource;
 
 	private HTSPrecompiledContract subject;
 
@@ -185,7 +191,7 @@ class AssociatePrecompileTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
 
 		subject.setAssociateLogicFactory(associateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);

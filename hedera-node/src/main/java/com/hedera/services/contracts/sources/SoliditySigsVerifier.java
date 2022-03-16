@@ -23,6 +23,7 @@ package com.hedera.services.contracts.sources;
  */
 
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.legacy.core.jproto.JKey;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface SoliditySigsVerifier {
@@ -103,4 +104,7 @@ public interface SoliditySigsVerifier {
 	 */
 	boolean hasActiveSupplyKey(
 			Address token, Address recipient, Address contract, Address activeContract, ContractAliases aliases);
+
+	//TODO: add javadoc
+	boolean keyIsActive(JKey key);
 }

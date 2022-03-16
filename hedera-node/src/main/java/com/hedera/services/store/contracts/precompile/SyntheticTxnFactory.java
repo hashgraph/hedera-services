@@ -163,7 +163,8 @@ public class SyntheticTxnFactory {
 		txnBodyBuilder.setSupplyType(tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
 		txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
 		txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValue());
-		txnBodyBuilder.setTreasury(tokenCreateWrapper.getTreasury());
+		if (tokenCreateWrapper.getTreasury() != null)
+			txnBodyBuilder.setTreasury(tokenCreateWrapper.getTreasury());
 		txnBodyBuilder.setFreezeDefault(tokenCreateWrapper.isFreezeDefault());
 		txnBodyBuilder.setMemo(tokenCreateWrapper.getMemo());
 		if (tokenCreateWrapper.getExpiry().second() != 0)

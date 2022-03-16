@@ -36,6 +36,7 @@ import java.util.List;
 
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.BALANCE;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.BURN;
+import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.CREATE;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.DECIMALS;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.ERC_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.MINT;
@@ -52,6 +53,7 @@ public class EncodingFacade {
 	private static final String STRING_RETURN_TYPE = "(string)";
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
+	private static final TupleType createReturnType = TupleType.parse("(int32,address)");
 	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
 	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
@@ -156,8 +158,24 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeCreateSuccess(final Address newTokenAddress) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.CREATE)
+				.withStatus(SUCCESS.getNumber())
+				.withNewTokenAddress(newTokenAddress)
+				.build();
+	}
+
+	public Bytes encodeCreateFailure(final ResponseCodeEnum status) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.CREATE)
+				.withStatus(status.getNumber())
+				.withNewTokenAddress(Address.ZERO)
+				.build();
+	}
+
 	protected enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
+		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -168,6 +186,7 @@ public class EncodingFacade {
 		private FunctionType functionType;
 		private TupleType tupleType;
 		private int status;
+		private Address newTokenAddress;
 		private boolean ercFungibleTransferStatus;
 		private long totalSupply;
 		private long balance;
@@ -179,7 +198,9 @@ public class EncodingFacade {
 		private String metadata;
 
 		private FunctionResultBuilder forFunction(final FunctionType functionType) {
-			if (functionType == FunctionType.MINT) {
+			if (functionType == FunctionType.CREATE) {
+				tupleType = createReturnType;
+			} else if (functionType == FunctionType.MINT) {
 				tupleType = mintReturnType;
 			} else if (functionType == FunctionType.BURN) {
 				tupleType = burnReturnType;
@@ -207,6 +228,11 @@ public class EncodingFacade {
 
 		private FunctionResultBuilder withStatus(final int status) {
 			this.status = status;
+			return this;
+		}
+
+		private FunctionResultBuilder withNewTokenAddress(final Address newTokenAddress) {
+			this.newTokenAddress = newTokenAddress;
 			return this;
 		}
 
@@ -258,7 +284,9 @@ public class EncodingFacade {
 		private Bytes build() {
 			Tuple result = Tuple.of(status);
 
-			if (MINT.equals(functionType)) {
+			if (CREATE.equals(functionType)) {
+				result = Tuple.of(status, convertBesuAddressToHeadlongAddress(newTokenAddress));
+			} else if (MINT.equals(functionType)) {
 				result = Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
 			} else if (BURN.equals(functionType)) {
 				result = Tuple.of(status, BigInteger.valueOf(totalSupply));

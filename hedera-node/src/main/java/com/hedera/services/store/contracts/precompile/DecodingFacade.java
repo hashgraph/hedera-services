@@ -161,22 +161,22 @@ public class DecodingFacade {
 	private static final Function TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION =
 			new Function("createFungibleTokenWithCustomFees((string,string,address,string,bool,uint32,bool," +
 					"(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),uint256,uint256,(uint32," +
-					"address,bool,address)[],(uint32,uint32,uint32,uint32,bool,address)[])");
+					"address,bool,bool,address)[],(uint32,uint32,uint32,uint32,bool,address)[])");
 	private static final Bytes TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR =
 			Bytes.wrap(TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION.selector());
 	private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER = TypeFactory.create("((string," +
 			"string,bytes32,string,bool,int64,bool,(uint256,(bool,bytes32,bytes,bytes,bytes32))[],(int64,bytes32," +
-			"int64)),uint256,uint256,(int64,bytes32,bool,bytes32)[],(int64,int64,int64,int64,bool,bytes32)[])");
+			"int64)),uint256,uint256,(int64,bytes32,bool,bool,bytes32)[],(int64,int64,int64,int64,bool,bytes32)[])");
 
 	private static final Function TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION =
 			new Function("createNonFungibleTokenWithCustomFees((string,string,address,string,bool,uint32," +
 					"bool,(uint256,(bool,address,bytes,bytes,address))[],(uint32,address,uint32)),(uint32,address," +
-					"bool,address)[],(uint32,uint32,(uint32,address,bool,address),address)[])");
+					"bool,bool,address)[],(uint32,uint32,(uint32,address,bool,bool,address),address)[])");
 	private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR =
 			Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION.selector());
 	private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER = TypeFactory.create("((string," +
 			"string,bytes32,string,bool,int64,bool,(uint256,(bool,bytes32,bytes,bytes,bytes32))[],(int64,bytes32," +
-			"int64)),(int64,bytes32,bool,bytes32)[],(int64,int64,(int64,bytes32,bool,bytes32),bytes32)[])");
+			"int64)),(int64,bytes32,bool,bool,bytes32)[],(int64,int64,(int64,bytes32,bool,bool,bytes32),bytes32)[])");
 
 	@Inject
 	public DecodingFacade() {
@@ -436,8 +436,9 @@ public class DecodingFacade {
 				aliasResolver);
 	}
 
-	public TokenCreateWrapper decodeNonFungibleTokenCreateWithFees(final Bytes input,
-																   final UnaryOperator<byte[]> aliasResolver
+	public TokenCreateWrapper decodeNonFungibleTokenCreateWithFees(
+			final Bytes input,
+			final UnaryOperator<byte[]> aliasResolver
 	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR,
 				TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
@@ -452,9 +453,12 @@ public class DecodingFacade {
 		return tokenCreateWrapper;
 	}
 
-	private TokenCreateWrapper decodeTokenCreateWithoutFees(final Tuple tokenCreateStruct, final boolean isFungible,
-															final BigInteger initSupply, final BigInteger decimals,
-															final UnaryOperator<byte[]> aliasResolver
+	private TokenCreateWrapper decodeTokenCreateWithoutFees(
+			final Tuple tokenCreateStruct,
+			final boolean isFungible,
+			final BigInteger initSupply,
+			final BigInteger decimals,
+			final UnaryOperator<byte[]> aliasResolver
 	) {
 		final var tokenName = (String) tokenCreateStruct.get(0);
 		final var tokenSymbol = (String) tokenCreateStruct.get(1);
@@ -472,8 +476,9 @@ public class DecodingFacade {
 				tokenKeys, tokenExpiry);
 	}
 
-	private List<TokenKeyWrapper> decodeTokenKeys(final Tuple[] tokenKeysTuples,
-												  final UnaryOperator<byte[]> aliasResolver
+	private List<TokenKeyWrapper> decodeTokenKeys(
+			final Tuple[] tokenKeysTuples,
+			final UnaryOperator<byte[]> aliasResolver
 	) {
 		final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
 		for (final var tokenKeyTuple: tokenKeysTuples) {
@@ -501,23 +506,26 @@ public class DecodingFacade {
 				autoRenewPeriod);
 	}
 
-	private List<FixedFeeWrapper> decodeFixedFees(final Tuple[] fixedFeesTuples,
-												  final UnaryOperator<byte[]> aliasResolver
+	private List<FixedFeeWrapper> decodeFixedFees(
+			final Tuple[] fixedFeesTuples,
+			final UnaryOperator<byte[]> aliasResolver
 	) {
 		final List<FixedFeeWrapper> fixedFees = new ArrayList<>(fixedFeesTuples.length);
 		for (final var fixedFeeTuple : fixedFeesTuples) {
 			final var amount = (long) fixedFeeTuple.get(0);
 			final var tokenId = convertAddressBytesToTokenID((byte[]) fixedFeeTuple.get(1));
-			final var isTokenIdSet = (Boolean) fixedFeeTuple.get(2);
-			final var feeCollector = convertLeftPaddedAddressToAccountId((byte[]) fixedFeeTuple.get(3), aliasResolver);
-			fixedFees.add(new FixedFeeWrapper(amount, Boolean.TRUE.equals(isTokenIdSet) ? tokenId : null,
+			final var useHbarsForPayment = (Boolean) fixedFeeTuple.get(2);
+			final var useCurrentTokenForPayment = (Boolean) fixedFeeTuple.get(3);
+			final var feeCollector = convertLeftPaddedAddressToAccountId((byte[]) fixedFeeTuple.get(4), aliasResolver);
+			fixedFees.add(new FixedFeeWrapper(amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment,
 					feeCollector.getAccountNum() != 0 ? feeCollector : null));
 		}
 		return fixedFees;
 	}
 
-	private List<FractionalFeeWrapper> decodeFractionalFees(final Tuple[] fractionalFeesTuples,
-															final UnaryOperator<byte[]> aliasResolver
+	private List<FractionalFeeWrapper> decodeFractionalFees(
+			final Tuple[] fractionalFeesTuples,
+			final UnaryOperator<byte[]> aliasResolver
 	) {
 		final List<FractionalFeeWrapper> fractionalFees = new ArrayList<>(fractionalFeesTuples.length);
 		for (final var fractionalFeeTuple: fractionalFeesTuples) {
@@ -534,8 +542,9 @@ public class DecodingFacade {
 		return fractionalFees;
 	}
 
-	private List<RoyaltyFeeWrapper> decodeRoyaltyFees(final Tuple[] royaltyFeesTuples,
-													  final UnaryOperator<byte[]> aliasResolver
+	private List<RoyaltyFeeWrapper> decodeRoyaltyFees(
+			final Tuple[] royaltyFeesTuples,
+			final UnaryOperator<byte[]> aliasResolver
 	) {
 		final List<RoyaltyFeeWrapper> decodedRoyaltyFees = new ArrayList<>(royaltyFeesTuples.length);
 		for (final var royaltyFeeTuple : royaltyFeesTuples) {

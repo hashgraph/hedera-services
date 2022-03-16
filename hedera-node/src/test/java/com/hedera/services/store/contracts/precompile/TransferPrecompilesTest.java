@@ -53,6 +53,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.token.process.DissociationFactory;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -205,6 +206,10 @@ class TransferPrecompilesTest {
 	private UsagePricesProvider resourceCosts;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private CreateChecks createChecks;
+	@Mock
+	private EntityIdSource entityIdSource;
 
 	private HTSPrecompiledContract subject;
 
@@ -214,7 +219,7 @@ class TransferPrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
 		subject.setTransferLogicFactory(transferLogicFactory);
 		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

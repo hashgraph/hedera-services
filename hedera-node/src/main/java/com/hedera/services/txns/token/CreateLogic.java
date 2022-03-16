@@ -37,7 +37,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class TokenCreateLogic {
+public class CreateLogic {
 	static final Creation.NewRelsListing RELS_LISTING = NewRels::listFrom;
 	static final Creation.TokenModelFactory MODEL_FACTORY = Token::fromGrpcOpAndMeta;
 	private Creation.CreationFactory creationFactory = Creation::new;
@@ -51,14 +51,15 @@ public class TokenCreateLogic {
 	private final OptionValidator validator;
 
 	@Inject
-	public TokenCreateLogic(
+	public CreateLogic(
 			AccountStore accountStore,
 			TypedTokenStore tokenStore,
 			GlobalDynamicProperties dynamicProperties,
 			SigImpactHistorian sigImpactHistorian,
 			SideEffectsTracker sideEffectsTracker,
 			EntityIdSource entityIdSource,
-			OptionValidator validator) {
+			OptionValidator validator
+	) {
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
 		this.dynamicProperties = dynamicProperties;

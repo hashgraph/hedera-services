@@ -29,6 +29,7 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -44,6 +45,7 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.process.DissociationFactory;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -154,6 +156,10 @@ class HTSPrecompiledContractTest {
 	private HederaWorldState.WorldStateAccount worldStateAccount;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private CreateChecks createChecks;
+	@Mock
+	private EntityIdSource entityIdSource;
 
 	private HTSPrecompiledContract subject;
 
@@ -170,7 +176,7 @@ class HTSPrecompiledContractTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
 	}
 
 	@Test

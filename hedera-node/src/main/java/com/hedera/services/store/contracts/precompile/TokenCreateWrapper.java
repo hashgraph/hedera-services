@@ -21,6 +21,8 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -33,6 +35,7 @@ import org.apache.commons.codec.DecoderException;
 
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Optional;
 
 final class TokenCreateWrapper {
 	private final boolean isFungible;
@@ -51,11 +54,20 @@ final class TokenCreateWrapper {
 	private List<FractionalFeeWrapper> fractionalFees;
 	private List<RoyaltyFeeWrapper> royaltyFees;
 
-	TokenCreateWrapper(final boolean isFungible, final String tokenName, final String tokenSymbol,
-					   final AccountID tokenTreasury, final String memo, final Boolean isSupplyTypeFinite,
-					   final BigInteger initSupply, final BigInteger decimals, final long maxSupply,
-					   final Boolean isFreezeDefault, final List<TokenKeyWrapper> tokenKeys,
-					   final TokenExpiryWrapper tokenExpiry) {
+	TokenCreateWrapper(
+			final boolean isFungible,
+			final String tokenName,
+			final String tokenSymbol,
+			final AccountID tokenTreasury,
+			final String memo,
+			final Boolean isSupplyTypeFinite,
+			final BigInteger initSupply,
+			final BigInteger decimals,
+			final long maxSupply,
+			final Boolean isFreezeDefault,
+			final List<TokenKeyWrapper> tokenKeys,
+			final TokenExpiryWrapper tokenExpiry
+	) {
 		this.isFungible = isFungible;
 		this.name = tokenName;
 		this.symbol = tokenSymbol;
@@ -153,6 +165,14 @@ final class TokenCreateWrapper {
 		}
 	}
 
+	public Optional<TokenKeyWrapper> getAdminKey() {
+		return tokenKeys.stream()
+				.filter(TokenKeyWrapper::isUsedForAdminKey)
+				.findFirst();
+	}
+
+	/* ------------------ */
+
 	record TokenKeyWrapper(BigInteger keyType, KeyValueWrapper key) {
 		boolean isUsedForAdminKey() {
 			return (keyType().intValue() & 1) != 0;
@@ -194,8 +214,13 @@ final class TokenCreateWrapper {
 		/* --- This field is populated only when `shouldInheritAccountKey` is true --- */
 		private Key inheritedKey;
 
-		public KeyValueWrapper(final boolean shouldInheritAccountKey, final ContractID contractID, final byte[] ed25519,
-							   final byte[] ecdsSecp256k1, final ContractID delegatableContractID) {
+		public KeyValueWrapper(
+				final boolean shouldInheritAccountKey,
+				final ContractID contractID,
+				final byte[] ed25519,
+		   		final byte[] ecdsSecp256k1,
+				final ContractID delegatableContractID
+		) {
 			this.shouldInheritAccountKey = shouldInheritAccountKey;
 			this.contractID = contractID;
 			this.ed25519 = ed25519;
@@ -216,11 +241,11 @@ final class TokenCreateWrapper {
 		}
 
 		boolean isEd25519KeySet() {
-			return ed25519.length == 32;
+			return ed25519.length == JEd25519Key.ED25519_BYTE_LENGTH;
 		}
 
 		boolean isEcdsSecp256k1KeySet() {
-			return ecdsSecp256k1.length == 33;
+			return ecdsSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH;
 		}
 
 		private void setInheritedKey(final Key key) {
@@ -232,9 +257,9 @@ final class TokenCreateWrapper {
 				return this.inheritedKey;
 			} else if (contractID != null) {
 				return Key.newBuilder().setContractID(contractID).build();
-			} else if (ed25519.length == 32) {
+			} else if (ed25519.length == JEd25519Key.ED25519_BYTE_LENGTH) {
 				return Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519)).build();
-			} else if (ecdsSecp256k1.length == 33) {
+			} else if (ecdsSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
 				return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsSecp256k1)).build();
 			} else if (delegatableContractID != null) {
 				return Key.newBuilder().setContractID((delegatableContractID)).build();
@@ -242,24 +267,68 @@ final class TokenCreateWrapper {
 				return Key.newBuilder().build();
 			}
 		}
+
+		ContractID getContractID() {
+			return this.contractID;
+		}
+
+		ContractID getDelegatableContractID() {
+			return this.delegatableContractID;
+		}
+
+		byte[] getEd25519Key() {
+			return this.ed25519;
+		}
+
+		byte[] getEcdsSecp256k1() {
+			return this.ecdsSecp256k1;
+		}
 	}
 
 	record TokenExpiryWrapper(long second, AccountID autoRenewAccount, long autoRenewPeriod) { }
 
-	record FixedFeeWrapper(long amount, TokenID tokenID, AccountID feeCollector) {
-		CustomFee asGrpc() {
+	record FixedFeeWrapper(
+			long amount,
+			TokenID tokenID,
+			boolean useHbarsForPayment,
+			boolean useCurrentTokenForPayment,
+			AccountID feeCollector
+	) {
+
+		private FixedFee.Builder asBuilder() {
 			final var fixedFeeBuilder = FixedFee.newBuilder().setAmount(amount);
-			if (tokenID != null)
+			if (isTokenIdSet()) {
 				fixedFeeBuilder.setDenominatingTokenId(tokenID);
+			} else if (useCurrentTokenForPayment) {
+				fixedFeeBuilder.setDenominatingTokenId(TokenID.newBuilder()
+						.setShardNum(0L)
+						.setRealmNum(0L)
+						.setTokenNum(0L).build());
+			}
+			return fixedFeeBuilder;
+		}
+
+		boolean isTokenIdSet() {
+			return tokenID.getTokenNum() != 0;
+		}
+
+		CustomFee asGrpc() {
 			return CustomFee.newBuilder()
-				.setFixedFee(fixedFeeBuilder.build())
+				.setFixedFee(asBuilder().build())
 				.setFeeCollectorAccountId(feeCollector)
 				.build();
 		}
 	}
 
-	record FractionalFeeWrapper(long numerator, long denominator, long minimumAmount, long maximumAmount,
-								boolean netOfTransfers, AccountID feeCollector) {
+	record FractionalFeeWrapper(
+			long numerator,
+			long denominator,
+			long minimumAmount,
+			long maximumAmount,
+			boolean netOfTransfers,
+			AccountID feeCollector
+	) {
+
 		CustomFee asGrpc() {
 			return CustomFee.newBuilder()
 				.setFractionalFee(com.hederahashgraph.api.proto.java.FractionalFee.newBuilder()
@@ -278,12 +347,10 @@ final class TokenCreateWrapper {
 		}
 	}
 
-	record RoyaltyFeeWrapper(long numerator, long denominator, FixedFeeWrapper fallbackFixedFee,
-							 AccountID feeCollector) {
+	record RoyaltyFeeWrapper(
+			long numerator, long denominator, FixedFeeWrapper fallbackFixedFee, AccountID feeCollector
+	) {
 		CustomFee asGrpc() {
-			final var fallbackFeeBuilder = FixedFee.newBuilder().setAmount(fallbackFixedFee.amount);
-			if (fallbackFixedFee.tokenID != null)
-				fallbackFeeBuilder.setDenominatingTokenId(fallbackFixedFee.tokenID);
 			return CustomFee.newBuilder()
 				.setRoyaltyFee(com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder()
 					.setExchangeValueFraction(Fraction.newBuilder()
@@ -291,7 +358,7 @@ final class TokenCreateWrapper {
 						.setDenominator(denominator)
 						.build()
 					)
-					.setFallbackFee(fallbackFeeBuilder.build())
+					.setFallbackFee(fallbackFixedFee.asBuilder().build())
 					.build()
 				)
 				.setFeeCollectorAccountId(feeCollector)
