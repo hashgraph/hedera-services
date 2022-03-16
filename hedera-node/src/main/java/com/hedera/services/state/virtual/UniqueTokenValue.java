@@ -203,13 +203,36 @@ public class UniqueTokenValue implements VirtualValue {
 		return ownerAccountNum;
 	}
 
-	public Instant getCreationTime() {
-		return Instant.ofEpochSecond(
+	public EntityId getOwner() {
+		return EntityId.fromNum(ownerAccountNum);
+	}
+
+	public RichInstant getCreationTime() {
+		return RichInstant.fromJava(Instant.ofEpochSecond(
 				unsignedHighOrder32From(packedCreationTime),
-				signedLowOrder32From(packedCreationTime));
+				signedLowOrder32From(packedCreationTime)));
+	}
+
+	public long getPackedCreationTime() {
+		return packedCreationTime;
 	}
 
 	public byte[] getMetadata() {
 		return metadata;
+	}
+
+	public void setOwner(EntityId entityId) {
+		throwIfImmutable();
+		ownerAccountNum = entityId.num();
+	}
+
+	public void setPackedCreationTime(long newPackedCreationTime) {
+		throwIfImmutable();
+		this.packedCreationTime = newPackedCreationTime;
+	}
+
+	public void setMetadata(byte[] newMetadata) {
+		throwIfImmutable();
+		this.metadata = newMetadata;
 	}
 }

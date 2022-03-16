@@ -30,7 +30,6 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
@@ -38,6 +37,8 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -267,7 +268,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		tokens().archive();
 		accounts().archive();
 		scheduleTxs().archive();
-		uniqueTokens().archive();
 		tokenAssociations().archive();
 	}
 
@@ -355,7 +355,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH);
 	}
 
-	public MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens() {
+	public VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens() {
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
@@ -442,7 +442,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	void createGenesisChildren(AddressBook addressBook, long seqStart) {
 		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
 
-		setChild(StateChildIndices.UNIQUE_TOKENS, new MerkleMap<>());
+		setChild(StateChildIndices.UNIQUE_TOKENS, virtualMapFactory.newVirtualizedUniqueTokenStorage());
 		setChild(StateChildIndices.TOKEN_ASSOCIATIONS, new MerkleMap<>());
 		setChild(StateChildIndices.TOPICS, new MerkleMap<>());
 		setChild(StateChildIndices.STORAGE, virtualMapFactory.newVirtualizedBlobs());

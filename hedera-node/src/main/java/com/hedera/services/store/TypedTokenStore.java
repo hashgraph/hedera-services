@@ -26,8 +26,9 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -84,7 +85,7 @@ public class TypedTokenStore {
 	private final AccountStore accountStore;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final BackingStore<TokenID, MerkleToken> tokens;
-	private final BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
+	private final BackingStore<NftId, UniqueTokenValue> uniqueTokens;
 	private final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 
 	/* Only needed for interoperability with legacy HTS during refactor */
@@ -95,7 +96,7 @@ public class TypedTokenStore {
 	public TypedTokenStore(
 			final AccountStore accountStore,
 			final BackingStore<TokenID, MerkleToken> tokens,
-			final BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
+			final BackingStore<NftId, UniqueTokenValue> uniqueTokens,
 			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
 			final LegacyTreasuryAdder legacyStoreDelegate,
 			final LegacyTreasuryRemover delegate,
@@ -314,10 +315,10 @@ public class TypedTokenStore {
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
 		for (long serialNumber : serialNumbers) {
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serialNumber);
-			final var merkleUniqueToken = uniqueTokens.getImmutableRef(nftId);
-			validateUsable(merkleUniqueToken);
+			final var uniqueTokenValue = uniqueTokens.getImmutableRef(nftId);
+			validateUsable(uniqueTokenValue);
 			final var uniqueToken = new UniqueToken(token.getId(), serialNumber);
-			initModelFields(uniqueToken, merkleUniqueToken);
+			initModelFields(uniqueToken, uniqueTokenValue);
 			loadedUniqueTokens.put(serialNumber, uniqueToken);
 		}
 		token.setLoadedUniqueTokens(loadedUniqueTokens);
@@ -435,7 +436,10 @@ public class TypedTokenStore {
 
 	private void persistMinted(List<UniqueToken> nfts) {
 		for (final var nft : nfts) {
-			final var merkleNft = new MerkleUniqueToken(MISSING_ENTITY_ID, nft.getMetadata(), nft.getCreationTime());
+			final var merkleNft = new UniqueTokenValue(
+					MISSING_ENTITY_ID.num(),
+					nft.getCreationTime(),
+					nft.getMetadata());
 			uniqueTokens.put(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()), merkleNft);
 		}
 	}
@@ -456,8 +460,8 @@ public class TypedTokenStore {
 		validateFalse(merkleToken.isPaused(), code);
 	}
 
-	private void validateUsable(MerkleUniqueToken merkleUniqueToken) {
-		validateTrue(merkleUniqueToken != null, INVALID_NFT_ID);
+	private void validateUsable(UniqueTokenValue uniqueTokenValue) {
+		validateTrue(uniqueTokenValue != null, INVALID_NFT_ID);
 	}
 
 	private void mapModelChanges(Token token, MerkleToken mutableToken) {
@@ -522,7 +526,7 @@ public class TypedTokenStore {
 		token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());
 	}
 
-	private void initModelFields(UniqueToken uniqueToken, MerkleUniqueToken immutableUniqueToken) {
+	private void initModelFields(UniqueToken uniqueToken, UniqueTokenValue immutableUniqueToken) {
 		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
 		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
 		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());

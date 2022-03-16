@@ -41,6 +41,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -287,7 +289,7 @@ class StateViewTest {
 
 		StateView.tokenRelsFn = mockTokenRelsFn;
 
-		final var uniqueTokens = new MerkleMap<EntityNumPair, MerkleUniqueToken>();
+		final var uniqueTokens = new VirtualMap<UniqueTokenKey, UniqueTokenValue>();
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
@@ -940,14 +942,16 @@ class StateViewTest {
 			.setTokenID(IdUtils.asToken("0.0.9"))
 			.setSerialNumber(5L)
 			.build();
-	private final EntityNumPair targetNftKey = EntityNumPair.fromLongs(3, 4);
-	private final EntityNumPair treasuryNftKey = EntityNumPair.fromLongs(3, 5);
-	private final MerkleUniqueToken targetNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(nftOwnerId), nftMeta,
-			fromJava(nftCreation));
-	private final MerkleUniqueToken treasuryNft = new MerkleUniqueToken(EntityId.fromGrpcAccountId(treasuryOwnerId),
-			nftMeta,
-			fromJava(nftCreation));
-
+	private final UniqueTokenKey targetNftKey = new UniqueTokenKey(3, 4);
+	private final UniqueTokenKey treasuryNftKey = new UniqueTokenKey(3, 5);
+	private final UniqueTokenValue targetNft = new UniqueTokenValue(
+			nftOwnerId.getAccountNum(),
+			fromJava(nftCreation),
+			nftMeta);
+	private final UniqueTokenValue treasuryNft = new UniqueTokenValue(
+			treasuryOwnerId.getAccountNum(),
+			fromJava(nftCreation),
+			nftMeta);
 	private final CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);
 	private final CustomFee customFixedFeeInHbar = builder.withFixedFee(fixedHbar(100L));
 	private final CustomFee customFixedFeeInHts = builder.withFixedFee(fixedHts(tokenId, 100L));

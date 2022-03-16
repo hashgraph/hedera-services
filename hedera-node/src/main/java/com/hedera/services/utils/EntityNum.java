@@ -31,9 +31,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.NotNull;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.realmFromEvmAddress;
@@ -47,9 +45,9 @@ import static com.hedera.services.utils.EntityIdUtils.shardFromEvmAddress;
 public class EntityNum implements Comparable<EntityNum> {
 	public static final EntityNum MISSING_NUM = new EntityNum(0);
 
-	private final int value;
+	private final long value;
 
-	public EntityNum(int value) {
+	public EntityNum(long value) {
 		this.value = value;
 	}
 
@@ -61,8 +59,7 @@ public class EntityNum implements Comparable<EntityNum> {
 		if (!isValidNum(l)) {
 			return MISSING_NUM;
 		}
-		final var value = codeFromNum(l);
-		return new EntityNum(value);
+		return new EntityNum(l);
 	}
 
 	public static EntityNum fromModel(Id id) {
@@ -122,35 +119,35 @@ public class EntityNum implements Comparable<EntityNum> {
 	}
 
 	public int intValue() {
-		return value;
+		return (int) value;
 	}
 
 	public long longValue() {
-		return numFromCode(value);
+		return value;
 	}
 
 	public AccountID toGrpcAccountId() {
-		return STATIC_PROPERTIES.scopedAccountWith(numFromCode(value));
+		return STATIC_PROPERTIES.scopedAccountWith(value);
 	}
 
 	public Id toId() {
-		return STATIC_PROPERTIES.scopedIdWith(numFromCode(value));
+		return STATIC_PROPERTIES.scopedIdWith(value);
 	}
 
 	public ContractID toGrpcContractID() {
-		return STATIC_PROPERTIES.scopedContractIdWith(numFromCode(value));
+		return STATIC_PROPERTIES.scopedContractIdWith(value);
 	}
 
 	public TokenID toGrpcTokenId() {
-		return STATIC_PROPERTIES.scopedTokenWith(numFromCode(value));
+		return STATIC_PROPERTIES.scopedTokenWith(value);
 	}
 
 	public ScheduleID toGrpcScheduleId() {
-		return STATIC_PROPERTIES.scopedScheduleWith(numFromCode(value));
+		return STATIC_PROPERTIES.scopedScheduleWith(value);
 	}
 
 	public String toIdString() {
-		return STATIC_PROPERTIES.scopedIdLiteralWith(numFromCode(value));
+		return STATIC_PROPERTIES.scopedIdLiteralWith(value);
 	}
 
 	public Address toEvmAddress() {
@@ -161,7 +158,7 @@ public class EntityNum implements Comparable<EntityNum> {
 		return asEvmAddress(
 				(int) STATIC_PROPERTIES.getShard(),
 				STATIC_PROPERTIES.getRealm(),
-				numFromCode(value));
+				value);
 	}
 
 	@Override
@@ -196,6 +193,6 @@ public class EntityNum implements Comparable<EntityNum> {
 
 	@Override
 	public int compareTo(@NotNull final EntityNum that) {
-		return Integer.compare(this.value, that.value);
+		return Long.compare(this.value, that.value);
 	}
 }

@@ -31,7 +31,7 @@ public class BitPackUtils {
 	private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
 	private static final long MASK_HI_ORDER_32 = MASK_INT_AS_UNSIGNED_LONG << 32;
 
-	public static final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
+	public static final long MAX_NUM_ALLOWED = Long.MAX_VALUE;
 
 	/**
 	 * Returns a {@code long} whose high-order 32 bits "encode" an unsigned
