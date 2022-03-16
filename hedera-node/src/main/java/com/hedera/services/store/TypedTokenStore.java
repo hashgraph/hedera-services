@@ -206,6 +206,10 @@ public class TypedTokenStore {
 		sideEffectsTracker.trackTokenBalanceChanges(tokenRelationships);
 	}
 
+	public boolean hasAssociation(Token token, Account account) {
+		return tokenRels.contains(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
+	}
+
 	public MerkleTokenRelStatus getMerkleTokenRelationship(Token token, Account account) {
 		return tokenRels.getImmutableRef(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
 	}
@@ -217,7 +221,9 @@ public class TypedTokenStore {
 		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
 		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
 		tokenRelationship.setAutomaticAssociation(merkleTokenRel.isAutomaticAssociation());
-
+		tokenRelationship.setKey(merkleTokenRel.getKey());
+		tokenRelationship.setNextKey(merkleTokenRel.nextKey());
+		tokenRelationship.setPrevKey(merkleTokenRel.prevKey());
 		tokenRelationship.markAsPersisted();
 
 		return tokenRelationship;
@@ -235,6 +241,9 @@ public class TypedTokenStore {
 		mutableTokenRel.setFrozen(modelRel.isFrozen());
 		mutableTokenRel.setKycGranted(modelRel.isKycGranted());
 		mutableTokenRel.setAutomaticAssociation(modelRel.isAutomaticAssociation());
+		mutableTokenRel.setKey(modelRel.getKey());
+		mutableTokenRel.setNextKey(modelRel.getNextKey());
+		mutableTokenRel.setPrevKey(modelRel.getPrevKey());
 		tokenRels.put(key.asAccountTokenRel(), mutableTokenRel);
 	}
 
@@ -529,6 +538,11 @@ public class TypedTokenStore {
 		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
 		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
 		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
+	}
+
+	public TokenRelationship getLatestTokenRelationship(final Account account) {
+		var latestTokenId = Id.fromGrpcToken(account.getLastAssociatedToken().asAccountTokenRel().getRight());
+		return loadTokenRelationship(loadPossiblyDeletedOrAutoRemovedToken(latestTokenId), account);
 	}
 
 	@FunctionalInterface
