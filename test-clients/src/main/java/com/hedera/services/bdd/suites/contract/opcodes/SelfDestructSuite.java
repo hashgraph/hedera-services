@@ -33,7 +33,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
@@ -69,7 +69,7 @@ public class SelfDestructSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract)
 				).when(
-						newContractCreate(contract)
+						contractCreate(contract)
 								.balance(3 * ONE_HBAR)
 								.via("contractCreate"),
 						cryptoCreate(nextAccount)
@@ -97,7 +97,7 @@ public class SelfDestructSuite extends HapiApiSuite {
 						uploadInitCode(contract)
 				)
 				.when(
-						newContractCreate(contract)
+						contractCreate(contract)
 								.via("cc")
 								.payingWith("acc")
 								.hasKnownStatus(SUCCESS)

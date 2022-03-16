@@ -37,7 +37,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -65,7 +65,7 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("VerifiesExistence")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 				)
 				.then(

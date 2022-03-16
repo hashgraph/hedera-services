@@ -49,7 +49,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -115,7 +115,7 @@ public class SStoreSuite extends HapiApiSuite {
 										"contracts.maxGas", "" + GAS_TO_OFFER
 								)),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				)
 				.when(
 						withOpContext((spec, opLog) -> {
@@ -158,7 +158,7 @@ public class SStoreSuite extends HapiApiSuite {
 										"contracts.maxGas", "" + MAX_CONTRACT_GAS
 								)),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 						withOpContext((spec, opLog) -> {
 							final var almostFullKb = MAX_CONTRACT_STORAGE_KB * 3 / 4;
@@ -211,7 +211,7 @@ public class SStoreSuite extends HapiApiSuite {
 						uploadInitCode(contract)
 				)
 				.when(
-						newContractCreate(contract)
+						contractCreate(contract)
 								.payingWith("payer")
 								.via("creationTx")
 								.gas(GAS_LIMIT),
@@ -241,7 +241,7 @@ public class SStoreSuite extends HapiApiSuite {
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 						contractCall(contract, "holdTemporary", 10).via("tempHoldTx"),
 						contractCall(contract, "holdPermanently", 10).via("permHoldTx")

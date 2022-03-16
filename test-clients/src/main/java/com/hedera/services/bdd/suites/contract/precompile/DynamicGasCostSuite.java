@@ -68,7 +68,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
@@ -197,7 +197,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		return defaultHapiSpec("AllLogOpcodesResolveExpectedContractId")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.payingWith(GENESIS)
 								.via(creation)
 								.exposingNumTo(outerCreatorNum::set)
@@ -239,7 +239,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						overriding("contracts.throttle.throttleByGas", "false"),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.payingWith(GENESIS)
 								.via(creation)
 								.exposingNumTo(num -> {
@@ -292,7 +292,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						overriding("contracts.throttle.throttleByGas", "false"),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.payingWith(GENESIS)
 								.via(creation)
 								.exposingNumTo(num -> {
@@ -356,7 +356,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						newKeyNamed(replAdminKey),
 						overriding("contracts.throttle.throttleByGas", "false"),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.payingWith(GENESIS)
 								.proxy("0.0.3")
 								.adminKey(adminKey)
@@ -511,7 +511,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						newKeyNamed(multiKey),
 						cryptoCreate(TOKEN_TREASURY),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.omitAdminKey()
 								.payingWith(GENESIS)
 								.proxy("0.0.3"),
@@ -672,7 +672,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		return defaultHapiSpec("CannotSelfDestructToMirrorAddress")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.payingWith(GENESIS)
 								.proxy("0.0.3"),
 						contractCall(contract, "buildDonor", salt)
@@ -724,7 +724,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(adminKey),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.adminKey(adminKey)
 								.payingWith(GENESIS)
 								.proxy("0.0.3"),
@@ -798,7 +798,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		return defaultHapiSpec("Create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.payingWith(GENESIS)
 								.proxy("0.0.3"),
 						contractCall(contract, "buildCreator", salt)
@@ -868,7 +868,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		return defaultHapiSpec("PriorityAddressIsCreate2ForStaticHapiCalls")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.payingWith(GENESIS)
 								.proxy("0.0.3"),
 						contractCall(contract, "createReturner", salt)
@@ -929,7 +929,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		return defaultHapiSpec("PriorityAddressIsCreate2ForInternalMessages")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.payingWith(GENESIS)
 								.proxy("0.0.3"),
 						contractCall(contract, "createReturner", salt)
@@ -1003,7 +1003,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(SAFE_OPERATIONS_CONTRACT),
-						newContractCreate(SAFE_OPERATIONS_CONTRACT)
+						contractCreate(SAFE_OPERATIONS_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1068,7 +1068,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						mintToken(VANILLA_TOKEN, amount),
 						uploadInitCode(SAFE_OPERATIONS_CONTRACT),
-						newContractCreate(SAFE_OPERATIONS_CONTRACT)
+						contractCreate(SAFE_OPERATIONS_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1128,7 +1128,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(SAFE_OPERATIONS_CONTRACT),
-						newContractCreate(SAFE_OPERATIONS_CONTRACT)
+						contractCreate(SAFE_OPERATIONS_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1187,7 +1187,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.initialSupply(10L)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(SAFE_OPERATIONS_CONTRACT),
-						newContractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
+						contractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1255,7 +1255,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.initialSupply(10L)
 								.exposingCreatedIdTo(id -> knowableTokenID.set(asToken(id))),
 						uploadInitCode(SAFE_OPERATIONS_CONTRACT),
-						newContractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
+						contractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1330,7 +1330,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.initialSupply(10)
 								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
 						uploadInitCode(SAFE_OPERATIONS_CONTRACT),
-						newContractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
+						contractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
 				)
 				.when(
 						withOpContext(
@@ -1405,7 +1405,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						cryptoUpdate(TOKEN_TREASURY).key(MULTI_KEY),
 						uploadInitCode(SAFE_OPERATIONS_CONTRACT),
-						newContractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
+						contractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
 				)
 				.when(
 						withOpContext(
@@ -1482,7 +1482,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						cryptoUpdate(TOKEN_TREASURY).key(MULTI_KEY),
 						uploadInitCode(SAFE_OPERATIONS_CONTRACT),
-						newContractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
+						contractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
 				)
 				.when(
 						withOpContext(
@@ -1564,7 +1564,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						cryptoUpdate(TOKEN_TREASURY).key(MULTI_KEY),
 						cryptoUpdate(SECOND_ACCOUNT).key(MULTI_KEY),
 						uploadInitCode(SAFE_OPERATIONS_CONTRACT),
-						newContractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
+						contractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
 				)
 				.when(
 						withOpContext(
@@ -1653,7 +1653,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						cryptoUpdate(TOKEN_TREASURY).key(MULTI_KEY),
 						uploadInitCode(SAFE_OPERATIONS_CONTRACT),
-						newContractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
+						contractCreate(SAFE_OPERATIONS_CONTRACT).gas(100_000)
 				)
 				.when(
 						withOpContext(

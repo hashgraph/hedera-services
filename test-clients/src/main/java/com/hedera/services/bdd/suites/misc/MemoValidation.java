@@ -38,7 +38,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -91,7 +90,7 @@ public final class MemoValidation extends HapiApiSuite {
 		return defaultHapiSpec("MemoValidationsOnContractOps")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.omitAdminKey()
 				)
 				.when(

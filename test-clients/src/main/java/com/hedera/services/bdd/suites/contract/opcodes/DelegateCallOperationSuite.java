@@ -30,7 +30,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -57,7 +57,7 @@ public class DelegateCallOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("VerifiesExistence")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 				).then(
 						contractCall(contract, "delegateCall", INVALID_ADDRESS)

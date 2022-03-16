@@ -57,7 +57,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getExecTime;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
@@ -307,7 +307,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 							.deferStatusResolution();
 				} else {
 					final var numSlots = contractSlots.get(choice);
-					op = newContractCreate(CONTRACT, numSlots)
+					op = contractCreate(CONTRACT, numSlots)
 							.payingWith(civilian)
 							.balance(0L)
 							.gas(GAS_TO_OFFER)
@@ -354,7 +354,7 @@ public class FibonacciPlusLoadProvider extends HapiApiSuite {
 						uploadInitCode(CONTRACT),
 						cryptoCreate(civilian).balance(100 * ONE_MILLION_HBARS).payingWith(GENESIS)
 				).when(
-						newContractCreate(CONTRACT, 32)
+						contractCreate(CONTRACT, 32)
 								.payingWith(civilian)
 								.balance(0L)
 								.gas(300_000L)

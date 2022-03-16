@@ -79,7 +79,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -189,10 +188,10 @@ public class ContractCallSuite extends HapiApiSuite {
 						withOpContext((spec, opLog) -> defaultPayerMirror.set(
 								asSolidityAddress(spec.registry().getAccountID(DEFAULT_PAYER)))),
 						uploadInitCode(addressBook, jurisdictions),
-						newContractCreate(addressBook)
+						contractCreate(addressBook)
 								.exposingNumTo(num -> addressBookMirror.set(
 										asHexedSolidityAddress(0, 0, num))),
-						newContractCreate(jurisdictions)
+						contractCreate(jurisdictions)
 								.exposingNumTo(num -> jurisdictionMirror.set(
 										asHexedSolidityAddress(0, 0, num)))
 								.withExplicitParams(() -> explicitJurisdictionConsParams),
@@ -200,7 +199,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								bookInterpolated(
 										literalInitcodeFor(minters).toByteArray(),
 										addressBookMirror.get()))),
-						newContractCreate(minters)
+						contractCreate(minters)
 								.withExplicitParams(() -> String.format(
 										explicitMinterConsParamsTpl, jurisdictionMirror.get()))
 				).when(
@@ -253,7 +252,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(adminKey),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.gas(300_000)
 				).when(
 						contractCall(contract, "destroy")
@@ -304,7 +303,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var registry = spec.registry();
 							final var tokenId = registry.getTokenID(ticketToken);
 							final var treasuryId = registry.getAccountID(treasury);
-							final var creation = newContractCreate(
+							final var creation = contractCreate(
 									contract,
 									tokenId.getTokenNum(), treasuryId.getAccountNum()
 							)
@@ -358,7 +357,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("ImapUserExercise")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when().then(
 						contractCall(contract, "insert", 1, 4)
 								.gas(gasToOffer)
@@ -393,7 +392,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						getAccountInfo("Dave").savingSnapshot("DaveAcctInfo"),
 
 						uploadInitCode(contract),
-						newContractCreate(contract, 1_000_000L, "OpenCrowd Token", "OCT")
+						contractCreate(contract, 1_000_000L, "OpenCrowd Token", "OCT")
 								.gas(250_000L)
 								.payingWith("tokenIssuer")
 								.via("tokenCreateTxn").logged()
@@ -604,8 +603,8 @@ public class ContractCallSuite extends HapiApiSuite {
 								.balance(10_000_000_000_000L),
 						uploadInitCode(SIMPLE_STORAGE_CONTRACT, inlineTestContract)
 				).when(
-						newContractCreate(SIMPLE_STORAGE_CONTRACT),
-						newContractCreate(inlineTestContract)
+						contractCreate(SIMPLE_STORAGE_CONTRACT),
+						contractCreate(inlineTestContract)
 				).then(
 						assertionsHold((spec, ctxLog) -> {
 
@@ -682,7 +681,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("MultipleSelfDestructsAreSafe")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract).gas(300_000)
+						contractCreate(contract).gas(300_000)
 				).when(
 						contractCall(contract, "light").via("lightTxn")
 								.scrambleTxnBody(
@@ -699,7 +698,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("DepositSuccess")
 				.given(
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-						newContractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
+						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
 				).when(
 						contractCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount
 						)
@@ -716,7 +715,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("MultipleDepositSuccess")
 				.given(
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-						newContractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
+						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
 				)
 				.when()
 				.then(
@@ -741,7 +740,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate("beneficiary").balance(initBalance),
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-						newContractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
+						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
 				).when(
 						contractCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount
 						)
@@ -760,7 +759,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						UtilVerbs.overriding("contracts.maxGas", "1000000"),
 						uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-						newContractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD).gas(1_000_000)
+						contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD).gas(1_000_000)
 				).when(
 						contractCall(PAY_RECEIVABLE_CONTRACT).via("payTxn").sending(depositAmount)
 				).then(
@@ -779,7 +778,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						UtilVerbs.overriding("contracts.maxGas", "1000000"),
 						uploadInitCode(SIMPLE_UPDATE_CONTRACT)
 				).when(
-						newContractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
+						contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
 						contractCall(SIMPLE_UPDATE_CONTRACT,
 								"set", 5, 42).gas(300_000L),
 						contractCall(SIMPLE_UPDATE_CONTRACT,
@@ -817,7 +816,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate("accountToPay"),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when().then(
 						contractCall(contract, "create")
 								.fee(0L)
@@ -831,7 +830,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("NonPayable")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 						contractCall(contract, "create")
 								.via("callTxn")
@@ -872,7 +871,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 						contractCall(contract, "deposit", TRANSFER_AMOUNT, 0, "So we out-danced thought..."
 						)
@@ -915,7 +914,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							final var subop1 = balanceSnapshot("balanceBefore0", "payer");
 
 							final var subop2 =
-									newContractCreate(SIMPLE_STORAGE_CONTRACT)
+									contractCreate(SIMPLE_STORAGE_CONTRACT)
 											.balance(0)
 											.payingWith("payer")
 											.gas(1)
@@ -936,7 +935,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 							final var subop1 = balanceSnapshot("balanceBefore1", "payer");
 
-							final var subop2 = newContractCreate(SIMPLE_STORAGE_CONTRACT)
+							final var subop2 = contractCreate(SIMPLE_STORAGE_CONTRACT)
 									.balance(100_000_000_000L)
 									.payingWith("payer")
 									.gas(250_000L)
@@ -957,7 +956,7 @@ public class ContractCallSuite extends HapiApiSuite {
 
 							final var subop1 = balanceSnapshot("balanceBefore2", "payer");
 
-							final var subop2 = newContractCreate(SIMPLE_STORAGE_CONTRACT)
+							final var subop2 = contractCreate(SIMPLE_STORAGE_CONTRACT)
 									.balance(0L)
 									.payingWith("payer")
 									.gas(250_000L)
@@ -1028,7 +1027,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate("payer").balance(1_000_000_000_000L).logged(),
 						cryptoCreate("receiver").balance(1_000L),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
@@ -1096,7 +1095,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						getAccountInfo("receivableSigReqAccount").savingSnapshot("receivableSigReqAccountInfo"),
 						uploadInitCode(TRANSFERRING_CONTRACT)
 				).when(
-						newContractCreate(TRANSFERRING_CONTRACT).gas(300_000L).balance(5000L)
+						contractCreate(TRANSFERRING_CONTRACT).gas(300_000L).balance(5000L)
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var accountAddress = spec.registry()
@@ -1134,7 +1133,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						getAccountInfo("receivableSigReqAccount").savingSnapshot("receivableSigReqAccountInfo"),
 						uploadInitCode(TRANSFERRING_CONTRACT)
 				).when(
-						newContractCreate(TRANSFERRING_CONTRACT).gas(300_000L).balance(5000L)
+						contractCreate(TRANSFERRING_CONTRACT).gas(300_000L).balance(5000L)
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var accountAddress = spec.registry()
@@ -1153,7 +1152,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "5"),
 						uploadInitCode(SIMPLE_UPDATE_CONTRACT)
 				).when(
-						newContractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
+						contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
 						contractCall(SIMPLE_UPDATE_CONTRACT, "set", 5, 42
 						)
 								.gas(300_000L)
@@ -1177,7 +1176,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						uploadInitCode(SIMPLE_UPDATE_CONTRACT)
 				).when(
-						newContractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
+						contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
 						contractCall(SIMPLE_UPDATE_CONTRACT, "set", 5, 42
 						)
 								.gas(300_000L)
@@ -1199,7 +1198,7 @@ public class ContractCallSuite extends HapiApiSuite {
 		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
 				.given(
 						uploadInitCode(SIMPLE_UPDATE_CONTRACT),
-						newContractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
+						contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
 						UtilVerbs.overriding("contracts.maxGas", "100")
 				).when().then(
 						contractCall(SIMPLE_UPDATE_CONTRACT, "set", 5, 42).gas(101L
@@ -1217,7 +1216,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("receiver").balance(10_000L),
 						uploadInitCode(TRANSFERRING_CONTRACT),
-						newContractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
+						contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
 						getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry("contract_from"),
 						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo"),
 						getAccountInfo("receiver").savingSnapshot("receiverInfo")
@@ -1250,8 +1249,8 @@ public class ContractCallSuite extends HapiApiSuite {
 						uploadInitCode(topLevelContract, subLevelContract)
 				)
 				.when(
-						newContractCreate(topLevelContract).payingWith(ACCOUNT).balance(INITIAL_CONTRACT_BALANCE),
-						newContractCreate(subLevelContract).payingWith(ACCOUNT).balance(INITIAL_CONTRACT_BALANCE)
+						contractCreate(topLevelContract).payingWith(ACCOUNT).balance(INITIAL_CONTRACT_BALANCE),
+						contractCreate(subLevelContract).payingWith(ACCOUNT).balance(INITIAL_CONTRACT_BALANCE)
 				)
 				.then(
 						contractCall(topLevelContract).sending(10).payingWith(ACCOUNT),
@@ -1310,7 +1309,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						uploadInitCode(TRANSFERRING_CONTRACT),
-						newContractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
+						contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
 						cloneContract(TRANSFERRING_CONTRACT, to).balance(10_000L).payingWith(ACCOUNT),
 						getContractInfo(TRANSFERRING_CONTRACT).saveToRegistry("contract_from"),
 						getContractInfo(TRANSFERRING_CONTRACT + to).saveToRegistry("contract_to"),
@@ -1347,7 +1346,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.when(
 						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
 						uploadInitCode(TRANSFERRING_CONTRACT),
-						newContractCreate(TRANSFERRING_CONTRACT).payingWith(ACCOUNT).balance(ONE_HUNDRED_HBARS)
+						contractCreate(TRANSFERRING_CONTRACT).payingWith(ACCOUNT).balance(ONE_HUNDRED_HBARS)
 				)
 				.then(
 						withOpContext(
@@ -1390,12 +1389,12 @@ public class ContractCallSuite extends HapiApiSuite {
 						uploadInitCode(TRANSFERRING_CONTRACT),
 						getAccountInfo(ACCOUNT).savingSnapshot("accInfo"),
 
-						newContractCreate(TRANSFERRING_CONTRACT)
+						contractCreate(TRANSFERRING_CONTRACT)
 								.payingWith(ACCOUNT)
 								.signedBy(PAYER_KEY)
 								.adminKey(KEY_LIST).hasPrecheck(INVALID_SIGNATURE),
 
-						newContractCreate(TRANSFERRING_CONTRACT)
+						contractCreate(TRANSFERRING_CONTRACT)
 								.payingWith(ACCOUNT)
 								.signedBy(PAYER_KEY, OTHER_KEY)
 								.balance(10)
@@ -1432,7 +1431,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("receiver").balance(10_000L),
 						uploadInitCode(TRANSFERRING_CONTRACT),
-						newContractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
+						contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
 						getAccountInfo("receiver").savingSnapshot("receiverInfo")
 				)
 				.when(
@@ -1462,7 +1461,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate("receiver2").balance(10_000L),
 						cryptoCreate("receiver3").balance(10_000L),
 						uploadInitCode(TRANSFERRING_CONTRACT),
-						newContractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
+						contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
 
 						getAccountInfo("receiver1").savingSnapshot("receiver1Info"),
 						getAccountInfo("receiver2").savingSnapshot("receiver2Info"),
@@ -1509,7 +1508,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							var receiverAddr = spec.registry().getAccountInfo("receiverInfo").getContractAccountID();
 
 							allRunFor(spec,
-									newContractCreate(NESTED_TRANSFERRING_CONTRACT,
+									contractCreate(NESTED_TRANSFERRING_CONTRACT,
 											getNestedContractAddress(NESTED_CONTRACT + "1", spec),
 											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(10_000L).payingWith(ACCOUNT),
 
@@ -1542,7 +1541,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.when(
 						withOpContext((spec, log) -> {
 							allRunFor(spec,
-									newContractCreate(NESTED_TRANSFERRING_CONTRACT,
+									contractCreate(NESTED_TRANSFERRING_CONTRACT,
 											getNestedContractAddress(NESTED_CONTRACT + "1", spec),
 											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(10_000L).payingWith(ACCOUNT),
 
@@ -1578,7 +1577,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.when(
 						withOpContext((spec, log) -> {
 							allRunFor(spec,
-									newContractCreate(NESTED_TRANSFERRING_CONTRACT,
+									contractCreate(NESTED_TRANSFERRING_CONTRACT,
 											getNestedContractAddress(NESTED_CONTRACT + "1", spec),
 											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(10_000L).payingWith(GENESIS),
 									contractCall(
@@ -1636,7 +1635,7 @@ public class ContractCallSuite extends HapiApiSuite {
 							var receiver3Addr = spec.registry().getAccountInfo("receiver3Info").getContractAccountID();
 
 							allRunFor(spec,
-									newContractCreate(NESTED_TRANSFERRING_CONTRACT,
+									contractCreate(NESTED_TRANSFERRING_CONTRACT,
 											getNestedContractAddress(NESTED_CONTRACT + "1", spec),
 											getNestedContractAddress(NESTED_CONTRACT + "2", spec)).balance(10_000L).payingWith(ACCOUNT),
 
@@ -1665,7 +1664,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("receiver").balance(10_000L),
 						uploadInitCode(TRANSFERRING_CONTRACT),
-						newContractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
+						contractCreate(TRANSFERRING_CONTRACT).balance(10_000L).payingWith(ACCOUNT),
 
 						getAccountInfo("receiver").savingSnapshot("receiverInfo")
 				)
@@ -1700,7 +1699,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						uploadInitCode(TRANSFERRING_CONTRACT),
-						newContractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
+						contractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
 						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo").payingWith(GENESIS)
 				)
 				.when(
@@ -1743,7 +1742,7 @@ public class ContractCallSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						uploadInitCode(TRANSFERRING_CONTRACT),
-						newContractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
+						contractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
 						getAccountInfo(ACCOUNT).savingSnapshot("accountInfo").payingWith(GENESIS)
 				)
 				.when(
@@ -1788,7 +1787,7 @@ public class ContractCallSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
 						cryptoCreate("receiver").balance(10_000L),
 						uploadInitCode(TRANSFERRING_CONTRACT),
-						newContractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
+						contractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
 						getAccountInfo("receiver").savingSnapshot("receiverInfo")
 				)
 				.when(

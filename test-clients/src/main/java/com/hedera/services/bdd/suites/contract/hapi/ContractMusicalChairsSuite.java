@@ -39,7 +39,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -81,7 +81,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
 						(spec, opLog) ->
 								allRunFor(
 										spec,
-										newContractCreate(contract, asAddress(spec.registry().getAccountID(dj))
+										contractCreate(contract, asAddress(spec.registry().getAccountID(dj))
 										)
 												.payingWith(dj)
 								)

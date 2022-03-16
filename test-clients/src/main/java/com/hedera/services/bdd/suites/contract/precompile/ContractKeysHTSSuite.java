@@ -57,7 +57,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
@@ -247,7 +247,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(BURN_TOKEN, asAddress(spec.registry().getTokenID(token))
+												contractCreate(BURN_TOKEN, asAddress(spec.registry().getTokenID(token))
 												)
 														.via("creationTx")
 										)
@@ -312,7 +312,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						cryptoCreate(RECEIVER)
 								.exposingCreatedIdTo(receiverID::set),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract),
+						contractCreate(nestedContract),
 						tokenAssociate(nestedContract, VANILLA_TOKEN),
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						tokenAssociate(RECEIVER, VANILLA_TOKEN),
@@ -323,7 +323,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												tokenAssociate(outerContract, VANILLA_TOKEN),
 												newKeyNamed(DELEGATE_KEY).shape(delegateContractKeyShape.signedWith(sigs(ON, ON, outerContract, nestedContract))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
@@ -370,7 +370,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						cryptoCreate(RECEIVER)
 								.exposingCreatedIdTo(receiverID::set),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract),
+						contractCreate(nestedContract),
 						tokenAssociate(nestedContract, VANILLA_TOKEN),
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						tokenAssociate(RECEIVER, VANILLA_TOKEN),
@@ -381,7 +381,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												tokenAssociate(outerContract, VANILLA_TOKEN),
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
@@ -422,14 +422,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
 						mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("Second!"))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				)
 				.when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
 												contractCall(outerContract, "burnDelegateCall",
@@ -466,14 +466,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.initialSupply(50L)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				)
 				.when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
 												contractCall(outerContract, "mintDelegateCall",
@@ -509,14 +509,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												contractCall(outerContract, "dissociateStaticCall",
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get())
 												)
@@ -555,7 +555,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						cryptoCreate(RECEIVER)
 								.exposingCreatedIdTo(receiverID::set),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract),
+						contractCreate(nestedContract),
 						tokenAssociate(nestedContract, VANILLA_TOKEN),
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						tokenAssociate(RECEIVER, VANILLA_TOKEN),
@@ -566,7 +566,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												tokenAssociate(outerContract, VANILLA_TOKEN),
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
@@ -604,14 +604,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
 						mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("Second!"))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				)
 				.when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
 												contractCall(outerContract, "burnStaticCall",
@@ -646,14 +646,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.initialSupply(50L)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				)
 				.when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(CONTRACT_KEY),
 
@@ -694,7 +694,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						cryptoCreate(RECEIVER)
 								.exposingCreatedIdTo(receiverID::set),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract),
+						contractCreate(nestedContract),
 						tokenAssociate(nestedContract, VANILLA_TOKEN),
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						tokenAssociate(RECEIVER, VANILLA_TOKEN),
@@ -705,7 +705,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												tokenAssociate(outerContract, VANILLA_TOKEN),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
@@ -743,14 +743,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
 						mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("Second!"))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				)
 				.when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
 												contractCall(outerContract, "burnStaticCall",
@@ -786,14 +786,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.initialSupply(50L)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				)
 				.when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
 												contractCall(outerContract, "mintStaticCall",
@@ -827,13 +827,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												contractCall(outerContract, "associateStaticCall",
 														asAddress(accountID.get()), asAddress(vanillaTokenTokenID.get())
 												)
@@ -870,7 +870,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(ORDINARY_CALLS_CONTRACT),
-						newContractCreate(ORDINARY_CALLS_CONTRACT)
+						contractCreate(ORDINARY_CALLS_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -920,7 +920,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(ORDINARY_CALLS_CONTRACT),
-						newContractCreate(ORDINARY_CALLS_CONTRACT)
+						contractCreate(ORDINARY_CALLS_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -968,7 +968,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						uploadInitCode(ORDINARY_CALLS_CONTRACT),
-						newContractCreate(ORDINARY_CALLS_CONTRACT).via("creationTx")
+						contractCreate(ORDINARY_CALLS_CONTRACT).via("creationTx")
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1025,7 +1025,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						uploadInitCode(ORDINARY_CALLS_CONTRACT),
-						newContractCreate(ORDINARY_CALLS_CONTRACT)
+						contractCreate(ORDINARY_CALLS_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1078,7 +1078,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1116,7 +1116,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1156,7 +1156,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.initialSupply(totalSupply)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1215,7 +1215,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.initialSupply(totalSupply)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1277,7 +1277,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(BURN_TOKEN, asAddress(spec.registry().getTokenID(token))
+												contractCreate(BURN_TOKEN, asAddress(spec.registry().getTokenID(token))
 												)
 														.via("creationTx")
 										)
@@ -1320,13 +1320,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(outerContract, "associateDelegateCall",
@@ -1362,13 +1362,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
@@ -1405,7 +1405,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.kycKey(KYC_KEY)
 								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1465,7 +1465,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.initialSupply(TOTAL_SUPPLY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1547,7 +1547,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.freezeKey(FREEZE_KEY)
 								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 
 				).when(
 						withOpContext(
@@ -1601,7 +1601,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.kycKey(KYC_KEY)
 								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1657,7 +1657,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						mintToken(VANILLA_TOKEN, List.of(metadata("memo"))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1736,7 +1736,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.freezeKey(FREEZE_KEY)
 								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1790,7 +1790,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.kycKey(KYC_KEY)
 								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1843,7 +1843,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.freezeDefault(true)
 								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1902,7 +1902,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.initialSupply(0)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1962,7 +1962,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.kycKey(KYC_KEY)
 								.exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -2024,7 +2024,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.freezeDefault(true)
 								.exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -2082,7 +2082,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
-						newContractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
+						contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -2142,13 +2142,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
 												contractCall(outerContract, "associateDelegateCall",
@@ -2184,13 +2184,13 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)),
 												newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
 												cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
@@ -2229,7 +2229,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(BURN_TOKEN, asAddress(spec.registry().getTokenID(token)))
+												contractCreate(BURN_TOKEN, asAddress(spec.registry().getTokenID(token)))
 														.via("creationTx")
 										)
 						)
@@ -2276,7 +2276,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(ORDINARY_CALLS_CONTRACT),
-						newContractCreate(ORDINARY_CALLS_CONTRACT)
+						contractCreate(ORDINARY_CALLS_CONTRACT)
 				)
 				.when(
 						withOpContext(
@@ -2336,14 +2336,14 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.treasury(TOKEN_TREASURY),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				)
 				.when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec)
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec)
 												)
 														.via("creationTx"),
 												newKeyNamed(delegateContractDelegateContractKey).shape(delegateContractDelegateContractShape.signedWith(sigs(ON,

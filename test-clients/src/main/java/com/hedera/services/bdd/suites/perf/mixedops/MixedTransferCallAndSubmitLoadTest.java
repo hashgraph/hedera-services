@@ -37,7 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -112,7 +112,7 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 						cryptoCreate("sender").balance(999_999_999_999_999L),
 						cryptoCreate("receiver"),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).then(
 						runLoadTest(transferBurst)
 								.tps(settings::getTps)

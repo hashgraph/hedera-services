@@ -51,7 +51,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
@@ -130,7 +130,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(THE_CONTRACT, asAddress(spec.registry().getTokenID(TOKEN)))
+												contractCreate(THE_CONTRACT, asAddress(spec.registry().getTokenID(TOKEN)))
 														.payingWith(ALICE)
 														.via("creationTx")
 														.gas(GAS_TO_OFFER)
@@ -198,7 +198,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(THE_CONTRACT, asAddress(spec.registry().getTokenID(TOKEN)))
+												contractCreate(THE_CONTRACT, asAddress(spec.registry().getTokenID(TOKEN)))
 														.payingWith(ALICE)
 														.via("creationTx")
 														.gas(GAS_TO_OFFER)
@@ -250,13 +250,13 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.treasury(TOKEN_TREASURY),
 						uploadInitCode(innerContract, outerContract),
-						newContractCreate(innerContract)
+						contractCreate(innerContract)
 								.gas(GAS_TO_OFFER),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(innerContract, spec)
+												contractCreate(outerContract, getNestedContractAddress(innerContract, spec)
 												)
 														.payingWith(ALICE)
 														.via("creationTx")
@@ -328,7 +328,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(theContract, asAddress(spec.registry().getTokenID(tokenWithHbarFee))
+												contractCreate(theContract, asAddress(spec.registry().getTokenID(tokenWithHbarFee))
 												)
 														.payingWith(bob)
 														.gas(GAS_TO_OFFER)

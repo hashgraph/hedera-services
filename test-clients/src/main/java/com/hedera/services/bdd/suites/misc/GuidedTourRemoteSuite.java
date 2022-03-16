@@ -51,7 +51,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -94,7 +94,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate("targetAccount").balance(ACTUAL_BALANCE),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when().then(
 						/* This contract (c.f. src/main/resource/contract/contracts/BalanceLookup/BalanceLookup.sol) assumes
 						   a shard and realm of 0; accepts just the sequence number of an account. */

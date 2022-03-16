@@ -30,7 +30,7 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 
 public class ContractCallLocalPerfSuite extends HapiApiSuite {
@@ -62,7 +62,7 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractCallLocalPerf")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract).balance(1_000L)
+						contractCreate(contract).balance(1_000L)
 				).when(
 						contractCallLocal(
 								contract,

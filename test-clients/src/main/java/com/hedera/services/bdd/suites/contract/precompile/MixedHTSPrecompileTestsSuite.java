@@ -35,7 +35,7 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -84,12 +84,12 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract),
+						contractCreate(nestedContract),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, asAddress(spec.registry().getTokenID(token))
+												contractCreate(outerContract, asAddress(spec.registry().getTokenID(token))
 												)
 														.via("associateTxn"),
 												cryptoTransfer(moving(200, token).between(TOKEN_TREASURY, theAccount))

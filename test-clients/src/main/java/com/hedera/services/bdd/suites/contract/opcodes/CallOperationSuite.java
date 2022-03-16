@@ -33,7 +33,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -64,7 +64,7 @@ public class CallOperationSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate(ACCOUNT).balance(0L),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 				).then(
 						contractCall(contract, "call", INVALID_ADDRESS)
@@ -89,7 +89,7 @@ public class CallOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("CallingContract")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 						contractCall(contract, "setVar1", 35),
 						contractCallLocal(contract, "getVar1")

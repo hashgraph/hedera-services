@@ -49,7 +49,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -175,7 +175,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(theContract, asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
+												contractCreate(theContract, asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
 										)
 						),
 						tokenAssociate(alice, tokenWithHbarFee),
@@ -232,7 +232,7 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(theContract, asAddress(spec.registry().getTokenID(A_TOKEN))
+												contractCreate(theContract, asAddress(spec.registry().getTokenID(A_TOKEN))
 												)
 														.via("creationTx")
 										)
@@ -289,12 +289,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
-						newContractCreate(FEE_DISTRIBUTOR),
+						contractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						),
 						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),
@@ -367,12 +367,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN)
 								.between(TOKEN_TREASURY, ACCOUNT)),
 						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
-						newContractCreate(FEE_DISTRIBUTOR),
+						contractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						)
 				).when(
@@ -500,12 +500,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 						cryptoTransfer(moving(TOTAL_SUPPLY, A_TOKEN)
 								.between(TOKEN_TREASURY, ACCOUNT)),
 						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
-						newContractCreate(FEE_DISTRIBUTOR),
+						contractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						)
 				).when(
@@ -629,12 +629,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.balance(0L),
 						cryptoCreate(TOKEN_TREASURY),
 						uploadInitCode(outerContract, innerContract),
-						newContractCreate(innerContract),
+						contractCreate(innerContract),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(innerContract, spec))
+												contractCreate(outerContract, getNestedContractAddress(innerContract, spec))
 										)
 						)
 				).when(
@@ -699,12 +699,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
-						newContractCreate(FEE_DISTRIBUTOR),
+						contractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						),
 						tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
@@ -764,12 +764,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
-						newContractCreate(FEE_DISTRIBUTOR),
+						contractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						),
 						tokenAssociate(VERSATILE_TRANSFERS, List.of(NFT)),
@@ -829,12 +829,12 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						uploadInitCode(VERSATILE_TRANSFERS, FEE_DISTRIBUTOR),
-						newContractCreate(FEE_DISTRIBUTOR),
+						contractCreate(FEE_DISTRIBUTOR),
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
+												contractCreate(VERSATILE_TRANSFERS, getNestedContractAddress(FEE_DISTRIBUTOR, spec))
 										)
 						),
 						tokenAssociate(ACCOUNT, List.of(A_TOKEN)),

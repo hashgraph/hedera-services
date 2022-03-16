@@ -52,7 +52,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
@@ -402,7 +402,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				.given(
 						overriding("contracts.maxRefundPercentOfGasLimit", "5"),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "create")
 								.gas(1_000_000L)
@@ -419,7 +419,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				.given(
 						overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "create")
 								.gas(1_000_000L)
@@ -435,7 +435,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT),
+						contractCreate(CONTRACT),
 						overriding("contracts.maxGas", "100")
 				).when().then(
 						contractCallLocal(CONTRACT, "getIndirect").gas(101L)
@@ -452,7 +452,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract),
 						/* This contract has 0 key/value mappings at creation */
-						newContractCreate(contract),
+						contractCreate(contract),
 						/* Now we update the per-contract limit to 10 mappings */
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
@@ -515,7 +515,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate(civilian),
 						uploadInitCode(contract),
-						newContractCreate(contract),
+						contractCreate(contract),
 						contractCall(contract, "insert", 1, 4)
 								.payingWith(civilian)
 								.gas(gasToOffer)

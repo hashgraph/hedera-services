@@ -46,7 +46,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -116,7 +115,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("Eip1014AddressAlwaysHasPriority")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract).via(creationTxn)
+						contractCreate(contract).via(creationTxn)
 				).when(
 						captureChildCreate2MetaFor(
 								2, 0,
@@ -154,7 +153,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ADMIN_KEY),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 								.adminKey(ADMIN_KEY)
 								.entityMemo(firstMemo)
 				).when(
@@ -177,7 +176,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("UpdatingExpiryWorks")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				)
 				.when(
 						contractUpdate(CONTRACT)
@@ -195,7 +194,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("RejectsExpiryTooFarInTheFuture")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when().then(
 						contractUpdate(CONTRACT)
 								.newExpirySecs(excessiveExpiry)
@@ -208,7 +207,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(ADMIN_KEY),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 								.adminKey(ADMIN_KEY)
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 				)
@@ -229,7 +228,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						newKeyNamed(ADMIN_KEY),
 						newKeyNamed(NEW_ADMIN_KEY),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 								.adminKey(ADMIN_KEY)
 				).when(
 						contractUpdate(CONTRACT)
@@ -250,7 +249,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						newKeyNamed(ADMIN_KEY),
 						newKeyNamed(NEW_ADMIN_KEY),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 								.adminKey(ADMIN_KEY)
 				).when(
 						contractUpdate(CONTRACT)
@@ -270,7 +269,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("GivenAdminKeyMustBeValid")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 						getContractInfo(contract).logged()
 				).then(
@@ -400,7 +399,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 		return defaultHapiSpec("HSCS-DCPR-001")
 				.given(
 						uploadInitCode(simpleStorageContract, emptyConstructorContract),
-						newContractCreate(simpleStorageContract),
+						contractCreate(simpleStorageContract),
 						getContractBytecode(simpleStorageContract).saveResultTo("initialBytecode")
 				)
 				.when(

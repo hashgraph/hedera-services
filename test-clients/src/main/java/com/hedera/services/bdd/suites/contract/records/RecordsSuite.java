@@ -36,7 +36,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
@@ -63,7 +63,7 @@ public class RecordsSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate("payer").balance(10 * ONE_HUNDRED_HBARS),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 						contractCall(contract, "pick", byteArraySize
 						)
@@ -81,7 +81,7 @@ public class RecordsSuite extends HapiApiSuite {
 		return defaultHapiSpec("TXRecordsContainValidTransfers")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract).balance(10_000L).via("createTx")
+						contractCreate(contract).balance(10_000L).via("createTx")
 				).when(
 						contractCall(contract, "transferToChild", 10_000).via("transferTx")
 				).then(

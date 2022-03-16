@@ -31,7 +31,7 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
@@ -83,7 +83,7 @@ public class ERC721ContractInteractions extends HapiApiSuite {
                         uploadInitCode(CONTRACT)
                 ).when(
                         QueryVerbs.getAccountBalance(PAYER).logged(),
-                        newContractCreate(CONTRACT)
+                        contractCreate(CONTRACT)
                                 .payingWith(CONTRACT_CREATOR)
                                 .hasKnownStatus(SUCCESS)
                                 .via(CREATE_TX)

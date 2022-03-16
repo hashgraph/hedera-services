@@ -46,7 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
@@ -168,7 +168,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 								.balance(10 * ONE_HUNDRED_HBARS)
 								.exposingCreatedIdTo(nonZeroBalanceUnfrozenID::set),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -266,13 +266,13 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY)
 								.exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
 						uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
-						newContractCreate(NESTED_CONTRACT)
+						contractCreate(NESTED_CONTRACT)
 				)
 				.when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT, spec)),
+												contractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT, spec)),
 												tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 												contractCall(OUTER_CONTRACT, "dissociateAssociateContractCall",
 														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
@@ -318,7 +318,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 								.initialSupply(TOTAL_SUPPLY)
 								.exposingCreatedIdTo(id -> knowableTokenTokenID.set(asToken(id))),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				)
 				.when(
 						withOpContext(

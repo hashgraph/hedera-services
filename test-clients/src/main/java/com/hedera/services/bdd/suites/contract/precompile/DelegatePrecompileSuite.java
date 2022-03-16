@@ -47,7 +47,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
@@ -128,7 +128,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(RECEIVER)
 								.exposingCreatedIdTo(receiverID::set),
 						uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
-						newContractCreate(NESTED_CONTRACT),
+						contractCreate(NESTED_CONTRACT),
 						tokenAssociate(NESTED_CONTRACT, VANILLA_TOKEN),
 						tokenAssociate(ACCOUNT, VANILLA_TOKEN),
 						tokenAssociate(RECEIVER, VANILLA_TOKEN),
@@ -139,7 +139,7 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT, spec)),
+												contractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT, spec)),
 												tokenAssociate(OUTER_CONTRACT, VANILLA_TOKEN),
 												newKeyNamed(SIMPLE_AND_DELEGATE_KEY_NAME).shape(SIMPLE_AND_DELEGATE_KEY_SHAPE.signedWith(sigs(ON, OUTER_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(SIMPLE_AND_DELEGATE_KEY_NAME),
@@ -179,14 +179,14 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 						mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("First!"))),
 						mintToken(VANILLA_TOKEN, List.of(copyFromUtf8("Second!"))),
 						uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
-						newContractCreate(NESTED_CONTRACT)
+						contractCreate(NESTED_CONTRACT)
 				)
 				.when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT, spec)),
+												contractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT, spec)),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
 												contractCall(OUTER_CONTRACT, "burnDelegateCall",
@@ -221,13 +221,13 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
 								.initialSupply(50L)
 								.exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
 						uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
-						newContractCreate(NESTED_CONTRACT))
+						contractCreate(NESTED_CONTRACT))
 				.when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT, spec)),
+												contractCreate(OUTER_CONTRACT, getNestedContractAddress(NESTED_CONTRACT, spec)),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(OUTER_CONTRACT))),
 												tokenUpdate(VANILLA_TOKEN).supplyKey(DELEGATE_KEY),
 												contractCall(OUTER_CONTRACT, "mintDelegateCall",

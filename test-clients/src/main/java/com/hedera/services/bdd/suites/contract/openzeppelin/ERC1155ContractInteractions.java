@@ -36,7 +36,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
@@ -74,7 +74,7 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 				)
 				.when()
 				.then(
-						newContractCreate(CONTRACT).via("contractCreate").payingWith(OPERATIONS_PAYER),
+						contractCreate(CONTRACT).via("contractCreate").payingWith(OPERATIONS_PAYER),
 						getTxnRecord("contractCreate").logged(), // 121618 gas
 						getAccountBalance(OPERATIONS_PAYER).logged(), // started with 1M hbars
 						getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),

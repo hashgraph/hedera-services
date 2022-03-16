@@ -36,7 +36,11 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +57,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.bytecodePath;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -70,11 +75,11 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cloneContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -114,29 +119,29 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
-				createEmptyConstructor(),
-				insufficientPayerBalanceUponCreation(),
-				rejectsInvalidMemo(),
-				rejectsInsufficientFee(),
-				rejectsInvalidBytecode(),
-				revertsNonzeroBalance(),
-				createFailsIfMissingSigs(),
-				rejectsInsufficientGas(),
-				createsVanillaContractAsExpectedWithOmittedAdminKey(),
-				childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-				cannotCreateTooLargeContract(),
-				revertedTryExtCallHasNoSideEffects(),
-				getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-				receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-				cannotSendToNonExistentAccount(),
-				canCallPendingContractSafely(),
-				delegateContractIdRequiredForTransferInDelegateCall(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsedByContractCreate(),
-				gasLimitOverMaxGasLimitFailsPrecheck(),
-				vanillaSuccess(),
-				propagatesNestedCreations(),
-				blockTimestampIsConsensusTime()
+//				createEmptyConstructor(),
+//				insufficientPayerBalanceUponCreation(),
+//				rejectsInvalidMemo(),
+//				rejectsInsufficientFee(),
+//				rejectsInvalidBytecode(),
+//				revertsNonzeroBalance(),
+//				createFailsIfMissingSigs(),
+//				rejectsInsufficientGas(),
+//				createsVanillaContractAsExpectedWithOmittedAdminKey(),
+//				childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+				cannotCreateTooLargeContract()
+//				revertedTryExtCallHasNoSideEffects(),
+//				getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+//				receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+//				cannotSendToNonExistentAccount(),
+//				canCallPendingContractSafely(),
+//				delegateContractIdRequiredForTransferInDelegateCall(),
+//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+//				minChargeIsTXGasUsedByContractCreate(),
+//				gasLimitOverMaxGasLimitFailsPrecheck(),
+//				vanillaSuccess(),
+//				propagatesNestedCreations(),
+//				blockTimestampIsConsensusTime()
 		);
 	}
 
@@ -149,7 +154,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				)
 				.when()
 				.then(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.payingWith("bankrupt")
 								.hasPrecheck(INSUFFICIENT_PAYER_BALANCE)
 				);
@@ -201,7 +206,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("CannotSendToNonExistentAccount").given(
 				uploadInitCode(contract)
 		).when(
-				newContractCreate(contract)
+				contractCreate(contract)
 						.balance(666)
 		).then(
 				contractCall(contract, "donate", donationArgs)
@@ -214,7 +219,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when().then(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.omitAdminKey(),
 						getContractInfo(EMPTY_CONSTRUCTOR_CONTRACT)
 								.has(contractWith().immutableContractKey(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -232,7 +237,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("ChildCreationsHaveExpectedKeysWithOmittedAdminKey")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract).omitAdminKey().gas(300_000).via(txn),
+						contractCreate(contract).omitAdminKey().gas(300_000).via(txn),
 						withOpContext((spec, opLog) -> {
 							final var op = getTxnRecord(txn);
 							allRunFor(spec, op);
@@ -273,7 +278,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				).when(
 
 				).then(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.hasKnownStatus(SUCCESS)
 				);
 	}
@@ -295,7 +300,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(adminKey),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.proxy("0.0.3")
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
@@ -342,7 +347,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("RevertedTryExtCallHasNoSideEffects")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract).balance(balance),
+						contractCreate(contract).balance(balance),
 						cryptoCreate(aBeneficiary).balance(0L),
 						cryptoCreate(bBeneficiary).balance(0L)
 				).when(
@@ -374,11 +379,11 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when().then(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.adminKeyShape(shape)
 								.sigControl(forKey(EMPTY_CONSTRUCTOR_CONTRACT, invalidSig))
 								.hasKnownStatus(INVALID_SIGNATURE),
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.adminKeyShape(shape)
 								.sigControl(forKey(EMPTY_CONSTRUCTOR_CONTRACT, validSig))
 								.hasKnownStatus(SUCCESS)
@@ -390,7 +395,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when().then(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.gas(0L)
 								.hasKnownStatus(INSUFFICIENT_GAS)
 				);
@@ -400,10 +405,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("RejectsInvalidMemo")
 				.given().when().then(
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.entityMemo(TxnUtils.nAscii(101))
 								.hasPrecheck(MEMO_TOO_LONG),
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.entityMemo(ZERO_BYTE_MEMO)
 								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING)
 				);
@@ -415,7 +420,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						cryptoCreate("payer"),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when().then(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.payingWith("payer")
 								.fee(1L)
 								.hasPrecheck(INSUFFICIENT_TX_FEE)
@@ -428,7 +433,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract)
 				).when().then(
-						newContractCreate(contract)
+						contractCreate(contract)
 								.hasKnownStatus(ERROR_DECODING_BYTESTRING)
 				);
 	}
@@ -438,7 +443,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when().then(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.balance(1L)
 								.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 				);
@@ -460,10 +465,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("DelegateContractIdRequiredForTransferInDelegateCall")
 				.given(
 						uploadInitCode(justSendContract, sendInternalAndDelegateContract),
-						newContractCreate(justSendContract)
+						contractCreate(justSendContract)
 								.gas(300_000L)
 								.exposingNumTo(justSendContractNum::set),
-						newContractCreate(sendInternalAndDelegateContract)
+						contractCreate(sendInternalAndDelegateContract)
 								.gas(300_000L)
 								.balance(2 * totalToSend)
 				).when(
@@ -508,10 +513,10 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(id -> beneficiaryAccountNum.set(id.getAccountNum())),
 						uploadInitCode(sendInternalAndDelegateContract, justSendContract)
 				).when(
-						newContractCreate(justSendContract)
+						contractCreate(justSendContract)
 								.gas(300_000L)
 								.exposingNumTo(justSendContractNum::set),
-						newContractCreate(sendInternalAndDelegateContract)
+						contractCreate(sendInternalAndDelegateContract)
 								.gas(300_000L)
 								.balance(balanceToDistribute)
 				).then(
@@ -549,7 +554,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						cryptoCreate(civilian).balance(ONE_HUNDRED_HBARS),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
 								.gas(80_000L)
 								.payingWith(civilian)
 								.balance(0L)
@@ -566,7 +571,13 @@ public class ContractCreateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec cannotCreateTooLargeContract() {
-		final var contract = "CryptoKitties";
+		ByteString contents;
+		try {
+			contents =
+					ByteString.copyFrom(Files.readAllBytes(Path.of(bytecodePath("CryptoKitties"))));
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 		final var FILE_KEY = "fileKey";
 		final var KEY_LIST = "keyList";
 		final var ACCOUNT = "acc";
@@ -574,18 +585,18 @@ public class ContractCreateSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(FILE_KEY),
 						newKeyListNamed(KEY_LIST, List.of(FILE_KEY)),
-						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS * 10).key(FILE_KEY)
+						cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS * 10).key(FILE_KEY),
+						fileCreate("bytecode")
+								.path(bytecodePath("CryptoKitties"))
+								.hasPrecheck(TRANSACTION_OVERSIZE)
 				)
 				.when(
-						withOpContext(
-								(spec, noOp) -> {
-									uploadInitCode(contract, spec).hasPrecheck(TRANSACTION_OVERSIZE);
-									uploadInitCode(contract, spec).contents("").key(KEY_LIST);
-								}
-						)
+						fileCreate("bytecode").contents("").key(KEY_LIST),
+						UtilVerbs.updateLargeFile(ACCOUNT, "bytecode", contents)
 				)
 				.then(
-						newContractCreate(contract)
+						contractCreate("contract")
+								.bytecode("bytecode")
 								.payingWith(ACCOUNT)
 								.hasKnownStatus(INSUFFICIENT_GAS)
 				);
@@ -597,7 +608,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "5"),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via("createTX")
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via("createTX")
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var subop01 = getTxnRecord("createTX").saveTxnRecordToRegistry("createTXRec");
@@ -617,7 +628,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via("createTX")
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via("createTX")
 				).then(
 						withOpContext((spec, ignore) -> {
 							final var subop01 = getTxnRecord("createTX").saveTxnRecordToRegistry("createTXRec");
@@ -637,7 +648,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						UtilVerbs.overriding("contracts.maxGas", "100"),
 						uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT)
 				).when().then(
-						newContractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheck(
+						contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(101L).hasPrecheck(
 								MAX_GAS_LIMIT_EXCEEDED),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
@@ -650,7 +661,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("BlockTimestampIsConsensusTime")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				).when(
 						contractCall(contract, "logNow")
 								.via(timeLoggingTxn)
@@ -686,7 +697,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 		return defaultHapiSpec("VanillaSuccess")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract).adminKey(THRESHOLD),
+						contractCreate(contract).adminKey(THRESHOLD),
 						getContractInfo(contract).logged().saveToRegistry("parentInfo"),
 						upMaxGasTo(1_000_000L)
 				).when(

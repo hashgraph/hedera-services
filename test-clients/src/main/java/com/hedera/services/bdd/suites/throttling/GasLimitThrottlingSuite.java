@@ -32,7 +32,7 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -70,7 +70,7 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 						/* we need the payer account, see SystemPrecheck IS_THROTTLE_EXEMPT */
 						cryptoCreate("payerAccount").balance(ONE_MILLION_HBARS),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT).payingWith("payerAccount")
+						contractCreate(CONTRACT).payingWith("payerAccount")
 				).then(
 						UtilVerbs.inParallel(
 								asOpArray(NUM_CALLS, i ->
@@ -104,7 +104,7 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 				).when(
 						cryptoCreate("payerAccount").balance(ONE_MILLION_HBARS),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).then(
 						contractCall(
 								CONTRACT, "twoSSTOREs",

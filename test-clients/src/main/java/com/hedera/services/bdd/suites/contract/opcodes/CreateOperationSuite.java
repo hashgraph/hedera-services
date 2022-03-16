@@ -48,7 +48,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecod
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -90,7 +90,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.balance(10)
 				)
 				.when(
@@ -109,7 +109,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("FactoryQuickSelfDestructContract")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 				)
 				.when(
 						contractCall(contract, "createAndDeleteChild")
@@ -131,7 +131,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract).logged().via("createRecord"),
+						contractCreate(contract).logged().via("createRecord"),
 						getContractInfo(contract).logged().saveToRegistry("parentInfo")
 				)
 				.when(
@@ -153,7 +153,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractFactoryWorksHappyPath")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "deploymentSuccess")
 								.gas(780_000)
@@ -181,7 +181,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("StackedFactoryWorks")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "stackedDeploymentSuccess")
 								.gas(1_000_000)
@@ -211,7 +211,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("ResetOnFactoryFailureWorks")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "stackedDeploymentFailure")
 								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -246,7 +246,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("ResetOnFactoryFailureAfterDeploymentWorks")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "failureAfterDeploy")
 								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -281,7 +281,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("ResetOnStackedFactoryFailureWorks")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "stackedDeploymentFailure")
 								.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
@@ -317,7 +317,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractCreateWithNewOpInConstructorAbandoningParent")
 				.given(
 						uploadInitCode(contract),
-						newContractCreate(contract).via("AbandoningParentTxn")
+						contractCreate(contract).via("AbandoningParentTxn")
 				).when().then(
 						getContractInfo(contract).saveToRegistry("AbandoningParentParentInfo").logged(),
 						getTxnRecord("AbandoningParentTxn")
@@ -336,7 +336,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(contract)
 				).when(
-						newContractCreate(contract).via("firstContractTxn")
+						contractCreate(contract).via("firstContractTxn")
 				).then(
 						assertionsHold((spec, ctxLog) -> {
 							final var subop1 = contractCall(contract, "create")

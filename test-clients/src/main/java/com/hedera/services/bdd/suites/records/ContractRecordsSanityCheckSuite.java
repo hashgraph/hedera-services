@@ -42,7 +42,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.addLogInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -78,7 +77,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractDeleteRecordSanityChecks")
 				.given(flattened(
 						uploadInitCode(BALANCE_LOOKUP),
-						newContractCreate(BALANCE_LOOKUP)
+						contractCreate(BALANCE_LOOKUP)
 								.balance(1_000L),
 						takeBalanceSnapshots(BALANCE_LOOKUP, FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
@@ -98,7 +97,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 						uploadInitCode(BALANCE_LOOKUP),
 						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
-						newContractCreate(BALANCE_LOOKUP)
+						contractCreate(BALANCE_LOOKUP)
 								.balance(1_000L)
 								.via("txn")
 				).then(
@@ -111,7 +110,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
 				.given(flattened(
 						uploadInitCode(PAYABLE_CONTRACT),
-						newContractCreate(PAYABLE_CONTRACT),
+						contractCreate(PAYABLE_CONTRACT),
 						UtilVerbs.takeBalanceSnapshots(PAYABLE_CONTRACT, FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
 						contractCall(PAYABLE_CONTRACT, "deposit", 1_000L).via("txn").sending(1_000L)
@@ -193,7 +192,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
 				.given(flattened(
 						newKeyNamed("newKey").type(KeyFactory.KeyType.SIMPLE),
 						uploadInitCode(BALANCE_LOOKUP),
-						newContractCreate(BALANCE_LOOKUP).balance(1_000L),
+						contractCreate(BALANCE_LOOKUP).balance(1_000L),
 						takeBalanceSnapshots(FUNDING, NODE, DEFAULT_PAYER)
 				)).when(
 						contractUpdate(BALANCE_LOOKUP).newKey("newKey").via("txn").fee(95_000_000L)

@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
@@ -89,8 +89,8 @@ public class ContractCallLoadTest extends LoadTest {
 						logIt(ignore -> settings.toString())
 				).when(
 						uploadInitCode(VERBOSE_DEPOSIT,BALANCE_LOOKUP),
-						newContractCreate(VERBOSE_DEPOSIT),
-						newContractCreate(BALANCE_LOOKUP).balance(1L),
+						contractCreate(VERBOSE_DEPOSIT),
+						contractCreate(BALANCE_LOOKUP).balance(1L),
 						getContractInfo(VERBOSE_DEPOSIT).hasExpectedInfo().logged()
 
 				).then(

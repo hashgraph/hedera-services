@@ -51,7 +51,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -152,10 +152,10 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 								.balance(ONE_HUNDRED_HBARS),
 						uploadInitCode(multipurposeContract, lookupContract)
 				).when(
-						newContractCreate(multipurposeContract)
+						contractCreate(multipurposeContract)
 								.payingWith("civilian")
 								.balance(652),
-						newContractCreate(lookupContract)
+						contractCreate(lookupContract)
 								.payingWith("civilian")
 								.balance(256)
 				).then(

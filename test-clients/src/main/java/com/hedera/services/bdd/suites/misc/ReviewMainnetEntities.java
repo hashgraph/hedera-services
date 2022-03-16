@@ -41,7 +41,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -120,7 +120,7 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 //						withOpContext((spec, noOp) -> uploadInitCode(contract, spec)
 //								.exposingNumTo(l -> log.info("Created initcode file 0.0.{}", l)).execFor(spec)),
 						inParallel(IntStream.range(0, burstSize).mapToObj(i ->
-								newContractCreate(contract, 64)
+								contractCreate(contract, 64)
 										.fee(ONE_HUNDRED_HBARS)
 										.payingWith(GENESIS)
 										.bytecode("0.0.26011")

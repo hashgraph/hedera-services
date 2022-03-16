@@ -35,7 +35,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -72,8 +72,8 @@ public class ContractCallPerfSuite extends HapiApiSuite {
 		return defaultHapiSpec("ContractCallPerf")
 				.given(
 						uploadInitCode(verboseDeposit,balanceLookup),
-						newContractCreate(verboseDeposit),
-						newContractCreate(balanceLookup).balance(1L)
+						contractCreate(verboseDeposit),
+						contractCreate(balanceLookup).balance(1L)
 				).when(
 						getContractInfo(verboseDeposit).hasExpectedInfo().logged(),
 						UtilVerbs.startThroughputObs("contractCall").msToSaturateQueues(50L)

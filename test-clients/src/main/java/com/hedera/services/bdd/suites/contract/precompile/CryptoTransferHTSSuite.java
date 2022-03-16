@@ -48,7 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -131,7 +131,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
 						cryptoTransfer(moving(senderStartBalance, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						withOpContext((spec, opLog) -> {
 									final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
@@ -202,7 +202,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
 						cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
@@ -266,7 +266,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						tokenAssociate(RECEIVER2, List.of(FUNGIBLE_TOKEN)),
 						cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)).payingWith(SENDER),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
@@ -340,7 +340,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 								TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER)).payingWith(
 								SENDER),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -416,7 +416,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 								TokenMovement.movingUnique(NFT_TOKEN, 2).between(TOKEN_TREASURY, SENDER2)).payingWith(
 								SENDER2),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
@@ -502,7 +502,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 								TokenMovement.movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER2)).payingWith(
 								SENDER2),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
@@ -607,7 +607,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 								TokenMovement.movingUnique(NFT_TOKEN, 2).between(TOKEN_TREASURY, SENDER2)).payingWith(
 								SENDER2),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						withOpContext(
 								(spec, opLog) -> {
@@ -710,7 +710,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 						cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY),
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 								.payingWith(GENESIS)
 								.adminKey(contractKey)
 								.gas(GAS_TO_OFFER),

@@ -32,7 +32,7 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
@@ -61,7 +61,7 @@ public class ContractGetInfoSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed("adminKey"),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.adminKey("adminKey")
 								.entityMemo(MEMO)
 								.autoRenewSecs(6999999L)

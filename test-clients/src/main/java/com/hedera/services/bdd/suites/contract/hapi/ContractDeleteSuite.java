@@ -35,7 +35,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cloneContract;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractUndelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -122,7 +121,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
 				.given(
 						cryptoCreate("receiver").balance(0L),
 						uploadInitCode(PAYABLE_CONSTRUCTOR),
-						newContractCreate(PAYABLE_CONSTRUCTOR).balance(1L)
+						contractCreate(PAYABLE_CONSTRUCTOR).balance(1L)
 				).when(
 						contractDelete(PAYABLE_CONSTRUCTOR).transferAccount("receiver")
 				).then(
@@ -136,7 +135,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
 		return defaultHapiSpec("DeleteTransfersToContract")
 				.given(
 						uploadInitCode(PAYABLE_CONSTRUCTOR),
-						newContractCreate(PAYABLE_CONSTRUCTOR).balance(0L),
+						contractCreate(PAYABLE_CONSTRUCTOR).balance(0L),
 						cloneContract(PAYABLE_CONSTRUCTOR, suffix).balance(1L)
 				).when(
 						contractDelete(PAYABLE_CONSTRUCTOR).transferContract(PAYABLE_CONSTRUCTOR + suffix)

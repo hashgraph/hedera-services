@@ -77,7 +77,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -310,7 +310,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						newKeyNamed(multiKey),
 						cryptoCreate(TOKEN_TREASURY),
 						uploadInitCode(contract),
-						newContractCreate(contract)
+						contractCreate(contract)
 								.adminKey(multiKey)
 								.payingWith(GENESIS),
 						contractCall(contract, "buildDonor", salt)

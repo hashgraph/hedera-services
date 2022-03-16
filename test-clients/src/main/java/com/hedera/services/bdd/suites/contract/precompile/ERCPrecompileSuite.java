@@ -48,7 +48,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -147,7 +147,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT)
+						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -196,7 +196,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT)
+						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -246,7 +246,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY),
 						fileCreate(ERC_20_CONTRACT_NAME),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT)
+						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -293,7 +293,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT)
+						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -342,7 +342,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
 						cryptoTransfer(moving(3, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT)
+						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -390,7 +390,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT),
+						contractCreate(ERC_20_CONTRACT),
 						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
 						tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
 						tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
@@ -463,8 +463,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						uploadInitCode(ERC_20_CONTRACT, nestedContract),
-						newContractCreate(ERC_20_CONTRACT),
-						newContractCreate(nestedContract),
+						contractCreate(ERC_20_CONTRACT),
+						contractCreate(nestedContract),
 						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
 						tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
 						tokenAssociate(ERC_20_CONTRACT, List.of(FUNGIBLE_TOKEN)),
@@ -540,7 +540,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
 						cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT)
+						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -612,7 +612,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT)
+						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -650,7 +650,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT)
+						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -688,7 +688,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
 						fileCreate(ERC_20_CONTRACT_NAME),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT)
+						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -729,7 +729,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1).
 								between(TOKEN_TREASURY, ACCOUNT)).payingWith(ACCOUNT),
 						uploadInitCode(ERC_20_CONTRACT),
-						newContractCreate(ERC_20_CONTRACT)
+						contractCreate(ERC_20_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -769,7 +769,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY),
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
 						uploadInitCode(ERC_721_CONTRACT),
-						newContractCreate(ERC_721_CONTRACT)
+						contractCreate(ERC_721_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -819,7 +819,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY),
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
 						uploadInitCode(ERC_721_CONTRACT),
-						newContractCreate(ERC_721_CONTRACT)
+						contractCreate(ERC_721_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -867,7 +867,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY),
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
 						uploadInitCode(ERC_721_CONTRACT),
-						newContractCreate(ERC_721_CONTRACT)
+						contractCreate(ERC_721_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -915,7 +915,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY),
 						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
 						uploadInitCode(ERC_721_CONTRACT),
-						newContractCreate(ERC_721_CONTRACT)
+						contractCreate(ERC_721_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -966,7 +966,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
 						cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, OWNER)),
 						uploadInitCode(ERC_721_CONTRACT),
-						newContractCreate(ERC_721_CONTRACT)
+						contractCreate(ERC_721_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -1017,7 +1017,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
 						cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, OWNER)),
 						uploadInitCode(ERC_721_CONTRACT),
-						newContractCreate(ERC_721_CONTRACT)
+						contractCreate(ERC_721_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -1070,7 +1070,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						uploadInitCode(ERC_721_CONTRACT),
-						newContractCreate(ERC_721_CONTRACT)
+						contractCreate(ERC_721_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
@@ -1108,7 +1108,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
 						cryptoTransfer(moving(3, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)),
 						uploadInitCode(ERC_721_CONTRACT),
-						newContractCreate(ERC_721_CONTRACT)
+						contractCreate(ERC_721_CONTRACT)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(

@@ -77,7 +77,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
@@ -337,63 +336,7 @@ public class TxnVerbs {
 		return new HapiContractCall(abi, contract, fn);
 	}
 
-	public static HapiContractCreate contractCreate(String contract) {
-		return new HapiContractCreate(contract);
-	}
-
-	public static HapiContractCreate contractCreate(String contract, String abi, Object... params) {
-		return new HapiContractCreate(contract, abi, params);
-	}
-
-	public static HapiContractDelete contractDelete(String contract) {
-		return new HapiContractDelete(contract);
-	}
-
-	public static HapiContractUpdate contractUpdate(String contract) {
-		return new HapiContractUpdate(contract);
-	}
-
-	/**
-	 * This method enables the developer to upload one or many contract(s) bytecode(s), but without the ability to chain methods
-	 * related to HapiFileCreate.
-	 */
-	public static HapiSpecOperation uploadInitCode(final String... contractsNames) {
-		return withOpContext((spec, ctxLog) -> {
-			List<HapiSpecOperation> ops = new ArrayList<>();
-			for (String contractName : contractsNames) {
-				final var path = getResourcePath(contractName, ".bin");
-				final var file = new HapiFileCreate(contractName);
-				final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
-				ops.add(file);
-				ops.add(updatedFile);
-			}
-			allRunFor(spec, ops);
-		});
-	}
-
-	/**This method enables the developer to upload contract bytecode with the ability to chain methods, related to HapiFileCreate.
-	 The execution of the method requires the op context, therefore the invocation is not straightforward.
-	 Example:
-	 withOpContext(
-	 (spec, noOp) -> {
-	 chainedFileCreate(contract, spec).hasPrecheck(TRANSACTION_OVERSIZE);
-	 chainedFileCreate(contract, spec).contents("").key(KEY_LIST);
-	 }
-	 )
-	 */
-	public static HapiFileCreate uploadInitCode(final String contractName, final HapiApiSpec spec) {
-		final var path = getResourcePath(contractName, ".bin");
-		final var file = new HapiFileCreate(contractName);
-		sourcing(() -> file).execFor(spec);
-		sourcing(() -> updateLargeFile(GENESIS, contractName, extractByteCode(path))).execFor(spec);
-		return file;
-	}
-
-	/*  Note to the reviewer:
-		This method is temporarily named with the "new" prefix, as soon as the implementation is approved and the legacy
-		contractCreate() is entirely replaced, this method will be renamed to "contractCreate"
-	 */
-	public static HapiContractCreate newContractCreate(final String contractName, final Object... constructorParams) {
+	public static HapiContractCreate contractCreate(final String contractName, final Object... constructorParams) {
 		if (constructorParams.length > 0) {
 			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
 			return new HapiContractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);
@@ -423,33 +366,30 @@ public class TxnVerbs {
 		}
 	}
 
-	/**This method enables the developer to create a file and deploy a contract with a single method call.
-	 The execution of the method requires the op context, therefore the invocation is not straightforward:
-	 "withOpContext((spec, log) -> contractDeploy(contractName, spec).execFor(spec));"
-	 It can be convenient when the developer deploys a nested contract, since both the creation of the outer and the inner contract
-	 can happen in the given clause:
-	 "withOpContext((spec, log) -> contractDeploy(INNER_CONTRACT, spec).execFor(spec)),
-	 withOpContext((spec, log) -> contractDeploy(OUTER_CONTRACT, spec, getNestedContractAddress(INNER_CONTRACT, spec)).execFor(spec))"
+	public static HapiContractDelete contractDelete(String contract) {
+		return new HapiContractDelete(contract);
+	}
+
+	public static HapiContractUpdate contractUpdate(String contract) {
+		return new HapiContractUpdate(contract);
+	}
+
+	/**
+	 * This method enables the developer to upload one or many contract(s) bytecode(s), but without the ability to chain methods
+	 * related to HapiFileCreate.
 	 */
-	public static HapiContractCreate contractDeploy(final String contractName,
-													final HapiApiSpec spec,
-													final Object... constructorParams) {
-		final var path = getResourcePath(contractName, ".bin");
-		sourcing(() -> new HapiFileCreate(contractName)).execFor(spec);
-		sourcing(() -> updateLargeFile(GENESIS, contractName, extractByteCode(path))).execFor(spec);
-
-		HapiContractCreate contract;
-
-		if (constructorParams.length > 0) {
-			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
-			contract = new HapiContractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);
-		} else {
-			contract = new HapiContractCreate(contractName).bytecode(contractName);
-		}
-
-		sourcing(() -> contract);
-
-		return contract;
+	public static HapiSpecOperation uploadInitCode(final String... contractsNames) {
+		return withOpContext((spec, ctxLog) -> {
+			List<HapiSpecOperation> ops = new ArrayList<>();
+			for (String contractName : contractsNames) {
+				final var path = getResourcePath(contractName, ".bin");
+				final var file = new HapiFileCreate(contractName);
+				final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
+				ops.add(file);
+				ops.add(updatedFile);
+			}
+			allRunFor(spec, ops);
+		});
 	}
 
 	/* SYSTEM */

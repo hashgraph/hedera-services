@@ -54,7 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
@@ -139,7 +139,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(HELLO_WORLD_MINT)
 				).when(
-						sourcing(() -> newContractCreate(HELLO_WORLD_MINT, fungibleNum.get()))
+						sourcing(() -> contractCreate(HELLO_WORLD_MINT, fungibleNum.get()))
 				).then(
 						contractCall(HELLO_WORLD_MINT, "brrr", amount
 						)
@@ -183,7 +183,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> nonFungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(HELLO_WORLD_MINT),
-						sourcing(() -> newContractCreate(HELLO_WORLD_MINT, nonFungibleNum.get()))
+						sourcing(() -> contractCreate(HELLO_WORLD_MINT, nonFungibleNum.get()))
 				).when(
 						contractCall(HELLO_WORLD_MINT, "mint")
 								.via(firstMintTxn)
@@ -225,7 +225,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(MINT_CONTRACT),
-						sourcing(() -> newContractCreate(MINT_CONTRACT, fungibleNum.get()))
+						sourcing(() -> contractCreate(MINT_CONTRACT, fungibleNum.get()))
 				).when(
 						contractCall(MINT_CONTRACT, "mintFungibleTokenWithEvent", amount
 						)
@@ -266,7 +266,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY)
 								.exposingCreatedIdTo(idLit -> nonFungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(MINT_CONTRACT),
-						sourcing(() -> newContractCreate(MINT_CONTRACT, nonFungibleNum.get()))
+						sourcing(() -> contractCreate(MINT_CONTRACT, nonFungibleNum.get()))
 				).when(
 						contractCall(MINT_CONTRACT, "mintNonFungibleTokenWithEvent",
 								Arrays.asList("Test metadata 1", "Test metadata 2")
@@ -309,12 +309,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						uploadInitCode(outerContract, nestedContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec),
 														asAddress(spec.registry().getTokenID(nonFungibleToken))
 												),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
@@ -388,7 +388,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(contract, asAddress(spec.registry().getTokenID(fungibleToken))),
+												contractCreate(contract, asAddress(spec.registry().getTokenID(fungibleToken))),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														contract))),
 												cryptoUpdate(theAccount).key(DELEGATE_KEY),
@@ -430,13 +430,13 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						uploadInitCode(nestedContract, outerContract),
-						newContractCreate(nestedContract)
+						contractCreate(nestedContract)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												newContractCreate(outerContract, getNestedContractAddress(nestedContract, spec),
+												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec),
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
 														.bytecode(outerContract)
 														.gas(GAS_TO_OFFER),

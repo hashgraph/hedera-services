@@ -38,7 +38,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.newContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -75,7 +75,7 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 		return defaultHapiSpec("chainIdWorks")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "getChainID")
 								.via("chainId")
@@ -109,7 +109,7 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 		return defaultHapiSpec("baseFeeWorks")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "getBaseFee")
 								.via("baseFee")
@@ -142,7 +142,7 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 		return defaultHapiSpec("coinbaseWorks")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "getCoinbase")
 								.via("coinbase")
@@ -170,7 +170,7 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 		return defaultHapiSpec("gasLimitWorks")
 				.given(
 						uploadInitCode(CONTRACT),
-						newContractCreate(CONTRACT)
+						contractCreate(CONTRACT)
 				).when(
 						contractCall(CONTRACT, "getGasLimit")
 								.via("gasLimit")
