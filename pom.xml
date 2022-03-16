@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<groupId>com.hedera.hashgraph</groupId>
 	<artifactId>hedera-services</artifactId>
@@ -179,7 +180,7 @@
 		<log4j.version>2.17.2</log4j.version>
 		<netty.version>4.1.66.Final</netty.version>
 		<protobuf-java.version>3.19.4</protobuf-java.version>
-		<swirlds.version>0.23.1</swirlds.version>
+		<swirlds.version>0.24.0</swirlds.version>
 		<!-- Test dependency properties in alphabetical order -->
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit5.version>5.8.2</junit5.version>
