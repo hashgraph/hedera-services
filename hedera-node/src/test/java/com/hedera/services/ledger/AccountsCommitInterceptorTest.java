@@ -15,6 +15,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -47,6 +48,18 @@ class AccountsCommitInterceptorTest {
 
 		verify(sideEffectsTracker).trackHbarChange(partyId.getAccountNum(), +amount);
 		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), -amount);
+	}
+
+	@Test
+	void noopWithoutBalancesChanges() {
+		setupMockInterceptor();
+
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		changes.include(partyId, party, Map.of(AccountProperty.ALIAS, ByteString.copyFromUtf8("IGNORE THE VASE")));
+		subject.preview(changes);
+
+		verify(sideEffectsTracker).getNetHbarChange();
+		verifyNoMoreInteractions(sideEffectsTracker);
 	}
 
 	private void setupMockInterceptor() {

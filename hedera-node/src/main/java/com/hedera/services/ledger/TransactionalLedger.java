@@ -58,10 +58,9 @@ import static java.util.stream.Collectors.joining;
  * @param <P>
  * 		the family of properties associated to entities in the ledger
  * @param <A>
- * 		the type of a ledger entity
+ * 		the type of ledger entity
  */
-public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
-		implements Ledger<K, P, A>, BackingStore<K, A> {
+public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P>, BackingStore<K, A> {
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
 	public static final int MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN = 42;

@@ -27,11 +27,10 @@ package com.hedera.services.ledger;
  * state, such as occurs in the middle of an transaction. The
  * accessors make this distinction explicit.
  *
- * @param <K> the type of an account id.
- * @param <P> the type of the property family associated to an account.
- * @param <A> the account type.
+ * @param <K> the type of an account id
+ * @param <P> the type of the property family associated to an account
  */
-public interface Ledger<K, P extends Enum<P>, A> {
+public interface Ledger<K, P extends Enum<P>> {
 	/**
 	 * Sets value of a given property to a given value for the specified account.
 	 *
