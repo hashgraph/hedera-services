@@ -32,23 +32,19 @@ public class SignedStateViewFactory {
 		if (signedState == null) {
 			return false;
 		}
-		// Since we can't get the enclosing platform SignedState, we don't know exactly
-		// when this state was signed. So we just use, as a guaranteed lower bound, the
-		// consensus time of its last-handled transaction.
+		/*
+		  Since we can't get the enclosing platform SignedState, we don't know exactly when this state was signed. So
+		  we just use, as a guaranteed lower bound, the consensus time of its last-handled transaction.
+		 */
 		latestSigningTime = signedState.getTimeOfLastHandledTxn();
-		if (latestSigningTime == null) {
-			// No transactions have been handled; abort now to avoid downstream NPE.
-			return false;
-		}
-		if (signedState.getStateVersion() != StateVersions.CURRENT_VERSION) {
-			// We just upgraded and don't yet have a signed state from the current version.
-			return false;
-		}
-		if (!signedState.isInitialized()) {
-			// The aliases FCHashMap has not been rebuilt in an uninitialized state
-			return false;
-		}
-		return true;
+
+		/*
+		 1. latestSigningTime is null when no transactions have been handled; abort now to avoid downstream NPE.
+		 2. Signed state version is not CURRENT_VERSION when we just upgraded and don't yet have a signed state from
+		 the current version.
+		 3. Signed state is not initialized when the aliases FCHashMap has not been rebuilt in an uninitialized state
+		 */
+		return latestSigningTime != null && signedState.getStateVersion() == StateVersions.CURRENT_VERSION && signedState.isInitialized();
 	}
 
 	/**
