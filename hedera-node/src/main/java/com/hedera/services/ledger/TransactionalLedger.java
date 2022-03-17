@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -74,12 +75,14 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 	private final Class<P> propertyType;
 	private final Supplier<A> newEntity;
+	private final Consumer<K> finalizeAction;
 	private final BackingStore<K, A> entities;
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final TransactionalLedger<K, P, A> entitiesLedger;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
 	private boolean isInTransaction = false;
+	private Consumer<K> previewAction = null;
 	private Function<K, String> keyToString = null;
 	private EntityChangeSet<K, A, P> pendingChanges = null;
 	private CommitInterceptor<K, A, P> commitInterceptor = null;
@@ -103,6 +106,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		} else {
 			this.entitiesLedger = null;
 		}
+
+		this.finalizeAction = id -> entities.put(id, getFinalized(id));
 	}
 
 	/**
@@ -194,6 +199,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	public void setCommitInterceptor(final CommitInterceptor<K, A, P> commitInterceptor) {
 		this.commitInterceptor = commitInterceptor;
 		pendingChanges = new EntityChangeSet<>();
+		previewAction = id -> {
+			final var entity = entities.contains(id) ? entities.getImmutableRef(id) : null;
+			pendingChanges.include(id, entity, changes.get(id));
+		};
 	}
 
 	public void setPropertyChangeObserver(final PropertyChangeObserver<K, P> propertyChangeObserver) {
@@ -278,6 +287,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	// --- Ledger implementation ---
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -350,6 +360,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	// --- BackingStore implementation ---
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -489,6 +500,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 	}
 
+	private void computePendingChanges() {
+		doForRetainedIn(changedKeys, previewAction);
+		doForRetainedIn(createdKeys, previewAction);
+	}
+
 	private void flushPendingChanges() {
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
 			final var id = pendingChanges.ids(i);
@@ -501,14 +517,21 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	private void flushListed(final List<K> l) {
-		if (!l.isEmpty()) {
-			for (final var key : l) {
-				if (!deadKeys.contains(key)) {
-					entities.put(key, getFinalized(key));
-				}
-			}
+		if (doForRetainedIn(l, finalizeAction)) {
 			l.clear();
 		}
+	}
+
+	private boolean doForRetainedIn(final List<K> l, final Consumer<K> action) {
+		if (l.isEmpty()) {
+			return false;
+		}
+		for (final var key : l) {
+			if (!deadKeys.contains(key)) {
+				action.accept(key);
+			}
+		}
+		return true;
 	}
 
 	private A toGetterTarget(K id) {
@@ -552,15 +575,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		return prop -> prop.getter().apply(defaultEntity);
 	}
 
-	private void computePendingChanges() {
-		changes.forEach((id, entityChanges) -> {
-			if (!deadKeys.contains(id)) {
-				final var entity = entities.contains(id) ? entities.getImmutableRef(id) : null;
-				pendingChanges.include(id, entity, entityChanges);
-			}
-		});
-	}
-
 	private String readable(final K id) {
 		return (keyToString == null) ? readableId(id) : keyToString.apply(id);
 	}
@@ -574,6 +588,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	@VisibleForTesting
 	EntityChangeSet<K, A, P> getPendingChanges() {
 		return pendingChanges;
+	}
+
+	@VisibleForTesting
+	Consumer<K> getPreviewAction() {
+		return previewAction;
 	}
 
 	@VisibleForTesting

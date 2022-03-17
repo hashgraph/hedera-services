@@ -101,13 +101,14 @@ class TransactionalLedgerTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	@Test
-	void settingInterceptorAlsoInitializesPendingChanges() {
+	void settingInterceptorAlsoInitializesPendingChangesAndPreviewAction() {
 		setupTestLedger();
 
 		assertNull(testLedger.getPendingChanges());
 
 		testLedger.setCommitInterceptor(testInterceptor);
 
+		assertNotNull(testLedger.getPreviewAction());
 		assertNotNull(testLedger.getPendingChanges());
 	}
 
