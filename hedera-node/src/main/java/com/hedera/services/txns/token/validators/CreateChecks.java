@@ -56,7 +56,7 @@ public final class CreateChecks {
 	}
 
 	public Function<TransactionBody, ResponseCodeEnum> validatorForConsTime(final Instant curConsTime) {
-		return (txnBody) -> {
+		return txnBody -> {
 			TokenCreateTransactionBody op = txnBody.getTokenCreation();
 
 			final var domainType = TokenTypesMapper.mapToDomain(op.getTokenType());

@@ -118,7 +118,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -166,6 +166,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
+	private static final String UNKNOWN_FUNCTION_ID_ERROR_MESSAGE =
+			"%s precompile received unknown functionId=%d (via %s)";
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
@@ -854,9 +856,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decoder.decodeNonFungibleTokenCreate(input, aliasResolver);
 				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES ->
 						decoder.decodeNonFungibleTokenCreateWithFees(input, aliasResolver);
-				default -> throw new InvalidTransactionException(
-						"Create precompile received unknown functionId=" + functionId + " (via " + input + ")",
-						FAIL_INVALID);
+				default -> throw new InvalidTransactionException(String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE,
+						"Create", functionId, input), FAIL_INVALID);
 			};
 
 			/* --- Validate Solidity input and massage it to be able to transform it to tokenCreateTxnBody --- */
@@ -1005,8 +1006,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return hasAdminKeySigned;
 		}
 
-		private boolean validateKeyActive(final JKey key, final Function<JKey, Boolean> keyActiveTest) {
-			return keyActiveTest.apply(key);
+		private boolean validateKeyActive(final JKey key, final Predicate<JKey> keyActiveTest) {
+			return keyActiveTest.test(key);
 		}
 
 		private void validateTrue(final boolean flag, final String revertMessage) {
@@ -1064,8 +1065,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_TRANSFER_NFTS -> decoder.decodeTransferNFTs(input, aliasResolver);
 				case ABI_ID_TRANSFER_NFT -> decoder.decodeTransferNFT(input, aliasResolver);
 				default -> throw new InvalidTransactionException(
-						"Transfer precompile received unknown functionId=" + functionId + " (via " + input + ")",
-						FAIL_INVALID);
+						String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE, "Transfer", functionId, input), FAIL_INVALID);
 			};
 			syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			extrapolateDetailsFromSyntheticTxn();
@@ -1332,7 +1332,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID,
 						aliasResolver);
 				default -> throw new InvalidTransactionException(
-						"Transfer precompile received unknown functionId=" + functionId + " (via " + nestedInput + ")",
+						String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE, "Transfer", functionId, nestedInput),
 						FAIL_INVALID);
 			};
 			super.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
