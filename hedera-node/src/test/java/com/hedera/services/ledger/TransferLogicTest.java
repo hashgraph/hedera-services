@@ -32,9 +32,9 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
@@ -71,7 +71,7 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class TransferLogicTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	private GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
+	private final GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
 	private final long initialBalance = 1_000_000L;
 	private final long initialAllowance = 100L;
@@ -97,7 +97,7 @@ class TransferLogicTest {
 	}};
 
 	@Mock
-	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	@Mock

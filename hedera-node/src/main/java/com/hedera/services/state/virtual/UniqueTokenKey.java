@@ -22,6 +22,7 @@ package com.hedera.services.state.virtual;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -249,5 +250,13 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
 				.add("entityNum", entityNum)
 				.add("tokenSerial", tokenSerial)
 				.toString();
+	}
+
+	/**
+	 * Convenience function to construct a corresponding {@link EntityNumPair} from this instance.
+	 * @return
+	 */
+	public EntityNumPair toEntityNumPair() {
+		return EntityNumPair.fromLongs(entityNum, tokenSerial);
 	}
 }

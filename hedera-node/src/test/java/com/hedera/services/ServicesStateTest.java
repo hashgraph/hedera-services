@@ -32,11 +32,12 @@ import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
@@ -58,6 +59,7 @@ import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -258,7 +260,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(metadata).archive();
-		verify(mockMm, times(6)).archive();
+		verify(mockMm, times(5)).archive();
 	}
 
 	@Test
@@ -652,7 +654,7 @@ class ServicesStateTest {
 	private List<MerkleNode> legacyChildrenWith(
 			AddressBook addressBook,
 			MerkleNetworkContext networkContext,
-			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts,
+			VirtualMap<UniqueTokenKey, UniqueTokenValue> nfts,
 			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
 			boolean withNfts
 	) {

@@ -55,7 +55,7 @@ class EntityNumTest {
 
 	@Test
 	void returnsMissingNumForUnusableNum() {
-		assertEquals(MISSING_NUM, EntityNum.fromLong(Long.MAX_VALUE));
+		assertEquals(MISSING_NUM, EntityNum.fromLong(-1));
 	}
 
 	@Test

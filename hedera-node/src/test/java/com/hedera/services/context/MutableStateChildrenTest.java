@@ -29,9 +29,10 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -78,13 +79,13 @@ class MutableStateChildrenTest {
 	@Mock
 	private MerkleSpecialFiles specialFiles;
 	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
 	@Mock
 	private FCHashMap<ByteString, EntityNum> aliases;
 
-	private MutableStateChildren subject = new MutableStateChildren();
+	private final MutableStateChildren subject = new MutableStateChildren();
 
 	@Test
 	void refusesToUpdateFromUninitializedState() {

@@ -20,12 +20,13 @@ package com.hedera.services.ledger.backing;
  * ‍
  */
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.jasperdb.JasperDbBuilder;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,37 +40,34 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class BackingNftsTest {
 	private final NftId aNftId = new NftId(0, 0, 3, 4);
 	private final NftId bNftId = new NftId(0, 0, 4, 5);
 	private final NftId cNftId = new NftId(0, 0, 5, 6);
-	private final EntityNumPair aKey = EntityNumPair.fromLongs(3, 4);
-	private final EntityNumPair bKey = EntityNumPair.fromLongs(4, 5);
-	private final EntityNumPair cKey = EntityNumPair.fromLongs(5, 6);
-	private final MerkleUniqueToken aValue = new MerkleUniqueToken(
-			new EntityId(0, 0, 3),
-			"abcdefgh".getBytes(),
-			new RichInstant(1_234_567L, 1));
-	private final MerkleUniqueToken theToken = new MerkleUniqueToken(
-			MISSING_ENTITY_ID,
-			"HI".getBytes(StandardCharsets.UTF_8),
-			MISSING_INSTANT);
-	private final MerkleUniqueToken notTheToken = new MerkleUniqueToken(
-			MISSING_ENTITY_ID,
-			"IH".getBytes(StandardCharsets.UTF_8),
-			MISSING_INSTANT);
+	private final UniqueTokenKey aKey = new UniqueTokenKey(3, 4);
+	private final UniqueTokenKey bKey = new UniqueTokenKey(4, 5);
+	private final UniqueTokenValue aValue = new UniqueTokenValue(
+			3,
+			new RichInstant(1_234_567L, 1),
+			"abcdefgh".getBytes());
+	private final UniqueTokenValue theToken = new UniqueTokenValue(
+			MISSING_ENTITY_ID.num(),
+			MISSING_INSTANT,
+			"HI".getBytes(StandardCharsets.UTF_8));
+	private final UniqueTokenValue notTheToken = new UniqueTokenValue(
+			MISSING_ENTITY_ID.num(),
+			MISSING_INSTANT,
+			"IH".getBytes(StandardCharsets.UTF_8));
 
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> delegate;
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> delegate;
 
 	private BackingNfts subject;
 
 	@BeforeEach
 	void setUp() {
-		delegate = new MerkleMap<>();
+		delegate = new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
 
 		delegate.put(aKey, theToken);
 		delegate.put(bKey, notTheToken);
@@ -78,12 +76,11 @@ class BackingNftsTest {
 	}
 
 	@Test
-	void doSupportGettingIdSet() {
+	void checkInitialSizeIsExpected() {
 		// when:
 		subject = new BackingNfts(() -> delegate);
 
 		// expect:
-		assertNotNull(subject.idSet());
 		assertEquals(2, subject.size());
 	}
 

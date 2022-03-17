@@ -28,9 +28,9 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -71,7 +71,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -83,7 +82,7 @@ class TypedTokenStoreTest {
 	@Mock
 	private BackingStore<TokenID, MerkleToken> tokens;
 	@Mock
-	private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
+	private BackingStore<NftId, UniqueTokenValue> uniqueTokens;
 	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 	@Mock
@@ -324,10 +323,9 @@ class TypedTokenStoreTest {
 	@Test
 	void loadsUniqueTokens() {
 		final var aToken = new Token(miscId);
-		final var merkleUniqueToken = mock(MerkleUniqueToken.class);
+		final var uniqueTokenValue = new UniqueTokenValue();
 		final var serialNumbers = List.of(1L, 2L);
-		given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
-		given(uniqueTokens.getImmutableRef(any())).willReturn(merkleUniqueToken);
+		given(uniqueTokens.getImmutableRef(any())).willReturn(uniqueTokenValue);
 
 		subject.loadUniqueTokens(aToken, serialNumbers);
 
@@ -400,7 +398,7 @@ class TypedTokenStoreTest {
 		// and:
 		final var expectedNewUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo);
 		final var expectedNewUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo2);
-		final var expectedNewUniqToken = new MerkleUniqueToken(MISSING_ENTITY_ID, nftMeta, creationTime);
+		final var expectedNewUniqToken = new UniqueTokenValue(MISSING_ENTITY_ID.num(), creationTime, nftMeta);
 		final var expectedPastUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), wipedSerialNo);
 		final var expectedPastUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), burnedSerialNo);
 

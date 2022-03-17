@@ -26,7 +26,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
@@ -57,7 +57,7 @@ class StoreInitializationFlowTest {
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
 	@Mock
-	private BackingStore<NftId, MerkleUniqueToken> backingNfts;
+	private BackingStore<NftId, UniqueTokenValue> backingNfts;
 	@Mock
 	private BackingStore<TokenID, MerkleToken> backingTokens;
 	@Mock

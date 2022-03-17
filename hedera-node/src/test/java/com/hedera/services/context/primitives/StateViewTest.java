@@ -36,7 +36,6 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
@@ -45,6 +44,7 @@ import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -72,6 +72,7 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
+import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterEach;
@@ -170,6 +171,7 @@ class StateViewTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	private VirtualMap<ContractKey, ContractValue> contractStorage;
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
 	private NetworkInfo networkInfo;
@@ -289,9 +291,9 @@ class StateViewTest {
 
 		StateView.tokenRelsFn = mockTokenRelsFn;
 
-		final var uniqueTokens = new VirtualMap<UniqueTokenKey, UniqueTokenValue>();
-		uniqueTokens.put(targetNftKey, targetNft);
+		uniqueTokens = new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
+		uniqueTokens.put(targetNftKey, targetNft);
 
 		storage = (VirtualMap<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMap.class);
 		contractStorage = (VirtualMap<ContractKey, ContractValue>) mock(VirtualMap.class);
@@ -877,7 +879,7 @@ class StateViewTest {
 
 		final var token = new MerkleToken();
 		token.setTreasury(EntityId.fromGrpcAccountId(tokenAccountId));
-		given(tokens.get(targetNftKey.getHiPhi())).willReturn(token);
+		given(tokens.get(targetNftKey.toEntityNumPair().getHiPhi())).willReturn(token);
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
@@ -912,7 +914,7 @@ class StateViewTest {
 		assertSame(StateView.EMPTY_FCM, subject.tokens());
 		assertSame(StateView.EMPTY_VM, subject.storage());
 		assertSame(StateView.EMPTY_VM, subject.contractStorage());
-		assertSame(StateView.EMPTY_FCM, subject.uniqueTokens());
+		assertSame(StateView.EMPTY_VM, subject.uniqueTokens());
 		assertSame(StateView.EMPTY_FCM, subject.tokenAssociations());
 		assertSame(StateView.EMPTY_FCM, subject.contracts());
 		assertSame(StateView.EMPTY_FCM, subject.accounts());

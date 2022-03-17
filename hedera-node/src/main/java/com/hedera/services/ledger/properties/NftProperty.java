@@ -35,7 +35,7 @@ public enum NftProperty implements BeanProperty<UniqueTokenValue> {
 
 		@Override
 		public Function<UniqueTokenValue, Object> getter() {
-			return UniqueTokenValue::getOwnerAccountNum;
+			return UniqueTokenValue::getOwner;
 		}
 	},
 	CREATION_TIME {

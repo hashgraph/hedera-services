@@ -327,7 +327,7 @@ public class StateView {
 		final var currentNfts = uniqueTokens();
 		final var tokenId = EntityNum.fromTokenId(target.getTokenID());
 		final var targetKey = new UniqueTokenKey(tokenId.longValue(), target.getSerialNumber());
-		if (!currentNfts.containsKey(targetKey)) {
+		if (currentNfts == EMPTY_VM || !currentNfts.containsKey(targetKey)) {
 			return Optional.empty();
 		}
 		final var targetNft = currentNfts.get(targetKey);
@@ -354,7 +354,11 @@ public class StateView {
 	public boolean nftExists(final NftID id) {
 		final var tokenNum = EntityNum.fromTokenId(id.getTokenID());
 		final var key = new UniqueTokenKey(tokenNum.longValue(), id.getSerialNumber());
-		return uniqueTokens().containsKey(key);
+		var uniqueTokens = uniqueTokens();
+		if (uniqueTokens == EMPTY_VM) {
+			return false;
+		}
+		return uniqueTokens.containsKey(key);
 	}
 
 	public Optional<TokenType> tokenType(final TokenID tokenId) {

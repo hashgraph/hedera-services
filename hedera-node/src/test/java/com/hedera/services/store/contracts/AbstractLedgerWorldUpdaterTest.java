@@ -39,9 +39,9 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
@@ -468,7 +468,7 @@ class AbstractLedgerWorldUpdaterTest {
 				new ChangeSummaryManager<>());
 		final var nftsLedger = new TransactionalLedger<>(
 				NftProperty.class,
-				MerkleUniqueToken::new,
+				UniqueTokenValue::new,
 				new HashMapBackingNfts(),
 				new ChangeSummaryManager<>());
 

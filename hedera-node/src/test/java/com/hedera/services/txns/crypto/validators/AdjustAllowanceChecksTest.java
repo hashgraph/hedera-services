@@ -25,10 +25,11 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -36,7 +37,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -46,7 +46,7 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +87,7 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class AdjustAllowanceChecksTest {
 	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> nftsMap;
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> nftsMap;
 	@Mock
 	private AccountStore accountStore;
 	@Mock
@@ -99,9 +99,9 @@ class AdjustAllowanceChecksTest {
 	@Mock
 	private Account owner;
 	@Mock
-	private MerkleUniqueToken token;
-	@Mock
 	private Account treasury;
+	@Mock
+	private UniqueTokenValue token;
 
 	AdjustAllowanceChecks subject;
 
@@ -135,14 +135,14 @@ class AdjustAllowanceChecksTest {
 	final NftId token2Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 	final NftId token2Nft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
 
-	private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
-	private List<TokenAllowance> tokenAllowances = new ArrayList<>();
-	private List<NftAllowance> nftAllowances = new ArrayList<>();
+	private final List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
+	private final List<TokenAllowance> tokenAllowances = new ArrayList<>();
+	private final List<NftAllowance> nftAllowances = new ArrayList<>();
 
 	private final Map<EntityNum, Long> existingCryptoAllowances = new TreeMap<>();
 	private final Map<FcTokenAllowanceId, Long> existingTokenAllowances = new TreeMap<>();
 	private final Map<FcTokenAllowanceId, FcTokenAllowance> existingNftAllowances = new TreeMap<>();
-	private List<Long> existingSerials = new ArrayList<>();
+	private final List<Long> existingSerials = new ArrayList<>();
 
 	private TransactionBody cryptoAdjustAllowanceTxn;
 	private CryptoAdjustAllowanceTransactionBody op;
@@ -408,8 +408,8 @@ class AdjustAllowanceChecksTest {
 		final var badNftAllowance1 = NftAllowance.newBuilder().setSpender(spender2)
 				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).setOwner(ownerId).
 				addAllSerialNumbers(List.of(1L, 1L)).build();
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(true);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft2))).willReturn(true);
 
 		cryptoAllowances.add(badCryptoAllowance);
 		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER, subject.validateCryptoAllowances(cryptoAllowances, payer));
@@ -513,8 +513,8 @@ class AdjustAllowanceChecksTest {
 		setUpForTest();
 		getValidTxnCtx();
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(true);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft2))).willReturn(true);
 		assertEquals(OK, subject.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
 				dynamicProperties.maxAllowanceLimitPerTransaction()));
@@ -526,17 +526,17 @@ class AdjustAllowanceChecksTest {
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(payer.isAssociatedWith(token2Model.getId())).willReturn(true);
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(true);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft2))).willReturn(true);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
-		given(nftsMap.get(EntityNumPair.fromNftId(token1Nft1))).willReturn(token);
-		given(nftsMap.get(EntityNumPair.fromNftId(tokenNft2))).willReturn(token);
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token1Nft1))).willReturn(token);
+		given(nftsMap.get(UniqueTokenKey.fromNftId(tokenNft2))).willReturn(token);
 
-		given(nftsMap.get(EntityNumPair.fromNftId(token1Nft1)).getOwner()).willReturn(
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token1Nft1)).getOwner()).willReturn(
 				EntityId.fromGrpcAccountId(ownerId));
-		given(nftsMap.get(EntityNumPair.fromNftId(tokenNft2)).getOwner()).willReturn(
+		given(nftsMap.get(UniqueTokenKey.fromNftId(tokenNft2)).getOwner()).willReturn(
 				EntityId.fromGrpcAccountId(ownerId));
 
 		final var badNftAllowance = NftAllowance.newBuilder().setSpender(spender2)
@@ -550,7 +550,7 @@ class AdjustAllowanceChecksTest {
 	@Test
 	void validateSerialsExistence() {
 		final var serials = List.of(1L, 10L);
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(false);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(false);
 
 		var validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
@@ -560,9 +560,9 @@ class AdjustAllowanceChecksTest {
 	void adjustsAllowanceFromTreasury(){
 		final var serials = List.of(1L);
 		token2Model.setTreasury(treasury);
-		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1))).willReturn(token);
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(token);
 
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(true);
 		given(token.getOwner()).willReturn(EntityId.MISSING_ENTITY_ID);
 
 		var validity = subject.validateSerialNums(serials, treasury, token2Model, existingSerials);
@@ -572,11 +572,11 @@ class AdjustAllowanceChecksTest {
 	@Test
 	void rejectsAllowanceFromInvalidTreasury(){
 		final var serials = List.of(1L);
-		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1))).willReturn(token);
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(token);
 		token2Model.setTreasury(treasury);
 
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
-		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1)).getOwner()).willReturn(
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(true);
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token2Nft1)).getOwner()).willReturn(
 				EntityId.fromGrpcAccountId(spender1));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 
@@ -587,7 +587,7 @@ class AdjustAllowanceChecksTest {
 	@Test
 	void returnsIfSerialsFail() {
 		final var serials = List.of(1L, 10L);
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(false);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(false);
 
 		var validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
@@ -608,9 +608,9 @@ class AdjustAllowanceChecksTest {
 	@Test
 	void validateSerialsOwner() {
 		final var serials = List.of(1L, 10L);
-		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1))).willReturn(token);
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
-		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1)).getOwner()).willReturn(
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(token);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token2Nft1))).willReturn(true);
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token2Nft1)).getOwner()).willReturn(
 				EntityId.fromGrpcAccountId(spender1));
 
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
@@ -633,14 +633,14 @@ class AdjustAllowanceChecksTest {
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 20L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 4L);
-		given(nftsMap.get(EntityNumPair.fromNftId(token1Nft1))).willReturn(token);
-		given(nftsMap.get(EntityNumPair.fromNftId(tokenNft2))).willReturn(token);
-		given(nftsMap.get(EntityNumPair.fromNftId(token1Nft1)).getOwner()).willReturn(
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token1Nft1))).willReturn(token);
+		given(nftsMap.get(UniqueTokenKey.fromNftId(tokenNft2))).willReturn(token);
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token1Nft1)).getOwner()).willReturn(
 				EntityId.fromGrpcAccountId(ownerId));
-		given(nftsMap.get(EntityNumPair.fromNftId(tokenNft2)).getOwner()).willReturn(
+		given(nftsMap.get(UniqueTokenKey.fromNftId(tokenNft2)).getOwner()).willReturn(
 				EntityId.fromGrpcAccountId(ownerId));
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(token1Nft1))).willReturn(true);
-		given(nftsMap.containsKey(EntityNumPair.fromNftId(tokenNft2))).willReturn(true);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(token1Nft1))).willReturn(true);
+		given(nftsMap.containsKey(UniqueTokenKey.fromNftId(tokenNft2))).willReturn(true);
 
 		serials = List.of(20L, 4L);
 		validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
@@ -751,11 +751,11 @@ class AdjustAllowanceChecksTest {
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
-		given(nftsMap.get(EntityNumPair.fromNftId(token1Nft1))).willReturn(token);
-		given(nftsMap.get(EntityNumPair.fromNftId(tokenNft2))).willReturn(token);
-		given(nftsMap.get(EntityNumPair.fromNftId(token1Nft1)).getOwner()).willReturn(
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token1Nft1))).willReturn(token);
+		given(nftsMap.get(UniqueTokenKey.fromNftId(tokenNft2))).willReturn(token);
+		given(nftsMap.get(UniqueTokenKey.fromNftId(token1Nft1)).getOwner()).willReturn(
 				EntityId.fromGrpcAccountId(ownerId));
-		given(nftsMap.get(EntityNumPair.fromNftId(tokenNft2)).getOwner()).willReturn(
+		given(nftsMap.get(UniqueTokenKey.fromNftId(tokenNft2)).getOwner()).willReturn(
 				EntityId.fromGrpcAccountId(ownerId));
 	}
 }

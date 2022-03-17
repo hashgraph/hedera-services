@@ -28,7 +28,6 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -39,9 +38,9 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
@@ -73,7 +72,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
@@ -142,7 +140,7 @@ class ERC721PrecompilesTest {
     @Mock
     private WorldLedgers wrappedLedgers;
     @Mock
-    private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+    private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nfts;
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
     @Mock
@@ -222,7 +220,7 @@ class ERC721PrecompilesTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -253,7 +251,7 @@ class ERC721PrecompilesTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -285,7 +283,7 @@ class ERC721PrecompilesTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -322,7 +320,7 @@ class ERC721PrecompilesTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -357,7 +355,7 @@ class ERC721PrecompilesTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -390,7 +388,7 @@ class ERC721PrecompilesTest {
 
         // when:
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
+        subject.prepareComputation(pretendArguments, a -> a);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
@@ -420,7 +418,7 @@ class ERC721PrecompilesTest {
         subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
-                () -> subject.prepareComputation(pretendArguments, а -> а));
+                () -> subject.prepareComputation(pretendArguments, a -> a));
         assertEquals(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, exception.getMessage());
     }
 

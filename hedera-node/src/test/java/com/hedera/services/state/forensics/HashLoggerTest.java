@@ -28,7 +28,8 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -61,7 +62,7 @@ class HashLoggerTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 	@Mock
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	@Mock
@@ -85,7 +86,7 @@ class HashLoggerTest {
 	private LogCaptor logCaptor;
 
 	@LoggingSubject
-	private HashLogger subject = new HashLogger();
+	private final HashLogger subject = new HashLogger();
 
 	@Test
 	void logsAsExpected() {

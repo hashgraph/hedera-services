@@ -208,7 +208,8 @@ public class Token {
 				"Cannot mint zero unique tokens");
 		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID,
 				"Non-fungible mint can be invoked only on non-fungible token type");
-		validateTrue((lastUsedSerialNumber + metadataCount) <= MAX_NUM_ALLOWED, SERIAL_NUMBER_LIMIT_REACHED);
+		// NOTE: Because lastUsedSerialNumber can be at the bit limit, do not add to it to avoid overflow.
+		validateTrue(lastUsedSerialNumber <= MAX_NUM_ALLOWED - metadataCount, SERIAL_NUMBER_LIMIT_REACHED);
 
 		changeSupply(treasuryRel, metadataCount, FAIL_INVALID, false);
 

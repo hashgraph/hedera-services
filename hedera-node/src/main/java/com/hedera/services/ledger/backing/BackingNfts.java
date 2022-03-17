@@ -75,15 +75,7 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
 
 	@Override
 	public Set<NftId> idSet() {
-		// TODO: Blocked on issue #2994
-		return new HashSet<>();
-		/*
-		return delegate.get()
-				.stream()
-				.map(EntityNumPair::asTokenNumAndSerialPair)
-				.map(pair -> NftId.withDefaultShardRealm(pair.getLeft(), pair.getRight()))
-				.collect(Collectors.toSet());
-		 */
+		throw new UnsupportedOperationException("Virtual merkle operation unsupported");
 	}
 
 	@Override

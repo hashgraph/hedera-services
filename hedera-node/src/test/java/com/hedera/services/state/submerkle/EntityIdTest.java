@@ -97,9 +97,9 @@ class EntityIdTest {
 
 	@Test
 	void fromIdentityCodeWorks() {
-		final var expected = new EntityId(0, 0, BitPackUtils.MAX_NUM_ALLOWED);
+		final var expected = new EntityId(0, 0, Integer.MAX_VALUE);
 
-		final var actual = EntityId.fromIdentityCode((int) BitPackUtils.MAX_NUM_ALLOWED);
+		final var actual = EntityId.fromIdentityCode(Integer.MAX_VALUE);
 
 		assertEquals(expected, actual);
 	}
