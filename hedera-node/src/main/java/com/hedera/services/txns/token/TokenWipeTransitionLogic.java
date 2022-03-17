@@ -28,6 +28,7 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -73,9 +74,10 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
-		final var accessor = (TokenWipeAccessor) txnCtx.accessor();
-		final var targetTokenId = accessor.targetToken();
-		final var targetAccountId = accessor.accountToWipe();
+		final var accessor = (PlatformTxnAccessor) txnCtx.accessor();
+		final var customAccessor = (TokenWipeAccessor) accessor.getDelegate();
+		final var targetTokenId = customAccessor.targetToken();
+		final var targetAccountId = customAccessor.accountToWipe();
 
 		/* --- Load the model objects --- */
 		final var token = tokenStore.loadToken(targetTokenId);
@@ -87,10 +89,10 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 
 		/* --- Do the business logic --- */
 		if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
-			token.wipe(accountRel, accessor.amount());
+			token.wipe(accountRel, customAccessor.amount());
 		} else {
-			tokenStore.loadUniqueTokens(token, accessor.serialNums());
-			token.wipe(ownershipTracker, accountRel, accessor.serialNums());
+			tokenStore.loadUniqueTokens(token, customAccessor.serialNums());
+			token.wipe(ownershipTracker, accountRel, customAccessor.serialNums());
 		}
 		/* --- Persist the updated models --- */
 		tokenStore.commitToken(token);
