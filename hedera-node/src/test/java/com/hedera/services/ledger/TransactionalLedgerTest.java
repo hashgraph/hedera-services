@@ -73,6 +73,7 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -330,6 +331,26 @@ class TransactionalLedgerTest {
 		testLedger.destroy(2L);
 
 		assertEquals("{*DEAD* 1, *DEAD* 2}", testLedger.changeSetSoFar());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void recoversFromChangeSetDescriptionProblem() {
+		final CommitInterceptor<Long,  TestAccount, TestAccountProperty> unhappy = mock(CommitInterceptor.class);
+		willThrow(IllegalStateException.class).given(unhappy).preview(any());
+
+		setupTestLedger();
+		testLedger.setKeyToString(i -> {
+			throw new IllegalStateException();
+		});
+		testLedger.setCommitInterceptor(unhappy);
+
+		testLedger.begin();
+		testLedger.create(1L);
+		testLedger.create(2L);
+		testLedger.destroy(2L);
+
+		assertThrows(IllegalStateException.class, testLedger::commit);
 	}
 
 	@Test
