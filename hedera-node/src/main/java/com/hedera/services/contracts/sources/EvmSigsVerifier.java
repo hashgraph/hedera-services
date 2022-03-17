@@ -103,5 +103,5 @@ public interface EvmSigsVerifier {
 			boolean isDelegateCall, Address token, Address activeContract, WorldLedgers worldLedgers);
 
 	//TODO: add javadoc
-	boolean keyIsActive(JKey key);
+	boolean cryptoKeyIsActive(JKey key);
 }

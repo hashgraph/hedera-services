@@ -997,15 +997,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			} else if (key.isShouldInheritAccountKeySet()) {
 				hasAdminKeySigned = validateKey(frame, senderAddress, sigsVerifier::hasActiveKey);
 			} else if (key.isEd25519KeySet()) {
-				hasAdminKeySigned = validateKeyActive(new JEd25519Key(key.getEd25519Key()), sigsVerifier::keyIsActive);
+				hasAdminKeySigned = validateCryptoKey(new JEd25519Key(key.getEd25519Key()),
+						sigsVerifier::cryptoKeyIsActive);
 			} else if (key.isEcdsSecp256k1KeySet()) {
-				hasAdminKeySigned = validateKeyActive(new JECDSASecp256k1Key(key.getEcdsSecp256k1()),
-						sigsVerifier::keyIsActive);
+				hasAdminKeySigned = validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsSecp256k1()),
+						sigsVerifier::cryptoKeyIsActive);
 			}
 			return hasAdminKeySigned;
 		}
 
-		private boolean validateKeyActive(final JKey key, final Predicate<JKey> keyActiveTest) {
+		private boolean validateCryptoKey(final JKey key, final Predicate<JKey> keyActiveTest) {
 			return keyActiveTest.test(key);
 		}
 
