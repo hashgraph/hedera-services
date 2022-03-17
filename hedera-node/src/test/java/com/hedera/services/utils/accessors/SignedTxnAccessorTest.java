@@ -128,22 +128,22 @@ class SignedTxnAccessorTest {
 			.build();
 
 
-//	@Test
-//	@SuppressWarnings("uncheckeed")
-//	void getsCryptoSigMappingFromKnownRationalizedMeta() {
-//		final var subject = mock(TxnAccessor.class);
-//		final RationalizedSigMeta sigMeta = mock(RationalizedSigMeta.class);
-//		final Function<byte[], TransactionSignature> mockFn = mock(Function.class);
-//		given(sigMeta.pkToVerifiedSigFn()).willReturn(mockFn);
-//		given(subject.getSigMeta()).willReturn(sigMeta);
-//
-//		doCallRealMethod().when(subject).getRationalizedPkToCryptoSigFn();
-//
-//		assertThrows(IllegalStateException.class, subject::getRationalizedPkToCryptoSigFn);
-//
-//		given(sigMeta.couldRationalizeOthers()).willReturn(true);
-//		assertSame(mockFn, subject.getRationalizedPkToCryptoSigFn());
-//	}
+	@Test
+	@SuppressWarnings("uncheckeed")
+	void getsCryptoSigMappingFromKnownRationalizedMeta() {
+		final var subject = mock(PlatformTxnAccessor.class);
+		final RationalizedSigMeta sigMeta = mock(RationalizedSigMeta.class);
+		final Function<byte[], TransactionSignature> mockFn = mock(Function.class);
+		given(sigMeta.pkToVerifiedSigFn()).willReturn(mockFn);
+		given(subject.getSigMeta()).willReturn(sigMeta);
+
+		doCallRealMethod().when(subject).getRationalizedPkToCryptoSigFn();
+
+		assertThrows(IllegalStateException.class, subject::getRationalizedPkToCryptoSigFn);
+
+		given(sigMeta.couldRationalizeOthers()).willReturn(true);
+		assertSame(mockFn, subject.getRationalizedPkToCryptoSigFn());
+	}
 
 	@Test
 	void uncheckedPropagatesIaeOnNonsense() {

@@ -108,7 +108,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			final long submittingMember,
 			final Instant consensusTime,
 			final Instant effectiveConsensusTime,
-			final TxnAccessor accessor
+			final PlatformTxnAccessor accessor
 	) {
 		executionTimeTracker.start();
 		txnManager.process(accessor, effectiveConsensusTime, submittingMember);
