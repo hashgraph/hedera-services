@@ -1,0 +1,77 @@
+package com.hedera.services.ledger;
+
+import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hederahashgraph.api.proto.java.AccountID;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+
+
+@ExtendWith(MockitoExtension.class)
+class AccountsCommitInterceptorTest {
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
+
+	private AccountsCommitInterceptor subject;
+
+	@Test
+	void rejectsNonZeroSumChange() {
+		setupLiveInterceptor();
+
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		changes.include(partyId, party, randomAndBalanceChanges(partyBalance + amount));
+		changes.include(counterpartyId, counterparty, randomAndBalanceChanges(counterpartyBalance - amount - 1));
+
+		assertThrows(IllegalStateException.class, () -> subject.preview(changes));
+	}
+
+	@Test
+	void tracksAsExpected() {
+		setupMockInterceptor();
+
+		final var changes = new EntityChangeSet<AccountID, MerkleAccount, AccountProperty>();
+		changes.include(partyId, party, randomAndBalanceChanges(partyBalance + amount));
+		changes.include(counterpartyId, counterparty, randomAndBalanceChanges(counterpartyBalance - amount));
+
+		subject.preview(changes);
+
+		verify(sideEffectsTracker).trackHbarChange(partyId.getAccountNum(), +amount);
+		verify(sideEffectsTracker).trackHbarChange(counterpartyId.getAccountNum(), -amount);
+	}
+
+	private void setupMockInterceptor() {
+		subject = new AccountsCommitInterceptor(sideEffectsTracker);
+	}
+
+	private void setupLiveInterceptor() {
+		subject = new AccountsCommitInterceptor(new SideEffectsTracker());
+	}
+
+	private Map<AccountProperty, Object> randomAndBalanceChanges(final long newBalance) {
+		return Map.of(
+				AccountProperty.BALANCE, newBalance,
+				AccountProperty.ALIAS, ByteString.copyFromUtf8("IGNORE THE VASE"));
+	}
+
+	private static final long amount = 1L;
+	private static final long partyBalance = 111L;
+	private static final long counterpartyBalance = 555L;
+	private static final AccountID partyId = AccountID.newBuilder().setAccountNum(123).build();
+	private static final AccountID counterpartyId = AccountID.newBuilder().setAccountNum(321).build();
+	private static final MerkleAccount party = MerkleAccountFactory.newAccount()
+			.balance(partyBalance)
+			.get();
+	private static final MerkleAccount counterparty = MerkleAccountFactory.newAccount()
+			.balance(counterpartyBalance)
+			.get();
+}

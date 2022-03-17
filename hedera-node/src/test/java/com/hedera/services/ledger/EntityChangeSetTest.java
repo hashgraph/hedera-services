@@ -31,7 +31,7 @@ class EntityChangeSetTest {
 
 		subject.clear();
 
-		assertTrue(subject.getKeys().isEmpty());
+		assertTrue(subject.getIds().isEmpty());
 		assertTrue(subject.getEntities().isEmpty());
 		assertTrue(subject.getChanges().isEmpty());
 	}
@@ -42,7 +42,7 @@ class EntityChangeSetTest {
 			final TestAccount a,
 			final Map<TestAccountProperty, Object> p
 	) {
-		assertEquals(k, subject.key(i));
+		assertEquals(k, subject.ids(i));
 		assertEquals(a, subject.entity(i));
 		assertEquals(p, subject.changes(i));
 	}

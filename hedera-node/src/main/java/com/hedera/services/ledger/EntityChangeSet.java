@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.ledger.TransactionalLedger.MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN;
+import static com.hedera.services.ledger.TransactionalLedger.MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN;
 
 /**
  * Represents a set of changes to one or more entities in a {@link TransactionalLedger}.
@@ -25,12 +25,12 @@ import static com.hedera.services.ledger.TransactionalLedger.MAX_ENTITIES_LIKELY
 public class EntityChangeSet<K, A, P extends Enum<P> & BeanProperty<A>> {
 	// The change set is stored in three parallel lists to reduce object allocations; if the entities
 	// list has a null value at an index, it means the change at that index was a creation
-	private final List<K> keys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
-	private final List<A> entities = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
-	private final List<Map<P, Object>> changes = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
+	private final List<K> ids = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
+	private final List<A> entities = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
+	private final List<Map<P, Object>> changes = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
 
-	public K key(final int i) {
-		return keys.get(i);
+	public K ids(final int i) {
+		return ids.get(i);
 	}
 
 	public A entity(final int i) {
@@ -42,24 +42,24 @@ public class EntityChangeSet<K, A, P extends Enum<P> & BeanProperty<A>> {
 	}
 
 	public void clear() {
-		keys.clear();
+		ids.clear();
 		changes.clear();
 		entities.clear();
 	}
 
 	public int size() {
-		return keys.size();
+		return ids.size();
 	}
 
 	public void include(final K key, final A entity, final Map<P, Object> entityChanges) {
-		keys.add(key);
+		ids.add(key);
 		entities.add(entity);
 		changes.add(entityChanges);
 	}
 
 	@VisibleForTesting
-	List<K> getKeys() {
-		return keys;
+	List<K> getIds() {
+		return ids;
 	}
 
 	List<A> getEntities() {

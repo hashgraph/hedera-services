@@ -480,7 +480,6 @@ public class HederaLedger {
 
 	/* -- Only used by unit tests --- */
 	CurrencyAdjustments netTransfersInTxn() {
-		accountsLedger.throwIfNotInTxn();
 		return sideEffectsTracker.getNetTrackedHbarChanges();
 	}
 

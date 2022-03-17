@@ -30,6 +30,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -52,7 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -78,7 +78,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class TransactionalLedgerTest {
 	private final Object[] things = { "a", "b", "c", "d" };
-	private final TestAccount account1 = new TestAccount(1L, things[1], false, 667L,
+	private final TestAccount anAccount = new TestAccount(
+			1L, things[1], false, 667L,
+			TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK);
+	private final TestAccount anotherAccount = new TestAccount(
+			2L, things[2], true, 668L,
 			TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK);
 	private final ChangeSummaryManager<TestAccount, TestAccountProperty> changeManager = new ChangeSummaryManager<>();
 
@@ -111,7 +115,7 @@ class TransactionalLedgerTest {
 		setupInterceptedTestLedger();
 		final var statefulChanges = testLedger.getPendingChanges();
 
-		statefulChanges.include(1L, account1, Map.of(FLAG, true));
+		statefulChanges.include(1L, anAccount, Map.of(FLAG, true));
 		testLedger.begin();
 
 		assertEquals(0, statefulChanges.size());
@@ -123,6 +127,8 @@ class TransactionalLedgerTest {
 		final ArgumentCaptor<EntityChangeSet<Long, TestAccount, TestAccountProperty>> captor =
 				forClass(EntityChangeSet.class);
 		setupInterceptedTestLedger();
+
+		final var expectedCommit = new TestAccount(0L, things, true);
 
 		testLedger.begin();
 		testLedger.create(1L);
@@ -136,9 +142,42 @@ class TransactionalLedgerTest {
 		verify(testInterceptor).preview(captor.capture());
 		final var changes = captor.getValue();
 		assertEquals(1, changes.size());
-		assertEquals(1L, changes.key(0));
+		assertEquals(1L, changes.ids(0));
 		assertNull(changes.entity(0));
 		assertEquals(Map.of(OBJ, things, FLAG, true), changes.changes(0));
+		verify(backingTestAccounts).put(1L, expectedCommit);
+		assertTrue(testLedger.getCreatedKeys().isEmpty());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void committingIncludesOnlyUndestroyedUpdates() {
+		final ArgumentCaptor<EntityChangeSet<Long, TestAccount, TestAccountProperty>> captor =
+				forClass(EntityChangeSet.class);
+		setupInterceptedTestLedger();
+
+		given(backingTestAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
+		given(backingTestAccounts.contains(2L)).willReturn(true);
+		final var expectedCommit = new TestAccount(
+				anAccount.getValue(), things, true, anAccount.getTokenThing(),
+				TestAccount.Allowance.OK, TestAccount.Allowance.OK, TestAccount.Allowance.OK);
+
+		testLedger.begin();
+		testLedger.set(1L, OBJ, things);
+		testLedger.set(1L, FLAG, true);
+		testLedger.set(2L, OBJ, things);
+		testLedger.destroy(2L);
+		testLedger.commit();
+
+		verify(testInterceptor).preview(captor.capture());
+		final var changes = captor.getValue();
+		assertEquals(1, changes.size());
+		assertEquals(1L, changes.ids(0));
+		assertSame(anAccount, changes.entity(0));
+		assertEquals(Map.of(OBJ, things, FLAG, true), changes.changes(0));
+		verify(backingTestAccounts).put(1L, expectedCommit);
+		assertTrue(testLedger.getChangedKeys().isEmpty());
 	}
 
 	@Test
@@ -192,13 +231,13 @@ class TransactionalLedgerTest {
 	@Test
 	void getUsesMutableRefIfPendingChanges() {
 		setupTestLedger();
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
 		given(backingTestAccounts.contains(1L)).willReturn(true);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
 
-		final var newAccount1 = new TestAccount(account1.value, account1.thing, !account1.flag, account1.tokenThing,
-				account1.validHbarAllowances, account1.validFungibleAllowances, account1.validNftAllowances);
+		final var newAccount1 = new TestAccount(anAccount.value, anAccount.thing, !anAccount.flag, anAccount.tokenThing,
+				anAccount.validHbarAllowances, anAccount.validFungibleAllowances, anAccount.validNftAllowances);
 		testLedger.begin();
-		testLedger.set(1L, FLAG, !account1.flag);
+		testLedger.set(1L, FLAG, !anAccount.flag);
 		var account = testLedger.getFinalized(1L);
 
 		assertEquals(newAccount1, account);
@@ -212,10 +251,10 @@ class TransactionalLedgerTest {
 		testLedger.begin();
 		testLedger.create(1L);
 		testLedger.destroy(1L);
-		testLedger.put(1L, account1);
+		testLedger.put(1L, anAccount);
 		testLedger.commit();
 
-		verify(backingTestAccounts).put(1L, account1);
+		verify(backingTestAccounts).put(1L, anAccount);
 	}
 
 	@Test
@@ -258,7 +297,7 @@ class TransactionalLedgerTest {
 	@Test
 	void requiresManualRollbackIfCommitFails() {
 		setupTestLedger();
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
 		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		willThrow(IllegalStateException.class).given(backingTestAccounts).put(any(), any());
@@ -416,11 +455,11 @@ class TransactionalLedgerTest {
 	void reflectsChangeToExistingAccountIfInTransaction() {
 		setupTestLedger();
 
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
 		given(backingTestAccounts.contains(1L)).willReturn(true);
 
-		final var expected = new TestAccount(account1.value, things[0], account1.flag, 667L,
-				account1.validHbarAllowances, account1.validFungibleAllowances, account1.validNftAllowances);
+		final var expected = new TestAccount(anAccount.value, things[0], anAccount.flag, 667L,
+				anAccount.validHbarAllowances, anAccount.validFungibleAllowances, anAccount.validNftAllowances);
 
 		testLedger.begin();
 		testLedger.set(1L, OBJ, things[0]);
@@ -432,7 +471,7 @@ class TransactionalLedgerTest {
 	void canUndoSpecificChange() {
 		setupTestLedger();
 
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
 		given(backingTestAccounts.contains(1L)).willReturn(true);
 		ArgumentCaptor<TestAccount> captor = forClass(TestAccount.class);
 		final var changesToUndo = List.of(FLAG);
@@ -478,7 +517,7 @@ class TransactionalLedgerTest {
 	void dropsPendingChangesAfterRollback() {
 		setupTestLedger();
 
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
 		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		testLedger.begin();
@@ -488,7 +527,7 @@ class TransactionalLedgerTest {
 		testLedger.rollback();
 
 		assertFalse(testLedger.isInTransaction());
-		assertEquals(account1, testLedger.getFinalized(1L));
+		assertEquals(anAccount, testLedger.getFinalized(1L));
 		assertFalse(testLedger.exists(2L));
 	}
 
@@ -496,7 +535,7 @@ class TransactionalLedgerTest {
 	void persistsPendingChangesAndDestroysDeadAccountsAfterCommit() {
 		setupTestLedger();
 
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
 		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		final var expected2 = new TestAccount(2L, things[2], false);
@@ -524,17 +563,17 @@ class TransactionalLedgerTest {
 	void reflectsUnchangedAccountIfNoChanges() {
 		setupTestLedger();
 
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
 		given(backingTestAccounts.contains(1L)).willReturn(true);
-		assertEquals(account1, testLedger.getFinalized(1L));
+		assertEquals(anAccount, testLedger.getFinalized(1L));
 	}
 
 	@Test
 	void validateHappyPath() {
 		setupCheckableTestLedger();
 
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
+		given(backingTestAccounts.getImmutableRef(1L)).willReturn(anAccount);
 		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		testLedger.begin();
@@ -543,7 +582,7 @@ class TransactionalLedgerTest {
 		testLedger.set(1L, OBJ, "DEFAULT");
 		testLedger.commit();
 
-		assertEquals(OK, testLedger.validate(1L, scopedCheck));
+		assertEquals(ResponseCodeEnum.OK, testLedger.validate(1L, scopedCheck));
 	}
 
 	@Test
@@ -577,8 +616,8 @@ class TransactionalLedgerTest {
 	void validationFailsWithMissingHbarAllowance() {
 		setupCheckableTestLedger();
 
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
+		given(backingTestAccounts.getImmutableRef(1L)).willReturn(anAccount);
 		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		testLedger.begin();
@@ -595,8 +634,8 @@ class TransactionalLedgerTest {
 	void validationFailsWithInsufficientHbarAllowance() {
 		setupCheckableTestLedger();
 
-		given(backingTestAccounts.getRef(1L)).willReturn(account1);
-		given(backingTestAccounts.getImmutableRef(1L)).willReturn(account1);
+		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
+		given(backingTestAccounts.getImmutableRef(1L)).willReturn(anAccount);
 		given(backingTestAccounts.contains(1L)).willReturn(true);
 
 		testLedger.begin();
@@ -631,14 +670,6 @@ class TransactionalLedgerTest {
 		verify(backingTestAccounts).size();
 	}
 
-	private void setupAccountsLedger() {
-		accountsLedger = new TransactionalLedger<>(
-				AccountProperty.class,
-				MerkleAccount::new,
-				backingAccounts,
-				new ChangeSummaryManager<>());
-	}
-
 	@Test
 	void throwsOnCommittingInconsistentAdjustments() {
 		setupInterceptedAccountsLedger();
@@ -653,6 +684,14 @@ class TransactionalLedgerTest {
 		accountsLedger.set(aliasAccountId, AccountProperty.BALANCE, 8L);
 
 		assertThrows(IllegalStateException.class, () -> accountsLedger.commit());
+	}
+
+	private void setupAccountsLedger() {
+		accountsLedger = new TransactionalLedger<>(
+				AccountProperty.class,
+				MerkleAccount::new,
+				backingAccounts,
+				new ChangeSummaryManager<>());
 	}
 
 	private void setupInterceptedAccountsLedger() {

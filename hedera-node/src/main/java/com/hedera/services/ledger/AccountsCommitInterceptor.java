@@ -50,28 +50,24 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	 */
 	@Override
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
-//		for (final var changeToCommit : pendingChanges) {
-//			final var account = changeToCommit.id().getAccountNum();
-//			final var merkleAccount = changeToCommit.entity();
-//			final var changedProperties = changeToCommit.changes();
-//
-//			trackBalanceChangeIfAny(changedProperties, account, merkleAccount);
-//		}
-//		assertZeroSum();
-		throw new AssertionError("Not implemented");
+		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
+			trackBalanceChangeIfAny(
+					pendingChanges.ids(i).getAccountNum(),
+					pendingChanges.entity(i),
+					pendingChanges.changes(i));
+		}
+		assertZeroSum();
 	}
 
 	private void trackBalanceChangeIfAny(
-			final Map<AccountProperty, Object> changedProperties,
-			final long account,
-			final MerkleAccount merkleAccount
+			final long accountNum,
+			final MerkleAccount merkleAccount,
+			final Map<AccountProperty, Object> accountChanges
 	) {
-		if (changedProperties.containsKey(AccountProperty.BALANCE)) {
-			final long balancePropertyValue = (long) changedProperties.get(AccountProperty.BALANCE);
-			final long balanceChange = merkleAccount != null ?
-					balancePropertyValue - merkleAccount.getBalance() : balancePropertyValue;
-
-			sideEffectsTracker.trackHbarChange(account, balanceChange);
+		if (accountChanges.containsKey(AccountProperty.BALANCE)) {
+			final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
+			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
+			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		}
 	}
 
