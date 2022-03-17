@@ -20,7 +20,6 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;

@@ -34,7 +34,6 @@ import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldTransaction;
