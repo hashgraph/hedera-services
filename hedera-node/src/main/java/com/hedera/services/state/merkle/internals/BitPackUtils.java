@@ -31,7 +31,9 @@ public class BitPackUtils {
 	private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
 	private static final long MASK_HI_ORDER_32 = MASK_INT_AS_UNSIGNED_LONG << 32;
 
-	public static final long MAX_NUM_ALLOWED = Long.MAX_VALUE;
+	// To increase this value, one would have to deprecate the usage of EntityNum.intValue() and EntityNum.fromInt()
+	// and migrate all serialization format to long.
+	public static final long MAX_NUM_ALLOWED = 0xFFFF_FFFFL;
 
 	/**
 	 * Returns a {@code long} whose high-order 32 bits "encode" an unsigned
