@@ -73,7 +73,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 
 	private void assertZeroSum() {
 		if (sideEffectsTracker.getNetHbarChange() != 0) {
-			throw new IllegalStateException("Invalid balance changes!");
+			throw new IllegalStateException("Invalid balance changes");
 		}
 	}
 }

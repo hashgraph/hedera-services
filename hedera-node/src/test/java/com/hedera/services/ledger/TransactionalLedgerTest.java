@@ -159,6 +159,7 @@ class TransactionalLedgerTest {
 
 		given(backingTestAccounts.contains(1L)).willReturn(true);
 		given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
+		given(backingTestAccounts.getImmutableRef(1L)).willReturn(anAccount);
 		given(backingTestAccounts.contains(2L)).willReturn(true);
 		final var expectedCommit = new TestAccount(
 				anAccount.getValue(), things, true, anAccount.getTokenThing(),
@@ -697,9 +698,9 @@ class TransactionalLedgerTest {
 		setupInterceptedAccountsLedger();
 
 		when(backingAccounts.contains(rand)).thenReturn(true);
-		when(backingAccounts.getRef(rand)).thenReturn(randMerkleAccount);
+		when(backingAccounts.getImmutableRef(rand)).thenReturn(randMerkleAccount);
 		when(backingAccounts.contains(aliasAccountId)).thenReturn(true);
-		when(backingAccounts.getRef(aliasAccountId)).thenReturn(aliasMerkleAccount);
+		when(backingAccounts.getImmutableRef(aliasAccountId)).thenReturn(aliasMerkleAccount);
 
 		accountsLedger.begin();
 		accountsLedger.set(rand, AccountProperty.BALANCE, 4L);
