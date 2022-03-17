@@ -64,7 +64,7 @@ class GetMerkleTopicInfoResourceUsageTest {
 		topics = mock(MerkleMap.class);
 		final var children = new MutableStateChildren();
 		children.setTopics(topics);
-		view = new StateView(null, null, children, null);
+		view = new StateView( null, children, null);
 
 		subject = new GetTopicInfoResourceUsage();
 	}

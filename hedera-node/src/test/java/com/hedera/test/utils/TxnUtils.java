@@ -9,9 +9,9 @@ package com.hedera.test.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -60,6 +61,10 @@ public class TxnUtils {
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(b).setAmount(B).build())
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(c).setAmount(C).build())
 				.build();
+	}
+
+	public static CurrencyAdjustments withAdjustments(final long[] balanceChanges, final long[] accountCodes) {
+		return new CurrencyAdjustments(balanceChanges, accountCodes);
 	}
 
 	public static TransferList withAdjustments(
@@ -102,20 +107,20 @@ public class TxnUtils {
 			AccountID cSenderId, AccountID cReceiverId, Long cSerialNumber
 	) {
 		return TokenTransferList.newBuilder()
-						.setToken(a)
-						.addNftTransfers(NftTransfer.newBuilder()
-								.setSenderAccountID(aSenderId)
-								.setReceiverAccountID(aReceiverId)
-								.setSerialNumber(aSerialNumber))
-						.addNftTransfers(NftTransfer.newBuilder()
-								.setSenderAccountID(bSenderId)
-								.setReceiverAccountID(bReceiverId)
-								.setSerialNumber(bSerialNumber))
-						.addNftTransfers(NftTransfer.newBuilder()
-								.setSenderAccountID(cSenderId)
-								.setReceiverAccountID(cReceiverId)
-								.setSerialNumber(cSerialNumber))
-						.build();
+				.setToken(a)
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(aSenderId)
+						.setReceiverAccountID(aReceiverId)
+						.setSerialNumber(aSerialNumber))
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(bSenderId)
+						.setReceiverAccountID(bReceiverId)
+						.setSerialNumber(bSerialNumber))
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(cSenderId)
+						.setReceiverAccountID(cReceiverId)
+						.setSerialNumber(cSerialNumber))
+				.build();
 	}
 
 	public static List<TokenTransferList> withTokenAdjustments(

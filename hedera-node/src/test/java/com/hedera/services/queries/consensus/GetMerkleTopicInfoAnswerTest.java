@@ -114,7 +114,7 @@ class GetMerkleTopicInfoAnswerTest {
 		networkInfo = mock(NetworkInfo.class);
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-		view = new StateView(null, null, children, networkInfo);
+		view = new StateView(null, children, networkInfo);
 		optionValidator = mock(OptionValidator.class);
 
 		subject = new GetTopicInfoAnswer(optionValidator);
@@ -268,7 +268,8 @@ class GetMerkleTopicInfoAnswerTest {
 		Response response = subject.responseGiven(query, view, OK, fee);
 
 		assertTrue(response.hasConsensusGetTopicInfo());
-		assertEquals(INVALID_TOPIC_ID, response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(INVALID_TOPIC_ID,
+				response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode());
 	}
 
 	@Test

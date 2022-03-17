@@ -69,14 +69,13 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 
 	public StateChildrenSigMetadataLookup(
 			final FileNumbers fileNumbers,
-			final AliasManager aliasManager,
 			final StateChildren stateChildren,
 			final Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform
 	) {
 		this.fileNumbers = fileNumbers;
-		this.aliasManager = aliasManager;
 		this.stateChildren = stateChildren;
 		this.tokenMetaTransform = tokenMetaTransform;
+		this.aliasManager = new AliasManager(stateChildren::aliases);
 
 		final var blobStore = new FcBlobsBytesStore(stateChildren::storage);
 		this.metaMap = MetadataMapFactory.metaMapFrom(blobStore);

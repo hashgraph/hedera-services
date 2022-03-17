@@ -372,6 +372,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return response.getTransactionGetRecord().getTransactionRecord();
 	}
 
+	public TransactionRecord getChildRecord(final int i) {
+		return response.getTransactionGetRecord().getChildTransactionRecords(i);
+	}
+
 	private void assertPriority(HapiApiSpec spec, TransactionRecord actualRecord) throws Throwable {
 		if (priorityExpectations.isPresent()) {
 			ErroringAsserts<TransactionRecord> asserts = priorityExpectations.get().assertsFor(spec);

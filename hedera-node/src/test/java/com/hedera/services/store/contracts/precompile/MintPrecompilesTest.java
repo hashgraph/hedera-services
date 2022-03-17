@@ -23,7 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -65,6 +65,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -103,7 +104,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("rawtypes")
 class MintPrecompilesTest {
 	@Mock
 	private Bytes pretendArguments;
@@ -120,7 +120,7 @@ class MintPrecompilesTest {
 	@Mock
 	private MessageFrame frame;
 	@Mock
-	private TxnAwareSoliditySigsVerifier sigsVerifier;
+	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
@@ -193,7 +193,7 @@ class MintPrecompilesTest {
 	void mintFailurePathWorks() {
 		givenNonFungibleFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases))
+		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -226,7 +226,7 @@ class MintPrecompilesTest {
 	void mintRandomFailurePathWorks() {
 		givenNonFungibleFrameContext();
 
-		given(sigsVerifier.hasActiveSupplyKey(any(), any(), any(), any(), any()))
+		given(sigsVerifier.hasActiveSupplyKey(Mockito.anyBoolean(), any(), any(), any()))
 				.willThrow(new IllegalArgumentException("random error"));
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -258,7 +258,7 @@ class MintPrecompilesTest {
 		givenNonFungibleFrameContext();
 		givenLedgers();
 
-		given(sigsVerifier.hasActiveSupplyKey(nonFungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases)).willReturn(true);
+		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -387,7 +387,7 @@ class MintPrecompilesTest {
 	}
 
 	private void givenFungibleCollaborators() {
-		given(sigsVerifier.hasActiveSupplyKey(fungibleTokenAddr, recipientAddr, contractAddr, recipientAddr, aliases))
+		given(sigsVerifier.hasActiveSupplyKey(true, fungibleTokenAddr, recipientAddr, wrappedLedgers))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts

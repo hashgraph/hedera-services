@@ -59,6 +59,28 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.APPROVE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_OF_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DECIMALS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_INSERT;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_REMOVE;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.INDIRECT_CREATE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.JURISDICTION_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.JURISDICTION_ISVALID_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_ADD_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_OWNER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_SEVEN_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OC_TOKEN_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SYMBOL_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_ERC20_CONSTRUCTOR_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOYMAKER_MAKE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_FROM_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_CONS;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_TAKE_TICKET;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_USER_BYTECODE_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WORKING_HOURS_WORK_TICKET;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.literalInitcodeFor;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -89,6 +111,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -108,6 +131,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractCallSuite extends HapiApiSuite {
+	private static final String defaultMaxAutoRenewPeriod =
+			HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.maxDuration");
+
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
 	private static final long depositAmount = 1000;
 
@@ -166,8 +192,57 @@ public class ContractCallSuite extends HapiApiSuite {
 				transferZeroHbars(),
 				sendHbarsToOuterContractFromDifferentAddresses(),
 				sendHbarsToCallerFromDifferentAddresses(),
-				bitcarbonTestStillPasses()
-		);
+				bitcarbonTestStillPasses(),
+				contractCreationStoragePriceMatchesFinalExpiry(),
+		});
+	}
+
+	private HapiApiSpec contractCreationStoragePriceMatchesFinalExpiry() {
+		final var icInitcode = "icInitcode";
+		final var longLivedCreator = "longLivedCreator";
+		final var tmInitcode = "tmInitcode";
+		final var toyMaker = "toyMaker";
+		final var normalPayer = "normalPayer";
+		final var longLivedPayer = "longLivedPayer";
+		final var longLifetime = 100 * 7776000L;
+		final AtomicLong normalPayerGasUsed = new AtomicLong();
+		final AtomicLong longLivedPayerGasUsed = new AtomicLong();
+		final AtomicReference<String> toyMakerMirror = new AtomicReference<>();
+
+		return defaultHapiSpec("ContractCreationStoragePriceMatchesFinalExpiry")
+				.given(
+						overriding("ledger.autoRenewPeriod.maxDuration", "" + longLifetime),
+						cryptoCreate(normalPayer),
+						cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime),
+						fileCreate(tmInitcode).path(ContractResources.TOY_MAKER_PATH),
+						contractCreate(toyMaker)
+								.bytecode(tmInitcode)
+								.exposingNumTo(num -> toyMakerMirror.set(
+										asHexedSolidityAddress(0, 0, num))),
+						sourcing(() -> createLargeFile(
+								DEFAULT_PAYER, icInitcode, literalInitcodeFor("CreateIndirectly"))),
+						sourcing(() -> contractCreate(longLivedCreator)
+								.autoRenewSecs(longLifetime)
+								.payingWith(GENESIS)
+								.bytecode(icInitcode))
+				).when(
+						contractCall(toyMaker, TOYMAKER_MAKE_ABI)
+								.payingWith(normalPayer)
+								.exposingGasTo((status, gasUsed) -> normalPayerGasUsed.set(gasUsed)),
+						contractCall(toyMaker, TOYMAKER_MAKE_ABI)
+								.payingWith(longLivedPayer)
+								.exposingGasTo((status, gasUsed) -> longLivedPayerGasUsed.set(gasUsed)),
+						assertionsHold((spec, opLog) -> Assertions.assertEquals(
+								normalPayerGasUsed.get(),
+								longLivedPayerGasUsed.get(),
+								"Payer expiry should not affect create storage cost")),
+						// Verify that we are still charged a "typical" amount despite the payer and
+						// the original sender contract having extremely long expiry dates
+						sourcing(() -> contractCall(longLivedCreator, INDIRECT_CREATE_ABI, toyMakerMirror.get())
+								.payingWith(longLivedPayer))
+				).then(
+						overriding("ledger.autoRenewPeriod.maxDuration", "" + defaultMaxAutoRenewPeriod)
+				);
 	}
 
 	private HapiApiSpec bitcarbonTestStillPasses() {
