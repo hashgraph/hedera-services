@@ -329,10 +329,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 		this.payer = payer;
 	}
 
+	@Override
 	public BaseTransactionMeta baseUsageMeta() {
 		return txnUsageMeta;
 	}
 
+	@Override
 	public CryptoTransferMeta availXferUsageMeta() {
 		if (function != CryptoTransfer) {
 			throw new IllegalStateException("Cannot get CryptoTransfer metadata for a " + function + ACCESSOR_LITERAL);
@@ -340,6 +342,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		return xferUsageMeta;
 	}
 
+	@Override
 	public SubmitMessageMeta availSubmitUsageMeta() {
 		if (function != ConsensusSubmitMessage) {
 			throw new IllegalStateException(

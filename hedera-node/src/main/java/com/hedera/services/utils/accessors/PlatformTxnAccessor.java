@@ -25,6 +25,9 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -268,6 +271,21 @@ public class PlatformTxnAccessor implements TxnAccessor {
 					"failed");
 		}
 		return sigMeta.pkToVerifiedSigFn();
+	}
+
+	@Override
+	public BaseTransactionMeta baseUsageMeta() {
+		return delegate.baseUsageMeta();
+	}
+
+	@Override
+	public CryptoTransferMeta availXferUsageMeta() {
+		return delegate.availXferUsageMeta();
+	}
+
+	@Override
+	public SubmitMessageMeta availSubmitUsageMeta() {
+		return delegate.availSubmitUsageMeta();
 	}
 
 	public TxnAccessor getDelegate() {

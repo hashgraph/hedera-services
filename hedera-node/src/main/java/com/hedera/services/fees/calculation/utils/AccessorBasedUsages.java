@@ -97,7 +97,7 @@ public class AccessorBasedUsages {
 			throw new IllegalArgumentException("Usage estimation for " + function + " not yet migrated");
 		}
 
-		final var baseMeta = ((SignedTxnAccessor) accessor).baseUsageMeta();
+		final var baseMeta = accessor.baseUsageMeta();
 		if (function == CryptoTransfer) {
 			estimateCryptoTransfer(sigUsage, accessor, baseMeta, into);
 		} else if (function == CryptoCreate) {
@@ -165,7 +165,7 @@ public class AccessorBasedUsages {
 			BaseTransactionMeta baseMeta,
 			UsageAccumulator into
 	) {
-		final var xferMeta = ((SignedTxnAccessor) accessor).availXferUsageMeta();
+		final var xferMeta = accessor.availXferUsageMeta();
 		xferMeta.setTokenMultiplier(dynamicProperties.feesTokenTransferUsageMultiplier());
 		cryptoOpsUsage.cryptoTransferUsage(sigUsage, xferMeta, baseMeta, into);
 	}
@@ -207,7 +207,7 @@ public class AccessorBasedUsages {
 			BaseTransactionMeta baseMeta,
 			UsageAccumulator into
 	) {
-		final var submitMeta = ((SignedTxnAccessor) accessor).availSubmitUsageMeta();
+		final var submitMeta = accessor.availSubmitUsageMeta();
 		consensusOpsUsage.submitMessageUsage(sigUsage, submitMeta, baseMeta, into);
 	}
 

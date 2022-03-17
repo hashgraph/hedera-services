@@ -27,7 +27,6 @@ import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hedera.services.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -37,7 +36,6 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.Map;
@@ -48,47 +46,81 @@ import java.util.function.Function;
  * parts of a Hedera Services gRPC {@link Transaction}.
  */
 public interface TxnAccessor {
-    int sigMapSize();
-    int numSigPairs();
-    SignatureMap getSigMap();
-    void setExpandedSigStatus(ResponseCodeEnum status);
-    ResponseCodeEnum getExpandedSigStatus();
-    PubKeyToSigBytes getPkToSigsFn();
+	int sigMapSize();
 
-    long getOfferedFee();
-    AccountID getPayer();
-    TransactionID getTxnId();
+	int numSigPairs();
 
-    HederaFunctionality getFunction();
-    SubType getSubType();
+	SignatureMap getSigMap();
 
-    byte[] getMemoUtf8Bytes();
-    String getMemo();
-    boolean memoHasZeroByte();
+	void setExpandedSigStatus(ResponseCodeEnum status);
 
-    byte[] getHash();
-    byte[] getTxnBytes();
-    byte[] getSignedTxnWrapperBytes();
-    Transaction getSignedTxnWrapper();
-    TransactionBody getTxn();
+	ResponseCodeEnum getExpandedSigStatus();
 
-    boolean canTriggerTxn();
-    boolean isTriggeredTxn();
-    ScheduleID getScheduleRef();
-    void setTriggered(boolean b);
-    void setScheduleRef(ScheduleID parent);
-    void setPayer(AccountID payer);
+	PubKeyToSigBytes getPkToSigsFn();
 
-    long getGasLimitForContractTx();
-    Map<String, Object> getSpanMap();
-    ExpandHandleSpanMapAccessor getSpanMapAccessor();
+	long getOfferedFee();
 
-    void setNumAutoCreations(int numAutoCreations);
-    int getNumAutoCreations();
-    boolean areAutoCreationsCounted();
-    void countAutoCreationsWith(AliasManager aliasManager);
+	AccountID getPayer();
 
-    void setLinkedRefs(LinkedRefs linkedRefs);
-    LinkedRefs getLinkedRefs();
-    Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn();
+	TransactionID getTxnId();
+
+	HederaFunctionality getFunction();
+
+	SubType getSubType();
+
+	byte[] getMemoUtf8Bytes();
+
+	String getMemo();
+
+	boolean memoHasZeroByte();
+
+	byte[] getHash();
+
+	byte[] getTxnBytes();
+
+	byte[] getSignedTxnWrapperBytes();
+
+	Transaction getSignedTxnWrapper();
+
+	TransactionBody getTxn();
+
+	boolean canTriggerTxn();
+
+	boolean isTriggeredTxn();
+
+	ScheduleID getScheduleRef();
+
+	void setTriggered(boolean b);
+
+	void setScheduleRef(ScheduleID parent);
+
+	void setPayer(AccountID payer);
+
+	long getGasLimitForContractTx();
+
+	Map<String, Object> getSpanMap();
+
+	ExpandHandleSpanMapAccessor getSpanMapAccessor();
+
+	void setNumAutoCreations(int numAutoCreations);
+
+	int getNumAutoCreations();
+
+	boolean areAutoCreationsCounted();
+
+	void countAutoCreationsWith(AliasManager aliasManager);
+
+	void setLinkedRefs(LinkedRefs linkedRefs);
+
+	LinkedRefs getLinkedRefs();
+
+	Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn();
+
+	// TODO To Be deleted
+
+	BaseTransactionMeta baseUsageMeta();
+
+	CryptoTransferMeta availXferUsageMeta();
+
+	SubmitMessageMeta availSubmitUsageMeta();
 }
