@@ -327,8 +327,9 @@ class TransactionalLedgerTest {
 
 		testLedger.begin();
 		testLedger.destroy(1L);
+		testLedger.destroy(2L);
 
-		assertEquals("{*DEAD* 1}", testLedger.changeSetSoFar());
+		assertEquals("{*DEAD* 1, *DEAD* 2}", testLedger.changeSetSoFar());
 	}
 
 	@Test
