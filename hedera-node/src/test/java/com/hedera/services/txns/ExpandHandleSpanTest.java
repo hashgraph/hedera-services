@@ -93,6 +93,6 @@ class ExpandHandleSpanTest {
 		// when:
 		final var endAccessor = subject.accessorFor(validTxn);
 
-		verify(handleSpanMap).expandSpan(endAccessor);
+		verify(handleSpanMap).expandSpan(endAccessor.getDelegate());
 	}
 }

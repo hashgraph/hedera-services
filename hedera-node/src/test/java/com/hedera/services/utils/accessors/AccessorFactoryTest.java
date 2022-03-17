@@ -21,6 +21,7 @@ package com.hedera.services.utils.accessors;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.goterl.lazysodium.interfaces.Sign;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -64,7 +65,7 @@ class AccessorFactoryTest {
 				new SwirldTransaction(Transaction.newBuilder()
 						.setBodyBytes(someTxn.toByteString())
 						.build().toByteArray());
-		assertTrue(subject.nonTriggeredTxn(platformTxn.getContentsDirect()) instanceof PlatformTxnAccessor);
+		assertTrue(subject.nonTriggeredTxn(platformTxn.getContentsDirect()) instanceof SignedTxnAccessor);
 
 		SwirldTransaction wipeTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(tokenWipeTxn.toByteString())

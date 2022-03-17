@@ -269,4 +269,8 @@ public class PlatformTxnAccessor implements TxnAccessor {
 		}
 		return sigMeta.pkToVerifiedSigFn();
 	}
+
+	public TxnAccessor getDelegate() {
+		return delegate;
+	}
 }
