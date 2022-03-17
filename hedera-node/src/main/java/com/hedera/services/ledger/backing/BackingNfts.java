@@ -27,7 +27,6 @@ import com.swirlds.virtualmap.VirtualMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 

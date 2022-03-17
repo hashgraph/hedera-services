@@ -52,7 +52,7 @@ public class EntityNum implements Comparable<EntityNum> {
 	}
 
 	public static EntityNum fromInt(int i) {
-		return fromLong((long) i & 0xFFFF_FFFFL);
+		return fromLong(i & 0xFFFF_FFFFL);
 	}
 
 	public static EntityNum fromLong(long l) {
