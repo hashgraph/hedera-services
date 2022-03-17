@@ -71,6 +71,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private final List<K> createdKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final List<K> changedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
 	private final List<K> perishedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
+
 	private final Class<P> propertyType;
 	private final Supplier<A> newEntity;
 	private final BackingStore<K, A> entities;
@@ -78,11 +79,13 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private final ChangeSummaryManager<A, P> changeManager;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
-	final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
+	private final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
+	private final List<EntityChanges<K, A, P>> entityChanges = new ArrayList<>();
 
 	private boolean isInTransaction = false;
-	private PropertyChangeObserver<K, P> commitInterceptor = null;
+	private PropertyChangeObserver<K, P> propertyChangeObserver = null;
 	private Optional<Function<K, String>> keyToString = Optional.empty();
+	private CommitInterceptor<K, A, P> commitInterceptor;
 
 	public TransactionalLedger(
 			Class<P> propertyType,
@@ -102,6 +105,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		} else {
 			this.entitiesLedger = null;
 		}
+	}
+
+	public void setCommitInterceptor(final CommitInterceptor<K, A, P> commitInterceptor) {
+		this.commitInterceptor = commitInterceptor;
 	}
 
 	/**
@@ -135,8 +142,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		this.keyToString = Optional.of(keyToString);
 	}
 
-	public void setCommitInterceptor(final PropertyChangeObserver<K, P> commitInterceptor) {
-		this.commitInterceptor = commitInterceptor;
+	public void setPropertyChangeObserver(final PropertyChangeObserver<K, P> propertyChangeObserver) {
+		this.propertyChangeObserver = propertyChangeObserver;
 	}
 
 	public void begin() {
@@ -144,6 +151,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 			throw new IllegalStateException("A transaction is already active!");
 		}
 		isInTransaction = true;
+		entityChanges.clear();
 	}
 
 	public void undoChangesOfType(List<P> properties) {
@@ -189,9 +197,15 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 
 		try {
+			if (commitInterceptor != null) {
+				computePendingEntityChanges();
+				commitInterceptor.preview(entityChanges);
+			}
+
 			flushListed(changedKeys);
 			flushListed(createdKeys);
 			changes.clear();
+			entityChanges.clear();
 
 			if (!deadEntities.isEmpty()) {
 				perishedKeys.forEach(entities::remove);
@@ -240,8 +254,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		final boolean hasPendingChanges = changeSet != null;
 		final A entity = entities.contains(id) ? entities.getRef(id) : newEntity.get();
 		if (hasPendingChanges) {
-			if (commitInterceptor != null) {
-				changeManager.persistWithObserver(id, changeSet, entity, commitInterceptor);
+			if (propertyChangeObserver != null) {
+				changeManager.persistWithObserver(id, changeSet, entity, propertyChangeObserver);
 			} else {
 				changeManager.persist(changeSet, entity);
 			}
@@ -506,6 +520,18 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	private Function<P, Object> newDefaultPropertySource() {
 		final var defaultEntity = newEntity.get();
 		return prop -> prop.getter().apply(defaultEntity);
+	}
+
+	private List<EntityChanges<K, A, P>> computePendingEntityChanges() {
+		for (final var change : changes.entrySet()) {
+			final var id = change.getKey();
+			final var entityProperties = change.getValue();
+			final var entity = entities.contains(id) ? entities.getRef(id) : null;
+			final var entityChange = new EntityChanges<>(id, entity, entityProperties);
+			entityChanges.add(entityChange);
+		}
+
+		return entityChanges;
 	}
 
 	ChangeSummaryManager<A, P> getChangeManager() {

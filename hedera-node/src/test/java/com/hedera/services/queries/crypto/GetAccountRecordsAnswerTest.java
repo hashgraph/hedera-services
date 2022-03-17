@@ -27,7 +27,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
@@ -100,12 +99,7 @@ class GetAccountRecordsAnswerTest {
 
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
-		view = new StateView(
-				null,
-				null,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				null);
+		view = new StateView(null, children, null);
 
 		optionValidator = mock(OptionValidator.class);
 

@@ -21,6 +21,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -35,13 +36,13 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 import javax.inject.Inject;
 
-import static com.hedera.services.contracts.operation.HederaCreateOperation.storageAndMemoryGasForCreation;
 import static com.hedera.services.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 	private static final Bytes PREFIX = Bytes.fromHexString("0xFF");
 
+	private final StorageGasCalculator storageGasCalculator;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
@@ -50,7 +51,8 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 			final EntityCreator creator,
 			final SyntheticTxnFactory syntheticTxnFactory,
 			final AccountRecordsHistorian recordsHistorian,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final StorageGasCalculator storageGasCalculator
 	) {
 		super(
 				0xF5,
@@ -62,16 +64,15 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 				creator,
 				syntheticTxnFactory,
 				recordsHistorian);
+		this.storageGasCalculator = storageGasCalculator;
 		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
-	protected Gas cost(MessageFrame frame) {
-		final var effGasCalculator = gasCalculator();
-
-		return effGasCalculator
-				.create2OperationGasCost(frame)
-				.plus(storageAndMemoryGasForCreation(frame, effGasCalculator));
+	protected Gas cost(final MessageFrame frame) {
+		final var calculator = gasCalculator();
+		return calculator.create2OperationGasCost(frame)
+				.plus(storageGasCalculator.creationGasCost(frame, calculator));
 	}
 
 	@Override

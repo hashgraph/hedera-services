@@ -21,6 +21,7 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
@@ -61,16 +62,20 @@ import static com.hedera.services.ledger.HederaLedger.TOKEN_ID_COMPARATOR;
 public class SideEffectsTracker {
 	private static final long INAPPLICABLE_NEW_SUPPLY = -1;
 	private static final int MAX_TOKENS_TOUCHED = 1_000;
+	private static final int BALANCE_CHANGES_LENGTH = 64;
 
 	private final TokenID[] tokensTouched = new TokenID[MAX_TOKENS_TOUCHED];
-	private final TransferList.Builder netHbarChanges = TransferList.newBuilder();
+	private final long[] changedAccounts = new long[BALANCE_CHANGES_LENGTH];
+	private final long[] balanceChanges = new long[BALANCE_CHANGES_LENGTH];
 	private final List<Long> nftMints = new ArrayList<>();
 	private final List<FcTokenAssociation> autoAssociations = new ArrayList<>();
 	private final Map<TokenID, TransferList.Builder> netTokenChanges = new HashMap<>();
 	private final Map<TokenID, TokenTransferList.Builder> nftOwnerChanges = new HashMap<>();
 
-	private int numTouches = 0;
+	private int numTokenChangesSoFar = 0;
 	private long newSupply = INAPPLICABLE_NEW_SUPPLY;
+	private long netHbarChange = 0;
+	private int numHbarChangesSoFar = 0;
 	private TokenID newTokenId = null;
 	private AccountID newAccountId = null;
 	private ContractID newContractId = null;
@@ -301,8 +306,10 @@ public class SideEffectsTracker {
 	 * @param amount
 	 * 		the incremental ℏ change to track
 	 */
-	public void trackHbarChange(final AccountID account, final long amount) {
-		updateFungibleChanges(account, amount, netHbarChanges);
+	public void trackHbarChange(final long account, final long amount) {
+		netHbarChange += amount;
+		numHbarChangesSoFar = includeOrderedFungibleChange(changedAccounts, balanceChanges,
+				numHbarChangesSoFar, account, amount);
 	}
 
 	/**
@@ -319,11 +326,10 @@ public class SideEffectsTracker {
 	 * 		the incremental unit change to track
 	 */
 	public void trackTokenUnitsChange(final TokenID token, final AccountID account, final long amount) {
-		tokensTouched[numTouches++] = token;
+		tokensTouched[numTokenChangesSoFar++] = token;
 		final var unitChanges = netTokenChanges.computeIfAbsent(token, ignore -> TransferList.newBuilder());
 		updateFungibleChanges(account, amount, unitChanges);
 	}
-
 
 	/**
 	 * Tracks ownership of the given NFT changing from the given sender to the given receiver. This tracking
@@ -341,21 +347,29 @@ public class SideEffectsTracker {
 	 */
 	public void trackNftOwnerChange(final NftId nftId, final AccountID from, AccountID to) {
 		final var token = nftId.tokenId();
-		tokensTouched[numTouches++] = token;
+		tokensTouched[numTokenChangesSoFar++] = token;
 		var xfers = nftOwnerChanges.computeIfAbsent(token, ignore -> TokenTransferList.newBuilder());
 		xfers.addNftTransfers(nftTransferBuilderWith(from, to, nftId.serialNo()));
 	}
 
 	/**
 	 * Returns the list of net ℏ balance changes including all incremental side effects tracked since the
-	 * last call to {@link SideEffectsTracker#reset()}. The returned list is sorted in ascending order by
-	 * the {@link com.hedera.services.ledger.HederaLedger#ACCOUNT_ID_COMPARATOR}.
+	 * last call to {@link SideEffectsTracker#reset()}. The returned adjustments are sorted in ascending order of
+	 * account numbers
 	 *
 	 * @return the ordered net balance changes
 	 */
-	public TransferList getNetTrackedHbarChanges() {
-		purgeZeroAdjustments(netHbarChanges);
-		return netHbarChanges.build();
+	public CurrencyAdjustments getNetTrackedHbarChanges() {
+		numHbarChangesSoFar = purgeZeroChanges(changedAccounts, balanceChanges, numHbarChangesSoFar);
+
+		// copy the range of elements that are modified from balance changes and account numbers
+		final long[] changedBalances = Arrays.copyOfRange(balanceChanges, 0, numHbarChangesSoFar);
+		final long[] changedAccountNums = Arrays.copyOfRange(changedAccounts, 0, numHbarChangesSoFar);
+		return CurrencyAdjustments.fromChanges(changedBalances, changedAccountNums);
+	}
+
+	public long getNetHbarChange() {
+		return netHbarChange;
 	}
 
 	/**
@@ -374,12 +388,12 @@ public class SideEffectsTracker {
 			return explicitNetTokenUnitOrOwnershipChanges;
 		}
 
-		if (numTouches == 0) {
+		if (numTokenChangesSoFar == 0) {
 			return Collections.emptyList();
 		}
 		final List<TokenTransferList> all = new ArrayList<>();
-		Arrays.sort(tokensTouched, 0, numTouches, TOKEN_ID_COMPARATOR);
-		for (int i = 0; i < numTouches; i++) {
+		Arrays.sort(tokensTouched, 0, numTokenChangesSoFar, TOKEN_ID_COMPARATOR);
+		for (int i = 0; i < numTokenChangesSoFar; i++) {
 			var token = tokensTouched[i];
 			if (i == 0 || !token.equals(tokensTouched[i - 1])) {
 				final var uniqueTransfersHere = nftOwnerChanges.get(token);
@@ -455,7 +469,8 @@ public class SideEffectsTracker {
 	 */
 	public void reset() {
 		resetTrackedTokenChanges();
-		netHbarChanges.clear();
+		numHbarChangesSoFar = 0;
+		netHbarChange = 0;
 		newAccountId = null;
 		newContractId = null;
 		newEntityAlias = ByteString.EMPTY;
@@ -473,7 +488,7 @@ public class SideEffectsTracker {
 	 * </ul>
 	 */
 	public void resetTrackedTokenChanges() {
-		for (int i = 0; i < numTouches; i++) {
+		for (int i = 0; i < numTokenChangesSoFar; i++) {
 			final var fungibleBuilder = netTokenChanges.get(tokensTouched[i]);
 			if (fungibleBuilder != null) {
 				fungibleBuilder.clearAccountAmounts();
@@ -481,7 +496,7 @@ public class SideEffectsTracker {
 				nftOwnerChanges.get(tokensTouched[i]).clearNftTransfers();
 			}
 		}
-		numTouches = 0;
+		numTokenChangesSoFar = 0;
 
 		newSupply = INAPPLICABLE_NEW_SUPPLY;
 		newTokenId = null;
@@ -541,5 +556,95 @@ public class SideEffectsTracker {
 
 	private AccountAmount.Builder aaBuilderWith(final AccountID account, final long amount) {
 		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
+	}
+
+	/**
+	 * Incorporates a balance change for a target account into two parallel {@code long[]} arrays
+	 * that represent all the cumulative balance changes so far to all touched accounts, <b>in
+	 * ascending order of account number</b>.
+	 *
+	 * Returns the new number of touched accounts after incorporating this change.
+	 *
+	 * <b>IMPORTANT:</b> This method assumes the parallel arrays are large enough to include a
+	 * new balance change without resizing. (It takes care of shifting larger-numbered accounts
+	 * to the right if needed.)
+	 *
+	 * @param accountNums
+	 * 		an array of account numbers whose balances have changed so far
+	 * @param balanceChanges
+	 * 		the parallel array of balance changes
+	 * @param touchedSoFar
+	 * 		how many slots in the accountNums array were actually touched so far
+	 * @param targetNum
+	 * 		the account number for the new balance change
+	 * @param newChange
+	 * 		an additional change to incorporate into the target account's balance
+	 * @return how many slots in the accountNums array are now actually touched
+	 */
+	public static int includeOrderedFungibleChange(
+			final long[] accountNums,
+			final long[] balanceChanges,
+			final int touchedSoFar,
+			final long targetNum,
+			final long newChange
+	) {
+		var i = touchedSoFar - 1;
+		// Start from the rightmost touched account, skip accounts larger than our target
+		while (i >= 0 && accountNums[i] > targetNum) {
+			i--;
+		}
+		if (i == -1 || accountNums[i] != targetNum) {
+			// The target num wasn't already present, so we need to shift all larger accounts one to the right
+			for (int j = touchedSoFar - 1; j > i; j--) {
+				accountNums[j + 1] = accountNums[j];
+				balanceChanges[j + 1] = balanceChanges[j];
+			}
+			// And now insert our new change
+			i++;
+			accountNums[i] = targetNum;
+			balanceChanges[i] = newChange;
+			return touchedSoFar + 1;
+		} else {
+			// The target num was already present, so just update the balance
+			balanceChanges[i] += newChange;
+			return touchedSoFar;
+		}
+	}
+
+	/**
+	 * Removes any zero-impact balance changes from two parallel {@code long[]} arrays that represent
+	 * all the cumulative balance changes so far to all touched accounts; returns the new number of
+	 * touched accounts after zero balances have been purged.
+	 *
+	 * @param accountNums
+	 * 		an array of account numbers whose balances have changed so far
+	 * @param balanceChanges
+	 * 		the parallel array of balance changes
+	 * @param touchedSoFar
+	 * 		how many slots in the accountNums array were actually touched so far
+	 * @return how many slots in the accountNums array are now actually touched
+	 */
+	public static int purgeZeroChanges(
+			final long[] accountNums,
+			final long[] balanceChanges,
+			final int touchedSoFar
+	) {
+		var zerosSkippedSoFar = 0;
+		var retracedI = 0;
+		for (int i = 0; i < touchedSoFar; i++, retracedI++) {
+			if (balanceChanges[i] == 0) {
+				zerosSkippedSoFar++;
+				retracedI--;
+			} else if (zerosSkippedSoFar > 0) {
+				// shift the elements in array to left replacing zero changes
+				accountNums[retracedI] = accountNums[i];
+				balanceChanges[retracedI] = balanceChanges[i];
+			}
+		}
+		return touchedSoFar - zerosSkippedSoFar;
+	}
+
+	public int getNumHbarChangesSoFar() {
+		return numHbarChangesSoFar;
 	}
 }

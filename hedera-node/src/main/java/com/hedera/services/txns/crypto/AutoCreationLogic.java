@@ -186,13 +186,14 @@ public class AutoCreationLogic {
 				.key(asFcKeyUnchecked(key))
 				.memo(AUTO_MEMO)
 				.autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+				.expiry(txnCtx.consensusTime().getEpochSecond() + THREE_MONTHS_IN_SECONDS)
 				.isReceiverSigRequired(false)
 				.isSmartContract(false)
 				.alias(alias);
 		customizer.customize(newAccountId, accountsLedger);
-
 		sideEffects.trackAutoCreation(newAccountId, alias);
 		final var childRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, AUTO_MEMO);
+		childRecord.setFee(fee);
 		final var inProgress = new InProgressChildRecord(DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
 		pendingCreations.add(inProgress);
 		/* If the transaction fails, we will get an opportunity to unlink this alias in reclaimPendingAliases() */

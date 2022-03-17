@@ -119,11 +119,13 @@ class SigOpsRegressionTest {
 			KeyActivationCharacteristics characteristics
 	) {
 		TransactionBody txn = accessor.getTxn();
-		Function<byte[], TransactionSignature> sigsFn = HederaKeyActivation.pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
+		Function<byte[], TransactionSignature> sigsFn = HederaKeyActivation.pkToSigMapFrom(
+				accessor.getPlatformTxn().getSignatures());
 
 		final var othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
 		for (JKey otherKey : othersResult.getOrderedKeys()) {
-			if (!HederaKeyActivation.isActive(otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID, characteristics)) {
+			if (!HederaKeyActivation.isActive(otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID,
+					characteristics)) {
 				return false;
 			}
 		}
@@ -380,7 +382,7 @@ class SigOpsRegressionTest {
 	}
 
 	private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {
-		platformTxn.getPlatformTxn().clear();
+		platformTxn.getPlatformTxn().clearSignatures();
 		platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
 		final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
 		SigRequirements keysOrder = new SigRequirements(

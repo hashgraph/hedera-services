@@ -20,9 +20,9 @@ package com.hedera.services.context.init;
  * ‍
  */
 
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -30,9 +30,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.UniqueTokenViewsManager;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -53,11 +51,9 @@ class StoreInitializationFlowTest {
 	@Mock
 	private ScheduleStore scheduleStore;
 	@Mock
-	private StateAccessor stateAccessor;
+	private MutableStateChildren workingState;
 	@Mock
 	private AliasManager aliasManager;
-	@Mock
-	private UniqueTokenViewsManager uniqueTokenViewsManager;
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
 	@Mock
@@ -66,10 +62,6 @@ class StoreInitializationFlowTest {
 	private BackingStore<TokenID, MerkleToken> backingTokens;
 	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels;
-	@Mock
-	private MerkleMap<EntityNum, MerkleToken> tokens;
-	@Mock
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 
@@ -81,8 +73,7 @@ class StoreInitializationFlowTest {
 				tokenStore,
 				scheduleStore,
 				aliasManager,
-				stateAccessor,
-				uniqueTokenViewsManager,
+				workingState,
 				backingAccounts,
 				backingTokens,
 				backingNfts,
@@ -91,9 +82,7 @@ class StoreInitializationFlowTest {
 
 	@Test
 	void initsAsExpected() {
-		given(stateAccessor.tokens()).willReturn(tokens);
-		given(stateAccessor.accounts()).willReturn(accounts);
-		given(stateAccessor.uniqueTokens()).willReturn(nfts);
+		given(workingState.accounts()).willReturn(accounts);
 
 		// when:
 		subject.run();
@@ -104,7 +93,6 @@ class StoreInitializationFlowTest {
 		verify(backingNfts).rebuildFromSources();
 		verify(tokenStore).rebuildViews();
 		verify(scheduleStore).rebuildViews();
-		verify(uniqueTokenViewsManager).rebuildNotice(tokens, nfts);
 		verify(aliasManager).rebuildAliasesMap(accounts);
 	}
 }

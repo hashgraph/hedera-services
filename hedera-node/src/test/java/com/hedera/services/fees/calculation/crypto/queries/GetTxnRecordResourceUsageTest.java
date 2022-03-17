@@ -26,7 +26,6 @@ import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;
 import com.hedera.services.records.RecordCache;
-import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -90,12 +89,7 @@ class GetTxnRecordResourceUsageTest {
 		usageEstimator = mock(CryptoFeeBuilder.class);
 		recordCache = mock(RecordCache.class);
 		final var children = new MutableStateChildren();
-		view = new StateView(
-				null,
-				null,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				null);
+		view = new StateView(null, children, null);
 
 		answerFunctions = mock(AnswerFunctions.class);
 		given(answerFunctions.txnRecord(recordCache, satisfiableAnswerOnly))

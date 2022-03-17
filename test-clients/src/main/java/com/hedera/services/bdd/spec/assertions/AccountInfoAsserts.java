@@ -289,7 +289,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		registerProvider((spec, o) -> {
 			long expiry = ((AccountInfo) o).getExpirationTime().getSeconds();
 			assertTrue(Math.abs(approxTime - expiry) <= epsilon,
-					String.format("Expiry %d not in [%d, %d]!", approxTime, expiry - epsilon, expiry + epsilon));
+					String.format("Expiry %d not in [%d, %d]!", expiry, approxTime - epsilon, approxTime + epsilon));
 		});
 		return this;
 	}

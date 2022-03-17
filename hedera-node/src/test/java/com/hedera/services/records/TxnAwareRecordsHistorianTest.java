@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +51,6 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -88,11 +86,12 @@ class TxnAwareRecordsHistorianTest {
 					.setNanos(nanos))
 			.setAccountID(a)
 			.build();
-	final private TransferList initialTransfers = withAdjustments(
-			a, -1_000L, b, 500L, c, 501L, d, -1L);
+	final private CurrencyAdjustments initialTransfers = CurrencyAdjustments.fromChanges(
+			new long[] { -1_000L, 500L, 501L, 01L },
+			new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum(), d.getAccountNum() });
 	final private ExpirableTxnRecord.Builder finalRecord = ExpirableTxnRecord.newBuilder()
 			.setTxnId(TxnId.fromGrpc(txnIdA))
-			.setTransferList(CurrencyAdjustments.fromGrpc(initialTransfers))
+			.setTransferList(initialTransfers)
 			.setMemo("This is different!")
 			.setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build());
 	final private ExpirableTxnRecord.Builder jFinalRecord = finalRecord;
@@ -187,7 +186,8 @@ class TxnAwareRecordsHistorianTest {
 		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
 
 		final var n = (short) 123;
-		subject.customizeSuccessor(any -> false, childRecord -> {});
+		subject.customizeSuccessor(any -> false, childRecord -> {
+		});
 		subject.customizeSuccessor(any -> true, childRecord -> childRecord.recordBuilder().setNumChildRecords(n));
 
 		verify(followingBuilder).setNumChildRecords(n);

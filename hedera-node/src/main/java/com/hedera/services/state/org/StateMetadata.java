@@ -20,11 +20,14 @@ package com.hedera.services.state.org;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesApp;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.merkle.Archivable;
-import com.swirlds.fchashmap.FCOneToManyRelation;
+import com.swirlds.fchashmap.FCHashMap;
+
+import java.util.Map;
 
 /**
  * Contains the part of the Hedera Services world state that does influence
@@ -32,22 +35,15 @@ import com.swirlds.fchashmap.FCOneToManyRelation;
  */
 public class StateMetadata implements FastCopyable, Archivable {
 	private final ServicesApp app;
+	private final FCHashMap<ByteString, EntityNum> aliases;
 
-	private FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations;
-	private FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations;
-	private FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations;
-
-	public StateMetadata(ServicesApp app) {
+	public StateMetadata(final ServicesApp app, final FCHashMap<ByteString, EntityNum> aliases) {
 		this.app = app;
-		this.uniqueTokenAssociations = new FCOneToManyRelation<>();
-		this.uniqueOwnershipAssociations = new FCOneToManyRelation<>();
-		this.uniqueTreasuryOwnershipAssociations = new FCOneToManyRelation<>();
+		this.aliases = aliases;
 	}
 
-	private StateMetadata(StateMetadata that) {
-		this.uniqueTokenAssociations = that.uniqueTokenAssociations.copy();
-		this.uniqueOwnershipAssociations = that.uniqueOwnershipAssociations.copy();
-		this.uniqueTreasuryOwnershipAssociations = that.uniqueTreasuryOwnershipAssociations.copy();
+	private StateMetadata(final StateMetadata that) {
+		this.aliases = that.aliases.copy();
 		this.app = that.app;
 	}
 
@@ -57,43 +53,23 @@ public class StateMetadata implements FastCopyable, Archivable {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public StateMetadata copy() {
 		return new StateMetadata(this);
 	}
 
 	@Override
 	public void release() {
-		uniqueTokenAssociations.release();
-		uniqueOwnershipAssociations.release();
-		uniqueTreasuryOwnershipAssociations.release();
+		if (!aliases.isReleased()) {
+			aliases.release();
+		}
 	}
 
 	public ServicesApp app() {
 		return app;
 	}
 
-	public FCOneToManyRelation<EntityNum, Long> getUniqueTokenAssociations() {
-		return uniqueTokenAssociations;
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> getUniqueOwnershipAssociations() {
-		return uniqueOwnershipAssociations;
-	}
-
-	public FCOneToManyRelation<EntityNum, Long> getUniqueTreasuryOwnershipAssociations() {
-		return uniqueTreasuryOwnershipAssociations;
-	}
-
-	/* --- Only used by unit tests --- */
-	void setUniqueTokenAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTokenAssociations) {
-		this.uniqueTokenAssociations = uniqueTokenAssociations;
-	}
-
-	void setUniqueOwnershipAssociations(FCOneToManyRelation<EntityNum, Long> uniqueOwnershipAssociations) {
-		this.uniqueOwnershipAssociations = uniqueOwnershipAssociations;
-	}
-
-	void setUniqueTreasuryOwnershipAssociations(FCOneToManyRelation<EntityNum, Long> uniqueTreasuryOwnershipAssociations) {
-		this.uniqueTreasuryOwnershipAssociations = uniqueTreasuryOwnershipAssociations;
+	public Map<ByteString, EntityNum> aliases() {
+		return aliases;
 	}
 }

@@ -162,7 +162,7 @@ class SideEffectsTrackerTest {
 		changedToken.setTotalSupply(newSupply);
 		changedToken.mintedUniqueTokens().add(new UniqueToken(Id.fromGrpcToken(cSN1.tokenId()), cSN1.serialNo()));
 
-		subject.trackHbarChange(aAccount, aFirstBalanceChange);
+		subject.trackHbarChange(aAccount.getAccountNum(), aFirstBalanceChange);
 		subject.trackTokenUnitsChange(bToken, cAccount, cOnlyBalanceChange);
 		subject.trackNftOwnerChange(cSN1, aAccount, bAccount);
 		subject.trackAutoAssociation(aToken, bAccount);
@@ -176,10 +176,9 @@ class SideEffectsTrackerTest {
 		assertTrue(subject.getTrackedAutoAssociations().isEmpty());
 		assertSame(Collections.emptyList(), subject.getNetTrackedTokenUnitAndOwnershipChanges());
 		final var netChanges = subject.getNetTrackedHbarChanges();
-		assertEquals(1, netChanges.getAccountAmountsCount());
-		final var aChange = netChanges.getAccountAmounts(0);
-		assertEquals(aAccount, aChange.getAccountID());
-		assertEquals(aFirstBalanceChange, aChange.getAmount());
+		assertEquals(1, netChanges.getAccountNums().length);
+		assertEquals(aAccount.getAccountNum(), netChanges.getAccountNums()[0]);
+		assertEquals(aFirstBalanceChange, netChanges.getHbars()[0]);
 	}
 
 	@Test
@@ -223,23 +222,25 @@ class SideEffectsTrackerTest {
 
 	@Test
 	void tracksAndResetsHbarChangesAsExpected() {
-		subject.trackHbarChange(cAccount, cOnlyBalanceChange);
-		subject.trackHbarChange(aAccount, aFirstBalanceChange);
-		subject.trackHbarChange(bAccount, bOnlyBalanceChange);
-		subject.trackHbarChange(aAccount, aSecondBalanceChange);
-		subject.trackHbarChange(bAccount, -bOnlyBalanceChange);
+		subject.trackHbarChange(cAccount.getAccountNum(), cOnlyBalanceChange);
+		subject.trackHbarChange(aAccount.getAccountNum(), aFirstBalanceChange);
+		subject.trackHbarChange(bAccount.getAccountNum(), bOnlyBalanceChange);
+		subject.trackHbarChange(aAccount.getAccountNum(), aSecondBalanceChange);
+		subject.trackHbarChange(bAccount.getAccountNum(), -bOnlyBalanceChange);
 
 		final var netChanges = subject.getNetTrackedHbarChanges();
-		assertEquals(2, netChanges.getAccountAmountsCount());
-		final var aChange = netChanges.getAccountAmounts(0);
-		assertEquals(aAccount, aChange.getAccountID());
-		assertEquals(aFirstBalanceChange + aSecondBalanceChange, aChange.getAmount());
-		final var cChange = netChanges.getAccountAmounts(1);
-		assertEquals(cAccount, cChange.getAccountID());
-		assertEquals(cOnlyBalanceChange, cChange.getAmount());
+		assertEquals(2, netChanges.getAccountNums().length);
+		assertEquals(2, netChanges.getHbars().length);
+		assertEquals(aAccount.getAccountNum(), netChanges.getAccountNums()[0]);
+		assertEquals(aFirstBalanceChange + aSecondBalanceChange, netChanges.getHbars()[0]);
+		assertEquals(cAccount.getAccountNum(), netChanges.getAccountNums()[1]);
+		assertEquals(cOnlyBalanceChange, netChanges.getHbars()[1]);
 
+		assertEquals(aFirstBalanceChange + aSecondBalanceChange + cOnlyBalanceChange, subject.getNetHbarChange());
 		subject.reset();
-		assertEquals(0, subject.getNetTrackedHbarChanges().getAccountAmountsCount());
+		assertEquals(0, subject.getNetTrackedHbarChanges().getAccountNums().length);
+		assertEquals(0, subject.getNetTrackedHbarChanges().getHbars().length);
+		assertEquals(0, subject.getNetHbarChange());
 	}
 
 	@Test
@@ -337,6 +338,35 @@ class SideEffectsTrackerTest {
 		assertEquals(fungibleAllowances, subject.getFungibleTokenAllowances());
 	}
 
+	@Test
+	void purgesZeroChangesSuccessfully() {
+		final var accountNums = new long[] { 100L, 200L, 300L, 400L, 200L };
+		final var balanceChanges = new long[] { 1000L, 2000L, 0L, 300L, -100L };
+		final var result = subject.purgeZeroChanges(accountNums, balanceChanges, 4);
+		assertEquals(3, result);
+	}
+
+	@Test
+	void includesOrderedFungibleChanges() {
+		final var accountNums = new long[] { 100L, 200L, 300L, 400L, 200L };
+		final var balanceChanges = new long[] { 1000L, 2000L, 0L, 300L, -100L };
+		var result = subject.includeOrderedFungibleChange(accountNums, balanceChanges,
+				4, 300L, 100L);
+		assertEquals(4, result);
+		result = subject.includeOrderedFungibleChange(accountNums, balanceChanges,
+				4, 500L, 100L);
+		assertEquals(5, result);
+	}
+
+	@Test
+	void resetsTouchedNumsCorrectly() {
+		subject.trackHbarChange(100L, 200L);
+		subject.trackHbarChange(200L, 200L);
+		assertEquals(2, subject.getNumHbarChangesSoFar());
+		subject.reset();
+		assertEquals(0, subject.getNumHbarChangesSoFar());
+	}
+
 	private static final long aFirstBalanceChange = 1_000L;
 	private static final long aSecondBalanceChange = 9_000L;
 	private static final long bOnlyBalanceChange = 7_777L;
@@ -363,24 +393,24 @@ class SideEffectsTrackerTest {
 		}});
 	}};
 	private static final Map<EntityNum, Long> cryptoAllowance = new TreeMap<>() {{
-			put(EntityNum.fromAccountId(aAccount), initialAllowance);
-		}};
+		put(EntityNum.fromAccountId(aAccount), initialAllowance);
+	}};
 	private static final Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleAllowances = new TreeMap<>() {{
 		put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
 			put(fungibleAllowanceId, initialAllowance);
 		}});
 	}};
 	private static final Map<FcTokenAllowanceId, Long> fungibleAllowance = new TreeMap<>() {{
-			put(fungibleAllowanceId, initialAllowance);
-		}};
+		put(fungibleAllowanceId, initialAllowance);
+	}};
 	private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = new TreeMap<>() {{
 		put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
-				put(fungibleAllowanceId, nftAllowance1);
-				put(nftAllowanceId, nftAllowance2);
-			}});
-	}};
-	private static final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowance = new TreeMap<>() {{
 			put(fungibleAllowanceId, nftAllowance1);
 			put(nftAllowanceId, nftAllowance2);
-		}};
+		}});
+	}};
+	private static final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowance = new TreeMap<>() {{
+		put(fungibleAllowanceId, nftAllowance1);
+		put(nftAllowanceId, nftAllowance2);
+	}};
 }
