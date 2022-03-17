@@ -24,9 +24,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 
 import java.util.List;
@@ -42,7 +39,7 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
 	}
 
 	public Id accountToWipe() {
-		return aliasManager.unaliased(body.getAccount()).toId();
+		return EntityIdUtils.unaliased(body.getAccount(), aliasManager).toId();
 	}
 
 	public Id targetToken() {
@@ -55,13 +52,5 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
 
 	public long amount() {
 		return body.getAmount();
-	}
-
-	protected EntityNum unaliased(AccountID grpcId) {
-		return aliasManager.unaliased(grpcId);
-	}
-
-	protected EntityNum unaliased(ContractID grpcId) {
-		return EntityIdUtils.unaliased(grpcId, aliasManager);
 	}
 }
