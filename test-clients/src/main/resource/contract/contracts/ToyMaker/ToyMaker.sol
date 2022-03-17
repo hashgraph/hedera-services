@@ -5,9 +5,7 @@ contract Toy {
 }
 
 contract ToyMaker {
-  function make() public returns (address) {
-    return address(new Toy());
-  }
+    function make() public returns (address) {
+        return address(new Toy());
+    }
 }
-
-
