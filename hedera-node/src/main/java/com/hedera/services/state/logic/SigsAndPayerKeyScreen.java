@@ -68,8 +68,6 @@ public class SigsAndPayerKeyScreen {
 		if (sigStatus == OK) {
 			if (rationalization.usedSyncVerification()) {
 				speedometers.cycleSyncVerifications();
-			} else {
-				speedometers.cycleAsyncVerifications();
 			}
 		}
 

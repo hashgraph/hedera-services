@@ -27,7 +27,6 @@ public class MiscSpeedometers {
 	private final SpeedometerFactory speedometer;
 
 	StatsSpeedometer syncVerifications;
-	StatsSpeedometer asyncVerifications;
 	StatsSpeedometer accountLookupRetries;
 	StatsSpeedometer platformTxnRejections;
 
@@ -35,7 +34,6 @@ public class MiscSpeedometers {
 		this.speedometer = speedometer;
 
 		syncVerifications = new StatsSpeedometer(halfLife);
-		asyncVerifications = new StatsSpeedometer(halfLife);
 		accountLookupRetries = new StatsSpeedometer(halfLife);
 		platformTxnRejections = new StatsSpeedometer(halfLife);
 	}
@@ -46,11 +44,6 @@ public class MiscSpeedometers {
 						Names.SYNC_VERIFICATIONS,
 						Descriptions.SYNC_VERIFICATIONS,
 						syncVerifications));
-		platform.addAppStatEntry(
-				speedometer.from(
-						Names.ASYNC_VERIFICATIONS,
-						Descriptions.ASYNC_VERIFICATIONS,
-						asyncVerifications));
 		platform.addAppStatEntry(
 				speedometer.from(
 						Names.ACCOUNT_LOOKUP_RETRIES,
@@ -67,10 +60,6 @@ public class MiscSpeedometers {
 		syncVerifications.update(1);
 	}
 
-	public void cycleAsyncVerifications() {
-		asyncVerifications.update(1);
-	}
-
 	public void cycleAccountLookupRetries() {
 		accountLookupRetries.update(1);
 	}
@@ -81,7 +70,6 @@ public class MiscSpeedometers {
 
 	public static final class Names {
 		static final String SYNC_VERIFICATIONS = "sigVerifySync/sec";
-		static final String ASYNC_VERIFICATIONS = "sigVerifyAsync/sec";
 		static final String ACCOUNT_LOOKUP_RETRIES = "acctLookupRetries/sec";
 		static final String PLATFORM_TXN_REJECTIONS = "platformTxnNotCreated/sec";
 
@@ -93,8 +81,6 @@ public class MiscSpeedometers {
 	public static final class Descriptions {
 		static final String SYNC_VERIFICATIONS =
 				"number of transactions received per second that must be verified synchronously in handleTransaction";
-		static final String ASYNC_VERIFICATIONS =
-				"number of transactions received per second that were verified asynchronously via expandSignatures";
 		static final String ACCOUNT_LOOKUP_RETRIES =
 				"number of times per second that an account lookup must be retried";
 		static final String PLATFORM_TXN_REJECTIONS =
