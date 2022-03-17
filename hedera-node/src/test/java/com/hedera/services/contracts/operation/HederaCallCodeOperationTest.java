@@ -22,7 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -37,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
@@ -68,7 +69,7 @@ class HederaCallCodeOperationTest {
 	@Mock
 	private Gas cost;
 	@Mock
-	private SoliditySigsVerifier sigsVerifier;
+	private EvmSigsVerifier sigsVerifier;
 	@Mock
 	private BiPredicate<Address, MessageFrame> addressValidator;
 	@Mock
@@ -130,7 +131,7 @@ class HederaCallCodeOperationTest {
 		given(acc.getBalance()).willReturn(Wei.of(100));
 		given(calc.gasAvailableForChildCall(any(), any(), anyBoolean())).willReturn(Gas.of(10));
 		given(acc.getAddress()).willReturn(accountAddr);
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(true);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		var opRes = subject.execute(evmMsgFrame, evm);
@@ -161,7 +162,7 @@ class HederaCallCodeOperationTest {
 		// and:
 		given(worldUpdater.get(any())).willReturn(acc);
 		given(acc.getAddress()).willReturn(accountAddr);
-		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(false);
+		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(false);
 		given(addressValidator.test(any(), any())).willReturn(true);
 
 		given(evmMsgFrame.getContractAddress()).willReturn(Address.ALTBN128_ADD);

@@ -54,10 +54,6 @@ public class ContractResources {
 	public static final String PAY_TEST_SELF_DESTRUCT_BYTECODE_PATH = bytecodePath("PayTestSelfDestruct");
 	public static final String PARENT_CHILD_TRANSFER_BYTECODE_PATH = bytecodePath("ParentChildTransfer");
 	public static final String OC_TOKEN_BYTECODE_PATH = bytecodePath("octoken");
-	public static final String ADDRESS_BOOK_BYTECODE_PATH = bytecodePath("AddressBook");
-	public static final String JURISDICTIONS_BYTECODE_PATH = bytecodePath("Jurisdictions");
-	public static final String MINTERS_BYTECODE_PATH = bytecodePath("Minters");
-	public static final String PAY_TEST_BYTECODE_PATH = bytecodePath("PayTest");
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 	public static final String EMPTY_CONSTRUCTOR = bytecodePath("EmptyConstructor");
 	public static final String PAYABLE_CONSTRUCTOR = bytecodePath("PayableConstructor");
@@ -119,7 +115,6 @@ public class ContractResources {
 	public static final String ERC_20_CONTRACT = bytecodePath("ERC20Contract");
 	public static final String NESTED_ERC_20_CONTRACT = bytecodePath("NestedERC20Contract");
 	public static final String ERC_721_CONTRACT = bytecodePath("ERC721Contract");
-
 	public static final String CREATE2_FACTORY_PATH = bytecodePath("Create2Factory");
 	public static final String SALTING_CREATOR_FACTORY_PATH = bytecodePath("SaltingCreatorFactory");
 	public static final String ADDRESS_VAL_RETURNER_PATH = bytecodePath("AddressValueRet");
@@ -132,7 +127,15 @@ public class ContractResources {
 	public static final String OUTER_CREATOR_PATH = bytecodePath("OuterCreator");
 	public static final String VARIOUS_CREATE2_CALLS_PATH = bytecodePath("VariousCreate2Calls");
 	public static final String EMIT_BLOCKTIME_PATH = bytecodePath("EmitBlockTimestamp");
+	public static final String TOY_MAKER_PATH = bytecodePath("ToyMaker");
 
+	public static final String TOYMAKER_MAKE_ABI = "{\"inputs\":[],\"name\":\"make\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String INDIRECT_CREATE_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"makerAddress\",\"type\":\"address\"}],\"name\":\"makeOpaquely\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String EMIT_TIME_ABI = "{\"inputs\":[],\"name\":\"logNow\",\"outputs\":[]," +
 			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String VARIOUS_CALLS_NORMAL_ABI = "{\"inputs\":[],\"name\":\"makeNormalCall\"," +

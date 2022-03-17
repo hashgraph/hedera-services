@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<groupId>com.hedera.hashgraph</groupId>
 	<artifactId>hedera-services</artifactId>
@@ -158,7 +159,7 @@
 		<maven-license.version>2.0.0</maven-license.version>
 		<maven-compiler.version>3.10.0</maven-compiler.version>
 		<maven-surefire.version>3.0.0-M5</maven-surefire.version>
-		<maven-dependency.version>3.2.0</maven-dependency.version>
+		<maven-dependency.version>3.3.0</maven-dependency.version>
 		<maven-versions.version>2.9.0</maven-versions.version>
 		<maven-javadoc.version>3.3.2</maven-javadoc.version>
 
@@ -179,11 +180,11 @@
 		<log4j.version>2.17.2</log4j.version>
 		<netty.version>4.1.66.Final</netty.version>
 		<protobuf-java.version>3.19.4</protobuf-java.version>
-		<swirlds.version>0.23.1</swirlds.version>
+		<swirlds.version>0.24.0</swirlds.version>
 		<!-- Test dependency properties in alphabetical order -->
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit5.version>5.8.2</junit5.version>
-		<mockito.version>4.3.1</mockito.version>
+		<mockito.version>4.4.0</mockito.version>
 		<awaitility.version>4.1.1</awaitility.version>
 
 		<!-- SonarCloud properties -->

@@ -23,7 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -123,7 +123,7 @@ class DissociatePrecompilesTest {
 	@Mock
 	private Iterator<MessageFrame> dequeIterator;
 	@Mock
-	private TxnAwareSoliditySigsVerifier sigsVerifier;
+	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
@@ -206,7 +206,7 @@ class DissociatePrecompilesTest {
 		givenFrameContext();
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
-		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr, aliases))
+		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
 				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
 		given(decoder.decodeDissociate(eq(pretendArguments), any())).willReturn(dissociateToken);
@@ -239,7 +239,7 @@ class DissociatePrecompilesTest {
 		givenLedgers();
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
-		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr, aliases)).willReturn(true);
+		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers)).willReturn(true);
 		given(accountStoreFactory.newAccountStore(
 				validator, dynamicProperties, accounts
 		)).willReturn(accountStore);
@@ -286,7 +286,7 @@ class DissociatePrecompilesTest {
 				.willReturn(multiDissociateOp);
 		given(syntheticTxnFactory.createDissociate(multiDissociateOp))
 				.willReturn(mockSynthBodyBuilder);
-		given(sigsVerifier.hasActiveKey(accountAddr, contractAddr, contractAddr, senderAddr, aliases))
+		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
 				.willReturn(true);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
 				.willReturn(accountStore);

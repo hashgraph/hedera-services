@@ -22,7 +22,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -136,7 +136,7 @@ class ERC20PrecompilesTest {
     @Mock
     private MessageFrame frame;
     @Mock
-    private TxnAwareSoliditySigsVerifier sigsVerifier;
+    private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock
     private AccountRecordsHistorian recordsHistorian;
     @Mock
@@ -299,8 +299,8 @@ class ERC20PrecompilesTest {
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
-        given(sigsVerifier.hasActiveKey(any(), any(), any(), any(), any())).willReturn(true);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(true, true);
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true, true);
 
         given(hederaTokenStoreFactory.newHederaTokenStore(
                 ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
@@ -550,8 +550,8 @@ class ERC20PrecompilesTest {
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
-        given(sigsVerifier.hasActiveKey(any(), any(), any(), any(), any())).willReturn(true);
-        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(any(), any(), any(), any(), any())).willReturn(true, true);
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true, true);
 
         given(hederaTokenStoreFactory.newHederaTokenStore(
                 ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
@@ -614,7 +614,7 @@ class ERC20PrecompilesTest {
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER);
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
-        given(sigsVerifier.hasActiveKey(any(), any(), any(), any(), any())).willReturn(false);
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(false);
         given(hederaTokenStoreFactory.newHederaTokenStore(
                 ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);

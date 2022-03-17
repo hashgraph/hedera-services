@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -55,6 +56,7 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
@@ -64,6 +66,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
@@ -246,7 +250,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		final var that = new ServicesState(this);
 		if (metadata != null) {
-			metadata.app().workingState().updateChildrenFrom(that);
+			metadata.app().workingState().updateFrom(that);
 		}
 
 		return that;
@@ -254,7 +258,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	/* --- Archivable --- */
 	@Override
-	public void archive() {
+	public synchronized void archive() {
 		if (metadata != null) {
 			metadata.archive();
 		}
@@ -269,7 +273,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	/* --- MerkleNode --- */
 	@Override
-	protected void onRelease() {
+	protected synchronized void onRelease() {
 		if (metadata != null) {
 			metadata.release();
 		}
@@ -280,6 +284,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		var address = addressBook().getAddress(nodeId.getId());
 		var memo = address.getMemo();
 		return parseAccount(memo);
+	}
+
+	public boolean isInitialized() {
+		return metadata != null;
 	}
 
 	public Instant getTimeOfLastHandledTxn() {
@@ -300,6 +308,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			ctxSummary = networkCtx().summarized();
 		}
 		log.info(ctxSummary);
+	}
+
+	public Map<ByteString, EntityNum> aliases() {
+		Objects.requireNonNull(metadata, "Cannot get aliases from an uninitialized state");
+		return metadata.aliases();
 	}
 
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
@@ -396,8 +409,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			}
 			networkCtx().setStateVersion(CURRENT_VERSION);
 
-			metadata = new StateMetadata(app);
-			app.workingState().updateChildrenFrom(this);
+			metadata = new StateMetadata(app, new FCHashMap<>());
+			// This updates the working state accessor with our children
 			app.initializationFlow().runWith(this);
 
 			// Ensure the prefetch queue is created and thread pool is active instead of waiting

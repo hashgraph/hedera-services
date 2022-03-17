@@ -26,8 +26,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.ValidationUtils;
 import com.hedera.services.fees.FeeCalculator;
@@ -38,7 +38,6 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
-import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -195,7 +194,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final EncodingFacade encoder;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
-	private final SoliditySigsVerifier sigsVerifier;
+	private final EvmSigsVerifier sigsVerifier;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final AccountRecordsHistorian recordsHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
@@ -288,7 +287,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final GasCalculator gasCalculator,
 			final SigImpactHistorian sigImpactHistorian,
 			final AccountRecordsHistorian recordsHistorian,
-			final TxnAwareSoliditySigsVerifier sigsVerifier,
+			final TxnAwareEvmSigsVerifier sigsVerifier,
 			final DecodingFacade decoder,
 			final EncodingFacade encoder,
 			final SyntheticTxnFactory syntheticTxnFactory,
@@ -1561,21 +1560,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final ContractActivationTest activationTest
 	) {
 		final var aliases = updater.aliases();
-
 		final var recipient = aliases.resolveForEvm(frame.getRecipientAddress());
-		final var contract = aliases.resolveForEvm(frame.getContractAddress());
 		final var sender = aliases.resolveForEvm(frame.getSenderAddress());
 
 		if (isDelegateCall(frame) && !isToken(frame, recipient)) {
-			return activationTest.apply(target, recipient, contract, recipient, aliases);
+			return activationTest.apply(true, target, recipient, ledgers);
 		} else {
 			final var parentFrame = getParentFrame(frame);
-			if (parentFrame.isPresent() && isDelegateCall(parentFrame.get())) {
-				final var parentRecipient = parentFrame.get().getRecipientAddress();
-				return activationTest.apply(target, parentRecipient, contract, sender, aliases);
-			} else {
-				return activationTest.apply(target, recipient, contract, sender, aliases);
-			}
+			return activationTest.apply(parentFrame.isPresent() && isDelegateCall(parentFrame.get()), target, sender, ledgers);
 		}
 	}
 
@@ -1603,24 +1595,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
+		 * @param isDelegateCall
+		 * 		a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
 		 * @param target
 		 * 		an address with an implicit key understood by this implementation
-		 * @param recipient
-		 * 		the idealized account receiving the call operation
-		 * @param contract
-		 * 		the idealized account whose code is being executed
 		 * @param activeContract
 		 * 		the contract address that can activate a contract or delegatable contract key
-		 * @param aliases
-		 * 		the current contract aliases in effect
+		 * @param worldLedgers
+		 * 		the worldLedgers representing current state
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(
+				boolean isDelegateCall,
 				Address target,
-				Address recipient,
-				Address contract,
 				Address activeContract,
-				ContractAliases aliases);
+				WorldLedgers worldLedgers);
 	}
 
 	private Optional<MessageFrame> getParentFrame(final MessageFrame currentFrame) {

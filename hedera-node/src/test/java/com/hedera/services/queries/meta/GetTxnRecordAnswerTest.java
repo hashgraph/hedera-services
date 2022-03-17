@@ -109,7 +109,7 @@ class GetTxnRecordAnswerTest {
 		nodeProps = mock(NodeLocalProperties.class);
 		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
-		view = new StateView(null, null, children, null);
+		view = new StateView(null, children, null);
 		optionValidator = mock(OptionValidator.class);
 		answerFunctions = mock(AnswerFunctions.class);
 

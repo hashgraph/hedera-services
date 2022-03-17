@@ -220,7 +220,8 @@ public class RenewalHelper {
 		final var treasuryId = EntityId.fromGrpcAccountId(treasury);
 		displacements.getRight().add(new CurrencyAdjustments(
 				expiredFirst ? new long[] { -balance, +balance } : new long[] { +balance, -balance },
-				expiredFirst ? List.of(expiredId, treasuryId) : List.of(treasuryId, expiredId)
+				expiredFirst ? new long[] { expiredId.num(), treasuryId.num() } : new long[] { treasuryId.num(),
+						expiredId.num() }
 		));
 
 		final var treasuryRel = fromAccountTokenRel(treasury, scopedToken);
