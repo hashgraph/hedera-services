@@ -90,6 +90,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -126,24 +127,6 @@ class SignedTxnAccessorTest {
 					.setEd25519(ByteString.copyFromUtf8("econd")))
 			.build();
 
-	@Test
-	void unsupportedOpsThrowByDefault() {
-		final var subject = mock(SignedTxnAccessor.class);
-
-		doCallRealMethod().when(subject).getPkToSigsFn();
-		doCallRealMethod().when(subject).baseUsageMeta();
-		doCallRealMethod().when(subject).availXferUsageMeta();
-		doCallRealMethod().when(subject).availSubmitUsageMeta();
-		doCallRealMethod().when(subject).getSpanMap();
-		doCallRealMethod().when(subject).getSpanMapAccessor();
-
-		assertThrows(UnsupportedOperationException.class, subject::getPkToSigsFn);
-		assertThrows(UnsupportedOperationException.class, subject::baseUsageMeta);
-		assertThrows(UnsupportedOperationException.class, subject::availXferUsageMeta);
-		assertThrows(UnsupportedOperationException.class, subject::availSubmitUsageMeta);
-		assertThrows(UnsupportedOperationException.class, subject::getSpanMap);
-		assertThrows(UnsupportedOperationException.class, subject::getSpanMapAccessor);
-	}
 
 //	@Test
 //	@SuppressWarnings("uncheckeed")
@@ -166,7 +149,7 @@ class SignedTxnAccessorTest {
 	void uncheckedPropagatesIaeOnNonsense() {
 		final var nonsenseTxn = buildTransactionFrom(ByteString.copyFromUtf8("NONSENSE"));
 
-		assertThrows(IllegalArgumentException.class, () -> SignedTxnAccessor.uncheckedFrom(nonsenseTxn));
+		assertThrows(IllegalStateException.class, () -> SignedTxnAccessor.uncheckedFrom(nonsenseTxn));
 	}
 
 	@Test
@@ -486,7 +469,7 @@ class SignedTxnAccessorTest {
 	void throwsOnUnsupportedCallToGetScheduleRef() {
 		final var subject = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
 
-		assertThrows(UnsupportedOperationException.class, subject::getScheduleRef);
+		assertDoesNotThrow(subject::getScheduleRef);
 	}
 
 	@Test

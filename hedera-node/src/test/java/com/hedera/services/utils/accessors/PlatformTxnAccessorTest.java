@@ -190,7 +190,7 @@ class PlatformTxnAccessorTest {
 		SwirldTransaction platformTxn = new SwirldTransaction(NONSENSE);
 
 		// expect:
-		assertThrows(InvalidProtocolBufferException.class,
+		assertThrows(IllegalStateException.class,
 				() -> new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn));
 	}
 

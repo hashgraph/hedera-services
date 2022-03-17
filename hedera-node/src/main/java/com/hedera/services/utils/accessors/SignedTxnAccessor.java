@@ -126,7 +126,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 			return new SignedTxnAccessor(validSignedTxn);
 		} catch (Exception illegal) {
 			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
-			throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
+			throw new IllegalStateException("Argument 'validSignedTxn' must be a valid signed txn");
 		}
 	}
 
@@ -135,7 +135,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 			return new SignedTxnAccessor(signedTxnWrapperBytes);
 		} catch (Exception illegal) {
 			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
-			throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
+			throw new IllegalStateException("Argument 'validSignedTxn' must be a valid signed txn");
 		}
 	}
 

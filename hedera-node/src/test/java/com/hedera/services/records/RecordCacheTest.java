@@ -71,6 +71,7 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
 
 @ExtendWith(MockitoExtension.class)
 class RecordCacheTest {
@@ -305,6 +306,7 @@ class RecordCacheTest {
 		final var effectivePayer = IdUtils.asAccount("0.0.3");
 		final var effectiveScheduleID = IdUtils.asSchedule("0.0.123");
 		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
+		willCallRealMethod().given(factory).triggeredTxn(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
 
 		final var accessor = factory.triggeredTxn(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
 		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()

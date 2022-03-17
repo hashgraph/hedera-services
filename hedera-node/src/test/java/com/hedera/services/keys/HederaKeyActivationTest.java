@@ -230,7 +230,7 @@ class HederaKeyActivationTest {
 
 	@Test
 	void throwsIfNoSigMetaHasBeenRationalized() {
-		final var accessor = mock(TxnAccessor.class);
+		final var accessor = mock(PlatformTxnAccessor.class);
 
 		assertThrows(IllegalArgumentException.class,
 				() -> HederaKeyActivation.payerSigIsActive(accessor, ONLY_IF_SIG_IS_VALID));
