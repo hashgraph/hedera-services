@@ -1,4 +1,4 @@
-package com.hedera.services.state;
+package com.hedera.services.context.primitives;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.ImmutableStateChildren;
@@ -86,7 +86,7 @@ public class SignedStateViewFactory {
 	 *
 	 * @return last completed signed state
 	 */
-	private ServicesState getSignedState() {
+	ServicesState getSignedState() {
 		try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLastCompleteSwirldState()) {
 			signedState = wrapper.get();
 			if (signedState == null) {
@@ -96,6 +96,7 @@ public class SignedStateViewFactory {
 		}
 	}
 
+	/* --- only for unit tests ---*/
 	public Instant getLatestSigningTime() {
 		return latestSigningTime;
 	}

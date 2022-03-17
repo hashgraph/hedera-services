@@ -23,6 +23,7 @@ package com.hedera.services.sigs.order;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.Rationalization;
@@ -30,7 +31,6 @@ import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.StateChildrenSigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenMetaUtils;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
-import com.hedera.services.state.SignedStateViewFactory;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
@@ -128,22 +128,6 @@ public class SigReqsManager {
 	 */
 	private boolean tryExpandFromSignedState(final PlatformTxnAccessor accessor) {
 		final SignedStateViewFactory factory = new SignedStateViewFactory(platform);
-		final var status = factory.tryToUpdate(signedChildren);
-		if (!status) {
-			return status;
-		}
-		expandFromSignedState(accessor);
-		return true;
-	}
-
-	/**
-	 * Tries to expand the platform signatures linked to a transaction from a provided signed state that
-	 * cannot have been signed before the given consensus time. Returns whether the expansion attempt was
-	 * successful. (If this fails, we will next try to expand signatures from the working state.)
-	 *
-	 * @param accessor
-	 */
-	private void expandFromSignedState(final PlatformTxnAccessor accessor) {
 		/* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
 		 * Because event intake is single-threaded, there's no risk of another thread getting
 		 * inconsistent results while we are doing this. Also, note that MutableStateChildren
@@ -153,6 +137,22 @@ public class SigReqsManager {
 		 * reconnect the latest signed state may have never received an init() call. In that
 		 * case, any "rebuilt" children of the ServicesState will be null. (This isn't a
 		 * problem for any existing SigRequirements code, however.) */
+		final var status = factory.tryToUpdate(signedChildren);
+		if (!status) {
+			return status;
+		}
+		expandFromSignedState(accessor);
+		return true;
+	}
+
+	/**
+	 * Tries to expand the platform signatures linked to a transaction from latest completed signed state that
+	 * cannot have been signed before the given consensus time. Returns whether the expansion attempt was
+	 * successful. (If this fails, we will next try to expand signatures from the working state.)
+	 *
+	 * @param accessor
+	 */
+	private void expandFromSignedState(final PlatformTxnAccessor accessor) {
 		ensureSignedStateSigReqsIsConstructed();
 		expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
 	}
