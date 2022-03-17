@@ -843,6 +843,51 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 	}
 
+	/**
+	 * Executes the logic of creating a token from {@link HTSPrecompiledContract}.
+	 *
+	 * <p>When a token create call is received, the execution can follow one of the following 4 scenarios:</p>
+	 * <ol>
+	 *     <li>The calling smart contract has sent a corrupt input to the {@link HTSPrecompiledContract} (e.g.
+	 *     passing random bytes through the {@code encode()} Solidity method), which cannot be decoded to a valid
+	 *     {@link TokenCreateWrapper}.
+	 *     		<ul>
+	 *     		 	<li><b>result</b> - (TBD) the {@link DecodingFacade} throws an exception and null is returned
+	 *     		 	from the {@link HTSPrecompiledContract}</li>
+	 *     		 	<li><b>gas cost</b> - TBD</li>
+	 *     		</ul>
+	 *     	</li>
+	 *     <li>The decoding succeeds, we create a valid {@link TokenCreateWrapper}, but we cannot translate it to a
+	 *     valid token create {@link TransactionBody}. This comes from <b>difference in the design of the Solidity
+	 *     function interface and the HAPI API (protobufs)</b>
+	 *     		<ul>
+  	 *     		 	<li><b>result</b> - {@link MessageFrame}'s revertReason is set to the specific error and null is
+	 *     		 	returned from the {@link HTSPrecompiledContract}</li>
+	 * 	    		<li><b>gas cost</b> - TBD</li>
+	 *     		</ul>
+	 *     	</li>
+	 *     <li>The decoding succeeds, we create a valid {@link TokenCreateWrapper}, we successfully translate it to a
+	 *     valid token create {@link TransactionBody}. However, the {@link CreateChecks} validations find an input
+	 *     error.
+	 *     		<ul>
+	 *     		 	<li><b>result</b> - a child {@link ExpirableTxnRecord} is created, containing the error response
+	 *     		 	code. (from the point of view of the EVM this is a successful precompile call, however, from a
+	 *     		 	Hedera's perspective there has been a problem during the execution)
+	 *     		 	</li>
+	 * 	    		<li><b>gas cost</b> - TBD</li>
+	 *     		</ul>
+	 *     	</li>
+	 *     <li>The decoding succeeds, we create a valid {@link TokenCreateWrapper}, we successfully translate it to a
+	 *     valid token create {@link TransactionBody}, the {@link CreateChecks} token create validations pass and the
+	 *     whole execution flow succeeds.
+	 *     		<ul>
+	 *     		 	<li><b>result</b> - a child {@link ExpirableTxnRecord} is created, containing the successful
+	 *     		 	response code and the ID of the newly created token.</li>
+	 * 	    		<li><b>gas cost</b> - TBD</li>
+	 *     		</ul>
+	 *     	</li>
+	 * </ol>
+	 */
 	private class TokenCreatePrecompile implements Precompile {
 		protected TokenCreateWrapper tokenCreateOp;
 
@@ -901,13 +946,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					transactionBody.getTokenCreation());
 		}
 
-		/* --- Due to differences in Solidity and protobuf interfaces, we need custom checks on the input  --- */
+		/* --- Due to differences in Solidity and protobuf interfaces, perform custom checks on the input  --- */
 		private void verifySolidityInput() {
 
 			/*
 			 * Verify initial supply and decimals fall withing the allowed ranges of the types
 			 * they convert to (long and int, respectively), since in the Solidity interface
-			 * we've specified them as uint256s and illegal values may be passed as input
+			 * they are specified as uint256s and illegal values may be passed as input.
 			 */
 			if (tokenCreateOp.isFungible()) {
 				validateTrue(tokenCreateOp.getInitSupply().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 1,
@@ -917,7 +962,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			}
 
 			/*
-			 * Checks keys validity. The `TokenKey` struct in `IHederaTokenService.sol`
+			 * Check keys validity. The `TokenKey` struct in `IHederaTokenService.sol`
 			 * defines a `keyType` bit field, which smart contract developers will use to
 			 * set the type of key the `KeyValue` field will be used for. For example, if the
 			 * `keyType` field is set to `00000001`, then the key value will be used for adminKey.

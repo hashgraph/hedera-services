@@ -102,6 +102,18 @@ public interface EvmSigsVerifier {
 	boolean hasActiveSupplyKey(
 			boolean isDelegateCall, Address token, Address activeContract, WorldLedgers worldLedgers);
 
-	//TODO: add javadoc
+	/**
+	 * Determines if the supplied key is active in the context of the transaction, i.e. has signed
+	 * the transaction, given the cryptographic signatures from the
+	 * {@link com.hederahashgraph.api.proto.java.SignatureMap} that could be verified asynchronously.
+	 *
+	 * <p><b>IMPORTANT:</b> The supplied key <b>must be of one of the supported crypto keys</b> and not a contractID,
+	 * delegatableContractID or their corresponding alias keys. If a non-crypto key is specified, the result will
+	 * always be false.
+	 *
+	 * @param key
+	 *  	the key to test
+	 * @return whether the key has signed the transaction
+	 */
 	boolean cryptoKeyIsActive(JKey key);
 }
