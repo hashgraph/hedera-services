@@ -725,6 +725,100 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec transferErc20TokenAliasedSender() {
+		final var aliasedTransferTxn = "aliasedTransferTxn";
+		final var addLiquidityTxn = "addLiquidityTxn";
+		final var create2Txn = "create2Txn";
+
+		final var ACCOUNT_A = "AccountA";
+		final var ACCOUNT_B = "AccountB";
+		final var TOKEN_A = "TokenA";
+
+		final var ALIASED_TRANSFER = "aliasedTransfer";
+		final byte[][] ALIASED_ADDRESS = new byte[1][1];
+
+		final AtomicReference<String> childMirror = new AtomicReference<>();
+		final AtomicReference<String> childEip1014 = new AtomicReference<>();
+
+		return defaultHapiSpec("ERC_20_TRANSFER_ALIASED_SENDER")
+				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(OWNER),
+						cryptoCreate(ACCOUNT),
+						cryptoCreate(ACCOUNT_A).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
+						cryptoCreate(ACCOUNT_B).balance(ONE_MILLION_HBARS),
+						tokenCreate("TokenA")
+								.adminKey(MULTI_KEY)
+								.initialSupply(10000)
+								.treasury(ACCOUNT_A),
+						tokenAssociate(ACCOUNT_B, TOKEN_A),
+						fileCreate(ALIASED_TRANSFER),
+						updateLargeFile(OWNER, ALIASED_TRANSFER,
+								extractByteCode(ContractResources.ALIASED_TRANSFER_CONTRACT)),
+						contractCreate(ALIASED_TRANSFER)
+								.bytecode(ALIASED_TRANSFER)
+								.gas(300_000),
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										contractCall(ALIASED_TRANSFER,
+												ContractResources.ALIASED_TRANSFER_DEPLOY_WITH_CREATE2_ABI,
+												asAddress(spec.registry().getTokenID(TOKEN_A)))
+												.exposingResultTo(result -> {
+													final var res = (byte[])result[0];
+													ALIASED_ADDRESS[0] = res;
+												})
+												.payingWith(ACCOUNT)
+												.alsoSigningWithFullPrefix(MULTI_KEY)
+												.via(create2Txn).gas(GAS_TO_OFFER)
+												.hasKnownStatus(SUCCESS)
+								)
+						)
+				).when(
+						captureChildCreate2MetaFor(
+								2, 0,
+								"setup", create2Txn, childMirror, childEip1014),
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										contractCall(ALIASED_TRANSFER,
+												ContractResources.ALIASED_GIVE_TOKENS_TO_OPERATOR_ABI,
+												asAddress(spec.registry().getTokenID(TOKEN_A)),
+												asAddress(spec.registry().getAccountID(ACCOUNT_A)),
+												1500)
+												.payingWith(ACCOUNT)
+												.alsoSigningWithFullPrefix(MULTI_KEY)
+												.via(addLiquidityTxn).gas(GAS_TO_OFFER)
+												.hasKnownStatus(SUCCESS)
+								)
+						),
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										contractCall(ALIASED_TRANSFER,
+												ContractResources.ALIASED_TRANSFER_ABI,
+												asAddress(spec.registry().getAccountID(ACCOUNT_B)),
+												1000)
+												.payingWith(ACCOUNT)
+												.alsoSigningWithFullPrefix(MULTI_KEY)
+												.via(aliasedTransferTxn).gas(GAS_TO_OFFER)
+												.hasKnownStatus(SUCCESS)
+								))
+				).then(
+						sourcing(
+								() -> getContractInfo(asContractString(
+										contractIdFromHexedMirrorAddress(childMirror.get())))
+										.hasToken(ExpectedTokenRel.relationshipWith(TOKEN_A).balance(500))
+										.logged()
+						),
+						getAccountBalance(ACCOUNT_B).hasTokenBalance(TOKEN_A, 1000),
+						getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_A, 8500)
+				);
+	}
+
 	private HapiApiSpec erc20AllowanceReturnsFails() {
 		final var theSpender = "spender";
 		final var allowanceTxn = "allowanceTxn";
