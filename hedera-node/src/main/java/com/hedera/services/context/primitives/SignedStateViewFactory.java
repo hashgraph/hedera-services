@@ -29,6 +29,8 @@ import com.hedera.services.state.migration.StateVersions;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -37,9 +39,11 @@ import java.util.function.Consumer;
  * Factory that provides view of last completed signed state and its state children.
  * Provides access to get/update to the latest signed state children from platform.
  */
+@Singleton
 public class SignedStateViewFactory {
 	private final Platform platform;
 
+	@Inject
 	public SignedStateViewFactory(Platform platform) {
 		this.platform = platform;
 	}

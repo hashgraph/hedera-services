@@ -69,6 +69,7 @@ public class SigReqsManager {
 	private final SignatureWaivers signatureWaivers;
 	private final MutableStateChildren workingState;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final SignedStateViewFactory stateViewFactory;
 	// Convenience wrapper for the latest state children received from Platform#getLastCompleteSwirldState()
 	private final MutableStateChildren signedChildren = new MutableStateChildren();
 
@@ -82,15 +83,20 @@ public class SigReqsManager {
 	private SigRequirements workingSigReqs;
 
 	@Inject
-	public SigReqsManager(final Platform platform, final FileNumbers fileNumbers, final ExpansionHelper expansionHelper,
-			final SignatureWaivers signatureWaivers, final MutableStateChildren workingState,
-			final GlobalDynamicProperties dynamicProperties) {
+	public SigReqsManager(final Platform platform,
+			final FileNumbers fileNumbers,
+			final ExpansionHelper expansionHelper,
+			final SignatureWaivers signatureWaivers,
+			final MutableStateChildren workingState,
+			final GlobalDynamicProperties dynamicProperties,
+			final SignedStateViewFactory stateViewFactory) {
 		this.platform = platform;
 		this.fileNumbers = fileNumbers;
 		this.workingState = workingState;
 		this.expansionHelper = expansionHelper;
 		this.signatureWaivers = signatureWaivers;
 		this.dynamicProperties = dynamicProperties;
+		this.stateViewFactory = stateViewFactory;
 	}
 
 	/**
@@ -128,7 +134,6 @@ public class SigReqsManager {
 	 * @return whether the expansion attempt succeeded
 	 */
 	private boolean tryExpandFromSignedState(final PlatformTxnAccessor accessor) {
-		final SignedStateViewFactory factory = new SignedStateViewFactory(platform);
 		/* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
 		 * Because event intake is single-threaded, there's no risk of another thread getting
 		 * inconsistent results while we are doing this. Also, note that MutableStateChildren
@@ -139,7 +144,7 @@ public class SigReqsManager {
 		 * case, any "rebuilt" children of the ServicesState will be null. (This isn't a
 		 * problem for any existing SigRequirements code, however.) */
 		try {
-			factory.tryToUpdateToLatestSignedChildren(signedChildren);
+			stateViewFactory.tryToUpdateToLatestSignedChildren(signedChildren);
 		} catch (NoValidSignedStateException ignore) {
 			return false;
 		}

@@ -24,8 +24,8 @@ import com.hedera.services.ServicesState;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -56,8 +56,6 @@ class SigReqsManagerTest {
 	@Mock
 	private FileNumbers fileNumbers;
 	@Mock
-	private AliasManager aliasManager;
-	@Mock
 	private SignatureWaivers signatureWaivers;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
@@ -82,14 +80,21 @@ class SigReqsManagerTest {
 	@Mock
 	private ServicesState nextSignedState;
 
+	private SignedStateViewFactory stateViewFactory;
+
 	private SigReqsManager subject;
 
 	@BeforeEach
 	void setUp() {
+		stateViewFactory = new SignedStateViewFactory(platform);
 		subject = new SigReqsManager(
 				platform,
-				fileNumbers, expansionHelper,
-				signatureWaivers, workingState, dynamicProperties);
+				fileNumbers,
+				expansionHelper,
+				signatureWaivers,
+				workingState,
+				dynamicProperties,
+				stateViewFactory);
 		given(accessor.getPkToSigsFn()).willReturn(pubKeyToSigBytes);
 	}
 
