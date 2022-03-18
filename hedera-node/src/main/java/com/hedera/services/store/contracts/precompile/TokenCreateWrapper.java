@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -30,6 +31,7 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.codec.DecoderException;
 
@@ -303,18 +305,23 @@ final class TokenCreateWrapper {
 		}
 
 		Key asGrpc() {
-			if (shouldInheritAccountKey) {
-				return this.inheritedKey;
-			} else if (contractID != null) {
-				return Key.newBuilder().setContractID(contractID).build();
-			} else if (ed25519.length == JEd25519Key.ED25519_BYTE_LENGTH) {
-				return Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519)).build();
-			} else if (ecdsSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
-				return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsSecp256k1)).build();
-			} else if (delegatableContractID != null) {
-				return Key.newBuilder().setContractID((delegatableContractID)).build();
-			} else {
-				return Key.newBuilder().build();
+			switch (keyValueType) {
+				case INHERIT_ACCOUNT_KEY -> {
+					return this.inheritedKey;
+				}
+				case CONTRACT_ID -> {
+					return Key.newBuilder().setContractID(contractID).build();
+				}
+				case ED25519 -> {
+					return Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519)).build();
+				}
+				case ECDS_SECPK256K1 -> {
+					return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsSecp256k1)).build();
+				}
+				case DELEGATABLE_CONTRACT_ID -> {
+					return Key.newBuilder().setDelegatableContractId(delegatableContractID).build();
+				}
+				default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
 			}
 		}
 	}
