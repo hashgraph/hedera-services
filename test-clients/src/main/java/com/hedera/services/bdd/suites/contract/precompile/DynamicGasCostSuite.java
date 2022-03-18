@@ -200,16 +200,16 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-//						create2FactoryWorksAsExpected(),
-//						canDeleteViaAlias(),
-//						cannotSelfDestructToMirrorAddress(),
-//						priorityAddressIsCreate2ForStaticHapiCalls(),
-//						priorityAddressIsCreate2ForInternalMessages(),
-//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-//						canUseAliasesInPrecompilesAndContractKeys(),
-//						inlineCreateCanFailSafely(),
-//						inlineCreate2CanFailSafely(),
-//						allLogOpcodesResolveExpectedContractId(),
+						create2FactoryWorksAsExpected(),
+						canDeleteViaAlias(),
+						cannotSelfDestructToMirrorAddress(),
+						priorityAddressIsCreate2ForStaticHapiCalls(),
+						priorityAddressIsCreate2ForInternalMessages(),
+						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+						canUseAliasesInPrecompilesAndContractKeys(),
+						inlineCreateCanFailSafely(),
+						inlineCreate2CanFailSafely(),
+						allLogOpcodesResolveExpectedContractId(),
 						eip1014AliasIsPriorityInErcOwnerPrecompile(),
 				}
 		);
