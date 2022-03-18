@@ -82,6 +82,14 @@ class DecodingFacadeTest {
 
 	private static final Bytes TRANSFER_FROM_NON_FUNGIBLE_INPUT = Bytes.fromHexString("0x23b872dd00000000000000000000000000000000000000000000000000000000000003e900000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
 
+	private static final Bytes GET_APPROVED_INPUT = Bytes.fromHexString("0x081812fc0000000000000000000000000000000000000000000000000000000000000001");
+
+	public static final Bytes ALLOWANCE_INPUT = Bytes.fromHexString("0xdd62ed3e00000000000000000000000000000000000000000000000000000000000006010000000000000000000000000000000000000000000000000000000000000602");
+
+	public static final Bytes SET_APPROVAL_FOR_ALL_INPUT = Bytes.fromHexString("0xa22cb46500000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000001");
+
+	public static final Bytes IS_APPROVED_FOR_ALL_INPUT = Bytes.fromHexString("0xe985e9c5000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
+
 	@Test
 	void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
 		final var decodedInput =
@@ -136,6 +144,38 @@ class DecodingFacadeTest {
 
 		assertEquals(1, decodedInput.tokenId());
 	}
+
+	@Test
+	void decodeGetApprovedInput() {
+		final var decodedInput = subject.decodeGetApproved(GET_APPROVED_INPUT);
+
+		assertEquals(1, decodedInput.tokenId());
+	}
+
+	@Test
+	void decodeAllowanceInput() {
+		final var decodedInput = subject.decodeTokenAllowance(ALLOWANCE_INPUT, a -> a);
+
+		assertTrue(decodedInput.owner().getAccountNum() > 0);
+		assertTrue(decodedInput.spender().getAccountNum() > 0);
+	}
+
+	@Test
+	void decodeSetApprovalForAll() {
+		final var decodedInput = subject.decodeSetApprovalForAll(SET_APPROVAL_FOR_ALL_INPUT, a -> a);
+
+		assertTrue(decodedInput.to().getAccountNum() > 0);
+		assertTrue(decodedInput.approved());
+	}
+
+	@Test
+	void decodeIsApprovedForAll() {
+		final var decodedInput = subject.decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT, a -> a);
+
+		assertTrue(decodedInput.owner().getAccountNum() > 0);
+		assertTrue(decodedInput.operator().getAccountNum() > 0);
+	}
+
 
 	@Test
 	void decodeBalanceInput() {
