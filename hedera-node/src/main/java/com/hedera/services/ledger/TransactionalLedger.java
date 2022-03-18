@@ -507,7 +507,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 
 	private void flushPendingChanges() {
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
-			final var id = pendingChanges.ids(i);
+			final var id = pendingChanges.id(i);
 			final var cachedEntity = pendingChanges.entity(i);
 			final var entity = (cachedEntity == null) ? newEntity.get() : entities.getRef(id);
 			entities.put(id, finalized(id, entity, pendingChanges.changes(i)));

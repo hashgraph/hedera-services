@@ -62,7 +62,7 @@ class EntityChangeSetTest {
 			final TestAccount a,
 			final Map<TestAccountProperty, Object> p
 	) {
-		assertEquals(k, subject.ids(i));
+		assertEquals(k, subject.id(i));
 		assertEquals(a, subject.entity(i));
 		assertEquals(p, subject.changes(i));
 	}

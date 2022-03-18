@@ -52,7 +52,7 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
 			trackBalanceChangeIfAny(
-					pendingChanges.ids(i).getAccountNum(),
+					pendingChanges.id(i).getAccountNum(),
 					pendingChanges.entity(i),
 					pendingChanges.changes(i));
 		}

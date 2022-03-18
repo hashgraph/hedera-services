@@ -49,7 +49,7 @@ public class EntityChangeSet<K, A, P extends Enum<P> & BeanProperty<A>> {
 	private final List<A> entities = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
 	private final List<Map<P, Object>> changes = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
 
-	public K ids(final int i) {
+	public K id(final int i) {
 		return ids.get(i);
 	}
 

@@ -144,7 +144,7 @@ class TransactionalLedgerTest {
 		verify(testInterceptor).preview(captor.capture());
 		final var changes = captor.getValue();
 		assertEquals(1, changes.size());
-		assertEquals(1L, changes.ids(0));
+		assertEquals(1L, changes.id(0));
 		assertNull(changes.entity(0));
 		assertEquals(Map.of(OBJ, things, FLAG, true), changes.changes(0));
 		verify(backingTestAccounts).put(1L, expectedCommit);
@@ -176,7 +176,7 @@ class TransactionalLedgerTest {
 		verify(testInterceptor).preview(captor.capture());
 		final var changes = captor.getValue();
 		assertEquals(1, changes.size());
-		assertEquals(1L, changes.ids(0));
+		assertEquals(1L, changes.id(0));
 		assertSame(anAccount, changes.entity(0));
 		assertEquals(Map.of(OBJ, things, FLAG, true), changes.changes(0));
 		verify(backingTestAccounts).put(1L, expectedCommit);
