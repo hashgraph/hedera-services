@@ -91,11 +91,7 @@ public class SignedStateViewFactory {
 	 * @return
 	 */
 	public Optional<StateView> getLatestSignedStateView() {
-		final var stateChildren = tryToGetLatestSignedChildren();
-		if (stateChildren.isEmpty()) {
-			return Optional.empty();
-		}
-		return Optional.of(new StateView(scheduleStore, stateChildren.get(), networkInfo));
+		return tryToGetLatestSignedChildren().map(children -> new StateView(scheduleStore, children, networkInfo));
 	}
 
 	/**
@@ -137,7 +133,7 @@ public class SignedStateViewFactory {
 		try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLastCompleteSwirldState()) {
 			final var signedState = wrapper.get();
 			if (!isValid(signedState)) {
-				throw new NoValidSignedStateException("State children require an valid state to update");
+				throw new NoValidSignedStateException();
 			}
 			action.accept(signedState);
 		}
