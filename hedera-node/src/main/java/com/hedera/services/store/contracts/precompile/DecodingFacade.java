@@ -446,7 +446,7 @@ public class DecodingFacade {
 		return tokenCreateWrapper;
 	}
 
-	public TokenCreateWrapper decodeNonFungibleTokenCreate(final Bytes input, final UnaryOperator<byte[]> aliasResolver
+	public TokenCreateWrapper decodeNonFungibleCreate(final Bytes input, final UnaryOperator<byte[]> aliasResolver
 	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_CREATE_NON_FUNGIBLE_SELECTOR,
 				TOKEN_CREATE_NON_FUNGIBLE_DECODER);
@@ -455,7 +455,7 @@ public class DecodingFacade {
 				aliasResolver);
 	}
 
-	public TokenCreateWrapper decodeNonFungibleTokenCreateWithFees(
+	public TokenCreateWrapper decodeNonFungibleCreateWithFees(
 			final Bytes input,
 			final UnaryOperator<byte[]> aliasResolver
 	) {

@@ -140,6 +140,7 @@ import static com.hedera.services.store.contracts.precompile.PrecompilePricingUt
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
+import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
@@ -897,9 +898,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_CREATE_FUNGIBLE_TOKEN -> decoder.decodeFungibleCreate(input, aliasResolver);
 				case ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES ->
 						decoder.decodeFungibleCreateWithFees(input, aliasResolver);
-				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decoder.decodeNonFungibleTokenCreate(input, aliasResolver);
+				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decoder.decodeNonFungibleCreate(input, aliasResolver);
 				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES ->
-						decoder.decodeNonFungibleTokenCreateWithFees(input, aliasResolver);
+						decoder.decodeNonFungibleCreateWithFees(input, aliasResolver);
 				default -> throw new InvalidTransactionException(String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE,
 						"Create", functionId, input), FAIL_INVALID);
 			};
@@ -976,7 +977,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (!tokenKeys.isEmpty()) {
 				for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
 					final var tokenKey = tokenKeys.get(i);
-					validateTrue(isKeyValueValid(tokenKey.key()), "Token key must have exactly 1 key value set.");
+					validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, "Token key must have exactly 1 key " +
+							"value set.");
 					final var tokenKeyBitField = tokenKey.keyType().intValue();
 					validateTrue(tokenKeyBitField != 0, "Key passed without key type to apply it to.");
 					for (int j = i + 1; j < tokenKeysSize; j++) {
@@ -996,20 +998,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							"useCurrentTokenForPayment should be set!");
 				}
 			}
-		}
-
-		private boolean isKeyValueValid(final TokenCreateWrapper.KeyValueWrapper key) {
-			if (key.isShouldInheritAccountKeySet()) {
-				return !key.isEcdsSecp256k1KeySet() && !key.isDelegatableContractIdSet() && !key.isContractIDSet()
-						&& !key.isEd25519KeySet();
-			} else if (key.isContractIDSet()) {
-				return !key.isEcdsSecp256k1KeySet() && !key.isDelegatableContractIdSet() && !key.isEd25519KeySet();
-			} else if (key.isEd25519KeySet()) {
-				return !key.isEcdsSecp256k1KeySet() && !key.isDelegatableContractIdSet() ;
-			} else if (key.isEcdsSecp256k1KeySet()) {
-				return !key.isDelegatableContractIdSet();
-			}
-			return key.isDelegatableContractIdSet();
 		}
 
 		private boolean isFixedFeeValid(final TokenCreateWrapper.FixedFeeWrapper fixedFee) {
@@ -1033,20 +1021,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			//TODO: test the custom validation of ed25519 and ecdsasecpk256k1
 			var hasAdminKeySigned = false;
 			final var key = tokenKeyWrapper.key();
-			if (key.isContractIDSet()) {
-				hasAdminKeySigned = validateKey(frame, asTypedEvmAddress(key.getContractID()),
-						sigsVerifier::hasActiveKey);
-			} else if (key.isDelegatableContractIdSet()) {
-				hasAdminKeySigned = validateKey(frame, asTypedEvmAddress(key.getDelegatableContractID()),
-						sigsVerifier::hasActiveKey);
-			} else if (key.isShouldInheritAccountKeySet()) {
-				hasAdminKeySigned = validateKey(frame, senderAddress, sigsVerifier::hasActiveKey);
-			} else if (key.isEd25519KeySet()) {
-				hasAdminKeySigned = validateCryptoKey(new JEd25519Key(key.getEd25519Key()),
-						sigsVerifier::cryptoKeyIsActive);
-			} else if (key.isEcdsSecp256k1KeySet()) {
-				hasAdminKeySigned = validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsSecp256k1()),
-						sigsVerifier::cryptoKeyIsActive);
+			switch (key.getKeyValueType()) {
+				case INHERIT_ACCOUNT_KEY ->
+						hasAdminKeySigned = validateKey(frame, senderAddress, sigsVerifier::hasActiveKey);
+				case CONTRACT_ID ->
+						hasAdminKeySigned = validateKey(frame, asTypedEvmAddress(key.getContractID()),
+								sigsVerifier::hasActiveKey);
+				case DELEGATABLE_CONTRACT_ID ->
+						hasAdminKeySigned = validateKey(frame, asTypedEvmAddress(key.getDelegatableContractID()),
+								sigsVerifier::hasActiveKey);
+				case ED25519 ->
+						hasAdminKeySigned = validateCryptoKey(new JEd25519Key(key.getEd25519Key()),
+								sigsVerifier::cryptoKeyIsActive);
+				case ECDS_SECPK256K1 ->
+						hasAdminKeySigned = validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsSecp256k1()),
+								sigsVerifier::cryptoKeyIsActive);
 			}
 			return hasAdminKeySigned;
 		}

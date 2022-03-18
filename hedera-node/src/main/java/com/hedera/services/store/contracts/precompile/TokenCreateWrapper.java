@@ -204,6 +204,15 @@ final class TokenCreateWrapper {
 	}
 
 	static final class KeyValueWrapper {
+		enum KeyValueType {
+			INVALID_KEY,
+			INHERIT_ACCOUNT_KEY,
+			CONTRACT_ID,
+			DELEGATABLE_CONTRACT_ID,
+			ED25519,
+			ECDS_SECPK256K1
+		}
+
 		/* ---  Only 1 of these values should be set when the input is valid. --- */
 		private final boolean shouldInheritAccountKey;
 		private final ContractID contractID;
@@ -213,6 +222,8 @@ final class TokenCreateWrapper {
 
 		/* --- This field is populated only when `shouldInheritAccountKey` is true --- */
 		private Key inheritedKey;
+		
+		private KeyValueType keyValueType;
 
 		public KeyValueWrapper(
 				final boolean shouldInheritAccountKey,
@@ -226,25 +237,26 @@ final class TokenCreateWrapper {
 			this.ed25519 = ed25519;
 			this.ecdsSecp256k1 = ecdsSecp256k1;
 			this.delegatableContractID = delegatableContractID;
+			this.setKeyValueType();
 		}
 
-		boolean isContractIDSet() {
+		private boolean isContractIDSet() {
 			return contractID != null;
 		}
 
-		boolean isDelegatableContractIdSet() {
+		private boolean isDelegatableContractIdSet() {
 			return delegatableContractID != null;
 		}
 
-		boolean isShouldInheritAccountKeySet() {
+		private boolean isShouldInheritAccountKeySet() {
 			return shouldInheritAccountKey;
 		}
 
-		boolean isEd25519KeySet() {
+		private boolean isEd25519KeySet() {
 			return ed25519.length == JEd25519Key.ED25519_BYTE_LENGTH;
 		}
 
-		boolean isEcdsSecp256k1KeySet() {
+		private boolean isEcdsSecp256k1KeySet() {
 			return ecdsSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH;
 		}
 
@@ -252,20 +264,26 @@ final class TokenCreateWrapper {
 			this.inheritedKey = key;
 		}
 
-		Key asGrpc() {
-			if (shouldInheritAccountKey) {
-				return this.inheritedKey;
-			} else if (contractID != null) {
-				return Key.newBuilder().setContractID(contractID).build();
-			} else if (ed25519.length == JEd25519Key.ED25519_BYTE_LENGTH) {
-				return Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519)).build();
-			} else if (ecdsSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
-				return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsSecp256k1)).build();
-			} else if (delegatableContractID != null) {
-				return Key.newBuilder().setContractID((delegatableContractID)).build();
+		private void setKeyValueType() {
+			if (isShouldInheritAccountKeySet() && !isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet()
+					&& !isContractIDSet() && !isEd25519KeySet()) {
+				this.keyValueType = KeyValueType.INHERIT_ACCOUNT_KEY;
+			} else if (isContractIDSet() && !isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet()
+					&& !isEd25519KeySet()) {
+				this.keyValueType = KeyValueType.CONTRACT_ID;
+			} else if (isEd25519KeySet() && !isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet()) {
+				this.keyValueType = KeyValueType.ED25519;
+			} else if (isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet() ) {
+				this.keyValueType = KeyValueType.ECDS_SECPK256K1;
+			} else if (isDelegatableContractIdSet()) {
+				this.keyValueType = KeyValueType.DELEGATABLE_CONTRACT_ID;
 			} else {
-				return Key.newBuilder().build();
+				this.keyValueType = KeyValueType.INVALID_KEY;
 			}
+		}
+
+		KeyValueType getKeyValueType() {
+			return this.keyValueType;
 		}
 
 		ContractID getContractID() {
@@ -282,6 +300,22 @@ final class TokenCreateWrapper {
 
 		byte[] getEcdsSecp256k1() {
 			return this.ecdsSecp256k1;
+		}
+
+		Key asGrpc() {
+			if (shouldInheritAccountKey) {
+				return this.inheritedKey;
+			} else if (contractID != null) {
+				return Key.newBuilder().setContractID(contractID).build();
+			} else if (ed25519.length == JEd25519Key.ED25519_BYTE_LENGTH) {
+				return Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519)).build();
+			} else if (ecdsSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
+				return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsSecp256k1)).build();
+			} else if (delegatableContractID != null) {
+				return Key.newBuilder().setContractID((delegatableContractID)).build();
+			} else {
+				return Key.newBuilder().build();
+			}
 		}
 	}
 
