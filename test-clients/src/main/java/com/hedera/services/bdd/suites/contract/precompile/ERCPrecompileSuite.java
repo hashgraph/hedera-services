@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -649,8 +650,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("ERC_20_TRANSFER_ALIASED_SENDER")
 				.given(
-						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
-						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
 						newKeyNamed(MULTI_KEY),
 						cryptoCreate(OWNER),
