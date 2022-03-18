@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
@@ -33,8 +34,11 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -55,12 +59,14 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -113,7 +119,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				getErc20TokenDecimalsFromErc721TokenFails(),
 				transferErc20TokenFromErc721TokenFails(),
 				transferErc20TokenReceiverContract(),
-				transferErc20TokenSenderAccount()
+				transferErc20TokenSenderAccount(),
+				transferErc20TokenAliasedSender()
 		);
 	}
 
@@ -622,6 +629,100 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.hasTokenBalance(FUNGIBLE_TOKEN, 3),
 						getAccountBalance(RECIPIENT)
 								.hasTokenBalance(FUNGIBLE_TOKEN, 2)
+				);
+	}
+
+	private HapiApiSpec transferErc20TokenAliasedSender() {
+		final var aliasedTransferTxn = "aliasedTransferTxn";
+		final var addLiquidityTxn = "addLiquidityTxn";
+		final var create2Txn = "create2Txn";
+
+		final var ACCOUNT_A = "AccountA";
+		final var ACCOUNT_B = "AccountB";
+		final var TOKEN_A = "TokenA";
+
+		final var ALIASED_TRANSFER = "aliasedTransfer";
+		final byte[][] ALIASED_ADDRESS = new byte[1][1];
+
+		final AtomicReference<String> childMirror = new AtomicReference<>();
+		final AtomicReference<String> childEip1014 = new AtomicReference<>();
+
+		return defaultHapiSpec("ERC_20_TRANSFER_ALIASED_SENDER")
+				.given(
+						UtilVerbs.overriding("contracts.redirectTokenCalls", "true"),
+						UtilVerbs.overriding("contracts.precompile.exportRecordResults", "true"),
+						UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(OWNER),
+						cryptoCreate(ACCOUNT),
+						cryptoCreate(ACCOUNT_A).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
+						cryptoCreate(ACCOUNT_B).balance(ONE_MILLION_HBARS),
+						tokenCreate("TokenA")
+								.adminKey(MULTI_KEY)
+								.initialSupply(10000)
+								.treasury(ACCOUNT_A),
+						tokenAssociate(ACCOUNT_B, TOKEN_A),
+						fileCreate(ALIASED_TRANSFER),
+						updateLargeFile(OWNER, ALIASED_TRANSFER,
+								extractByteCode(ContractResources.ALIASED_TRANSFER_CONTRACT)),
+						contractCreate(ALIASED_TRANSFER)
+								.bytecode(ALIASED_TRANSFER)
+								.gas(300_000),
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										contractCall(ALIASED_TRANSFER,
+												ContractResources.ALIASED_TRANSFER_DEPLOY_WITH_CREATE2_ABI,
+												asAddress(spec.registry().getTokenID(TOKEN_A)))
+												.exposingResultTo(result -> {
+													final var res = (byte[])result[0];
+													ALIASED_ADDRESS[0] = res;
+												})
+												.payingWith(ACCOUNT)
+												.alsoSigningWithFullPrefix(MULTI_KEY)
+												.via(create2Txn).gas(GAS_TO_OFFER)
+												.hasKnownStatus(SUCCESS)
+								)
+						)
+				).when(
+						captureChildCreate2MetaFor(
+								2, 0,
+								"setup", create2Txn, childMirror, childEip1014),
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										contractCall(ALIASED_TRANSFER,
+												ContractResources.ALIASED_GIVE_TOKENS_TO_OPERATOR_ABI,
+												asAddress(spec.registry().getTokenID(TOKEN_A)),
+												asAddress(spec.registry().getAccountID(ACCOUNT_A)),
+												1500)
+												.payingWith(ACCOUNT)
+												.alsoSigningWithFullPrefix(MULTI_KEY)
+												.via(addLiquidityTxn).gas(GAS_TO_OFFER)
+												.hasKnownStatus(SUCCESS)
+								)
+						),
+						withOpContext(
+								(spec, opLog) -> allRunFor(
+										spec,
+										contractCall(ALIASED_TRANSFER,
+												ContractResources.ALIASED_TRANSFER_ABI,
+												asAddress(spec.registry().getAccountID(ACCOUNT_B)),
+												1000)
+												.payingWith(ACCOUNT)
+												.alsoSigningWithFullPrefix(MULTI_KEY)
+												.via(aliasedTransferTxn).gas(GAS_TO_OFFER)
+												.hasKnownStatus(SUCCESS)
+								))
+				).then(
+						sourcing(
+								() -> getContractInfo(asContractString(
+										contractIdFromHexedMirrorAddress(childMirror.get())))
+										.hasToken(ExpectedTokenRel.relationshipWith(TOKEN_A).balance(500))
+										.logged()
+						),
+						getAccountBalance(ACCOUNT_B).hasTokenBalance(TOKEN_A, 1000),
+						getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_A, 8500)
 				);
 	}
 
