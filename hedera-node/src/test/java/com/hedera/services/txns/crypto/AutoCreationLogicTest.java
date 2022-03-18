@@ -66,8 +66,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AutoCreationLogicTest {
@@ -84,6 +84,8 @@ class AutoCreationLogicTest {
 	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
+	private AccessorFactory accessorFactory;
+	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
@@ -97,7 +99,7 @@ class AutoCreationLogicTest {
 	@BeforeEach
 	void setUp() {
 		subject = new AutoCreationLogic(
-				syntheticTxnFactory, creator, ids, aliasManager, sigImpactHistorian, currentView, txnCtx);
+				syntheticTxnFactory, accessorFactory, creator, ids, aliasManager, sigImpactHistorian, currentView, txnCtx);
 
 		subject.setFeeCalculator(feeCalculator);
 	}
@@ -124,15 +126,12 @@ class AutoCreationLogicTest {
 	}
 
 	@Test
-	void failsAsExpectedWhenInvalidAutoCreateTxnIsBuilt() {
+	void failsAsExpectedWhenInvalidAutoCreateTxnIsBuilt() throws InvalidProtocolBufferException {
 		given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L))
 				.willReturn(mockSyntheticCreation);
+		when(accessorFactory.nonTriggeredTxn(any())).thenThrow(InvalidProtocolBufferException.class);
 		final var input = wellKnownChange();
-		final var mockedStatic = mockStatic(AccessorFactory.class);
-		mockedStatic.when(() -> AccessorFactory.constructFrom(any(), any()))
-				.thenThrow(InvalidProtocolBufferException.class);
 		assertThrows(IllegalArgumentException.class , ()->subject.create(input, accountsLedger));
-		mockedStatic.close();
 	}
 
 	private void givenCollaborators() {

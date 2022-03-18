@@ -29,12 +29,12 @@ public enum TokenUnpauseScenarios implements TxnHandlingScenario {
 	VALID_UNPAUSE_WITH_EXTANT_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUnpause()
 							.unPausing(KNOWN_TOKEN_WITH_PAUSE)
 							.nonPayerKts(TOKEN_PAUSE_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 }

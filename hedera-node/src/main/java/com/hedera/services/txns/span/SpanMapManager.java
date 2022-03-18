@@ -26,6 +26,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 
 import javax.inject.Inject;
@@ -104,7 +105,7 @@ public class SpanMapManager {
 	}
 
 	public static void reCalculateXferMeta(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
-		final var xferMeta = accessor.availXferUsageMeta();
+		final var xferMeta = ((SignedTxnAccessor) accessor).availXferUsageMeta();
 
 		var customFeeTokenTransfers = 0;
 		var customFeeHbarTransfers = 0;

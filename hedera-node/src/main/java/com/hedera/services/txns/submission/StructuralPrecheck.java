@@ -97,7 +97,7 @@ public final class StructuralPrecheck {
 		}
 
 		try {
-			final var accessor = accessorFactory.constructFrom(signedTxn);
+			final var accessor = (SignedTxnAccessor) accessorFactory.nonTriggeredTxn(signedTxn.toByteArray());
 			if (hasTooManyLayers(signedTxn) || hasTooManyLayers(accessor.getTxn())) {
 				return WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS);
 			}

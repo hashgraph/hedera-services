@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.accessors.PlatformTxnAccessor.uncheckedAccessorFor;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.sigs.SyncVerifiers.ALWAYS_VALID;
@@ -89,7 +88,8 @@ class PrecheckVerifierTest {
 	@BeforeAll
 	static void setupAll() throws Throwable {
 		aliasManager = mock(AliasManager.class);
-		realAccessor = uncheckedAccessorFor(PlatformTxnFactory.from(txn), aliasManager);
+		realAccessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(PlatformTxnFactory.from(txn).getContentsDirect()),
+				PlatformTxnFactory.from(txn));
 		reqKeys = List.of(
 				KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),
 				KeyTree.withRoot(ed25519()).asJKey());

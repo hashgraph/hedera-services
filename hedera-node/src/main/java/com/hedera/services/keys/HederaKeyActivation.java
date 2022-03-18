@@ -23,6 +23,7 @@ package com.hedera.services.keys;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
@@ -73,7 +74,7 @@ public final class HederaKeyActivation {
 			final TxnAccessor accessor,
 			final BiPredicate<JKey, TransactionSignature> validity
 	) {
-		final var sigMeta = accessor.getSigMeta();
+		final var sigMeta = ((PlatformTxnAccessor) accessor).getSigMeta();
 
 		if (sigMeta == null) {
 			throw new IllegalArgumentException("Cannot test payer sig activation without rationalized sig meta");
@@ -166,7 +167,8 @@ public final class HederaKeyActivation {
 			if (!xCoordsMatch) {
 				return false;
 			} else {
-				/* Two secp25681 public keys with the same x-coord can differ at most in the parity of their y-coords. */
+				/* Two secp25681 public keys with the same x-coord can differ at most in the parity of their y-coords
+				. */
 				return (sourceKey[0] & PARITY_MASK) == (sigKey[UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN - 1] & PARITY_MASK);
 			}
 		} else {

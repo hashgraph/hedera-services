@@ -29,6 +29,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.CryptoDeleteAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -86,6 +87,7 @@ class CryptoDeleteTransitionLogicTest {
 	private TransactionBody cryptoDeleteTxn;
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
+	private PlatformTxnAccessor platformAccessor;
 	private CryptoDeleteAccessor accessor;
 	private AliasManager aliasManager;
 
@@ -100,6 +102,7 @@ class CryptoDeleteTransitionLogicTest {
 		ledger = mock(HederaLedger.class);
 		aliasManager = mock(AliasManager.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
+		platformAccessor = mock(PlatformTxnAccessor.class);
 
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 		given(aliasManager.unaliased(payer)).willReturn(payerNum);
@@ -122,7 +125,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenValidTxnCtx(target);
 
 		// expect:
-		assertEquals(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.validateSemantics(accessor));
+		assertEquals(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
@@ -130,7 +133,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.validateSemantics(accessor));
+		assertEquals(OK, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
@@ -250,7 +253,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenDeleteTxnMissingTarget();
 
 		// when:
-		ResponseCodeEnum validity = subject.validateSemantics(accessor);
+		ResponseCodeEnum validity = subject.validateSemantics(platformAccessor);
 
 		// then:
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
@@ -261,7 +264,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenDeleteTxnMissingTransfer();
 
 		// when:
-		ResponseCodeEnum validity = subject.validateSemantics(accessor);
+		ResponseCodeEnum validity = subject.validateSemantics(platformAccessor);
 
 		// then:
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
@@ -273,7 +276,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenDeleteTxnWithAlias(aliasedTransfer);
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
-		ResponseCodeEnum validity = subject.validateSemantics(accessor);
+		ResponseCodeEnum validity = subject.validateSemantics(platformAccessor);
 		assertEquals(OK, validity);
 
 		subject.doStateTransition();
@@ -316,7 +319,6 @@ class CryptoDeleteTransitionLogicTest {
 								.build()
 				).build();
 		setAccessor();
-		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
 	private void givenDeleteTxnMissingTarget() throws InvalidProtocolBufferException {
@@ -354,13 +356,14 @@ class CryptoDeleteTransitionLogicTest {
 		given(aliasManager.unaliased(aliasAccountTarget)).willReturn(targetNum);
 		given(aliasManager.unaliased(aliasedTransfer)).willReturn(payerNum);
 		setAccessor();
-		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
 	private void setAccessor() throws InvalidProtocolBufferException {
 		final var txn = new SwirldTransaction(
 				Transaction.newBuilder().setBodyBytes(cryptoDeleteTxn.toByteString()).build().toByteArray());
-		accessor = new CryptoDeleteAccessor(txn, aliasManager);
+		accessor = new CryptoDeleteAccessor(txn.getContentsDirect(), aliasManager);
+		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 	}
 
 	private TransactionID ourTxnId() {

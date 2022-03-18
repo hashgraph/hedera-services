@@ -22,13 +22,14 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.common.SwirldTransaction;
 
 import javax.inject.Inject;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
-import static com.hedera.services.utils.accessors.SignedTxnAccessor.functionExtractor;
 
 public class AccessorFactory {
 	final AliasManager aliasManager;
@@ -38,25 +39,41 @@ public class AccessorFactory {
 		this.aliasManager = aliasManager;
 	}
 
-	public PlatformTxnAccessor constructFrom(SwirldTransaction transaction) throws InvalidProtocolBufferException {
-		return constructFrom(transaction, aliasManager);
+	public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
+		subtype.setTriggered(false);
+		subtype.setScheduleRef(null);
+		return subtype;
 	}
 
-	public PlatformTxnAccessor constructFrom(Transaction validSignedTxn) throws InvalidProtocolBufferException {
-		final var platformTxn = new SwirldTransaction(validSignedTxn.toByteArray());
-		return constructFrom(platformTxn);
+	public TxnAccessor triggeredTxn(byte[] signedTxnWrapperBytes, final AccountID payer,
+			ScheduleID parent) throws InvalidProtocolBufferException {
+		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
+		subtype.setTriggered(true);
+		subtype.setScheduleRef(parent);
+		subtype.setPayer(payer);
+		return subtype;
 	}
 
-	public static PlatformTxnAccessor constructFrom(SwirldTransaction transaction, AliasManager aliasManager) throws InvalidProtocolBufferException {
-		final var body = extractTransactionBody(Transaction.parseFrom(transaction.getContents()));
-		final var function = functionExtractor.apply(body);
+	/**
+	 * parse the signedTxnWrapperBytes, figure out what specialized implementation to use
+	 * construct the subtype instance
+	 *
+	 * @param signedTxnWrapperBytes
+	 * @return
+	 * @throws InvalidProtocolBufferException
+	 */
+	private TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
+			throws InvalidProtocolBufferException {
+		final var body = extractTransactionBody(Transaction.parseFrom(signedTxnWrapperBytes));
+		final var function = MiscUtils.functionExtractor.apply(body);
 		return switch (function) {
-			case TokenAccountWipe -> new TokenWipeAccessor(transaction, aliasManager);
-			case CryptoCreate -> new CryptoCreateAccessor(transaction, aliasManager);
-			case CryptoUpdate -> new CryptoUpdateAccessor(transaction, aliasManager);
-			case CryptoDelete -> new CryptoDeleteAccessor(transaction, aliasManager);
-			case CryptoApproveAllowance, CryptoAdjustAllowance -> new CryptoAllowanceAccessor(transaction, aliasManager);
-			default -> new PlatformTxnAccessor(transaction, aliasManager);
+			case TokenAccountWipe -> new TokenWipeAccessor(signedTxnWrapperBytes, aliasManager);
+			case CryptoCreate -> new CryptoCreateAccessor(signedTxnWrapperBytes, aliasManager);
+			case CryptoUpdate -> new CryptoUpdateAccessor(signedTxnWrapperBytes, aliasManager);
+			case CryptoDelete -> new CryptoDeleteAccessor(signedTxnWrapperBytes, aliasManager);
+			case CryptoApproveAllowance, CryptoAdjustAllowance -> new CryptoAllowanceAccessor(signedTxnWrapperBytes, aliasManager);
+			default -> SignedTxnAccessor.from(signedTxnWrapperBytes);
 		};
 	}
 }

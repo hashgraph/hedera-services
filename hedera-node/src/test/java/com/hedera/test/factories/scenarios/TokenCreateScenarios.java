@@ -35,107 +35,107 @@ import static com.hedera.test.factories.txns.TokenCreateFactory.newSignedTokenCr
 public enum TokenCreateScenarios implements TxnHandlingScenario {
 	TOKEN_CREATE_WITH_ADMIN_ONLY {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.nonPayerKts(TOKEN_ADMIN_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_ADMIN_AND_FREEZE {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate().frozen()
 							.nonPayerKts(TOKEN_ADMIN_KT, TOKEN_FREEZE_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_MISSING_ADMIN {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate().missingAdmin().get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_AUTO_RENEW {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.autoRenew(MISC_ACCOUNT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.autoRenew(DEFAULT_PAYER)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_MISSING_AUTO_RENEW {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.autoRenew(MISSING_ACCOUNT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.plusCustomFee(fixedFee(123L, null, collector))
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.plusCustomFee(fixedFee(123L, MISSING_ENTITY_ID, collector))
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.plusCustomFee(fixedFee(123L, null, collector))
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(DEFAULT_PAYER);
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.plusCustomFee(fixedFee(123L, null, collector))
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.plusCustomFee(fractionalFee(
@@ -143,39 +143,39 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 									3, 4,
 									false, collector))
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.plusCustomFee(royaltyFee(
 									1, 2,
 									null, collector))
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.plusCustomFee(royaltyFee(
 									1, 2,
 									null, collector))
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(RECEIVER_SIG);
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.plusCustomFee(royaltyFee(
@@ -183,13 +183,13 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 									new FixedFeeSpec(1, new EntityId(2, 3, 4)),
 									collector))
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.plusCustomFee(royaltyFee(
@@ -197,38 +197,38 @@ public enum TokenCreateScenarios implements TxnHandlingScenario {
 									new FixedFeeSpec(1, MISSING_ENTITY_ID),
 									collector))
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_MISSING_COLLECTOR {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			final var collector = EntityId.fromGrpcAccountId(MISSING_ACCOUNT);
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.plusCustomFee(fixedFee(123L, null, collector))
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_MISSING_TREASURY {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.treasury(MISSING_ACCOUNT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_CREATE_WITH_TREASURY_AS_PAYER {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenCreate()
 							.missingAdmin()
 							.treasury(DEFAULT_PAYER)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 }

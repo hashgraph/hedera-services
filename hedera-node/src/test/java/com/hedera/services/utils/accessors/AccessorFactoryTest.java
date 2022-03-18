@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -88,37 +89,38 @@ class AccessorFactoryTest {
 
 	@Test
 	void constructsCorrectly() throws InvalidProtocolBufferException {
-		final var platformTxn = Transaction.newBuilder()
+		final var platformTxn =
+				new SwirldTransaction(Transaction.newBuilder()
 						.setBodyBytes(someTxn.toByteString())
-						.build();
-		assertTrue(subject.constructFrom(platformTxn) instanceof PlatformTxnAccessor);
+						.build().toByteArray());
+		assertTrue(subject.nonTriggeredTxn(platformTxn.getContentsDirect()) instanceof SignedTxnAccessor);
 
-		final var  wipeTxn = Transaction.newBuilder()
+		final var wipeTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(tokenWipeTxn.toByteString())
-				.build();
-		assertTrue(subject.constructFrom(wipeTxn) instanceof TokenWipeAccessor);
+				.build().toByteArray());
+		assertTrue(subject.nonTriggeredTxn(wipeTxn.getContentsDirect()) instanceof TokenWipeAccessor);
 
-		final var accountCreateTxn = Transaction.newBuilder()
+		final var accountCreateTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(cryptoCreateTxn.toByteString())
-				.build();
-		assertTrue(subject.constructFrom(accountCreateTxn) instanceof CryptoCreateAccessor);
+				.build().toByteArray());
+		assertTrue(subject.nonTriggeredTxn(accountCreateTxn.getContentsDirect()) instanceof CryptoCreateAccessor);
 
-		final var accountDeleteTxn = Transaction.newBuilder()
+		final var accountDeleteTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(cryptoDeleteTxn.toByteString())
-				.build();
-		assertTrue(subject.constructFrom(accountDeleteTxn) instanceof  CryptoDeleteAccessor);
+				.build().toByteArray());
+		assertTrue(subject.nonTriggeredTxn(accountDeleteTxn.getContentsDirect()) instanceof  CryptoDeleteAccessor);
 
-		final var approveAllowanceTxn = Transaction.newBuilder()
+		final var approveAllowanceTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(cryptoApproveAllowanceTxn.toByteString())
-				.build();
-		final var approveAllowanceAccessor = subject.constructFrom(approveAllowanceTxn);
+				.build().toByteArray());
+		final var approveAllowanceAccessor = subject.nonTriggeredTxn(approveAllowanceTxn.getContentsDirect());
 		assertTrue(approveAllowanceAccessor instanceof CryptoAllowanceAccessor);
 		assertEquals(CryptoApproveAllowance, approveAllowanceAccessor.getFunction());
 
-		final var adjustAllowanceTxn = Transaction.newBuilder()
+		final var adjustAllowanceTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(cryptoAdjustAllowanceTxn.toByteString())
-				.build();
-		final var adjustAllowanceAccessor = subject.constructFrom(adjustAllowanceTxn);
+				.build().toByteArray());
+		final var adjustAllowanceAccessor = subject.nonTriggeredTxn(adjustAllowanceTxn.getContentsDirect());
 		assertTrue(adjustAllowanceAccessor instanceof  CryptoAllowanceAccessor);
 		assertEquals(CryptoAdjustAllowance, adjustAllowanceAccessor.getFunction());
 	}

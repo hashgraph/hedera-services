@@ -37,6 +37,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.CryptoUpdateAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -107,6 +108,7 @@ class CryptoUpdateTransitionLogicTest {
 	private OptionValidator validator;
 	private TransactionBody cryptoUpdateTxn;
 	private SigImpactHistorian sigImpactHistorian;
+	private PlatformTxnAccessor platformAccessor;
 	private TransactionContext txnCtx;
 	private CryptoUpdateAccessor accessor;
 	private CryptoUpdateTransitionLogic subject;
@@ -116,13 +118,15 @@ class CryptoUpdateTransitionLogicTest {
 	private void setup() {
 		useLegacyFields = false;
 
+		platformAccessor = mock(PlatformTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 		ledger = mock(HederaLedger.class);
 		accessor = mock(CryptoUpdateAccessor.class);
 		validator = mock(OptionValidator.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
+
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
@@ -300,16 +304,18 @@ class CryptoUpdateTransitionLogicTest {
 	void rejectsInvalidMemo() {
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.MEMO));
 		given(validator.memoCheck(MEMO)).willReturn(MEMO_TOO_LONG);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 
-		assertEquals(MEMO_TOO_LONG, subject.validateSemantics(accessor));
+		assertEquals(MEMO_TOO_LONG, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
 	void rejectsInvalidAutoRenewPeriod() {
 		givenTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.validateSemantics(accessor));
+		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
@@ -407,7 +413,8 @@ class CryptoUpdateTransitionLogicTest {
 				.setCryptoUpdateAccount(cryptoUpdateTxn.getCryptoUpdateAccount().toBuilder().setKey(unmappableKey()))
 				.build();
 		given(accessor.getKey()).willReturn(unmappableKey());
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 
 		subject.doStateTransition();
 
@@ -423,7 +430,8 @@ class CryptoUpdateTransitionLogicTest {
 				.build();
 		given(accessor.getTarget()).willReturn(PAYER);
 		given(ledger.exists(PAYER)).willReturn(true);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 		given(ledger.alias(PAYER)).willReturn(ALIASED_PAYER.getAlias());
 
 		subject.doStateTransition();
@@ -439,7 +447,8 @@ class CryptoUpdateTransitionLogicTest {
 						.setAccountIDToUpdate(ALIASED_PAYER))
 				.build();
 		given(accessor.getTarget()).willReturn(MISSING_NUM.toGrpcAccountId());
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 		given(ledger.alias(PAYER)).willReturn(ALIASED_PAYER.getAlias());
 
 		subject.doStateTransition();
@@ -456,7 +465,8 @@ class CryptoUpdateTransitionLogicTest {
 						.setProxyAccountID(ALIASED_PROXY_ID))
 				.build();
 		given(accessor.getProxy()).willReturn(PROXY);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 
 		subject.doStateTransition();
 
@@ -471,7 +481,8 @@ class CryptoUpdateTransitionLogicTest {
 						.setAccountIDToUpdate(ALIASED_PAYER))
 				.build();
 		given(accessor.getProxy()).willReturn(MISSING_NUM.toGrpcAccountId());
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 		given(ledger.alias(PAYER)).willReturn(ALIASED_PAYER.getAlias());
 
 		subject.doStateTransition();
@@ -498,8 +509,9 @@ class CryptoUpdateTransitionLogicTest {
 				.build();
 		given(accessor.hasKey()).willReturn(true);
 		given(accessor.getKey()).willReturn(key);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 
-		assertEquals(BAD_ENCODING, subject.validateSemantics(accessor));
+		assertEquals(BAD_ENCODING, subject.validateSemantics(platformAccessor));
 	}
 
 	private void givenTxnCtx() {
@@ -570,7 +582,8 @@ class CryptoUpdateTransitionLogicTest {
 		op.setAccountIDToUpdate(TARGET);
 		given(accessor.getTarget()).willReturn(TARGET);
 		cryptoUpdateTxn = TransactionBody.newBuilder().setTransactionID(ourTxnId()).setCryptoUpdateAccount(op).build();
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 		given(ledger.exists(TARGET)).willReturn(true);
 	}
 

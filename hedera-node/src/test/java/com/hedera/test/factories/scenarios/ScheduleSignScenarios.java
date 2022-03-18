@@ -35,21 +35,21 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 	SCHEDULE_SIGN_MISSING_SCHEDULE {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleSign()
 							.signing(UNKNOWN_SCHEDULE)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	SCHEDULE_SIGN_KNOWN_SCHEDULE {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleSign()
 							.signing(KNOWN_SCHEDULE_WITH_ADMIN)
 							.get()
-			), aliasManager());
+			));
 		}
 
 		@Override
@@ -69,11 +69,11 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 	SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleSign()
 							.signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER)
 							.get()
-			), aliasManager());
+			));
 		}
 
 		@Override
@@ -93,11 +93,11 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 	SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleSign()
 							.signing(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER)
 							.get()
-			), aliasManager());
+			));
 		}
 	}
 }

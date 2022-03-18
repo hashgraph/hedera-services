@@ -31,6 +31,7 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.CryptoAllowanceAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -43,7 +44,6 @@ import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
@@ -75,8 +75,9 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		/* --- Extract gRPC --- */
-		final var approveAccessor = (CryptoAllowanceAccessor) txnCtx.accessor();
-		final AccountID payer = approveAccessor.getOwner();
+		final var platformAccessor = (PlatformTxnAccessor) txnCtx.accessor();
+		final var approveAccessor = (CryptoAllowanceAccessor) platformAccessor.getDelegate();
+		final AccountID payer = approveAccessor.getPayer();
 		entitiesChanged.clear();
 
 		/* --- Use models --- */
@@ -103,9 +104,10 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var approveAccessor = (CryptoAllowanceAccessor) accessor;
-		final AccountID owner = approveAccessor.getOwner();
-		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(owner));
+		final var platformAccessor = (PlatformTxnAccessor) accessor;
+		final var approveAccessor = (CryptoAllowanceAccessor) platformAccessor.getDelegate();
+		final AccountID payer = approveAccessor.getPayer();
+		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 
 		return allowanceChecks.allowancesValidation(approveAccessor.getCryptoAllowances(),
 				approveAccessor.getTokenAllowances(), approveAccessor.getNftAllowances(), payerAccount,

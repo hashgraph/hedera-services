@@ -28,9 +28,9 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 public enum FileCreateScenarios implements TxnHandlingScenario {
 	VANILLA_FILE_CREATE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedFileCreate().get()
-			), aliasManager());
+			));
 		}
 	}
 }

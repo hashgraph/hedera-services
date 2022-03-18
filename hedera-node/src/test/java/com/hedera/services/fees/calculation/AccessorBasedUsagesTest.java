@@ -51,7 +51,7 @@ import com.hedera.services.usage.token.meta.TokenPauseMeta;
 import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
 import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.services.usage.token.meta.TokenWipeMeta;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -108,7 +108,7 @@ class AccessorBasedUsagesTest {
 	private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
 	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
-	private TxnAccessor txnAccessor;
+	private SignedTxnAccessor txnAccessor;
 	@Mock
 	private OpUsageCtxHelper opUsageCtxHelper;
 	@Mock

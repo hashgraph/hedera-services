@@ -24,22 +24,24 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.swirlds.common.SwirldTransaction;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CryptoAllowanceAccessor extends PlatformTxnAccessor{
+public class CryptoAllowanceAccessor extends SignedTxnAccessor{
+	private AliasManager aliasManager;
 
 	public CryptoAllowanceAccessor(
-			final SwirldTransaction platformTxn,
+			final byte[] txn,
 			final AliasManager aliasManager) throws InvalidProtocolBufferException {
-		super(platformTxn, aliasManager);
+		super(txn);
+		this.aliasManager = aliasManager;
 		if (getFunction() == HederaFunctionality.CryptoApproveAllowance) {
 			setCryptoApproveUsageMeta();
 		} else {
@@ -47,8 +49,9 @@ public class CryptoAllowanceAccessor extends PlatformTxnAccessor{
 		}
 	}
 
-	public AccountID getOwner() {
-		return super.getPayer();
+	@Override
+	public AccountID getPayer() {
+		return unaliased(super.getPayer()).toGrpcAccountId();
 	}
 
 	public List<CryptoAllowance> getCryptoAllowances() {
@@ -85,6 +88,10 @@ public class CryptoAllowanceAccessor extends PlatformTxnAccessor{
 			);
 		}
 		return allowances;
+	}
+
+	protected EntityNum unaliased(AccountID grpcId) {
+		return aliasManager.unaliased(grpcId);
 	}
 
 	private List<CryptoAllowance> getCryptoAllowancesList() {

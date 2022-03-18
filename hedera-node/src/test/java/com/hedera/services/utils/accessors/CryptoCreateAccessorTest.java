@@ -72,7 +72,7 @@ class CryptoCreateAccessorTest {
 		when(aliasManager.unaliased(payer)).thenReturn(payerEntity);
 		when(aliasManager.unaliased(proxy)).thenReturn(proxyEntity);
 
-		subject = new CryptoCreateAccessor(accountCreateTxn, aliasManager);
+		subject = new CryptoCreateAccessor(accountCreateTxn.getContentsDirect(), aliasManager);
 
 		validate();
 	}
@@ -83,7 +83,7 @@ class CryptoCreateAccessorTest {
 		when(aliasManager.unaliased(aliasedPayer)).thenReturn(payerEntity);
 		when(aliasManager.unaliased(aliasedProxy)).thenReturn(proxyEntity);
 
-		subject = new CryptoCreateAccessor(accountCreateTxn, aliasManager);
+		subject = new CryptoCreateAccessor(accountCreateTxn.getContentsDirect(), aliasManager);
 
 		validate();
 	}
@@ -94,7 +94,7 @@ class CryptoCreateAccessorTest {
 		when(aliasManager.unaliased(aliasedPayer)).thenReturn(EntityNum.MISSING_NUM);
 		when(aliasManager.unaliased(aliasedProxy)).thenReturn(EntityNum.MISSING_NUM);
 
-		subject = new CryptoCreateAccessor(accountCreateTxn, aliasManager);
+		subject = new CryptoCreateAccessor(accountCreateTxn.getContentsDirect(), aliasManager);
 
 		assertEquals(0L, subject.getSponsor().getAccountNum());
 		assertEquals(0L, subject.getProxy().getAccountNum());

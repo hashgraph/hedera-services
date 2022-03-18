@@ -79,6 +79,7 @@ public class AutoCreationLogic {
 	private final AliasManager aliasManager;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
+	private final AccessorFactory accessorFactory;
 	private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
 
 	private FeeCalculator feeCalculator;
@@ -89,6 +90,7 @@ public class AutoCreationLogic {
 	@Inject
 	public AutoCreationLogic(
 			final SyntheticTxnFactory syntheticTxnFactory,
+			final AccessorFactory accessorFactory,
 			final EntityCreator creator,
 			final EntityIdSource ids,
 			final AliasManager aliasManager,
@@ -102,6 +104,7 @@ public class AutoCreationLogic {
 		this.currentView = currentView;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.syntheticTxnFactory = syntheticTxnFactory;
+		this.accessorFactory = accessorFactory;
 		this.aliasManager = aliasManager;
 	}
 
@@ -213,7 +216,7 @@ public class AutoCreationLogic {
 
 		try {
 			final var swirldTransaction = new SwirldTransaction(txn.toByteArray());
-			final var accessor = AccessorFactory.constructFrom(swirldTransaction, aliasManager);
+			final var accessor = accessorFactory.nonTriggeredTxn(swirldTransaction.getContentsDirect());
 			final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, currentView, txnCtx.consensusTime());
 			return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
 		} catch (Exception illegal) {

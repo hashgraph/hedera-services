@@ -28,16 +28,16 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 public enum ConsensusSubmitMessageScenarios implements TxnHandlingScenario {
 	CONSENSUS_SUBMIT_MESSAGE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedConsensusSubmitMessage(EXISTING_TOPIC_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedConsensusSubmitMessage(MISSING_TOPIC_ID).get()
-			), aliasManager());
+			));
 		}
 	}
 }

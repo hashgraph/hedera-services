@@ -30,6 +30,7 @@ import com.hedera.services.sigs.order.SigningOrderResult;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.RationalizedSigMeta;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -57,7 +58,7 @@ public class Rationalization {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final ReusableBodySigningFactory bodySigningFactory;
 
-	private TxnAccessor txnAccessor;
+	private PlatformTxnAccessor txnAccessor;
 	private PubKeyToSigBytes pkToSigFn;
 
 	private JKey reqPayerSig;
@@ -82,7 +83,7 @@ public class Rationalization {
 		this.bodySigningFactory = bodySigningFactory;
 	}
 
-	public void performFor(final TxnAccessor txnAccessor) {
+	public void performFor(final PlatformTxnAccessor txnAccessor) {
 		final var linkedRefs = txnAccessor.getLinkedRefs();
 		if (linkedRefs != null && linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)) {
 			finalStatus = txnAccessor.getExpandedSigStatus();
@@ -106,7 +107,7 @@ public class Rationalization {
 		return verifiedSync;
 	}
 
-	void resetFor(final TxnAccessor txnAccessor) {
+	void resetFor(final PlatformTxnAccessor txnAccessor) {
 		this.pkToSigFn = txnAccessor.getPkToSigsFn();
 		this.txnAccessor = txnAccessor;
 

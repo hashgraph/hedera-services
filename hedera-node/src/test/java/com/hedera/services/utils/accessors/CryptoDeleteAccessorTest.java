@@ -63,7 +63,7 @@ class CryptoDeleteAccessorTest {
 		when(aliasManager.unaliased(target)).thenReturn(targetEntity);
 		when(aliasManager.unaliased(transferAccount)).thenReturn(transferAccountEntity);
 
-		subject = new CryptoDeleteAccessor(accountDeleteTxn, aliasManager);
+		subject = new CryptoDeleteAccessor(accountDeleteTxn.getContentsDirect(), aliasManager);
 
 		validate();
 	}
@@ -74,7 +74,7 @@ class CryptoDeleteAccessorTest {
 		when(aliasManager.unaliased(aliasedTarget)).thenReturn(targetEntity);
 		when(aliasManager.unaliased(aliasedTransferAccount)).thenReturn(transferAccountEntity);
 
-		subject = new CryptoDeleteAccessor(accountDeleteTxn, aliasManager);
+		subject = new CryptoDeleteAccessor(accountDeleteTxn.getContentsDirect(), aliasManager);
 
 		validate();
 	}
@@ -85,7 +85,7 @@ class CryptoDeleteAccessorTest {
 		when(aliasManager.unaliased(aliasedTarget)).thenReturn(EntityNum.MISSING_NUM);
 		when(aliasManager.unaliased(aliasedTransferAccount)).thenReturn(EntityNum.MISSING_NUM);
 
-		subject = new CryptoDeleteAccessor(accountDeleteTxn, aliasManager);
+		subject = new CryptoDeleteAccessor(accountDeleteTxn.getContentsDirect(), aliasManager);
 
 		assertEquals(0L, subject.getTarget().getAccountNum());
 		assertEquals(0L, subject.getTransferAccount().getAccountNum());

@@ -73,8 +73,8 @@ public class PlatformSubmissionManager {
 		var txn = accessor.getTxn();
 		if (txn.hasUncheckedSubmit()) {
 			try {
-				return new SignedTxnAccessor(txn.getUncheckedSubmit().getTransactionBytes().toByteArray());
-			} catch (InvalidProtocolBufferException e) {
+				return SignedTxnAccessor.from(txn.getUncheckedSubmit().getTransactionBytes().toByteArray());
+			} catch (IllegalStateException e) {
 				log.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);
 				return null;
 			}

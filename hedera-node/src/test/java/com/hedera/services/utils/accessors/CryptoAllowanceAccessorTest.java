@@ -80,7 +80,7 @@ class CryptoAllowanceAccessorTest {
 		when(aliasManager.unaliased(owner)).thenReturn(ownerNum);
 		when(aliasManager.unaliased(spender)).thenReturn(spenderNum);
 
-		subject = new CryptoAllowanceAccessor(cryptoApproveAllowanceTxn, aliasManager);
+		subject = new CryptoAllowanceAccessor(cryptoApproveAllowanceTxn.getContentsDirect(), aliasManager);
 
 		validateApprove();
 	}
@@ -91,7 +91,7 @@ class CryptoAllowanceAccessorTest {
 		when(aliasManager.unaliased(owner)).thenReturn(ownerNum);
 		when(aliasManager.unaliased(spender)).thenReturn(spenderNum);
 
-		subject = new CryptoAllowanceAccessor(cryptoAdjustAllowanceTxn, aliasManager);
+		subject = new CryptoAllowanceAccessor(cryptoAdjustAllowanceTxn.getContentsDirect(), aliasManager);
 
 		validateAdjust();
 	}
@@ -102,7 +102,7 @@ class CryptoAllowanceAccessorTest {
 		when(aliasManager.unaliased(aliasedOwner)).thenReturn(ownerNum);
 		when(aliasManager.unaliased(aliasedSpender)).thenReturn(spenderNum);
 
-		subject = new CryptoAllowanceAccessor(cryptoApproveAllowanceTxn, aliasManager);
+		subject = new CryptoAllowanceAccessor(cryptoApproveAllowanceTxn.getContentsDirect(), aliasManager);
 
 		validateApprove();
 	}
@@ -113,7 +113,7 @@ class CryptoAllowanceAccessorTest {
 		when(aliasManager.unaliased(aliasedOwner)).thenReturn(ownerNum);
 		when(aliasManager.unaliased(aliasedSpender)).thenReturn(spenderNum);
 
-		subject = new CryptoAllowanceAccessor(cryptoAdjustAllowanceTxn, aliasManager);
+		subject = new CryptoAllowanceAccessor(cryptoAdjustAllowanceTxn.getContentsDirect(), aliasManager);
 
 		validateAdjust();
 	}
@@ -123,7 +123,7 @@ class CryptoAllowanceAccessorTest {
 		setUpApprovalWith(aliasedOwner, aliasedSpender);
 		when(aliasManager.unaliased(aliasedSpender)).thenReturn(MISSING_NUM);
 
-		subject = new CryptoAllowanceAccessor(cryptoApproveAllowanceTxn, aliasManager);
+		subject = new CryptoAllowanceAccessor(cryptoApproveAllowanceTxn.getContentsDirect(), aliasManager);
 
 
 		assertEquals(MISSING_NUM.longValue(), subject.getCryptoAllowances().get(0).getSpender().getAccountNum());
@@ -138,7 +138,7 @@ class CryptoAllowanceAccessorTest {
 		setUpAdjustWith(aliasedOwner, aliasedSpender);
 		when(aliasManager.unaliased(aliasedSpender)).thenReturn(MISSING_NUM);
 
-		subject = new CryptoAllowanceAccessor(cryptoAdjustAllowanceTxn, aliasManager);
+		subject = new CryptoAllowanceAccessor(cryptoAdjustAllowanceTxn.getContentsDirect(), aliasManager);
 
 
 		assertEquals(MISSING_NUM.longValue(), subject.getCryptoAllowances().get(0).getSpender().getAccountNum());
@@ -150,7 +150,7 @@ class CryptoAllowanceAccessorTest {
 
 	private void validateApprove() {
 		assertEquals(CryptoApproveAllowance, subject.getFunction());
-		assertEquals(owner, subject.getOwner());
+		assertEquals(owner, subject.getPayer());
 		assertEquals(spender, subject.getCryptoAllowances().get(0).getSpender());
 		assertEquals(amount, subject.getCryptoAllowances().get(0).getAmount());
 		assertEquals(token1, subject.getTokenAllowances().get(0).getTokenId());
@@ -167,7 +167,7 @@ class CryptoAllowanceAccessorTest {
 
 	private void validateAdjust() {
 		assertEquals(CryptoAdjustAllowance, subject.getFunction());
-		assertEquals(owner, subject.getOwner());
+		assertEquals(owner, subject.getPayer());
 		assertEquals(spender, subject.getCryptoAllowances().get(0).getSpender());
 		assertEquals(adjust, subject.getCryptoAllowances().get(0).getAmount());
 		assertEquals(token1, subject.getTokenAllowances().get(0).getTokenId());

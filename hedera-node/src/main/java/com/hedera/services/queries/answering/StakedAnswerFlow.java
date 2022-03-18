@@ -109,7 +109,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
 			if (paymentStatus != OK) {
 				return service.responseGiven(query, view, paymentStatus);
 			} else {
-				optionalPayment = paymentCheck.getRight();
+				optionalPayment = (SignedTxnAccessor) paymentCheck.getRight();
 			}
 		}
 

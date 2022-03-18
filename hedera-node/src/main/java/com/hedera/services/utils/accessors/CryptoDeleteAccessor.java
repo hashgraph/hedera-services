@@ -22,16 +22,18 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
-import com.swirlds.common.SwirldTransaction;
 
-public class CryptoDeleteAccessor extends PlatformTxnAccessor {
+public class CryptoDeleteAccessor extends SignedTxnAccessor {
 	private final CryptoDeleteTransactionBody transactionBody;
+	private AliasManager aliasManager;
 
-	public CryptoDeleteAccessor(final SwirldTransaction platformTxn,
+	public CryptoDeleteAccessor(final byte[] txn,
 			final AliasManager aliasManager) throws InvalidProtocolBufferException {
-		super(platformTxn, aliasManager);
+		super(txn);
+		this.aliasManager = aliasManager;
 		this.transactionBody = getTxn().getCryptoDelete();
 	}
 
@@ -49,5 +51,9 @@ public class CryptoDeleteAccessor extends PlatformTxnAccessor {
 
 	public AccountID getTransferAccount() {
 		return unaliased(transactionBody.getTransferAccountID()).toGrpcAccountId();
+	}
+
+	protected EntityNum unaliased(AccountID grpcId) {
+		return aliasManager.unaliased(grpcId);
 	}
 }

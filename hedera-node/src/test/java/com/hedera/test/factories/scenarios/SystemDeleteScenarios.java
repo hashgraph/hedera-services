@@ -31,31 +31,31 @@ import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystem
 public enum SystemDeleteScenarios implements TxnHandlingScenario {
 	SYSTEM_DELETE_FILE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedSystemDelete().file(MISC_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	FULL_PAYER_SIGS_VIA_MAP_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedSystemDelete()
 							.payer(DILIGENT_SIGNING_PAYER_ID)
 							.payerKt(DILIGENT_SIGNING_PAYER_KT)
 							.nonPayerKts(MISC_FILE_WACL_KT)
 							.file(MISC_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	MISSING_PAYER_SIGS_VIA_MAP_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedSystemDelete()
 							.payer(TOKEN_TREASURY_ID)
 							.payerKt(TOKEN_TREASURY_KT)
 							.nonPayerKts(MISC_FILE_WACL_KT)
 							.file(MISC_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	INVALID_PAYER_SIGS_VIA_MAP_SCENARIO {
@@ -63,7 +63,7 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
 			SigMapGenerator buggySigMapGen = SigMapGenerator.withUniquePrefixes();
 			buggySigMapGen.setInvalidEntries(Set.of(1));
 
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedSystemDelete()
 							.fee(1_234L)
 							.sigMapGen(buggySigMapGen)
@@ -71,14 +71,14 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
 							.payerKt(DILIGENT_SIGNING_PAYER_KT)
 							.nonPayerKts(MISC_FILE_WACL_KT)
 							.file(MISC_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	},
 	AMBIGUOUS_SIG_MAP_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			SigMapGenerator ambigSigMapGen = SigMapGenerator.withAmbiguousPrefixes();
 
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedSystemDelete()
 							.fee(1_234L)
 							.keyFactory(overlapFactory)
@@ -87,7 +87,7 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
 							.payerKt(FROM_OVERLAP_PAYER_KT)
 							.nonPayerKts(MISC_FILE_WACL_KT)
 							.file(MISC_FILE_ID).get()
-			), aliasManager());
+			));
 		}
 	}
 }

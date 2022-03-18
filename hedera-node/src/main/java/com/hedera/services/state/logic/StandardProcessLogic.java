@@ -29,7 +29,7 @@ import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -107,7 +107,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			final long submittingMember,
 			final Instant consensusTime,
 			final Instant effectiveConsensusTime,
-			final PlatformTxnAccessor accessor
+			final TxnAccessor accessor
 	) {
 		executionTimeTracker.start();
 		txnManager.process(accessor, effectiveConsensusTime, submittingMember);

@@ -30,38 +30,38 @@ public enum TokenAssociateScenarios implements TxnHandlingScenario {
 	TOKEN_ASSOCIATE_WITH_KNOWN_TARGET {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenAssociate()
 							.targeting(MISC_ACCOUNT)
 							.associating(KNOWN_TOKEN_WITH_KYC)
 							.associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.nonPayerKts(MISC_ACCOUNT_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenAssociate()
 							.targeting(DEFAULT_PAYER)
 							.associating(KNOWN_TOKEN_WITH_KYC)
 							.associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_ASSOCIATE_WITH_MISSING_TARGET {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenAssociate()
 							.targeting(MISSING_ACCOUNT)
 							.associating(KNOWN_TOKEN_WITH_KYC)
 							.associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 }

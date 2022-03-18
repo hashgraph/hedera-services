@@ -23,19 +23,21 @@ package com.hedera.services.utils.accessors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.common.SwirldTransaction;
 
-public class CryptoUpdateAccessor extends PlatformTxnAccessor{
+public class CryptoUpdateAccessor extends SignedTxnAccessor{
 	private final CryptoUpdateTransactionBody transactionBody;
+	private AliasManager aliasManager;
 
-	public CryptoUpdateAccessor(final SwirldTransaction platformTxn,
+	public CryptoUpdateAccessor(final byte[] txn,
 			final AliasManager aliasManager) throws InvalidProtocolBufferException {
-		super(platformTxn, aliasManager);
+		super(txn);
+		this.aliasManager = aliasManager;
 		this.transactionBody = getTxn().getCryptoUpdateAccount();
 		setCryptoUpdateUsageMeta();
 	}
@@ -103,6 +105,10 @@ public class CryptoUpdateAccessor extends PlatformTxnAccessor{
 
 	public Key getKey() {
 		return transactionBody.getKey();
+	}
+
+	protected EntityNum unaliased(AccountID grpcId) {
+		return aliasManager.unaliased(grpcId);
 	}
 
 	private void setCryptoUpdateUsageMeta() {

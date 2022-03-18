@@ -34,6 +34,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.CryptoCreateAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -103,6 +104,7 @@ class CryptoCreateTransitionLogicTest {
 	private TransactionBody cryptoCreateTxn;
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
+	private PlatformTxnAccessor platformAccessor;
 	private CryptoCreateAccessor accessor;
 	private CryptoCreateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
@@ -111,13 +113,15 @@ class CryptoCreateTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 		ledger = mock(HederaLedger.class);
 		aliasManager = mock(AliasManager.class);
 		validator = mock(OptionValidator.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
+		platformAccessor = mock(PlatformTxnAccessor.class);
+
 		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
+		given(txnCtx.consensusTime()).willReturn(CONSENSUS_TIME);
 		withRubberstampingValidator();
 		given(aliasManager.unaliased(PAYER)).willReturn(PAYER_NUM);
 		given(aliasManager.unaliased(PROXY)).willReturn(PROXY_NUM);
@@ -138,49 +142,49 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.memoCheck(MEMO)).willReturn(MEMO_TOO_LONG);
 
-		assertEquals(MEMO_TOO_LONG, subject.validateSemantics(accessor));
+		assertEquals(MEMO_TOO_LONG, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
 	void returnsKeyRequiredOnEmptyKey() throws InvalidProtocolBufferException {
 		givenValidTxnCtx(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build(), PROXY, ourTxnId());
 
-		assertEquals(KEY_REQUIRED, subject.validateSemantics(accessor));
+		assertEquals(KEY_REQUIRED, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
 	void requiresKey() throws InvalidProtocolBufferException {
 		givenMissingKey();
 
-		assertEquals(KEY_REQUIRED, subject.validateSemantics(accessor));
+		assertEquals(KEY_REQUIRED, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
 	void rejectsMissingAutoRenewPeriod() throws InvalidProtocolBufferException {
 		givenMissingAutoRenewPeriod();
 
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.validateSemantics(accessor));
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
 	void rejectsNegativeBalance() throws InvalidProtocolBufferException {
 		givenAbsurdInitialBalance();
 
-		assertEquals(INVALID_INITIAL_BALANCE, subject.validateSemantics(accessor));
+		assertEquals(INVALID_INITIAL_BALANCE, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
 	void rejectsNegativeSendThreshold() throws InvalidProtocolBufferException {
 		givenAbsurdSendThreshold();
 
-		assertEquals(INVALID_SEND_RECORD_THRESHOLD, subject.validateSemantics(accessor));
+		assertEquals(INVALID_SEND_RECORD_THRESHOLD, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
 	void rejectsNegativeReceiveThreshold() throws InvalidProtocolBufferException {
 		givenAbsurdReceiveThreshold();
 
-		assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, subject.validateSemantics(accessor));
+		assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
@@ -188,7 +192,7 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.hasGoodEncoding(any())).willReturn(false);
 
-		assertEquals(BAD_ENCODING, subject.validateSemantics(accessor));
+		assertEquals(BAD_ENCODING, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
@@ -196,14 +200,14 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.validateSemantics(accessor));
+		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
 	void acceptsValidTxn() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 
-		assertEquals(OK, subject.validateSemantics(accessor));
+		assertEquals(OK, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
@@ -211,7 +215,7 @@ class CryptoCreateTransitionLogicTest {
 		givenInvalidMaxAutoAssociations();
 
 		assertEquals(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
-				subject.validateSemantics(accessor));
+				subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
@@ -256,7 +260,8 @@ class CryptoCreateTransitionLogicTest {
 				.setCryptoCreateAccount(cryptoCreateTxn.getCryptoCreateAccount().toBuilder().setKey(unmappableKey()))
 				.build();
 		setAccessor();
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 
 		subject.doStateTransition();
 
@@ -372,7 +377,8 @@ class CryptoCreateTransitionLogicTest {
 	private void setAccessor() throws InvalidProtocolBufferException {
 		final var txn = new SwirldTransaction(
 				Transaction.newBuilder().setBodyBytes(cryptoCreateTxn.toByteString()).build().toByteArray());
-		accessor = new CryptoCreateAccessor(txn, aliasManager);
+		accessor = new CryptoCreateAccessor(txn.getContentsDirect(), aliasManager);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 	}
 
 	private void givenValidTxnCtx() throws InvalidProtocolBufferException {
@@ -397,7 +403,7 @@ class CryptoCreateTransitionLogicTest {
 								.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
 				).build();
 		setAccessor();
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(platformAccessor);
 	}
 
 	private TransactionID ourTxnId() {

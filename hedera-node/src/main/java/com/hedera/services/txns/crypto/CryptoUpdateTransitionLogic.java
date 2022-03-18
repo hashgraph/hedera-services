@@ -33,6 +33,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.CryptoUpdateAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -100,7 +101,8 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			final var accessor = (CryptoUpdateAccessor) txnCtx.accessor();
+			final var platformAccessor = (PlatformTxnAccessor) txnCtx.accessor();
+			final var accessor = (CryptoUpdateAccessor) platformAccessor.getDelegate();
 			final var target = accessor.getTarget();
 
 			// validate account Id.
@@ -209,7 +211,8 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var updateAccessor = (CryptoUpdateAccessor) accessor;
+		final var platformAccessor = (PlatformTxnAccessor) accessor;
+		final var updateAccessor = (CryptoUpdateAccessor) platformAccessor.getDelegate();
 
 		var memoValidity = !updateAccessor.hasMemo() ? OK : validator.memoCheck(updateAccessor.getMemo());
 		if (memoValidity != OK) {

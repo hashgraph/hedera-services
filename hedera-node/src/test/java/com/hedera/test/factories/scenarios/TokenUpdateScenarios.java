@@ -30,153 +30,153 @@ public enum TokenUpdateScenarios implements TxnHandlingScenario {
 	UPDATE_WITH_NO_KEYS_AFFECTED {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	UPDATE_REPLACING_TREASURY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newTreasury(TOKEN_TREASURY)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	UPDATE_REPLACING_TREASURY_AS_PAYER {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newTreasury(DEFAULT_PAYER)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	UPDATE_REPLACING_WITH_MISSING_TREASURY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newTreasury(MISSING_ACCOUNT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	UPDATE_REPLACING_ADMIN_KEY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newAdmin(TOKEN_REPLACE_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	UPDATE_WITH_SUPPLY_KEYED_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_WITH_SUPPLY)
 							.replacingSupply()
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	UPDATE_WITH_KYC_KEYED_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_WITH_KYC)
 							.replacingKyc()
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	UPDATE_WITH_FREEZE_KEYED_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_WITH_FREEZE)
 							.replacingFreeze()
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	UPDATE_WITH_WIPE_KEYED_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_WITH_WIPE)
 							.replacingWipe()
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	UPDATE_WITH_MISSING_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(MISSING_TOKEN)
 							.newAutoRenew(MISC_ACCOUNT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_IMMUTABLE)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newAutoRenew(MISC_ACCOUNT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_PAYER {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newAutoRenew(DEFAULT_PAYER)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 	TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenUpdate()
 							.updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 							.newAutoRenew(MISSING_ACCOUNT)
 							.get()
-			), aliasManager());
+			));
 		}
 	}
 }

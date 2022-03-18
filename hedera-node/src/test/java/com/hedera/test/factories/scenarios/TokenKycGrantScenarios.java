@@ -29,12 +29,12 @@ public enum TokenKycGrantScenarios implements TxnHandlingScenario {
 	VALID_GRANT_WITH_EXTANT_TOKEN {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenGrantKyc()
 							.granting(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
 							.nonPayerKts(TOKEN_KYC_KT)
 							.get()
-			), aliasManager());
+			));
 		}
 	},
 }

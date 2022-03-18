@@ -78,7 +78,7 @@ class CryptoUpdateAccessorTest {
 		when(aliasManager.unaliased(target)).thenReturn(targetEntity);
 		when(aliasManager.unaliased(proxy)).thenReturn(proxyEntity);
 
-		subject = new CryptoUpdateAccessor(accountUpdateTxn, aliasManager);
+		subject = new CryptoUpdateAccessor(accountUpdateTxn.getContentsDirect(), aliasManager);
 
 		validate();
 	}
@@ -89,7 +89,7 @@ class CryptoUpdateAccessorTest {
 		when(aliasManager.unaliased(aliasedTarget)).thenReturn(targetEntity);
 		when(aliasManager.unaliased(aliasedProxy)).thenReturn(proxyEntity);
 
-		subject = new CryptoUpdateAccessor(accountUpdateTxn, aliasManager);
+		subject = new CryptoUpdateAccessor(accountUpdateTxn.getContentsDirect(), aliasManager);
 
 		validate();
 	}
@@ -100,7 +100,7 @@ class CryptoUpdateAccessorTest {
 		when(aliasManager.unaliased(aliasedTarget)).thenReturn(EntityNum.MISSING_NUM);
 		when(aliasManager.unaliased(aliasedProxy)).thenReturn(EntityNum.MISSING_NUM);
 
-		subject = new CryptoUpdateAccessor(accountUpdateTxn, aliasManager);
+		subject = new CryptoUpdateAccessor(accountUpdateTxn.getContentsDirect(), aliasManager);
 
 		assertEquals(0L, subject.getTarget().getAccountNum());
 		assertEquals(0L, subject.getProxy().getAccountNum());

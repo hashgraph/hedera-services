@@ -32,6 +32,7 @@ import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.CryptoAllowanceAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -80,12 +81,13 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		/* --- Extract gRPC --- */
-		final var adjustAccessor = (CryptoAllowanceAccessor) txnCtx.accessor();
-		final AccountID owner = adjustAccessor.getOwner();
+		final var platformAccessor = (PlatformTxnAccessor) txnCtx.accessor();
+		final var adjustAccessor = (CryptoAllowanceAccessor) platformAccessor.getDelegate();
+		final AccountID payer = adjustAccessor.getPayer();
 		entitiesChanged.clear();
 
 		/* --- Use models --- */
-		final Id payerId = Id.fromGrpcAccount(owner);
+		final Id payerId = Id.fromGrpcAccount(payer);
 		final var payerAccount = accountStore.loadAccount(payerId);
 
 		/* --- Do the business logic --- */
@@ -108,8 +110,9 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var adjustAccessor = (CryptoAllowanceAccessor) accessor;
-		final AccountID payer = adjustAccessor.getOwner();
+		final var platformAccessor = (PlatformTxnAccessor) accessor;
+		final var adjustAccessor = (CryptoAllowanceAccessor) platformAccessor.getDelegate();
+		final AccountID payer = adjustAccessor.getPayer();
 		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 		return adjustAllowanceChecks.allowancesValidation(adjustAccessor.getCryptoAllowances(),
 				adjustAccessor.getTokenAllowances(), adjustAccessor.getNftAllowances(), payerAccount,

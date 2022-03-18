@@ -27,6 +27,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.utils.accessors.CryptoDeleteAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -80,7 +81,8 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			final var accessor = (CryptoDeleteAccessor) txnCtx.accessor();
+			final var platformAccessor = (PlatformTxnAccessor) txnCtx.accessor();
+			final var accessor = (CryptoDeleteAccessor)platformAccessor.getDelegate();
 
 			AccountID id = accessor.getTarget();
 			if (ledger.isKnownTreasury(id)) {
@@ -125,7 +127,8 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var deleteAccessor = (CryptoDeleteAccessor) accessor;
+		final var platformAccessor = (PlatformTxnAccessor) accessor;
+		final var deleteAccessor = (CryptoDeleteAccessor) platformAccessor.getDelegate();
 
 		if (!deleteAccessor.hasTarget() || !deleteAccessor.hasTransferAccount()) {
 			return ACCOUNT_ID_DOES_NOT_EXIST;

@@ -30,7 +30,9 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.accessors.TriggeredTxnAccessor;
+import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -53,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
-import static com.hedera.services.utils.accessors.PlatformTxnAccessor.uncheckedAccessorFor;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -70,6 +71,7 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willCallRealMethod;
 
 @ExtendWith(MockitoExtension.class)
 class RecordCacheTest {
@@ -87,6 +89,8 @@ class RecordCacheTest {
 	private TxnIdRecentHistory recentChildHistory;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private AccessorFactory factory;
 
 	private RecordCache subject;
 
@@ -253,7 +257,7 @@ class RecordCacheTest {
 	}
 
 	@Test
-	void managesFailInvalidRecordsAsExpected() {
+	void managesFailInvalidRecordsAsExpected() throws InvalidProtocolBufferException {
 		final var consensusTime = Instant.now();
 		final var txnId = TransactionID.newBuilder().setAccountID(asAccount("0.0.1001")).build();
 		final var signedTxn = Transaction.newBuilder()
@@ -265,7 +269,8 @@ class RecordCacheTest {
 		final var platformTxn = new SwirldTransaction(signedTxn.toByteArray());
 		final var effectivePayer = IdUtils.asAccount("0.0.3");
 		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
-		final var accessor = uncheckedAccessorFor(platformTxn, aliasManager);
+		final var accessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
+				platformTxn);
 
 		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(txnId))
@@ -301,8 +306,9 @@ class RecordCacheTest {
 		final var effectivePayer = IdUtils.asAccount("0.0.3");
 		final var effectiveScheduleID = IdUtils.asSchedule("0.0.123");
 		given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
+		willCallRealMethod().given(factory).triggeredTxn(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
 
-		final var accessor = new TriggeredTxnAccessor(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
+		final var accessor = factory.triggeredTxn(signedTxn.toByteArray(), effectivePayer, effectiveScheduleID);
 		final var expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
 				.setTxnId(TxnId.fromGrpc(txnId))
 				.setReceipt(TxnReceipt.newBuilder().setStatus(FAIL_INVALID.name()).build())

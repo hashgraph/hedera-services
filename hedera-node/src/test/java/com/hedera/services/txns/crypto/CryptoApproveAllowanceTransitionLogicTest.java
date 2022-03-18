@@ -25,7 +25,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
@@ -37,6 +36,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.CryptoAllowanceAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -88,6 +88,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private PlatformTxnAccessor platformAccessor;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
 	private CryptoAllowanceAccessor accessor;
@@ -102,7 +104,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 	@Test
 	void hasCorrectApplicability() throws InvalidProtocolBufferException {
-		givenValidTxnCtx();
+		setUpValidTxnCtx();
 
 		assertTrue(subject.applicability().test(cryptoApproveAllowanceTxn));
 		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
@@ -111,13 +113,11 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@Test
 	void happyPathAddsAllowances() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(aliasManager.unaliased(owner)).willReturn(ownerNum);
+		given(aliasManager.unaliased(payerId)).willReturn(payerNum);
 		given(aliasManager.unaliased(spender)).willReturn(spenderNum);
-		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
-		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
-		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
-				.willReturn(ownerAcccount);
+		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
+		given(accountStore.loadAccountOrFailWith(ownerAccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
+				.willReturn(ownerAccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		subject.doStateTransition();
@@ -131,25 +131,25 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	}
 
 	@Test
-	void considersPayerAsOwnerIfNotMentioned() {
+	void considersPayerAsOwnerIfNotMentioned() throws InvalidProtocolBufferException {
 		givenValidTxnCtxWithOwnerAsPayer();
 
-		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
+		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+		given(aliasManager.unaliased(payerId)).willReturn(payerNum);
+		given(aliasManager.unaliased(spender)).willReturn(spenderNum);
 
-		assertEquals(0, payerAcccount.getCryptoAllowances().size());
-		assertEquals(0, payerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(0, payerAcccount.getNftAllowances().size());
+		assertEquals(0, payerAccount.getCryptoAllowances().size());
+		assertEquals(0, payerAccount.getFungibleTokenAllowances().size());
+		assertEquals(0, payerAccount.getNftAllowances().size());
 
 		subject.doStateTransition();
 
-		assertEquals(1, payerAcccount.getCryptoAllowances().size());
-		assertEquals(1, payerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, payerAcccount.getNftAllowances().size());
+		assertEquals(1, payerAccount.getCryptoAllowances().size());
+		assertEquals(1, payerAccount.getFungibleTokenAllowances().size());
+		assertEquals(1, payerAccount.getNftAllowances().size());
 
-		verify(accountStore).commitAccount(payerAcccount);
+		verify(accountStore).commitAccount(payerAccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
 
@@ -157,13 +157,11 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	void wipesSerialsWhenApprovedForAll() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(aliasManager.unaliased(owner)).willReturn(ownerNum);
+		given(aliasManager.unaliased(payerId)).willReturn(payerNum);
 		given(aliasManager.unaliased(spender)).willReturn(spenderNum);
-		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
-		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
-		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
-				.willReturn(ownerAcccount);
+		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
+		given(accountStore.loadAccountOrFailWith(ownerAccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
+				.willReturn(ownerAccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		subject.doStateTransition();
@@ -180,22 +178,14 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 	@Test
 	void checksIfAllowancesExceedLimit() throws InvalidProtocolBufferException {
-		Account ownerAcc = mock(Account.class);
-		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAcc);
-		given(ownerAcc.getTotalAllowances()).willReturn(101);
-	void checksIfAllowancesExceedLimit() {
+		givenValidTxnCtx();
 		Account owner = mock(Account.class);
-		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
-		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
+		given(aliasManager.unaliased(payerId)).willReturn(payerNum);
+		given(aliasManager.unaliased(spender)).willReturn(spenderNum);
+		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
+		given(accountStore.loadAccountOrFailWith(ownerAccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(owner);
 		given(owner.getTotalAllowances()).willReturn(101);
-
-		givenValidTxnCtx();
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(aliasManager.unaliased(owner)).willReturn(ownerNum);
-		given(aliasManager.unaliased(spender)).willReturn(spenderNum);
-
-		given(txnCtx.accessor()).willReturn(accessor);
 
 		var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
@@ -207,23 +197,18 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 	@Test
 	void semanticCheckDelegatesWorks() throws InvalidProtocolBufferException {
-		givenValidTxnCtx();
-		given(aliasManager.unaliased(owner)).willReturn(ownerNum);
+		setUpValidTxnCtx();
+		final var txn = new SwirldTransaction(
+				Transaction.newBuilder().setBodyBytes(cryptoApproveAllowanceTxn.toByteString()).build().toByteArray());
+		accessor = new CryptoAllowanceAccessor(txn.getContentsDirect(), aliasManager);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
+		given(aliasManager.unaliased(payerId)).willReturn(payerNum);
 		given(aliasManager.unaliased(spender)).willReturn(spenderNum);
 		given(allowanceChecks.allowancesValidation(accessor.getCryptoAllowances(), accessor.getTokenAllowances(),
-				accessor.getNftAllowances(), ownerAccount,
+				accessor.getNftAllowances(), payerAccount,
 				dynamicProperties.maxAllowanceLimitPerTransaction())).willReturn(OK);
-		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
-		assertEquals(OK, subject.validateSemantics(accessor));
-		given(allowanceChecks.allowancesValidation(
-				op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(),
-				op.getNftAllowancesList(),
-				payerAcccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction()))
-				.willReturn(OK);
-		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
-		assertEquals(OK, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));
+		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
+		assertEquals(OK, subject.validateSemantics(platformAccessor));
 	}
 
 	@Test
@@ -234,20 +219,18 @@ class CryptoApproveAllowanceTransitionLogicTest {
 						CryptoApproveAllowanceTransactionBody.newBuilder()
 				).build();
 		setAccessor();
-		given(aliasManager.unaliased(owner)).willReturn(ownerNum);
-		given(txnCtx.accessor()).willReturn(accessor);
 
-		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
-		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
+		given(aliasManager.unaliased(payerId)).willReturn(payerNum);
+		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
 
 		subject.doStateTransition();
 		assertEquals(0, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
 		assertEquals(0, ownerAccount.getNftAllowances().size());
-		verify(accountStore).commitAccount(ownerAccount);
-		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
-		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(0, ownerAcccount.getNftAllowances().size());
+		verify(accountStore, never()).commitAccount(ownerAccount);
+		assertEquals(0, ownerAccount.getCryptoAllowances().size());
+		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
+		assertEquals(0, ownerAccount.getNftAllowances().size());
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
 
@@ -255,15 +238,12 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@Test
 	void removesAllowancesWhenAmountIsZero() throws InvalidProtocolBufferException {
 		givenTxnCtxWithZeroAmount();
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(aliasManager.unaliased(owner)).willReturn(ownerNum);
+		given(aliasManager.unaliased(payerId)).willReturn(payerNum);
 		given(aliasManager.unaliased(spender)).willReturn(spenderNum);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
-
-		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
-		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
-				.willReturn(ownerAcccount);
-		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
+		given(accountStore.loadAccountOrFailWith(ownerAccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
+				.willReturn(ownerAccount);
+		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
 
 		subject.doStateTransition();
 
@@ -277,7 +257,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 	@Test
 	void skipsTxnWhenKeyExistsAndAmountGreaterThanZero() throws InvalidProtocolBufferException {
-		var ownerAcccount = new Account(Id.fromGrpcAccount(owner));
+		var ownerAcccount = new Account(Id.fromGrpcAccount(ownerId));
 		setUpOwnerWithExistingKeys(ownerAcccount);
 
 		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
@@ -286,12 +266,9 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		givenValidTxnCtx();
 
-		given(txnCtx.accessor()).willReturn(accessor);
-		given(aliasManager.unaliased(owner)).willReturn(ownerNum);
+		given(aliasManager.unaliased(payerId)).willReturn(payerNum);
 		given(aliasManager.unaliased(spender)).willReturn(spenderNum);
-		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
-		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
-		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
+		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAcccount);
 
@@ -327,25 +304,19 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		token2Model.setMaxSupply(5000L);
 		token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
-		final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder().setSpender(spender).setAmount(
-				0L).build();
-		final TokenAllowance tokenAllowance = TokenAllowance.newBuilder().setSpender(spender).setAmount(
-				0L).setTokenId(token1).build();
-		final NftAllowance nftAllowance = NftAllowance.newBuilder().setSpender(spender)
-				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
 		final CryptoAllowance cryptoAllowance = CryptoAllowance
 				.newBuilder()
 				.setOwner(ownerId)
-				.setSpender(spender1)
+				.setSpender(spender)
 				.setAmount(0L).build();
 		final TokenAllowance tokenAllowance = TokenAllowance.newBuilder()
-				.setSpender(spender1)
+				.setSpender(spender)
 				.setAmount(0L)
 				.setTokenId(token1)
 				.setOwner(ownerId)
 				.build();
 		final NftAllowance nftAllowance = NftAllowance.newBuilder()
-				.setSpender(spender1)
+				.setSpender(spender)
 				.setTokenId(token2)
 				.setApprovedForAll(BoolValue.of(false))
 				.setOwner(ownerId)
@@ -369,12 +340,17 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				).build();
 
 		setAccessor();
-		ownerAccount.setNftAllowances(new HashMap<>());
-		ownerAccount.setCryptoAllowances(new HashMap<>());
-		ownerAccount.setFungibleTokenAllowances(new HashMap<>());
+		ownerAccount.setNftAllowances(new TreeMap<>());
+		ownerAccount.setCryptoAllowances(new TreeMap<>());
+		ownerAccount.setFungibleTokenAllowances(new TreeMap<>());
 	}
 
 	private void givenValidTxnCtx() throws InvalidProtocolBufferException {
+		setUpValidTxnCtx();
+		setAccessor();
+	}
+
+	private void setUpValidTxnCtx() {
 		token1Model.setMaxSupply(5000L);
 		token1Model.setType(TokenType.FUNGIBLE_COMMON);
 		token2Model.setMaxSupply(5000L);
@@ -392,7 +368,6 @@ class CryptoApproveAllowanceTransitionLogicTest {
 								.addAllTokenAllowances(tokenAllowances)
 								.addAllNftAllowances(nftAllowances)
 				).build();
-		setAccessor();
 		ownerAccount.setNftAllowances(new HashMap<>());
 		ownerAccount.setCryptoAllowances(new HashMap<>());
 		ownerAccount.setFungibleTokenAllowances(new HashMap<>());
@@ -401,25 +376,27 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private void setAccessor() throws InvalidProtocolBufferException {
 		final var txn = new SwirldTransaction(
 				Transaction.newBuilder().setBodyBytes(cryptoApproveAllowanceTxn.toByteString()).build().toByteArray());
-		accessor = new CryptoAllowanceAccessor(txn, aliasManager);
+		accessor = new CryptoAllowanceAccessor(txn.getContentsDirect(), aliasManager);
+		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(platformAccessor.getDelegate()).willReturn(accessor);
 	}
 
-	private void givenValidTxnCtxWithOwnerAsPayer() {
+	private void givenValidTxnCtxWithOwnerAsPayer() throws InvalidProtocolBufferException {
 		token1Model.setMaxSupply(5000L);
 		token1Model.setType(TokenType.FUNGIBLE_COMMON);
 		token2Model.setMaxSupply(5000L);
 		token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder()
-				.setSpender(spender1)
+				.setSpender(spender)
 				.setAmount(10L).build();
 		final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder()
-				.setSpender(spender1)
+				.setSpender(spender)
 				.setAmount(10L)
 				.setTokenId(token1)
 				.build();
 		final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
-				.setSpender(spender1)
+				.setSpender(spender)
 				.setTokenId(token2)
 				.setApprovedForAll(BoolValue.of(true))
 				.addAllSerialNumbers(List.of(1L, 10L)).build();
@@ -436,16 +413,16 @@ class CryptoApproveAllowanceTransitionLogicTest {
 								.addAllTokenAllowances(tokenAllowances)
 								.addAllNftAllowances(nftAllowances)
 				).build();
-		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
+		setAccessor();
 
-		payerAcccount.setNftAllowances(new HashMap<>());
-		payerAcccount.setCryptoAllowances(new HashMap<>());
-		payerAcccount.setFungibleTokenAllowances(new HashMap<>());
+		payerAccount.setNftAllowances(new HashMap<>());
+		payerAccount.setCryptoAllowances(new HashMap<>());
+		payerAccount.setFungibleTokenAllowances(new HashMap<>());
 	}
 
 	private TransactionID ourTxnId() {
 		return TransactionID.newBuilder()
-				.setAccountID(owner)
+				.setAccountID(ownerId)
 				.setAccountID(payerId)
 				.setTransactionValidStart(
 						Timestamp.newBuilder().setSeconds(consensusTime.getEpochSecond()))
@@ -453,30 +430,22 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	}
 
 	private final AccountID spender = asAccount("0.0.123");
+	private final AccountID payerId = asAccount("0.0.6000");
+	private final AccountID ownerId = asAccount("0.0.5000");
 	private final TokenID token1 = asToken("0.0.100");
 	private final TokenID token2 = asToken("0.0.200");
-	private final AccountID owner = asAccount("0.0.5000");
 	private final Instant consensusTime = Instant.now();
 	private final EntityNum spenderNum = EntityNum.fromAccountId(spender);
-	private final EntityNum ownerNum = EntityNum.fromAccountId(owner);
-	private static final AccountID spender1 = asAccount("0.0.123");
-	private static final TokenID token1 = asToken("0.0.100");
-	private static final TokenID token2 = asToken("0.0.200");
-	private static final AccountID payerId = asAccount("0.0.5000");
-	private static final AccountID ownerId = asAccount("0.0.6000");
-	private static final Instant consensusTime = Instant.now();
+	private final EntityNum ownerNum = EntityNum.fromAccountId(ownerId);
+	private final EntityNum payerNum = EntityNum.fromAccountId(payerId);
 	private final Token token1Model = new Token(Id.fromGrpcToken(token1));
 	private final Token token2Model = new Token(Id.fromGrpcToken(token2));
-	private final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder().setSpender(spender).setAmount(
-			10L).build();
-	private final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder().setSpender(spender).setAmount(
-			10L).setTokenId(token1).build();
 	private final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder()
-			.setSpender(spender1)
+			.setSpender(spender)
 			.setOwner(ownerId)
 			.setAmount(10L).build();
 	private final TokenAllowance tokenAllowance1 = TokenAllowance.newBuilder()
-			.setSpender(spender1)
+			.setSpender(spender)
 			.setAmount(10L)
 			.setTokenId(token1)
 			.setOwner(ownerId)
@@ -484,7 +453,6 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
 			.setSpender(spender)
 			.setTokenId(token2).setApprovedForAll(BoolValue.of(true))
-			.setSpender(spender1)
 			.setOwner(ownerId)
 			.setTokenId(token2)
 			.setApprovedForAll(BoolValue.of(true))
@@ -492,7 +460,6 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowance> tokenAllowances = new ArrayList<>();
 	private List<NftAllowance> nftAllowances = new ArrayList<>();
-	private final Account ownerAccount = new Account(Id.fromGrpcAccount(owner));
-	private final Account payerAcccount = new Account(Id.fromGrpcAccount(payerId));
-	private final Account ownerAcccount = new Account(Id.fromGrpcAccount(ownerId));
+	private final Account payerAccount = new Account(Id.fromGrpcAccount(payerId));
+	private final Account ownerAccount = new Account(Id.fromGrpcAccount(ownerId));
 }
