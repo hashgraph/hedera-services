@@ -157,7 +157,7 @@
 		<maven-source.version>3.2.0</maven-source.version>
 		<maven-resources.version>3.2.0</maven-resources.version>
 		<maven-license.version>2.0.0</maven-license.version>
-		<maven-compiler.version>3.10.0</maven-compiler.version>
+		<maven-compiler.version>3.10.1</maven-compiler.version>
 		<maven-surefire.version>3.0.0-M5</maven-surefire.version>
 		<maven-dependency.version>3.3.0</maven-dependency.version>
 		<maven-versions.version>2.9.0</maven-versions.version>
@@ -185,7 +185,7 @@
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit5.version>5.8.2</junit5.version>
 		<mockito.version>4.4.0</mockito.version>
-		<awaitility.version>4.1.1</awaitility.version>
+		<awaitility.version>4.2.0</awaitility.version>
 
 		<!-- SonarCloud properties -->
 		<jacoco.version>0.8.7</jacoco.version>
