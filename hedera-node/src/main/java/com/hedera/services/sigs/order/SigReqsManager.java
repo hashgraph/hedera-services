@@ -63,7 +63,6 @@ public class SigReqsManager {
 	public static final Function<MerkleToken, TokenSigningMetadata> TOKEN_META_TRANSFORM =
 			TokenMetaUtils::signingMetaFrom;
 
-	private final Platform platform;
 	private final FileNumbers fileNumbers;
 	private final ExpansionHelper expansionHelper;
 	private final SignatureWaivers signatureWaivers;
@@ -83,14 +82,12 @@ public class SigReqsManager {
 	private SigRequirements workingSigReqs;
 
 	@Inject
-	public SigReqsManager(final Platform platform,
-			final FileNumbers fileNumbers,
+	public SigReqsManager(final FileNumbers fileNumbers,
 			final ExpansionHelper expansionHelper,
 			final SignatureWaivers signatureWaivers,
 			final MutableStateChildren workingState,
 			final GlobalDynamicProperties dynamicProperties,
 			final SignedStateViewFactory stateViewFactory) {
-		this.platform = platform;
 		this.fileNumbers = fileNumbers;
 		this.workingState = workingState;
 		this.expansionHelper = expansionHelper;

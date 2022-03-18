@@ -88,7 +88,6 @@ class SigReqsManagerTest {
 	void setUp() {
 		stateViewFactory = new SignedStateViewFactory(platform);
 		subject = new SigReqsManager(
-				platform,
 				fileNumbers,
 				expansionHelper,
 				signatureWaivers,
