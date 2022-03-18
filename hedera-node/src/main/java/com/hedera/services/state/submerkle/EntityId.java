@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import java.io.IOException;
@@ -42,6 +43,7 @@ import java.util.Objects;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 
 public class EntityId implements SelfSerializable {
 	private static final long DEFAULT_SHARD = 0L;
@@ -275,5 +277,9 @@ public class EntityId implements SelfSerializable {
 
 	public Id asId() {
 		return new Id(shard, realm, num);
+	}
+
+	public Address toEvmAddress() {
+		return Address.wrap(Bytes.wrap(asEvmAddress((int) shard, realm, num)));
 	}
 }
