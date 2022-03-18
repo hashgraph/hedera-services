@@ -196,7 +196,7 @@ class LedgerBalanceChangesTest {
 		assertFailsWith(
 				() -> subject.doZeroSum(fixtureChanges()),
 				ResponseCodeEnum.INVALID_ACCOUNT_ID);
-		assertTrue(accountsLedger.getCreations().isEmpty());
+		assertTrue(accountsLedger.getCreatedKeys().isEmpty());
 	}
 
 	@Test

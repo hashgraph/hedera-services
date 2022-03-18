@@ -97,6 +97,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.precompiledContract;
@@ -512,6 +513,7 @@ class ERC20PrecompilesTest {
                 BALANCE_OF_WRAPPER);
         given(tokenRels.get(any(), any())).willReturn(10L);
         given(encoder.encodeBalance(10L)).willReturn(successResult);
+        given(tokenRels.exists(any())).willReturn(true);
 
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
@@ -529,6 +531,14 @@ class ERC20PrecompilesTest {
         // and:
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+
+        // when:
+        given(tokenRels.exists(any())).willReturn(false);
+        given(encoder.encodeBalance(0L)).willReturn(successResult);
+
+        // then:
+        assertEquals(successResult, subject.computeInternal(frame));
+        verify(encoder).encodeBalance(0L);
     }
 
     @Test
@@ -672,6 +682,7 @@ class ERC20PrecompilesTest {
     }
 
     private void givenMinimalFrameContext() {
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
@@ -682,6 +693,7 @@ class ERC20PrecompilesTest {
     }
 
     private void givenMinimalFrameContextWithoutParentUpdater() {
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(pretendArguments.getInt(0)).willReturn(ABI_ID_REDIRECT_FOR_TOKEN);
