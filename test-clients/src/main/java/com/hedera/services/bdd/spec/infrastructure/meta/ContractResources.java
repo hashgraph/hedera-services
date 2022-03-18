@@ -110,6 +110,7 @@ public class ContractResources {
 	public static final String SERVICE_CONTRACT = bytecodePath("ServiceContract");
 	public static final String STATIC_CONTRACT = bytecodePath("StaticContract");
 	public static final String MIXED_MINT_TOKEN_CONTRACT = bytecodePath("MixedMintTokenContract");
+	public static final String ALIASED_TRANSFER_CONTRACT = bytecodePath("AliasedTransfer");
 	public static final String MIXED_FRAMES_SCENARIOS = bytecodePath("MixedFramesScenarios");
 	public static final String NESTED_CREATIONS_PATH = bytecodePath("NestedCreations");
 	public static final String ERC_20_CONTRACT = bytecodePath("ERC20Contract");
@@ -1266,6 +1267,19 @@ public class ContractResources {
 	public static final String STATIC_MINT_CALL_ABI = "{\"inputs\": [{\"internalType\": \"address\",\"name\": \"token\",\"type\": \"address\"}," +
 			"{\"internalType\": \"uint64\",\"name\": \"amount\",\"type\": \"uint64\"}]," +
 			"\"name\": \"mintStaticCall\",\"outputs\": [],\"stateMutability\": \"nonpayable\",\"type\": \"function\"}";
+
+	public static final String ALIASED_TRANSFER_DEPLOY_WITH_CREATE2_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name" +
+			"\":\"token\",\"type\":\"address\"}],\"name\":\"deployWithCREATE2\",\"outputs\":[{\"internalType\":\"address" +
+			"\",\"name\":\"operator\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String ALIASED_TRANSFER_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"" +
+			"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"" +
+			"transfer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String ALIASED_GIVE_TOKENS_TO_OPERATOR_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token" +
+			"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType" +
+			"\":\"int64\",\"name\":\"value\",\"type\":\"int64\"}],\"name\":\"giveTokensToOperator\",\"outputs\":[],\"" +
+			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 
 	public static String bytecodePath(String bytecode) {
