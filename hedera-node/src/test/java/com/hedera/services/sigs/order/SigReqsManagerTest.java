@@ -22,6 +22,7 @@ package com.hedera.services.sigs.order;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.FileNumbers;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.SignedStateViewFactory;
@@ -30,6 +31,7 @@ import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
@@ -79,6 +81,10 @@ class SigReqsManagerTest {
 	private ServicesState firstSignedState;
 	@Mock
 	private ServicesState nextSignedState;
+	@Mock
+	private ScheduleStore scheduleStore;
+	@Mock
+	private NetworkInfo networkInfo;
 
 	private SignedStateViewFactory stateViewFactory;
 
@@ -86,7 +92,7 @@ class SigReqsManagerTest {
 
 	@BeforeEach
 	void setUp() {
-		stateViewFactory = new SignedStateViewFactory(platform);
+		stateViewFactory = new SignedStateViewFactory(platform, scheduleStore, networkInfo);
 		subject = new SigReqsManager(
 				fileNumbers,
 				expansionHelper,

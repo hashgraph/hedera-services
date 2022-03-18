@@ -21,11 +21,13 @@ package com.hedera.services.context.primitives;
  */
 
 import com.hedera.services.ServicesState;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.ImmutableStateChildren;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.exceptions.NoValidSignedStateException;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
 
@@ -42,10 +44,15 @@ import java.util.function.Consumer;
 @Singleton
 public class SignedStateViewFactory {
 	private final Platform platform;
+	private final ScheduleStore scheduleStore;
+	private final NetworkInfo networkInfo;
 
 	@Inject
-	public SignedStateViewFactory(Platform platform) {
+	public SignedStateViewFactory(final Platform platform, final ScheduleStore scheduleStore,
+			final NetworkInfo nodeInfo) {
 		this.platform = platform;
+		this.scheduleStore = scheduleStore;
+		this.networkInfo = nodeInfo;
 	}
 
 	/**
@@ -61,8 +68,8 @@ public class SignedStateViewFactory {
 	}
 
 	/**
-	 * Gets the immutable state children from the latest signedState from platform. Returns {@code Optional.empty()}
-	 * when the provided state is invalid.
+	 * Gets the immutable state children from the latest signedState from platform.
+	 * Returns {@code Optional.empty()} when platform has no valid signed state.
 	 *
 	 * @return latest state children from state
 	 */
@@ -74,6 +81,21 @@ public class SignedStateViewFactory {
 		} catch (NoValidSignedStateException ignore) {
 			return Optional.empty();
 		}
+	}
+
+	/**
+	 * Get the StateView with the StateChildren of platform's latest signed state.
+	 * Returns {@code Optional.empty()} if there is no signed state available in platform and StateChildren can't be
+	 * constructed.
+	 *
+	 * @return
+	 */
+	public Optional<StateView> getLatestSignedStateView() {
+		final var stateChildren = tryToGetLatestSignedChildren();
+		if (stateChildren.isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(new StateView(scheduleStore, stateChildren.get(), networkInfo));
 	}
 
 	/**

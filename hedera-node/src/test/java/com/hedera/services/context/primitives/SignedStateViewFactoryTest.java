@@ -22,6 +22,7 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.exceptions.NoValidSignedStateException;
@@ -38,6 +39,7 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -72,6 +74,10 @@ class SignedStateViewFactoryTest {
 	@Mock
 	private Platform platform;
 	@Mock
+	private ScheduleStore scheduleStore;
+	@Mock
+	private NetworkInfo networkInfo;
+	@Mock
 	private ServicesState state;
 	@Mock
 	private ServicesState secondState;
@@ -104,7 +110,7 @@ class SignedStateViewFactoryTest {
 
 	@BeforeEach
 	public void setUp() {
-		factory = new SignedStateViewFactory(platform);
+		factory = new SignedStateViewFactory(platform, scheduleStore, networkInfo);
 	}
 
 	@Test
@@ -219,6 +225,28 @@ class SignedStateViewFactoryTest {
 		assertChildrenAreExpectedMocks(firstChildrenToUpdate);
 		assertEquals(firstHandleTime, firstChildrenToUpdate.signedAt());
 		assertEquals(secondHandleTime, secondChildrenToUpdate.signedAt());
+	}
+
+	@Test
+	void canConstructStateView() {
+		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
+		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
+		given(state.isInitialized()).willReturn(true);
+		assertTrue(factory.isValid(state));
+		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
+		}));
+		final var stateView = factory.getLatestSignedStateView();
+		assertFalse(stateView.isEmpty());
+	}
+
+	@Test
+	void failsToConstructStateViewIfChildrenEmpty() {
+		given(state.getTimeOfLastHandledTxn()).willReturn(null);
+		assertFalse(factory.isValid(state));
+		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
+		}));
+		final var stateView = factory.getLatestSignedStateView();
+		assertTrue(stateView.isEmpty());
 	}
 
 	private void givenStateWithMockChildren() {
