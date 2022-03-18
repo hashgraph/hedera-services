@@ -53,24 +53,40 @@ import java.util.Objects;
  * much more expensive, since the compiler does not seem to ever inline those calls.)
  */
 public class ImmutableStateChildren implements StateChildren {
-	private WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
-	private WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
-	private WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
-	private WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
-	private WeakReference<MerkleMap<EntityNum, MerkleSchedule>> schedules;
-	private WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
-	private WeakReference<VirtualMap<ContractKey, ContractValue>> contractStorage;
-	private WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
-	private WeakReference<MerkleNetworkContext> networkCtx;
-	private WeakReference<AddressBook> addressBook;
-	private WeakReference<MerkleSpecialFiles> specialFiles;
-	private WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
-	private WeakReference<Map<ByteString, EntityNum>> aliases;
-	private Instant signedAt = Instant.EPOCH;
-	private ServicesState state;
+	private final WeakReference<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final WeakReference<MerkleMap<EntityNum, MerkleTopic>> topics;
+	private final WeakReference<MerkleMap<EntityNum, MerkleToken>> tokens;
+	private final WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+	private final WeakReference<MerkleMap<EntityNum, MerkleSchedule>> schedules;
+	private final WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
+	private final WeakReference<VirtualMap<ContractKey, ContractValue>> contractStorage;
+	private final WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
+	private final WeakReference<MerkleNetworkContext> networkCtx;
+	private final WeakReference<AddressBook> addressBook;
+	private final WeakReference<MerkleSpecialFiles> specialFiles;
+	private final WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
+	private final WeakReference<Map<ByteString, EntityNum>> aliases;
+	private final Instant signedAt;
+
+	private final ServicesState state;
 
 	public ImmutableStateChildren(ServicesState state) {
 		this.state = state;
+		this.signedAt = state.getTimeOfLastHandledTxn();
+		
+		accounts = new WeakReference<>(this.state.accounts());
+		topics = new WeakReference<>(this.state.topics());
+		storage = new WeakReference<>(this.state.storage());
+		contractStorage = new WeakReference<>(this.state.contractStorage());
+		tokens = new WeakReference<>(this.state.tokens());
+		tokenAssociations = new WeakReference<>(this.state.tokenAssociations());
+		schedules = new WeakReference<>(this.state.scheduleTxs());
+		networkCtx = new WeakReference<>(this.state.networkCtx());
+		addressBook = new WeakReference<>(this.state.addressBook());
+		specialFiles = new WeakReference<>(this.state.specialFiles());
+		uniqueTokens = new WeakReference<>(this.state.uniqueTokens());
+		runningHashLeaf = new WeakReference<>(this.state.runningHashLeaf());
+		aliases = new WeakReference<>(this.state.aliases());
 	}
 
 	@Override
@@ -143,25 +159,5 @@ public class ImmutableStateChildren implements StateChildren {
 	@Override
 	public Map<ByteString, EntityNum> aliases() {
 		return Objects.requireNonNull(aliases.get());
-	}
-
-	public void updatePrimitiveChildren(final Instant signingTime) {
-		if (!state.isInitialized()) {
-			throw new IllegalArgumentException("State children require an initialized state to update");
-		}
-		accounts = new WeakReference<>(this.state.accounts());
-		topics = new WeakReference<>(this.state.topics());
-		storage = new WeakReference<>(this.state.storage());
-		contractStorage = new WeakReference<>(this.state.contractStorage());
-		tokens = new WeakReference<>(this.state.tokens());
-		tokenAssociations = new WeakReference<>(this.state.tokenAssociations());
-		schedules = new WeakReference<>(this.state.scheduleTxs());
-		networkCtx = new WeakReference<>(this.state.networkCtx());
-		addressBook = new WeakReference<>(this.state.addressBook());
-		specialFiles = new WeakReference<>(this.state.specialFiles());
-		uniqueTokens = new WeakReference<>(this.state.uniqueTokens());
-		runningHashLeaf = new WeakReference<>(this.state.runningHashLeaf());
-		aliases = new WeakReference<>(this.state.aliases());
-		signedAt = signingTime;
 	}
 }

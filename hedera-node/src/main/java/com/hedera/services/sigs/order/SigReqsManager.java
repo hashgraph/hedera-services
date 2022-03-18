@@ -25,6 +25,7 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.NoValidSignedStateException;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -137,9 +138,10 @@ public class SigReqsManager {
 		 * reconnect the latest signed state may have never received an init() call. In that
 		 * case, any "rebuilt" children of the ServicesState will be null. (This isn't a
 		 * problem for any existing SigRequirements code, however.) */
-		final var status = factory.tryToUpdate(signedChildren);
-		if (!status) {
-			return status;
+		try {
+			factory.tryToUpdate(signedChildren);
+		} catch (NoValidSignedStateException ignore) {
+			return false;
 		}
 		expandFromSignedState(accessor);
 		return true;

@@ -3,40 +3,69 @@ package com.hedera.services.context.primitives;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.ImmutableStateChildren;
 import com.hedera.services.context.MutableStateChildren;
+import com.hedera.services.exceptions.NoValidSignedStateException;
 import com.hedera.services.state.migration.StateVersions;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
 
-import java.time.Instant;
+import java.util.Optional;
 
 /**
  * Factory that provides view of last completed signed state and its state children.
- * It also provides access to update/get the state children
+ * Fetches the latest signed state from platform for each call to get/update state children.
  */
 public class SignedStateViewFactory {
 	private final Platform platform;
-	private ServicesState signedState;
-	private Instant latestSigningTime;
 
 	public SignedStateViewFactory(Platform platform) {
 		this.platform = platform;
-		signedState = getSignedState();
+	}
+
+	/**
+	 * Try to update the mutable state children with the children from the signed state.
+	 * Throws {@code NoValidSignedStateException} when the provided state is invalid.
+	 *
+	 * @param children
+	 * 		mutable children provided
+	 * @throws NoValidSignedStateException
+	 */
+	public void tryToUpdate(MutableStateChildren children) throws NoValidSignedStateException {
+		final var state = getLatestSignedState();
+		if (!hasValidSignedState(state)) {
+			throw new NoValidSignedStateException("State children require an valid state to update");
+		}
+		children.updateFromSigned(state, state.getTimeOfLastHandledTxn());
+	}
+
+	/**
+	 * Gets the immutable state children from the latest signedState from platform. Returns {@code Optional.empty()}
+	 * when the provided state is invalid.
+	 *
+	 * @return immutable state children
+	 */
+	public Optional<ImmutableStateChildren> tryToGet() {
+		final var state = getLatestSignedState();
+		if (!hasValidSignedState(state)) {
+			return Optional.empty();
+		}
+		return Optional.of(new ImmutableStateChildren(state));
 	}
 
 	/**
 	 * Checks if the signedState provided is valid
 	 *
+	 * @param state
 	 * @return true if it is a valid signedState
 	 */
-	public boolean hasValidSignedState() {
-		if (signedState == null) {
+	boolean hasValidSignedState(final ServicesState state) {
+		if (state == null) {
 			return false;
 		}
 		/*
 		  Since we can't get the enclosing platform SignedState, we don't know exactly when this state was signed. So
 		  we just use, as a guaranteed lower bound, the consensus time of its last-handled transaction.
 		 */
-		latestSigningTime = signedState.getTimeOfLastHandledTxn();
+		final var latestSigningTime = state.getTimeOfLastHandledTxn();
 
 		/*
 		 1. latestSigningTime is null when no transactions have been handled; abort now to avoid downstream NPE.
@@ -44,56 +73,23 @@ public class SignedStateViewFactory {
 		 the current version.
 		 3. Signed state is not initialized when the aliases FCHashMap has not been rebuilt in an uninitialized state
 		 */
-		return latestSigningTime != null && signedState.getStateVersion() == StateVersions.CURRENT_VERSION && signedState.isInitialized();
+		return latestSigningTime != null && state.getStateVersion() == StateVersions.CURRENT_VERSION && state.isInitialized();
 	}
 
 	/**
-	 * Try to update the mutable state children with the children from the signed state
-	 *
-	 * @param children
-	 * 		mutable children provided
-	 * @return true if success, false otherwise
-	 */
-	public boolean tryToUpdate(MutableStateChildren children) {
-		if (!hasValidSignedState()) {
-			return false;
-		}
-		children.updateFromSigned(signedState, latestSigningTime);
-		return true;
-	}
-
-	/**
-	 * Gets the state children from the latest signedState from platform.
-	 *
-	 * @return immutable state children
-	 */
-	public ImmutableStateChildren tryToGet() {
-		if (!hasValidSignedState()) {
-			throw new IllegalArgumentException("State children require an valid state to update");
-		}
-		// Convenience wrapper for the latest state children received from Platform#getLastCompleteSwirldState()
-		final ImmutableStateChildren signedChildren = new ImmutableStateChildren(signedState);
-		signedChildren.updatePrimitiveChildren(signedState.getTimeOfLastHandledTxn());
-		return signedChildren;
-	}
-
-	/**
-	 * Gets the last completed signed state from platform
+	 * Gets the last completed signed state from platform.
+	 * <b>IMPORTANT:</b> This should be called everytime we try to get or update state children, to ensure we have the
+	 * latest state.
 	 *
 	 * @return last completed signed state
 	 */
-	ServicesState getSignedState() {
+	ServicesState getLatestSignedState() {
 		try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLastCompleteSwirldState()) {
-			signedState = wrapper.get();
+			final var signedState = wrapper.get();
 			if (signedState == null) {
 				return null;
 			}
 			return signedState;
 		}
-	}
-
-	/* --- only for unit tests ---*/
-	public Instant getLatestSigningTime() {
-		return latestSigningTime;
 	}
 }

@@ -22,8 +22,9 @@ package com.hedera.services.context.primitives;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
-import com.hedera.services.context.ImmutableStateChildren;
 import com.hedera.services.context.MutableStateChildren;
+import com.hedera.services.context.StateChildren;
+import com.hedera.services.exceptions.NoValidSignedStateException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -53,7 +54,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -98,9 +101,6 @@ class SignedStateViewFactoryTest {
 
 	@BeforeEach
 	public void setUp() {
-		given(platform.getLastCompleteSwirldState())
-				.willReturn(new AutoCloseableWrapper<>(state, () -> {
-				}));
 		factory = new SignedStateViewFactory(platform);
 	}
 
@@ -109,7 +109,7 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
-		assertTrue(factory.hasValidSignedState());
+		assertTrue(factory.hasValidSignedState(state));
 	}
 
 	@Test
@@ -117,48 +117,62 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(false);
-		assertFalse(factory.hasValidSignedState());
+		assertFalse(factory.hasValidSignedState(state));
 
 		given(state.getStateVersion()).willReturn(StateVersions.MINIMUM_SUPPORTED_VERSION);
-		assertFalse(factory.hasValidSignedState());
+		assertFalse(factory.hasValidSignedState(state));
 
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.hasValidSignedState());
+		assertFalse(factory.hasValidSignedState(state));
 	}
 
 	@Test
-	void returnsTrueIfUpdatesSuccessfully() {
+	void canUpdateSuccessfully() {
+		given(platform.getLastCompleteSwirldState())
+				.willReturn(new AutoCloseableWrapper<>(state, () -> {
+				}));
+		var childrenToUpdate = new MutableStateChildren();
+		givenStateWithMockChildren();
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
-		assertTrue(factory.hasValidSignedState());
-		assertTrue(factory.tryToUpdate(new MutableStateChildren()));
+		assertTrue(factory.hasValidSignedState(state));
+		assertDoesNotThrow(() -> factory.tryToUpdate(childrenToUpdate));
+		assertChildrenAreExpectedMocks(childrenToUpdate);
 	}
 
 	@Test
-	void doesntUpdateIfInvalidState() {
+	void throwsIfUpdatedWithInvalidState() {
+		given(platform.getLastCompleteSwirldState())
+				.willReturn(new AutoCloseableWrapper<>(state, () -> {
+				}));
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.hasValidSignedState());
-		assertFalse(factory.tryToUpdate(new MutableStateChildren()));
+		assertFalse(factory.hasValidSignedState(state));
+		assertThrows(NoValidSignedStateException.class, () -> factory.tryToUpdate(new MutableStateChildren()));
 	}
 
 	@Test
-	void failsToGetIfInvalidState() {
+	void returnsEmptyWhenGettingFromInvalidState() {
+		given(platform.getLastCompleteSwirldState())
+				.willReturn(new AutoCloseableWrapper<>(state, () -> {
+				}));
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.hasValidSignedState());
-		final var err = assertThrows(IllegalArgumentException.class, () -> factory.tryToGet());
-		assertTrue(err.getMessage().contains("State children require an valid state to update"));
+		assertFalse(factory.hasValidSignedState(state));
+		final var children = factory.tryToGet();
+		assertEquals(Optional.empty(), children);
 	}
 
 	@Test
 	void getsLatestImmutableChildren() {
+		given(platform.getLastCompleteSwirldState())
+				.willReturn(new AutoCloseableWrapper<>(state, () -> {
+				}));
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.ofEpochSecond(12345));
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
 		givenStateWithMockChildren();
 		final var children = factory.tryToGet();
-		assertChildrenAreExpectedMocks(children);
-		assertEquals(Instant.ofEpochSecond(12345), factory.getLatestSigningTime());
+		assertChildrenAreExpectedMocks(children.get());
 	}
 
 	private void givenStateWithMockChildren() {
@@ -177,7 +191,7 @@ class SignedStateViewFactoryTest {
 		given(state.aliases()).willReturn(aliases);
 	}
 
-	private void assertChildrenAreExpectedMocks(ImmutableStateChildren children) {
+	private void assertChildrenAreExpectedMocks(StateChildren children) {
 		assertSame(accounts, children.accounts());
 		assertSame(storage, children.storage());
 		assertSame(contractStorage, children.contractStorage());

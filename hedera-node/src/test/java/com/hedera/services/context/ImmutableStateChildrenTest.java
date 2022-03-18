@@ -51,7 +51,6 @@ import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -93,17 +92,10 @@ class ImmutableStateChildrenTest {
 	}
 
 	@Test
-	void refusesToUpdateFromUninitializedState() {
-		assertThrows(IllegalArgumentException.class, () -> subject.updatePrimitiveChildren(signedAt));
-	}
-
-	@Test
-	void childrenGetUpdatedAsExpected() {
+	public void childrenUpdatedInConstructor() {
 		givenStateWithMockChildren();
 		given(state.isInitialized()).willReturn(true);
-
-		subject.updatePrimitiveChildren(signedAt);
-
+		subject = new ImmutableStateChildren(state);
 		assertChildrenAreExpectedMocks();
 		assertEquals(signedAt, subject.signedAt());
 	}
