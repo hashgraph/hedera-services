@@ -749,8 +749,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec erc20AllowanceReturnsFails() {
-
 	private HapiApiSpec transferErc20TokenFrom() {
 		final var accountNotAssignedToTokenTxn = "accountNotAssignedToTokenTxn";
 		final var transferFromAccountTxn = "transferFromAccountTxn";
