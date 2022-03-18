@@ -139,7 +139,7 @@ public class SigReqsManager {
 		 * case, any "rebuilt" children of the ServicesState will be null. (This isn't a
 		 * problem for any existing SigRequirements code, however.) */
 		try {
-			factory.tryToUpdate(signedChildren);
+			factory.tryToUpdateToLatestSignedChildren(signedChildren);
 		} catch (NoValidSignedStateException ignore) {
 			return false;
 		}

@@ -79,9 +79,7 @@ public class MutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
-		final var refAccounts = accounts.get();
-		Objects.requireNonNull(refAccounts);
-		return refAccounts;
+		return Objects.requireNonNull(accounts.get());
 	}
 
 	public void setAccounts(MerkleMap<EntityNum, MerkleAccount> accounts) {

@@ -112,7 +112,7 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
-		assertTrue(factory.hasValidSignedState(state));
+		assertTrue(factory.isValid(state));
 	}
 
 	@Test
@@ -120,13 +120,13 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(false);
-		assertFalse(factory.hasValidSignedState(state));
+		assertFalse(factory.isValid(state));
 
 		given(state.getStateVersion()).willReturn(StateVersions.MINIMUM_SUPPORTED_VERSION);
-		assertFalse(factory.hasValidSignedState(state));
+		assertFalse(factory.isValid(state));
 
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.hasValidSignedState(state));
+		assertFalse(factory.isValid(state));
 	}
 
 	@Test
@@ -138,8 +138,8 @@ class SignedStateViewFactoryTest {
 		given(state.getTimeOfLastHandledTxn()).willReturn(Instant.now());
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
-		assertTrue(factory.hasValidSignedState(state));
-		assertDoesNotThrow(() -> factory.tryToUpdate(childrenToUpdate));
+		assertTrue(factory.isValid(state));
+		assertDoesNotThrow(() -> factory.tryToUpdateToLatestSignedChildren(childrenToUpdate));
 		assertChildrenAreExpectedMocks(childrenToUpdate);
 	}
 
@@ -148,8 +148,9 @@ class SignedStateViewFactoryTest {
 		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
 		}));
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.hasValidSignedState(state));
-		assertThrows(NoValidSignedStateException.class, () -> factory.tryToUpdate(new MutableStateChildren()));
+		assertFalse(factory.isValid(state));
+		assertThrows(NoValidSignedStateException.class,
+				() -> factory.tryToUpdateToLatestSignedChildren(new MutableStateChildren()));
 	}
 
 	@Test
@@ -157,8 +158,8 @@ class SignedStateViewFactoryTest {
 		given(platform.getLastCompleteSwirldState()).willReturn(new AutoCloseableWrapper<>(state, () -> {
 		}));
 		given(state.getTimeOfLastHandledTxn()).willReturn(null);
-		assertFalse(factory.hasValidSignedState(state));
-		final var children = factory.tryToGet();
+		assertFalse(factory.isValid(state));
+		final var children = factory.tryToGetLatestSignedChildren();
 		assertEquals(Optional.empty(), children);
 	}
 
@@ -170,7 +171,7 @@ class SignedStateViewFactoryTest {
 		given(state.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(state.isInitialized()).willReturn(true);
 		givenStateWithMockChildren();
-		final var children = factory.tryToGet();
+		final var children = factory.tryToGetLatestSignedChildren();
 		assertChildrenAreExpectedMocks(children.get());
 	}
 
@@ -188,8 +189,8 @@ class SignedStateViewFactoryTest {
 		given(secondState.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION);
 		given(secondState.isInitialized()).willReturn(true);
 		givenStateWithMockChildren();
-		var firstChildren = factory.tryToGet();
-		var secondChildren = factory.tryToGet();
+		var firstChildren = factory.tryToGetLatestSignedChildren();
+		var secondChildren = factory.tryToGetLatestSignedChildren();
 		assertNotSame(firstChildren, secondChildren);
 		assertChildrenAreExpectedMocks(firstChildren.get());
 		assertEquals(firstHandleTime, firstChildren.get().signedAt());
@@ -212,8 +213,8 @@ class SignedStateViewFactoryTest {
 		givenStateWithMockChildren();
 		final var firstChildrenToUpdate = new MutableStateChildren();
 		final var secondChildrenToUpdate = new MutableStateChildren();
-		factory.tryToUpdate(firstChildrenToUpdate);
-		factory.tryToUpdate(secondChildrenToUpdate);
+		factory.tryToUpdateToLatestSignedChildren(firstChildrenToUpdate);
+		factory.tryToUpdateToLatestSignedChildren(secondChildrenToUpdate);
 		assertNotSame(firstChildrenToUpdate, secondChildrenToUpdate);
 		assertChildrenAreExpectedMocks(firstChildrenToUpdate);
 		assertEquals(firstHandleTime, firstChildrenToUpdate.signedAt());

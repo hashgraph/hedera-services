@@ -68,25 +68,22 @@ public class ImmutableStateChildren implements StateChildren {
 	private final WeakReference<Map<ByteString, EntityNum>> aliases;
 	private final Instant signedAt;
 
-	private final ServicesState state;
-
 	public ImmutableStateChildren(ServicesState state) {
-		this.state = state;
 		this.signedAt = state.getTimeOfLastHandledTxn();
-		
-		accounts = new WeakReference<>(this.state.accounts());
-		topics = new WeakReference<>(this.state.topics());
-		storage = new WeakReference<>(this.state.storage());
-		contractStorage = new WeakReference<>(this.state.contractStorage());
-		tokens = new WeakReference<>(this.state.tokens());
-		tokenAssociations = new WeakReference<>(this.state.tokenAssociations());
-		schedules = new WeakReference<>(this.state.scheduleTxs());
-		networkCtx = new WeakReference<>(this.state.networkCtx());
-		addressBook = new WeakReference<>(this.state.addressBook());
-		specialFiles = new WeakReference<>(this.state.specialFiles());
-		uniqueTokens = new WeakReference<>(this.state.uniqueTokens());
-		runningHashLeaf = new WeakReference<>(this.state.runningHashLeaf());
-		aliases = new WeakReference<>(this.state.aliases());
+
+		accounts = new WeakReference<>(state.accounts());
+		topics = new WeakReference<>(state.topics());
+		storage = new WeakReference<>(state.storage());
+		contractStorage = new WeakReference<>(state.contractStorage());
+		tokens = new WeakReference<>(state.tokens());
+		tokenAssociations = new WeakReference<>(state.tokenAssociations());
+		schedules = new WeakReference<>(state.scheduleTxs());
+		networkCtx = new WeakReference<>(state.networkCtx());
+		addressBook = new WeakReference<>(state.addressBook());
+		specialFiles = new WeakReference<>(state.specialFiles());
+		uniqueTokens = new WeakReference<>(state.uniqueTokens());
+		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
+		aliases = new WeakReference<>(state.aliases());
 	}
 
 	@Override
@@ -96,9 +93,7 @@ public class ImmutableStateChildren implements StateChildren {
 
 	@Override
 	public MerkleMap<EntityNum, MerkleAccount> accounts() {
-		final var refAccounts = accounts.get();
-		Objects.requireNonNull(refAccounts);
-		return refAccounts;
+		return Objects.requireNonNull(accounts.get());
 	}
 
 	@Override
