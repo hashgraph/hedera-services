@@ -94,7 +94,7 @@ class ImmutableStateChildrenTest {
 	@Test
 	public void childrenUpdatedInConstructor() {
 		givenStateWithMockChildren();
-		given(state.isInitialized()).willReturn(true);
+		given(state.getTimeOfLastHandledTxn()).willReturn(signedAt);
 		subject = new ImmutableStateChildren(state);
 		assertChildrenAreExpectedMocks();
 		assertEquals(signedAt, subject.signedAt());
