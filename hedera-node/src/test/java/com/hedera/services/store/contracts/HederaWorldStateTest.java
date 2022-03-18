@@ -20,7 +20,6 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -82,7 +81,6 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -101,8 +99,6 @@ class HederaWorldStateTest {
 	private ContractAliases aliases;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private SideEffectsTracker sideEffectsTracker;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
