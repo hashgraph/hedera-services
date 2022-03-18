@@ -22,12 +22,8 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.AccountsCommitInterceptor;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.TokenRelsCommitInterceptor;
-import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
@@ -44,10 +40,13 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.fchashmap.FCHashMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,16 +55,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-
 @ExtendWith(MockitoExtension.class)
 class WorldLedgersTest {
+	private static final NftId target = new NftId(0, 0, 123, 456);
+	private static final TokenID nft = target.tokenId();
+	private static final EntityId treasury = new EntityId(0, 0, 666);
+	private static final EntityId notTreasury = new EntityId(0, 0, 777);
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final Address sponsor = Address.fromHexString("0xcba");
 
@@ -91,6 +96,25 @@ class WorldLedgersTest {
 	@BeforeEach
 	void setUp() {
 		subject = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+	}
+
+	@Test
+	void resolvesOwnerDirectlyIfNotTreasury() {
+		given(nftsLedger.get(target, OWNER)).willReturn(notTreasury);
+
+		final var expected = notTreasury.toEvmAddress();
+		final var actual = subject.ownerOf(target);
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void resolvesTreasuryOwner() {
+		given(nftsLedger.get(target, OWNER)).willReturn(MISSING_ENTITY_ID);
+		given(tokensLedger.get(nft, TokenProperty.TREASURY)).willReturn(treasury);
+
+		final var expected = treasury.toEvmAddress();
+		final var actual = subject.ownerOf(target);
+		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -198,7 +222,8 @@ class WorldLedgersTest {
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>());
-		final var liveAliases = new AliasManager();
+		final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
+		final var liveAliases = new AliasManager(() -> aliases);
 
 		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
 		assertTrue(source.areMutable());
@@ -247,7 +272,8 @@ class WorldLedgersTest {
 				MerkleToken::new,
 				new HashMapBackingTokens(),
 				new ChangeSummaryManager<>());
-		final var liveAliases = new AliasManager();
+		final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
+		final var liveAliases = new AliasManager(() -> aliases);
 
 		final var source = new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
 		assertTrue(source.areMutable());
@@ -259,6 +285,7 @@ class WorldLedgersTest {
 		assertFalse(nullAccounts.areMutable());
 		assertFalse(nullNfts.areMutable());
 		assertFalse(nullTokens.areMutable());
+		assertThrows(IllegalStateException.class, () -> nullAccounts.ownerOf(target));
 
 		final var wrappedUnusable = nullAccounts.wrapped();
 		assertSame(((StackedContractAliases) wrappedUnusable.aliases()).wrappedAliases(), nullAccounts.aliases());

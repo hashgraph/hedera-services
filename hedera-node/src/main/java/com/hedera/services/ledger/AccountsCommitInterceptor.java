@@ -25,7 +25,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,34 +49,31 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 	 * 		if these changes are invalid
 	 */
 	@Override
-	public void preview(final List<EntityChanges<AccountID, MerkleAccount, AccountProperty>> changesToCommit) {
-		for (final var changeToCommit : changesToCommit) {
-			final var account = changeToCommit.id();
-			final var merkleAccount = changeToCommit.entity();
-			final var changedProperties = changeToCommit.changes();
-
-			trackBalanceChangeIfAny(changedProperties, account, merkleAccount);
+	public void preview(final EntityChangeSet<AccountID, MerkleAccount, AccountProperty> pendingChanges) {
+		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
+			trackBalanceChangeIfAny(
+					pendingChanges.id(i).getAccountNum(),
+					pendingChanges.entity(i),
+					pendingChanges.changes(i));
 		}
 		assertZeroSum();
 	}
 
 	private void trackBalanceChangeIfAny(
-			final Map<AccountProperty, Object> changedProperties,
-			final AccountID account,
-			final MerkleAccount merkleAccount
+			final long accountNum,
+			final MerkleAccount merkleAccount,
+			final Map<AccountProperty, Object> accountChanges
 	) {
-		if (changedProperties.containsKey(AccountProperty.BALANCE)) {
-			final long balancePropertyValue = (long) changedProperties.get(AccountProperty.BALANCE);
-			final long balanceChange = merkleAccount != null ?
-					balancePropertyValue - merkleAccount.getBalance() : balancePropertyValue;
-
-			sideEffectsTracker.trackHbarChange(account, balanceChange);
+		if (accountChanges.containsKey(AccountProperty.BALANCE)) {
+			final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
+			final long adjustment = (merkleAccount != null) ? newBalance - merkleAccount.getBalance() : newBalance;
+			sideEffectsTracker.trackHbarChange(accountNum, adjustment);
 		}
 	}
 
 	private void assertZeroSum() {
 		if (sideEffectsTracker.getNetHbarChange() != 0) {
-			throw new IllegalStateException("Invalid balance changes!");
+			throw new IllegalStateException("Invalid balance changes");
 		}
 	}
 }

@@ -25,11 +25,10 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,14 +122,6 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 				"--- TOKENS ---\n" +
 				"NONSENSE";
 		assertEquals(desired, summary);
-	}
-
-	@Test
-	void delegatesGet() {
-		final var fakeGenesis = new MerkleAccount();
-		given(accountsLedger.getFinalized(genesis)).willReturn(fakeGenesis);
-
-		assertSame(fakeGenesis, subject.get(genesis));
 	}
 
 	@Test
@@ -370,7 +361,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	void forwardsTransactionalSemantics() {
 		subject.setTokenRelsLedger(null);
 		final var inOrder = inOrder(accountsLedger, mutableEntityAccess);
-		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(TransferList.getDefaultInstance());
+		given(sideEffectsTracker.getNetTrackedHbarChanges()).willReturn(new CurrencyAdjustments());
 
 		subject.begin();
 		subject.commit();

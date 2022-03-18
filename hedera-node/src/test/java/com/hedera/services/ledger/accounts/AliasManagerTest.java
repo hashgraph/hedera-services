@@ -23,13 +23,16 @@ package com.hedera.services.ledger.accounts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import static com.swirlds.common.CommonUtils.unhex;
@@ -46,7 +49,9 @@ class AliasManagerTest {
 	private static final Address nonMirrorAddress = Address.wrap(Bytes.wrap(rawNonMirrorAddress));
 	private static final Address mirrorAddress = num.toEvmAddress();
 
-	final AliasManager subject = new AliasManager();
+	private FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
+
+	private AliasManager subject = new AliasManager(() -> aliases);
 
 	@Test
 	void resolvesLinkedNonMirrorAsExpected() {
@@ -110,48 +115,38 @@ class AliasManagerTest {
 	}
 
 	@Test
-	void settersAndGettersWork() {
-		final var a = new EntityNum(1);
-		final var b = new EntityNum(2);
-		ByteString aliasA = ByteString.copyFromUtf8("aaaa");
-		ByteString aliasB = ByteString.copyFromUtf8("bbbb");
-		Map<ByteString, EntityNum> expectedMap = new HashMap<>() {{
-			put(aliasA, a);
-			put(aliasB, b);
-		}};
+	void rebuildsFromMap() throws ConstructableRegistryException {
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
 
-		assertTrue(subject.getAliases().isEmpty());
-
-		subject.setAliases(expectedMap);
-		assertEquals(expectedMap, subject.getAliases());
-		assertEquals(b, subject.lookupIdBy(ByteString.copyFromUtf8("bbbb")));
-		assertTrue(subject.contains(aliasA));
-	}
-
-	@Test
-	void rebuildsFromMap() {
 		final var withNum = EntityNum.fromLong(1L);
 		final var withoutNum = EntityNum.fromLong(2L);
+		final var contractNum = EntityNum.fromLong(3L);
 		final var expiredAlias = ByteString.copyFromUtf8("zyxwvut");
 		final var upToDateAlias = ByteString.copyFromUtf8("abcdefg");
+		final var contractAlias = ByteString.copyFrom(rawNonMirrorAddress);
 
 		final var accountWithAlias = new MerkleAccount();
 		accountWithAlias.setAlias(upToDateAlias);
 		final var accountWithNoAlias = new MerkleAccount();
+		final var contractAccount = new MerkleAccount();
+		contractAccount.setSmartContract(true);
+		contractAccount.setAlias(contractAlias);
 
 		final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
 		liveAccounts.put(withNum, accountWithAlias);
 		liveAccounts.put(withoutNum, accountWithNoAlias);
+		liveAccounts.put(contractNum, contractAccount);
 
 		subject.getAliases().put(expiredAlias, withoutNum);
 		subject.rebuildAliasesMap(liveAccounts);
 
 		final var finalMap = subject.getAliases();
-		assertEquals(1, finalMap.size());
+		assertEquals(2, finalMap.size());
 		assertEquals(withNum, subject.getAliases().get(upToDateAlias));
 
 		// finally when
 		subject.forgetAliasIfPresent(withNum, liveAccounts);
-		assertEquals(0, subject.getAliases().size());
+		assertEquals(1, subject.getAliases().size());
 	}
 }

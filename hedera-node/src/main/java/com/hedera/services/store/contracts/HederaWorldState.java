@@ -68,6 +68,7 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
+import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
@@ -493,6 +494,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
+				if (updatedAccount.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE) {
+					continue;
+				}
 				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
 				if (updatedAccount.codeWasUpdated()) {
