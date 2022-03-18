@@ -51,16 +51,11 @@ class MiscSpeedometersTest {
 	@Test
 	void registersExpectedStatEntries() {
 		final var sync = mock(StatEntry.class);
-		final var retries = mock(StatEntry.class);
 		final var rejections = mock(StatEntry.class);
 		given(factory.from(
 				argThat(MiscSpeedometers.Names.SYNC_VERIFICATIONS::equals),
 				argThat(MiscSpeedometers.Descriptions.SYNC_VERIFICATIONS::equals),
 				any())).willReturn(sync);
-		given(factory.from(
-				argThat(MiscSpeedometers.Names.ACCOUNT_LOOKUP_RETRIES::equals),
-				argThat(MiscSpeedometers.Descriptions.ACCOUNT_LOOKUP_RETRIES::equals),
-				any())).willReturn(retries);
 		given(factory.from(
 				argThat(MiscSpeedometers.Names.PLATFORM_TXN_REJECTIONS::equals),
 				argThat(MiscSpeedometers.Descriptions.PLATFORM_TXN_REJECTIONS::equals),
@@ -68,25 +63,20 @@ class MiscSpeedometersTest {
 
 		subject.registerWith(platform);
 
-		verify(platform).addAppStatEntry(retries);
 		verify(platform).addAppStatEntry(sync);
 		verify(platform).addAppStatEntry(rejections);
 	}
 
 	@Test
 	void cyclesExpectedSpeedometers() {
-		final var retries = mock(StatsSpeedometer.class);
 		final var sync = mock(StatsSpeedometer.class);
 		final var rejections = mock(StatsSpeedometer.class);
-		subject.accountLookupRetries = retries;
 		subject.syncVerifications = sync;
 		subject.platformTxnRejections = rejections;
 
-		subject.cycleAccountLookupRetries();
 		subject.cycleSyncVerifications();
 		subject.cyclePlatformTxnRejections();
 
-		verify(retries).update(1.0);
 		verify(rejections).update(1.0);
 		verify(sync).update(1.0);
 	}
