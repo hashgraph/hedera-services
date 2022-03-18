@@ -34,7 +34,6 @@ import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.AutoCloseableWrapper;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldTransaction;
@@ -55,7 +54,7 @@ import java.util.function.Function;
  *
  * We prefer to lookup the Hedera keys from the latest signed state, since if the entities with those keys
  * are unchanged between {@code expandSignatures} and {@code handleTransaction}, we can skip the otherwise
- * necessary step of re-expanding signatures in {@link Rationalization#performFor(TxnAccessor)}.
+ * necessary step of re-expanding signatures in {@link Rationalization#performFor(PlatformTxnAccessor)}.
  *
  * This class is <b>NOT</b> thread-safe.
  */
