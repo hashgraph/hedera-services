@@ -35,6 +35,7 @@ import java.util.List;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -94,6 +95,14 @@ class EncodingFacadeTest {
 
     private static final Bytes TRANSFER_EVENT = Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
 
+	private static final Bytes RETURN_CREATE_SUCCESS = Bytes.fromHexString(
+			"0x0000000000000000000000000000000000000000000000000000000000000016" +
+					"0000000000000000000000000000000000000000000000000000000000000008");
+
+	private static final Bytes CREATE_FAILURE_FROM_INVALID_EXPIRATION_TIME = Bytes.fromHexString(
+			"0x000000000000000000000000000000000000000000000000000000000000002d" +
+					"0000000000000000000000000000000000000000000000000000000000000000");
+
 	final Address logger = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
 	@Test
@@ -112,6 +121,18 @@ class EncodingFacadeTest {
 	void decodeReturnResultForBurn() {
 		final var decodedResult = subject.encodeBurnSuccess(49);
 		assertEquals(RETURN_BURN_FOR_49_TOKENS, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForCreateSuccess() {
+		final var decodedResult = subject.encodeCreateSuccess(senderAddress);
+		assertEquals(RETURN_CREATE_SUCCESS, decodedResult);
+	}
+
+	@Test
+	void decodeReturnResultForCreateFailure() {
+		final var decodedResult = subject.encodeCreateFailure(INVALID_EXPIRATION_TIME);
+		assertEquals(CREATE_FAILURE_FROM_INVALID_EXPIRATION_TIME, decodedResult);
 	}
 
 	@Test
