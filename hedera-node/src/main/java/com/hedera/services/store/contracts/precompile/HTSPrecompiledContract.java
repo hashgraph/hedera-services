@@ -140,6 +140,7 @@ import static com.hedera.services.store.contracts.precompile.PrecompilePricingUt
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
+import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
 import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
@@ -994,19 +995,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			 */
 			if (!tokenCreateOp.getFixedFees().isEmpty()) {
 				for (final var fixedFee: tokenCreateOp.getFixedFees()) {
-					validateTrue(isFixedFeeValid(fixedFee), "In FixedFee, only 1 of tokenId, useHbarsForPayment, " +
-							"useCurrentTokenForPayment should be set!");
+					validateTrue(fixedFee.getFixedFeePayment() != INVALID_PAYMENT, "In FixedFee, only 1 of tokenId, " +
+						"useHbarsForPayment, useCurrentTokenForPayment should be set!");
 				}
 			}
-		}
-
-		private boolean isFixedFeeValid(final TokenCreateWrapper.FixedFeeWrapper fixedFee) {
-			if (fixedFee.isTokenIdSet()) {
-				return !fixedFee.useCurrentTokenForPayment() && !fixedFee.useHbarsForPayment();
-			} else if (fixedFee.useHbarsForPayment()) {
-				return !fixedFee.useCurrentTokenForPayment();
-			}
-			return fixedFee.useCurrentTokenForPayment();
 		}
 
 		private void replaceInheritedKeysWithSenderKey() throws DecoderException {

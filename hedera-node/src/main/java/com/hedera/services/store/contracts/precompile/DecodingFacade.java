@@ -536,8 +536,8 @@ public class DecodingFacade {
 			final var useHbarsForPayment = (Boolean) fixedFeeTuple.get(2);
 			final var useCurrentTokenForPayment = (Boolean) fixedFeeTuple.get(3);
 			final var feeCollector = convertLeftPaddedAddressToAccountId((byte[]) fixedFeeTuple.get(4), aliasResolver);
-			fixedFees.add(new FixedFeeWrapper(amount, tokenId, useHbarsForPayment, useCurrentTokenForPayment,
-					feeCollector.getAccountNum() != 0 ? feeCollector : null));
+			fixedFees.add(new FixedFeeWrapper(amount, tokenId.getTokenNum() != 0 ? tokenId : null, useHbarsForPayment,
+					useCurrentTokenForPayment, feeCollector.getAccountNum() != 0 ? feeCollector : null));
 		}
 		return fixedFees;
 	}

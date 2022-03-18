@@ -321,29 +321,64 @@ final class TokenCreateWrapper {
 
 	record TokenExpiryWrapper(long second, AccountID autoRenewAccount, long autoRenewPeriod) { }
 
-	record FixedFeeWrapper(
-			long amount,
-			TokenID tokenID,
-			boolean useHbarsForPayment,
-			boolean useCurrentTokenForPayment,
-			AccountID feeCollector
-	) {
+	static final class FixedFeeWrapper {
+		enum FixedFeePayment {
+			INVALID_PAYMENT,
+			USE_HBAR,
+			USE_CURRENTLY_CREATED_TOKEN,
+			USE_EXISTING_FUNGIBLE_TOKEN
+		}
+
+		private final long amount;
+		private final TokenID tokenID;
+		private final boolean useHbarsForPayment;
+		private final boolean useCurrentTokenForPayment;
+		private final AccountID feeCollector;
+
+		private FixedFeePayment fixedFeePayment;
+
+		public FixedFeeWrapper(
+				final long amount,
+				final TokenID tokenID,
+				final boolean useHbarsForPayment,
+				final boolean useCurrentTokenForPayment,
+				final AccountID feeCollector
+		) {
+			this.amount = amount;
+			this.tokenID = tokenID;
+			this.useHbarsForPayment = useHbarsForPayment;
+			this.useCurrentTokenForPayment = useCurrentTokenForPayment;
+			this.feeCollector = feeCollector;
+			this.calculateFixedFeePaymentType();
+		}
+
+		private void calculateFixedFeePaymentType() {
+			if (tokenID != null && !useCurrentTokenForPayment && !useHbarsForPayment) {
+				this.fixedFeePayment = FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
+			} else if (useCurrentTokenForPayment && !useHbarsForPayment) {
+				this.fixedFeePayment = FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
+			} else if (useHbarsForPayment) {
+				this.fixedFeePayment =  FixedFeePayment.USE_HBAR;
+			} else {
+				this.fixedFeePayment = FixedFeePayment.INVALID_PAYMENT;
+			}
+		}
 
 		private FixedFee.Builder asBuilder() {
 			final var fixedFeeBuilder = FixedFee.newBuilder().setAmount(amount);
-			if (isTokenIdSet()) {
-				fixedFeeBuilder.setDenominatingTokenId(tokenID);
-			} else if (useCurrentTokenForPayment) {
-				fixedFeeBuilder.setDenominatingTokenId(TokenID.newBuilder()
+			switch (fixedFeePayment) {
+				case USE_EXISTING_FUNGIBLE_TOKEN -> fixedFeeBuilder.setDenominatingTokenId(tokenID);
+				case USE_CURRENTLY_CREATED_TOKEN -> fixedFeeBuilder.setDenominatingTokenId(TokenID.newBuilder()
 						.setShardNum(0L)
 						.setRealmNum(0L)
-						.setTokenNum(0L).build());
+						.setTokenNum(0L)
+						.build());
 			}
 			return fixedFeeBuilder;
 		}
 
-		boolean isTokenIdSet() {
-			return tokenID.getTokenNum() != 0;
+		FixedFeePayment getFixedFeePayment() {
+			return this.fixedFeePayment;
 		}
 
 		CustomFee asGrpc() {
