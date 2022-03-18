@@ -92,7 +92,7 @@ class ImmutableStateChildrenTest {
 	}
 
 	@Test
-	public void childrenUpdatedInConstructor() {
+	void childrenUpdatedInConstructor() {
 		givenStateWithMockChildren();
 		given(state.getTimeOfLastHandledTxn()).willReturn(signedAt);
 		subject = new ImmutableStateChildren(state);
