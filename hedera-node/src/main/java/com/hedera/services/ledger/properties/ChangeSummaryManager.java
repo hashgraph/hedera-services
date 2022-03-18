@@ -82,12 +82,9 @@ public final class ChangeSummaryManager<A, P extends Enum<P> & BeanProperty<A>> 
 			final A account,
 			final PropertyChangeObserver<K, P> changeObserver
 	) {
-		changes.entrySet().forEach(entry -> {
-					final var property = entry.getKey();
-					final var newValue = entry.getValue();
-					property.setter().accept(account, newValue);
-					changeObserver.newProperty(id, property, newValue);
-				}
-		);
+		changes.forEach((property, newValue) -> {
+			property.setter().accept(account, newValue);
+			changeObserver.newProperty(id, property, newValue);
+		});
 	}
 }

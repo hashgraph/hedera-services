@@ -25,8 +25,6 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.TokenID;
 
-import java.util.List;
-
 public class TokensCommitInterceptor implements CommitInterceptor<TokenID, MerkleToken, TokenProperty> {
 
 	// The tracker this interceptor should use for previewing changes. The interceptor is NOT
@@ -37,8 +35,11 @@ public class TokensCommitInterceptor implements CommitInterceptor<TokenID, Merkl
 //		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public void preview(List<EntityChanges<TokenID, MerkleToken, TokenProperty>> changesToCommit) {
-		//to be implemented
+	public void preview(final EntityChangeSet<TokenID, MerkleToken, TokenProperty> pendingChanges) {
+		// No-op for now
 	}
 }

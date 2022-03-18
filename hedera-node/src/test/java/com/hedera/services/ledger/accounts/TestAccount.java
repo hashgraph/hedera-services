@@ -9,9 +9,9 @@ package com.hedera.services.ledger.accounts;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,7 +37,7 @@ public class TestAccount {
 	public boolean flag;
 	public Allowance validHbarAllowances = Allowance.MISSING;
 	public Allowance validFungibleAllowances = Allowance.MISSING;
-	public Allowance validNftAllowances= Allowance.MISSING;
+	public Allowance validNftAllowances = Allowance.MISSING;
 
 	public TestAccount() {
 		tokenThing = DEFAULT_TOKEN_THING;
@@ -47,11 +47,10 @@ public class TestAccount {
 		this(value, thing, flag, tokenThing, Allowance.MISSING, Allowance.MISSING, Allowance.MISSING);
 	}
 
-	public TestAccount(long value, Object thing, boolean flag, long tokenThing,
-			Allowance validHbarAllowances,
-			Allowance validFungibleAllowances,
-			Allowance validNftAllowances
-			) {
+	public TestAccount(
+			long value, Object thing, boolean flag, long tokenThing,
+			Allowance validHbarAllowances, Allowance validFungibleAllowances, Allowance validNftAllowances
+	) {
 		this.value = value;
 		this.thing = thing;
 		this.flag = flag;
@@ -129,7 +128,7 @@ public class TestAccount {
 		if (!(o instanceof TestAccount)) {
 			return false;
 		}
-		TestAccount that = (TestAccount)o;
+		TestAccount that = (TestAccount) o;
 		return thing.equals(that.thing)
 				&& (flag == that.flag)
 				&& (value == that.value)
