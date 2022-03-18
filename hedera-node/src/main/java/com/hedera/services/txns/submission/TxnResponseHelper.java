@@ -20,7 +20,6 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -47,15 +46,12 @@ public final class TxnResponseHelper {
 
 	private final SubmissionFlow submissionFlow;
 	private final HapiOpCounters opCounters;
-	private final AliasManager aliasManager;
 
 	@Inject
 	public TxnResponseHelper(final SubmissionFlow submissionFlow,
-			final HapiOpCounters opCounters,
-			final AliasManager aliasManager) {
+			final HapiOpCounters opCounters) {
 		this.opCounters = opCounters;
 		this.submissionFlow = submissionFlow;
-		this.aliasManager = aliasManager;
 	}
 
 	public void submit(

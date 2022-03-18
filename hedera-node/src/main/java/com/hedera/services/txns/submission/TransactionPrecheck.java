@@ -99,7 +99,7 @@ public final class TransactionPrecheck {
 		}
 
 		final var structuralAssessment = stagedPrechecks.assessStructure(signedTxn);
-		final var accessor = (SignedTxnAccessor) structuralAssessment.getRight();
+		final var accessor = structuralAssessment.getRight();
 		if (null == accessor) {
 			return structuralAssessment;
 		}

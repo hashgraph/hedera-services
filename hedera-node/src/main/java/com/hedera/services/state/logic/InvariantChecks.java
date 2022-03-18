@@ -22,7 +22,6 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

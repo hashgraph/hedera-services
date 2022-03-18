@@ -52,7 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.times;
@@ -174,38 +173,6 @@ class PlatformTxnAccessorTest {
 
 		// expect:
 		assertDoesNotThrow(() -> SignedTxnAccessor.uncheckedFrom(validTxn));
-	}
-
-	@Test
-	void failsWithIllegalStateOnUncheckedConstruction() {
-		final var txn = new SwirldTransaction(NONSENSE);
-		// expect:
-		assertThrows(IllegalStateException.class,
-				() -> PlatformTxnAccessor.from(SignedTxnAccessor.from(txn.getContentsDirect()),
-						txn));
-	}
-
-	@Test
-	void failsOnInvalidSignedTxn() {
-		// given:
-		SwirldTransaction platformTxn = new SwirldTransaction(NONSENSE);
-
-		// expect:
-		assertThrows(IllegalStateException.class,
-				() -> new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn));
-	}
-
-	@Test
-	void failsOnInvalidTxn() {
-		// given:
-		Transaction signedNonsenseTxn = Transaction.newBuilder()
-				.setBodyBytes(ByteString.copyFrom(NONSENSE))
-				.build();
-		// and:
-		SwirldTransaction platformTxn =
-				new SwirldTransaction(signedNonsenseTxn.toByteArray());
-
-		// expect:
 	}
 
 	@Test

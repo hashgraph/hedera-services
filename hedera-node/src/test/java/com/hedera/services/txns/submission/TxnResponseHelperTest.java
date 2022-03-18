@@ -20,7 +20,6 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.SubmissionFlow;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -55,7 +54,6 @@ class TxnResponseHelperTest {
 	private SubmissionFlow submissionFlow;
 	private HapiOpCounters opCounters;
 	private StreamObserver<TransactionResponse> observer;
-	private AliasManager aliasManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -71,9 +69,8 @@ class TxnResponseHelperTest {
 		okResponse = mock(TransactionResponse.class);
 		given(okResponse.getNodeTransactionPrecheckCode()).willReturn(OK);
 		notOkResponse = mock(TransactionResponse.class);
-		aliasManager = mock(AliasManager.class);
 
-		subject = new TxnResponseHelper(submissionFlow, opCounters, aliasManager);
+		subject = new TxnResponseHelper(submissionFlow, opCounters);
 	}
 
 	@Test

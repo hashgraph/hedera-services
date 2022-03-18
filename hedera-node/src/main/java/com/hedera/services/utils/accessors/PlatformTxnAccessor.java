@@ -20,7 +20,6 @@ package com.hedera.services.utils.accessors;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
@@ -57,29 +56,18 @@ public class PlatformTxnAccessor implements TxnAccessor {
 	private RationalizedSigMeta sigMeta = null;
 
 	protected PlatformTxnAccessor(final TxnAccessor delegate,
-			SwirldTransaction platformTxn)
-			throws InvalidProtocolBufferException {
+			SwirldTransaction platformTxn) {
 		this.platformTxn = platformTxn;
 		this.delegate = delegate;
 	}
 
-	public static PlatformTxnAccessor from(final TxnAccessor delegate, final SwirldTransaction platformTxn)
-			throws InvalidProtocolBufferException {
-		try {
-			return new PlatformTxnAccessor(delegate, platformTxn);
-		} catch (InvalidProtocolBufferException ignore) {
-			throw new IllegalStateException("Accessor construction must get valid gRPC bytes!");
-		}
+	public static PlatformTxnAccessor from(final TxnAccessor delegate, final SwirldTransaction platformTxn) {
+		return new PlatformTxnAccessor(delegate, platformTxn);
 	}
 
-	public static PlatformTxnAccessor from(final SwirldTransaction platformTxn)
-			throws InvalidProtocolBufferException {
-		try {
-			return new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
-					platformTxn);
-		} catch (InvalidProtocolBufferException ignore) {
-			throw new IllegalStateException("Accessor construction must get valid gRPC bytes!");
-		}
+	public static PlatformTxnAccessor from(final SwirldTransaction platformTxn) {
+		return new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
+				platformTxn);
 	}
 
 	public SwirldTransaction getPlatformTxn() {
@@ -265,7 +253,6 @@ public class PlatformTxnAccessor implements TxnAccessor {
 	}
 
 	public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
-		final var sigMeta = getSigMeta();
 		if (!sigMeta.couldRationalizeOthers()) {
 			throw new IllegalStateException("Public-key-to-crypto-sig mapping is unusable after rationalization " +
 					"failed");
