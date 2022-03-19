@@ -20,15 +20,16 @@ package com.hedera.services.ledger;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -36,9 +37,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -49,7 +50,7 @@ import static java.util.stream.Collectors.joining;
 
 /**
  * Provides a ledger with transactional semantics. Changes during a transaction
- * are summarized in per-account changesets, which are then either saved to a
+ * are summarized in per-account change sets, which are then either saved to a
  * backing store when the transaction is committed; or dropped with no effects
  * upon a rollback.
  *
@@ -58,40 +59,40 @@ import static java.util.stream.Collectors.joining;
  * @param <P>
  * 		the family of properties associated to entities in the ledger
  * @param <A>
- * 		the type of a ledger entity
+ * 		the type of ledger entity
  */
-public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
-		implements Ledger<K, P, A>, BackingStore<K, A> {
-	private static final int MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN = 42;
-
+public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> implements Ledger<K, P>, BackingStore<K, A> {
 	private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
 
+	public static final int MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN = 42;
+
 	private final P[] allProps;
-	private final Set<K> deadEntities = new HashSet<>();
-	private final List<K> createdKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
-	private final List<K> changedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
-	private final List<K> perishedKeys = new ArrayList<>(MAX_ENTITIES_LIKELY_TOUCHED_IN_LEDGER_TXN);
+	private final Set<K> deadKeys = new HashSet<>();
+	private final List<K> createdKeys = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
+	private final List<K> changedKeys = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
+	private final List<K> removedKeys = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
+	private final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
 
 	private final Class<P> propertyType;
 	private final Supplier<A> newEntity;
+	private final Consumer<K> finalizeAction;
 	private final BackingStore<K, A> entities;
-	private final TransactionalLedger<K, P, A> entitiesLedger;
 	private final ChangeSummaryManager<A, P> changeManager;
+	private final TransactionalLedger<K, P, A> entitiesLedger;
 	private final Function<K, EnumMap<P, Object>> changeFactory;
 
-	private final Map<K, EnumMap<P, Object>> changes = new HashMap<>();
-	private final List<EntityChanges<K, A, P>> entityChanges = new ArrayList<>();
-
 	private boolean isInTransaction = false;
+	private Consumer<K> previewAction = null;
+	private Function<K, String> keyToString = null;
+	private EntityChangeSet<K, A, P> pendingChanges = null;
+	private CommitInterceptor<K, A, P> commitInterceptor = null;
 	private PropertyChangeObserver<K, P> propertyChangeObserver = null;
-	private Optional<Function<K, String>> keyToString = Optional.empty();
-	private CommitInterceptor<K, A, P> commitInterceptor;
 
 	public TransactionalLedger(
-			Class<P> propertyType,
-			Supplier<A> newEntity,
-			BackingStore<K, A> entities,
-			ChangeSummaryManager<A, P> changeManager
+			final Class<P> propertyType,
+			final Supplier<A> newEntity,
+			final BackingStore<K, A> entities,
+			final ChangeSummaryManager<A, P> changeManager
 	) {
 		this.entities = entities;
 		this.allProps = propertyType.getEnumConstants();
@@ -105,10 +106,8 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		} else {
 			this.entitiesLedger = null;
 		}
-	}
 
-	public void setCommitInterceptor(final CommitInterceptor<K, A, P> commitInterceptor) {
-		this.commitInterceptor = commitInterceptor;
+		this.finalizeAction = id -> entities.put(id, getFinalized(id));
 	}
 
 	/**
@@ -121,7 +120,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 * @param <P>
 	 * 		the family of properties associated to entities in the ledger
 	 * @param <A>
-	 * 		the type of a ledger entity
+	 * 		the type of ledger entity
 	 * @return an active ledger wrapping the source
 	 */
 	public static <K, P extends Enum<P> & BeanProperty<A>, A> TransactionalLedger<K, P, A> activeLedgerWrapping(
@@ -138,8 +137,72 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return wrapper;
 	}
 
+	public boolean isInTransaction() {
+		return isInTransaction;
+	}
+
+	public String changeSetSoFar() {
+		final var desc = new StringBuilder("{");
+		final var isFirstChange = new AtomicBoolean(true);
+		changes.forEach((id, value) -> {
+			if (!isFirstChange.get()) {
+				desc.append(", ");
+			}
+			final var accountInDeadAccounts = deadKeys.contains(id) ? "*DEAD* " : "";
+			final var accountNotInDeadAccounts = deadKeys.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
+			final var prefix = entities.contains(id)
+					? accountInDeadAccounts
+					: accountNotInDeadAccounts;
+			desc.append(prefix)
+					.append(readable(id))
+					.append(": [");
+			desc.append(
+					value.entrySet().stream()
+							.map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
+							.collect(joining(", ")));
+			desc.append("]");
+			isFirstChange.set(false);
+		});
+		deadKeys.stream()
+				.filter(id -> !changes.containsKey(id))
+				.forEach(id -> {
+					if (!isFirstChange.get()) {
+						desc.append(", ");
+					}
+					desc.append("*DEAD* ").append(readable(id));
+					isFirstChange.set(false);
+				});
+		return desc.append("}").toString();
+	}
+
+	public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
+		if (!exists(id)) {
+			return INVALID_ACCOUNT_ID;
+		}
+		final var changeSet = changes.get(id);
+		if (entitiesLedger == null) {
+			final var getterTarget = toGetterTarget(id);
+			return ledgerCheck.checkUsing(getterTarget, changeSet);
+		} else {
+			// If we are backed by a ledger, it is far more efficient to source properties
+			// by using get(), since each call to a ledger's getRef() creates a new entity
+			// and sets all its properties.
+			final var extantProps = extantLedgerPropsFor(id);
+			return ledgerCheck.checkUsing(extantProps, changeSet);
+		}
+	}
+
 	public void setKeyToString(final Function<K, String> keyToString) {
-		this.keyToString = Optional.of(keyToString);
+		this.keyToString = keyToString;
+	}
+
+	public void setCommitInterceptor(final CommitInterceptor<K, A, P> commitInterceptor) {
+		this.commitInterceptor = commitInterceptor;
+		pendingChanges = new EntityChangeSet<>();
+		previewAction = id -> {
+			final var entity = entities.contains(id) ? entities.getImmutableRef(id) : null;
+			pendingChanges.include(id, entity, changes.get(id));
+		};
 	}
 
 	public void setPropertyChangeObserver(final PropertyChangeObserver<K, P> propertyChangeObserver) {
@@ -147,23 +210,21 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	}
 
 	public void begin() {
-		if (isInTransaction) {
-			throw new IllegalStateException("A transaction is already active!");
-		}
+		throwIfInTxn();
 		isInTransaction = true;
-		entityChanges.clear();
+		if (pendingChanges != null) {
+			pendingChanges.clear();
+		}
 	}
 
 	public void undoChangesOfType(List<P> properties) {
-		if (!isInTransaction) {
-			throw new IllegalStateException("Cannot undo changes, no transaction is active");
-		}
+		throwIfNotInTxn();
 		if (!changedKeys.isEmpty()) {
 			for (var key : changedKeys) {
-				final var delta = changes.get(key);
-				if (delta != null) {
+				final var entityChanges = changes.get(key);
+				if (entityChanges != null) {
 					for (final var property : properties) {
-						delta.remove(property);
+						entityChanges.remove(property);
 					}
 				}
 			}
@@ -179,38 +240,37 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
 	public void rollback() {
 		if (!isInTransaction) {
-			throw new IllegalStateException("Cannot perform rollback, no transaction is active!");
+			throw new IllegalStateException("Cannot perform rollback, no transaction is active");
 		}
 
 		changes.clear();
-		deadEntities.clear();
+		deadKeys.clear();
 		changedKeys.clear();
 		createdKeys.clear();
-		perishedKeys.clear();
+		removedKeys.clear();
 
 		isInTransaction = false;
 	}
 
 	public void commit() {
-		if (!isInTransaction) {
-			throw new IllegalStateException("Cannot perform commit, no transaction is active!");
-		}
+		throwIfNotInTxn();
 
 		try {
 			if (commitInterceptor != null) {
-				computePendingEntityChanges();
-				commitInterceptor.preview(entityChanges);
+				computePendingChanges();
+				commitInterceptor.preview(pendingChanges);
+				flushPendingChanges();
+			} else {
+				flushListed(changedKeys);
+				flushListed(createdKeys);
 			}
 
-			flushListed(changedKeys);
-			flushListed(createdKeys);
 			changes.clear();
-			entityChanges.clear();
 
-			if (!deadEntities.isEmpty()) {
-				perishedKeys.forEach(entities::remove);
-				deadEntities.clear();
-				perishedKeys.clear();
+			if (!deadKeys.isEmpty()) {
+				removedKeys.forEach(entities::remove);
+				deadKeys.clear();
+				removedKeys.clear();
 			}
 
 			isInTransaction = false;
@@ -219,56 +279,50 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 			try {
 				changeDesc = changeSetSoFar();
 			} catch (Exception f) {
-				log.warn("Unable to describe pending change set!", f);
+				log.warn("Unable to describe pending change set", f);
 			}
-			log.error("Catastrophic failure during commit of {}!", changeDesc);
+			log.error("Catastrophic failure during commit of {}", changeDesc);
 			throw e;
 		}
 	}
 
+	// --- Ledger implementation ---
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public boolean exists(K id) {
+	public boolean exists(final K id) {
 		return existsOrIsPendingCreation(id) && !isZombie(id);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public boolean existsPending(K id) {
+	public boolean existsPending(final K id) {
 		return isPendingCreation(id);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public void set(K id, P property, Object value) {
+	public void set(final K id, final P property, final Object value) {
 		assertIsSettable(id);
-
 		changeManager.update(changes.computeIfAbsent(id, ignore -> {
 			changedKeys.add(id);
 			return changeFactory.apply(id);
 		}), property, value);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public A getFinalized(K id) {
+	public Object get(final K id, final P property) {
 		throwIfMissing(id);
-
-		final EnumMap<P, Object> changeSet = changes.get(id);
-		final boolean hasPendingChanges = changeSet != null;
-		final A entity = entities.contains(id) ? entities.getRef(id) : newEntity.get();
-		if (hasPendingChanges) {
-			if (propertyChangeObserver != null) {
-				changeManager.persistWithObserver(id, changeSet, entity, propertyChangeObserver);
-			} else {
-				changeManager.persist(changeSet, entity);
-			}
-		}
-
-		return entity;
-	}
-
-	@Override
-	public Object get(K id, P property) {
-		throwIfMissing(id);
-
-		var changeSet = changes.get(id);
+		final var changeSet = changes.get(id);
 		if (changeSet != null && changeSet.containsKey(property)) {
 			return changeSet.get(property);
 		} else {
@@ -285,35 +339,38 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public void create(K id) {
+	public void create(final K id) {
 		assertIsCreatable(id);
-
 		changes.put(id, new EnumMap<>(propertyType));
 		createdKeys.add(id);
 	}
-
-	@Override
-	public void destroy(K id) {
-		throwIfNotInTxn();
-
-		deadEntities.add(id);
-		perishedKeys.add(id);
-	}
-
-	/* --- BackingStore --- */
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public A getRef(K id) {
+	public void destroy(final K id) {
+		throwIfNotInTxn();
+		deadKeys.add(id);
+		removedKeys.add(id);
+	}
+
+	// --- BackingStore implementation ---
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public A getRef(final K id) {
 		if (!exists(id)) {
 			return null;
 		}
-
-		/* Create a new entity, then set its properties based on the combination of
-		 * the existing (or default) entity's properties, plus the current change set. */
+		// Create a new entity, then set its properties based on the combination of
+		// the existing (or default) entity's properties, plus the current change set
 		final var entity = newEntity.get();
 		if (entitiesLedger == null) {
 			final var getterTarget = toGetterTarget(id);
@@ -328,7 +385,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 * {@inheritDoc}
 	 */
 	@Override
-	public A getImmutableRef(K id) {
+	public A getImmutableRef(final K id) {
 		return getRef(id);
 	}
 
@@ -336,17 +393,17 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void put(K id, A entity) {
+	public void put(final K id, final A entity) {
 		throwIfNotInTxn();
-
 		if (isZombie(id)) {
-			deadEntities.remove(id);
+			deadKeys.remove(id);
 		}
-		/* The ledger wrapping us may have created an entity we don't have; so catch up on that if necessary. */
+		// The ledger wrapping us may have created an entity we don't have, so catch up on that if necessary;
+		// note this differs from the semantics of set() above, which throws if the target entity is missing
 		if (!exists(id)) {
 			create(id);
 		}
-		/* Now accumulate the entire change-set represented by the received entity. */
+		// Now accumulate the entire change-set represented by the received entity
 		for (final var prop : allProps) {
 			set(id, prop, prop.getter().apply(entity));
 		}
@@ -356,7 +413,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void remove(K id) {
+	public void remove(final K id) {
 		destroy(id);
 	}
 
@@ -364,7 +421,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean contains(K id) {
+	public boolean contains(final K id) {
 		return exists(id);
 	}
 
@@ -376,27 +433,41 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return entities.idSet();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public long size() {
 		return entities.size();
 	}
 
-	/* --- Helpers --- */
-	public ResponseCodeEnum validate(final K id, final LedgerCheck<A, P> ledgerCheck) {
-		if (!exists(id)) {
-			return INVALID_ACCOUNT_ID;
+	// --- Internal helpers ---
+	A getFinalized(final K id) {
+		final A entity = entities.contains(id) ? entities.getRef(id) : newEntity.get();
+		return finalized(id, entity, changes.get(id));
+	}
+
+	ChangeSummaryManager<A, P> getChangeManager() {
+		return changeManager;
+	}
+
+	Supplier<A> getNewEntity() {
+		return newEntity;
+	}
+
+	Class<P> getPropertyType() {
+		return propertyType;
+	}
+
+	private A finalized(final K id, final A entity, @Nullable final Map<P, Object> changes) {
+		if (changes != null) {
+			if (propertyChangeObserver != null) {
+				changeManager.persistWithObserver(id, changes, entity, propertyChangeObserver);
+			} else {
+				changeManager.persist(changes, entity);
+			}
 		}
-		var changeSet = changes.get(id);
-		if (entitiesLedger == null) {
-			final var getterTarget = toGetterTarget(id);
-			return ledgerCheck.checkUsing(getterTarget, changeSet);
-		} else {
-			/* If we are backed by a ledger, it is far more efficient to source properties
-			 * by using get(), since each call to a ledger's getRef() creates a new entity
-			 * and sets all its properties. */
-			final var extantProps = extantLedgerPropsFor(id);
-			return ledgerCheck.checkUsing(extantProps, changeSet);
-		}
+		return entity;
 	}
 
 	private void setPropsWithSource(final K id, final A entity, final Function<P, Object> extantProps) {
@@ -417,68 +488,50 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 				: newDefaultPropertySource();
 	}
 
-	public boolean isInTransaction() {
-		return isInTransaction;
-	}
-
-	public String changeSetSoFar() {
-		StringBuilder desc = new StringBuilder("{");
-		AtomicBoolean isFirstChange = new AtomicBoolean(true);
-		changes.entrySet().forEach(change -> {
-			if (!isFirstChange.get()) {
-				desc.append(", ");
-			}
-			K id = change.getKey();
-			var accountInDeadAccounts = deadEntities.contains(id) ? "*DEAD* " : "";
-			var accountNotInDeadAccounts = deadEntities.contains(id) ? "*NEW -> DEAD* " : "*NEW* ";
-			var prefix = entities.contains(id)
-					? accountInDeadAccounts
-					: accountNotInDeadAccounts;
-			desc.append(prefix)
-					.append(keyToString.orElse(EntityIdUtils::readableId).apply(id))
-					.append(": [");
-			desc.append(
-					change.getValue().entrySet().stream()
-							.map(entry -> String.format("%s -> %s", entry.getKey(), readableProperty(entry.getValue())))
-							.collect(joining(", ")));
-			desc.append("]");
-			isFirstChange.set(false);
-		});
-		deadEntities.stream()
-				.filter(id -> !changes.containsKey(id))
-				.forEach(id -> {
-					if (!isFirstChange.get()) {
-						desc.append(", ");
-					}
-					desc.append("*DEAD* ").append(readableId(id));
-					isFirstChange.set(false);
-				});
-		return desc.append("}").toString();
-	}
-
-	void throwIfNotInTxn() {
+	private void throwIfNotInTxn() {
 		if (!isInTransaction) {
-			throw new IllegalStateException("No active transaction!");
+			throw new IllegalStateException("No active transaction");
 		}
 	}
 
-	Map<K, EnumMap<P, Object>> getChanges() {
-		return changes;
+	private void throwIfInTxn() {
+		if (isInTransaction) {
+			throw new IllegalStateException("Transaction already active");
+		}
 	}
 
-	List<K> getCreations() {
-		return createdKeys;
+	private void computePendingChanges() {
+		doForRetainedIn(changedKeys, previewAction);
+		doForRetainedIn(createdKeys, previewAction);
+	}
+
+	private void flushPendingChanges() {
+		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
+			final var id = pendingChanges.id(i);
+			final var cachedEntity = pendingChanges.entity(i);
+			final var entity = (cachedEntity == null) ? newEntity.get() : entities.getRef(id);
+			entities.put(id, finalized(id, entity, pendingChanges.changes(i)));
+		}
+		createdKeys.clear();
+		changedKeys.clear();
 	}
 
 	private void flushListed(final List<K> l) {
-		if (!l.isEmpty()) {
-			for (final var key : l) {
-				if (!deadEntities.contains(key)) {
-					entities.put(key, getFinalized(key));
-				}
-			}
+		if (doForRetainedIn(l, finalizeAction)) {
 			l.clear();
 		}
+	}
+
+	private boolean doForRetainedIn(final List<K> l, final Consumer<K> action) {
+		if (l.isEmpty()) {
+			return false;
+		}
+		for (final var key : l) {
+			if (!deadKeys.contains(key)) {
+				action.accept(key);
+			}
+		}
+		return true;
 	}
 
 	private A toGetterTarget(K id) {
@@ -496,10 +549,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
 	private void assertIsCreatable(K id) {
 		if (!isInTransaction) {
-			throw new IllegalStateException("No active transaction!");
+			throw new IllegalStateException("No active transaction");
 		}
 		if (existsOrIsPendingCreation(id)) {
-			throw new IllegalArgumentException("An entity already exists with key '" + id + "'!");
+			throw new IllegalArgumentException("An entity already exists with key '" + id + "'");
 		}
 	}
 
@@ -514,7 +567,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 	}
 
 	private boolean isZombie(K id) {
-		return deadEntities.contains(id);
+		return deadKeys.contains(id);
 	}
 
 	private Function<P, Object> newDefaultPropertySource() {
@@ -522,32 +575,38 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 		return prop -> prop.getter().apply(defaultEntity);
 	}
 
-	private List<EntityChanges<K, A, P>> computePendingEntityChanges() {
-		for (final var change : changes.entrySet()) {
-			final var id = change.getKey();
-			final var entityProperties = change.getValue();
-			final var entity = entities.contains(id) ? entities.getRef(id) : null;
-			final var entityChange = new EntityChanges<>(id, entity, entityProperties);
-			entityChanges.add(entityChange);
-		}
-
-		return entityChanges;
+	private String readable(final K id) {
+		return (keyToString == null) ? readableId(id) : keyToString.apply(id);
 	}
 
-	ChangeSummaryManager<A, P> getChangeManager() {
-		return changeManager;
-	}
-
-	Supplier<A> getNewEntity() {
-		return newEntity;
-	}
-
-	Class<P> getPropertyType() {
-		return propertyType;
-	}
-
-	/* --- Only used by unit tests --- */
+	// --- Only used by unit tests ---
+	@VisibleForTesting
 	public TransactionalLedger<K, P, A> getEntitiesLedger() {
 		return entitiesLedger;
+	}
+
+	@VisibleForTesting
+	EntityChangeSet<K, A, P> getPendingChanges() {
+		return pendingChanges;
+	}
+
+	@VisibleForTesting
+	Consumer<K> getPreviewAction() {
+		return previewAction;
+	}
+
+	@VisibleForTesting
+	List<K> getCreatedKeys() {
+		return createdKeys;
+	}
+
+	@VisibleForTesting
+	List<K> getChangedKeys() {
+		return changedKeys;
+	}
+
+	@VisibleForTesting
+	Map<K, EnumMap<P, Object>> getChanges() {
+		return changes;
 	}
 }

@@ -260,7 +260,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		}
 	}
 
-	protected WorldLedgers trackingLedgers() {
+	public WorldLedgers trackingLedgers() {
 		return trackingLedgers;
 	}
 

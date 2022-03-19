@@ -27,11 +27,10 @@ package com.hedera.services.ledger;
  * state, such as occurs in the middle of an transaction. The
  * accessors make this distinction explicit.
  *
- * @param <K> the type of an account id.
- * @param <P> the type of the property family associated to an account.
- * @param <A> the account type.
+ * @param <K> the type of an account id
+ * @param <P> the type of the property family associated to an account
  */
-public interface Ledger<K, P extends Enum<P>, A> {
+public interface Ledger<K, P extends Enum<P>> {
 	/**
 	 * Sets value of a given property to a given value for the specified account.
 	 *
@@ -54,14 +53,6 @@ public interface Ledger<K, P extends Enum<P>, A> {
 	 * @param id the id of the account to be forgotten.
 	 */
 	void destroy(K id);
-
-	/**
-	 * Gets the account with the specified id.
-	 *
-	 * @param id the id of the relevant account.
-	 * @return the account.
-	 */
-	A getFinalized(K id);
 
 	/**
 	 * Gets the current property value of the specified account. This value

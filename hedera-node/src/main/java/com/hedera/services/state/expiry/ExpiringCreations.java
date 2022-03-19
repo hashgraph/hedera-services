@@ -29,11 +29,11 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -163,7 +163,7 @@ public class ExpiringCreations implements EntityCreator {
 		final var baseRecord = ExpirableTxnRecord.newBuilder()
 				.setReceiptBuilder(receiptBuilder)
 				.setMemo(memo)
-				.setTransferList(CurrencyAdjustments.fromGrpc(sideEffectsTracker.getNetTrackedHbarChanges()))
+				.setTransferList(sideEffectsTracker.getNetTrackedHbarChanges())
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations())
 				.setCryptoAllowances(sideEffectsTracker.getCryptoAllowances())
@@ -179,7 +179,7 @@ public class ExpiringCreations implements EntityCreator {
 			setTokensAndTokenAdjustments(baseRecord, tokenChanges);
 		}
 		if (sideEffectsTracker.hasTrackedContractCreation()) {
-			final var newId = 	EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId());
+			final var newId = EntityId.fromGrpcContractId(sideEffectsTracker.getTrackedNewContractId());
 			receiptBuilder.setContractId(newId);
 			final var createResult = new EvmFnResult();
 			// A bit redundant, but set this for consistency with top-level records

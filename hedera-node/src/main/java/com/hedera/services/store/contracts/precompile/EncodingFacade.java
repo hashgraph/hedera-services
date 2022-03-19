@@ -372,7 +372,8 @@ public class EncodingFacade {
 		}
 	}
 
-	private static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address addressToBeConverted) {
-		return com.esaulpaugh.headlong.abi.Address.wrap(com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressToBeConverted.toBigInteger()));
+	static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address address) {
+		return com.esaulpaugh.headlong.abi.Address.wrap(
+				com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
 	}
 }

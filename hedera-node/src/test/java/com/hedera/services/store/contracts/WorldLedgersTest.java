@@ -40,6 +40,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -54,16 +55,22 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-
 @ExtendWith(MockitoExtension.class)
 class WorldLedgersTest {
+	private static final NftId target = new NftId(0, 0, 123, 456);
+	private static final TokenID nft = target.tokenId();
+	private static final EntityId treasury = new EntityId(0, 0, 666);
+	private static final EntityId notTreasury = new EntityId(0, 0, 777);
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final Address sponsor = Address.fromHexString("0xcba");
 
@@ -89,6 +96,25 @@ class WorldLedgersTest {
 	@BeforeEach
 	void setUp() {
 		subject = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+	}
+
+	@Test
+	void resolvesOwnerDirectlyIfNotTreasury() {
+		given(nftsLedger.get(target, OWNER)).willReturn(notTreasury);
+
+		final var expected = notTreasury.toEvmAddress();
+		final var actual = subject.ownerOf(target);
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	void resolvesTreasuryOwner() {
+		given(nftsLedger.get(target, OWNER)).willReturn(MISSING_ENTITY_ID);
+		given(tokensLedger.get(nft, TokenProperty.TREASURY)).willReturn(treasury);
+
+		final var expected = treasury.toEvmAddress();
+		final var actual = subject.ownerOf(target);
+		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -259,6 +285,7 @@ class WorldLedgersTest {
 		assertFalse(nullAccounts.areMutable());
 		assertFalse(nullNfts.areMutable());
 		assertFalse(nullTokens.areMutable());
+		assertThrows(IllegalStateException.class, () -> nullAccounts.ownerOf(target));
 
 		final var wrappedUnusable = nullAccounts.wrapped();
 		assertSame(((StackedContractAliases) wrappedUnusable.aliases()).wrappedAliases(), nullAccounts.aliases());
