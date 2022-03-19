@@ -127,14 +127,12 @@ class SigsAndPayerKeyScreenTest {
 	}
 
 	@Test
-	void cyclesAsyncWhenUsed() {
+	void doesntCyclesAsyncAnymore() {
 		givenOkRationalization();
 
-		// when:
 		subject.applyTo(accessor);
 
-		// then:
-		verify(speedometers).cycleAsyncVerifications();
+		verifyNoInteractions(speedometers);
 	}
 
 	private void givenOkRationalization() {

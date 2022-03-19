@@ -23,15 +23,13 @@ package com.hedera.services.contracts.operation;
  */
 
 
+import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
-import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.Assertions;
@@ -41,27 +39,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.Deque;
-import java.util.Iterator;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class HederaCreateOperationTest {
+	private static final Gas baseGas = Gas.of(100);
+	private static final Gas extraGas = Gas.of(101);
+
 	@Mock
-	private MessageFrame evmMsgFrame;
-	@Mock
-	private BlockValues initialFrameBlockValues;
-	@Mock
-	private Wei gasPrice;
-	@Mock
-	private Gas gas;
-	@Mock
-	private MessageFrame lastStackedMsgFrame;
+	private MessageFrame frame;
 	@Mock
 	private GasCalculator gasCalculator;
 	@Mock
@@ -69,21 +56,20 @@ class HederaCreateOperationTest {
 	@Mock
 	private Address recipientAddr;
 	@Mock
-	private Deque<MessageFrame> messageFrameStack;
-	@Mock
-	private Iterator<MessageFrame> iterator;
-	@Mock
 	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private EntityCreator creator;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
+	@Mock
+	private StorageGasCalculator storageGasCalculator;
 
 	private HederaCreateOperation subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaCreateOperation(gasCalculator, creator, syntheticTxnFactory, recordsHistorian);
+		subject = new HederaCreateOperation(
+				gasCalculator, creator, syntheticTxnFactory, recordsHistorian, storageGasCalculator);
 	}
 
 	@Test
@@ -93,35 +79,20 @@ class HederaCreateOperationTest {
 
 	@Test
 	void computesExpectedCost() {
-		final var oneOffsetStackItem = Bytes.of(10);
-		final var twoOffsetStackItem = Bytes.of(20);
-		given(evmMsgFrame.getStackItem(1)).willReturn(oneOffsetStackItem);
-		given(evmMsgFrame.getStackItem(2)).willReturn(twoOffsetStackItem);
-		given(evmMsgFrame.getMessageFrameStack()).willReturn(messageFrameStack);
-		given(evmMsgFrame.getBlockValues()).willReturn(initialFrameBlockValues);
-		given(evmMsgFrame.getGasPrice()).willReturn(gasPrice);
-		given(messageFrameStack.getLast()).willReturn(lastStackedMsgFrame);
-		given(lastStackedMsgFrame.getContextVariable("sbh")).willReturn(10L);
-		given(initialFrameBlockValues.getTimestamp()).willReturn(Instant.MAX.getEpochSecond());
-		given(gasPrice.toLong()).willReturn(10000000000L);
-		given(messageFrameStack.iterator()).willReturn(iterator);
-		given(iterator.hasNext()).willReturn(false);
+		given(gasCalculator.createOperationGasCost(frame)).willReturn(baseGas);
+		given(storageGasCalculator.creationGasCost(frame, gasCalculator)).willReturn(extraGas);
 
-		given(gasCalculator.createOperationGasCost(any())).willReturn(gas);
-		given(gasCalculator.memoryExpansionGasCost(any(), anyLong(), anyLong())).willReturn(gas);
-		given(gas.plus(any())).willReturn(gas);
+		var actualGas = subject.cost(frame);
 
-		var gas = subject.cost(evmMsgFrame);
-
-		assertEquals(0, gas.toLong());
+		assertEquals(baseGas.plus(extraGas), actualGas);
 	}
 
 	@Test
 	void computesExpectedTargetAddress() {
-		given(evmMsgFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
-		given(evmMsgFrame.getRecipientAddress()).willReturn(recipientAddr);
+		given(frame.getWorldUpdater()).willReturn(hederaWorldUpdater);
+		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(hederaWorldUpdater.newContractAddress(recipientAddr)).willReturn(Address.ZERO);
-		var targetAddr = subject.targetContractAddress(evmMsgFrame);
+		var targetAddr = subject.targetContractAddress(frame);
 		assertEquals(Address.ZERO, targetAddr);
 	}
 }
