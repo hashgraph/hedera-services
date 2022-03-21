@@ -56,4 +56,7 @@ public class ReleaseTwentyFourMigration {
 		}
 	}
 
+	private ReleaseTwentyFourMigration() {
+		throw new UnsupportedOperationException("Utility class");
+	}
 }
