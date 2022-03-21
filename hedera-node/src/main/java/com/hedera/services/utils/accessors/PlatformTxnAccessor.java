@@ -253,11 +253,12 @@ public class PlatformTxnAccessor implements TxnAccessor {
 	}
 
 	public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
-		if (!sigMeta.couldRationalizeOthers()) {
+		final var meta = getSigMeta();
+		if (!meta.couldRationalizeOthers()) {
 			throw new IllegalStateException("Public-key-to-crypto-sig mapping is unusable after rationalization " +
 					"failed");
 		}
-		return sigMeta.pkToVerifiedSigFn();
+		return meta.pkToVerifiedSigFn();
 	}
 
 	@Override
