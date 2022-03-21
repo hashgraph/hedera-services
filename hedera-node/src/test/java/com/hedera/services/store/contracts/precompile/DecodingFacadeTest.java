@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -89,6 +90,10 @@ class DecodingFacadeTest {
 	public static final Bytes SET_APPROVAL_FOR_ALL_INPUT = Bytes.fromHexString("0xa22cb46500000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000001");
 
 	public static final Bytes IS_APPROVED_FOR_ALL_INPUT = Bytes.fromHexString("0xe985e9c5000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
+
+	private static final Bytes APPROVE_NFT_INPUT = Bytes.fromHexString("0x095ea7b300000000000000000000000000000000000000000000000000000000000003ea0000000000000000000000000000000000000000000000000000000000000001");
+
+	public static final Bytes APPROVE_TOKEN_INPUT = Bytes.fromHexString("0x095ea7b300000000000000000000000000000000000000000000000000000000000003f0000000000000000000000000000000000000000000000000000000000000000a");
 
 	@Test
 	void decodeCryptoTransferPositiveFungibleAmountAndNftTransfer() {
@@ -174,6 +179,22 @@ class DecodingFacadeTest {
 
 		assertTrue(decodedInput.owner().getAccountNum() > 0);
 		assertTrue(decodedInput.operator().getAccountNum() > 0);
+	}
+
+	@Test
+	void decodeApproveForNFT() {
+		final var decodedInput = subject.decodeTokenApprove(APPROVE_NFT_INPUT, TokenID.getDefaultInstance(),false, a -> a);
+
+		assertTrue(decodedInput.spender().getAccountNum() > 0);
+		assertEquals(BigInteger.ONE, decodedInput.serialNumber());
+	}
+
+	@Test
+	void decodeApproveForToken() {
+		final var decodedInput = subject.decodeTokenApprove(APPROVE_TOKEN_INPUT, TokenID.getDefaultInstance(),true, a -> a);
+
+		assertTrue(decodedInput.spender().getAccountNum() > 0);
+		assertEquals(BigInteger.TEN, decodedInput.amount());
 	}
 
 
