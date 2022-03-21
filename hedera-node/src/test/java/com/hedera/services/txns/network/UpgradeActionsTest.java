@@ -29,6 +29,7 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.swirlds.platform.state.DualStateImpl;
+import org.apache.commons.io.FileUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -96,12 +97,8 @@ class UpgradeActionsTest {
 	}
 
 	@AfterAll
-	static void cleanup() {
-		List.of(
-				EXEC_IMMEDIATE_MARKER,
-				FREEZE_ABORTED_MARKER,
-				FREEZE_SCHEDULED_MARKER,
-				NOW_FROZEN_MARKER).forEach(UpgradeActionsTest::rmIfPresent);
+	static void cleanup() throws IOException {
+		FileUtils.deleteDirectory(new File(markerFilesLoc));
 	}
 
 	@Test
@@ -215,6 +212,7 @@ class UpgradeActionsTest {
 
 	@Test
 	void complainsLoudlyWhenUnableToUnzipArchive() throws IOException {
+		new File(markerFilesLoc).mkdirs();
 		rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
@@ -433,7 +431,7 @@ class UpgradeActionsTest {
 
 	private void setupNoiseFiles() throws IOException {
 		final var noiseDir = new File(noiseDirLoc);
-		noiseDir.mkdir();
+		noiseDir.mkdirs();
 		Files.write(Paths.get(noiseFileLoc),
 				List.of("There, the eyes are", "Sunlight on a broken column", "There, is a tree swinging"));
 		Files.write(Paths.get(noiseSubFileLoc),
