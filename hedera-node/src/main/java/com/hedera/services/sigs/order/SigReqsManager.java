@@ -20,11 +20,12 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
-import com.hedera.services.ServicesState;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
+import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.NoValidSignedStateException;
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
@@ -32,15 +33,13 @@ import com.hedera.services.sigs.metadata.StateChildrenSigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenMetaUtils;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.swirlds.common.AutoCloseableWrapper;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldTransaction;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Instant;
 import java.util.function.Function;
 
 /**
@@ -64,12 +63,12 @@ public class SigReqsManager {
 	public static final Function<MerkleToken, TokenSigningMetadata> TOKEN_META_TRANSFORM =
 			TokenMetaUtils::signingMetaFrom;
 
-	private final Platform platform;
 	private final FileNumbers fileNumbers;
 	private final ExpansionHelper expansionHelper;
 	private final SignatureWaivers signatureWaivers;
 	private final MutableStateChildren workingState;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final SignedStateViewFactory stateViewFactory;
 	// Convenience wrapper for the latest state children received from Platform#getLastCompleteSwirldState()
 	private final MutableStateChildren signedChildren = new MutableStateChildren();
 
@@ -83,20 +82,18 @@ public class SigReqsManager {
 	private SigRequirements workingSigReqs;
 
 	@Inject
-	public SigReqsManager(
-			final Platform platform,
-			final FileNumbers fileNumbers,
+	public SigReqsManager(final FileNumbers fileNumbers,
 			final ExpansionHelper expansionHelper,
 			final SignatureWaivers signatureWaivers,
 			final MutableStateChildren workingState,
-			final GlobalDynamicProperties dynamicProperties
-	) {
-		this.platform = platform;
+			final GlobalDynamicProperties dynamicProperties,
+			final SignedStateViewFactory stateViewFactory) {
 		this.fileNumbers = fileNumbers;
 		this.workingState = workingState;
 		this.expansionHelper = expansionHelper;
 		this.signatureWaivers = signatureWaivers;
 		this.dynamicProperties = dynamicProperties;
+		this.stateViewFactory = stateViewFactory;
 	}
 
 	/**
@@ -134,50 +131,6 @@ public class SigReqsManager {
 	 * @return whether the expansion attempt succeeded
 	 */
 	private boolean tryExpandFromSignedState(final PlatformTxnAccessor accessor) {
-		try (final AutoCloseableWrapper<ServicesState> wrapper = platform.getLastCompleteSwirldState()) {
-			final var signedState = wrapper.get();
-			if (signedState == null) {
-				return false;
-			}
-			// Since we can't get the enclosing platform SignedState, we don't know exactly
-			// when this state was signed. So we just use, as a guaranteed lower bound, the
-			// consensus time of its last-handled transaction.
-			final var earliestSigningTime = signedState.getTimeOfLastHandledTxn();
-			if (earliestSigningTime == null) {
-				// No transactions have been handled; abort now to avoid downstream NPE.
-				return false;
-			}
-			if (signedState.getStateVersion() != StateVersions.CURRENT_VERSION) {
-				// We just upgraded and don't yet have a signed state from the current version.
-				return false;
-			}
-			if (!signedState.isInitialized()) {
-				// The aliases FCHashMap has not been rebuilt in an uninitialized state
-				return false;
-			}
-
-			expandFromSignedState(signedState, earliestSigningTime, accessor);
-			return true;
-		}
-	}
-
-	/**
-	 * Tries to expand the platform signatures linked to a transaction from a provided signed state that
-	 * cannot have been signed before the given consensus time. Returns whether the expansion attempt was
-	 * successful. (If this fails, we will next try to expand signatures from the working state.)
-	 *
-	 * @param signedState
-	 * 		the signed state to use for the expansion attempt
-	 * @param earliestSigningTime
-	 * 		the earliest consensus time at which the state could have been signed
-	 * @param accessor
-	 * 		the transaction to expand signatures for
-	 */
-	private void expandFromSignedState(
-			final ServicesState signedState,
-			final Instant earliestSigningTime,
-			final PlatformTxnAccessor accessor
-	) {
 		/* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
 		 * Because event intake is single-threaded, there's no risk of another thread getting
 		 * inconsistent results while we are doing this. Also, note that MutableStateChildren
@@ -187,7 +140,23 @@ public class SigReqsManager {
 		 * reconnect the latest signed state may have never received an init() call. In that
 		 * case, any "rebuilt" children of the ServicesState will be null. (This isn't a
 		 * problem for any existing SigRequirements code, however.) */
-		signedChildren.updateFromSigned(signedState, earliestSigningTime);
+		try {
+			stateViewFactory.tryToUpdateToLatestSignedChildren(signedChildren);
+		} catch (NoValidSignedStateException ignore) {
+			return false;
+		}
+		expandFromSignedState(accessor);
+		return true;
+	}
+
+	/**
+	 * Tries to expand the platform signatures linked to a transaction from latest completed signed state that
+	 * cannot have been signed before the given consensus time. Returns whether the expansion attempt was
+	 * successful. (If this fails, we will next try to expand signatures from the working state.)
+	 *
+	 * @param accessor
+	 */
+	private void expandFromSignedState(final PlatformTxnAccessor accessor) {
 		ensureSignedStateSigReqsIsConstructed();
 		expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
 	}
@@ -208,16 +177,12 @@ public class SigReqsManager {
 
 	@FunctionalInterface
 	interface SigReqsFactory {
-		SigRequirements from(
-				SigMetadataLookup sigMetaLookup,
-				SignatureWaivers signatureWaivers);
+		SigRequirements from(SigMetadataLookup sigMetaLookup, SignatureWaivers signatureWaivers);
 	}
 
 	@FunctionalInterface
 	interface StateChildrenLookupsFactory {
-		SigMetadataLookup from(
-				FileNumbers fileNumbers,
-				StateChildren stateChildren,
+		SigMetadataLookup from(FileNumbers fileNumbers, StateChildren stateChildren,
 				Function<MerkleToken, TokenSigningMetadata> tokenMetaTransform);
 	}
 
