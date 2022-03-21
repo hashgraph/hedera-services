@@ -97,6 +97,14 @@ class EncodingFacadeTest {
 	final Address logger = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
 	@Test
+	void canEncodeEip1014Address() {
+		final var literalEip1014 = "0x8ff8eb31713b9ff374d893d21f3b9eb732a307a5";
+		final var besuAddress = Address.fromHexString(literalEip1014);
+		final var headlongAddress = EncodingFacade.convertBesuAddressToHeadlongAddress(besuAddress);
+		assertEquals(literalEip1014, ("" + headlongAddress).toLowerCase());
+	}
+
+	@Test
 	void decodeReturnResultForFungibleMint() {
 		final var decodedResult = subject.encodeMintSuccess(10, null);
 		assertEquals(RETURN_FUNGIBLE_MINT_FOR_10_TOKENS, decodedResult);

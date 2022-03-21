@@ -155,7 +155,7 @@ class TransferLogicTest {
 		assertFailsWith(() -> subject.doZeroSum(List.of(failingTrigger)), INSUFFICIENT_ACCOUNT_BALANCE);
 
 		verify(autoCreationLogic).reclaimPendingAliases();
-		assertTrue(accountsLedger.getCreations().isEmpty());
+		assertTrue(accountsLedger.getCreatedKeys().isEmpty());
 	}
 
 	@Test

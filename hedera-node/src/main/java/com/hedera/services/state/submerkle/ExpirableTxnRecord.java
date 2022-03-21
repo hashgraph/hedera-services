@@ -146,7 +146,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.nftTokenAdjustments = builder.nftTokenAdjustments;
 		this.scheduleRef = builder.scheduleRef;
 		this.assessedCustomFees = builder.assessedCustomFees;
-		this.newTokenAssociations = new ArrayList<>(builder.newTokenAssociations);
+		this.newTokenAssociations = builder.newTokenAssociations;
 		this.packedParentConsensusTime = builder.packedParentConsensusTime;
 		this.numChildRecords = builder.numChildRecords;
 		this.alias = builder.alias;

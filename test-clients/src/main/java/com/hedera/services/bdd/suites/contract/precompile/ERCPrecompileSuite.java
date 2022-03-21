@@ -368,6 +368,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	private HapiApiSpec getErc20BalanceOfAccount() {
 		final var balanceTxn = "balanceTxn";
+		final var zeroBalanceTxn = "zBalanceTxn";
 
 		return defaultHapiSpec("ERC_20_BALANCE_OF")
 				.given(
@@ -385,8 +386,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.supplyKey(MULTI_KEY),
 						fileCreate(ERC_20_CONTRACT_NAME),
 						updateLargeFile(ACCOUNT, ERC_20_CONTRACT_NAME, extractByteCode(ContractResources.ERC_20_CONTRACT)),
-						tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
-						cryptoTransfer(moving(3, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
 						contractCreate(ERC_20_CONTRACT_NAME)
 								.bytecode(ERC_20_CONTRACT_NAME)
 								.gas(300_000)
@@ -399,12 +398,34 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(ACCOUNT)))
 														.payingWith(ACCOUNT)
+														.via(zeroBalanceTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER),
+												tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
+												cryptoTransfer(moving(3, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+												contractCall(ERC_20_CONTRACT_NAME,
+														ContractResources.ERC_20_BALANCE_OF_CALL,
+														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(ACCOUNT)))
+														.payingWith(ACCOUNT)
 														.via(balanceTxn)
 														.hasKnownStatus(SUCCESS)
 														.gas(GAS_TO_OFFER)
 										)
 						)
 				).then(
+						/* expect 0 returned from balanceOf() if the account and token are not associated -*/
+						childRecordsCheck(zeroBalanceTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.BALANCE)
+																.withBalance(0)
+														)
+										)
+						),
 						childRecordsCheck(balanceTxn, SUCCESS,
 								recordWith()
 										.status(SUCCESS)
@@ -1363,6 +1384,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	private HapiApiSpec getErc721TokenURI() {
 		final var tokenURITxn = "tokenURITxn";
+		final var nonExistingTokenURITxn = "nonExistingTokenURITxn";
+		final var ERC721MetadataNonExistingToken = "ERC721Metadata: URI query for nonexistent token";
 
 		return defaultHapiSpec("ERC_721_TOKEN_URI")
 				.given(
@@ -1393,6 +1416,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.payingWith(ACCOUNT)
 														.via(tokenURITxn)
 														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER),
+												contractCall(ERC_721_CONTRACT_NAME,
+														ContractResources.ERC_721_TOKEN_URI_CALL,
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)), 2)
+														.payingWith(ACCOUNT)
+														.via(nonExistingTokenURITxn)
+														.hasKnownStatus(SUCCESS)
 														.gas(GAS_TO_OFFER)
 										)
 						)
@@ -1405,6 +1435,17 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.contractCallResult(htsPrecompileResult()
 																.forFunction(HTSPrecompileResult.FunctionType.TOKEN_URI)
 																.withTokenUri("FIRST")
+														)
+										)
+						),
+						childRecordsCheck(nonExistingTokenURITxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.TOKEN_URI)
+																.withTokenUri(ERC721MetadataNonExistingToken)
 														)
 										)
 						),
@@ -1466,6 +1507,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	private HapiApiSpec getErc721BalanceOf() {
 		final var balanceOfTxn = "balanceOfTxn";
+		final var zeroBalanceOfTxn = "zbalanceOfTxn";
 
 		return defaultHapiSpec("ERC_721_BALANCE_OF")
 				.given(
@@ -1485,13 +1527,22 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						contractCreate(ERC_721_CONTRACT_NAME)
 								.bytecode(ERC_721_CONTRACT_NAME)
 								.gas(300_000),
-						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
-						tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
-						cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY, OWNER))
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META))
 				).when(withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
+												contractCall(ERC_721_CONTRACT_NAME,
+														ContractResources.ERC_721_BALANCE_OF_CALL,
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(OWNER)))
+														.payingWith(OWNER)
+														.via(zeroBalanceOfTxn)
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER),
+												tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
+												cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1)
+														.between(TOKEN_TREASURY, OWNER)),
 												contractCall(ERC_721_CONTRACT_NAME,
 														ContractResources.ERC_721_BALANCE_OF_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
@@ -1503,6 +1554,18 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										)
 						)
 				).then(
+						/* expect 0 returned from balanceOf() if the account and token are not associated -*/
+						childRecordsCheck(zeroBalanceOfTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.BALANCE)
+																.withBalance(0)
+														)
+										)
+						),
 						childRecordsCheck(balanceOfTxn, SUCCESS,
 								recordWith()
 										.status(SUCCESS)

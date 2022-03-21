@@ -27,8 +27,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.List;
-
 public class TokenRelsCommitInterceptor implements CommitInterceptor<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty> {
 
 	// The tracker this interceptor should use for previewing changes. The interceptor is NOT
@@ -40,13 +38,12 @@ public class TokenRelsCommitInterceptor implements CommitInterceptor<Pair<Accoun
 	}
 
 	/**
-	 * Accepts a pending change set, including creations and removals.
-	 *
-	 * @throws IllegalStateException if these changes are invalid
+	 * {@inheritDoc}
 	 */
 	@Override
-	public void preview(final List<EntityChanges<Pair<AccountID, TokenID>, MerkleTokenRelStatus,
-				TokenRelProperty>> changesToCommit) {
-		//to be implemented
+	public void preview(
+			final EntityChangeSet<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty> pendingChanges
+	) {
+		// No-op for now
 	}
 }
