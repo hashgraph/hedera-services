@@ -1018,25 +1018,19 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper
 		) {
 			//TODO: test the custom validation of ed25519 and ecdsasecpk256k1
-			var hasAdminKeySigned = false;
 			final var key = tokenKeyWrapper.key();
-			switch (key.getKeyValueType()) {
-				case INHERIT_ACCOUNT_KEY ->
-						hasAdminKeySigned = validateKey(frame, senderAddress, sigsVerifier::hasActiveKey);
-				case CONTRACT_ID ->
-						hasAdminKeySigned = validateKey(frame, asTypedEvmAddress(key.getContractID()),
+			return switch (key.getKeyValueType()) {
+				case INHERIT_ACCOUNT_KEY -> validateKey(frame, senderAddress, sigsVerifier::hasActiveKey);
+				case CONTRACT_ID -> validateKey(frame, asTypedEvmAddress(key.getContractID()),
 								sigsVerifier::hasActiveKey);
-				case DELEGATABLE_CONTRACT_ID ->
-						hasAdminKeySigned = validateKey(frame, asTypedEvmAddress(key.getDelegatableContractID()),
+				case DELEGATABLE_CONTRACT_ID -> validateKey(frame, asTypedEvmAddress(key.getDelegatableContractID()),
 								sigsVerifier::hasActiveKey);
-				case ED25519 ->
-						hasAdminKeySigned = validateCryptoKey(new JEd25519Key(key.getEd25519Key()),
+				case ED25519 -> validateCryptoKey(new JEd25519Key(key.getEd25519Key()),
 								sigsVerifier::cryptoKeyIsActive);
-				case ECDS_SECPK256K1 ->
-						hasAdminKeySigned = validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsSecp256k1()),
+				case ECDS_SECPK256K1 -> validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsSecp256k1()),
 								sigsVerifier::cryptoKeyIsActive);
-			}
-			return hasAdminKeySigned;
+				default -> throw new InvalidTransactionException(FAIL_INVALID);
+			};
 		}
 
 		private boolean validateCryptoKey(final JKey key, final Predicate<JKey> keyActiveTest) {

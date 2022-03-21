@@ -305,24 +305,14 @@ final class TokenCreateWrapper {
 		}
 
 		Key asGrpc() {
-			switch (keyValueType) {
-				case INHERIT_ACCOUNT_KEY -> {
-					return this.inheritedKey;
-				}
-				case CONTRACT_ID -> {
-					return Key.newBuilder().setContractID(contractID).build();
-				}
-				case ED25519 -> {
-					return Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519)).build();
-				}
-				case ECDS_SECPK256K1 -> {
-					return Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsSecp256k1)).build();
-				}
-				case DELEGATABLE_CONTRACT_ID -> {
-					return Key.newBuilder().setDelegatableContractId(delegatableContractID).build();
-				}
+			return switch (keyValueType) {
+				case INHERIT_ACCOUNT_KEY -> this.inheritedKey;
+				case CONTRACT_ID -> Key.newBuilder().setContractID(contractID).build();
+				case ED25519 -> Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519)).build();
+				case ECDS_SECPK256K1 -> Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsSecp256k1)).build();
+				case DELEGATABLE_CONTRACT_ID -> Key.newBuilder().setDelegatableContractId(delegatableContractID).build();
 				default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
-			}
+			};
 		}
 	}
 
@@ -372,16 +362,17 @@ final class TokenCreateWrapper {
 		}
 
 		private FixedFee.Builder asBuilder() {
-			final var fixedFeeBuilder = FixedFee.newBuilder().setAmount(amount);
-			switch (fixedFeePayment) {
-				case USE_EXISTING_FUNGIBLE_TOKEN -> fixedFeeBuilder.setDenominatingTokenId(tokenID);
-				case USE_CURRENTLY_CREATED_TOKEN -> fixedFeeBuilder.setDenominatingTokenId(TokenID.newBuilder()
-						.setShardNum(0L)
-						.setRealmNum(0L)
-						.setTokenNum(0L)
-						.build());
-			}
-			return fixedFeeBuilder;
+			return switch (fixedFeePayment) {
+				case USE_HBAR -> FixedFee.newBuilder().setAmount(amount);
+				case USE_EXISTING_FUNGIBLE_TOKEN -> FixedFee.newBuilder().setAmount(amount).setDenominatingTokenId(tokenID);
+				case USE_CURRENTLY_CREATED_TOKEN -> FixedFee.newBuilder().setAmount(amount)
+						.setDenominatingTokenId(TokenID.newBuilder()
+							.setShardNum(0L)
+							.setRealmNum(0L)
+							.setTokenNum(0L)
+							.build());
+				default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
+			};
 		}
 
 		FixedFeePayment getFixedFeePayment() {
