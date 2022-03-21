@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_CONSTRUCTOR_ABI;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -224,7 +224,7 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 		final String MAINNET_NODES = "34.89.103.38:0.0.24";
 //		final String MAINNET_NODES = "35.236.5.219:0.0.8";
 		final String payer = "0.0.107630";
-		final String payerWords = "give credit milk ignore curve oppose regular grit gesture cousin escape grocery fashion note match plunge curtain hat blue good nature brand scale awful";
+		final String payerWords = "stairs fruit morning face thank sunset dance limb into table lion keen develop profit actor gentle time pistol prepare paper globe gap forget keep";
 
 		final long ONE_HBAR = 100_000_000L;
 
@@ -250,7 +250,8 @@ public class ReviewMainnetEntities extends HapiApiSuite {
 //								.logged()
 				).then(
 //						getTxnRecord(literalTxnId).assertingNothing().logged()
-						getAccountBalance("0.0.801")
+//						getAccountBalance("0.0.801")
+						getAccountInfo("0.0.98").logged()
 				);
 	}
 

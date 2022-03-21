@@ -26,11 +26,12 @@ import com.hedera.services.sigs.order.KeyOrderingFailure;
 import java.util.EnumMap;
 import java.util.Optional;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_AUTORENEW_ACCOUNT;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
@@ -54,8 +55,9 @@ public class SafeLookupResult<T> {
 		KNOWN_FAILURES.put(INVALID_CONTRACT, new SafeLookupResult<>(INVALID_CONTRACT));
 		KNOWN_FAILURES.put(IMMUTABLE_CONTRACT, new SafeLookupResult<>(IMMUTABLE_CONTRACT));
 		KNOWN_FAILURES.put(INVALID_TOPIC, new SafeLookupResult<>(INVALID_TOPIC));
-		KNOWN_FAILURES.put(MISSING_AUTORENEW_ACCOUNT, new SafeLookupResult<>(MISSING_AUTORENEW_ACCOUNT));
+		KNOWN_FAILURES.put(INVALID_AUTORENEW_ACCOUNT, new SafeLookupResult<>(INVALID_AUTORENEW_ACCOUNT));
 		KNOWN_FAILURES.put(MISSING_SCHEDULE, new SafeLookupResult<>(MISSING_SCHEDULE));
+		KNOWN_FAILURES.put(IMMUTABLE_ACCOUNT, new SafeLookupResult<>(IMMUTABLE_ACCOUNT));
 	}
 
 	private SafeLookupResult(KeyOrderingFailure failure) {
