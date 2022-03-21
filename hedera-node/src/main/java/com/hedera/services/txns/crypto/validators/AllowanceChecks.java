@@ -205,5 +205,10 @@ public interface AllowanceChecks {
 				: listedOwner.equals(ownerAccount.getId().asEntityId());
 	}
 
+	/**
+	 * Check if the allowance feature is enabled
+	 *
+	 * @return true if the feature is enabled in {@link com.hedera.services.context.properties.GlobalDynamicProperties}
+	 */
 	boolean isEnabled();
 }
