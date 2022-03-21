@@ -23,13 +23,12 @@ package com.hedera.services.utils.accessors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 
 public class CryptoCreateAccessor extends SignedTxnAccessor{
 	private final CryptoCreateTransactionBody transactionBody;
@@ -82,12 +81,12 @@ public class CryptoCreateAccessor extends SignedTxnAccessor{
 	}
 
 	public AccountID getSponsor() {
-		return unaliased(super.getPayer()).toGrpcAccountId();
+		return unaliased(super.getPayer(), aliasManager).toGrpcAccountId();
 	}
 
 	public AccountID getProxy() {
 		if (proxyId == null) {
-			proxyId = unaliased(transactionBody.getProxyAccountID()).toGrpcAccountId();
+			proxyId = unaliased(transactionBody.getProxyAccountID(), aliasManager).toGrpcAccountId();
 		}
 		return proxyId;
 	}
@@ -98,14 +97,6 @@ public class CryptoCreateAccessor extends SignedTxnAccessor{
 
 	public long getReceiveRecordThreshold() {
 		return transactionBody.getReceiveRecordThreshold();
-	}
-
-	protected EntityNum unaliased(AccountID grpcId) {
-		return aliasManager.unaliased(grpcId);
-	}
-
-	protected EntityNum unaliased(ContractID grpcId) {
-		return EntityIdUtils.unaliased(grpcId, aliasManager);
 	}
 
 	private void setCryptoCreateUsageMeta() {

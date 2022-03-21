@@ -24,7 +24,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -33,6 +32,8 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 
 public class CryptoAllowanceAccessor extends SignedTxnAccessor{
 	private AliasManager aliasManager;
@@ -51,7 +52,7 @@ public class CryptoAllowanceAccessor extends SignedTxnAccessor{
 
 	@Override
 	public AccountID getPayer() {
-		return unaliased(super.getPayer()).toGrpcAccountId();
+		return unaliased(super.getPayer(), aliasManager).toGrpcAccountId();
 	}
 
 	public List<CryptoAllowance> getCryptoAllowances() {
@@ -59,7 +60,7 @@ public class CryptoAllowanceAccessor extends SignedTxnAccessor{
 		for (var allowance : getCryptoAllowancesList()) {
 			allowances.add(
 					allowance.toBuilder()
-							.setSpender(unaliased(allowance.getSpender()).toGrpcAccountId())
+							.setSpender(unaliased(allowance.getSpender(), aliasManager).toGrpcAccountId())
 							.build()
 			);
 		}
@@ -71,7 +72,7 @@ public class CryptoAllowanceAccessor extends SignedTxnAccessor{
 		for (var allowance : getTokenAllowancesList()) {
 			allowances.add(
 					allowance.toBuilder()
-							.setSpender(unaliased(allowance.getSpender()).toGrpcAccountId())
+							.setSpender(unaliased(allowance.getSpender(), aliasManager).toGrpcAccountId())
 							.build()
 			);
 		}
@@ -83,15 +84,11 @@ public class CryptoAllowanceAccessor extends SignedTxnAccessor{
 		for (var allowance : getNftAllowancesList()) {
 			allowances.add(
 					allowance.toBuilder()
-							.setSpender(unaliased(allowance.getSpender()).toGrpcAccountId())
+							.setSpender(unaliased(allowance.getSpender(), aliasManager).toGrpcAccountId())
 							.build()
 			);
 		}
 		return allowances;
-	}
-
-	protected EntityNum unaliased(AccountID grpcId) {
-		return aliasManager.unaliased(grpcId);
 	}
 
 	private List<CryptoAllowance> getCryptoAllowancesList() {

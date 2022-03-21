@@ -23,6 +23,7 @@ package com.hedera.services.utils.accessors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 
 import java.util.List;
@@ -38,7 +39,7 @@ public class TokenWipeAccessor extends SignedTxnAccessor {
 	}
 
 	public Id accountToWipe() {
-		return aliasManager.unaliased(body.getAccount()).toId();
+		return EntityIdUtils.unaliased(body.getAccount(), aliasManager).toId();
 	}
 
 	public Id targetToken() {

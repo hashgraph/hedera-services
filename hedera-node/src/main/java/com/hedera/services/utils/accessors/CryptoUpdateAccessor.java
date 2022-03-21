@@ -23,12 +23,13 @@ package com.hedera.services.utils.accessors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
+
+import static com.hedera.services.utils.EntityIdUtils.unaliased;
 
 public class CryptoUpdateAccessor extends SignedTxnAccessor{
 	private final CryptoUpdateTransactionBody transactionBody;
@@ -43,7 +44,7 @@ public class CryptoUpdateAccessor extends SignedTxnAccessor{
 	}
 
 	public AccountID getTarget() {
-		return unaliased(transactionBody.getAccountIDToUpdate()).toGrpcAccountId();
+		return unaliased(transactionBody.getAccountIDToUpdate(), aliasManager).toGrpcAccountId();
 	}
 
 	public boolean hasExpirationTime() {
@@ -100,15 +101,11 @@ public class CryptoUpdateAccessor extends SignedTxnAccessor{
 	}
 
 	public AccountID getProxy() {
-		return unaliased(transactionBody.getProxyAccountID()).toGrpcAccountId();
+		return unaliased(transactionBody.getProxyAccountID(), aliasManager).toGrpcAccountId();
 	}
 
 	public Key getKey() {
 		return transactionBody.getKey();
-	}
-
-	protected EntityNum unaliased(AccountID grpcId) {
-		return aliasManager.unaliased(grpcId);
 	}
 
 	private void setCryptoUpdateUsageMeta() {

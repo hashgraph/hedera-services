@@ -166,7 +166,7 @@ class TxnAwareEvmSigsVerifierTest {
 	void supplyKeyFailsWhenTokensLedgerIsNull() {
 		given(ledgers.tokens()).willReturn(null);
 
-		assertThrows(NullPointerException.class, () ->subject.hasActiveSupplyKey(true,
+		assertThrows(NullPointerException.class, () -> subject.hasActiveSupplyKey(true,
 				PRETEND_TOKEN_ADDR,
 				PRETEND_SENDER_ADDR,
 				ledgers));
