@@ -28,7 +28,6 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.annotations.RunRecordStreaming;
 import com.hedera.services.state.annotations.RunTopLevelTransition;
 import com.hedera.services.state.annotations.RunTriggeredTransition;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
