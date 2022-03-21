@@ -54,7 +54,8 @@ public class BackedSystemAccountsCreator implements SystemAccountsCreator {
 	private static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
 	private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
 
-	public static List<EntityNum> STAKING_FUND_ACCOUNTS = List.of(EntityNum.fromLong(800L), EntityNum.fromLong(801L));
+	public static final List<EntityNum> STAKING_FUND_ACCOUNTS =
+			List.of(EntityNum.fromLong(800L), EntityNum.fromLong(801L));
 
 	private final AccountNumbers accountNums;
 	private final PropertySource properties;
