@@ -238,15 +238,13 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		final var txn = new SwirldTransaction(
 				Transaction.newBuilder().setBodyBytes(cryptoAdjustAllowanceTxn.toByteString()).build().toByteArray());
 		accessor = new CryptoAllowanceAccessor(txn.getContentsDirect(), aliasManager);
-		given(platformAccessor.getDelegate()).willReturn(accessor);
 		given(aliasManager.unaliased(ownerId)).willReturn(ownerNum);
 		given(aliasManager.unaliased(spender1)).willReturn(spenderNum);
 		given(adjustAllowanceChecks.allowancesValidation(accessor.getCryptoAllowances(), accessor.getTokenAllowances(),
 				accessor.getNftAllowances(), ownerAcccount,
 				dynamicProperties.maxAllowanceLimitPerTransaction())).willReturn(OK);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
-		given(platformAccessor.getDelegate()).willReturn(accessor);
-		assertEquals(OK, subject.validateSemantics(platformAccessor));
+		assertEquals(OK, subject.validateSemantics(accessor));
 	}
 
 	@Test

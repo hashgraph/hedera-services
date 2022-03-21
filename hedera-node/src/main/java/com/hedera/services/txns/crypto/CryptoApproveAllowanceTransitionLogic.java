@@ -104,8 +104,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var platformAccessor = (PlatformTxnAccessor) accessor;
-		final var approveAccessor = (CryptoAllowanceAccessor) platformAccessor.getDelegate();
+		final var approveAccessor = (CryptoAllowanceAccessor) accessor;
 		final AccountID payer = approveAccessor.getPayer();
 		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 

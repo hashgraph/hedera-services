@@ -125,7 +125,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenValidTxnCtx(target);
 
 		// expect:
-		assertEquals(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.validateSemantics(platformAccessor));
+		assertEquals(TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -133,7 +133,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenValidTxnCtx();
 
 		// expect:
-		assertEquals(OK, subject.validateSemantics(platformAccessor));
+		assertEquals(OK, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -253,7 +253,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenDeleteTxnMissingTarget();
 
 		// when:
-		ResponseCodeEnum validity = subject.validateSemantics(platformAccessor);
+		ResponseCodeEnum validity = subject.validateSemantics(accessor);
 
 		// then:
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
@@ -264,7 +264,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenDeleteTxnMissingTransfer();
 
 		// when:
-		ResponseCodeEnum validity = subject.validateSemantics(platformAccessor);
+		ResponseCodeEnum validity = subject.validateSemantics(accessor);
 
 		// then:
 		assertEquals(ACCOUNT_ID_DOES_NOT_EXIST, validity);
@@ -276,7 +276,7 @@ class CryptoDeleteTransitionLogicTest {
 		givenDeleteTxnWithAlias(aliasedTransfer);
 		given(ledger.allTokenBalancesVanish(target)).willReturn(true);
 
-		ResponseCodeEnum validity = subject.validateSemantics(platformAccessor);
+		ResponseCodeEnum validity = subject.validateSemantics(accessor);
 		assertEquals(OK, validity);
 
 		subject.doStateTransition();

@@ -142,49 +142,49 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.memoCheck(MEMO)).willReturn(MEMO_TOO_LONG);
 
-		assertEquals(MEMO_TOO_LONG, subject.validateSemantics(platformAccessor));
+		assertEquals(MEMO_TOO_LONG, subject.validateSemantics(accessor));
 	}
 
 	@Test
 	void returnsKeyRequiredOnEmptyKey() throws InvalidProtocolBufferException {
 		givenValidTxnCtx(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build(), PROXY, ourTxnId());
 
-		assertEquals(KEY_REQUIRED, subject.validateSemantics(platformAccessor));
+		assertEquals(KEY_REQUIRED, subject.validateSemantics(accessor));
 	}
 
 	@Test
 	void requiresKey() throws InvalidProtocolBufferException {
 		givenMissingKey();
 
-		assertEquals(KEY_REQUIRED, subject.validateSemantics(platformAccessor));
+		assertEquals(KEY_REQUIRED, subject.validateSemantics(accessor));
 	}
 
 	@Test
 	void rejectsMissingAutoRenewPeriod() throws InvalidProtocolBufferException {
 		givenMissingAutoRenewPeriod();
 
-		assertEquals(INVALID_RENEWAL_PERIOD, subject.validateSemantics(platformAccessor));
+		assertEquals(INVALID_RENEWAL_PERIOD, subject.validateSemantics(accessor));
 	}
 
 	@Test
 	void rejectsNegativeBalance() throws InvalidProtocolBufferException {
 		givenAbsurdInitialBalance();
 
-		assertEquals(INVALID_INITIAL_BALANCE, subject.validateSemantics(platformAccessor));
+		assertEquals(INVALID_INITIAL_BALANCE, subject.validateSemantics(accessor));
 	}
 
 	@Test
 	void rejectsNegativeSendThreshold() throws InvalidProtocolBufferException {
 		givenAbsurdSendThreshold();
 
-		assertEquals(INVALID_SEND_RECORD_THRESHOLD, subject.validateSemantics(platformAccessor));
+		assertEquals(INVALID_SEND_RECORD_THRESHOLD, subject.validateSemantics(accessor));
 	}
 
 	@Test
 	void rejectsNegativeReceiveThreshold() throws InvalidProtocolBufferException {
 		givenAbsurdReceiveThreshold();
 
-		assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, subject.validateSemantics(platformAccessor));
+		assertEquals(INVALID_RECEIVE_RECORD_THRESHOLD, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -192,7 +192,7 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.hasGoodEncoding(any())).willReturn(false);
 
-		assertEquals(BAD_ENCODING, subject.validateSemantics(platformAccessor));
+		assertEquals(BAD_ENCODING, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -200,14 +200,14 @@ class CryptoCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
 
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.validateSemantics(platformAccessor));
+		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.validateSemantics(accessor));
 	}
 
 	@Test
 	void acceptsValidTxn() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 
-		assertEquals(OK, subject.validateSemantics(platformAccessor));
+		assertEquals(OK, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -215,7 +215,7 @@ class CryptoCreateTransitionLogicTest {
 		givenInvalidMaxAutoAssociations();
 
 		assertEquals(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
-				subject.validateSemantics(platformAccessor));
+				subject.validateSemantics(accessor));
 	}
 
 	@Test

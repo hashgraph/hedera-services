@@ -127,8 +127,7 @@ public class CryptoDeleteTransitionLogic implements TransitionLogic {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var platformAccessor = (PlatformTxnAccessor) accessor;
-		final var deleteAccessor = (CryptoDeleteAccessor) platformAccessor.getDelegate();
+		final var deleteAccessor = (CryptoDeleteAccessor) accessor;
 
 		if (!deleteAccessor.hasTarget() || !deleteAccessor.hasTransferAccount()) {
 			return ACCOUNT_ID_DOES_NOT_EXIST;

@@ -304,18 +304,16 @@ class CryptoUpdateTransitionLogicTest {
 	void rejectsInvalidMemo() {
 		givenTxnCtx(EnumSet.of(AccountCustomizer.Option.MEMO));
 		given(validator.memoCheck(MEMO)).willReturn(MEMO_TOO_LONG);
-		given(platformAccessor.getDelegate()).willReturn(accessor);
 
-		assertEquals(MEMO_TOO_LONG, subject.validateSemantics(platformAccessor));
+		assertEquals(MEMO_TOO_LONG, subject.validateSemantics(accessor));
 	}
 
 	@Test
 	void rejectsInvalidAutoRenewPeriod() {
 		givenTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
-		given(platformAccessor.getDelegate()).willReturn(accessor);
 
-		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.validateSemantics(platformAccessor));
+		assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -509,9 +507,8 @@ class CryptoUpdateTransitionLogicTest {
 				.build();
 		given(accessor.hasKey()).willReturn(true);
 		given(accessor.getKey()).willReturn(key);
-		given(platformAccessor.getDelegate()).willReturn(accessor);
 
-		assertEquals(BAD_ENCODING, subject.validateSemantics(platformAccessor));
+		assertEquals(BAD_ENCODING, subject.validateSemantics(accessor));
 	}
 
 	private void givenTxnCtx() {

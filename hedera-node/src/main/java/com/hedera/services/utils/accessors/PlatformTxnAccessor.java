@@ -51,17 +51,17 @@ import java.util.function.Function;
  */
 public class PlatformTxnAccessor implements TxnAccessor {
 	private final SwirldTransaction platformTxn;
-	private TxnAccessor delegate;
+	private SignedTxnAccessor delegate;
 
 	private RationalizedSigMeta sigMeta = null;
 
-	protected PlatformTxnAccessor(final TxnAccessor delegate,
+	protected PlatformTxnAccessor(final SignedTxnAccessor delegate,
 			SwirldTransaction platformTxn) {
 		this.platformTxn = platformTxn;
 		this.delegate = delegate;
 	}
 
-	public static PlatformTxnAccessor from(final TxnAccessor delegate, final SwirldTransaction platformTxn) {
+	public static PlatformTxnAccessor from(final SignedTxnAccessor delegate, final SwirldTransaction platformTxn) {
 		return new PlatformTxnAccessor(delegate, platformTxn);
 	}
 
@@ -275,7 +275,7 @@ public class PlatformTxnAccessor implements TxnAccessor {
 		return delegate.availSubmitUsageMeta();
 	}
 
-	public TxnAccessor getDelegate() {
+	public SignedTxnAccessor getDelegate() {
 		return delegate;
 	}
 }

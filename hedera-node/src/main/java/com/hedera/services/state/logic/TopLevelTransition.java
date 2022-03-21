@@ -97,7 +97,7 @@ public class TopLevelTransition implements Runnable {
 			return;
 		}
 		if (networkUtilization.screenForAvailableCapacity()) {
-			requestedTransition.finishFor(accessor);
+			requestedTransition.finishFor(accessor.getDelegate());
 		}
 	}
 }

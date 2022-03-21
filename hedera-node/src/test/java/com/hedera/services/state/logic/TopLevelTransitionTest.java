@@ -112,7 +112,7 @@ class TopLevelTransitionTest {
 		inOrder.verify(chargingPolicyAgent).applyPolicyFor(accessor);
 		inOrder.verify(nonPayerKeysScreen).reqKeysAreActiveGiven(OK);
 		inOrder.verify(networkUtilization).screenForAvailableCapacity();
-		inOrder.verify(requestedTransition).finishFor(accessor);
+		inOrder.verify(requestedTransition).finishFor(accessor.getDelegate());
 	}
 
 	@Test

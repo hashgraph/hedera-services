@@ -39,14 +39,14 @@ public class AccessorFactory {
 		this.aliasManager = aliasManager;
 	}
 
-	public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+	public SignedTxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
 		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
 		subtype.setTriggered(false);
 		subtype.setScheduleRef(null);
 		return subtype;
 	}
 
-	public TxnAccessor triggeredTxn(byte[] signedTxnWrapperBytes, final AccountID payer,
+	public SignedTxnAccessor triggeredTxn(byte[] signedTxnWrapperBytes, final AccountID payer,
 			ScheduleID parent) throws InvalidProtocolBufferException {
 		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
 		subtype.setTriggered(true);
@@ -63,7 +63,7 @@ public class AccessorFactory {
 	 * @return
 	 * @throws InvalidProtocolBufferException
 	 */
-	private TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
+	private SignedTxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
 			throws InvalidProtocolBufferException {
 		final var body = extractTransactionBody(Transaction.parseFrom(signedTxnWrapperBytes));
 		final var function = MiscUtils.functionExtractor.apply(body);

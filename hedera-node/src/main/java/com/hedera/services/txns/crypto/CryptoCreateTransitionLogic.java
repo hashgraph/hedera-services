@@ -94,8 +94,15 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		try {
-			final var platformAccessor = (PlatformTxnAccessor) txnCtx.accessor();
-			final var accessor = (CryptoCreateAccessor) platformAccessor.getDelegate();
+//			final var accessor = (CryptoCreateAccessor) txnCtx.getAccessorForTransition();
+			final var txnAccessor = txnCtx.accessor();
+			final CryptoCreateAccessor accessor;
+			if (txnAccessor.isTriggeredTxn()) {
+				accessor = (CryptoCreateAccessor) txnAccessor;
+			} else {
+				final var platformAccessor = (PlatformTxnAccessor) txnAccessor;
+				accessor = (CryptoCreateAccessor) platformAccessor.getDelegate();
+			}
 			AccountID sponsor = accessor.getSponsor();
 
 			// validate proxy account
@@ -152,8 +159,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var platformAccessor = (PlatformTxnAccessor) accessor;
-		final var createAccessor = (CryptoCreateAccessor) platformAccessor.getDelegate();
+		final var createAccessor = (CryptoCreateAccessor) accessor;
 		var memoValidity = validator.memoCheck(createAccessor.getMemo());
 		if (memoValidity != OK) {
 			return memoValidity;

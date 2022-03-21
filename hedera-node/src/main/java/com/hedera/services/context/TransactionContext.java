@@ -25,6 +25,7 @@ import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -259,4 +260,6 @@ public interface TransactionContext {
 	 * @return long - the amount of gas used for the TX execution
 	 */
 	long getGasUsedForContractTxn();
+
+	SignedTxnAccessor getAccessorForTransition();
 }

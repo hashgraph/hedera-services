@@ -35,6 +35,8 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -328,6 +330,15 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public long getGasUsedForContractTxn() {
 		return evmFnResult.getGasUsed();
+	}
+
+	@Override
+	public SignedTxnAccessor getAccessorForTransition() {
+		if (accessor.isTriggeredTxn()) {
+			return (SignedTxnAccessor) accessor;
+		} else {
+			return ((PlatformTxnAccessor) accessor).getDelegate();
+		}
 	}
 
 	/* --- Used by unit tests --- */

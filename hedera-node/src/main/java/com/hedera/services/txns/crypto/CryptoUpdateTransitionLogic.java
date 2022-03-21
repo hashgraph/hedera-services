@@ -211,8 +211,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		final var platformAccessor = (PlatformTxnAccessor) accessor;
-		final var updateAccessor = (CryptoUpdateAccessor) platformAccessor.getDelegate();
+		final var updateAccessor = (CryptoUpdateAccessor) accessor;
 
 		var memoValidity = !updateAccessor.hasMemo() ? OK : validator.memoCheck(updateAccessor.getMemo());
 		if (memoValidity != OK) {
