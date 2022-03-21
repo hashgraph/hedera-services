@@ -38,6 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -65,6 +66,9 @@ import static org.mockito.Mockito.verify;
 class UpgradeActionsTest {
 	private static final Instant then = Instant.ofEpochSecond(1_234_567L, 890);
 	private static final String markerFilesLoc = "src/test/resources/upgrade";
+	private static final String noiseDirLoc = markerFilesLoc + "/outdated";
+	private static final String noiseFileLoc = markerFilesLoc + "/old-config.txt";
+	private static final String noiseSubFileLoc = noiseDirLoc + "/forgotten.cfg";
 	private static final String otherMarkerFilesLoc = "src/test/resources/upgrade/edargpu";
 	private static final byte[] PRETEND_ARCHIVE =
 			"This is missing something. Hard to put a finger on what...".getBytes(StandardCharsets.UTF_8);
@@ -230,6 +234,7 @@ class UpgradeActionsTest {
 
 	@Test
 	void preparesForUpgrade() throws IOException {
+		setupNoiseFiles();
 		rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
 		given(dynamicProperties.upgradeArtifactsLoc()).willReturn(markerFilesLoc);
@@ -238,6 +243,7 @@ class UpgradeActionsTest {
 
 		verify(unzipAction).unzip(PRETEND_ARCHIVE, markerFilesLoc);
 		assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
+		assertNoiseFilesAreGone();
 	}
 
 	@Test
@@ -423,5 +429,20 @@ class UpgradeActionsTest {
 		} else {
 			assertEquals(UpgradeActions.MARK, contents);
 		}
+	}
+
+	private void setupNoiseFiles() throws IOException {
+		final var noiseDir = new File(noiseDirLoc);
+		noiseDir.mkdir();
+		Files.write(Paths.get(noiseFileLoc),
+				List.of("There, the eyes are", "Sunlight on a broken column", "There, is a tree swinging"));
+		Files.write(Paths.get(noiseSubFileLoc),
+				List.of("And voices are", "In the wind's singing", "More distant and more solemn", "Than a fading star"));
+	}
+
+	private void assertNoiseFilesAreGone() {
+		assertFalse(new File(noiseDirLoc).exists());
+		assertFalse(new File(noiseFileLoc).exists());
+		assertFalse(new File(noiseSubFileLoc).exists());
 	}
 }
