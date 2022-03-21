@@ -504,6 +504,7 @@ class ImpliedTransfersMarshalTest {
 			maxFeeNesting,
 			maxBalanceChanges,
 			areNftsEnabled,
+			true,
 			true);
 	private final ImpliedTransfersMeta.ValidationProps propsNoAutoCreation = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
@@ -512,7 +513,8 @@ class ImpliedTransfersMarshalTest {
 			maxFeeNesting,
 			maxBalanceChanges,
 			areNftsEnabled,
-			false);
+			false,
+			true);
 
 	private final AccountID aModel = asAccount("1.2.3");
 	private final AccountID bModel = asAccount("2.3.4");

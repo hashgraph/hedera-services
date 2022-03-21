@@ -69,12 +69,13 @@ class SpanMapManagerTest {
 	private final int maxFeeNesting = 4;
 	private final int maxBalanceChanges = 5;
 	private final boolean autoCreationEnabled = true;
+	private final boolean areAllowancesEnabled = true;
 	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges,
-			areNftsEnabled, autoCreationEnabled);
+			areNftsEnabled, autoCreationEnabled, areAllowancesEnabled);
 	private final ImpliedTransfersMeta.ValidationProps otherValidationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges + 1, maxFeeNesting, maxBalanceChanges,
-			areNftsEnabled, autoCreationEnabled);
+			areNftsEnabled, autoCreationEnabled, areAllowancesEnabled);
 	private final TransactionBody pretendXferTxn = TransactionBody.getDefaultInstance();
 	private final ImpliedTransfers someImpliedXfers = ImpliedTransfers.invalid(
 			validationProps, ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS);

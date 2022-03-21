@@ -80,6 +80,30 @@ public class TxnUtils {
 				.build();
 	}
 
+	public static TransferList withAllowanceAdjustments(
+			AccountID a, long A, boolean isAllowedA,
+			AccountID b, long B, boolean isAllowedB,
+			AccountID c, long C, boolean isAllowedC,
+			AccountID d, long D, boolean isAllowedD) {
+		return TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(a).setAmount(A).setIsApproval(isAllowedA).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(b).setAmount(B).setIsApproval(isAllowedB).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(c).setAmount(C).setIsApproval(isAllowedC).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(d).setAmount(D).setIsApproval(isAllowedD).build())
+				.build();
+	}
+
+	public static TokenTransferList withTokenAllowanceAdjustments(
+			TokenID a, AccountID aId, AccountID aCounterpartyId, long A,
+			TokenID b, AccountID bId, AccountID bCounterpartyId, long B,
+			TokenID c, AccountID cId, AccountID cCounterpartyId, long C
+	) {
+		return TokenTransferList.newBuilder()
+						.setToken(a)
+						.addNftTransfers(IdUtils.nftXfer(aId, aCounterpartyId, A))
+						.build();
+	}
+
 	public static List<TokenTransferList> withOwnershipChanges(
 			TokenID a, AccountID aId, AccountID aCounterpartyId, long A,
 			TokenID b, AccountID bId, AccountID bCounterpartyId, long B,

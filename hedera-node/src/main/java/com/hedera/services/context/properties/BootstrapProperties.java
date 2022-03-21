@@ -267,7 +267,8 @@ public final class BootstrapProperties implements PropertySource {
 			"consensus.message.maxBytesAllowed",
 			"upgrade.artifacts.path",
 			"hedera.allowances.maxTransactionLimit",
-			"hedera.allowances.maxAccountLimit"
+			"hedera.allowances.maxAccountLimit",
+			"hedera.allowances.isEnabled"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -440,6 +441,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
 			entry("stats.executionTimesToTrack", AS_INT),
 			entry("hedera.allowances.maxTransactionLimit", AS_INT),
-			entry("hedera.allowances.maxAccountLimit", AS_INT)
+			entry("hedera.allowances.maxAccountLimit", AS_INT),
+			entry("hedera.allowances.isEnabled", AS_BOOLEAN)
 	);
 }

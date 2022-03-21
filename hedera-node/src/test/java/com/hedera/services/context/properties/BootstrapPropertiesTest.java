@@ -207,7 +207,8 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2")),
 			entry("upgrade.artifacts.path", "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),
 			entry("hedera.allowances.maxTransactionLimit", 20),
-			entry("hedera.allowances.maxAccountLimit", 100)
+			entry("hedera.allowances.maxAccountLimit", 100),
+			entry("hedera.allowances.isEnabled", true)
 	);
 
 	@Test

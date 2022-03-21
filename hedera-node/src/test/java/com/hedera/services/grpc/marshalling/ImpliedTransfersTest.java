@@ -163,6 +163,7 @@ class ImpliedTransfersTest {
 	private final int maxBalanceChanges = 20;
 	private final boolean areNftsEnabled = true;
 	private final boolean autoCreationEnabled = true;
+	private final boolean areAllowancesEnabled = true;
 	private final ImpliedTransfersMeta.ValidationProps props = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
 			maxExplicitTokenAdjusts,
@@ -170,7 +171,8 @@ class ImpliedTransfersTest {
 			maxFeeNesting,
 			maxBalanceChanges,
 			areNftsEnabled,
-			autoCreationEnabled);
+			autoCreationEnabled,
+			areAllowancesEnabled);
 	private final EntityId customFeeToken = new EntityId(0, 0, 123);
 	private final EntityId customFeeCollector = new EntityId(0, 0, 124);
 	private final Id someId = new Id(1, 2, 3);

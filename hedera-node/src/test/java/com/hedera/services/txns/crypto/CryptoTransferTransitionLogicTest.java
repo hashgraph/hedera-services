@@ -60,6 +60,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.IdUtils.hbarChange;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,11 +81,12 @@ class CryptoTransferTransitionLogicTest {
 	final private int maxOwnershipChanges = 15;
 	private final boolean areNftsEnabled = false;
 	private final boolean autoCreationEnabled = true;
+	private final boolean areAllowancesEnabled = true;
 	private final int maxFeeNesting = 20;
 	private final int maxBalanceChanges = 20;
 	private final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges,
-			areNftsEnabled, autoCreationEnabled);
+			areNftsEnabled, autoCreationEnabled, areAllowancesEnabled);
 	final private AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
@@ -240,6 +242,20 @@ class CryptoTransferTransitionLogicTest {
 
 		// then:
 		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN, validity);
+	}
+
+	@Test
+	void doesntAllowAllowanceTransfersWhenNotSupported(){
+		final var impliedTransfers = ImpliedTransfers.invalid(
+				validationProps, NOT_SUPPORTED);
+		givenValidTxnCtx();
+		given(accessor.getPayer()).willReturn(payer);
+		given(accessor.getTxn()).willReturn(cryptoTransferTxn);
+		given(impliedTransfersMarshal.unmarshalFromGrpc(cryptoTransferTxn.getCryptoTransfer(), payer))
+				.willReturn(impliedTransfers);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+		final var validity = subject.validateSemantics(accessor);
+		assertEquals(NOT_SUPPORTED, validity);
 	}
 
 	@Test

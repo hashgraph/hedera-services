@@ -30,11 +30,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hedera.test.utils.TxnUtils.withAllowanceAdjustments;
 import static com.hedera.test.utils.TxnUtils.withOwnershipChanges;
 import static com.hedera.test.utils.TxnUtils.withTokenAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
@@ -64,9 +66,10 @@ class PureTransferSemanticChecksTest {
 	private final int maxFeeNesting = 20;
 	private final int maxBalanceChanges = 20;
 	private final boolean autoCreationEnabled = true;
+	private final boolean areAllowancesAllowed = true;
 	final ImpliedTransfersMeta.ValidationProps validationProps = new ImpliedTransfersMeta.ValidationProps(
 			maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges,
-			areNftsEnabled, autoCreationEnabled);
+			areNftsEnabled, autoCreationEnabled, areAllowancesAllowed);
 	final private AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
 	final private AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
 	final private AccountID c = AccountID.newBuilder().setAccountNum(7_999L).build();
@@ -79,6 +82,28 @@ class PureTransferSemanticChecksTest {
 	PureTransferSemanticChecks subject = new PureTransferSemanticChecks();
 
 	@Test
+	void failsWhenAllowanceTxnsNotSupported(){
+		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
+				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges,
+				areNftsEnabled, autoCreationEnabled, false);
+		final var adjusts = withAllowanceAdjustments(
+				asAccount("0.0.1001"), -10L, true,
+				asAccount("0.0.1002"), +10L, true,
+				asAccount("0.0.1003"), -10L, false,
+				asAccount("0.0.1004"), +10L, false);
+		final var validity = subject.fullPureValidation(adjusts, List.of(), validationProps);
+		assertEquals(NOT_SUPPORTED, validity);
+
+		final var tokenAdjusts = withTokenAdjustments(
+				asAccount("0.0.1001"), -10L, true,
+				asAccount("0.0.1002"), +10L, true,
+				asAccount("0.0.1003"), -10L, false,
+				asAccount("0.0.1004"), +10L, false);
+		final var validity = subject.fullPureValidation(adjusts, List.of(), validationProps);
+		assertEquals(NOT_SUPPORTED, validity);
+	}
+
+	@Test
 	void preservesTraditionalResponseCodePriority() {
 		// setup:
 		final var hbarAdjusts = withAdjustments(a, -4L, b, +2L, c, +2L);
@@ -89,7 +114,8 @@ class PureTransferSemanticChecksTest {
 
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
+		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true,
+				true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(OK);
 		// and:
 		doCallRealMethod().when(subject)
@@ -102,7 +128,8 @@ class PureTransferSemanticChecksTest {
 		inOrder.verify(subject).hasRepeatedAccount(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList());
 		inOrder.verify(subject).isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts);
-		inOrder.verify(subject).validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true);
+		inOrder.verify(subject).validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true,
+				true);
 		inOrder.verify(subject).validateTokenTransferSemantics(tokenAdjusts);
 		// and:
 		assertEquals(OK, result);
@@ -118,7 +145,8 @@ class PureTransferSemanticChecksTest {
 
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true))
+		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true,
+				true))
 				.willReturn(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
 		// and:
 		doCallRealMethod().when(subject)
@@ -141,11 +169,12 @@ class PureTransferSemanticChecksTest {
 
 		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
 				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges,
-				areNftsEnabled, autoCreationEnabled);
+				areNftsEnabled, autoCreationEnabled, areAllowancesAllowed);
 		// and:
 		given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
 		given(subject.isAcceptableSize(hbarAdjusts.getAccountAmountsList(), maxHbarAdjusts)).willReturn(true);
-		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true)).willReturn(OK);
+		given(subject.validateTokenTransferSyntax(tokenAdjusts, maxTokenAdjusts, maxOwnershipChanges, true,
+				true)).willReturn(OK);
 		given(subject.validateTokenTransferSemantics(tokenAdjusts)).willReturn(TOKEN_ID_REPEATED_IN_TOKEN_LIST);
 		// and:
 		doCallRealMethod().when(subject).fullPureValidation(hbarAdjusts, tokenAdjusts, validationProps);
@@ -189,7 +218,7 @@ class PureTransferSemanticChecksTest {
 		// and:
 		final var strictValProps = new ImpliedTransfersMeta.ValidationProps(
 				1, 1, 1, 1, 1,
-				areNftsEnabled, autoCreationEnabled);
+				areNftsEnabled, autoCreationEnabled, areAllowancesAllowed);
 
 		// expect:
 		assertEquals(
@@ -212,7 +241,7 @@ class PureTransferSemanticChecksTest {
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTid, a, -1, bTid, b, 2, cTid, c, 3);
 
 		// when:
-		final var result = subject.validateTokenTransferSyntax(wrapper, 4, 2, true);
+		final var result = subject.validateTokenTransferSyntax(wrapper, 4, 2, true, true);
 
 		// expect:
 		assertEquals(OK, result);
@@ -221,7 +250,7 @@ class PureTransferSemanticChecksTest {
 	@Test
 	void acceptsNoTokenTransfers() {
 		// given:
-		final var result = subject.validateTokenTransferSyntax(Collections.emptyList(), 10, 2, true);
+		final var result = subject.validateTokenTransferSyntax(Collections.emptyList(), 10, 2, true, true);
 
 		// expect:
 		assertEquals(OK, result);
@@ -333,7 +362,7 @@ class PureTransferSemanticChecksTest {
 								.setSenderAccountID(a)
 								.setReceiverAccountID(b)
 								.setSerialNumber(123L))
-						.build()), 20, 1, true));
+						.build()), 20, 1, true, true));
 	}
 
 	@Test
@@ -422,7 +451,7 @@ class PureTransferSemanticChecksTest {
 				cTid, c, a, 345);
 
 		// when:
-		final var result = subject.validateTokenTransferSyntax(wrapper, 20, 1, false);
+		final var result = subject.validateTokenTransferSyntax(wrapper, 20, 1, false, true);
 
 		// then:
 		assertEquals(NOT_SUPPORTED, result);
@@ -437,7 +466,7 @@ class PureTransferSemanticChecksTest {
 				cTid, c, a, 345);
 
 		// when:
-		final var result = subject.validateTokenTransferSyntax(wrapper, 20, 1, true);
+		final var result = subject.validateTokenTransferSyntax(wrapper, 20, 1, true, true);
 
 		// then:
 		assertEquals(BATCH_SIZE_LIMIT_EXCEEDED, result);
@@ -449,7 +478,7 @@ class PureTransferSemanticChecksTest {
 		List<TokenTransferList> wrapper = withTokenAdjustments(aTid, a, -1, bTid, b, 2, cTid, c, 3, dTid, d, -4);
 
 		// when:
-		final var result = subject.validateTokenTransferSyntax(wrapper, 4, 2, true);
+		final var result = subject.validateTokenTransferSyntax(wrapper, 4, 2, true, true);
 
 		// then:
 		assertEquals(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, result);
@@ -463,7 +492,7 @@ class PureTransferSemanticChecksTest {
 				.build());
 
 		// when:
-		final var result = subject.validateTokenTransferSyntax(wrapper, 10, 2, true);
+		final var result = subject.validateTokenTransferSyntax(wrapper, 10, 2, true, true);
 
 		// then:
 		assertEquals(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS, result);
