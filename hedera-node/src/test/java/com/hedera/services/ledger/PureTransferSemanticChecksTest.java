@@ -26,15 +26,16 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TransferList;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hedera.test.utils.TxnUtils.withAllowanceAdjustments;
 import static com.hedera.test.utils.TxnUtils.withOwnershipChanges;
@@ -82,7 +83,7 @@ class PureTransferSemanticChecksTest {
 	PureTransferSemanticChecks subject = new PureTransferSemanticChecks();
 
 	@Test
-	void failsWhenAllowanceTxnsNotSupported(){
+	void failsWhenAllowanceTxnsNotSupported() {
 		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
 				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges,
 				areNftsEnabled, autoCreationEnabled, false);
@@ -91,15 +92,27 @@ class PureTransferSemanticChecksTest {
 				asAccount("0.0.1002"), +10L, true,
 				asAccount("0.0.1003"), -10L, false,
 				asAccount("0.0.1004"), +10L, false);
-		final var validity = subject.fullPureValidation(adjusts, List.of(), validationProps);
+		var validity = subject.fullPureValidation(adjusts, List.of(), validationProps);
 		assertEquals(NOT_SUPPORTED, validity);
 
-		final var tokenAdjusts = withTokenAdjustments(
-				asAccount("0.0.1001"), -10L, true,
-				asAccount("0.0.1002"), +10L, true,
-				asAccount("0.0.1003"), -10L, false,
-				asAccount("0.0.1004"), +10L, false);
-		final var validity = subject.fullPureValidation(adjusts, List.of(), validationProps);
+		final var tokenAdjusts = List.of(
+				TokenTransferList.newBuilder()
+						.setToken(asToken("0.0.2000"))
+						.addTransfers(AccountAmount.newBuilder().setAccountID(asAccount("0.0.1000")).setAmount(
+								10L).setIsApproval(true).build())
+						.build()
+		);
+		validity = subject.fullPureValidation(TransferList.newBuilder().build(), tokenAdjusts, validationProps);
+		assertEquals(NOT_SUPPORTED, validity);
+
+		final var nftAdjusts = List.of(
+				TokenTransferList.newBuilder()
+						.setToken(asToken("0.0.2000"))
+						.addNftTransfers(NftTransfer.newBuilder().setSenderAccountID(asAccount("0.0.1000"))
+								.setReceiverAccountID(asAccount("0.0.2000")).setSerialNumber(1L).setIsApproval(true).build())
+						.build()
+		);
+		validity = subject.fullPureValidation(TransferList.newBuilder().build(), nftAdjusts, validationProps);
 		assertEquals(NOT_SUPPORTED, validity);
 	}
 
@@ -269,7 +282,7 @@ class PureTransferSemanticChecksTest {
 		assertEquals(INVALID_TOKEN_ID, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
 						.addAllTransfers(withAdjustments(a, -4L, b, +2L, c, +2L).getAccountAmountsList())
-				.build()
+						.build()
 		)));
 		assertEquals(INVALID_TOKEN_ID, subject.validateTokenTransferSemantics(List.of(
 				TokenTransferList.newBuilder()
