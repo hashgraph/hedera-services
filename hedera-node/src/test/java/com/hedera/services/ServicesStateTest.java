@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -71,6 +72,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
@@ -146,6 +148,8 @@ class ServicesStateTest {
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private Consumer<ServicesState> mockMigrator;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -423,15 +427,18 @@ class ServicesStateTest {
 
 	@Test
 	void doesntMigrateWhenInitializingFromRelease0220() {
-		// given:
+		ServicesState.setStakeFundingMigrator(mockMigrator);
+
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
 
-		// expect:
 		assertDoesNotThrow(subject::migrate);
+
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
 	}
 
 	@Test
 	void migratesWhenInitializingFromRelease0210() {
+		ServicesState.setStakeFundingMigrator(mockMigrator);
 		ServicesState.setBlobMigrator(blobMigrator);
 
 		subject = mock(ServicesState.class);
@@ -447,6 +454,21 @@ class ServicesStateTest {
 				subject, StateVersions.RELEASE_0210_VERSION);
 		verify(subject).init(platform, addressBook, dualState);
 		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
+	}
+
+	@Test
+	void migratesWhenInitializingFromRelease0230() {
+		ServicesState.setStakeFundingMigrator(mockMigrator);
+
+		subject = mock(ServicesState.class);
+		doCallRealMethod().when(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0230_VERSION);
+
+		subject.migrate();
+
+		verify(mockMigrator).accept(subject);
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
 	}
 
 	@Test
