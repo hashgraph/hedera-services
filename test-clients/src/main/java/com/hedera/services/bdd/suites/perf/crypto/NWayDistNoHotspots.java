@@ -56,7 +56,7 @@ public class NWayDistNoHotspots extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(NWayDistNoHotspots.class);
 
 	private static final int XFER_DURATION = 600;
-	private static final int NUM_BENEFICIARIES = 1;
+	private static final int NUM_BENEFICIARIES = 3;
 	private static final int DISTRIBUTIONS_PER_SEC = 500;
 	private static final int CREATIONS_PER_SEC = 50;
 	private static final double ACCOUNT_BUFFER_PERCENTAGE = 10.0;
