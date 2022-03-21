@@ -85,12 +85,6 @@ public class CreateLogic {
 		sigImpactHistorian.markEntityChanged(creation.newTokenId().num());
 	}
 
-	public void create(long now, AccountID activePayer) {
-		// TODO: Come up with a way to pass/build a synthetic TokenCreateTransactionBody to the overloaded method
-		//  from the EVM Precompiled Contract logical path
-		this.create(now, activePayer, null);
-	}
-
 	// Only used in unit-tests
 	public void setCreationFactory(Creation.CreationFactory creationFactory) {
 		this.creationFactory = creationFactory;
