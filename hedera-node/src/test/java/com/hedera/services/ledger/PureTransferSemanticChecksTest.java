@@ -87,7 +87,7 @@ class PureTransferSemanticChecksTest {
 		final var validationProps = new ImpliedTransfersMeta.ValidationProps(
 				maxHbarAdjusts, maxTokenAdjusts, maxOwnershipChanges, maxFeeNesting, maxBalanceChanges,
 				areNftsEnabled, autoCreationEnabled, false);
-		final var adjusts = withAllowanceAdjustments(
+		var adjusts = withAllowanceAdjustments(
 				asAccount("0.0.1001"), -10L, true,
 				asAccount("0.0.1002"), +10L, true,
 				asAccount("0.0.1003"), -10L, false,
@@ -95,7 +95,15 @@ class PureTransferSemanticChecksTest {
 		var validity = subject.fullPureValidation(adjusts, List.of(), validationProps);
 		assertEquals(NOT_SUPPORTED, validity);
 
-		final var tokenAdjusts = List.of(
+		adjusts = withAllowanceAdjustments(
+				asAccount("0.0.1001"), -10L, false,
+				asAccount("0.0.1002"), +10L, false,
+				asAccount("0.0.1003"), -10L, false,
+				asAccount("0.0.1004"), +10L, false);
+		validity = subject.fullPureValidation(adjusts, List.of(), validationProps);
+		assertEquals(OK, validity);
+
+		var tokenAdjusts = List.of(
 				TokenTransferList.newBuilder()
 						.setToken(asToken("0.0.2000"))
 						.addTransfers(AccountAmount.newBuilder().setAccountID(asAccount("0.0.1000")).setAmount(
@@ -105,15 +113,70 @@ class PureTransferSemanticChecksTest {
 		validity = subject.fullPureValidation(TransferList.newBuilder().build(), tokenAdjusts, validationProps);
 		assertEquals(NOT_SUPPORTED, validity);
 
-		final var nftAdjusts = List.of(
+		tokenAdjusts = List.of(
+				TokenTransferList.newBuilder()
+						.setToken(asToken("0.0.2000"))
+						.addTransfers(AccountAmount.newBuilder().setAccountID(asAccount("0.0.1000")).setAmount(
+								10L).build())
+						.addTransfers(AccountAmount.newBuilder().setAccountID(asAccount("0.0.2000")).setAmount(
+								-10L).build())
+						.build()
+		);
+		validity = subject.fullPureValidation(TransferList.newBuilder().build(), tokenAdjusts, validationProps);
+		assertEquals(OK, validity);
+
+		var nftAdjusts = List.of(
 				TokenTransferList.newBuilder()
 						.setToken(asToken("0.0.2000"))
 						.addNftTransfers(NftTransfer.newBuilder().setSenderAccountID(asAccount("0.0.1000"))
-								.setReceiverAccountID(asAccount("0.0.2000")).setSerialNumber(1L).setIsApproval(true).build())
+								.setReceiverAccountID(asAccount("0.0.2000")).setSerialNumber(1L).setIsApproval(
+										true).build())
 						.build()
 		);
 		validity = subject.fullPureValidation(TransferList.newBuilder().build(), nftAdjusts, validationProps);
 		assertEquals(NOT_SUPPORTED, validity);
+
+		nftAdjusts = List.of(
+				TokenTransferList.newBuilder()
+						.setToken(asToken("0.0.2000"))
+						.addNftTransfers(NftTransfer.newBuilder().setSenderAccountID(asAccount("0.0.1000"))
+								.setReceiverAccountID(asAccount("0.0.2000")).setSerialNumber(1L).build())
+						.build()
+		);
+		validity = subject.fullPureValidation(TransferList.newBuilder().build(), nftAdjusts, validationProps);
+		assertEquals(OK, validity);
+	}
+
+	@Test
+	void countsAllowanceTransfersCorrectly() {
+		var adjusts = withAllowanceAdjustments(
+				asAccount("0.0.1001"), -10L, false,
+				asAccount("0.0.1002"), +10L, false,
+				asAccount("0.0.1003"), -10L, false,
+				asAccount("0.0.1004"), +10L, false);
+		assertFalse(subject.hasAllowanceTransfers(adjusts.getAccountAmountsList()));
+
+		adjusts = withAllowanceAdjustments(
+				asAccount("0.0.1001"), -10L, true,
+				asAccount("0.0.1002"), +10L, true,
+				asAccount("0.0.1003"), -10L, false,
+				asAccount("0.0.1004"), +10L, false);
+		assertTrue(subject.hasAllowanceTransfers(adjusts.getAccountAmountsList()));
+
+		final var tokenAdjusts = TokenTransferList.newBuilder()
+				.setToken(asToken("0.0.2000"))
+				.addTransfers(AccountAmount.newBuilder().setAccountID(asAccount("0.0.1000")).setAmount(
+						10L).setIsApproval(true).build())
+				.build();
+
+		assertTrue(subject.hasAllowanceTransfers(tokenAdjusts.getTransfersList()));
+
+		final var nftAdjusts = TokenTransferList.newBuilder()
+				.setToken(asToken("0.0.2000"))
+				.addNftTransfers(NftTransfer.newBuilder().setSenderAccountID(asAccount("0.0.1000"))
+						.setReceiverAccountID(asAccount("0.0.2000")).setSerialNumber(1L).setIsApproval(true).build())
+				.build();
+		assertTrue(subject.hasAllowanceNftTransfers(nftAdjusts.getNftTransfersList()));
 	}
 
 	@Test

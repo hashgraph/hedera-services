@@ -249,10 +249,18 @@ public class PureTransferSemanticChecks {
 	}
 
 	boolean hasAllowanceTransfers(final List<AccountAmount> adjusts) {
-		return adjusts.stream().filter(a -> a.getIsApproval() == true).count() > 0;
+		var count = 0;
+		for (var adjust : adjusts) {
+			if (adjust.getIsApproval()) count++;
+		}
+		return count > 0;
 	}
 
 	boolean hasAllowanceNftTransfers(final List<NftTransfer> adjusts) {
-		return adjusts.stream().filter(a -> a.getIsApproval() == true).count() > 0;
+		var count = 0;
+		for (var adjust : adjusts) {
+			if (adjust.getIsApproval()) count++;
+		}
+		return count > 0;
 	}
 }

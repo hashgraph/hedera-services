@@ -155,6 +155,14 @@ class ImpliedTransfersTest {
 		given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
 		given(dynamicProperties.isAutoCreationEnabled()).willReturn(!autoCreationEnabled);
 		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
+
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(!autoCreationEnabled);
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
+
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(!areAllowancesEnabled);
+		given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
+		assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
 	}
 
 	private final int maxExplicitHbarAdjusts = 5;
