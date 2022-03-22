@@ -249,18 +249,16 @@ public class PureTransferSemanticChecks {
 	}
 
 	boolean hasAllowanceTransfers(final List<AccountAmount> adjusts) {
-		var count = 0;
 		for (var adjust : adjusts) {
-			if (adjust.getIsApproval()) count++;
+			if (adjust.getIsApproval()) return true;
 		}
-		return count > 0;
+		return false;
 	}
 
 	boolean hasAllowanceNftTransfers(final List<NftTransfer> adjusts) {
-		var count = 0;
 		for (var adjust : adjusts) {
-			if (adjust.getIsApproval()) count++;
+			if (adjust.getIsApproval()) return true;
 		}
-		return count > 0;
+		return false;
 	}
 }
