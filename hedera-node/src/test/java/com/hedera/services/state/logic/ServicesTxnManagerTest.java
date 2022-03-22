@@ -25,6 +25,7 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.records.RecordCache;
+import com.hedera.services.state.migration.MigrationRecordsManager;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -52,6 +53,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class ServicesTxnManagerTest {
@@ -77,6 +80,8 @@ class ServicesTxnManagerTest {
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private MigrationRecordsManager migrationRecordsManager;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -87,13 +92,15 @@ class ServicesTxnManagerTest {
 	void setup() {
 		subject = new ServicesTxnManager(
 				processLogic, recordStreaming, triggeredProcessLogic, recordCache,
-				ledger, txnCtx, sigImpactHistorian, recordsHistorian);
+				ledger, txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager);
 	}
 
 	@Test
 	void managesHappyPath() {
 		// setup:
-		InOrder inOrder = inOrder(ledger, txnCtx, processLogic, recordStreaming, recordsHistorian, sigImpactHistorian);
+		InOrder inOrder = inOrder(
+				ledger, txnCtx, processLogic,
+				recordStreaming, recordsHistorian, sigImpactHistorian, migrationRecordsManager);
 
 		// when:
 		subject.process(accessor, consensusTime, submittingMember);
@@ -103,9 +110,18 @@ class ServicesTxnManagerTest {
 		inOrder.verify(sigImpactHistorian).setChangeTime(consensusTime);
 		inOrder.verify(recordsHistorian).clearHistory();
 		inOrder.verify(ledger).begin();
+		inOrder.verify(migrationRecordsManager).publishMigrationRecords(consensusTime);
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordStreaming).run();
+	}
+
+	@Test
+	void onlyCallsMigrationRecordsManagerOnce() {
+		subject.process(accessor, consensusTime, submittingMember);
+		subject.process(accessor, consensusTime, submittingMember);
+
+		verify(migrationRecordsManager, times(1)).publishMigrationRecords(consensusTime);
 	}
 
 	@Test
