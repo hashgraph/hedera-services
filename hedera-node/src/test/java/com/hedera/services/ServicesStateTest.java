@@ -596,6 +596,32 @@ class ServicesStateTest {
 	}
 
 	@Test
+	void nonGenesisInitWithOldVersionMarksMigrationRecordsNotStreamed() {
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+		final var when = Instant.ofEpochSecond(1_234_567L, 890);
+		given(dualState.getFreezeTime()).willReturn(when);
+		given(dualState.getLastFrozenTime()).willReturn(when);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook, dualState);
+
+		verify(networkContext).discardPreparedUpgradeMeta();
+		verify(networkContext).markMigrationRecordsNotYetStreamed();
+		verify(dualState).setFreezeTime(null);
+	}
+
+	@Test
 	void nonGenesisInitDoesntClearPreparedUpgradeIfBothFreezeAndLastFrozenAreNull() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);

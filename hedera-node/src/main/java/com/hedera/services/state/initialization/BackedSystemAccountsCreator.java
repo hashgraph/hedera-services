@@ -51,9 +51,9 @@ import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
 @Singleton
 public class BackedSystemAccountsCreator implements SystemAccountsCreator {
-	private static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
 	private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
 
+	public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
 	public static final List<EntityNum> STAKING_FUND_ACCOUNTS =
 			List.of(EntityNum.fromLong(800L), EntityNum.fromLong(801L));
 

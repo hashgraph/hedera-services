@@ -414,6 +414,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				networkCtx().discardPreparedUpgradeMeta();
 				dualState.setFreezeTime(null);
 			}
+			if (stateVersion < CURRENT_VERSION) {
+				// Only signal the MigrationRecordsManager to re-run if this is an upgrade
+				networkCtx().markMigrationRecordsNotYetStreamed();
+			}
 			networkCtx().setStateVersion(CURRENT_VERSION);
 
 			metadata = new StateMetadata(app, new FCHashMap<>());
