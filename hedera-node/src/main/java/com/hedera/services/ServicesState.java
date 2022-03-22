@@ -165,12 +165,16 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
+		boolean migrationProcessed = false;
 		if (deserializedVersionFromState < RELEASE_0220_VERSION) {
-			blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
-			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
+			blobMigrator.migrate(this, deserializedVersionFromState);
+			migrationProcessed = true;
 		}
 		if (deserializedVersionFromState < RELEASE_0250_VERSION) {
-			ReleaseTwentyFiveMigration.migrateFromUniqueTokenMerkleMap(this, deserializedVersionFromState);
+			uniqueTokenMigrator.migrate(this, deserializedVersionFromState);
+			migrationProcessed = true;
+		}
+		if (migrationProcessed) {
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
 	}
@@ -489,11 +493,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@FunctionalInterface
-	interface BinaryObjectStoreMigrator {
-		void migrateFromBinaryObjectStore(ServicesState initializingState, int deserializedVersion);
+	interface StoreMigrator {
+		void migrate(ServicesState initializingState, int deserializedVersion);
 	}
 
-	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore;
+	private static StoreMigrator blobMigrator = ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore;
+	private static StoreMigrator uniqueTokenMigrator = ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap;
+
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
 	/* --- Only used by unit tests --- */
@@ -513,7 +519,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		ServicesState.appBuilder = appBuilder;
 	}
 
-	static void setBlobMigrator(final BinaryObjectStoreMigrator blobMigrator) {
+	static void setBlobMigrator(final StoreMigrator blobMigrator) {
 		ServicesState.blobMigrator = blobMigrator;
+	}
+
+	static void setUniqueTokenMigrator(StoreMigrator uniqueTokenMigrator) {
+		ServicesState.uniqueTokenMigrator = uniqueTokenMigrator;
 	}
 }

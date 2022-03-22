@@ -32,6 +32,8 @@ import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -66,6 +68,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -143,11 +146,17 @@ class ServicesStateTest {
 	@Mock
 	private ServicesApp.Builder appBuilder;
 	@Mock
-	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
+	private ServicesState.StoreMigrator blobMigrator;
+	@Mock
+	private ServicesState.StoreMigrator uniqueTokenMigrator;
 	@Mock
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens;
+	@Mock
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -424,9 +433,9 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesntMigrateWhenInitializingFromRelease0220() {
+	void doesntMigrateWhenInitializingFromCurrentRelease() {
 		// given:
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.CURRENT_VERSION);
 
 		// expect:
 		assertDoesNotThrow(subject::migrate);
@@ -435,6 +444,7 @@ class ServicesStateTest {
 	@Test
 	void migratesWhenInitializingFromRelease0210() {
 		ServicesState.setBlobMigrator(blobMigrator);
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
 
 		subject = mock(ServicesState.class);
 		doCallRealMethod().when(subject).migrate();
@@ -445,10 +455,32 @@ class ServicesStateTest {
 
 		subject.migrate();
 
-		verify(blobMigrator).migrateFromBinaryObjectStore(
-				subject, StateVersions.RELEASE_0210_VERSION);
+		verify(blobMigrator).migrate(subject, StateVersions.RELEASE_0210_VERSION);
+		verify(uniqueTokenMigrator).migrate(subject, StateVersions.RELEASE_0210_VERSION);
 		verify(subject).init(platform, addressBook, dualState);
 		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
+		ServicesState.setUniqueTokenMigrator(ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap);
+	}
+
+	@Test
+	void migratesWhenInitializingFromRelease0240() {
+		ServicesState.setBlobMigrator(blobMigrator);
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
+
+		subject = mock(ServicesState.class);
+		doCallRealMethod().when(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0240_VERSION);
+		given(subject.getPlatformForDeferredInit()).willReturn(platform);
+		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
+		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
+
+		subject.migrate();
+
+		verifyNoInteractions(blobMigrator);
+		verify(uniqueTokenMigrator).migrate(subject, StateVersions.RELEASE_0240_VERSION);
+		verify(subject).init(platform, addressBook, dualState);
+		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
+		ServicesState.setUniqueTokenMigrator(ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap);
 	}
 
 	@Test
