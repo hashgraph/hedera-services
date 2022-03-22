@@ -221,11 +221,10 @@ final class TokenCreateWrapper {
 		private final byte[] ed25519;
 		private final byte[] ecdsSecp256k1;
 		private final ContractID delegatableContractID;
+		private final KeyValueType keyValueType;
 
 		/* --- This field is populated only when `shouldInheritAccountKey` is true --- */
 		private Key inheritedKey;
-		
-		private KeyValueType keyValueType;
 
 		public KeyValueWrapper(
 				final boolean shouldInheritAccountKey,
@@ -239,7 +238,7 @@ final class TokenCreateWrapper {
 			this.ed25519 = ed25519;
 			this.ecdsSecp256k1 = ecdsSecp256k1;
 			this.delegatableContractID = delegatableContractID;
-			this.setKeyValueType();
+			this.keyValueType = this.setKeyValueType();
 		}
 
 		private boolean isContractIDSet() {
@@ -266,21 +265,27 @@ final class TokenCreateWrapper {
 			this.inheritedKey = key;
 		}
 
-		private void setKeyValueType() {
-			if (isShouldInheritAccountKeySet() && !isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet()
-					&& !isContractIDSet() && !isEd25519KeySet()) {
-				this.keyValueType = KeyValueType.INHERIT_ACCOUNT_KEY;
-			} else if (isContractIDSet() && !isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet()
-					&& !isEd25519KeySet()) {
-				this.keyValueType = KeyValueType.CONTRACT_ID;
-			} else if (isEd25519KeySet() && !isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet()) {
-				this.keyValueType = KeyValueType.ED25519;
-			} else if (isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet() ) {
-				this.keyValueType = KeyValueType.ECDS_SECPK256K1;
-			} else if (isDelegatableContractIdSet()) {
-				this.keyValueType = KeyValueType.DELEGATABLE_CONTRACT_ID;
+		private KeyValueType setKeyValueType() {
+			if (isShouldInheritAccountKeySet()) {
+				return (!isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet() && !isContractIDSet() && !isEd25519KeySet())
+						? KeyValueType.INHERIT_ACCOUNT_KEY
+						: KeyValueType.INVALID_KEY;
+			} else if (isContractIDSet()) {
+				return !isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet() && !isEd25519KeySet()
+						? KeyValueType.CONTRACT_ID
+						: KeyValueType.INVALID_KEY;
+			} else if (isEd25519KeySet()) {
+				return !isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet()
+						? KeyValueType.ED25519
+						: KeyValueType.INVALID_KEY;
+			} else if (isEcdsSecp256k1KeySet()) {
+				return !isDelegatableContractIdSet()
+						? KeyValueType.ECDS_SECPK256K1
+						: KeyValueType.INVALID_KEY;
 			} else {
-				this.keyValueType = KeyValueType.INVALID_KEY;
+				return isDelegatableContractIdSet()
+						? KeyValueType.DELEGATABLE_CONTRACT_ID
+						: KeyValueType.INVALID_KEY;
 			}
 		}
 
@@ -346,18 +351,22 @@ final class TokenCreateWrapper {
 			this.useHbarsForPayment = useHbarsForPayment;
 			this.useCurrentTokenForPayment = useCurrentTokenForPayment;
 			this.feeCollector = feeCollector;
-			this.calculateFixedFeePaymentType();
+			this.fixedFeePayment = setFixedFeePaymentType();
 		}
 
-		private void calculateFixedFeePaymentType() {
-			if (tokenID != null && !useCurrentTokenForPayment && !useHbarsForPayment) {
-				this.fixedFeePayment = FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
-			} else if (useCurrentTokenForPayment && !useHbarsForPayment) {
-				this.fixedFeePayment = FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
-			} else if (useHbarsForPayment) {
-				this.fixedFeePayment =  FixedFeePayment.USE_HBAR;
+		private FixedFeePayment setFixedFeePaymentType() {
+			if (tokenID != null) {
+				return !useHbarsForPayment && !useCurrentTokenForPayment
+						? FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN
+						: FixedFeePayment.INVALID_PAYMENT;
+			} else if (useCurrentTokenForPayment) {
+				return !useHbarsForPayment
+						? FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN
+						: FixedFeePayment.INVALID_PAYMENT;
 			} else {
-				this.fixedFeePayment = FixedFeePayment.INVALID_PAYMENT;
+				return useHbarsForPayment
+						? FixedFeePayment.USE_HBAR
+						: FixedFeePayment.INVALID_PAYMENT;
 			}
 		}
 
