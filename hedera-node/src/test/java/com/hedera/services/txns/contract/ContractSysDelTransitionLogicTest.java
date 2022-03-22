@@ -181,7 +181,7 @@ class ContractSysDelTransitionLogicTest {
 								.setContractID(target));
 		contractSysDelTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractSysDelTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 	}
 
 	private TransactionID ourTxnId() {

@@ -122,7 +122,7 @@ class ContractCallTransitionLogicTest {
 		givenValidTxnCtx();
 		// and:
 		given(accessor.getTxn()).willReturn(contractCallTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
@@ -159,7 +159,7 @@ class ContractCallTransitionLogicTest {
 		contractCallTxn = op.build();
 		// and:
 		given(accessor.getTxn()).willReturn(contractCallTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))

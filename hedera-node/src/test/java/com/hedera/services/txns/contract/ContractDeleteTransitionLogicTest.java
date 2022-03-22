@@ -107,7 +107,7 @@ class ContractDeleteTransitionLogicTest {
 								.setContractID(target));
 		contractDeleteTxn = op.build();
 		given(accessor.getTxn()).willReturn(contractDeleteTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 	}
 
 	private TransactionID ourTxnId() {

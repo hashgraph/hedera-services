@@ -155,15 +155,15 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 	private void givenTxnCtx() {
 		final TokenFeeScheduleUpdateTransactionBody tokenFeeScheduleUpdateTxn =
 				TokenFeeScheduleUpdateTransactionBody.newBuilder()
-				.setTokenId(target)
-				.addCustomFees(CustomFee.getDefaultInstance())
-				.addCustomFees(CustomFee.getDefaultInstance())
-				.build();
+						.setTokenId(target)
+						.addCustomFees(CustomFee.getDefaultInstance())
+						.addCustomFees(CustomFee.getDefaultInstance())
+						.build();
 
 		final var txn = TransactionBody.newBuilder()
 				.setTokenFeeScheduleUpdate(tokenFeeScheduleUpdateTxn)
 				.build();
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(txn);
 		given(tokenStore.loadToken(Id.fromGrpcToken(target))).willReturn(token);
 	}

@@ -438,7 +438,7 @@ class FreezeTransitionLogicTest {
 			final Optional<ByteString> hash
 	) {
 		givenTypicalTxn(validTime, enumValue, target, hash);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(freezeTxn);
 	}
 

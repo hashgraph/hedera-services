@@ -50,7 +50,7 @@ import static org.mockito.Mockito.verify;
 class TokenUnpauseTransitionLogicTest {
 	private long tokenNum = 12345L;
 	private TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
-	private Id tokenId = new Id(0,0,tokenNum);
+	private Id tokenId = new Id(0, 0, tokenNum);
 
 	private TypedTokenStore tokenStore;
 	private TransactionContext txnCtx;
@@ -119,7 +119,7 @@ class TokenUnpauseTransitionLogicTest {
 				.setTokenUnpause(TokenUnpauseTransactionBody.newBuilder().setToken(tokenID))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenUnpauseTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(tokenStore.loadPossiblyPausedToken(tokenId)).willReturn(token);
 	}
 

@@ -24,8 +24,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
@@ -82,7 +82,8 @@ class SubmitMessageTransitionLogicTest {
 		topics.clear();
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
 		given(globalDynamicProperties.messageMaxBytesAllowed()).willReturn(1024);
-		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext, globalDynamicProperties);
+		subject = new SubmitMessageTransitionLogic(() -> topics, validator, transactionContext,
+				globalDynamicProperties);
 	}
 
 	@Test
@@ -148,7 +149,6 @@ class SubmitMessageTransitionLogicTest {
 		assertUnchangedTopics();
 		verify(transactionContext).setStatus(MESSAGE_SIZE_TOO_LARGE);
 	}
-
 
 
 	@Test
@@ -246,7 +246,7 @@ class SubmitMessageTransitionLogicTest {
 				.setConsensusSubmitMessage(body.build())
 				.build();
 		given(accessor.getTxn()).willReturn(transactionBody);
-		given(transactionContext.accessor()).willReturn(accessor);
+		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
 	}
 
 	private void givenValidTransactionContext() {

@@ -33,7 +33,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +87,7 @@ class NetworkCtxManagerTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private TxnAccessor txnAccessor;
+	private SignedTxnAccessor txnAccessor;
 	@Mock
 	private MiscRunningAvgs runningAvgs;
 

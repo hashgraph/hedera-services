@@ -263,7 +263,7 @@ class FileSysDelTransitionLogicTest {
 				.setSystemDelete(op)
 				.build();
 		given(accessor.getTxn()).willReturn(fileSysDelTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 	}
 }

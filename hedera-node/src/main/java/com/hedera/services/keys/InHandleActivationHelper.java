@@ -51,14 +51,14 @@ public class InHandleActivationHelper {
 	static Activation activation = HederaKeyActivation::isActive;
 
 	private final CharacteristicsFactory characteristics;
-	private final Supplier<TxnAccessor> accessorSource;
+	private final Supplier<PlatformTxnAccessor> accessorSource;
 
 	private List<JKey> otherParties = NO_OTHER_PARTIES;
 	private TxnAccessor accessor = NO_LAST_ACCESSOR;
 	private Function<byte[], TransactionSignature> sigsFn = NO_LAST_SIGS_FN;
 
 	public InHandleActivationHelper(CharacteristicsFactory characteristics,
-			Supplier<TxnAccessor> accessorSource) {
+			Supplier<PlatformTxnAccessor> accessorSource) {
 		this.characteristics = characteristics;
 		this.accessorSource = accessorSource;
 	}

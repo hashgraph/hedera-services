@@ -393,7 +393,7 @@ class TxnAwareRecordsHistorianTest {
 
 	private void givenTopLevelContext() {
 		given(accessor.getTxnId()).willReturn(txnIdA);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(topLevelNow);
 		given(txnCtx.submittingSwirldsMember()).willReturn(submittingMember);
 		given(txnCtx.effectivePayer()).willReturn(effPayer);

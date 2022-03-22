@@ -23,8 +23,8 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -243,7 +243,7 @@ class CryptoCreateTransitionLogicTest {
 				.setCryptoCreateAccount(cryptoCreateTxn.getCryptoCreateAccount().toBuilder().setKey(unmappableKey()))
 				.build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 
 		subject.doStateTransition();
 
@@ -343,7 +343,7 @@ class CryptoCreateTransitionLogicTest {
 								.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 	}
 
 	private TransactionID ourTxnId() {

@@ -24,7 +24,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,15 +41,10 @@ public class TriggeredTransition implements Runnable {
 	private final NetworkUtilization networkUtilization;
 
 	@Inject
-	public TriggeredTransition(
-			final StateView currentView,
-			final FeeCalculator fees,
-			final FeeChargingPolicy chargingPolicy,
-			final TransactionContext txnCtx,
-			final NetworkCtxManager networkCtxManager,
-			final RequestedTransition requestedTransition,
-			final NetworkUtilization networkUtilization
-	) {
+	public TriggeredTransition(final StateView currentView, final FeeCalculator fees,
+			final FeeChargingPolicy chargingPolicy, final TransactionContext txnCtx,
+			final NetworkCtxManager networkCtxManager, final RequestedTransition requestedTransition,
+			final NetworkUtilization networkUtilization) {
 		this.currentView = currentView;
 		this.fees = fees;
 		this.chargingPolicy = chargingPolicy;
@@ -62,7 +56,7 @@ public class TriggeredTransition implements Runnable {
 
 	@Override
 	public void run() {
-		final var accessor = (SignedTxnAccessor) txnCtx.accessor();
+		final var accessor = txnCtx.accessor();
 		final var now = txnCtx.consensusTime();
 
 		networkCtxManager.advanceConsensusClockTo(now);

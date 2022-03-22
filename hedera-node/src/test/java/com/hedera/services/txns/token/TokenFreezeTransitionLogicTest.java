@@ -44,10 +44,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -59,8 +59,8 @@ class TokenFreezeTransitionLogicTest {
 	private long accountNum = 54321L;
 	private TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
 	private AccountID accountID = IdUtils.asAccount("0.0." + accountNum);
-	private Id tokenId = new Id(0,0,tokenNum);
-	private Id accountId = new Id(0,0,accountNum);
+	private Id tokenId = new Id(0, 0, tokenNum);
+	private Id accountId = new Id(0, 0, accountNum);
 
 	private TypedTokenStore tokenStore;
 	private AccountStore accountStore;
@@ -153,7 +153,7 @@ class TokenFreezeTransitionLogicTest {
 						.setToken(tokenID))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenFreezeTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(tokenStore.loadToken(tokenId)).willReturn(token);
 		given(accountStore.loadAccount(accountId)).willReturn(account);
 		given(tokenStore.loadTokenRelationship(token, account)).willReturn(tokenRelationship);

@@ -110,7 +110,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 		addExistingAllowances();
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
@@ -148,7 +148,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 				).build();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 
 		subject.doStateTransition();
@@ -163,7 +163,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		addExistingAllowances();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
@@ -185,7 +185,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		addExistingAllowances();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
@@ -214,7 +214,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 
 		var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
@@ -243,7 +243,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 				).build();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 
@@ -262,7 +262,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		addExistingAllowances();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
@@ -293,7 +293,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 

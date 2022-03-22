@@ -194,7 +194,7 @@ class FileDeleteTransitionLogicTest {
 				.setFileDelete(op)
 				.build();
 		given(accessor.getTxn()).willReturn(fileDeleteTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 	}
 
 	private enum TargetType {IMMUTABLE, VALID, MISSING, DELETED}

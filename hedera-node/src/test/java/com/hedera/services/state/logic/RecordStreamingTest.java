@@ -25,7 +25,7 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.RunningHash;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +56,7 @@ class RecordStreamingTest {
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private RecordStreamObject firstFollowingChildRso;
 	@Mock

@@ -155,7 +155,7 @@ class ScheduleDeleteTransitionLogicTest {
 
 		scheduleDeleteTxn = builder.build();
 		given(accessor.getTxn()).willReturn(scheduleDeleteTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 	}
 }

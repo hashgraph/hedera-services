@@ -28,7 +28,6 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -74,7 +73,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
-		final var accessor = (PlatformTxnAccessor) txnCtx.accessor();
+		final var accessor = txnCtx.platformTxnAccessor();
 		final var customAccessor = (TokenWipeAccessor) accessor.getDelegate();
 		final var targetTokenId = customAccessor.targetToken();
 		final var targetAccountId = customAccessor.accountToWipe();

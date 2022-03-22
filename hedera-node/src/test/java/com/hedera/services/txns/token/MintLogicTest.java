@@ -92,7 +92,7 @@ class MintLogicTest {
 
 		givenValidUniqueTxnCtx();
 		given(accessor.getTxn()).willReturn(tokenMintTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(token.getType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(store.currentMintedNfts()).willReturn(curTotal);
 		given(token.getId()).willReturn(id);
@@ -116,7 +116,7 @@ class MintLogicTest {
 
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(tokenMintTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(store.loadToken(id)).willReturn(token);
 		given(token.getTreasury()).willReturn(treasury);
 		given(store.loadTokenRelationship(token, treasury)).willReturn(treasuryRel);
@@ -145,7 +145,7 @@ class MintLogicTest {
 
 		givenValidUniqueTxnCtx();
 		given(accessor.getTxn()).willReturn(tokenMintTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(token.getTreasury()).willReturn(treasury);
 		given(store.loadToken(id)).willReturn(token);
 		given(token.getId()).willReturn(id);

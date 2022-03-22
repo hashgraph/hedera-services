@@ -148,7 +148,7 @@ class TxnAwareEvmSigsVerifierTest {
 
 	@Test
 	void testsSupplyKeyIfPresent() {
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(ledgers.tokens()).willReturn(tokensLedger);
 		given(tokensLedger.exists(token)).willReturn(true);
 		given(tokensLedger.get(token, TokenProperty.SUPPLY_KEY)).willReturn(expectedKey);
@@ -187,7 +187,7 @@ class TxnAwareEvmSigsVerifierTest {
 
 	@Test
 	void testsAccountKeyIfPresent() {
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.exists(account)).willReturn(true);
 		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(expectedKey);
@@ -202,7 +202,7 @@ class TxnAwareEvmSigsVerifierTest {
 
 	@Test
 	void testsAccountKeyIfPresentButInvalid() {
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.exists(account)).willReturn(true);
 		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(expectedKey);
@@ -378,7 +378,7 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	private void givenAccessorInCtx() {
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(payer);
 	}
 }

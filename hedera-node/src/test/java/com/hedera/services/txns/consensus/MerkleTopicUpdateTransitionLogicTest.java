@@ -30,8 +30,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -459,7 +459,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 				.setConsensusUpdateTopic(body.build())
 				.build();
 		given(accessor.getTxn()).willReturn(transactionBody);
-		given(transactionContext.accessor()).willReturn(accessor);
+		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
 	}
 
 	private ConsensusUpdateTopicTransactionBody.Builder getBasicValidTransactionBodyBuilder() {

@@ -248,7 +248,7 @@ class FileSysUndelTransitionLogicTest {
 				.setSystemUndelete(op)
 				.build();
 		given(accessor.getTxn()).willReturn(fileSysUndelTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(Instant.ofEpochSecond(now));
 	}
 }

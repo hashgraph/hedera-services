@@ -160,7 +160,7 @@ class HapiOpCountersTest {
 		final var accessor = mock(PlatformTxnAccessor.class);
 		given(txn.getSerializedSize()).willReturn(expectedSize);
 		given(accessor.getTxn()).willReturn(txn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 
 		subject.countHandled(ConsensusSubmitMessage);
 
@@ -174,7 +174,7 @@ class HapiOpCountersTest {
 		final var accessor = mock(PlatformTxnAccessor.class);
 		given(txn.getSerializedSize()).willReturn(expectedSize);
 		given(accessor.getTxn()).willReturn(txn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 
 		subject.countReceived(ConsensusSubmitMessage);
 		subject.countSubmitted(ConsensusSubmitMessage);

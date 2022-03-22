@@ -291,6 +291,6 @@ class FileAppendTransitionLogicTest {
 				.setFileAppend(op)
 				.build();
 		given(accessor.getTxn()).willReturn(fileAppendTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 	}
 }

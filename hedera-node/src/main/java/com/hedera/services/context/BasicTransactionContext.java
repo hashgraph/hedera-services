@@ -35,6 +35,8 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -91,7 +93,8 @@ public class BasicTransactionContext implements TransactionContext {
 	private byte[] hash;
 	private boolean isPayerSigKnownActive;
 	private Instant consensusTime;
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
+	private PlatformTxnAccessor platformTxnAccessor;
 	private ResponseCodeEnum statusSoFar;
 	private List<ExpiringEntity> expiringEntities = new ArrayList<>();
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
@@ -110,15 +113,10 @@ public class BasicTransactionContext implements TransactionContext {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
-	BasicTransactionContext(
-			final NarratedCharging narratedCharging,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final NodeInfo nodeInfo,
-			final HbarCentExchange exchange,
-			final EntityCreator creator,
-			final SideEffectsTracker sideEffectsTracker,
-			final EntityIdSource ids
-	) {
+	BasicTransactionContext(final NarratedCharging narratedCharging,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts, final NodeInfo nodeInfo,
+			final HbarCentExchange exchange, final EntityCreator creator, final SideEffectsTracker sideEffectsTracker,
+			final EntityIdSource ids) {
 		this.ids = ids;
 		this.accounts = accounts;
 		this.narratedCharging = narratedCharging;
@@ -130,7 +128,12 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public void resetFor(final TxnAccessor accessor, final Instant consensusTime, final long submittingMember) {
-		this.accessor = accessor;
+		if (accessor instanceof PlatformTxnAccessor) {
+			platformTxnAccessor = (PlatformTxnAccessor) accessor;
+			this.accessor = (SignedTxnAccessor) platformTxnAccessor.getDelegate();
+		} else {
+			this.accessor = (SignedTxnAccessor) accessor;
+		}
 		this.consensusTime = consensusTime;
 		this.submittingMember = submittingMember;
 		this.triggeredTxn = null;
@@ -159,9 +162,8 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public JKey activePayerKey() {
-		return isPayerSigKnownActive
-				? accounts.get().get(fromAccountId(accessor.getPayer())).getAccountKey()
-				: EMPTY_KEY;
+		return isPayerSigKnownActive ? accounts.get().get(
+				fromAccountId(accessor.getPayer())).getAccountKey() : EMPTY_KEY;
 	}
 
 	@Override
@@ -191,23 +193,16 @@ public class BasicTransactionContext implements TransactionContext {
 	public ExpirableTxnRecord.Builder recordSoFar() {
 		final var receiptBuilder = receiptSoFar();
 		final var totalFees = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
-		recordSoFar = creator.createTopLevelRecord(
-				totalFees,
-				hash,
-				accessor,
-				consensusTime,
-				receiptBuilder,
-				assessedCustomFees,
-				sideEffectsTracker);
+		recordSoFar = creator.createTopLevelRecord(totalFees, hash, accessor, consensusTime, receiptBuilder,
+				assessedCustomFees, sideEffectsTracker);
 
 		recordConfig.accept(recordSoFar);
 		return recordSoFar;
 	}
 
 	TxnReceipt.Builder receiptSoFar() {
-		final var receipt = TxnReceipt.newBuilder()
-				.setExchangeRates(exchange.fcActiveRates())
-				.setStatus(statusSoFar.name());
+		final var receipt = TxnReceipt.newBuilder().setExchangeRates(exchange.fcActiveRates()).setStatus(
+				statusSoFar.name());
 		receiptConfig.accept(receipt);
 		return receipt;
 	}
@@ -223,8 +218,13 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public TxnAccessor accessor() {
+	public SignedTxnAccessor accessor() {
 		return accessor;
+	}
+
+	@Override
+	public PlatformTxnAccessor platformTxnAccessor() {
+		return platformTxnAccessor;
 	}
 
 	@Override
@@ -264,10 +264,8 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public void setTopicRunningHash(final byte[] topicRunningHash, final long sequenceNumber) {
-		receiptConfig = receipt -> receipt
-				.setTopicRunningHash(topicRunningHash)
-				.setTopicSequenceNumber(sequenceNumber)
-				.setRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
+		receiptConfig = receipt -> receipt.setTopicRunningHash(topicRunningHash).setTopicSequenceNumber(
+				sequenceNumber).setRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
 	}
 
 	@Override

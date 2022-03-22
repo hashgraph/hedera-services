@@ -273,7 +273,7 @@ class TokenWipeTransitionLogicTest {
 						.setAmount(wipeAmount))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenWipeTxn);
-		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(platformAccessor);
 		given(platformAccessor.getDelegate()).willReturn(accessor);
 		given(merkleToken.totalSupply()).willReturn(totalAmount);
 		given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
@@ -291,7 +291,7 @@ class TokenWipeTransitionLogicTest {
 						.addAllSerialNumbers(List.of(1L, 2L, 3L)))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenWipeTxn);
-		given(txnCtx.accessor()).willReturn(platformAccessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(platformAccessor);
 		given(platformAccessor.getDelegate()).willReturn(accessor);
 		given(merkleToken.totalSupply()).willReturn(totalAmount);
 		given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);

@@ -134,7 +134,7 @@ class TokenCreateTransitionLogicTest {
 		subject.setCreationFactory(creationFactory);
 
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(creationFactory.processFrom(

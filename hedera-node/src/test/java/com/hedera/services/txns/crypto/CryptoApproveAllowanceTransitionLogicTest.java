@@ -108,7 +108,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAcccount);
@@ -129,7 +129,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		givenValidTxnCtxWithOwnerAsPayer();
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
@@ -152,7 +152,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAcccount);
@@ -181,7 +181,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 
 		var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
@@ -214,7 +214,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				).build();
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 
@@ -230,7 +230,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	void removesAllowancesWhenAmountIsZero() {
 		givenTxnCtxWithZeroAmount();
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
@@ -259,7 +259,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAcccount);

@@ -25,7 +25,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;
@@ -77,7 +76,7 @@ public class SigsAndPayerKeyScreen {
 		return sigStatus;
 	}
 
-	private boolean hasActivePayerSig(TxnAccessor accessor) {
+	private boolean hasActivePayerSig(PlatformTxnAccessor accessor) {
 		try {
 			return payerSigValidity.test(accessor, validityTest);
 		} catch (Exception unknown) {

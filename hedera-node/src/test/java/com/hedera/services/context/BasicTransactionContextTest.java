@@ -39,6 +39,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -147,6 +148,8 @@ class BasicTransactionContextTest {
 	@Mock
 	private PlatformTxnAccessor accessor;
 	@Mock
+	private SignedTxnAccessor signedAccessor;
+	@Mock
 	private TransactionBody txn;
 	@Mock
 	private ExpiringEntity expiringEntity;
@@ -207,7 +210,8 @@ class BasicTransactionContextTest {
 	void getsPayerKeyIfSigActive() {
 		given(payerAccount.getAccountKey()).willReturn(payerKey);
 		given(accounts.get(EntityNum.fromAccountId(payer))).willReturn(payerAccount);
-		given(accessor.getPayer()).willReturn(payer);
+		given(accessor.getDelegate()).willReturn(signedAccessor);
+		given(signedAccessor.getPayer()).willReturn(payer);
 
 		// when:
 		subject.payerSigIsKnownActive();

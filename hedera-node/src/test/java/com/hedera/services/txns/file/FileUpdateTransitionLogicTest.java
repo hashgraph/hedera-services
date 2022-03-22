@@ -532,7 +532,7 @@ class FileUpdateTransitionLogicTest {
 				.setFileUpdate(op)
 				.build();
 		given(accessor.getTxn()).willReturn(fileUpdateTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 
 	}
 }

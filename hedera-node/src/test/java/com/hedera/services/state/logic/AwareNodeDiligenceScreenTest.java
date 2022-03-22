@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,6 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -68,7 +67,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class AwareNodeDiligenceScreenTest {
 	private static final long SUBMITTING_MEMBER = 2L;
 	private static final String PRETEND_MEMO = "ignored";
@@ -78,7 +77,7 @@ class AwareNodeDiligenceScreenTest {
 	private static final AccountID payerAccountId = IdUtils.asAccount("0.0.5");
 	private static final Duration validDuration = Duration.newBuilder().setSeconds(1_234_567L).build();
 
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 
 	@Mock
 	private TransactionContext txnCtx;
@@ -238,7 +237,7 @@ class AwareNodeDiligenceScreenTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
-	private TxnAccessor accessorWith(final AccountID designatedNodeAccount) throws InvalidProtocolBufferException {
+	private SignedTxnAccessor accessorWith(final AccountID designatedNodeAccount) throws InvalidProtocolBufferException {
 		final var transactionId = TransactionID.newBuilder().setAccountID(payerAccountId);
 
 		final var bodyBytes = TransactionBody.newBuilder()

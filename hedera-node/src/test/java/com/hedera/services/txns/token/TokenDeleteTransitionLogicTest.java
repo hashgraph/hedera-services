@@ -140,7 +140,7 @@ class TokenDeleteTransitionLogicTest {
 						.setToken(grpcTokenId))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenDeleteTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(typedTokenStore.loadToken(tokenId)).willReturn(token);
 	}
 
