@@ -17,7 +17,7 @@
       "operations" : [ "ScheduleSign" ]
     }, {
       "opsPerSec" : 350,
-      "operations": [ "ContractCall", "ContractCreate" ]
+      "operations": [ "ContractCall", "ContractCreate", "EthereumTransaction" ]
     }, {
       "opsPerSec" : 3000,
       "milliOpsPerSec" : 3000000,

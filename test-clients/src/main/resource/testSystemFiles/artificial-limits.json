@@ -20,7 +20,7 @@
                 },
                 {
                     "opsPerSec": 3,
-                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
+                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete","EthereumTransaction"]
                 },
                 {
                     "opsPerSec": 30,
@@ -39,7 +39,7 @@
             "throttleGroups": [
                 {
                     "opsPerSec": 2,
-                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
+                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete","EthereumTransaction"]
                 }
             ]
         },

@@ -87,14 +87,17 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		// validate transactionData is set
 		// validate senderId is set
 
-		if (txBody.hasContractCall()) {
+		if (txBody == null) {
+			// in submit precheck, not consensus precheck.  Don't validate synthetic TXes.
+			return ResponseCodeEnum.OK;
+		} else if (txBody.hasContractCall()) {
 			//FIXME eth specific checks
 			// does sender match the extracted signature?
 			// is the nonce valid?
 			// is the chainID correct?
 
 			return contractCallTransitionLogic.semanticCheck().apply(txBody);
-		} else {
+		} else { //FIXME
 			return ResponseCodeEnum.NOT_SUPPORTED; //FIXME create proper protobuf response code
 		}
 	}
@@ -110,11 +113,13 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	public void preFetch(final TxnAccessor accessor) {
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
 		spanMapAccessor.setEthTxSigsMeta(accessor, ethTxData.extractSignatures());
-		
+
 		//TODO short circuit direct calls to tokens and topics
 		if (ethTxData.to() != null) {
 			var op = ContractCallTransactionBody.newBuilder()
-					.setFunctionParameters(ByteString.copyFrom(ethTxData.data()))
+					.setFunctionParameters(
+							ByteString.copyFrom(ethTxData.data(), ethTxData.callDataStart(),
+									ethTxData.callDataLength()))
 					.setGas(ethTxData.gasLimit())
 					.setAmount(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
 					.setContractID(EntityIdUtils.contractIdFromEvmAddress(ethTxData.to())).build();

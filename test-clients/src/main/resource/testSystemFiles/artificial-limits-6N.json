@@ -13,14 +13,14 @@
                         "TokenGetInfo", "TokenGetNftInfo", "TokenGetNftInfos", "TokenGetAccountNftInfos",
                         "ScheduleDelete", "ScheduleGetInfo",
                         "FileGetContents", "FileGetInfo",
-                        "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal",
+                        "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", 
                         "TransactionGetRecord",
                         "GetVersionInfo"
                     ]
                 },
                 {
                     "opsPerSec": 3,
-                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
+                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete","EthereumTransaction"]
                 },
                 {
                     "opsPerSec": 30,
@@ -39,7 +39,7 @@
             "throttleGroups": [
                 {
                     "opsPerSec": 3,
-                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete" ]
+                    "operations": [ "ContractCall", "ContractCreate", "FileCreate", "FileUpdate", "FileAppend", "FileDelete","EthereumTransaction"]
                 }
             ]
         },

@@ -56,6 +56,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetIn
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
@@ -138,6 +139,7 @@ public final class PermissionFileUtils {
 		permissionKeys.put(ContractUpdate, "updateContract");
 		permissionKeys.put(ContractCall, "contractCallMethod");
 		permissionKeys.put(ContractDelete, "deleteContract");
+		permissionKeys.put(EthereumTransaction, "ethereumTransaction");
 		permissionKeys.put(ConsensusCreateTopic, "createTopic");
 		permissionKeys.put(ConsensusUpdateTopic, "updateTopic");
 		permissionKeys.put(ConsensusDeleteTopic, "deleteTopic");
