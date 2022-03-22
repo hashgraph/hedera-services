@@ -18,7 +18,7 @@ import static com.hedera.services.state.migration.StateVersions.RELEASE_0250_VER
 import static com.hedera.services.utils.MiscUtils.forEach;
 
 public class ReleaseTwentyFiveMigration {
-	private static final Logger log = LogManager.getLogger(ReleaseTwentyTwoMigration.class);
+	private static final Logger log = LogManager.getLogger(ReleaseTwentyFiveMigration.class);
 
 	/**
 	 * Migrate tokens from MerkleMap data structure to VirtualMap data structure.
