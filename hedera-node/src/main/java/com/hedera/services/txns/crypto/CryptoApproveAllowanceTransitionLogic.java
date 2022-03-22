@@ -22,11 +22,11 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
@@ -171,7 +171,8 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		for (var allowance : nftAllowances) {
 			final var owner = allowance.getOwner();
 			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var nftMap = accountToApprove.getMutableExplicitNftAllowances();
+			final var mutableExplicitNftAllowances = accountToApprove.getMutableExplicitNftAllowances();
+			final var approveForAllNftsSet = accountToApprove.getMutableApprovedForAllNftsAllowances();
 
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
@@ -180,15 +181,16 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = allowance.getTokenId();
 
-			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
-					spender.asEntityNum());
-			if (nftMap.containsKey(key)) {
-				// No-Op need to submit adjustAllowance to adjust any allowances
-				continue;
+			if (approvedForAll.getValue()) {
+				final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
+						spender.asEntityNum());
+				approveForAllNftsSet.add(key);
+			} else {
+				for (var serialNum : serialNums) {
+					final var key = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNum);
+					mutableExplicitNftAllowances.put(key, spender.asEntityNum());
+				}
 			}
-			final FcTokenAllowance value = approvedForAll.getValue() ? FcTokenAllowance.from(
-					true) : FcTokenAllowance.from(serialNums);
-			nftMap.put(key, value);
 
 			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);

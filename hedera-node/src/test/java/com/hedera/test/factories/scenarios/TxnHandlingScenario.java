@@ -152,7 +152,7 @@ public interface TxnHandlingScenario {
 								.balance(DEFAULT_BALANCE)
 								.cryptoAllowances(cryptoAllowances)
 								.fungibleTokenAllowances(fungibleTokenAllowances)
-								.nftAllowances(nftTokenAllowances)
+								.explicitNftAllowances(nftTokenAllowances)
 								.accountKeys(OWNER_ACCOUNT_KT).get()
 				).withAccount(
 						COMPLEX_KEY_ACCOUNT_ID,
@@ -600,7 +600,7 @@ public interface TxnHandlingScenario {
 			.setAmount(10_000L)
 			.build());
 
-	TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftTokenAllowances = new TreeMap<>() {{
+	TreeMap<NftID, EntityNum> nftTokenAllowances = new TreeMap<>() {{
 		put(FcTokenAllowanceId.from(
 						EntityNum.fromTokenId(KNOWN_TOKEN_WITH_WIPE), EntityNum.fromAccountId(DEFAULT_PAYER)),
 				FcTokenAllowance.from(true));

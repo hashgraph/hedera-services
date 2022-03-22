@@ -21,10 +21,12 @@ package com.hedera.services.store.models;
  */
 
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.commons.lang3.builder.CompareToBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
-public record NftId(long shard, long realm, long num, long serialNo) {
+public record NftId(long shard, long realm, long num, long serialNo) implements Comparable<NftId>{
 	public TokenID tokenId() {
 		return TokenID.newBuilder()
 				.setShardNum(shard)
@@ -40,5 +42,15 @@ public record NftId(long shard, long realm, long num, long serialNo) {
 	@Override
 	public String toString() {
 		return "TokenId : " + shard + "." + realm + "." + num + ", serial num : " + serialNo;
+	}
+
+	@Override
+	public int compareTo(@NotNull final NftId that) {
+		return new CompareToBuilder()
+				.append(shard, that.shard)
+				.append(realm, that.realm)
+				.append(num, that.num)
+				.append(serialNo, that.serialNo)
+				.toComparison();
 	}
 }

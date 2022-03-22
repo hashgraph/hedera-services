@@ -23,11 +23,11 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
@@ -189,7 +189,8 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final var owner = allowance.getOwner();
 
 			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var nftAllowancesMap = accountToAdjust.getMutableExplicitNftAllowances();
+			final var mutableExplicitNftAllowances = accountToAdjust.getMutableExplicitNftAllowances();
+			final var mutableApprovedForAllNftsAllowances = accountToAdjust.getMutableApprovedForAllNftsAllowances();
 
 			final var spenderAccount = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
@@ -198,28 +199,24 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final var spender = Id.fromGrpcAccount(spenderAccount);
 			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
 
-			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
-					spender.asEntityNum());
-			if (!nftAllowancesMap.containsKey(key)) {
-				final var value = approvedForAll.getValue() ? FcTokenAllowance.from(
-						true) : FcTokenAllowance.from(serialNums);
-				nftAllowancesMap.put(key, value);
+			if (approvedForAll.getValue()) {
+				final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
+						spender.asEntityNum());
+				mutableApprovedForAllNftsAllowances.add(key);
 			} else {
-				final var oldValue = nftAllowancesMap.get(key);
-				if (approvedForAll.getValue()) {
-					nftAllowancesMap.put(key, FcTokenAllowance.from(true));
-				} else {
-					final var newSerials = adjustSerials(oldValue.getSerialNumbers(), serialNums);
-					if (newSerials.isEmpty()) {
-						nftAllowancesMap.remove(key);
+				for (var serialNum : serialNums) {
+					final var key = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNum);
+					if (serialNum < 0) {
+						mutableExplicitNftAllowances.remove(key);
 					} else {
-						nftAllowancesMap.put(key, FcTokenAllowance.from(newSerials));
+						mutableExplicitNftAllowances.put(key, spender.asEntityNum());
 					}
 				}
 			}
 			validateAllowanceLimitsOn(accountToAdjust);
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-			sideEffectsTracker.setExplicitNftAllowances(accountToAdjust.getId().asEntityNum(), nftAllowancesMap);
+			sideEffectsTracker.setExplicitNftAllowances(accountToAdjust.getId().asEntityNum(), mutableExplicitNftAllowances);
+			sideEffectsTracker.setApproveForAllNfts(accountToAdjust.getId().asEntityNum(), mutableApprovedForAllNftsAllowances);
 		}
 	}
 

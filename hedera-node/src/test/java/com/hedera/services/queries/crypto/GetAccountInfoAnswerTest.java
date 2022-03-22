@@ -174,7 +174,7 @@ class GetAccountInfoAnswerTest {
 				.expirationTime(9_999_999L)
 				.cryptoAllowances(cryptoAllowances)
 				.fungibleTokenAllowances(fungibleTokenAllowances)
-				.nftAllowances(nftAllowances)
+				.explicitNftAllowances(nftAllowances)
 				.get();
 		payerAccount.setTokens(tokens);
 

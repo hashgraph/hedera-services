@@ -25,9 +25,9 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -64,7 +64,7 @@ public class MerkleAccountFactory {
 	private Set<Id> assocTokens = new HashSet<>();
 	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>();
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
+	private TreeMap<NftId, EntityNum> explicitNftAllowances = new TreeMap<>();
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
@@ -95,7 +95,7 @@ public class MerkleAccountFactory {
 		value.setNumContractKvPairs(numKvPairs);
 		value.setCryptoAllowances(cryptoAllowances);
 		value.setFungibleTokenAllowances(fungibleTokenAllowances);
-		value.setExplicitNftAllowances(nftAllowances);
+		value.setExplicitNftAllowances(explicitNftAllowances);
 		return value;
 	}
 
@@ -219,8 +219,8 @@ public class MerkleAccountFactory {
 		return this;
 	}
 
-	public MerkleAccountFactory nftAllowances(final TreeMap<FcTokenAllowanceId, FcTokenAllowance> allowances) {
-		nftAllowances = allowances;
+	public MerkleAccountFactory explicitNftAllowances(final TreeMap<NftId, EntityNum> allowances) {
+		explicitNftAllowances = allowances;
 		return this;
 	}
 }
