@@ -32,6 +32,7 @@ public class MigrationRecordsManager {
 	private static final Logger log = LogManager.getLogger(MigrationRecordsManager.class);
 
 	private static final Key immutableKey = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
+	private static final String MEMO = "Release 0.24.1 migration record";
 
 	private final EntityCreator creator;
 	private final SigImpactHistorian sigImpactHistorian;
@@ -74,7 +75,7 @@ public class MigrationRecordsManager {
 		final var tracker = sideEffectsFactory.get();
 		tracker.trackAutoCreation(num.toGrpcAccountId(), ByteString.EMPTY);
 		final var synthBody = synthStakingFundCreate(autoRenewPeriod);
-		final var synthRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, EMPTY_MEMO);
+		final var synthRecord = creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, MEMO);
 		recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
 		sigImpactHistorian.markEntityChanged(num.longValue());
 		log.info("Published synthetic CryptoCreate for staking fund account 0.0.{}", num.longValue());

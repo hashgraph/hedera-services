@@ -40,6 +40,7 @@ class MigrationRecordsManagerTest {
 	private static final ExpirableTxnRecord.Builder pretend801 = ExpirableTxnRecord.newBuilder();
 	private static final Instant now = Instant.ofEpochSecond(1_234_567L);
 	private static final Key EXPECTED_KEY = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
+	private static final String MEMO = "Release 0.24.1 migration record";
 
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
@@ -68,8 +69,8 @@ class MigrationRecordsManagerTest {
 		final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
 		final var synthBody = expectedSyntheticCreate();
 
-		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, EMPTY_MEMO)).willReturn(pretend800);
-		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, EMPTY_MEMO)).willReturn(pretend801);
+		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, MEMO)).willReturn(pretend800);
+		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, MEMO)).willReturn(pretend801);
 
 		subject.publishMigrationRecords(now);
 
