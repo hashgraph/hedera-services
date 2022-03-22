@@ -16,6 +16,21 @@ contract KeyHelper is HederaTokenService {
         keys[1] = IHederaTokenService.TokenKey (getDuplexKeyType(4, 6), getKeyValueType(2, ""));
     }
 
+    function getAllTypeKeys(uint8 keyValueType, bytes memory key) internal view returns (IHederaTokenService.TokenKey[] memory keys) {
+        keys = new IHederaTokenService.TokenKey[](1);
+        keys[0] = IHederaTokenService.TokenKey (getAllKeyTypes(), getKeyValueType(keyValueType, key));
+    }
+
+    function getCustomSingleTypeKeys(uint8 keyType, uint8 keyValueType, bytes memory key) internal view returns (IHederaTokenService.TokenKey[] memory keys) {
+        keys = new IHederaTokenService.TokenKey[](1);
+        keys[0] = IHederaTokenService.TokenKey (getKeyType(keyType), getKeyValueType(keyValueType, key));
+    }
+
+    function getCustomDuplexTypeKeys(uint8 firstType, uint8 secondType, uint8 keyValueType, bytes memory key) internal view returns (IHederaTokenService.TokenKey[] memory keys) {
+        keys = new IHederaTokenService.TokenKey[](1);
+        keys[0] = IHederaTokenService.TokenKey (getDuplexKeyType(firstType, secondType), getKeyValueType(keyValueType, key));
+    }
+
     function getSingleKey(uint8 keyType, uint8 keyValueType, bytes memory key) internal view returns (IHederaTokenService.TokenKey memory tokenKey) {
         tokenKey =  IHederaTokenService.TokenKey (getKeyType(keyType), getKeyValueType(keyValueType, key));
     }
@@ -27,6 +42,15 @@ contract KeyHelper is HederaTokenService {
     function getDuplexKeyType(uint8 firstType, uint8 secondType) internal pure returns (uint keyType) {
         keyType.setBit(firstType);
         keyType.setBit(secondType);
+    }
+
+    function getAllKeyTypes() internal pure returns (uint keyType) {
+        keyType.setBit(0);
+        keyType.setBit(1);
+        keyType.setBit(2);
+        keyType.setBit(3);
+        keyType.setBit(4);
+        keyType.setBit(5);
     }
 
     function getKeyType(uint8 keyType) internal pure returns (uint) {
