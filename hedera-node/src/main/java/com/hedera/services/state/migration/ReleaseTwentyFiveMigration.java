@@ -52,4 +52,6 @@ public class ReleaseTwentyFiveMigration {
 		initializingState.setChild(StateChildIndices.UNIQUE_TOKENS, vmUniqueTokens);
 		log.info("Migrated {} unique tokens", count.get());
 	}
+
+	private ReleaseTwentyFiveMigration() { /* disallow construction */ }
 }
