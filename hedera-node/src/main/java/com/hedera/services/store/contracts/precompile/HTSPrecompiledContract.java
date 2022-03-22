@@ -127,7 +127,6 @@ import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
-import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
 import static com.hedera.services.ledger.properties.TokenProperty.NAME;
 import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
@@ -148,6 +147,7 @@ import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -173,6 +173,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
+	private static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
 	/* Precompiles cannot change treasury accounts */
 	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
@@ -1270,9 +1271,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(
-				final MessageFrame frame
-		) {
+		public void run(final MessageFrame frame) {
 			Objects.requireNonNull(burnOp);
 
 			/* --- Check required signatures --- */
@@ -1328,9 +1327,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(
-				final MessageFrame frame
-		) {
+		public void run(final MessageFrame frame) {
+			// No changes to state to apply
+		}
+
+		@Override
+		public Bytes getFailureResultFor(ResponseCodeEnum status) {
+			return null;
 		}
 
 		@Override
@@ -1368,9 +1371,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(
-				final MessageFrame frame
-		) {
+		public void run(final MessageFrame frame) {
 			super.run(frame);
 
 			final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
@@ -1493,16 +1494,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
 			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(),
 					tokenUriWrapper.tokenId());
-			var metaData = (byte[]) nftsLedger.get(nftId, METADATA);
+			// If the requested serial num doesn't exist, we return the standard ERC error message
+			var metaData = nftsLedger.exists(nftId)
+					? new String((byte[]) nftsLedger.get(nftId, METADATA))
+					: URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 
-			String metaDataString = new String(metaData);
-
-			return encoder.encodeTokenUri(metaDataString);
+			return encoder.encodeTokenUri(metaData);
 		}
 	}
 
 	protected class OwnerOfPrecompile extends ERCReadOnlyAbstractPrecompile {
-		private OwnerOfAndTokenURIWrapper ownerWrapper;
+		private NftId nft;
 
 		public OwnerOfPrecompile(final TokenID tokenID) {
 			super(tokenID);
@@ -1510,21 +1512,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			final var nestedInput = input.slice(24);
-			ownerWrapper = decoder.decodeOwnerOf(nestedInput);
+			final var wrapper = decoder.decodeOwnerOf(input.slice(24));
+			nft = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), wrapper.tokenId());
+			validateTrue(ledgers.nfts().exists(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
 			return super.body(input, aliasResolver);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
-			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(),
-					ownerWrapper.tokenId());
-			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
-			var accountIdOwner = owner.toGrpcAccountId();
-
-			return encoder.encodeOwner(asTypedEvmAddress(accountIdOwner));
+			final var owner = ledgers.ownerOf(nft);
+			final var priorityAddress = updater.priorityAddress(owner);
+			return encoder.encodeOwner(priorityAddress);
 		}
 	}
 
@@ -1539,16 +1538,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			final var nestedInput = input.slice(24);
 			balanceWrapper = decoder.decodeBalanceOf(nestedInput, aliasResolver);
-
 			return super.body(input, aliasResolver);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger = ledgers.tokenRels();
-			final var relationship = asTokenRel(balanceWrapper.accountId(), tokenID);
-			final var balance = (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
-
+			final var tokenRelsLedger = ledgers.tokenRels();
+			final var rel = asTokenRel(balanceWrapper.accountId(), tokenID);
+			final var balance = tokenRelsLedger.exists(rel) ? (long) tokenRelsLedger.get(rel, TOKEN_BALANCE) : 0L;
 			return encoder.encodeBalance(balance);
 		}
 	}

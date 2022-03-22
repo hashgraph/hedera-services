@@ -30,7 +30,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.doThrow;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
@@ -39,13 +38,6 @@ class HederaLedgerXfersTest extends BaseHederaLedgerTestHelper {
 	private void setup() {
 		commonSetup();
 		setupWithMockLedger();
-	}
-
-	@Test
-	void throwsOnNetTransfersIfNotInTxn() {
-		doThrow(IllegalStateException.class).when(accountsLedger).throwIfNotInTxn();
-
-		assertThrows(IllegalStateException.class, () -> subject.netTransfersInTxn());
 	}
 
 	@Test
