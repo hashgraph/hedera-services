@@ -74,14 +74,14 @@ class ImpliedTransfersTest {
 		final var oneRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=TOKEN_WAS_DELETED, " +
 				"maxExplicitHbarAdjusts=5, maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, " +
 				"maxNestedCustomFees=1, maxXferBalanceChanges=20, areNftsEnabled=true, isAutoCreationEnabled=true, " +
-				"tokenFeeSchedules=[]}, changes=[], tokenFeeSchedules=[], assessedCustomFees=[], resolvedAliases={}, " +
-				"numAutoCreations=0}";
+				"tokenFeeSchedules=[], areAllowancesEnabled=true}, changes=[], tokenFeeSchedules=[], " +
+				"assessedCustomFees=[], resolvedAliases={}, numAutoCreations=0}";
 		final var twoRepr = "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5, " +
 				"maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12, maxNestedCustomFees=1, " +
 				"maxXferBalanceChanges=20, areNftsEnabled=true, isAutoCreationEnabled=true, " +
 				"tokenFeeSchedules=[CustomFeeMeta[tokenId=Id[shard=0, realm=0, num=123], treasuryId=Id[shard=2, " +
-				"realm=3, num=4], customFees=[]]]}, changes=[BalanceChange{token=Id[shard=1, realm=2, num=3], " +
-				"account=Id[shard=4, realm=5, num=6], alias=, units=7, expectedDecimals=-1}], " +
+				"realm=3, num=4], customFees=[]]], areAllowancesEnabled=true}, changes=[BalanceChange{token=Id[shard=1," +
+				" realm=2, num=3], account=Id[shard=4, realm=5, num=6], alias=, units=7, expectedDecimals=-1}], " +
 				"tokenFeeSchedules=[CustomFeeMeta[tokenId=Id[shard=0, realm=0, num=123], treasuryId=Id[shard=2, " +
 				"realm=3, num=4], customFees=[]]], assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, " +
 				"realm=0, num=123}, account=EntityId{shard=0, realm=0, num=124}, units=123, effective payer " +
@@ -108,6 +108,7 @@ class ImpliedTransfersTest {
 		given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
 		given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
 		given(customFeeSchedules.lookupMetaFor(any())).willReturn(entityCustomFees.get(0));
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
 
 		// expect:
 		assertTrue(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
