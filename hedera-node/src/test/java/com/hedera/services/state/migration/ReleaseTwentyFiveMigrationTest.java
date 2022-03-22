@@ -18,7 +18,7 @@ import java.time.Instant;
 import static com.google.common.truth.Truth.assertThat;
 import static com.hedera.services.state.migration.StateChildIndices.UNIQUE_TOKENS;
 
-public class ReleaseTwentyFiveMigrationTest {
+class ReleaseTwentyFiveMigrationTest {
 	private ServicesState state;
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> legacyTokens = new MerkleMap<>();
 
