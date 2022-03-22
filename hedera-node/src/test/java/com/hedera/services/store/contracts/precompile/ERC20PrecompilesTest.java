@@ -521,6 +521,7 @@ class ERC20PrecompilesTest {
                 BALANCE_OF_WRAPPER);
         given(tokenRels.get(any(), any())).willReturn(10L);
         given(encoder.encodeBalance(10L)).willReturn(successResult);
+        given(tokenRels.exists(any())).willReturn(true);
 
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
@@ -538,6 +539,14 @@ class ERC20PrecompilesTest {
         // and:
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+
+        // when:
+        given(tokenRels.exists(any())).willReturn(false);
+        given(encoder.encodeBalance(0L)).willReturn(successResult);
+
+        // then:
+        assertEquals(successResult, subject.computeInternal(frame));
+        verify(encoder).encodeBalance(0L);
     }
 
     @Test

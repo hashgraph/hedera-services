@@ -250,7 +250,7 @@ public class DecodingFacade {
 	public BalanceOfWrapper decodeBalanceOf(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, BALANCE_OF_TOKEN_SELECTOR, BALANCE_OF_TOKEN_DECODER);
 
-		final var account = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var account = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
 
 		return new BalanceOfWrapper(account);
 	}
@@ -274,8 +274,8 @@ public class DecodingFacade {
 															final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
 
-		final var from = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
-		final var to = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(1), aliasResolver);
+		final var from = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+		final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
 		if(isFungible) {
 			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
 			final var amount = (BigInteger) decodedArguments.get(2);

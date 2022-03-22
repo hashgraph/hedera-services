@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
@@ -293,7 +294,7 @@ public class SideEffectsTracker {
 	 * @return the created auto-associations
 	 */
 	public List<FcTokenAssociation> getTrackedAutoAssociations() {
-		return autoAssociations;
+		return autoAssociations.isEmpty() ? Collections.emptyList() : new ArrayList<>(autoAssociations);
 	}
 
 	/**
@@ -581,7 +582,8 @@ public class SideEffectsTracker {
 	 * 		an additional change to incorporate into the target account's balance
 	 * @return how many slots in the accountNums array are now actually touched
 	 */
-	public static int includeOrderedFungibleChange(
+	@VisibleForTesting
+	static int includeOrderedFungibleChange(
 			final long[] accountNums,
 			final long[] balanceChanges,
 			final int touchedSoFar,
@@ -624,7 +626,8 @@ public class SideEffectsTracker {
 	 * 		how many slots in the accountNums array were actually touched so far
 	 * @return how many slots in the accountNums array are now actually touched
 	 */
-	public static int purgeZeroChanges(
+	@VisibleForTesting
+	static int purgeZeroChanges(
 			final long[] accountNums,
 			final long[] balanceChanges,
 			final int touchedSoFar
@@ -644,7 +647,13 @@ public class SideEffectsTracker {
 		return touchedSoFar - zerosSkippedSoFar;
 	}
 
-	public int getNumHbarChangesSoFar() {
+	@VisibleForTesting
+	int getNumHbarChangesSoFar() {
 		return numHbarChangesSoFar;
+	}
+
+	@VisibleForTesting
+	List<FcTokenAssociation> getInternalAutoAssociations() {
+		return autoAssociations;
 	}
 }

@@ -30,7 +30,6 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -42,7 +41,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -76,7 +74,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
@@ -103,6 +100,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.succes
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -325,6 +323,7 @@ class ERC721PrecompilesTest {
                 .willReturn(1L);
         given(decoder.decodeBalanceOf(eq(nestedPretendArguments), any())).willReturn(
                 BALANCE_OF_WRAPPER);
+        given(tokenRels.exists(any())).willReturn(true);
         given(tokenRels.get(any(), any())).willReturn(10L);
         given(encoder.encodeBalance(10L)).willReturn(successResult);
 
@@ -334,12 +333,19 @@ class ERC721PrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
 
         // then:
-        assertEquals(successResult, result);
+        assertEquals(successResult, subject.computeInternal(frame));
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+
+        // when:
+        given(tokenRels.exists(any())).willReturn(false);
+        given(encoder.encodeBalance(0L)).willReturn(successResult);
+
+        // then:
+        assertEquals(successResult, subject.computeInternal(frame));
+        verify(encoder).encodeBalance(0L);
     }
 
     @Test
@@ -362,8 +368,10 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-        given(nfts.get(any(), eq(NftProperty.OWNER))).willReturn(EntityId.fromGrpcAccountId(sender));
-        given(encoder.encodeOwner(EntityIdUtils.asTypedEvmAddress(sender))).willReturn(successResult);
+        given(nfts.exists(any())).willReturn(true);
+        given(wrappedLedgers.ownerOf(any())).willReturn(senderAddress);
+        given(worldUpdater.priorityAddress(senderAddress)).willReturn(senderAddress);
+        given(encoder.encodeOwner(senderAddress)).willReturn(successResult);
 
         // when:
         subject.prepareFields(frame);
@@ -373,6 +381,39 @@ class ERC721PrecompilesTest {
 
         // then:
         assertEquals(successResult, result);
+    }
+
+    @Test
+    void erc20FailureResultIsNull() {
+        givenMinimalFrameContext();
+        given(wrappedLedgers.nfts()).willReturn(nfts);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+        given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+        given(nfts.exists(any())).willReturn(true);
+        given(wrappedLedgers.ownerOf(any())).willReturn(senderAddress);
+        given(worldUpdater.priorityAddress(senderAddress)).willThrow(IllegalStateException.class);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, а -> а);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        assertNull(result);
     }
 
     @Test
@@ -397,6 +438,40 @@ class ERC721PrecompilesTest {
         given(decoder.decodeTokenUriNFT(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
         given(nfts.get(any(), eq(NftProperty.METADATA))).willReturn("Metadata".getBytes());
         given(encoder.encodeTokenUri("Metadata")).willReturn(successResult);
+        given(nfts.exists(any())).willReturn(true);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, а -> а);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+    }
+
+    @Test
+    void defaultErrorMsgReturnedForMissingTokenURI() {
+        givenMinimalFrameContext();
+
+        given(wrappedLedgers.nfts()).willReturn(nfts);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_TOKEN_URI_NFT);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+        given(decoder.decodeTokenUriNFT(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
+        given(nfts.exists(any())).willReturn(false);
+        given(encoder.encodeTokenUri("ERC721Metadata: URI query for nonexistent token")).willReturn(successResult);
 
         // when:
         subject.prepareFields(frame);
