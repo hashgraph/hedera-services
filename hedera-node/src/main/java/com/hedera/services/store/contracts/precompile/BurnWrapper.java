@@ -23,25 +23,26 @@ package com.hedera.services.store.contracts.precompile;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-public record BurnWrapper(long amount, TokenID tokenType, List<Long> serialNos) {
-	private static final long NONFUNGIBLE_BURN_AMOUNT = -1;
+public record BurnWrapper(BigInteger amount, TokenID tokenType, List<Long> serialNos) {
+	private static final BigInteger NONFUNGIBLE_BURN_AMOUNT = BigInteger.valueOf(-1);
 	private static final List<Long> FUNGIBLE_BURN_SERIAL_NOS = Collections.emptyList();
 
 	public static BurnWrapper forNonFungible(final TokenID tokenType, final List<Long> serialNos) {
 		return new BurnWrapper(NONFUNGIBLE_BURN_AMOUNT, tokenType, serialNos);
 	}
 
-	public static BurnWrapper forFungible(final TokenID tokenType, final long amount) {
+	public static BurnWrapper forFungible(final TokenID tokenType, final BigInteger amount) {
 		return new BurnWrapper(amount, tokenType, FUNGIBLE_BURN_SERIAL_NOS);
 	}
 
 	public TokenType type() {
-		return (amount == NONFUNGIBLE_BURN_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
+		return (amount.compareTo(NONFUNGIBLE_BURN_AMOUNT) == 0) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
 	}
 }

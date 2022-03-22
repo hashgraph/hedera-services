@@ -517,6 +517,29 @@ class HTSPrecompiledContractTest {
 	}
 
 	@Test
+	void computeCallsCorrectImplementationForMintToken2() {
+		// given
+		given(messageFrame.getSenderAddress()).willReturn(contractAddress);
+		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+
+		given(worldUpdater.unaliased(contractAddress.toArray())).willReturn("0x000000000000000123".getBytes());
+		subject.prepareFields(messageFrame);
+
+		verify(messageFrame, times(1)).getSenderAddress();
+
+		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
+		given(decoder.decodeMint(any())).willReturn(fungibleMint);
+
+		// when
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
+
+		// then
+		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.MintPrecompile);
+	}
+
+	@Test
 	void computeCallsCorrectImplementationForBurnToken() {
 		// given
 		givenFrameContext();

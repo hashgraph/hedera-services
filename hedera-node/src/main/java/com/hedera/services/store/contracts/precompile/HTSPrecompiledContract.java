@@ -113,6 +113,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
@@ -756,6 +757,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		) {
 			Objects.requireNonNull(mintOp);
 
+			validateTrue(mintOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0, FAIL_INVALID);
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(mintOp.tokenType());
 			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
@@ -772,7 +774,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
 				mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
 			} else {
-				mintLogic.mint(tokenId, 0, mintOp.amount(), NO_METADATA, Instant.EPOCH);
+				mintLogic.mint(tokenId, 0, mintOp.amount().longValue(), NO_METADATA, Instant.EPOCH);
 			}
 		}
 
@@ -1007,6 +1009,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public void run(final MessageFrame frame) {
 			Objects.requireNonNull(burnOp);
 
+			validateTrue(burnOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0, FAIL_INVALID);
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
 			final var hasRequiredSigs = validateKey(
@@ -1023,7 +1026,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var targetSerialNos = burnOp.serialNos();
 				burnLogic.burn(tokenId, 0, targetSerialNos);
 			} else {
-				burnLogic.burn(tokenId, burnOp.amount(), NO_SERIAL_NOS);
+				burnLogic.burn(tokenId, burnOp.amount().longValue(), NO_SERIAL_NOS);
 			}
 		}
 

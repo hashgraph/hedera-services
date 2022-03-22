@@ -31,6 +31,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 
@@ -127,26 +128,26 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedFungibleMint() {
-		final var amount = 1234L;
+		final var amount = BigInteger.valueOf(1234);
 		final var funMints = MintWrapper.forFungible(fungible, amount);
 
 		final var result = subject.createMint(funMints);
 		final var txnBody = result.build();
 
 		assertEquals(fungible, txnBody.getTokenMint().getToken());
-		assertEquals(amount, txnBody.getTokenMint().getAmount());
+		assertEquals(amount.longValue(), txnBody.getTokenMint().getAmount());
 	}
 
 	@Test
 	void createsExpectedFungibleBurn() {
-		final var amount = 1234L;
+		final var amount = BigInteger.valueOf(1234);
 		final var funBurns = BurnWrapper.forFungible(fungible, amount);
 
 		final var result = subject.createBurn(funBurns);
 		final var txnBody = result.build();
 
 		assertEquals(fungible, txnBody.getTokenBurn().getToken());
-		assertEquals(amount, txnBody.getTokenBurn().getAmount());
+		assertEquals(amount.longValue(), txnBody.getTokenBurn().getAmount());
 	}
 
 	@Test

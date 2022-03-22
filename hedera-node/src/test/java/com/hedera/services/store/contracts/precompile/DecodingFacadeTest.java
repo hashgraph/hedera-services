@@ -119,7 +119,7 @@ class DecodingFacadeTest {
 		final var decodedInput = subject.decodeBurn(FUNGIBLE_BURN_INPUT);
 
 		assertTrue(decodedInput.tokenType().getTokenNum() > 0);
-		assertEquals(33, decodedInput.amount());
+		assertEquals(33, decodedInput.amount().longValue());
 		assertEquals(0, decodedInput.serialNos().size());
 	}
 
@@ -179,7 +179,7 @@ class DecodingFacadeTest {
 		final var decodedInput = subject.decodeBurn(NON_FUNGIBLE_BURN_INPUT);
 
 		assertTrue(decodedInput.tokenType().getTokenNum() > 0);
-		assertEquals(-1, decodedInput.amount());
+		assertEquals(-1, decodedInput.amount().longValue());
 		assertEquals(2, decodedInput.serialNos().size());
 		assertEquals(123, decodedInput.serialNos().get(0));
 		assertEquals(234, decodedInput.serialNos().get(1));
@@ -190,7 +190,7 @@ class DecodingFacadeTest {
 		final var decodedInput = subject.decodeMint(FUNGIBLE_MINT_INPUT);
 
 		assertTrue(decodedInput.tokenType().getTokenNum() > 0);
-		assertEquals(15, decodedInput.amount());
+		assertEquals(15, decodedInput.amount().longValue());
 	}
 
 	@Test
