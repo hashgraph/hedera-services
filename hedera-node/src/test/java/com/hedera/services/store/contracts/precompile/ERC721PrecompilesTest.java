@@ -40,6 +40,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
@@ -48,6 +50,7 @@ import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -72,12 +75,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ERC_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_IS_APPROVED_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_OWNER_OF_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
@@ -253,6 +258,49 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(encoder.encodeSymbol(any())).willReturn(successResult);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, а -> а);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void isApprovedForAll() {
+        TreeMap<FcTokenAllowanceId, FcTokenAllowance> alowances = new TreeMap<>();
+        FcTokenAllowanceId fcTokenAllowanceId = FcTokenAllowanceId.from(EntityNum.fromLong(token.getTokenNum()), EntityNum.fromLong(receiver.getAccountNum()));
+        FcTokenAllowance fcTokenAllowance = FcTokenAllowance.from(true);
+        alowances.put(fcTokenAllowanceId, fcTokenAllowance);
+
+        givenMinimalFrameContext();
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_IS_APPROVED_FOR_ALL);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.accounts()).willReturn(accounts);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+
+        given(encoder.encodeIsApprovedForAll(true)).willReturn(successResult);
+        given(decoder.decodeIsApprovedForAll(eq(nestedPretendArguments), any())).willReturn(
+                IS_APPROVE_FOR_ALL_WRAPPER);
+        given(accounts.get(any(), any())).willReturn(alowances);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         // when:
         subject.prepareFields(frame);
@@ -652,4 +700,7 @@ class ERC721PrecompilesTest {
         given(wrappedLedgers.nfts()).willReturn(nfts);
         given(wrappedLedgers.tokens()).willReturn(tokens);
     }
+
+    public static final  IsApproveForAllWrapper IS_APPROVE_FOR_ALL_WRAPPER = new IsApproveForAllWrapper(sender, receiver);
+
 }
