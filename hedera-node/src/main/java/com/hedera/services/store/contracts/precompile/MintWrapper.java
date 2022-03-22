@@ -44,6 +44,6 @@ public record MintWrapper(BigInteger amount, TokenID tokenType, List<ByteString>
 	}
 
 	public TokenType type() {
-		return (amount.compareTo(NONFUNGIBLE_MINT_AMOUNT) == 0) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
+		return (!metadata.isEmpty()) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
 	}
 }
