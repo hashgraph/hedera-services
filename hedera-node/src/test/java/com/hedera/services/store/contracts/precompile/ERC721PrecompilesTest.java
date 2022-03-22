@@ -39,6 +39,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -82,6 +83,7 @@ import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ERC_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_GET_APPROVED;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_IS_APPROVED_FOR_ALL;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_OWNER_OF_NFT;
@@ -300,6 +302,48 @@ class ERC721PrecompilesTest {
         given(decoder.decodeIsApprovedForAll(eq(nestedPretendArguments), any())).willReturn(
                 IS_APPROVE_FOR_ALL_WRAPPER);
         given(accounts.get(any(), any())).willReturn(alowances);
+        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, а -> а);
+        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(successResult, result);
+        verify(wrappedLedgers).commit();
+        verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void getApproved() {
+        TreeMap<FcTokenAllowanceId, FcTokenAllowance> alowances = new TreeMap<>();
+
+        givenMinimalFrameContext();
+        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_GET_APPROVED);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(wrappedLedgers.accounts()).willReturn(accounts);
+        given(wrappedLedgers.nfts()).willReturn(nfts);
+        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
+        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+                .willReturn(mockRecordBuilder);
+
+        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getNodeFee())
+                .willReturn(1L);
+        given(mockFeeObject.getNetworkFee())
+                .willReturn(1L);
+        given(mockFeeObject.getServiceFee())
+                .willReturn(1L);
+
+        given(encoder.encodeGetApproved(Address.fromHexString("0"))).willReturn(successResult);
+        given(decoder.decodeGetApproved(eq(nestedPretendArguments))).willReturn(
+                GET_APPROVED_WRAPPER);
+        given(accounts.get(any(), any())).willReturn(alowances);
+        given(nfts.get(any(), any())).willReturn(EntityId.fromGrpcAccountId(sender));
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         // when:
@@ -702,5 +746,7 @@ class ERC721PrecompilesTest {
     }
 
     public static final  IsApproveForAllWrapper IS_APPROVE_FOR_ALL_WRAPPER = new IsApproveForAllWrapper(sender, receiver);
+
+    public static final GetApprovedWrapper GET_APPROVED_WRAPPER = new GetApprovedWrapper(token.getTokenNum());
 
 }
