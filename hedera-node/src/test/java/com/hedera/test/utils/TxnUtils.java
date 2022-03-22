@@ -93,17 +93,6 @@ public class TxnUtils {
 				.build();
 	}
 
-	public static TokenTransferList withTokenAllowanceAdjustments(
-			TokenID a, AccountID aId, AccountID aCounterpartyId, long A,
-			TokenID b, AccountID bId, AccountID bCounterpartyId, long B,
-			TokenID c, AccountID cId, AccountID cCounterpartyId, long C
-	) {
-		return TokenTransferList.newBuilder()
-						.setToken(a)
-						.addNftTransfers(IdUtils.nftXfer(aId, aCounterpartyId, A))
-						.build();
-	}
-
 	public static List<TokenTransferList> withOwnershipChanges(
 			TokenID a, AccountID aId, AccountID aCounterpartyId, long A,
 			TokenID b, AccountID bId, AccountID bCounterpartyId, long B,

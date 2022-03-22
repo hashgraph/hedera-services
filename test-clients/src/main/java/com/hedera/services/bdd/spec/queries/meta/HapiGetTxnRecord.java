@@ -108,7 +108,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private List<ExpectedCryptoAllowance> expectedCryptoAllowances = new ArrayList<>();
 	private List<ExpectedTokenAllowance> expectedTokenAllowances = new ArrayList<>();
 	private List<ExpectedNftAllowance> expectedNftAllowances = new ArrayList<>();
-	private boolean zeroAllowances = false;
 	private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
 	private Optional<TransactionID> explicitTxnId = Optional.empty();
 	private Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
@@ -141,20 +140,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return ByteString.copyFrom(noThrowSha384HashOf(transaction.getSignedTransactionBytes().toByteArray()));
 	}
 
-	private record ExpectedChildInfo(String aliasingKey) {
-	}
+	private record ExpectedChildInfo(String aliasingKey) {}
+	private record ExpectedCryptoAllowance(String owner, String spender, Long allowance) {}
+	private record ExpectedTokenAllowance(String owner, String token, String spender, Long allowance) {}
+	private record ExpectedNftAllowance(String owner, String token, String spender, Boolean isApproveForAll, List<Long> serialNums) {}
 
-	private record ExpectedCryptoAllowance(String owner, String spender, Long allowance) {
-	}
-
-	private record ExpectedTokenAllowance(String owner, String token, String spender, Long allowance) {
-	}
-
-	private record ExpectedNftAllowance(String owner, String token, String spender, Boolean isApproveForAll,
-										List<Long> serialNums) {
-	}
-
-	private Map<Integer, ExpectedChildInfo> childExpectations = new HashMap<>();
+	private Map<Integer, ExpectedChildInfo>	childExpectations = new HashMap<>();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -245,8 +236,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasTokenAllowance(final String owner, final String token, final String spender,
-			final long allowance) {
+	public HapiGetTxnRecord hasTokenAllowance(final String owner, final String token, final String spender, final long allowance) {
 		expectedTokenAllowances.add(new ExpectedTokenAllowance(owner, token, spender, allowance));
 		return this;
 	}
@@ -254,11 +244,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	public HapiGetTxnRecord hasNftAllowance(final String owner, final String token, final String spender
 			, final boolean isApproveForAll, final List<Long> serialNums) {
 		expectedNftAllowances.add(new ExpectedNftAllowance(owner, token, spender, isApproveForAll, serialNums));
-		return this;
-	}
-
-	public HapiGetTxnRecord noAllowances() {
-		zeroAllowances = true;
 		return this;
 	}
 
@@ -307,7 +292,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts... providers) {
+	public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts ...providers) {
 		childRecordsExpectations = Optional.of(Arrays.asList(providers));
 		return this;
 	}
@@ -404,9 +389,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (childRecordsExpectations.isPresent()) {
 			final var expectedChildRecords = childRecordsExpectations.get();
 
-			assertEquals(expectedChildRecords.size(), actualRecords.size(),
-					String.format("Expected %d child records, got %d", expectedChildRecords.size(),
-							actualRecords.size()));
+			assertEquals(expectedChildRecords.size(), actualRecords.size(), String.format("Expected %d child records, got %d", expectedChildRecords.size(), actualRecords.size()));
 			for (int i = 0; i < actualRecords.size(); i++) {
 				final var expectedChildRecord = expectedChildRecords.get(i);
 				final var actualChildRecord = actualRecords.get(i);
@@ -564,8 +547,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			for (var actualAllowance : actualRecord.getCryptoAdjustmentsList()) {
 				if (
 						actualAllowance.getOwner().equals(ownerId) &&
-								actualAllowance.getSpender().equals(spenderId) &&
-								actualAllowance.getAmount() == allowance
+						actualAllowance.getSpender().equals(spenderId) &&
+						actualAllowance.getAmount() == allowance
 				) {
 					found = true;
 				}
@@ -584,9 +567,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			for (var actualAllowance : actualRecord.getTokenAdjustmentsList()) {
 				if (
 						actualAllowance.getOwner().equals(ownerId) &&
-								actualAllowance.getTokenId().equals(tokenId) &&
-								actualAllowance.getSpender().equals(spenderId) &&
-								actualAllowance.getAmount() == allowance
+						actualAllowance.getTokenId().equals(tokenId) &&
+						actualAllowance.getSpender().equals(spenderId) &&
+						actualAllowance.getAmount() == allowance
 				) {
 					found = true;
 				}
@@ -596,11 +579,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		}
 		nftAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getNftAdjustmentsCount(),
 				"expected nftAllowanceCount was : " + n + " but is : " + actualRecord.getNftAdjustmentsCount()));
-		if (zeroAllowances) {
-			assertEquals(0, actualRecord.getNftAdjustmentsCount());
-			assertEquals(0, actualRecord.getCryptoAdjustmentsCount());
-			assertEquals(0, actualRecord.getTokenAdjustmentsCount());
-		}
+
 		for (var expectedNftAllowance : expectedNftAllowances) {
 			final var ownerId = spec.registry().getAccountID(expectedNftAllowance.owner());
 			final var tokenId = spec.registry().getTokenID(expectedNftAllowance.token());
@@ -611,11 +590,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			for (var actualAllowance : actualRecord.getNftAdjustmentsList()) {
 				if (
 						actualAllowance.getOwner().equals(ownerId) &&
-								actualAllowance.getTokenId().equals(tokenId) &&
-								actualAllowance.getSpender().equals(spenderId) &&
-								(!actualAllowance.hasApprovedForAll() || actualAllowance.getApprovedForAll().equals(
-										isApprovedForAll)) &&
-								actualAllowance.getSerialNumbersList().equals(serialNums)
+						actualAllowance.getTokenId().equals(tokenId) &&
+						actualAllowance.getSpender().equals(spenderId) &&
+						(!actualAllowance.hasApprovedForAll() || actualAllowance.getApprovedForAll().equals(isApprovedForAll)) &&
+						actualAllowance.getSerialNumbersList().equals(serialNums)
 				) {
 					found = true;
 				}
