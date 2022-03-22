@@ -53,7 +53,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPLICIT_NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -201,7 +201,7 @@ public class TransferLogic {
 		final var allowanceId = FcTokenAllowanceId.from(
 				change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
 		final var nftAllowances = new TreeMap<>(
-				(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(ownerID, NFT_ALLOWANCES));
+				(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(ownerID, EXPLICIT_NFT_ALLOWANCES));
 		final var currentAllowance = nftAllowances.get(allowanceId);
 		if (!currentAllowance.isApprovedForAll()) {
 			var mutableAllowanceList = new ArrayList<>(currentAllowance.getSerialNumbers());
@@ -211,7 +211,7 @@ public class TransferLogic {
 			} else {
 				nftAllowances.put(allowanceId, FcTokenAllowance.from(mutableAllowanceList));
 			}
-			accountsLedger.set(ownerID, NFT_ALLOWANCES, nftAllowances);
+			accountsLedger.set(ownerID, EXPLICIT_NFT_ALLOWANCES, nftAllowances);
 		}
 	}
 

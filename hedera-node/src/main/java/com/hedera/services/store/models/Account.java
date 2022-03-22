@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -42,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -83,7 +83,8 @@ public class Account {
 	private int autoAssociationMetadata;
 	private TreeMap<EntityNum, Long> cryptoAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
+	private TreeMap<NftId, EntityNum> explicitNftAllowances;
+	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
 
 	public Account(Id id) {
 		this.id = id;
@@ -243,7 +244,8 @@ public class Account {
 				.add("alias", getAlias().toStringUtf8())
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
-				.add("nftAllowances", nftAllowances)
+				.add("explicitNftAllowances", explicitNftAllowances)
+				.add("approveForAllNfts", approveForAllNfts)
 				.toString();
 	}
 
@@ -350,25 +352,42 @@ public class Account {
 		this.fungibleTokenAllowances = new TreeMap<>(fungibleTokenAllowances);
 	}
 
-	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
-		return nftAllowances == null ? Collections.emptyMap() : nftAllowances;
+	public Map<NftId, EntityNum> getExplicitNftAllowances() {
+		return explicitNftAllowances == null ? Collections.emptyMap() : explicitNftAllowances;
 	}
 
-	public SortedMap<FcTokenAllowanceId, FcTokenAllowance> getMutableNftAllowances() {
-		if (nftAllowances == null) {
-			nftAllowances = new TreeMap<>();
+	public SortedMap<NftId, EntityNum> getMutableExplicitNftAllowances() {
+		if (explicitNftAllowances == null) {
+			explicitNftAllowances = new TreeMap<>();
 		}
-		return nftAllowances;
+		return explicitNftAllowances;
 	}
 
-	public void setNftAllowances(
-			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		this.nftAllowances = new TreeMap<>(nftAllowances);
+	public void setExplicitNftAllowances(
+			final Map<NftId, EntityNum> explicitNftAllowances) {
+		this.explicitNftAllowances = new TreeMap<>(explicitNftAllowances);
+	}
+
+	public Set<FcTokenAllowanceId> getApprovedForAllNftsAllowances() {
+		return approveForAllNfts == null ? Collections.emptySet() : approveForAllNfts;
+	}
+
+	public TreeSet<FcTokenAllowanceId> getMutableApprovedForAllNftsAllowances() {
+		if (approveForAllNfts == null) {
+			approveForAllNfts = new TreeSet<>();
+		}
+		return approveForAllNfts;
+	}
+
+	public void setApproveForAllNfts(final Set<FcTokenAllowanceId> approveForAllNfts) {
+		this.approveForAllNfts = new TreeSet<>(approveForAllNfts);
 	}
 
 	public int getTotalAllowances() {
 		// each serial number of an NFT is considered as an allowance.
 		// So for Nft allowances aggregated amount is considered for limit calculation.
-		return cryptoAllowances.size() + fungibleTokenAllowances.size() + aggregateNftAllowances(nftAllowances);
+		return cryptoAllowances.size() +
+				fungibleTokenAllowances.size() +
+				aggregateNftAllowances(explicitNftAllowances, approveForAllNfts);
 	}
 }

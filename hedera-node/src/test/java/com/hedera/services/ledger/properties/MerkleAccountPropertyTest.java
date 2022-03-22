@@ -61,7 +61,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPLICIT_NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
@@ -224,7 +224,7 @@ class MerkleAccountPropertyTest {
 		NUM_CONTRACT_KV_PAIRS.setter().accept(account, newNumKvPairs);
 		CRYPTO_ALLOWANCES.setter().accept(account, cryptoAllowances);
 		FUNGIBLE_TOKEN_ALLOWANCES.setter().accept(account, fungibleAllowances);
-		NFT_ALLOWANCES.setter().accept(account, nftAllowances);
+		EXPLICIT_NFT_ALLOWANCES.setter().accept(account, nftAllowances);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -242,7 +242,7 @@ class MerkleAccountPropertyTest {
 		assertEquals(newNumKvPairs, NUM_CONTRACT_KV_PAIRS.getter().apply(account));
 		assertEquals(cryptoAllowances, CRYPTO_ALLOWANCES.getter().apply(account));
 		assertEquals(fungibleAllowances, FUNGIBLE_TOKEN_ALLOWANCES.getter().apply(account));
-		assertEquals(nftAllowances, NFT_ALLOWANCES.getter().apply(account));
+		assertEquals(nftAllowances, EXPLICIT_NFT_ALLOWANCES.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

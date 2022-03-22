@@ -39,7 +39,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPLICIT_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -114,8 +114,8 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 				return useExtantProps ? extantProps.apply(CRYPTO_ALLOWANCES) : account.getCryptoAllowances();
 			case FUNGIBLE_TOKEN_ALLOWANCES:
 				return useExtantProps ? extantProps.apply(FUNGIBLE_TOKEN_ALLOWANCES) : account.getFungibleTokenAllowances();
-			case NFT_ALLOWANCES:
-				return useExtantProps ? extantProps.apply(NFT_ALLOWANCES) : account.getNftAllowances();
+			case EXPLICIT_NFT_ALLOWANCES:
+				return useExtantProps ? extantProps.apply(EXPLICIT_NFT_ALLOWANCES) : account.getExplicitNftAllowances();
 			default:
 				throw new IllegalArgumentException("Invalid Property " + prop + " cannot be validated in scoped check");
 		}
@@ -157,7 +157,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			final Map<AccountProperty, Object> changeSet) {
 		if (balanceChange.isApprovedAllowance()) {
 			final var nftAllowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) getEffective(
-					NFT_ALLOWANCES, account, extantProps, changeSet);
+					EXPLICIT_NFT_ALLOWANCES, account, extantProps, changeSet);
 			final var nftAllowance = nftAllowances.getOrDefault(
 					FcTokenAllowanceId.from(
 							balanceChange.getToken().asEntityNum(), EntityNum.fromAccountId(balanceChange.getPayerID())),

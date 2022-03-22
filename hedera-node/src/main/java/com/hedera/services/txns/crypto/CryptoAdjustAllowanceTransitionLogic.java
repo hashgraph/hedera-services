@@ -189,7 +189,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final var owner = allowance.getOwner();
 
 			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var nftAllowancesMap = accountToAdjust.getMutableNftAllowances();
+			final var nftAllowancesMap = accountToAdjust.getMutableExplicitNftAllowances();
 
 			final var spenderAccount = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
@@ -219,7 +219,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			}
 			validateAllowanceLimitsOn(accountToAdjust);
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-			sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), nftAllowancesMap);
+			sideEffectsTracker.setExplicitNftAllowances(accountToAdjust.getId().asEntityNum(), nftAllowancesMap);
 		}
 	}
 

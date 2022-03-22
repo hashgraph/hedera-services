@@ -195,21 +195,23 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
 
+			if (token.isFungibleCommon()) {
+				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+			}
+
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
 			final var ownerAccount = fetchResult.getLeft();
 
-			final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spender.asEntityNum());
-			final var existingAllowances = ownerAccount.getNftAllowances();
+			final var existingAllowances = ownerAccount.getExplicitNftAllowances();
+			final var existingSerials = new ArrayList<Long>();
 
-			final var existingSerials = existingAllowances.containsKey(key) ?
-					existingAllowances.get(key).getSerialNumbers()
-					: new ArrayList<Long>();
-
-			if (token.isFungibleCommon()) {
-				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+			for (final var nftId : existingAllowances.keySet()) {
+				if (tokenId.equals(nftId.tokenId())) {
+					existingSerials.add(nftId.serialNo());
+				}
 			}
 
 			var validity = validateTokenBasics(ownerAccount, spender, tokenId);
@@ -260,9 +262,6 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 
 			if ((serial < 0 && !existingSerials.contains(absoluteSerial)) || absoluteSerial == 0) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
-			}
-			if (serial > 0 && existingSerials.contains(absoluteSerial)) {
-				return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 			}
 			if (!nftsMap.get().containsKey(EntityNumPair.fromNftId(nftId))) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;

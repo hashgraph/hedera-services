@@ -238,7 +238,7 @@ class AdjustAllowanceChecksTest {
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
-		given(owner.getNftAllowances()).willReturn(existingNftAllowances);
+		given(owner.getExplicitNftAllowances()).willReturn(existingNftAllowances);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 
 
@@ -746,7 +746,7 @@ class AdjustAllowanceChecksTest {
 
 		given(payer.getCryptoAllowances()).willReturn(existingCryptoAllowances);
 		given(payer.getFungibleTokenAllowances()).willReturn(existingTokenAllowances);
-		given(payer.getNftAllowances()).willReturn(existingNftAllowances);
+		given(payer.getExplicitNftAllowances()).willReturn(existingNftAllowances);
 		given(payer.isAssociatedWith(token2Model.getId())).willReturn(true);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);

@@ -277,7 +277,7 @@ class TransferLogicTest {
 		accountsLedger.create(owner);
 		accountsLedger.set(owner, AccountProperty.CRYPTO_ALLOWANCES, cryptoAllowances);
 		accountsLedger.set(owner, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
-		accountsLedger.set(owner, AccountProperty.NFT_ALLOWANCES, nftAllowances);
+		accountsLedger.set(owner, AccountProperty.EXPLICIT_NFT_ALLOWANCES, nftAllowances);
 		accountsLedger.set(owner, AccountProperty.BALANCE, initialBalance);
 		accountsLedger.commit();
 	}
@@ -288,6 +288,6 @@ class TransferLogicTest {
 		fungibleAllowances = new TreeMap<>(
 				(Map<FcTokenAllowanceId, Long>) accountsLedger.get(owner, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES));
 		nftAllowances = new TreeMap<>(
-				(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(owner, AccountProperty.NFT_ALLOWANCES));
+				(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(owner, AccountProperty.EXPLICIT_NFT_ALLOWANCES));
 	}
 }

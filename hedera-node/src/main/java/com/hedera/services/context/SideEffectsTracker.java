@@ -23,7 +23,6 @@ package com.hedera.services.context;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Id;
@@ -49,6 +48,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
@@ -85,7 +85,8 @@ public class SideEffectsTracker {
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 	private Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = Collections.emptyMap();
 	private Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances = Collections.emptyMap();
-	private Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = Collections.emptyMap();
+	private Map<EntityNum, Map<NftId, EntityNum>> explicitNftAllowances = Collections.emptyMap();
+	private Map<EntityNum, Set<FcTokenAllowanceId>> approveForAllNfts = Collections.emptyMap();
 
 	@Inject
 	public SideEffectsTracker() {
@@ -449,20 +450,35 @@ public class SideEffectsTracker {
 		this.fungibleTokenAllowances.put(ownerNum, fungibleTokenAllowances);
 	}
 
-	public Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> getNftAllowances() {
-		return nftAllowances;
+	public Map<EntityNum, Map<NftId, EntityNum>> getExplicitNftAllowances() {
+		return explicitNftAllowances;
 	}
 
-	public void setNftAllowances(Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances) {
-		this.nftAllowances = nftAllowances;
+	public void setExplicitNftAllowances(final Map<EntityNum, Map<NftId, EntityNum>> explicitNftAllowances) {
+		this.explicitNftAllowances = explicitNftAllowances;
 	}
 
-	public void setNftAllowances(
-			final EntityNum ownerNum, final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		if (this.nftAllowances.equals(Collections.emptyMap())) {
-			this.nftAllowances = new TreeMap<>();
+	public void setExplicitNftAllowances(
+			final EntityNum ownerNum, final Map<NftId, EntityNum> explicitNftAllowances) {
+		if (this.explicitNftAllowances.equals(Collections.emptyMap())) {
+			this.explicitNftAllowances = new TreeMap<>();
 		}
-		this.nftAllowances.put(ownerNum, nftAllowances);
+		this.explicitNftAllowances.put(ownerNum, explicitNftAllowances);
+	}
+
+	public Map<EntityNum, Set<FcTokenAllowanceId>> getApproveForAllNfts() {
+		return approveForAllNfts;
+	}
+
+	public void setApproveForAllNfts(final Map<EntityNum, Set<FcTokenAllowanceId>> approveForAllNfts) {
+		this.approveForAllNfts = approveForAllNfts;
+	}
+
+	public void setApproveForAllNfts(final EntityNum ownerNum, final Set<FcTokenAllowanceId> approveForAllNfts) {
+		if (this.approveForAllNfts.equals(Collections.emptyMap())) {
+			this.approveForAllNfts = new TreeMap<>();
+		}
+		this.approveForAllNfts.put(ownerNum, approveForAllNfts);
 	}
 
 	/**
@@ -477,7 +493,8 @@ public class SideEffectsTracker {
 		newEntityAlias = ByteString.EMPTY;
 		cryptoAllowances = Collections.emptyMap();
 		fungibleTokenAllowances = Collections.emptyMap();
-		nftAllowances = Collections.emptyMap();
+		explicitNftAllowances = Collections.emptyMap();
+		approveForAllNfts = Collections.emptyMap();
 	}
 
 	/**

@@ -118,7 +118,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAcccount.getNftAllowances().size());
+		assertEquals(1, ownerAcccount.getExplicitNftAllowances().size());
 
 		verify(accountStore).commitAccount(ownerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
@@ -135,13 +135,13 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(0, payerAcccount.getCryptoAllowances().size());
 		assertEquals(0, payerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(0, payerAcccount.getNftAllowances().size());
+		assertEquals(0, payerAcccount.getExplicitNftAllowances().size());
 
 		subject.doStateTransition();
 
 		assertEquals(1, payerAcccount.getCryptoAllowances().size());
 		assertEquals(1, payerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, payerAcccount.getNftAllowances().size());
+		assertEquals(1, payerAcccount.getExplicitNftAllowances().size());
 
 		verify(accountStore).commitAccount(payerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
@@ -162,8 +162,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAcccount.getNftAllowances().size());
-		assertEquals(0, ownerAcccount.getNftAllowances()
+		assertEquals(1, ownerAcccount.getExplicitNftAllowances().size());
+		assertEquals(0, ownerAcccount.getExplicitNftAllowances()
 				.get(FcTokenAllowanceId.from(EntityNum.fromTokenId(token2),
 						EntityNum.fromAccountId(spender1))).getSerialNumbers().size());
 		verify(accountStore).commitAccount(ownerAcccount);
@@ -187,7 +187,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(0, ownerAcccount.getNftAllowances().size());
+		assertEquals(0, ownerAcccount.getExplicitNftAllowances().size());
 		verify(accountStore, never()).commitAccount(ownerAcccount);
 	}
 
@@ -221,7 +221,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		subject.doStateTransition();
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(0, ownerAcccount.getNftAllowances().size());
+		assertEquals(0, ownerAcccount.getExplicitNftAllowances().size());
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
 
@@ -241,7 +241,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAcccount.getNftAllowances().size());
+		assertEquals(1, ownerAcccount.getExplicitNftAllowances().size());
 
 		verify(accountStore).commitAccount(ownerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
@@ -254,7 +254,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAcccount.getNftAllowances().size());
+		assertEquals(1, ownerAcccount.getExplicitNftAllowances().size());
 
 		givenValidTxnCtx();
 
@@ -268,7 +268,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAcccount.getNftAllowances().size());
+		assertEquals(1, ownerAcccount.getExplicitNftAllowances().size());
 
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
@@ -287,7 +287,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		nftAllowances.put(Nftid, val);
 		ownerAcccount.setCryptoAllowances(cryptoAllowances);
 		ownerAcccount.setFungibleTokenAllowances(tokenAllowances);
-		ownerAcccount.setNftAllowances(nftAllowances);
+		ownerAcccount.setExplicitNftAllowances(nftAllowances);
 	}
 
 	private void givenTxnCtxWithZeroAmount() {
@@ -331,7 +331,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 								.addAllNftAllowances(nftAllowances)
 				).build();
 
-		ownerAcccount.setNftAllowances(new HashMap<>());
+		ownerAcccount.setExplicitNftAllowances(new HashMap<>());
 		ownerAcccount.setCryptoAllowances(new HashMap<>());
 		ownerAcccount.setFungibleTokenAllowances(new HashMap<>());
 	}
@@ -356,7 +356,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				).build();
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
-		ownerAcccount.setNftAllowances(new HashMap<>());
+		ownerAcccount.setExplicitNftAllowances(new HashMap<>());
 		ownerAcccount.setCryptoAllowances(new HashMap<>());
 		ownerAcccount.setFungibleTokenAllowances(new HashMap<>());
 	}
@@ -395,7 +395,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				).build();
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
-		payerAcccount.setNftAllowances(new HashMap<>());
+		payerAcccount.setExplicitNftAllowances(new HashMap<>());
 		payerAcccount.setCryptoAllowances(new HashMap<>());
 		payerAcccount.setFungibleTokenAllowances(new HashMap<>());
 	}

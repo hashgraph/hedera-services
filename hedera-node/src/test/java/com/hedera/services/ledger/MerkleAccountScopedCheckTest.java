@@ -193,7 +193,7 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void failsAsExpectedWhenSpenderIsNotGrantedAllowanceOnNFT() {
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getExplicitNftAllowances()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(revokedSpender);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
 
@@ -204,7 +204,7 @@ class MerkleAccountScopedCheckTest {
 	void failsAsExpectedWhenSpenderIsHasNoAllowanceOnSpecificNFT() {
 		when(balanceChange.serialNo()).thenReturn(4L);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getExplicitNftAllowances()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
 
@@ -214,7 +214,7 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void happyPathWithSpenderIsHasAllowanceOnAllNFT() {
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getExplicitNftAllowances()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(fungibleTokenID));
 
@@ -225,7 +225,7 @@ class MerkleAccountScopedCheckTest {
 	void happyPathWithSpenderIsHasAllowanceOnSpecificNFT() {
 		when(balanceChange.serialNo()).thenReturn(2L);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getExplicitNftAllowances()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
 

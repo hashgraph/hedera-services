@@ -157,7 +157,7 @@ public class AccountStore {
 		account.setAlias(merkleAccount.getAlias());
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
-		account.setNftAllowances(merkleAccount.getNftAllowances());
+		account.setExplicitNftAllowances(merkleAccount.getExplicitNftAllowances());
 
 		return account;
 	}
@@ -193,7 +193,7 @@ public class AccountStore {
 		mutableAccount.setSmartContract(model.isSmartContract());
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
-		mutableAccount.setNftAllowances(model.getMutableNftAllowances());
+		mutableAccount.setExplicitNftAllowances(model.getMutableExplicitNftAllowances());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,

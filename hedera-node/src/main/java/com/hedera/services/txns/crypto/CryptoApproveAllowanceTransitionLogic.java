@@ -171,7 +171,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		for (var allowance : nftAllowances) {
 			final var owner = allowance.getOwner();
 			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var nftMap = accountToApprove.getMutableNftAllowances();
+			final var nftMap = accountToApprove.getMutableExplicitNftAllowances();
 
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);

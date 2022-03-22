@@ -95,7 +95,7 @@ public class MerkleAccountFactory {
 		value.setNumContractKvPairs(numKvPairs);
 		value.setCryptoAllowances(cryptoAllowances);
 		value.setFungibleTokenAllowances(fungibleTokenAllowances);
-		value.setNftAllowances(nftAllowances);
+		value.setExplicitNftAllowances(nftAllowances);
 		return value;
 	}
 

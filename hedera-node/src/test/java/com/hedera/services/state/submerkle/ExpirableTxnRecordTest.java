@@ -481,7 +481,7 @@ class ExpirableTxnRecordTest {
 		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleAllowances);
-		subject.setNftAllowances(nftAllowances);
+		subject.setExplicitNftAllowances(nftAllowances);
 		final var fin = mock(SerializableDataInputStream.class);
 		given(serdes.readNullableSerializable(fin))
 				.willReturn(subject.getReceipt())
@@ -553,7 +553,7 @@ class ExpirableTxnRecordTest {
 		final var inOrder = Mockito.inOrder(serdes, fout);
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleAllowances);
-		subject.setNftAllowances(nftAllowances);
+		subject.setExplicitNftAllowances(nftAllowances);
 
 		subject.serialize(fout);
 
@@ -645,7 +645,7 @@ class ExpirableTxnRecordTest {
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
-		subject.setNftAllowances(nftAllowances);
+		subject.setExplicitNftAllowances(nftAllowances);
 		subject.setFungibleTokenAllowances(fungibleAllowances);
 		subject.setCryptoAllowances(cryptoAllowances);
 
@@ -738,7 +738,7 @@ class ExpirableTxnRecordTest {
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleAllowances);
-		subject.setNftAllowances(nftAllowances);
+		subject.setExplicitNftAllowances(nftAllowances);
 		final var expected = "ExpirableTxnRecord{numChildRecords=2, receipt=TxnReceipt{status=INVALID_ACCOUNT_ID, " +
 				"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, fee=555, " +
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
