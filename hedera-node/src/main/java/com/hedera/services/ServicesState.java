@@ -30,6 +30,8 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
@@ -79,6 +81,7 @@ import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0250_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
@@ -166,6 +169,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
 			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 		}
+		if (deserializedVersionFromState < RELEASE_0250_VERSION) {
+			ReleaseTwentyFiveMigration.migrateFromUniqueTokenMerkleMap(this, deserializedVersionFromState);
+			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
+		}
 	}
 
 	/* --- SwirldState --- */
@@ -181,6 +188,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			return;
 		}
 
+		if (deserializedVersion < RELEASE_0250_VERSION && platform != platformForDeferredInit) {
+			platformForDeferredInit = platform;
+			dualStateForDeferredInit = dualState;
+			addressBookForDeferredInit = addressBook;
+			log.info("Deferring init for 0.24.x -> 0.25.x upgrade on Services node {}", platform.getSelfId());
+			return;
+		}
 		log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
 		/* Immediately override the address book from the saved state */
@@ -356,6 +370,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	public VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens() {
+		return getChild(StateChildIndices.UNIQUE_TOKENS);
+	}
+
+	public MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens() {
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
