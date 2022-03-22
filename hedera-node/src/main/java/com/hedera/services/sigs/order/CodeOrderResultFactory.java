@@ -102,8 +102,8 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forMissingAutoRenewAccount() {
-		return MISSING_AUTORENEW_RESULT;
+	public SigningOrderResult<ResponseCodeEnum> forInvalidAutoRenewAccount() {
+		return INVALID_AUTORENEW_RESULT;
 	}
 
 	@Override
@@ -117,8 +117,8 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 	}
 
 	@Override
-	public SigningOrderResult<ResponseCodeEnum> forMissingFeeCollector() {
-		return MISSING_FEE_COLLECTOR_RESULT;
+	public SigningOrderResult<ResponseCodeEnum> forInvalidFeeCollector() {
+		return INVALID_FEE_COLLECTOR_RESULT;
 	}
 
 	@Override
@@ -142,7 +142,7 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 			new SigningOrderResult<>(MODIFYING_IMMUTABLE_CONTRACT);
 	static final SigningOrderResult<ResponseCodeEnum> MISSING_TOPIC_RESULT =
 			new SigningOrderResult<>(INVALID_TOPIC_ID);
-	static final SigningOrderResult<ResponseCodeEnum> MISSING_AUTORENEW_RESULT =
+	static final SigningOrderResult<ResponseCodeEnum> INVALID_AUTORENEW_RESULT =
 			new SigningOrderResult<>(INVALID_AUTORENEW_ACCOUNT);
 	static final SigningOrderResult<ResponseCodeEnum> MISSING_TOKEN_RESULT =
 			new SigningOrderResult<>(INVALID_TOKEN_ID);
@@ -152,7 +152,7 @@ public enum CodeOrderResultFactory implements SigningOrderResultFactory<Response
 			new SigningOrderResult<>(UNRESOLVABLE_REQUIRED_SIGNERS);
 	static final SigningOrderResult<ResponseCodeEnum> UNSCHEDULABLE_TRANSACTION_RESULT =
 			new SigningOrderResult<>(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-	static final SigningOrderResult<ResponseCodeEnum> MISSING_FEE_COLLECTOR_RESULT =
+	static final SigningOrderResult<ResponseCodeEnum> INVALID_FEE_COLLECTOR_RESULT =
 			new SigningOrderResult<>(INVALID_CUSTOM_FEE_COLLECTOR);
 	static final SigningOrderResult<ResponseCodeEnum> MISSING_ALLOWANCE_OWNER_RESULT =
 			new SigningOrderResult<>(INVALID_ALLOWANCE_OWNER_ID);

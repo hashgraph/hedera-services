@@ -73,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -164,6 +165,30 @@ class AdjustAllowanceChecksTest {
 		subject = new AdjustAllowanceChecks(() -> nftsMap, tokenStore, accountStore, dynamicProperties);
 	}
 
+	@Test
+	void failsIfAllowanceFeatureIsNotTurnedOn() {
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
+
+		cryptoAllowances.add(cryptoAllowance2);
+		tokenAllowances.add(tokenAllowance2);
+		nftAllowances.add(nftAllowance3);
+
+		final var validity = subject.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, payer,
+				dynamicProperties.maxAllowanceLimitPerTransaction());
+
+		assertEquals(NOT_SUPPORTED, validity);
+	}
+
+	@Test
+	void isEnabledReturnsCorrectly() {
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+		assertEquals(false, subject.isEnabled());
+
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		assertEquals(true, subject.isEnabled());
+	}
+
 	private void addExistingAllowancesAndSerials() {
 		List<Long> serials = new ArrayList<>();
 		serials.add(30L);
@@ -186,6 +211,7 @@ class AdjustAllowanceChecksTest {
 	@Test
 	void validatesDuplicateSpenders() {
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 		assertNoRepeated();
 
 		cryptoAllowances.add(cryptoAllowance2);
@@ -209,7 +235,8 @@ class AdjustAllowanceChecksTest {
 
 	private void assertRepeated() {
 		assertTrue(hasRepeatedSpender(cryptoAllowances.stream()
-				.map(a -> buildEntityNumPairFrom(a.getOwner(), a.getSpender(), EntityNum.fromAccountId(ownerId))).toList()));
+				.map(a -> buildEntityNumPairFrom(a.getOwner(), a.getSpender(),
+						EntityNum.fromAccountId(ownerId))).toList()));
 		assertTrue(hasRepeatedId(tokenAllowances.stream()
 				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender())).toList()));
 		assertTrue(hasRepeatedId(nftAllowances.stream()
@@ -218,7 +245,8 @@ class AdjustAllowanceChecksTest {
 
 	private void assertNoRepeated() {
 		assertFalse(hasRepeatedSpender(cryptoAllowances.stream()
-				.map(a -> buildEntityNumPairFrom(a.getOwner(), a.getSpender(), EntityNum.fromAccountId(ownerId))).toList()));
+				.map(a -> buildEntityNumPairFrom(a.getOwner(), a.getSpender(),
+						EntityNum.fromAccountId(ownerId))).toList()));
 		assertFalse(hasRepeatedId(tokenAllowances.stream()
 				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender())).toList()));
 		assertFalse(hasRepeatedId(nftAllowances.stream()
@@ -240,6 +268,7 @@ class AdjustAllowanceChecksTest {
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		given(owner.getNftAllowances()).willReturn(existingNftAllowances);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
 
 		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
@@ -313,6 +342,7 @@ class AdjustAllowanceChecksTest {
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willThrow(InvalidTransactionException.class);
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
 		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -513,6 +543,7 @@ class AdjustAllowanceChecksTest {
 		setUpForTest();
 		getValidTxnCtx();
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
 		assertEquals(OK, subject.allowancesValidation(op.getCryptoAllowancesList(),
@@ -557,7 +588,7 @@ class AdjustAllowanceChecksTest {
 	}
 
 	@Test
-	void adjustsAllowanceFromTreasury(){
+	void adjustsAllowanceFromTreasury() {
 		final var serials = List.of(1L);
 		token2Model.setTreasury(treasury);
 		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1))).willReturn(token);
@@ -570,7 +601,7 @@ class AdjustAllowanceChecksTest {
 	}
 
 	@Test
-	void rejectsAllowanceFromInvalidTreasury(){
+	void rejectsAllowanceFromInvalidTreasury() {
 		final var serials = List.of(1L);
 		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1))).willReturn(token);
 		token2Model.setTreasury(treasury);
@@ -686,6 +717,7 @@ class AdjustAllowanceChecksTest {
 	void semanticCheckForExceededLimitOfAllowancesInOp() {
 		addAllowances();
 		getValidTxnCtx();
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, subject.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,

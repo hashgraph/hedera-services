@@ -1,10 +1,10 @@
-package com.hedera.services.sigs.order;
+package com.hedera.services.exceptions;
 
 /*-
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,11 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
-public enum KeyOrderingFailure {
-	NONE,
-	MISSING_FILE,
-	MISSING_ACCOUNT,
-	INVALID_CONTRACT,
-	IMMUTABLE_CONTRACT,
-	INVALID_AUTORENEW_ACCOUNT,
-	MISSING_TOKEN,
-	INVALID_TOPIC,
-	MISSING_TOKEN_TREASURY,
-	MISSING_SCHEDULE,
-	INVALID_ACCOUNT,
-	IMMUTABLE_ACCOUNT,
+/**
+ * Captures a failure when an invalid signed state is provided to update state children
+ */
+public class NoValidSignedStateException extends Exception {
+	public NoValidSignedStateException() {
+		super("Provided signed state is not valid to update state children!");
+	}
 }

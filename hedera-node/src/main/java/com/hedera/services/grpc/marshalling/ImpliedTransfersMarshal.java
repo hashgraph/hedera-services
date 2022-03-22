@@ -229,7 +229,8 @@ public class ImpliedTransfersMarshal {
 				dynamicProperties.maxCustomFeeDepth(),
 				dynamicProperties.maxXferBalanceChanges(),
 				dynamicProperties.areNftsEnabled(),
-				dynamicProperties.isAutoCreationEnabled());
+				dynamicProperties.isAutoCreationEnabled(),
+				dynamicProperties.areAllowancesEnabled());
 	}
 
 	static class TokenAndAccountID {

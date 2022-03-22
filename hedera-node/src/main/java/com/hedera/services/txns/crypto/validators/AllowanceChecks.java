@@ -40,6 +40,7 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregate
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -109,6 +110,11 @@ public interface AllowanceChecks {
 			final List<NftAllowance> nftAllowances,
 			final Account payerAccount,
 			final int maxLimitPerTxn) {
+
+		// feature flag for allowances
+		if (!isEnabled()) {
+			return NOT_SUPPORTED;
+		}
 		var validity = commonChecks(cryptoAllowances, tokenAllowances, nftAllowances, maxLimitPerTxn);
 		if (validity != OK) {
 			return validity;
@@ -198,4 +204,11 @@ public interface AllowanceChecks {
 				? ownerAccount.equals(token.getTreasury())
 				: listedOwner.equals(ownerAccount.getId().asEntityId());
 	}
+
+	/**
+	 * Check if the allowance feature is enabled
+	 *
+	 * @return true if the feature is enabled in {@link com.hedera.services.context.properties.GlobalDynamicProperties}
+	 */
+	boolean isEnabled();
 }
