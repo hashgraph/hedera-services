@@ -29,10 +29,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -44,6 +41,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -60,9 +58,15 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
+
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ASSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BURN_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKENS;
@@ -75,6 +79,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAUL
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
@@ -425,6 +430,8 @@ class HTSPrecompiledContractTest {
 		Mockito.verifyNoMoreInteractions(syntheticTxnFactory);
 	}
 
+	//TODO: add gasRequirementReturnsCorrectValueForCreateToken() when gas is calculated
+
 	@Test
 	void computeRevertsTheFrameIfTheFrameIsStatic() {
 		given(messageFrame.isStatic()).willReturn(true);
@@ -597,6 +604,64 @@ class HTSPrecompiledContractTest {
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.MultiDissociatePrecompile);
+	}
+
+	@Test
+	void computeCallsCorrectImplementationForCreateFungibleToken() {
+		// given
+		given(input.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		given(decoder.decodeFungibleCreate(any(), any()))
+				.willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+
+		prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile();
+	}
+
+	@Test
+	void computeCallsCorrectImplementationForCreateNonFungibleToken() {
+		// given
+		given(input.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
+		given(decoder.decodeNonFungibleCreate(any(), any()))
+				.willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+
+		prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile();
+	}
+
+	@Test
+	void computeCallsCorrectImplementationForCreateFungibleTokenWithFees() {
+		// given
+		given(input.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES);
+		given(decoder.decodeFungibleCreateWithFees(any(), any()))
+				.willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+
+		prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile();
+	}
+
+	@Test
+	void computeCallsCorrectImplementationForCreateNonFungibleTokenWithFees() {
+		// given
+		given(input.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES);
+		given(decoder.decodeNonFungibleCreateWithFees(any(), any()))
+				.willReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
+
+		prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile();
+	}
+
+	private void prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile() {
+		// given
+		givenFrameContext();
+		given(syntheticTxnFactory.createTokenCreate(any()))
+				.willReturn(TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder()));
+		final var accounts = mock(TransactionalLedger.class);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		final var key = Mockito.mock(JKey.class);
+		given(accounts.get(any(), any())).willReturn(key);
+
+		// when
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
+
+		// then
+		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TokenCreatePrecompile);
 	}
 
 	@Test

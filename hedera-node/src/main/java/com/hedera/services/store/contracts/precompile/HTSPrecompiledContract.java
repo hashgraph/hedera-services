@@ -330,7 +330,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
-		this.messageFrame = messageFrame;
 		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
 
 		if (messageFrame.isStatic() && !isRedirectProxy) {
@@ -363,6 +362,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	void prepareFields(final MessageFrame messageFrame) {
+		this.messageFrame = messageFrame;
 		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
 		this.sideEffectsTracker = sideEffectsFactory.get();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
@@ -897,7 +897,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 *     	</li>
 	 * </ol>
 	 */
-	private class TokenCreatePrecompile implements Precompile {
+	protected class TokenCreatePrecompile implements Precompile {
 		protected TokenCreateWrapper tokenCreateOp;
 
 		@Override
@@ -1681,6 +1681,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	/* --- Only used by unit tests --- */
+
+	void setCreateLogicFactory(final CreateLogicFactory createLogicFactory) {
+		this.createLogicFactory = createLogicFactory;
+	}
+
 	void setMintLogicFactory(final MintLogicFactory mintLogicFactory) {
 		this.mintLogicFactory = mintLogicFactory;
 	}
