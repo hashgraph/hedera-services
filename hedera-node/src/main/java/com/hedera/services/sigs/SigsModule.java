@@ -37,7 +37,6 @@ import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.logic.PayerSigValidity;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -48,8 +47,6 @@ import dagger.Provides;
 import javax.inject.Singleton;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-
-import static com.hedera.services.state.logic.TerminalSigStatuses.TERMINAL_SIG_STATUSES;
 
 @Module
 public interface SigsModule {
@@ -90,12 +87,6 @@ public interface SigsModule {
 	@Singleton
 	static Predicate<TransactionBody> provideQueryPaymentTest(final NodeInfo nodeInfo) {
 		return PrecheckUtils.queryPaymentTestFor(nodeInfo);
-	}
-
-	@Provides
-	@Singleton
-	static Predicate<ResponseCodeEnum> provideTerminalSigStatusTest() {
-		return TERMINAL_SIG_STATUSES;
 	}
 
 	@Provides
