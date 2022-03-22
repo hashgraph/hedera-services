@@ -7,22 +7,42 @@ import "./IHederaTokenService.sol";
 
 contract KeyHelper is HederaTokenService {
 
+    using Bits for uint;
     address supplyContract;
 
+    function getDefaultKeys() internal view returns (IHederaTokenService.TokenKey[] memory keys) {
+        keys = new IHederaTokenService.TokenKey[](2);
+        keys[0] = getSingleKey(1, 1, "");
+        keys[1] = IHederaTokenService.TokenKey (getDuplexKeyType(4, 6), getKeyValueType(2, ""));
+    }
+
+    function getSingleKey(uint8 keyType, uint8 keyValueType, bytes memory key) internal view returns (IHederaTokenService.TokenKey memory tokenKey) {
+        tokenKey =  IHederaTokenService.TokenKey (getKeyType(keyType), getKeyValueType(keyValueType, key));
+    }
+
+    function getSingleKey(uint8 firstType, uint8 secondType, uint8 keyValueType, bytes memory key) internal view returns (IHederaTokenService.TokenKey memory tokenKey) {
+        tokenKey =  IHederaTokenService.TokenKey (getDuplexKeyType(firstType, secondType), getKeyValueType(keyValueType, key));
+    }
+
+    function getDuplexKeyType(uint8 firstType, uint8 secondType) internal pure returns (uint keyType) {
+        keyType.setBit(firstType);
+        keyType.setBit(secondType);
+    }
+
     function getKeyType(uint8 keyType) internal pure returns (uint) {
-        if(keyType == 1) {
+        if(keyType == 0) {
             return HederaTokenService.ADMIN_KEY_TYPE;
-        } else if(keyType == 2) {
+        } else if(keyType == 1) {
             return HederaTokenService.KYC_KEY_TYPE;
-        } else if(keyType == 3) {
+        } else if(keyType == 2) {
             return HederaTokenService.FREEZE_KEY_TYPE;
-        } else if(keyType == 4) {
+        } else if(keyType == 3) {
             return HederaTokenService.WIPE_KEY_TYPE;
-        } else if(keyType == 5) {
+        } else if(keyType == 4) {
             return HederaTokenService.SUPPLY_KEY_TYPE;
-        } else if(keyType == 6) {
+        } else if(keyType == 5) {
             return HederaTokenService.FEE_SCHEDULE_KEY_TYPE;
-        } else if(keyType == 7) {
+        } else if(keyType == 6) {
             return HederaTokenService.PAUSE_KEY_TYPE;
         }
 
@@ -41,5 +61,16 @@ contract KeyHelper is HederaTokenService {
         } else if(keyValueType == 5) {
             keyValue.delegatableContractId = supplyContract;
         }
+    }
+}
+
+library Bits {
+
+    uint constant internal ONE = uint(1);
+
+    // Sets the bit at the given 'index' in 'self' to '1'.
+    // Returns the modified value.
+    function setBit(uint self, uint8 index) internal pure returns (uint) {
+        return self | ONE << index;
     }
 }
