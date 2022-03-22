@@ -27,6 +27,16 @@ import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.STAKING_FUND_ACCOUNTS;
 
+/**
+ * Responsible for externalizing any state changes that happened during migration via child records,
+ * and then marking the work done via {@link MerkleNetworkContext#markMigrationRecordsStreamed()}.
+ *
+ * For example, in the v0.24.1 tag we are materializing two new accounts {@code 0.0.800} and {@code 0.0.801}
+ * that will receive staking funds. Without two synthetic {@code CryptoCreate}s in the record stream, mirror nodes
+ * won't know about these new staking accounts.
+ *
+ * Note that most upgrades will not include any such state changes; so no records will need to be streamed.
+ */
 @Singleton
 public class MigrationRecordsManager {
 	private static final Logger log = LogManager.getLogger(MigrationRecordsManager.class);
