@@ -27,14 +27,23 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fractionalFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -147,6 +156,64 @@ class SyntheticTxnFactoryTest {
 
 		assertEquals(fungible, txnBody.getTokenBurn().getToken());
 		assertEquals(amount, txnBody.getTokenBurn().getAmount());
+	}
+
+	@Test
+	void createsExpectedTokenCreate() {
+		// given
+		final var adminKey = new TokenCreateWrapper.KeyValueWrapper(
+				false, null, new byte[]{}, new byte[]{}, EntityIdUtils.contractIdFromEvmAddress(contractAddress)
+		);
+		final var multiKey = new TokenCreateWrapper.KeyValueWrapper(
+				false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[]{}, new byte[]{}, null
+		);
+		final var wrapper = createTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(BigInteger.valueOf(254), multiKey),
+				new TokenCreateWrapper.TokenKeyWrapper(BigInteger.ONE, adminKey))
+		);
+		wrapper.setFixedFees(List.of(fixedFee));
+		wrapper.setFractionalFees(List.of(fractionalFee));
+		wrapper.setRoyaltyFees(List.of(royaltyFee));
+
+		// when
+		final var result = subject.createTokenCreate(wrapper);
+		final var txnBody = result.build().getTokenCreation();
+
+		// then
+		assertTrue(result.hasTokenCreation());
+
+		assertEquals(TokenType.FUNGIBLE_COMMON, txnBody.getTokenType());
+		assertEquals("token", txnBody.getName());
+		assertEquals("symbol", txnBody.getSymbol());
+		assertEquals(account, txnBody.getTreasury());
+		assertEquals("memo", txnBody.getMemo());
+		assertEquals(TokenSupplyType.INFINITE, txnBody.getSupplyType());
+		assertEquals(Long.MAX_VALUE, txnBody.getInitialSupply());
+		assertEquals(Integer.MAX_VALUE, txnBody.getDecimals());
+		assertEquals(5054L, txnBody.getMaxSupply());
+		assertFalse(txnBody.getFreezeDefault());
+
+		// keys assertions
+		assertTrue(txnBody.hasAdminKey());
+		assertEquals(adminKey.asGrpc(), txnBody.getAdminKey());
+		assertTrue(txnBody.hasKycKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getKycKey());
+		assertTrue(txnBody.hasFreezeKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getFreezeKey());
+		assertTrue(txnBody.hasWipeKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getWipeKey());
+		assertTrue(txnBody.hasSupplyKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+		assertTrue(txnBody.hasFeeScheduleKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+		assertTrue(txnBody.hasPauseKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
+
+		// assert custom fees
+		assertEquals(3, txnBody.getCustomFeesCount());
+		assertEquals(fixedFee.asGrpc(), txnBody.getCustomFees(0));
+		assertEquals(fractionalFee.asGrpc(), txnBody.getCustomFees(1));
+		assertEquals(royaltyFee.asGrpc(), txnBody.getCustomFees(2));
 	}
 
 	@Test

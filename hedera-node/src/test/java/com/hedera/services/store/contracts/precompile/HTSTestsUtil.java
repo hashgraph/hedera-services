@@ -37,6 +37,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -280,4 +281,28 @@ public class HTSTestsUtil {
 					payer
 			)
 	);
+
+	public static final TokenCreateWrapper createTokenCreateWrapperWithKeys(final List<TokenCreateWrapper.TokenKeyWrapper> keys) {
+		return new TokenCreateWrapper(
+				true,
+				"token",
+				"symbol",
+				account,
+				"memo",
+				false,
+				BigInteger.valueOf(Long.MAX_VALUE),
+				BigInteger.valueOf(Integer.MAX_VALUE),
+				5054L,
+				false,
+				keys,
+				new TokenCreateWrapper.TokenExpiryWrapper(442L, payer, 555L)
+		);
+	}
+
+	public static final TokenCreateWrapper.FixedFeeWrapper fixedFee =
+			new TokenCreateWrapper.FixedFeeWrapper(5, token, false, false, receiver);
+	public static final TokenCreateWrapper.FractionalFeeWrapper fractionalFee =
+			new TokenCreateWrapper.FractionalFeeWrapper(4, 5, 10, 20, true, receiver);
+	public static final TokenCreateWrapper.RoyaltyFeeWrapper royaltyFee =
+			new TokenCreateWrapper.RoyaltyFeeWrapper(4, 5, fixedFee, receiver);
 }

@@ -1,0 +1,601 @@
+package com.hedera.services.store.contracts.precompile;
+
+/*
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.token.CreateLogic;
+import com.hedera.services.txns.token.process.DissociationFactory;
+import com.hedera.services.txns.token.validators.CreateChecks;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.fee.FeeObject;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendingChildConsTime;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+@ExtendWith(MockitoExtension.class)
+class CreatePrecompileTest {
+
+	@Mock
+	private Bytes pretendArguments;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private GasCalculator gasCalculator;
+	@Mock
+	private MessageFrame frame;
+	@Mock
+	private TxnAwareEvmSigsVerifier sigsVerifier;
+	@Mock
+	private AccountRecordsHistorian recordsHistorian;
+	@Mock
+	private DecodingFacade decoder;
+	@Mock
+	private EncodingFacade encoder;
+	@Mock
+	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
+	@Mock
+	private SideEffectsTracker sideEffects;
+	@Mock
+	private TransactionBody.Builder mockSynthBodyBuilder;
+	@Mock
+	private TokenCreateTransactionBody tokenCreateTransactionBody;
+	@Mock
+	private ExpirableTxnRecord.Builder mockRecordBuilder;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
+	@Mock
+	private HederaStackedWorldStateUpdater worldUpdater;
+	@Mock
+	private WorldLedgers wrappedLedgers;
+	@Mock
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nfts;
+	@Mock
+	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRels;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accounts;
+	@Mock
+	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+	@Mock
+	private ExpiringCreations creator;
+	@Mock
+	private ImpliedTransfersMarshal impliedTransfersMarshal;
+	@Mock
+	private DissociationFactory dissociationFactory;
+	@Mock
+	private FeeCalculator feeCalculator;
+	@Mock
+	private FeeObject mockFeeObject;
+	@Mock
+	private StateView stateView;
+	@Mock
+	private PrecompilePricingUtils precompilePricingUtils;
+	@Mock
+	private ContractAliases aliases;
+	@Mock
+	private UsagePricesProvider resourceCosts;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private CreateChecks createChecks;
+	@Mock
+	private EntityIdSource entityIdSource;
+	@Mock
+	private HTSPrecompiledContract.CreateLogicFactory createLogicFactory;
+	@Mock
+	private CreateLogic createLogic;
+	@Mock
+	private TypedTokenStore typedTokenStore;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
+
+	private HTSPrecompiledContract subject;
+
+	@BeforeEach
+	void setUp() {
+		subject = new HTSPrecompiledContract(
+				validator, dynamicProperties, gasCalculator,
+				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
+				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
+		subject.setCreateLogicFactory(createLogicFactory);
+		subject.setTokenStoreFactory(tokenStoreFactory);
+		subject.setAccountStoreFactory(accountStoreFactory);
+		subject.setSideEffectsFactory(() -> sideEffects);
+	}
+
+	@Test
+	void createFungibleHappyPathWorks() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(
+						BigInteger.ONE,
+						new TokenCreateWrapper.KeyValueWrapper(
+								false,
+								EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+								new byte[]{},
+								new byte[]{},
+								null)
+				))
+		);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		given(decoder.decodeFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+	}
+
+	@Test
+	void createNonFungibleHappyPathWorks() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(
+						BigInteger.ONE,
+						new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[]{},
+								new byte[JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH], null)
+				))
+		);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
+		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(sigsVerifier.cryptoKeyIsActive(any())).willReturn(true);
+
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+	}
+
+	@Test
+	void createFungibleWithFeesHappyPathWorks() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(
+						BigInteger.ONE,
+						new TokenCreateWrapper.KeyValueWrapper(
+								false,
+								null,
+								new byte[]{},
+								new byte[]{},
+								EntityIdUtils.contractIdFromEvmAddress(contractAddress))
+		)));
+		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
+		tokenCreateWrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES);
+		given(decoder.decodeFungibleCreateWithFees(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+	}
+
+	@Test
+	void createNonFungibleWithFeesHappyPathWorks() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(
+						BigInteger.ONE,
+						new TokenCreateWrapper.KeyValueWrapper(
+								true,
+								null,
+								new byte[]{},
+								new byte[]{},
+								null))
+		));
+		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
+		tokenCreateWrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES);
+		given(decoder.decodeNonFungibleCreateWithFees(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(accounts.get(any(), any()))
+				.willReturn(new JContractIDKey(EntityIdUtils.contractIdFromEvmAddress(contractAddress)));
+
+		prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper);
+	}
+
+	@Test
+	void createFailurePath() {
+		givenMinimalFrameContext();
+
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.aliases()).willReturn(aliases);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(
+						BigInteger.ONE,
+						new TokenCreateWrapper.KeyValueWrapper(
+								false,
+								null,
+								new byte[JEd25519Key.ED25519_BYTE_LENGTH],
+								new byte[]{},
+								null
+						))
+				)
+		);
+		given(decoder.decodeFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(syntheticTxnFactory.createTokenCreate(tokenCreateWrapper)).willReturn(mockSynthBodyBuilder);
+		given(mockSynthBodyBuilder.build())
+				.willReturn(TransactionBody.newBuilder().setTokenCreation(tokenCreateTransactionBody).build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
+		final var validator = Mockito.mock(Function.class);
+		given(createChecks.validatorForConsTime(any())).willReturn(validator);
+		given(validator.apply(any())).willReturn(ResponseCodeEnum.OK);
+		given(recordsHistorian.nextFollowingChildConsensusTime())
+				.willReturn(pendingChildConsTime);
+		given(sigsVerifier.cryptoKeyIsActive(any(JKey.class)))
+				.willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
+		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
+				.willReturn(mockRecordBuilder);
+		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
+
+		// when:
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		final var result = subject.computeInternal(frame);
+
+		// then:
+		assertEquals(invalidSigResult, result);
+
+		verify(createLogic, never()).create(
+				pendingChildConsTime.getEpochSecond(),
+				EntityIdUtils.accountIdFromEvmAddress(senderAddress),
+				tokenCreateTransactionBody
+		);
+		verify(wrappedLedgers, never()).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void createReturnsNullAndSetsRevertReasonWhenKeyWithMultipleKeyTypesIsPresent() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(
+				List.of(
+						new TokenCreateWrapper.TokenKeyWrapper(
+								BigInteger.ONE,
+								new TokenCreateWrapper.KeyValueWrapper(
+										false,
+										EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+										new byte[JEd25519Key.ED25519_BYTE_LENGTH],
+										new byte[]{},
+										null
+								)
+				))
+		);
+
+		prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
+	}
+
+	@Test
+	void createReturnsNullAndSetsRevertReasonsWhenKeyWithNoKeyTypeToApplyToPresent() {
+		// test-specific preparations
+		final var tokenCreateWrapper =
+				createTokenCreateWrapperWithKeys(
+						List.of(
+								new TokenCreateWrapper.TokenKeyWrapper(
+									BigInteger.ZERO,
+									new TokenCreateWrapper.KeyValueWrapper(
+										false,
+										EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+										new byte[]{},
+										new byte[]{},
+										null)
+								),
+								new TokenCreateWrapper.TokenKeyWrapper(
+									BigInteger.ONE,
+									new TokenCreateWrapper.KeyValueWrapper(
+										false,
+										null,
+										new byte[JEd25519Key.ED25519_BYTE_LENGTH],
+										new byte[]{},
+										null)
+								))
+				);
+
+		prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
+	}
+
+	@Test
+	void createReturnsNullAndSetsRevertReasonWhenMultipleKeysForSameKeyTypePresent() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(
+				List.of(
+						new TokenCreateWrapper.TokenKeyWrapper(
+								BigInteger.ONE,
+								new TokenCreateWrapper.KeyValueWrapper(
+										false,
+										EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+										new byte[]{},
+										new byte[]{},
+										null)
+						),
+						new TokenCreateWrapper.TokenKeyWrapper(
+								BigInteger.ONE,
+								new TokenCreateWrapper.KeyValueWrapper(
+										false,
+										null,
+										new byte[]{},
+										new byte[]{},
+										EntityIdUtils.contractIdFromEvmAddress(contractAddress))
+						))
+		);
+
+		prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
+	}
+
+	@Test
+	void createReturnsNullAndSetsRevertReasonWhenSenderKeyCannotBeDecoded() throws DecoderException {
+		// test-specific preparations
+		final var tokenCreateWrapper = Mockito.mock(TokenCreateWrapper.class);
+		doThrow(DecoderException.class).when(tokenCreateWrapper).setAllInheritedKeysTo(any(JKey.class));
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		final var keyMock = Mockito.mock(JKey.class);
+		given(accounts.get(any(), any())).willReturn(keyMock);
+
+		prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
+	}
+
+	@Test
+	void createReturnsNullAndSetsRevertReasonWhenInitSupplyIsBiggerThanMaxLong() {
+		// test-specific preparations
+		final var invalidTokenCreate = new TokenCreateWrapper(
+				true,
+				"",
+				"",
+				null,
+				"",
+				false,
+				new BigInteger("9223372036854775809"), // LONG_MAX (9,223,372,036,854,775,807) + 2
+				BigInteger.ZERO,
+				0L,
+				false,
+				Collections.emptyList(),
+				null
+		);
+
+		prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
+	}
+
+	@Test
+	void createReturnsNullAndSetsRevertReasonWhenDecimalsIsBiggerThanMaxInt()  {
+		// test-specific preparations
+		final var invalidTokenCreate = new TokenCreateWrapper(
+				true,
+				"",
+				"",
+				null,
+				"",
+				false,
+				BigInteger.ZERO,
+				BigInteger.valueOf(Long.MAX_VALUE),
+				0L,
+				false,
+				Collections.emptyList(),
+				null
+		);
+
+		prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
+	}
+
+	@Test
+	void createReturnsNullAndSetsRevertReasonWhenInvalidFixedFeeIsPresent()  {
+		// test-specific preparations
+		final var invalidTokenCreate = createTokenCreateWrapperWithKeys(Collections.emptyList());
+		final var fixedFeeMock = mock(TokenCreateWrapper.FixedFeeWrapper.class);
+		given(fixedFeeMock.getFixedFeePayment())
+				.willReturn(TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT);
+		invalidTokenCreate.setFixedFees(List.of(fixedFeeMock));
+
+		prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
+	}
+
+	private void prepareAndAssertCreateHappyPathSucceeds(TokenCreateWrapper tokenCreateWrapper) {
+		givenMinimalFrameContext();
+		givenLedgers();
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.aliases()).willReturn(aliases);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+
+		given(mockSynthBodyBuilder.build())
+				.willReturn(TransactionBody.newBuilder().setTokenCreation(tokenCreateTransactionBody).build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTokenCreate(tokenCreateWrapper)).willReturn(mockSynthBodyBuilder);
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		given(mockSynthBodyBuilder.getTokenCreation()).willReturn(tokenCreateTransactionBody);
+		given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
+		final var tokenCreateValidator = Mockito.mock(Function.class);
+		given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
+		given(tokenCreateValidator.apply(any())).willReturn(ResponseCodeEnum.OK);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
+		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels,
+				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
+				.willReturn(typedTokenStore);
+		given(createLogicFactory.newTokenCreateLogic(
+				accountStore,
+				typedTokenStore,
+				dynamicProperties,
+				sigImpactHistorian,
+				sideEffects,
+				entityIdSource,
+				validator
+		)).willReturn(createLogic);
+		given(recordsHistorian.nextFollowingChildConsensusTime())
+				.willReturn(pendingChildConsTime);
+		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
+				.willReturn(mockRecordBuilder);
+		given(mockRecordBuilder.getReceiptBuilder())
+				.willReturn(TxnReceipt.newBuilder().setTokenId(
+						EntityId.fromGrpcTokenId(TokenID.newBuilder().setTokenNum(1L).build())
+				));
+		given(encoder.encodeCreateSuccess(any())).willReturn(successResult);
+
+
+		// when:
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		final var result = subject.computeInternal(frame);
+
+		// then:
+		assertEquals(successResult, result);
+		// and:
+		verify(createLogic).create(
+				pendingChildConsTime.getEpochSecond(),
+				EntityIdUtils.accountIdFromEvmAddress(senderAddress),
+				tokenCreateTransactionBody
+		);
+		verify(wrappedLedgers).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+
+	private void prepareAndAssertRevertReasonIsSetAndNullIsReturned(TokenCreateWrapper tokenCreateWrapper) {
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		doCallRealMethod().when(frame).setRevertReason(any());
+		doCallRealMethod().when(frame).getRevertReason();
+
+		// when:
+		final var result = subject.compute(pretendArguments, frame);
+
+		// then:
+		assertNull(result);
+
+		// and
+		verify(frame).setRevertReason(any());
+		verifyNoInteractions(createLogic);
+		verify(wrappedLedgers, never()).commit();
+		verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	private void givenMinimalFrameContext() {
+		given(frame.getContractAddress()).willReturn(contractAddr);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+	}
+
+	private void givenLedgers() {
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
+		given(wrappedLedgers.nfts()).willReturn(nfts);
+		given(wrappedLedgers.tokens()).willReturn(tokens);
+	}
+}

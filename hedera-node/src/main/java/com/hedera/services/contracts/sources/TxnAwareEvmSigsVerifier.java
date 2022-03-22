@@ -115,7 +115,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 
 	@Override
 	public boolean cryptoKeyIsActive(final JKey key) {
-		return isCryptoKeyActiveInFrame(key);
+		return key != null && isCryptoKeyActiveInFrame(key);
 	}
 
 	private boolean isCryptoKeyActiveInFrame(final JKey key) {
