@@ -106,12 +106,6 @@ class ImpliedTransfersMarshalTest {
 	private AliasResolver aliasResolver;
 	@Mock
 	private Predicate<CryptoTransferTransactionBody> aliasCheck;
-	@Mock
-	private CryptoTransferTransactionBody cryptoTransferTransactionBody;
-	@Mock
-	private TransferList hbarAdjustsWrapper;
-	@Mock
-	private TokenTransferList tokenAdjustsList;
 
 	private ImpliedTransfersMarshal subject;
 
@@ -427,6 +421,7 @@ class ImpliedTransfersMarshalTest {
 		given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
 		given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
 		given(dynamicProperties.isAutoCreationEnabled()).willReturn(flag);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
 	}
 
 	private void setupFullFixture() {
@@ -497,6 +492,7 @@ class ImpliedTransfersMarshalTest {
 	private final int maxFeeNesting = 1;
 	private final int maxBalanceChanges = 20;
 	private final boolean areNftsEnabled = true;
+	private boolean areAllowancesEnabled = true;
 	private final ImpliedTransfersMeta.ValidationProps propsWithAutoCreation = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
 			maxExplicitTokenAdjusts,
@@ -505,7 +501,7 @@ class ImpliedTransfersMarshalTest {
 			maxBalanceChanges,
 			areNftsEnabled,
 			true,
-			true);
+			areAllowancesEnabled);
 	private final ImpliedTransfersMeta.ValidationProps propsNoAutoCreation = new ImpliedTransfersMeta.ValidationProps(
 			maxExplicitHbarAdjusts,
 			maxExplicitTokenAdjusts,
@@ -514,7 +510,7 @@ class ImpliedTransfersMarshalTest {
 			maxBalanceChanges,
 			areNftsEnabled,
 			false,
-			true);
+			areAllowancesEnabled);
 
 	private final AccountID aModel = asAccount("1.2.3");
 	private final AccountID bModel = asAccount("2.3.4");
