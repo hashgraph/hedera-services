@@ -377,10 +377,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
-	public MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens() {
-		return getChild(StateChildIndices.UNIQUE_TOKENS);
-	}
-
 	public VirtualMap<ContractKey, ContractValue> contractStorage() {
 		return getChild(StateChildIndices.CONTRACT_STORAGE);
 	}

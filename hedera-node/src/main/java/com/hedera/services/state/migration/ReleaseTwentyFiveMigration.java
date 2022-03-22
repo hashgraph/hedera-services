@@ -32,7 +32,8 @@ public class ReleaseTwentyFiveMigration {
 		log.info("Migrating state from version {} to {}", deserializedVersion, RELEASE_0250_VERSION);
 
 		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
-		final MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens = initializingState.legacyUniqueTokens();
+		final MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens = initializingState.getChild(
+				StateChildIndices.UNIQUE_TOKENS);
 		final VirtualMap<UniqueTokenKey, UniqueTokenValue> vmUniqueTokens =
 				virtualMapFactory.newVirtualizedUniqueTokenStorage();
 		AtomicInteger count = new AtomicInteger();
