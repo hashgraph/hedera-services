@@ -33,7 +33,6 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -54,7 +53,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -62,7 +63,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -91,9 +91,9 @@ class TransferLogicTest {
 	private TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
 		put(fungibleAllowanceId, initialAllowance);
 	}};
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
-		put(fungibleAllowanceId, FcTokenAllowance.from(true));
-		put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
+	private TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>() {{
+		add(fungibleAllowanceId);
+		add(nftAllowanceId);
 	}};
 
 	@Mock
@@ -243,8 +243,7 @@ class TransferLogicTest {
 		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2)));
 
 		updateAllowanceMaps();
-		assertTrue(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(2L));
-		assertFalse(nftAllowances.get(nftAllowanceId).getSerialNumbers().contains(1L));
+		assertTrue(nftAllowances.contains(nftAllowanceId));
 	}
 
 	private AccountAmount aliasedAa(final ByteString alias, final long amount) {
@@ -277,7 +276,7 @@ class TransferLogicTest {
 		accountsLedger.create(owner);
 		accountsLedger.set(owner, AccountProperty.CRYPTO_ALLOWANCES, cryptoAllowances);
 		accountsLedger.set(owner, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
-		accountsLedger.set(owner, AccountProperty.EXPLICIT_NFT_ALLOWANCES, nftAllowances);
+		accountsLedger.set(owner, AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES, nftAllowances);
 		accountsLedger.set(owner, AccountProperty.BALANCE, initialBalance);
 		accountsLedger.commit();
 	}
@@ -287,7 +286,7 @@ class TransferLogicTest {
 				(Map<EntityNum, Long>) accountsLedger.get(owner, AccountProperty.CRYPTO_ALLOWANCES));
 		fungibleAllowances = new TreeMap<>(
 				(Map<FcTokenAllowanceId, Long>) accountsLedger.get(owner, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES));
-		nftAllowances = new TreeMap<>(
-				(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(owner, AccountProperty.EXPLICIT_NFT_ALLOWANCES));
+		nftAllowances = new TreeSet<>(
+				(Set<FcTokenAllowanceId>) accountsLedger.get(owner, AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES));
 	}
 }

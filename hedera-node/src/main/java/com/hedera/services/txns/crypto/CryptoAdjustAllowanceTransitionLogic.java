@@ -25,9 +25,10 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
@@ -56,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
 	private final AdjustAllowanceChecks adjustAllowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final SideEffectsTracker sideEffectsTracker;
@@ -65,11 +67,13 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	public CryptoAdjustAllowanceTransitionLogic(
 			final TransactionContext txnCtx,
 			final AccountStore accountStore,
+			final TypedTokenStore tokenStore,
 			final AdjustAllowanceChecks allowanceChecks,
 			final GlobalDynamicProperties dynamicProperties,
 			final SideEffectsTracker sideEffectsTracker) {
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
+		this.tokenStore = tokenStore;
 		this.adjustAllowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
@@ -189,7 +193,6 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final var owner = allowance.getOwner();
 
 			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var mutableExplicitNftAllowances = accountToAdjust.getMutableExplicitNftAllowances();
 			final var mutableApprovedForAllNftsAllowances = accountToAdjust.getMutableApprovedForAllNftsAllowances();
 
 			final var spenderAccount = allowance.getSpender();
@@ -197,6 +200,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = allowance.getTokenId();
 			final var spender = Id.fromGrpcAccount(spenderAccount);
+			final var nfts = new ArrayList<UniqueToken>();
 			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
 
 			if (approvedForAll.getValue()) {
@@ -205,18 +209,20 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 				mutableApprovedForAllNftsAllowances.add(key);
 			} else {
 				for (var serialNum : serialNums) {
-					final var key = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNum);
+					final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum);
 					if (serialNum < 0) {
-						mutableExplicitNftAllowances.remove(key);
+						nft.setSpender(Id.DEFAULT);
 					} else {
-						mutableExplicitNftAllowances.put(key, spender.asEntityNum());
+						nft.setSpender(spender);
 					}
+					nfts.add(nft);
 				}
 			}
 			validateAllowanceLimitsOn(accountToAdjust);
+			tokenStore.persistNfts(nfts);
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-			sideEffectsTracker.setExplicitNftAllowances(accountToAdjust.getId().asEntityNum(), mutableExplicitNftAllowances);
-			sideEffectsTracker.setApproveForAllNfts(accountToAdjust.getId().asEntityNum(), mutableApprovedForAllNftsAllowances);
+			// TODO track persisted nfts
+			sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), mutableApprovedForAllNftsAllowances, nfts);
 		}
 	}
 

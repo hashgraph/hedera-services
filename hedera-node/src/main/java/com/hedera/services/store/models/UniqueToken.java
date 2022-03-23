@@ -33,6 +33,7 @@ public class UniqueToken {
 	private long serialNumber;
 	private RichInstant creationTime;
 	private Id owner;
+	private Id spender;
 	private byte[] metadata;
 
 	public UniqueToken(Id tokenId, long serialNumber) {
@@ -84,6 +85,14 @@ public class UniqueToken {
 
 	public void setOwner(Id owner) {
 		this.owner = owner;
+	}
+
+	public Id getSpender() {
+		return spender;
+	}
+
+	public void setSpender(Id spender) {
+		this.spender = spender;
 	}
 
 	public byte[] getMetadata() {

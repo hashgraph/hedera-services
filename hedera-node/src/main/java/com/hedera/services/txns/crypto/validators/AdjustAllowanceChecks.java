@@ -205,15 +205,6 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			}
 			final var ownerAccount = fetchResult.getLeft();
 
-			final var existingAllowances = ownerAccount.getExplicitNftAllowances();
-			final var existingSerials = new ArrayList<Long>();
-
-			for (final var nftId : existingAllowances.keySet()) {
-				if (tokenId.equals(nftId.tokenId())) {
-					existingSerials.add(nftId.serialNo());
-				}
-			}
-
 			var validity = validateTokenBasics(ownerAccount, spender, tokenId);
 			if (validity != OK) {
 				return validity;
@@ -222,7 +213,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			if (!approvedForAll) {
 				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
 				// state
-				validity = validateSerialNums(serialNums, ownerAccount, token, existingSerials);
+				validity = validateSerialNums(serialNums, ownerAccount, token);
 				if (validity != OK) {
 					return validity;
 				}
@@ -240,14 +231,11 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 	 * 		owner account
 	 * @param token
 	 * 		token for which allowance is related to
-	 * @param existingSerials
-	 * 		existing serial numbers for the nft on owner account
 	 * @return response code after validation
 	 */
 	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
 			final Account ownerAccount,
-			final Token token,
-			List<Long> existingSerials) {
+			final Token token) {
 		if (hasRepeatedSerials(serialNums)) {
 			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 		}
@@ -259,10 +247,6 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 		for (var serial : serialNums) {
 			var absoluteSerial = absolute(serial);
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), absoluteSerial);
-
-			if ((serial < 0 && !existingSerials.contains(absoluteSerial)) || absoluteSerial == 0) {
-				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
-			}
 			if (!nftsMap.get().containsKey(EntityNumPair.fromNftId(nftId))) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
@@ -270,6 +254,9 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			final var nft = nftsMap.get().get(EntityNumPair.fromNftId(nftId));
 			if (!validOwner(nft, ownerAccount, token)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+			}
+			if (absoluteSerial == 0) {
+				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
 		}
 

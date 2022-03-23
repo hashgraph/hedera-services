@@ -30,7 +30,6 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
@@ -44,18 +43,21 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPLICIT_NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
+import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
@@ -117,7 +119,11 @@ public class TransferLogic {
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
 			} else {
-				validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
+				validity = accountsLedger.validate(
+						change.accountId(),
+						scopedCheck
+								.setBalanceChange(change)
+								.setNftsLedger(nftsLedger));
 
 				if (validity == OK) {
 					validity = tokenStore.tryTokenChange(change);
@@ -200,18 +206,11 @@ public class TransferLogic {
 	private void adjustNftAllowance(final BalanceChange change, final AccountID ownerID) {
 		final var allowanceId = FcTokenAllowanceId.from(
 				change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
-		final var nftAllowances = new TreeMap<>(
-				(Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(ownerID, EXPLICIT_NFT_ALLOWANCES));
-		final var currentAllowance = nftAllowances.get(allowanceId);
-		if (!currentAllowance.isApprovedForAll()) {
-			var mutableAllowanceList = new ArrayList<>(currentAllowance.getSerialNumbers());
-			mutableAllowanceList.remove(change.serialNo());
-			if (mutableAllowanceList.isEmpty()) {
-				nftAllowances.remove(allowanceId);
-			} else {
-				nftAllowances.put(allowanceId, FcTokenAllowance.from(mutableAllowanceList));
-			}
-			accountsLedger.set(ownerID, EXPLICIT_NFT_ALLOWANCES, nftAllowances);
+		final var approveForAllNftsAllowances = new TreeSet<>(
+				(Set<FcTokenAllowanceId>) accountsLedger.get(ownerID, APPROVE_FOR_ALL_NFTS_ALLOWANCES));
+
+		if (!approveForAllNftsAllowances.contains(allowanceId)) {
+			nftsLedger.set(change.nftId(), SPENDER, MISSING_ENTITY_ID);
 		}
 	}
 

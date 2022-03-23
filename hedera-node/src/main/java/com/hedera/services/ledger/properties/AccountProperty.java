@@ -27,11 +27,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -239,17 +237,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::getFungibleTokenAllowancesUnsafe;
-		}
-	},
-	EXPLICIT_NFT_ALLOWANCES {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setExplicitNftAllowances((SortedMap<NftId, EntityNum>) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getExplicitNftAllowancesUnsafe;
 		}
 	},
 	APPROVE_FOR_ALL_NFTS_ALLOWANCES  {

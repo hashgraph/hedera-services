@@ -127,16 +127,8 @@ public class AllowanceHelpers {
 	}
 
 	public static List<GrantedNftAllowance> getNftAllowancesList(final MerkleAccount account) {
-		if (!account.state().getExplicitNftAllowances().isEmpty()) {
+		if (!account.state().getApproveForAllNfts().isEmpty()) {
 			List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
-			for (var a : account.state().getExplicitNftAllowances().entrySet()) {
-				final var explicitNftAllowance = GrantedNftAllowance.newBuilder();
-				explicitNftAllowance.setTokenId(a.getKey().tokenId());
-				explicitNftAllowance.setSpender(a.getValue().toGrpcAccountId());
-				explicitNftAllowance.setApprovedForAll(false);
-				explicitNftAllowance.addSerialNumbers(a.getKey().serialNo());
-				nftAllowances.add(explicitNftAllowance.build());
-			}
 			for (var a : account.state().getApproveForAllNfts()) {
 				final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
 				approveForAllNftsAllowance.setTokenId(a.getTokenNum().toGrpcTokenId());

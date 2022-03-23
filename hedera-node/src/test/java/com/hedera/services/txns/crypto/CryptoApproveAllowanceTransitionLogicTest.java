@@ -25,9 +25,9 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -55,7 +55,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -78,6 +80,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@Mock
 	private AccountStore accountStore;
 	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
 	private ApproveAllowanceChecks allowanceChecks;
 	@Mock
 	private PlatformTxnAccessor accessor;
@@ -91,7 +95,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, accountStore, allowanceChecks,
+		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, accountStore, tokenStore, allowanceChecks,
 				dynamicProperties);
 	}
 
@@ -118,7 +122,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAcccount.getExplicitNftAllowances().size());
+		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 
 		verify(accountStore).commitAccount(ownerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
@@ -135,13 +139,13 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(0, payerAcccount.getCryptoAllowances().size());
 		assertEquals(0, payerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(0, payerAcccount.getExplicitNftAllowances().size());
+		assertEquals(0, payerAcccount.getApprovedForAllNftsAllowances().size());
 
 		subject.doStateTransition();
 
 		assertEquals(1, payerAcccount.getCryptoAllowances().size());
 		assertEquals(1, payerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, payerAcccount.getExplicitNftAllowances().size());
+		assertEquals(1, payerAcccount.getApprovedForAllNftsAllowances().size());
 
 		verify(accountStore).commitAccount(payerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
@@ -162,10 +166,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAcccount.getExplicitNftAllowances().size());
-		assertEquals(0, ownerAcccount.getExplicitNftAllowances()
-				.get(FcTokenAllowanceId.from(EntityNum.fromTokenId(token2),
-						EntityNum.fromAccountId(spender1))).getSerialNumbers().size());
+		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 		verify(accountStore).commitAccount(ownerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
@@ -187,7 +188,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(0, ownerAcccount.getExplicitNftAllowances().size());
+		assertEquals(0, ownerAcccount.getApprovedForAllNftsAllowances().size());
 		verify(accountStore, never()).commitAccount(ownerAcccount);
 	}
 
@@ -221,7 +222,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		subject.doStateTransition();
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(0, ownerAcccount.getExplicitNftAllowances().size());
+		assertEquals(0, ownerAcccount.getApprovedForAllNftsAllowances().size());
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
 
@@ -241,7 +242,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAcccount.getExplicitNftAllowances().size());
+		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 
 		verify(accountStore).commitAccount(ownerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
@@ -254,7 +255,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAcccount.getExplicitNftAllowances().size());
+		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 
 		givenValidTxnCtx();
 
@@ -268,7 +269,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAcccount.getExplicitNftAllowances().size());
+		assertEquals(2, ownerAcccount.getApprovedForAllNftsAllowances().size());
 
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
@@ -276,18 +277,17 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private void setUpOwnerWithExistingKeys(final Account ownerAcccount) {
 		Map<EntityNum, Long> cryptoAllowances = new TreeMap<>();
 		Map<FcTokenAllowanceId, Long> tokenAllowances = new TreeMap<>();
-		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
+		Set<FcTokenAllowanceId> nftAllowances = new TreeSet<>();
 		final var id = FcTokenAllowanceId.from(EntityNum.fromTokenId(token1),
 				EntityNum.fromAccountId(spender1));
 		final var Nftid = FcTokenAllowanceId.from(EntityNum.fromTokenId(token2),
 				EntityNum.fromAccountId(spender1));
-		final var val = FcTokenAllowance.from(false, List.of(1L, 100L));
 		cryptoAllowances.put(EntityNum.fromAccountId(spender1), 10000L);
 		tokenAllowances.put(id, 100000L);
-		nftAllowances.put(Nftid, val);
+		nftAllowances.add(Nftid);
 		ownerAcccount.setCryptoAllowances(cryptoAllowances);
 		ownerAcccount.setFungibleTokenAllowances(tokenAllowances);
-		ownerAcccount.setExplicitNftAllowances(nftAllowances);
+		ownerAcccount.setApproveForAllNfts(nftAllowances);
 	}
 
 	private void givenTxnCtxWithZeroAmount() {
@@ -331,7 +331,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 								.addAllNftAllowances(nftAllowances)
 				).build();
 
-		ownerAcccount.setExplicitNftAllowances(new HashMap<>());
+		ownerAcccount.setApproveForAllNfts(new TreeSet<>());
 		ownerAcccount.setCryptoAllowances(new HashMap<>());
 		ownerAcccount.setFungibleTokenAllowances(new HashMap<>());
 	}
@@ -356,7 +356,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				).build();
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
-		ownerAcccount.setExplicitNftAllowances(new HashMap<>());
+		ownerAcccount.setApproveForAllNfts(new TreeSet<>());
 		ownerAcccount.setCryptoAllowances(new HashMap<>());
 		ownerAcccount.setFungibleTokenAllowances(new HashMap<>());
 	}
@@ -395,7 +395,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				).build();
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
-		payerAcccount.setExplicitNftAllowances(new HashMap<>());
+		payerAcccount.setApproveForAllNfts(new TreeSet<>());
 		payerAcccount.setCryptoAllowances(new HashMap<>());
 		payerAcccount.setFungibleTokenAllowances(new HashMap<>());
 	}

@@ -313,14 +313,29 @@ public class TypedTokenStore {
 	public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
 		for (long serialNumber : serialNumbers) {
-			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serialNumber);
-			final var merkleUniqueToken = uniqueTokens.getImmutableRef(nftId);
-			validateUsable(merkleUniqueToken);
-			final var uniqueToken = new UniqueToken(token.getId(), serialNumber);
-			initModelFields(uniqueToken, merkleUniqueToken);
+			final var uniqueToken = loadUniqueToken(token.getId(), serialNumber);
 			loadedUniqueTokens.put(serialNumber, uniqueToken);
 		}
 		token.setLoadedUniqueTokens(loadedUniqueTokens);
+	}
+
+	/**
+	 * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to
+	 * implement business logic in a transaction.
+	 *
+	 * @param tokenId
+	 * 		TokenId of the NFT
+	 * @param serialNum
+	 * 		Serial number of the NFT
+	 * @return The {@link UniqueToken} model of the requested unique token
+	 */
+	public UniqueToken loadUniqueToken(Id tokenId, Long serialNum) {
+		final var nftId = NftId.withDefaultShardRealm(tokenId.num(), serialNum);
+		final var merkleUniqueToken = uniqueTokens.getImmutableRef(nftId);
+		validateUsable(merkleUniqueToken);
+		final var uniqueToken = new UniqueToken(tokenId, serialNum);
+		initModelFields(uniqueToken, merkleUniqueToken);
+		return uniqueToken;
 	}
 
 	/**
@@ -427,6 +442,14 @@ public class TypedTokenStore {
 		sideEffectsTracker.trackTokenChanges(token);
 	}
 
+	public void persistNfts(List<UniqueToken> nfts) {
+		for (final var nft :nfts) {
+			final var merkleNft = new MerkleUniqueToken(nft.getOwner().asEntityId(), nft.getMetadata(), nft.getCreationTime());
+			merkleNft.setSpender(nft.getSpender().asEntityId());
+			uniqueTokens.put(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()), merkleNft);
+		}
+	}
+
 	private void destroyRemoved(List<UniqueToken> nfts) {
 		for (final var nft : nfts) {
 			uniqueTokens.remove(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()));
@@ -526,6 +549,7 @@ public class TypedTokenStore {
 		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
 		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
 		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
+		uniqueToken.setSpender(immutableUniqueToken.getSpender().asId());
 	}
 
 	@FunctionalInterface

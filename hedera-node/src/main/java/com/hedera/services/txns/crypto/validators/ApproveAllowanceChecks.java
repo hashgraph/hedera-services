@@ -215,6 +215,8 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 	 * 		owner account
 	 * @param token
 	 * 		token for which allowance is related to
+	 * @param tokenStore
+	 * 		tokenStore to validate if nft serials that the allowance is granted has the correct owner
 	 * @return response code after validation
 	 */
 	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,

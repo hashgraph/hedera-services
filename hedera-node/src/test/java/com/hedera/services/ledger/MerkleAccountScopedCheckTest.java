@@ -23,7 +23,6 @@ package com.hedera.services.ledger;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -37,8 +36,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
@@ -193,7 +193,7 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void failsAsExpectedWhenSpenderIsNotGrantedAllowanceOnNFT() {
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getExplicitNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(revokedSpender);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
 
@@ -204,7 +204,7 @@ class MerkleAccountScopedCheckTest {
 	void failsAsExpectedWhenSpenderIsHasNoAllowanceOnSpecificNFT() {
 		when(balanceChange.serialNo()).thenReturn(4L);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getExplicitNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
 
@@ -214,7 +214,7 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void happyPathWithSpenderIsHasAllowanceOnAllNFT() {
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getExplicitNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(fungibleTokenID));
 
@@ -225,7 +225,7 @@ class MerkleAccountScopedCheckTest {
 	void happyPathWithSpenderIsHasAllowanceOnSpecificNFT() {
 		when(balanceChange.serialNo()).thenReturn(2L);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getExplicitNftAllowances()).thenReturn(NFT_ALLOWANCES);
+		when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
 
@@ -261,11 +261,11 @@ class MerkleAccountScopedCheckTest {
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(nonFungibleTokenID), payerNum);
 	private static final Map<EntityNum, Long> CRYPTO_ALLOWANCES = new HashMap<>();
 	private static final Map<FcTokenAllowanceId, Long> FUNGIBLE_ALLOWANCES = new HashMap<>();
-	private static final Map<FcTokenAllowanceId, FcTokenAllowance> NFT_ALLOWANCES = new HashMap<>();
+	private static final Set<FcTokenAllowanceId> NFT_ALLOWANCES = new TreeSet<>();
 	static {
 		CRYPTO_ALLOWANCES.put(payerNum, 100L);
 		FUNGIBLE_ALLOWANCES.put(fungibleAllowanceId, 100L);
-		NFT_ALLOWANCES.put(fungibleAllowanceId, FcTokenAllowance.from(true));
-		NFT_ALLOWANCES.put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
+		NFT_ALLOWANCES.add(fungibleAllowanceId);
+		NFT_ALLOWANCES.add(nftAllowanceId);
 	}
 }

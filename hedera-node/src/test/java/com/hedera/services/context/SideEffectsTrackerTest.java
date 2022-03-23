@@ -254,7 +254,7 @@ class SideEffectsTrackerTest {
 	void tracksAndResetsAllowanceAdjusts() {
 		subject.setFungibleTokenAllowances(ownerNum, fungibleAllowance);
 		subject.setCryptoAllowances(ownerNum, cryptoAllowance);
-		subject.setExplicitNftAllowances(ownerNum, nftAllowance);
+		subject.setNftAllowances(ownerNum, nftAllowance);
 
 		final var trackedCryptoAllowances = subject.getCryptoAllowances();
 		assertTrue(trackedCryptoAllowances.containsKey(ownerNum));

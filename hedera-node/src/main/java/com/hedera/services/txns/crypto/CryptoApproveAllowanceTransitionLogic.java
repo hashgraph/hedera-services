@@ -24,9 +24,10 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
@@ -38,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
 	private final ApproveAllowanceChecks allowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Map<Long, Account> entitiesChanged;
@@ -61,10 +64,12 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	public CryptoApproveAllowanceTransitionLogic(
 			final TransactionContext txnCtx,
 			final AccountStore accountStore,
+			final TypedTokenStore tokenStore,
 			final ApproveAllowanceChecks allowanceChecks,
 			final GlobalDynamicProperties dynamicProperties) {
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
+		this.tokenStore = tokenStore;
 		this.allowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
 		this.entitiesChanged = new HashMap<>();
@@ -171,7 +176,6 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		for (var allowance : nftAllowances) {
 			final var owner = allowance.getOwner();
 			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var mutableExplicitNftAllowances = accountToApprove.getMutableExplicitNftAllowances();
 			final var approveForAllNftsSet = accountToApprove.getMutableApprovedForAllNftsAllowances();
 
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
@@ -180,6 +184,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			final var approvedForAll = allowance.getApprovedForAll();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = allowance.getTokenId();
+			final var nfts = new ArrayList<UniqueToken>();
 
 			if (approvedForAll.getValue()) {
 				final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
@@ -187,12 +192,13 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				approveForAllNftsSet.add(key);
 			} else {
 				for (var serialNum : serialNums) {
-					final var key = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNum);
-					mutableExplicitNftAllowances.put(key, spender.asEntityNum());
+					nfts.add(tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum));
 				}
 			}
 
 			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
+			tokenStore.persistNfts(nfts);
+			// TODO track persisted nfts.
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 		}
 	}
