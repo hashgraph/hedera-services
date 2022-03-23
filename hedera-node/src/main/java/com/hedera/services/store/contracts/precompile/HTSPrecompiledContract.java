@@ -497,7 +497,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case ABI_ID_CREATE_FUNGIBLE_TOKEN,
 							ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
 							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
-							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> new TokenCreatePrecompile();
+							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES
+							->
+							(dynamicProperties.isHTSPrecompileCreateEnabled())
+									? new TokenCreatePrecompile()
+									: null;
 					default -> null;
 				};
 		if (precompile != null) {

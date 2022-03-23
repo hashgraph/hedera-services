@@ -649,6 +649,7 @@ class HTSPrecompiledContractTest {
 	private void prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile() {
 		// given
 		givenFrameContext();
+		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(syntheticTxnFactory.createTokenCreate(any()))
 				.willReturn(TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder()));
 		final var accounts = mock(TransactionalLedger.class);
@@ -716,6 +717,23 @@ class HTSPrecompiledContractTest {
 
 		// then
 		assertNull(result);
+	}
+
+	@Test
+	void computeReturnsNullForTokenCreateWhenNotEnabled() {
+		// given
+		givenFrameContext();
+		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(false);
+		given(input.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+
+		// when
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
+		var result = subject.compute(input, messageFrame);
+
+		// then
+		assertNull(result);
+		assertNull(subject.getPrecompile());
 	}
 
 	@Test

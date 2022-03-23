@@ -104,6 +104,7 @@ public class GlobalDynamicProperties {
 	private boolean redirectTokenCalls;
 	private boolean enableTraceability;
 	private boolean enableAllowances;
+	private boolean enableHTSPrecompileCreate;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -190,6 +191,7 @@ public class GlobalDynamicProperties {
 		redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
 		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
 		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
+		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
 	}
 
 	public int maxTokensPerAccount() {
@@ -462,5 +464,9 @@ public class GlobalDynamicProperties {
 
 	public boolean areAllowancesEnabled() {
 		return enableAllowances;
+	}
+
+	public boolean isHTSPrecompileCreateEnabled() {
+		return enableHTSPrecompileCreate;
 	}
 }

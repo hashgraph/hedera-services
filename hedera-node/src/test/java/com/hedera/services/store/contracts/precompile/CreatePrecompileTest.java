@@ -366,6 +366,7 @@ class CreatePrecompileTest {
 
 	@Test
 	void createFailsWhenCreateChecksAreNotSuccessful() {
+		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
@@ -633,6 +634,7 @@ class CreatePrecompileTest {
 
 
 	private void prepareAndAssertRevertReasonIsSetAndNullIsReturned(TokenCreateWrapper tokenCreateWrapper) {
+		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
@@ -655,6 +657,7 @@ class CreatePrecompileTest {
 	}
 
 	private void givenMinimalFrameContext() {
+		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);

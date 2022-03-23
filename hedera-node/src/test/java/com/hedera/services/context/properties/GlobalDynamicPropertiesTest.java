@@ -83,6 +83,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.isCreate2Enabled());
 		assertTrue(subject.isRedirectTokenCallsEnabled());
 		assertFalse(subject.areAllowancesEnabled());
+		assertTrue(subject.isHTSPrecompileCreateEnabled());
 	}
 
 	@Test
@@ -204,6 +205,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isCreate2Enabled());
 		assertFalse(subject.isRedirectTokenCallsEnabled());
 		assertTrue(subject.areAllowancesEnabled());
+		assertFalse(subject.isHTSPrecompileCreateEnabled());
 	}
 
 	@Test
@@ -361,6 +363,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("contracts.enableTraceability"))
 				.willReturn((i + 59) % 2 == 0);
 		given(properties.getBooleanProperty("hedera.allowances.isEnabled")).willReturn((i + 60) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
+				.willReturn((i + 61) % 2 == 0);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {
