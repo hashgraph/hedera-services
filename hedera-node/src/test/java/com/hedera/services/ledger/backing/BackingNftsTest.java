@@ -39,6 +39,7 @@ import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
@@ -133,5 +134,10 @@ class BackingNftsTest {
 	@Test
 	void sizePropagatesCallToDelegate() {
 		assertEquals(delegate.size(), subject.size());
+	}
+
+	@Test
+	void idSetShouldThrowUnsupportedOperationException() {
+		assertThrows(UnsupportedOperationException.class, subject::idSet);
 	}
 }
