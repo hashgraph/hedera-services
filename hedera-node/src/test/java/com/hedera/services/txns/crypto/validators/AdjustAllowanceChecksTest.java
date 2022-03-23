@@ -27,7 +27,6 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -57,7 +56,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
@@ -141,7 +142,7 @@ class AdjustAllowanceChecksTest {
 
 	private final Map<EntityNum, Long> existingCryptoAllowances = new TreeMap<>();
 	private final Map<FcTokenAllowanceId, Long> existingTokenAllowances = new TreeMap<>();
-	private final Map<FcTokenAllowanceId, FcTokenAllowance> existingNftAllowances = new TreeMap<>();
+	private final Set<FcTokenAllowanceId> existingApproveForAllNftsAllowances = new TreeSet<>();
 	private List<Long> existingSerials = new ArrayList<>();
 
 	private TransactionBody cryptoAdjustAllowanceTxn;
@@ -165,22 +166,12 @@ class AdjustAllowanceChecksTest {
 	}
 
 	private void addExistingAllowancesAndSerials() {
-		List<Long> serials = new ArrayList<>();
-		serials.add(30L);
-		serials.add(12L);
-
 		existingCryptoAllowances.put(EntityNum.fromAccountId(spender1), 20L);
 		existingCryptoAllowances.put(EntityNum.fromAccountId(spender2), 10L);
 		existingTokenAllowances.put(
 				FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)), 10L);
-		existingNftAllowances.put(
-				FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1)),
-				FcTokenAllowance.from(false, serials));
-		existingNftAllowances.put(
-				FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)),
-				FcTokenAllowance.from(true, new ArrayList<>()));
-
-		existingSerials.addAll(serials);
+		existingApproveForAllNftsAllowances.add(
+				FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)));
 	}
 
 	@Test
@@ -238,7 +229,7 @@ class AdjustAllowanceChecksTest {
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
-		given(owner.getExplicitNftAllowances()).willReturn(existingNftAllowances);
+		given(owner.getApprovedForAllNftsAllowances()).willReturn(existingApproveForAllNftsAllowances);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 
 
@@ -552,7 +543,7 @@ class AdjustAllowanceChecksTest {
 		final var serials = List.of(1L, 10L);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(false);
 
-		var validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
+		var validity = subject.validateSerialNums(serials, payer, token2Model);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
 
@@ -565,7 +556,7 @@ class AdjustAllowanceChecksTest {
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
 		given(token.getOwner()).willReturn(EntityId.MISSING_ENTITY_ID);
 
-		var validity = subject.validateSerialNums(serials, treasury, token2Model, existingSerials);
+		var validity = subject.validateSerialNums(serials, treasury, token2Model);
 		assertEquals(OK, validity);
 	}
 
@@ -580,7 +571,7 @@ class AdjustAllowanceChecksTest {
 				EntityId.fromGrpcAccountId(spender1));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 
-		var validity = subject.validateSerialNums(serials, owner, token2Model, existingSerials);
+		var validity = subject.validateSerialNums(serials, owner, token2Model);
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
 
@@ -589,7 +580,7 @@ class AdjustAllowanceChecksTest {
 		final var serials = List.of(1L, 10L);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(false);
 
-		var validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
+		var validity = subject.validateSerialNums(serials, payer, token2Model);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
 
@@ -597,11 +588,7 @@ class AdjustAllowanceChecksTest {
 	void validatesIfNegativeSerialsNotInExistingList() {
 		final var serials = List.of(-100L, 10L);
 
-		var validity = subject.validateSerialNums(serials, payer, token2Model,
-				existingNftAllowances.get(
-								FcTokenAllowanceId.from(EntityNum.fromTokenId(token2),
-										EntityNum.fromAccountId(spender1)))
-						.getSerialNumbers());
+		var validity = subject.validateSerialNums(serials, payer, token2Model);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
 
@@ -615,7 +602,7 @@ class AdjustAllowanceChecksTest {
 
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 
-		var validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
+		var validity = subject.validateSerialNums(serials, payer, token2Model);
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
 
@@ -624,11 +611,11 @@ class AdjustAllowanceChecksTest {
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 
 		var serials = List.of(1L, 10L, 1L);
-		var validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
+		var validity = subject.validateSerialNums(serials, payer, token2Model);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 
 		serials = List.of(10L, 4L);
-		validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
+		validity = subject.validateSerialNums(serials, payer, token2Model);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 20L);
@@ -643,21 +630,21 @@ class AdjustAllowanceChecksTest {
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(tokenNft2))).willReturn(true);
 
 		serials = List.of(20L, 4L);
-		validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
+		validity = subject.validateSerialNums(serials, payer, token2Model);
 		assertEquals(OK, validity);
 	}
 
 	@Test
 	void validateRepeatedNegativeSerials() {
 		final var serials = List.of(-1L, 10L, 1L);
-		var validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
+		var validity = subject.validateSerialNums(serials, payer, token2Model);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 	}
 
 	@Test
 	void validateGivingExistingDuplicateSerials() {
 		final var serials = List.of(12L, 1L);
-		var validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
+		var validity = subject.validateSerialNums(serials, payer, token2Model);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 	}
 
@@ -665,7 +652,7 @@ class AdjustAllowanceChecksTest {
 	@Test
 	void validateIfSerialsEmptyWithoutApproval() {
 		final List<Long> serials = List.of();
-		var validity = subject.validateSerialNums(serials, payer, token2Model, existingSerials);
+		var validity = subject.validateSerialNums(serials, payer, token2Model);
 		assertEquals(EMPTY_ALLOWANCES, validity);
 	}
 
@@ -746,7 +733,7 @@ class AdjustAllowanceChecksTest {
 
 		given(payer.getCryptoAllowances()).willReturn(existingCryptoAllowances);
 		given(payer.getFungibleTokenAllowances()).willReturn(existingTokenAllowances);
-		given(payer.getExplicitNftAllowances()).willReturn(existingNftAllowances);
+		given(payer.getApprovedForAllNftsAllowances()).willReturn(existingApproveForAllNftsAllowances);
 		given(payer.isAssociatedWith(token2Model.getId())).willReturn(true);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);

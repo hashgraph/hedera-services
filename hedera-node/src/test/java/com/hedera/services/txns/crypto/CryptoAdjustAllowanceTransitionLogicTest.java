@@ -26,7 +26,6 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -57,7 +56,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -311,18 +312,17 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	private void setUpOwnerWithSomeKeys(final Account ownerAcccount) {
 		Map<EntityNum, Long> cryptoAllowances = new TreeMap<>();
 		Map<FcTokenAllowanceId, Long> tokenAllowances = new TreeMap<>();
-		Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
+		Set<FcTokenAllowanceId> approveForAllNftAllowances = new TreeSet<>();
 		final var id = FcTokenAllowanceId.from(EntityNum.fromTokenId(token2),
 				EntityNum.fromAccountId(spender2));
 		final var Nftid = FcTokenAllowanceId.from(EntityNum.fromTokenId(token2),
 				EntityNum.fromAccountId(spender1));
-		final var val = FcTokenAllowance.from(false, List.of(1L, 100L));
 		cryptoAllowances.put(EntityNum.fromAccountId(spender2), 10000L);
 		tokenAllowances.put(id, 100000L);
-		nftAllowances.put(Nftid, val);
+		approveForAllNftAllowances.add(Nftid);
 		ownerAcccount.setCryptoAllowances(cryptoAllowances);
 		ownerAcccount.setFungibleTokenAllowances(tokenAllowances);
-		ownerAcccount.getApprovedForAllNftsAllowances(nftAllowances);
+		ownerAcccount.setApproveForAllNfts(approveForAllNftAllowances);
 	}
 
 	private void givenTxnCtxWithZeroAmount() {
@@ -354,7 +354,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 								.addAllTokenAllowances(tokenAllowances)
 								.addAllNftAllowances(nftAllowances)
 				).build();
-		ownerAcccount.getApprovedForAllNftsAllowances(new HashMap<>());
+		ownerAcccount.setApproveForAllNfts(new TreeSet<>());
 		ownerAcccount.setCryptoAllowances(new HashMap<>());
 		ownerAcccount.setFungibleTokenAllowances(new HashMap<>());
 	}
@@ -380,7 +380,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 				).build();
 		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
 
-		ownerAcccount.getApprovedForAllNftsAllowances(new HashMap<>());
+		ownerAcccount.setApproveForAllNfts(new TreeSet<>());
 		ownerAcccount.setCryptoAllowances(new HashMap<>());
 		ownerAcccount.setFungibleTokenAllowances(new HashMap<>());
 	}
@@ -402,15 +402,13 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		existingCryptoAllowances.put(EntityNum.fromAccountId(spender2), 10L);
 		existingTokenAllowances.put(
 				FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)), 10L);
-		existingNftAllowances.put(
-				FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1)),
-				FcTokenAllowance.from(false, serials));
-		existingNftAllowances.put(
-				FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)),
-				FcTokenAllowance.from(true, new ArrayList<>()));
+		existingNftAllowances.add(
+				FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1)));
+		existingNftAllowances.add(
+				FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)));
 		ownerAcccount.setCryptoAllowances(existingCryptoAllowances);
 		ownerAcccount.setFungibleTokenAllowances(existingTokenAllowances);
-		ownerAcccount.getApprovedForAllNftsAllowances(existingNftAllowances);
+		ownerAcccount.setApproveForAllNfts(existingNftAllowances);
 	}
 
 	private static final AccountID spender1 = asAccount("0.0.123");
@@ -440,6 +438,6 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 
 	private final Map<EntityNum, Long> existingCryptoAllowances = new TreeMap<>();
 	private final Map<FcTokenAllowanceId, Long> existingTokenAllowances = new TreeMap<>();
-	private final Map<FcTokenAllowanceId, FcTokenAllowance> existingNftAllowances = new TreeMap<>();
+	private final Set<FcTokenAllowanceId> existingNftAllowances = new TreeSet<>();
 
 }
