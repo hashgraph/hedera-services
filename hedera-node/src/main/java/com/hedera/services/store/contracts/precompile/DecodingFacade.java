@@ -158,8 +158,8 @@ public class DecodingFacade {
 	private static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
 	private static final String FRACTIONAL_FEE_DECODER = "(int64,int64,int64,int64,bool,bytes32)";
 
-	private static final String ROYALTY_FEE = "(uint32,uint32,(uint32,address,bool,bool,address),address)";
-	private static final String ROYALTY_FEE_DECODER = "(int64,int64,(int64,bytes32,bool,bool,bytes32),bytes32)";
+	private static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
+	private static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
 
 	private static final String TOKEN_CREATE_STRUCT = "(string,string,address,string,bool,uint32,bool,"
 			+ TOKEN_KEY + "[]," + EXPIRY + ")";
@@ -569,9 +569,25 @@ public class DecodingFacade {
 		for (final var royaltyFeeTuple : royaltyFeesTuples) {
 			final var numerator = (long) royaltyFeeTuple.get(0);
 			final var denominator = (long) royaltyFeeTuple.get(1);
-			final var fixedFee = decodeFixedFees(new Tuple[]{royaltyFeeTuple.get(2)}, aliasResolver).get(0);
-			final var feeCollector = convertLeftPaddedAddressToAccountId(
-					(byte[]) royaltyFeeTuple.get(3), aliasResolver);
+
+			// When at least 1 of the following 3 values is different from its default value,
+			// we treat it as though the user has tried to specify a fallbackFixedFee
+			final var fixedFeeAmount = (long) royaltyFeeTuple.get(2);
+			final var fixedFeeTokenId =
+					convertAddressBytesToTokenID((byte[]) royaltyFeeTuple.get(3));
+			final var fixedFeeUseHbars = (Boolean) royaltyFeeTuple.get(4);
+			FixedFeeWrapper fixedFee = null;
+			if (fixedFeeAmount != 0 || fixedFeeTokenId.getTokenNum() != 0 || fixedFeeUseHbars) {
+				fixedFee = new FixedFeeWrapper(
+						fixedFeeAmount,
+						fixedFeeTokenId.getTokenNum() != 0 ? fixedFeeTokenId : null,
+						fixedFeeUseHbars,
+						false,
+						null);
+			}
+
+			final var feeCollector =
+					convertLeftPaddedAddressToAccountId((byte[]) royaltyFeeTuple.get(5), aliasResolver);
 			decodedRoyaltyFees.add(new RoyaltyFeeWrapper(numerator, denominator, fixedFee,
 					feeCollector.getAccountNum() != 0 ? feeCollector : null));
 		}
