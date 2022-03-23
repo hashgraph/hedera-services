@@ -82,7 +82,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
 public final class ExpectedCustomThrottles {
-	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_TWENTY = EnumSet.of(
+	public static final Set<HederaFunctionality> OPS_FOR_RELEASE_TWENTY_FIVE = EnumSet.of(
 			CryptoCreate,
 			CryptoTransfer,
 			CryptoUpdate,

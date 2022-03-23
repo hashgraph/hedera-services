@@ -215,6 +215,15 @@ public class CryptoOpsUsage {
 		}
 	}
 
+	public void cryptoDeleteAllowanceUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoDeleteAllowanceMeta cryptoDeleteAllowanceMeta,
+			final UsageAccumulator accumulator) {
+
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+		accumulator.addBpt(cryptoDeleteAllowanceMeta.getMsgBytesUsed());
+	}
+
 	private long getAdjustedBytes(final CryptoAdjustAllowanceMeta cryptoAdjustMeta, final ExtantCryptoContext ctx) {
 		long adjustedBytesCount = 0;
 		final var adjustedCryptoBytes = getChangedCryptoKeys(cryptoAdjustMeta.getCryptoAllowances().keySet(),

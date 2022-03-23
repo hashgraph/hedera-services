@@ -33,6 +33,7 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
@@ -80,6 +81,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
@@ -447,6 +449,25 @@ class AccessorBasedUsagesTest {
 		subject.assess(sigUsage, txnAccessor, accumulator);
 
 		verify(cryptoOpsUsage).cryptoAdjustAllowanceUsage(sigUsage, baseMeta, opMeta, cryptoContext, accumulator);
+	}
+
+	@Test
+	void worksAsExpectedForCryptoDeleteAllowance() {
+		final var baseMeta = new BaseTransactionMeta(100, 0);
+		final var opMeta = CryptoDeleteAllowanceMeta.newBuilder()
+				.msgBytesUsed(112)
+				.effectiveNow(Instant.now().getEpochSecond())
+				.build();
+		final var accumulator = new UsageAccumulator();
+
+		given(txnAccessor.getFunction()).willReturn(CryptoDeleteAllowance);
+		given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
+		given(txnAccessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
+		given(txnAccessor.getSpanMapAccessor().getCryptoDeleteAllowanceMeta(any())).willReturn(opMeta);
+
+		subject.assess(sigUsage, txnAccessor, accumulator);
+
+		verify(cryptoOpsUsage).cryptoDeleteAllowanceUsage(sigUsage, baseMeta, opMeta, accumulator);
 	}
 
 	@Test

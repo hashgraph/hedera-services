@@ -21,50 +21,53 @@ package com.hedera.services.usage.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.NftWipeAllowance;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import static com.hedera.services.usage.crypto.CryptoContextUtils.countSerials;
-import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
+import java.util.List;
+
+import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_DELETE_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.TOKEN_DELETE_ALLOWANCE_SIZE;
 
 /**
- * Metadata for CryptoApproveAllowance
+ * Metadata for CryptoDeleteAllowance
  */
 public class CryptoDeleteAllowanceMeta {
-	private int aggregatedNftAllowancesWithSerials;
 	private final long effectiveNow;
 	private final long msgBytesUsed;
 
 	public CryptoDeleteAllowanceMeta(Builder builder) {
-		aggregatedNftAllowancesWithSerials = builder.aggregatedNftAllowancesWithSerials;
 		effectiveNow = builder.effectiveNow;
 		msgBytesUsed = builder.msgBytesUsed;
 	}
 
-	public CryptoDeleteAllowanceMeta(CryptoApproveAllowanceTransactionBody cryptoApproveTxnBody,
+	public CryptoDeleteAllowanceMeta(CryptoDeleteAllowanceTransactionBody cryptoDeleteTxnBody,
 			long transactionValidStartSecs) {
-		aggregatedNftAllowancesWithSerials = countSerials(cryptoApproveTxnBody.getNftAllowancesList());
 		effectiveNow = transactionValidStartSecs;
-		msgBytesUsed = bytesUsedInTxn(cryptoApproveTxnBody);
+		msgBytesUsed = bytesUsedInTxn(cryptoDeleteTxnBody);
 	}
 
-	private int bytesUsedInTxn(CryptoApproveAllowanceTransactionBody op) {
-		return op.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE
-				+ op.getTokenAllowancesCount() * TOKEN_ALLOWANCE_SIZE
-				+ op.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE
-				+ countSerials(op.getNftAllowancesList()) * LONG_SIZE;
+	private int bytesUsedInTxn(CryptoDeleteAllowanceTransactionBody op) {
+		return op.getCryptoAllowancesCount() * CRYPTO_DELETE_ALLOWANCE_SIZE
+				+ op.getTokenAllowancesCount() * TOKEN_DELETE_ALLOWANCE_SIZE
+				+ op.getNftAllowancesCount() * NFT_DELETE_ALLOWANCE_SIZE
+				+ countNftDeleteSerials(op.getNftAllowancesList()) * LONG_SIZE;
+	}
+
+	public static int countNftDeleteSerials(final List<NftWipeAllowance> nftAllowancesList) {
+		int totalSerials = 0;
+		for (var allowance : nftAllowancesList) {
+			totalSerials += allowance.getSerialNumbersCount();
+		}
+		return totalSerials;
 	}
 
 	public static Builder newBuilder() {
 		return new CryptoDeleteAllowanceMeta.Builder();
-	}
-
-	public int getAggregatedNftAllowancesWithSerials() {
-		return aggregatedNftAllowancesWithSerials;
 	}
 
 	public long getEffectiveNow() {
@@ -76,15 +79,8 @@ public class CryptoDeleteAllowanceMeta {
 	}
 
 	public static class Builder {
-		private int aggregatedNftAllowancesWithSerials;
 		private long effectiveNow;
 		private long msgBytesUsed;
-
-		public CryptoDeleteAllowanceMeta.Builder aggregatedNftAllowancesWithSerials(
-				int aggregatedNftAllowancesWithSerials) {
-			this.aggregatedNftAllowancesWithSerials = aggregatedNftAllowancesWithSerials;
-			return this;
-		}
 
 		public CryptoDeleteAllowanceMeta.Builder effectiveNow(long now) {
 			this.effectiveNow = now;
@@ -118,7 +114,6 @@ public class CryptoDeleteAllowanceMeta {
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("aggregatedNftAllowancesWithSerials", aggregatedNftAllowancesWithSerials)
 				.add("effectiveNow", effectiveNow)
 				.add("msgBytesUsed", msgBytesUsed)
 				.toString();
