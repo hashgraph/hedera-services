@@ -103,7 +103,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 			final var tokensMap = accountToWipe.getMutableFungibleTokenAllowances();
 
 			for (Map.Entry<FcTokenAllowanceId, Long> e : tokensMap.entrySet()) {
-				if (e.getKey().getTokenNum().equals(tokenId.getTokenNum())) {
+				if (e.getKey().getTokenNum().longValue() == tokenId.getTokenNum()) {
 					tokensMap.remove(e.getKey());
 				}
 			}
