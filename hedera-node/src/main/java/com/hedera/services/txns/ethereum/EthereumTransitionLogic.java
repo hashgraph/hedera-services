@@ -20,59 +20,101 @@ package com.hedera.services.txns.ethereum;
  * ‍
  */
 
+import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
+import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.bouncycastle.util.encoders.Hex;
 
 import javax.inject.Inject;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+
 public class EthereumTransitionLogic implements PreFetchableTransition {
-	private static final Logger log = LogManager.getLogger(EthereumTransitionLogic.class);
 
 	private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(100_000_000);
 
 	private final TransactionContext txnCtx;
 	private final ExpandHandleSpanMapAccessor spanMapAccessor;
 	private final ContractCallTransitionLogic contractCallTransitionLogic;
+	private final ContractCreateTransitionLogic contractCreateTransitionLogic;
+	private final AliasManager aliasManager;
+	private final HederaFs hfs;
+	private final byte[] chainId;
 
 	@Inject
 	public EthereumTransitionLogic(
 			final TransactionContext txnCtx,
 			final ExpandHandleSpanMapAccessor spanMapAccessor,
-			final ContractCallTransitionLogic contractCallTransitionLogic
-	) {
+			final ContractCallTransitionLogic contractCallTransitionLogic,
+			final ContractCreateTransitionLogic contractCreateTransitionLogic,
+			final HederaFs hfs,
+			GlobalDynamicProperties globalDynamicProperties,
+			AliasManager aliasManager) {
 		this.txnCtx = txnCtx;
 		this.spanMapAccessor = spanMapAccessor;
 		this.contractCallTransitionLogic = contractCallTransitionLogic;
+		this.contractCreateTransitionLogic = contractCreateTransitionLogic;
+		this.hfs = hfs;
+		this.chainId = Integers.toBytes(globalDynamicProperties.getChainId());
+		this.aliasManager = aliasManager;
 	}
 
 	@Override
 	public void doStateTransition() {
-		var syntheticTxBody = spanMapAccessor.getEthTxBodyMeta(txnCtx.accessor());
-		var txBody = txnCtx.accessor().getTxn();
+		var syntheticTxBody = getOrCreateTransactionBody(txnCtx.accessor());
+		maybeUpdateCallData(txnCtx.accessor(), spanMapAccessor.getEthTxDataMeta(txnCtx.accessor()), txnCtx.accessor().getTxn().getEthereumTransaction());
+		var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor());
 
+		var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 
 		if (syntheticTxBody.hasContractCall()) {
-			contractCallTransitionLogic.doStateTransitionOperation(
-					syntheticTxBody,
-					EntityNum.fromAccountId(txBody.getEthereumTransaction().getSenderId()).toId());
+			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId());
+			//FIXME add gas, amount, callData to the TransactionRecord.
+		} else if (syntheticTxBody.hasContractCreateInstance()) {
+			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId());
 			//FIXME add gas, amount, callData to the TransactionRecord.
 		}
-		//FIXME ContractCreate
 		//TODO when processing token and topic calls add a new child tx record.
+	}
+
+	private TransactionBody getOrCreateTransactionBody(final TxnAccessor txnCtx) {
+		var txBody = spanMapAccessor.getEthTxBodyMeta(txnCtx);
+		if (txBody == null) {
+			txBody = createSyntheticTransactionBody(spanMapAccessor.getEthTxDataMeta(txnCtx));
+			spanMapAccessor.setEthTxBodyMeta(txnCtx, txBody);
+		}
+		return txBody;
+	}
+
+	private EthTxSigs getOrCreateEthSigs(final TxnAccessor txnCtx) {
+		var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(txnCtx);
+		if (ethTxSigs == null) {
+			ethTxSigs = spanMapAccessor.getEthTxDataMeta(txnCtx).extractSignatures();
+			spanMapAccessor.setEthTxSigsMeta(txnCtx, ethTxSigs);
+		}
+		return ethTxSigs;
 	}
 
 	@Override
@@ -82,23 +124,32 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
-		var txBody = spanMapAccessor.getEthTxBodyMeta(accessor);
-		//FIXME
-		// validate transactionData is set
-		// validate senderId is set
+		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
+		var txBody = getOrCreateTransactionBody(accessor);
 
-		if (txBody == null) {
-			// in submit precheck, not consensus precheck.  Don't validate synthetic TXes.
-			return ResponseCodeEnum.OK;
-		} else if (txBody.hasContractCall()) {
-			//FIXME eth specific checks
-			// does sender match the extracted signature?
-			// is the nonce valid?
-			// is the chainID correct?
+		if (ethTxData.chainId().length == 0 || Arrays.compare(chainId, ethTxData.chainId()) != 0) {
+			return ResponseCodeEnum.FAIL_INVALID; //FIXME ResponseCodeEnum.WRONG_CHAIN_ID
+		}
 
+		if (accessor.getExpandedSigStatus() == ResponseCodeEnum.OK) {
+			// this is not precheck, so do more involved checks
+			maybeUpdateCallData(accessor, ethTxData, txBody.getEthereumTransaction());
+			var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor());
+			var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
+			if (callingAccount == null) {
+				return ResponseCodeEnum.INVALID_ACCOUNT_ID; // FIXME new response code?
+			}
+			//TODO is the nonce valid?
+		}
+
+		if (txBody.hasContractCall()) {
 			return contractCallTransitionLogic.semanticCheck().apply(txBody);
-		} else { //FIXME
-			return ResponseCodeEnum.NOT_SUPPORTED; //FIXME create proper protobuf response code
+		} else if (txBody.hasContractCreateInstance()) {
+			return contractCreateTransitionLogic.semanticCheck().apply(txBody);
+		} else {
+			// This should only happen when we update the createSyntheticTransactionBody 
+			// and then forget to update this code.
+			return ResponseCodeEnum.FAIL_INVALID;
 		}
 	}
 
@@ -112,20 +163,54 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	@Override
 	public void preFetch(final TxnAccessor accessor) {
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
-		spanMapAccessor.setEthTxSigsMeta(accessor, ethTxData.extractSignatures());
 
+		EthereumTransactionBody op = accessor.getTxn().getEthereumTransaction();
+		ethTxData = maybeUpdateCallData(accessor, ethTxData, op);
+
+		var ethTxSigs = ethTxData.extractSignatures();
+		spanMapAccessor.setEthTxSigsMeta(accessor, ethTxSigs);
+
+		TransactionBody txBody = createSyntheticTransactionBody(ethTxData);
+
+		spanMapAccessor.setEthTxBodyMeta(accessor, txBody);
+		if (txBody.hasContractCall()) {
+			contractCallTransitionLogic.preFetchOperation(txBody.getContractCall());
+		}
+	}
+
+	private EthTxData maybeUpdateCallData(final TxnAccessor accessor, EthTxData ethTxData, final EthereumTransactionBody op) {
+		if ((ethTxData.callData() == null || ethTxData.callData().length == 0) && op.hasCallData()) {
+			var callDataFileId = op.getCallData();
+			validateTrue(hfs.exists(callDataFileId), INVALID_FILE_ID);
+			//TODO for now existing init codes are hex encoded.  We should make a way for them to be binary encoded.
+			byte[] callDataFile = Hex.decode(hfs.cat(callDataFileId));
+			validateFalse(callDataFile.length == 0, CONTRACT_FILE_EMPTY); // FIXME new failure response code
+			ethTxData = ethTxData.relpaceCallData(callDataFile);
+			spanMapAccessor.setEthTxDataMeta(accessor, ethTxData);
+		}
+		return ethTxData;
+	}
+
+	private TransactionBody createSyntheticTransactionBody(EthTxData ethTxData) {
 		//TODO short circuit direct calls to tokens and topics
-		if (ethTxData.to() != null) {
-			var op = ContractCallTransactionBody.newBuilder()
-					.setFunctionParameters(
-							ByteString.copyFrom(ethTxData.data(), ethTxData.callDataStart(),
-									ethTxData.callDataLength()))
+		if (ethTxData.to() != null && ethTxData.to().length != 0) {
+			var synthOp = ContractCallTransactionBody.newBuilder()
+					.setFunctionParameters(ByteString.copyFrom(ethTxData.callData()))
 					.setGas(ethTxData.gasLimit())
 					.setAmount(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
 					.setContractID(EntityIdUtils.contractIdFromEvmAddress(ethTxData.to())).build();
-			var txBody = TransactionBody.newBuilder().setContractCall(op).build();
-			spanMapAccessor.setEthTxBodyMeta(accessor, txBody);
-			contractCallTransitionLogic.preFetchOperation(op);
+			return TransactionBody.newBuilder().setContractCall(synthOp).build();
+		} else {
+			//FIXME we need a better solution.  Something like for precheck it's the default
+			//FIXME but in consensus we get the renewal of the calling account and update the operation?
+			var autoRenewPeriod = Duration.newBuilder().setSeconds(
+					java.time.Duration.ofDays(90).getSeconds()).build();
+			var synthOp = ContractCreateTransactionBody.newBuilder()
+					.setInitcodeBytes(ByteString.copyFrom(ethTxData.callData()))
+					.setGas(ethTxData.gasLimit())
+					.setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
+					.setAutoRenewPeriod(autoRenewPeriod);
+			return TransactionBody.newBuilder().setContractCreateInstance(synthOp).build();
 		}
 	}
 }

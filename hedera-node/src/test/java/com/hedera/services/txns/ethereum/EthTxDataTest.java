@@ -28,7 +28,7 @@ public class EthTxDataTest {
 		try {
 			var frontierTx = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
 			assertNotNull(frontierTx);
-			assertEquals(RAW_TX_TYPE_0, Hex.toHexString(frontierTx.data()));
+			assertEquals(RAW_TX_TYPE_0, Hex.toHexString(frontierTx.rawTx()));
 			assertEquals(EthTxData.EthTransactionType.LEGACY_ETHEREUM, frontierTx.type());
 			assertEquals("012a", Hex.toHexString(frontierTx.chainId()));
 			assertEquals(1, frontierTx.nonce());
@@ -38,8 +38,7 @@ public class EthTxDataTest {
 			assertEquals(98_304L, frontierTx.gasLimit());
 			assertEquals("7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181", Hex.toHexString(frontierTx.to()));
 			assertEquals(BigInteger.ZERO, frontierTx.value());
-			assertEquals(31, frontierTx.callDataStart());
-			assertEquals(2, frontierTx.callDataLength());
+			assertEquals("7653", Hex.toHexString(frontierTx.callData()));
 			assertEquals((byte[]) null, frontierTx.accessList());
 			assertEquals(0, frontierTx.recId());
 			assertEquals("0277", Hex.toHexString(frontierTx.v()));
@@ -62,7 +61,7 @@ public class EthTxDataTest {
 	public void extractEIP155Signature() {
 		var eip155Tx = EthTxData.populateEthTxData(Hex.decode(EIP155_DEMO));
 		assertNotNull(eip155Tx);
-		assertEquals(EIP155_DEMO, Hex.toHexString(eip155Tx.data()));
+		assertEquals(EIP155_DEMO, Hex.toHexString(eip155Tx.rawTx()));
 		assertEquals(EthTxData.EthTransactionType.LEGACY_ETHEREUM, eip155Tx.type());
 		assertEquals("01", Hex.toHexString(eip155Tx.chainId()));
 		assertEquals(9, eip155Tx.nonce());
@@ -72,8 +71,7 @@ public class EthTxDataTest {
 		assertEquals(21_000L, eip155Tx.gasLimit());
 		assertEquals("3535353535353535353535353535353535353535", Hex.toHexString(eip155Tx.to()));
 		assertEquals(new BigInteger("0de0b6b3a7640000", 16), eip155Tx.value());
-		assertEquals(0, eip155Tx.callDataStart());
-		assertEquals(0, eip155Tx.callDataLength());
+		assertEquals(0, eip155Tx.callData().length);
 		assertEquals((byte[]) null, eip155Tx.accessList());
 		assertEquals(0, eip155Tx.recId());
 		assertEquals("25", Hex.toHexString(eip155Tx.v()));
@@ -92,7 +90,7 @@ public class EthTxDataTest {
 	public void extractLondonSignature() {
 		var londonTx = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_2));
 		assertNotNull(londonTx);
-		assertEquals(RAW_TX_TYPE_2, Hex.toHexString(londonTx.data()));
+		assertEquals(RAW_TX_TYPE_2, Hex.toHexString(londonTx.rawTx()));
 		assertEquals(EthTxData.EthTransactionType.EIP1559, londonTx.type());
 		assertEquals("012a", Hex.toHexString(londonTx.chainId()));
 		assertEquals(2, londonTx.nonce());
@@ -102,8 +100,7 @@ public class EthTxDataTest {
 		assertEquals(98_304L, londonTx.gasLimit());
 		assertEquals("7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181", Hex.toHexString(londonTx.to()));
 		assertEquals(new BigInteger("0de0b6b3a7640000", 16), londonTx.value());
-		assertEquals(44, londonTx.callDataStart());
-		assertEquals(3, londonTx.callDataLength());
+		assertEquals("123456", Hex.toHexString(londonTx.callData()));
 		assertEquals("", Hex.toHexString(londonTx.accessList()));
 		assertEquals(1, londonTx.recId());
 		assertEquals((byte[]) null, londonTx.v());

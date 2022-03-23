@@ -20,11 +20,12 @@ package com.hedera.services.txns.ethereum;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
+import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
@@ -34,47 +35,37 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.CommonUtils;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class EthereumTransactionTransitionLogicTest {
 	final private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+	private final Instant consensusTime = Instant.now();
+	private final Account senderAccount = new Account(new Id(0, 0, 1002));
+	private final Account contractAccount = new Account(new Id(0, 0, 1006));
+	@Mock
+	OptionValidator optionValidator;
+	@Mock
+	HederaLedger hederaLedger;
+	@Mock
+	GlobalDynamicProperties globalDynamicProperties;
+	ContractCallTransitionLogic contractCallTransitionLogic;
+	ContractCreateTransitionLogic contractCreateTransitionLogic;
+	EthereumTransitionLogic subject;
 	private int gas = 1_234;
 	private long sent = 1_234L;
-
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
@@ -88,6 +79,8 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private CallEvmTxProcessor evmTxProcessor;
 	@Mock
+	private CreateEvmTxProcessor createEvmTxProcessor;
+	@Mock
 	private GlobalDynamicProperties properties;
 	@Mock
 	private CodeCache codeCache;
@@ -96,21 +89,19 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private AliasManager aliasManager;
 	@Mock
-	private ExpandHandleSpanMapAccessor spanMapAccessor;
-
+	private HederaFs hfs;
 	private TransactionBody contractCallTxn;
-	private final Instant consensusTime = Instant.now();
-	private final Account senderAccount = new Account(new Id(0, 0, 1002));
-	private final Account contractAccount = new Account(new Id(0, 0, 1006));
-	ContractCallTransitionLogic contractCallTransitionLogic;
-	EthereumTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
 		contractCallTransitionLogic = new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
 				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager);
-		subject = new EthereumTransitionLogic(txnCtx, null, contractCallTransitionLogic);
+		contractCreateTransitionLogic = new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator,
+				worldState, recordService, createEvmTxProcessor, hederaLedger, globalDynamicProperties,
+				sigImpactHistorian);
+		subject = new EthereumTransitionLogic(txnCtx, null, contractCallTransitionLogic, contractCreateTransitionLogic,
+				hfs, globalDynamicProperties, aliasManager);
 	}
 
 	@Test

@@ -51,6 +51,7 @@ import java.util.function.Predicate;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODEBYTES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -102,9 +103,14 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
-		var contractCreateTxn = txnCtx.accessor().getTxn();
+		var contractCallTxn = txnCtx.accessor().getTxn();
+		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
+		doStateTransitionOperation(contractCallTxn, senderId);
+	}
+
+	public void doStateTransitionOperation(final TransactionBody contractCreateTxn, final Id senderId) {
+		/* --- Translate from gRPC types --- */
 		var op = contractCreateTxn.getContractCreateInstance();
-		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
 		final var proxyAccount = op.hasProxyAccountID() ? Id.fromGrpcAccount(op.getProxyAccountID()) : Id.DEFAULT;
 		var key = op.hasAdminKey()
 				? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
@@ -198,20 +204,24 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	}
 
 	Bytes prepareCodeWithConstructorArguments(ContractCreateTransactionBody op) {
-		var bytecodeSrc = op.getFileID();
-		validateTrue(hfs.exists(bytecodeSrc), INVALID_FILE_ID);
-		byte[] bytecode = hfs.cat(bytecodeSrc);
-		validateFalse(bytecode.length == 0, CONTRACT_FILE_EMPTY);
+		if (op.getInitcodeSourceCase() == INITCODEBYTES) {
+			return Bytes.wrap(op.getInitcodeBytes().toByteArray());
+		} else {
+			var bytecodeSrc = op.getFileID();
+			validateTrue(hfs.exists(bytecodeSrc), INVALID_FILE_ID);
+			byte[] bytecode = hfs.cat(bytecodeSrc);
+			validateFalse(bytecode.length == 0, CONTRACT_FILE_EMPTY);
 
-		var contractByteCodeString = new String(bytecode);
-		if (!op.getConstructorParameters().isEmpty()) {
-			final var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
-			contractByteCodeString += constructorParamsHexString;
-		}
-		try {
-			return Bytes.fromHexString(contractByteCodeString);
-		} catch (IllegalArgumentException e) {
-			throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+			var contractByteCodeString = new String(bytecode);
+			if (!op.getConstructorParameters().isEmpty()) {
+				final var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
+				contractByteCodeString += constructorParamsHexString;
+			}
+			try {
+				return Bytes.fromHexString(contractByteCodeString);
+			} catch (IllegalArgumentException e) {
+				throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
+			}
 		}
 	}
 }

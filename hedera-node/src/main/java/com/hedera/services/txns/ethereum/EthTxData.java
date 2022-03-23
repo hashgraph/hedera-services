@@ -19,7 +19,7 @@ import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ec
 
 
 public record EthTxData(
-		byte[] data,
+		byte[] rawTx,
 		EthTransactionType type,
 		byte[] chainId,
 		long nonce,
@@ -29,8 +29,7 @@ public record EthTxData(
 		long gasLimit,
 		byte[] to,
 		BigInteger value,
-		int callDataStart,
-		int callDataLength,
+		byte[] callData,
 		byte[] accessList,
 		byte recId,
 		byte[] v,
@@ -110,7 +109,6 @@ public record EthTxData(
 			r = rlpList.get(10).data();
 			s = rlpList.get(11).data();
 		}
-		int callDataStart = com.google.common.primitives.Bytes.indexOf(data, callData);
 
 		return new EthTxData(
 				data,
@@ -123,13 +121,18 @@ public record EthTxData(
 				gasLimit,
 				to,
 				value,
-				callDataStart,
-				callData.length,
+				callData,
 				accessList,
 				recId,
 				v,
 				r,
 				s);
+	}
+	
+	EthTxData relpaceCallData(byte[] callData) {
+		return new EthTxData(
+				rawTx, type, chainId, nonce, gasPrice, maxPriorityGas, maxGas, gasLimit, to, value, callData, accessList, recId, v, r, s); 
+	
 	}
 
 	EthTxSigs extractSignatures() {
@@ -142,8 +145,6 @@ public record EthTxData(
 	}
 
 	private byte[] calculateSingableMessage() {
-		byte[] callData = new byte[callDataLength];
-		System.arraycopy(data, callDataStart, callData, 0, callDataLength);
 		byte[] message;
 		if (type == EthTransactionType.LEGACY_ETHEREUM) {
 			if (chainId != null) {
