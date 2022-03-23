@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeSet;
 
 public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<EntityNum> {
 	private static final Logger log = LogManager.getLogger(MerkleAccount.class);
@@ -355,7 +354,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return state().getApproveForAllNfts();
 	}
 
-	public void setApproveForAllNfts(final TreeSet<FcTokenAllowanceId> approveForAllNfts) {
+	public void setApproveForAllNfts(final Set<FcTokenAllowanceId> approveForAllNfts) {
 		throwIfImmutable("Cannot change this account's approved for all NFTs allowances if it's immutable.");
 		state().setApproveForAllNfts(approveForAllNfts);
 	}

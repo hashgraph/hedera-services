@@ -30,7 +30,7 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 
 import java.util.Map;
-import java.util.TreeSet;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -242,7 +242,7 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 	APPROVE_FOR_ALL_NFTS_ALLOWANCES  {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setApproveForAllNfts((TreeSet<FcTokenAllowanceId>) t);
+			return (a, t) -> a.setApproveForAllNfts((Set<FcTokenAllowanceId>) t);
 		}
 
 		@Override

@@ -133,12 +133,12 @@ class ToStringAccountsExporterTest {
 				"proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, " +
 				"alreadyUsedAutoAssociations=7, maxAutoAssociations=10, alias=, " +
 				"cryptoAllowances={EntityNum{value=1}=10}, " +
-				"fungibleTokenAllowances={}, nftAllowances={}}, # records=0, tokens=[3.2.1, 1.2.3]}\n\n0.0.2\n---\n" +
+				"fungibleTokenAllowances={}, approveForAllNfts=[]}, # records=0, tokens=[3.2.1, 1.2.3]}\n\n0.0.2\n---\n" +
 				"MerkleAccount{state=MerkleAccountState{number=2 <-> 0.0.2, key=ed25519: \"second-fake\"\n" +
 				", expiry=7654321, balance=2, autoRenewSecs=444444, memo=We said, and show us what we love, " +
 				"deleted=true, smartContract=false, numContractKvPairs=0, receiverSigRequired=false, " +
 				"proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, alreadyUsedAutoAssociations=0, " +
-				"maxAutoAssociations=0, alias=, cryptoAllowances={}, fungibleTokenAllowances={}, nftAllowances={}}, #" +
+				"maxAutoAssociations=0, alias=, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[]}, #" +
 				" records=0, tokens=[1234.0.0]}\n";
 
 		// given:

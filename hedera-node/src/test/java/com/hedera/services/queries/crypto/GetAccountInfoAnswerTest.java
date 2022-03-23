@@ -296,8 +296,7 @@ class GetAccountInfoAnswerTest {
 						.build(),
 				info.getGrantedTokenAllowances(0));
 		assertEquals(GrantedNftAllowance.newBuilder()
-						.setApprovedForAll(false)
-						.addAllSerialNumbers(List.of(1L, 2L))
+						.setApprovedForAll(true)
 						.setSpender(EntityNum.fromLong(2000L).toGrpcAccountId())
 						.setTokenId(EntityNum.fromLong(1000L).toGrpcTokenId())
 						.build(),

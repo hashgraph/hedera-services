@@ -33,6 +33,7 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -57,6 +58,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -93,7 +96,6 @@ class TransferLogicTest {
 	}};
 	private TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>() {{
 		add(fungibleAllowanceId);
-		add(nftAllowanceId);
 	}};
 
 	@Mock
@@ -231,6 +233,7 @@ class TransferLogicTest {
 	@Test
 	void happyPathNFTAllowance() {
 		setUpAccountWithAllowances();
+		final var nftId = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
 		final var change1 = BalanceChange.changingNftOwnership(
 				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 1L), payer);
 		final var change2 = BalanceChange.changingNftOwnership(
@@ -238,12 +241,14 @@ class TransferLogicTest {
 
 		given(tokenStore.tryTokenChange(change1)).willReturn(OK);
 		given(tokenStore.tryTokenChange(change2)).willReturn(OK);
+		given(nftsLedger.get(nftId, SPENDER)).willReturn(EntityId.fromGrpcAccountId(payer));
 
 		accountsLedger.begin();
 		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2)));
 
 		updateAllowanceMaps();
-		assertTrue(nftAllowances.contains(nftAllowanceId));
+		assertTrue(nftAllowances.contains(fungibleAllowanceId));
+		verify(nftsLedger).set(nftId, SPENDER, MISSING_ENTITY_ID);
 	}
 
 	private AccountAmount aliasedAa(final ByteString alias, final long amount) {

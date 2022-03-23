@@ -444,9 +444,11 @@ public class TypedTokenStore {
 
 	public void persistNfts(List<UniqueToken> nfts) {
 		for (final var nft :nfts) {
+			final var tokenId = nft.getTokenId();
 			final var merkleNft = new MerkleUniqueToken(nft.getOwner().asEntityId(), nft.getMetadata(), nft.getCreationTime());
 			merkleNft.setSpender(nft.getSpender().asEntityId());
-			uniqueTokens.put(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()), merkleNft);
+			uniqueTokens.put(new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), nft.getSerialNumber()),
+					merkleNft);
 		}
 	}
 
