@@ -102,4 +102,8 @@ public class UniqueToken {
 	public void setMetadata(byte[] metadata) {
 		this.metadata = metadata;
 	}
+
+	public void clearSpender() {
+		this.spender = Id.DEFAULT;
+	}
 }

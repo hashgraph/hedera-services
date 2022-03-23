@@ -19,6 +19,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +49,8 @@ public class DeleteAllowanceChecks {
 	public DeleteAllowanceChecks(
 			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nftsMap,
 			final TypedTokenStore tokenStore,
-			final GlobalDynamicProperties dynamicProperties,
-			final AccountStore accountStore) {
+			final AccountStore accountStore,
+			final GlobalDynamicProperties dynamicProperties) {
 		this.tokenStore = tokenStore;
 		this.nftsMap = nftsMap;
 		this.dynamicProperties = dynamicProperties;
@@ -173,17 +174,19 @@ public class DeleteAllowanceChecks {
 		return OK;
 	}
 
-	private boolean repeatedAllowances(final List<NftWipeAllowance> nftAllowancesList) {
-		final var actualSize = nftAllowancesList.size();
-		final var allowancesSet = nftAllowancesList.stream().collect(Collectors.toSet());
-		if (actualSize != allowancesSet.size()) {
-			return true;
-		}
+	boolean repeatedAllowances(final List<NftWipeAllowance> nftAllowancesList) {
 		Map<Pair, List<Long>> nftsMap = new HashMap<>();
 		for (var allowance : nftAllowancesList) {
 			final var key = Pair.of(allowance.getOwner(), allowance.getTokenId());
-			if (nftsMap.containsKey(key) && serialsRepeated(nftsMap.get(key), allowance.getSerialNumbersList())) {
-				return true;
+			if (nftsMap.containsKey(key)) {
+				if (serialsRepeated(nftsMap.get(key), allowance.getSerialNumbersList())) {
+					return true;
+				} else {
+					final var list = new ArrayList<Long>();
+					list.addAll(nftsMap.get(key));
+					list.addAll(allowance.getSerialNumbersList());
+					nftsMap.put(key, list);
+				}
 			} else {
 				nftsMap.put(key, allowance.getSerialNumbersList());
 			}
@@ -191,7 +194,7 @@ public class DeleteAllowanceChecks {
 		return false;
 	}
 
-	private boolean serialsRepeated(final List<Long> existingSerials, final List<Long> newSerials) {
+	boolean serialsRepeated(final List<Long> existingSerials, final List<Long> newSerials) {
 		for (var serial : newSerials) {
 			if (existingSerials.contains(serial)) {
 				return true;
@@ -200,7 +203,7 @@ public class DeleteAllowanceChecks {
 		return false;
 	}
 
-	private ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
+	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
 			final Account ownerAccount,
 			final Token token) {
 		if (hasRepeatedSerials(serialNums)) {
@@ -249,5 +252,4 @@ public class DeleteAllowanceChecks {
 			}
 		}
 	}
-
 }
