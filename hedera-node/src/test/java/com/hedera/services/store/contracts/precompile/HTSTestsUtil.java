@@ -282,7 +282,7 @@ public class HTSTestsUtil {
 			)
 	);
 
-	public static final TokenCreateWrapper createTokenCreateWrapperWithKeys(final List<TokenCreateWrapper.TokenKeyWrapper> keys) {
+	public static TokenCreateWrapper createTokenCreateWrapperWithKeys(final List<TokenCreateWrapper.TokenKeyWrapper> keys) {
 		return new TokenCreateWrapper(
 				true,
 				"token",
@@ -296,6 +296,25 @@ public class HTSTestsUtil {
 				false,
 				keys,
 				new TokenCreateWrapper.TokenExpiryWrapper(442L, payer, 555L)
+		);
+	}
+
+	public static TokenCreateWrapper createNonFungibleTokenCreateWrapperWithKeys(
+			final List<TokenCreateWrapper.TokenKeyWrapper> keys
+	) {
+		return new TokenCreateWrapper(
+				false,
+				"nft",
+				"NFT",
+				account,
+				"nftMemo",
+				true,
+				BigInteger.ZERO,
+				BigInteger.ZERO,
+				5054L,
+				true,
+				keys,
+				new TokenCreateWrapper.TokenExpiryWrapper(0L, null, 0L)
 		);
 	}
 

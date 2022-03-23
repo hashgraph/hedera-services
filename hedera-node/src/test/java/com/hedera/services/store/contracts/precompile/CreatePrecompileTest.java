@@ -96,6 +96,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
@@ -223,6 +224,15 @@ class CreatePrecompileTest {
 								new byte[]{},
 								new byte[]{},
 								null)
+				),
+				new TokenCreateWrapper.TokenKeyWrapper(
+						BigInteger.valueOf(8),
+						new TokenCreateWrapper.KeyValueWrapper(
+								false,
+								null,
+								new byte[]{},
+								new byte[]{},
+								EntityIdUtils.contractIdFromEvmAddress(contractAddress))
 				))
 		);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
@@ -234,7 +244,7 @@ class CreatePrecompileTest {
 	@Test
 	void createNonFungibleHappyPathWorks() {
 		// test-specific preparations
-		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
+		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(
 						BigInteger.ONE,
 						new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[]{},
@@ -272,7 +282,7 @@ class CreatePrecompileTest {
 	@Test
 	void createNonFungibleWithFeesHappyPathWorks() {
 		// test-specific preparations
-		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
+		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(
 						BigInteger.ONE,
 						new TokenCreateWrapper.KeyValueWrapper(
@@ -344,6 +354,66 @@ class CreatePrecompileTest {
 		// then:
 		assertEquals(invalidSigResult, result);
 
+		verify(creator).createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE);
+		verify(createLogic, never()).create(
+				pendingChildConsTime.getEpochSecond(),
+				EntityIdUtils.accountIdFromEvmAddress(senderAddress),
+				tokenCreateTransactionBody
+		);
+		verify(wrappedLedgers, never()).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+	@Test
+	void createFailsWhenCreateChecksAreNotSuccessful() {
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
+						new TokenCreateWrapper.TokenKeyWrapper(
+								BigInteger.ONE,
+								new TokenCreateWrapper.KeyValueWrapper(
+										false,
+										null,
+										new byte[JEd25519Key.ED25519_BYTE_LENGTH],
+										new byte[]{},
+										null
+								))
+				)
+		);
+		given(decoder.decodeFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(mockSynthBodyBuilder.build())
+				.willReturn(TransactionBody.newBuilder().setTokenCreation(tokenCreateTransactionBody).build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTokenCreate(tokenCreateWrapper)).willReturn(mockSynthBodyBuilder);
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		final var tokenCreateValidator = Mockito.mock(Function.class);
+		given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
+		given(tokenCreateValidator.apply(any())).willReturn(INVALID_SIGNATURE);
+		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
+			.willReturn(mockRecordBuilder);
+		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
+
+		// when:
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		final var result = subject.computeInternal(frame);
+
+		// then:
+		assertEquals(invalidSigResult, result);
+
+		verify(creator).createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE);
 		verify(createLogic, never()).create(
 				pendingChildConsTime.getEpochSecond(),
 				EntityIdUtils.accountIdFromEvmAddress(senderAddress),
