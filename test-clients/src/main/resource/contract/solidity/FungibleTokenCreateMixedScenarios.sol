@@ -16,6 +16,19 @@ contract FungibleTokenCreateMixedScenarios is FungibleTokenCreate {
         supplyContract = address(this);
     }
 
+    function mintTokenViaDelegateCall(address token, uint64 amount) external {
+        (bool success, bytes memory result) = precompileAddress.delegatecall(
+            abi.encodeWithSelector(IHederaTokenService.mintToken.selector, token, amount, new bytes[](0)));
+        (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) =
+        success
+        ? abi.decode(result, (int32, uint64, int64[]))
+        : (HederaResponseCodes.UNKNOWN, 0, new int64[](0));
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Fungible mint failed");
+        }
+    }
+
     function createTokenAndMint(uint64 amountToMint) external {
         address createdToken = super.createTokenWithDefaultKeys();
 

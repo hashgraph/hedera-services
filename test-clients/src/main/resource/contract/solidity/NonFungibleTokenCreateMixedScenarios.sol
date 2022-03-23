@@ -14,6 +14,19 @@ contract NonFungibleTokenCreateMixedScenarios is NonFungibleTokenCreate {
         supplyContract = address(this);
     }
 
+    function mintTokenViaDelegateCall(address token, bytes[] memory metadata) external {
+        (bool success, bytes memory result) = precompileAddress.delegatecall(
+            abi.encodeWithSelector(IHederaTokenService.mintToken.selector, token, 0, metadata));
+        (int responseCode, uint64 newTotalSupply, int64[] memory serialNumbers) =
+        success
+        ? abi.decode(result, (int32, uint64, int64[]))
+        : (HederaResponseCodes.UNKNOWN, 0, new int64[](0));
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Nonfungible mint failed");
+        }
+    }
+
     function createTokenAndMint(bytes[] memory metadata) external {
         address createdToken = super.createTokenWithDefaultKeys();
 
