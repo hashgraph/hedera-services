@@ -33,14 +33,19 @@ contract FungibleTokenCreateMixedScenarios is FungibleTokenCreate {
     function createTokenAndMintAndTransfer(uint64 amountToMint, address receiver) external {
         address createdToken = super.createTokenWithDefaultKeys();
 
-        (int response, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(createdToken, amountToMint, new bytes[](0));
-        if (response != HederaResponseCodes.SUCCESS) {
+        (int mintResponse, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(createdToken, amountToMint, new bytes[](0));
+        if (mintResponse != HederaResponseCodes.SUCCESS) {
             revert ("Fungible mint failed");
         }
 
         uint totalSupply = IERC20(createdToken).totalSupply();
         if (totalSupply != newTotalSupply) {
             revert ("Total supply is not correct");
+        }
+
+        int associateResponse = HederaTokenService.associateToken(receiver, createdToken);
+        if (associateResponse != HederaResponseCodes.SUCCESS) {
+            revert ("Fungible associate failed");
         }
 
         bool transferResponse = IERC20(createdToken).transfer(receiver, 5);

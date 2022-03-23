@@ -4,13 +4,11 @@ pragma experimental ABIEncoderV2;
 
 import "./FeeHelper.sol";
 
-contract FungibleTokenCreate is FeeHelper {
+contract NonFungibleTokenCreate is FeeHelper {
 
     string name;
     string symbol;
     address treasury;
-    uint initialTotalSupply;
-    uint decimals;
 
     function createFrozenTokenWithDefaultKeys() external returns (address createdTokenAddress) {
         createdTokenAddress = createFrozenToken(super.getDefaultKeys());
@@ -37,51 +35,45 @@ contract FungibleTokenCreate is FeeHelper {
     }
 
     function createTokenWithTokenFixedFee(uint32 amount, address tokenId, address feeCollector) external returns (address createdTokenAddress) {
-        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForToken(amount, tokenId, feeCollector), super.getEmptyFractionalFees());
+        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForToken(amount, tokenId, feeCollector), super.getEmptyRoyaltyFees());
     }
 
     function createTokenWithCorrectAndWrongTokenFixedFee(uint32 amount, address tokenId, address feeCollector) external returns (address createdTokenAddress) {
-        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForToken(amount, tokenId, feeCollector, address(0)), super.getEmptyFractionalFees());
+        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForToken(amount, tokenId, feeCollector, address(0)), super.getEmptyRoyaltyFees());
     }
 
     function createTokenWithHbarsFixedFee(uint32 amount, address feeCollector) external returns (address createdTokenAddress) {
-        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForHbars(amount, feeCollector), super.getEmptyFractionalFees());
+        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForHbars(amount, feeCollector), super.getEmptyRoyaltyFees());
     }
 
     function createTokenWithCurrentTokenFixedFee(uint32 amount, address feeCollector) external returns (address createdTokenAddress) {
-        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForCurrentToken(amount, feeCollector), super.getEmptyFractionalFees());
+        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForCurrentToken(amount, feeCollector), super.getEmptyRoyaltyFees());
     }
 
     function createTokenWithAllTypesFixedFee(uint32 amount, address tokenId, address feeCollector) external returns (address createdTokenAddress) {
-        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesWithAllTypes(amount, tokenId, feeCollector), super.getEmptyFractionalFees());
+        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesWithAllTypes(amount, tokenId, feeCollector), super.getEmptyRoyaltyFees());
     }
 
     function createTokenWithInvalidFlagsFixedFee(uint32 amount, address feeCollector) external returns (address createdTokenAddress) {
-        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesWithInvalidFlags(amount, feeCollector), super.getEmptyFractionalFees());
+        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesWithInvalidFlags(amount, feeCollector), super.getEmptyRoyaltyFees());
     }
 
     function createTokenWithFixedFeeForTokenAndHbars(address tokenId, uint32 amount, address feeCollector) external returns (address createdTokenAddress) {
-        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesWithTokenIdAndHbars(amount, tokenId, feeCollector), super.getEmptyFractionalFees());
+        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesWithTokenIdAndHbars(amount, tokenId, feeCollector), super.getEmptyRoyaltyFees());
     }
 
-    function createTokenWithFractionalFee(uint32 numerator, uint32 denominator, bool netOfTransfers, address feeCollector) external returns (address createdTokenAddress) {
-        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.getEmptyFixedFees(), super.createFractionalFees(numerator, denominator, netOfTransfers, feeCollector));
+    function createTokenWithRoyaltyFee(uint32 numerator, uint32 denominator, address feeCollector) external returns (address createdTokenAddress) {
+        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.getEmptyFixedFees(), super.createRoyaltyFees(numerator, denominator, feeCollector));
     }
 
-    function createTokenWithFractionalFeeWithLimits(uint32 numerator, uint32 denominator, uint32 minimumAmount, uint32 maximumAmount,
-        bool netOfTransfers, address feeCollector) external returns (address createdTokenAddress) {
-        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.getEmptyFixedFees(), super.createFractionalFeesWithLimits(numerator, denominator, minimumAmount, maximumAmount, netOfTransfers, feeCollector));
+    function createTokenWithHbarFixedFeeAndRoaltyFee(uint32 amount, uint32 numerator, uint32 denominator, address fixedFeeCollector, address fractionalFeeCollector) external returns (address createdTokenAddress) {
+        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForHbars(amount, fixedFeeCollector), super.createRoyaltyFees(numerator, denominator, fractionalFeeCollector));
     }
 
-    function createTokenWithHbarFixedFeeAndFractionalFee(uint32 amount, uint32 numerator, uint32 denominator,
-        bool netOfTransfers, address fixedFeeCollector, address fractionalFeeCollector) external returns (address createdTokenAddress) {
-        createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(), super.createFixedFeesForHbars(amount, fixedFeeCollector), super.createFractionalFees(numerator, denominator, netOfTransfers, fractionalFeeCollector));
-    }
-
-    function createTokenWithNAmountHbarFixedFeesAndNAmountFractionalFees(uint8 numberOfFixedFees, uint8 numberOfFractionalFees, uint32 amount, uint32 numerator, uint32 denominator, bool netOfTransfers,
-        address fixedFeeCollector, address fractionalFeeCollector) external returns (address createdTokenAddress) {
+    function createTokenWithNAmountHbarFixedFeesAndNAmountRoaltyFees(uint8 numberOfFixedFees, uint8 numberOfRoyaltyFees, uint32 amount, uint32 numerator, uint32 denominator,
+        address fixedFeeCollector, address royaltyFeeCollector) external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenWithCustomFees(super.getDefaultKeys(),
-            super.createNAmountFixedFeesForHbars(numberOfFixedFees, amount, fixedFeeCollector), super.createNAmountFractionalFees(numberOfFractionalFees, numerator, denominator, netOfTransfers, fractionalFeeCollector));
+            super.createNAmountFixedFeesForHbars(numberOfFixedFees, amount, fixedFeeCollector), super.createNAmountRoyaltyFees(numberOfRoyaltyFees, numerator, denominator, royaltyFeeCollector));
     }
 
     function createTokenWithExpiry(uint32 second, address autoRenewAccount,
@@ -99,7 +91,7 @@ contract FungibleTokenCreate is FeeHelper {
         token.expiry = expiry;
 
         (int responseCode, address tokenAddress) =
-        HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
+        HederaTokenService.createNonFungibleToken(token);
 
         if (responseCode != 22) {
             revert ();
@@ -116,7 +108,7 @@ contract FungibleTokenCreate is FeeHelper {
         token.tokenKeys = keys;
 
         (int responseCode, address tokenAddress) =
-        HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
+        HederaTokenService.createNonFungibleToken(token);
 
         if (responseCode != 22) {
             revert ();
@@ -134,7 +126,7 @@ contract FungibleTokenCreate is FeeHelper {
         token.freezeDefault = true;
 
         (int responseCode, address tokenAddress) =
-        HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
+        HederaTokenService.createNonFungibleToken(token);
 
         if (responseCode != 22) {
             revert ();
@@ -143,8 +135,8 @@ contract FungibleTokenCreate is FeeHelper {
         createdTokenAddress = tokenAddress;
     }
 
-    function createTokenWithCustomFees(IHederaTokenService.TokenKey[] memory keys,
-        IHederaTokenService.FixedFee[] memory fixedFees, IHederaTokenService.FractionalFee[] memory fractionalFees) internal returns (address createdTokenAddress) {
+    function createTokenWithCustomFees(IHederaTokenService.TokenKey[] memory keys, IHederaTokenService.FixedFee[] memory fixedFees,
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees) internal returns (address createdTokenAddress) {
         IHederaTokenService.HederaToken memory token;
         token.name = name;
         token.symbol = symbol;
@@ -152,7 +144,7 @@ contract FungibleTokenCreate is FeeHelper {
         token.tokenKeys = keys;
 
         (int responseCode, address tokenAddress) =
-        HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals, fixedFees, fractionalFees);
+        HederaTokenService.createNonFungibleTokenWithCustomFees(token, fixedFees, royaltyFees);
 
         if (responseCode != 22) {
             revert ();
