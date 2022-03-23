@@ -28,7 +28,6 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -350,19 +349,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public void setCryptoAllowancesUnsafe(final Map<EntityNum, Long> cryptoAllowances) {
 		throwIfImmutable("Cannot change this account's crypto allowances if it's immutable.");
 		state().setCryptoAllowancesUnsafe(cryptoAllowances);
-	}
-
-	public Map<NftId, EntityNum> getExplicitNftAllowances() {
-		return state().getExplicitNftAllowances();
-	}
-
-	public void setExplicitNftAllowances(final SortedMap<NftId, EntityNum> explicitNftAllowances) {
-		throwIfImmutable("Cannot change this account's explicit Nft allowances if it's immutable.");
-		state().setExplicitNftAllowances(explicitNftAllowances);
-	}
-
-	public Map<NftId, EntityNum> getExplicitNftAllowancesUnsafe() {
-		return state().getExplicitNftAllowancesUnsafe();
 	}
 
 	public Set<FcTokenAllowanceId> getApproveForAllNfts() {

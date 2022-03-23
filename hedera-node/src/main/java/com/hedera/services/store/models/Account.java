@@ -49,7 +49,6 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -83,7 +82,6 @@ public class Account {
 	private int autoAssociationMetadata;
 	private TreeMap<EntityNum, Long> cryptoAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
-	private TreeMap<NftId, EntityNum> explicitNftAllowances;
 	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
 
 	public Account(Id id) {
@@ -244,7 +242,6 @@ public class Account {
 				.add("alias", getAlias().toStringUtf8())
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
-				.add("explicitNftAllowances", explicitNftAllowances)
 				.add("approveForAllNfts", approveForAllNfts)
 				.toString();
 	}
@@ -352,22 +349,6 @@ public class Account {
 		this.fungibleTokenAllowances = new TreeMap<>(fungibleTokenAllowances);
 	}
 
-	public Map<NftId, EntityNum> getExplicitNftAllowances() {
-		return explicitNftAllowances == null ? Collections.emptyMap() : explicitNftAllowances;
-	}
-
-	public SortedMap<NftId, EntityNum> getMutableExplicitNftAllowances() {
-		if (explicitNftAllowances == null) {
-			explicitNftAllowances = new TreeMap<>();
-		}
-		return explicitNftAllowances;
-	}
-
-	public void setExplicitNftAllowances(
-			final Map<NftId, EntityNum> explicitNftAllowances) {
-		this.explicitNftAllowances = new TreeMap<>(explicitNftAllowances);
-	}
-
 	public Set<FcTokenAllowanceId> getApprovedForAllNftsAllowances() {
 		return approveForAllNfts == null ? Collections.emptySet() : approveForAllNfts;
 	}
@@ -388,6 +369,6 @@ public class Account {
 		// So for Nft allowances aggregated amount is considered for limit calculation.
 		return cryptoAllowances.size() +
 				fungibleTokenAllowances.size() +
-				aggregateNftAllowances(explicitNftAllowances, approveForAllNfts);
+				approveForAllNfts.size();
 	}
 }

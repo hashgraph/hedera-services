@@ -124,7 +124,7 @@ class AccountStoreTest {
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
 		miscAccount.setCryptoAllowances(Collections.emptyMap());
 		miscAccount.setFungibleTokenAllowances(Collections.emptyMap());
-		miscAccount.setExplicitNftAllowances(Collections.emptyMap());
+		miscAccount.setApproveForAllNfts(Collections.emptySet());
 
 		// when:
 		final var actualAccount = subject.loadAccount(miscId);

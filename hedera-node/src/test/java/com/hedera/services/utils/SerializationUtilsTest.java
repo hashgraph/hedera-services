@@ -45,6 +45,6 @@ class SerializationUtilsTest {
 	@Test
 	void deserializesEmptyNftAllowancesAsSingletonEmptyMap() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
-		assertSame(Collections.emptyMap(), SerializationUtils.deserializeExplicitNftAllowances(in));
+		assertSame(Collections.emptyMap(), SerializationUtils.deserializeApproveForAllNftsAllowances(in));
 	}
 }

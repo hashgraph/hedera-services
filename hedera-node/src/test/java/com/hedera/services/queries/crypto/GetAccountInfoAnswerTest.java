@@ -65,6 +65,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
@@ -156,11 +157,11 @@ class GetAccountInfoAnswerTest {
 		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
 		TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap();
 		TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap();
-		TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap();
+		TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>();
 
 		cryptoAllowances.put(EntityNum.fromLong(1L), 10L);
 		fungibleTokenAllowances.put(tokenAllowanceKey, 20L);
-		nftAllowances.put(tokenAllowanceKey, tokenAllowanceValue);
+		nftAllowances.add(tokenAllowanceKey);
 
 		payerAccount = MerkleAccountFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
@@ -174,7 +175,7 @@ class GetAccountInfoAnswerTest {
 				.expirationTime(9_999_999L)
 				.cryptoAllowances(cryptoAllowances)
 				.fungibleTokenAllowances(fungibleTokenAllowances)
-				.nftAllowances(nftAllowances)
+				.explicitNftAllowances(nftAllowances)
 				.get();
 		payerAccount.setTokens(tokens);
 

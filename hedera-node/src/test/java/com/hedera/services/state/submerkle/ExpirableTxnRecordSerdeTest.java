@@ -54,7 +54,7 @@ class ExpirableTxnRecordSerdeTest {
 						10, 2, 3))
 				.setFungibleTokenAllowances(randomFungibleAllowances(
 						10, 10, 2, 3))
-				.setExplicitNftAllowances(randomNftAllowances(
+				.setNftAllowances(randomNftAllowances(
 						10, 10, 2, 3, 5));
 
 		final var subject = builder.build();

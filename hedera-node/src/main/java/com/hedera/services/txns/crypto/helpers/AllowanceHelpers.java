@@ -25,7 +25,6 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -40,25 +39,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 
 public class AllowanceHelpers {
 	private AllowanceHelpers() {
 		throw new IllegalStateException("Utility class");
-	}
-
-	/**
-	 * Since each serial number in an NFTAllowance is considered as an allowance, to get total allowance
-	 * from an NFTAllowance the size of serial numbers should be added.
-	 *
-	 * @param nftAllowances
-	 * @return
-	 */
-	public static int aggregateNftAllowances(Map<NftId, EntityNum> explicitNftAllowances,
-			Set<FcTokenAllowanceId> approveForAllNftsAllowances) {
-		return explicitNftAllowances.size() + approveForAllNftsAllowances.size();
 	}
 
 	/**
@@ -141,16 +127,8 @@ public class AllowanceHelpers {
 	}
 
 	public static List<GrantedNftAllowance> getNftAllowancesList(final MerkleAccount account) {
-		if (!account.state().getExplicitNftAllowances().isEmpty()) {
+		if (!account.state().getApproveForAllNfts().isEmpty()) {
 			List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
-			for (var a : account.state().getExplicitNftAllowances().entrySet()) {
-				final var explicitNftAllowance = GrantedNftAllowance.newBuilder();
-				explicitNftAllowance.setTokenId(a.getKey().tokenId());
-				explicitNftAllowance.setSpender(a.getValue().toGrpcAccountId());
-				explicitNftAllowance.setApprovedForAll(false);
-				explicitNftAllowance.addSerialNumbers(a.getKey().serialNo());
-				nftAllowances.add(explicitNftAllowance.build());
-			}
 			for (var a : account.state().getApproveForAllNfts()) {
 				final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
 				approveForAllNftsAllowance.setTokenId(a.getTokenNum().toGrpcTokenId());

@@ -30,7 +30,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.txns.SignedTxnFactory;
@@ -47,9 +46,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
@@ -61,7 +62,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPLICIT_NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
@@ -170,9 +170,9 @@ class MerkleAccountPropertyTest {
 		final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
 			put(fungibleAllowanceId, initialAllowance);
 		}};
-		final TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
-			put(fungibleAllowanceId, FcTokenAllowance.from(true));
-			put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
+		final TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>() {{
+			add(fungibleAllowanceId);
+			add(nftAllowanceId);
 		}};
 
 		final var account = new HederaAccountCustomizer()
@@ -224,7 +224,7 @@ class MerkleAccountPropertyTest {
 		NUM_CONTRACT_KV_PAIRS.setter().accept(account, newNumKvPairs);
 		CRYPTO_ALLOWANCES.setter().accept(account, cryptoAllowances);
 		FUNGIBLE_TOKEN_ALLOWANCES.setter().accept(account, fungibleAllowances);
-		EXPLICIT_NFT_ALLOWANCES.setter().accept(account, nftAllowances);
+		APPROVE_FOR_ALL_NFTS_ALLOWANCES.setter().accept(account, nftAllowances);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -242,7 +242,7 @@ class MerkleAccountPropertyTest {
 		assertEquals(newNumKvPairs, NUM_CONTRACT_KV_PAIRS.getter().apply(account));
 		assertEquals(cryptoAllowances, CRYPTO_ALLOWANCES.getter().apply(account));
 		assertEquals(fungibleAllowances, FUNGIBLE_TOKEN_ALLOWANCES.getter().apply(account));
-		assertEquals(nftAllowances, EXPLICIT_NFT_ALLOWANCES.getter().apply(account));
+		assertEquals(nftAllowances, APPROVE_FOR_ALL_NFTS_ALLOWANCES.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

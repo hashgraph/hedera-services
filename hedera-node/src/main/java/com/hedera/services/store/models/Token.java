@@ -560,6 +560,10 @@ public class Token {
 		return !mintedUniqueTokens.isEmpty();
 	}
 
+	public boolean hasChangedNfts() {
+		return !loadedUniqueTokens.isEmpty();
+	}
+
 	public List<UniqueToken> mintedUniqueTokens() {
 		return mintedUniqueTokens;
 	}

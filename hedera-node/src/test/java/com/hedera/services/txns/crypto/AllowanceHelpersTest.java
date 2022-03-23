@@ -20,16 +20,11 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -37,16 +32,6 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class AllowanceHelpersTest {
-
-	@Test
-	void aggregatedCorrectly() {
-		Map<FcTokenAllowanceId, FcTokenAllowance> map = new TreeMap<>();
-		final var Nftid = FcTokenAllowanceId.from(EntityNum.fromTokenId(asToken("0.0.1000")),
-				EntityNum.fromAccountId(asAccount("0.0.1001")));
-		final var val = FcTokenAllowance.from(false, List.of(1L, 100L));
-		map.put(Nftid, val);
-		assertEquals(2, aggregateNftAllowances(map));
-	}
 
 	@Test
 	void aggregatedListCorrectly() {

@@ -28,7 +28,6 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.fcqueue.FCQueue;
@@ -87,7 +86,6 @@ class MerkleAccountTest {
 	private FCQueue<ExpirableTxnRecord> payerRecords;
 	private MerkleAccountTokens tokens;
 	private TreeMap<EntityNum, Long> cryptoAllowances;
-	private TreeMap<NftId, EntityNum> explicitNftAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
 	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
 
@@ -107,7 +105,6 @@ class MerkleAccountTest {
 		given(tokens.copy()).willReturn(tokens);
 
 		cryptoAllowances = mock(TreeMap.class);
-		explicitNftAllowances = mock(TreeMap.class);
 		fungibleTokenAllowances = mock(TreeMap.class);
 		approveForAllNfts = mock(TreeSet.class);
 
@@ -125,7 +122,6 @@ class MerkleAccountTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				explicitNftAllowances,
 				approveForAllNfts);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
@@ -210,7 +206,7 @@ class MerkleAccountTest {
 		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
 		assertEquals(state.getCryptoAllowances().entrySet(), subject.getCryptoAllowances().entrySet());
 		assertEquals(state.getFungibleTokenAllowances().entrySet(), subject.getFungibleTokenAllowances().entrySet());
-		assertEquals(state.getExplicitNftAllowances().entrySet(), subject.getExplicitNftAllowances().entrySet());
+		assertEquals(state.getApproveForAllNfts(), subject.getApproveForAllNfts());
 	}
 
 	@Test
@@ -245,7 +241,6 @@ class MerkleAccountTest {
 		subject.setNumContractKvPairs(kvPairs);
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
-		subject.setExplicitNftAllowances(explicitNftAllowances);
 		subject.setApproveForAllNfts(approveForAllNfts);
 
 		verify(delegate).setExpiry(otherExpiry);
@@ -265,7 +260,6 @@ class MerkleAccountTest {
 		verify(delegate).setAlias(alias);
 		verify(delegate).setCryptoAllowances(cryptoAllowances);
 		verify(delegate).setFungibleTokenAllowances(fungibleTokenAllowances);
-		verify(delegate).setExplicitNftAllowances(explicitNftAllowances);
 		verify(delegate).setApproveForAllNfts(approveForAllNfts);
 	}
 

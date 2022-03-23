@@ -32,7 +32,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -63,6 +62,7 @@ import org.apache.commons.codec.DecoderException;
 import java.time.Instant;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
@@ -152,7 +152,7 @@ public interface TxnHandlingScenario {
 								.balance(DEFAULT_BALANCE)
 								.cryptoAllowances(cryptoAllowances)
 								.fungibleTokenAllowances(fungibleTokenAllowances)
-								.nftAllowances(nftTokenAllowances)
+								.explicitNftAllowances(nftTokenAllowances)
 								.accountKeys(OWNER_ACCOUNT_KT).get()
 				).withAccount(
 						COMPLEX_KEY_ACCOUNT_ID,
@@ -600,10 +600,9 @@ public interface TxnHandlingScenario {
 			.setAmount(10_000L)
 			.build());
 
-	TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftTokenAllowances = new TreeMap<>() {{
-		put(FcTokenAllowanceId.from(
-						EntityNum.fromTokenId(KNOWN_TOKEN_WITH_WIPE), EntityNum.fromAccountId(DEFAULT_PAYER)),
-				FcTokenAllowance.from(true));
+	TreeSet<FcTokenAllowanceId> nftTokenAllowances = new TreeSet<>() {{
+		add(FcTokenAllowanceId.from(
+						EntityNum.fromTokenId(KNOWN_TOKEN_WITH_WIPE), EntityNum.fromAccountId(DEFAULT_PAYER)));
 	}};
 
 	List<NftAllowance> nftAllowanceList = List.of(NftAllowance.newBuilder()
