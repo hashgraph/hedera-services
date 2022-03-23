@@ -191,7 +191,7 @@ public interface AllowanceChecks {
 		}
 	}
 
-	default boolean validOwner(final MerkleUniqueToken nft,
+	static boolean validOwner(final MerkleUniqueToken nft,
 			final Account ownerAccount, final Token token) {
 		final var listedOwner = nft.getOwner();
 		return MISSING_ENTITY_ID.equals(listedOwner)
