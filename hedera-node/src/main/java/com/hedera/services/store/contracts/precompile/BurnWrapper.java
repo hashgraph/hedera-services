@@ -43,6 +43,6 @@ public record BurnWrapper(BigInteger amount, TokenID tokenType, List<Long> seria
 	}
 
 	public TokenType type() {
-		return serialNos.size()>0 ? NON_FUNGIBLE_UNIQUE: FUNGIBLE_COMMON;
+		return !serialNos.isEmpty() ? NON_FUNGIBLE_UNIQUE: FUNGIBLE_COMMON;
 	}
 }

@@ -99,9 +99,12 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -324,31 +327,24 @@ class BurnPrecompilesTest {
 
 	@Test
 	void fungibleBurnFailureAmountOversize() {
+		// given:
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
+		doCallRealMethod().when(frame).setRevertReason(any());
+		doCallRealMethod().when(frame).getRevertReason();
 		given(decoder.decodeBurn(pretendArguments)).willReturn(fungibleBurnAmountOversize);
-		given(syntheticTxnFactory.createBurn(fungibleBurnAmountOversize)).willReturn(mockSynthBodyBuilder);
-		given(encoder.encodeBurnFailure(FAIL_INVALID)).willReturn(failInvalidResult);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
-		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee()).willReturn(1L);
-
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
-
-		assertEquals(failInvalidResult, result);
+		// when:
+		final var result = subject.compute(pretendArguments, frame);
+		// then:
+		assertNull(result);
+		verify(wrappedLedgers, never()).commit();
+		verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
 	@Test
-	void fungibleBurnHappyPathWorks2() {
+	void fungibleBurnForMaxAmountWorks() {
 		givenFrameContext();
 		givenLedgers();
 

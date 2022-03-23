@@ -102,9 +102,12 @@ import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -366,30 +369,17 @@ class MintPrecompilesTest {
 		// given:
 		given(frame.getSenderAddress()).willReturn(contractAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
+		doCallRealMethod().when(frame).setRevertReason(any());
+		doCallRealMethod().when(frame).getRevertReason();
 		given(decoder.decodeMint(pretendArguments)).willReturn(fungibleMintAmountOversize);
-		given(syntheticTxnFactory.createMint(fungibleMintAmountOversize)).willReturn(mockSynthBodyBuilder);
-		given(encoder.encodeMintFailure(FAIL_INVALID)).willReturn(failInvalidResult);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(mockSynthBodyBuilder.build())
-				.willReturn(TransactionBody.newBuilder().build());
-		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
-				.willReturn(mockSynthBodyBuilder);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
 		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, a -> a);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.compute(pretendArguments, frame);
 		// then:
-		assertEquals(failInvalidResult, result);
+		assertNull(result);
+		verify(wrappedLedgers, never()).commit();
+		verify(worldUpdater, never()).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
 	}
 
 	@Test

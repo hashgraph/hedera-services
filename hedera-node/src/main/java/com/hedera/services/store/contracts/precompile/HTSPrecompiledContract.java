@@ -113,7 +113,6 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
@@ -255,6 +254,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Address senderAddress;
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
+	private MessageFrame messageFrame;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -298,7 +298,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
- 		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
+		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
 
 		if (messageFrame.isStatic() && !isRedirectProxy) {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
@@ -315,6 +315,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		if (this.precompile == null) {
 			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 			return null;
+		} else if (this.messageFrame.getRevertReason().isPresent()) {
+			return null;
 		}
 
 		if (isTokenReadOnlyTransaction) {
@@ -327,6 +329,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	void prepareFields(final MessageFrame messageFrame) {
+		this.messageFrame = messageFrame;
 		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
 		this.sideEffectsTracker = sideEffectsFactory.get();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
@@ -748,6 +751,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			mintOp = decoder.decodeMint(input);
+			try {
+				validateAndSetRevertReasonIfNeeded(mintOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0, "Invalid token mint amount!");
+			} catch (InvalidTransactionException e) {
+				return null;
+			}
 			return syntheticTxnFactory.createMint(mintOp);
 		}
 
@@ -757,7 +765,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		) {
 			Objects.requireNonNull(mintOp);
 
-			validateTrue(mintOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0, FAIL_INVALID);
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(mintOp.tokenType());
 			final var hasRequiredSigs = validateKey(frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey);
@@ -1002,6 +1009,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			burnOp = decoder.decodeBurn(input);
+			try {
+				validateAndSetRevertReasonIfNeeded(burnOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0, "Invalid token burn amount!");
+			} catch (InvalidTransactionException e) {
+				return null;
+			}
 			return syntheticTxnFactory.createBurn(burnOp);
 		}
 
@@ -1009,7 +1021,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public void run(final MessageFrame frame) {
 			Objects.requireNonNull(burnOp);
 
-			validateTrue(burnOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0, FAIL_INVALID);
 			/* --- Check required signatures --- */
 			final var tokenId = Id.fromGrpcToken(burnOp.tokenType());
 			final var hasRequiredSigs = validateKey(
@@ -1307,12 +1318,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame
-	 * 		current frame
-	 * @param target
-	 * 		the element to test for key activation, in standard form
-	 * @param activationTest
-	 * 		the function which should be invoked for key validation
+	 * @param frame          current frame
+	 * @param target         the element to test for key activation, in standard form
+	 * @param activationTest the function which should be invoked for key validation
 	 * @return whether the implied key is active
 	 */
 	private boolean validateKey(
@@ -1356,14 +1364,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param isDelegateCall
-		 * 		a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
-		 * @param target
-		 * 		an address with an implicit key understood by this implementation
-		 * @param activeContract
-		 * 		the contract address that can activate a contract or delegatable contract key
-		 * @param worldLedgers
-		 * 		the worldLedgers representing current state
+		 * @param isDelegateCall a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
+		 * @param target         an address with an implicit key understood by this implementation
+		 * @param activeContract the contract address that can activate a contract or delegatable contract key
+		 * @param worldLedgers   the worldLedgers representing current state
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(
@@ -1411,6 +1415,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		precompile.addImplicitCostsIn(accessor);
 		final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
 		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+	}
+
+	private void validateAndSetRevertReasonIfNeeded(final boolean flag, final String revertMessage) {
+		if (!flag) {
+			messageFrame.setRevertReason(Bytes.of(revertMessage.getBytes()));
+			throw new InvalidTransactionException(FAIL_INVALID);
+		}
 	}
 
 	/* --- Only used by unit tests --- */
