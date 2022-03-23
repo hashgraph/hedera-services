@@ -39,7 +39,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeSet;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
@@ -460,7 +459,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return Collections.unmodifiableSet(approveForAllNfts);
 	}
 
-	public void setApproveForAllNfts(final TreeSet<FcTokenAllowanceId> approveForAllNfts) {
+	public void setApproveForAllNfts(final Set<FcTokenAllowanceId> approveForAllNfts) {
 		assertMutable("ApproveForAllNfts");
 		this.approveForAllNfts = approveForAllNfts;
 	}

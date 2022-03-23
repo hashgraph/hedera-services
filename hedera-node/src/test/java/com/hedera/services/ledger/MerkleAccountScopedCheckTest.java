@@ -22,9 +22,13 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -65,11 +69,15 @@ class MerkleAccountScopedCheckTest {
 	@Mock
 	private BalanceChange balanceChange;
 	@Mock
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
+	@Mock
 	private MerkleAccount account;
 	@Mock
 	private Map<AccountProperty, Object> changeSet;
 	@Mock
 	private Function<AccountProperty, Object> extantProps;
+	@Mock
+	private MerkleUniqueToken merkleUniqueToken;
 
 	private MerkleAccountScopedCheck subject;
 
@@ -77,6 +85,7 @@ class MerkleAccountScopedCheckTest {
 	void setUp() {
 		subject = new MerkleAccountScopedCheck(dynamicProperties, validator);
 		subject.setBalanceChange(balanceChange);
+		subject.setNftsLedger(nftsLedger);
 	}
 
 	@Test
@@ -194,19 +203,10 @@ class MerkleAccountScopedCheckTest {
 	void failsAsExpectedWhenSpenderIsNotGrantedAllowanceOnNFT() {
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
-		when(balanceChange.getPayerID()).thenReturn(revokedSpender);
-		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
-
-		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
-	}
-
-	@Test
-	void failsAsExpectedWhenSpenderIsHasNoAllowanceOnSpecificNFT() {
-		when(balanceChange.serialNo()).thenReturn(4L);
-		when(balanceChange.isApprovedAllowance()).thenReturn(true);
-		when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
+		when(balanceChange.nftId()).thenReturn(nftId1);
+		when(nftsLedger.get(nftId1, NftProperty.SPENDER)).thenReturn(EntityId.fromGrpcAccountId(revokedSpender));
 
 		assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, subject.checkUsing(account, changeSet));
 	}
@@ -223,11 +223,12 @@ class MerkleAccountScopedCheckTest {
 
 	@Test
 	void happyPathWithSpenderIsHasAllowanceOnSpecificNFT() {
-		when(balanceChange.serialNo()).thenReturn(2L);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
 		when(account.getApproveForAllNfts()).thenReturn(NFT_ALLOWANCES);
 		when(balanceChange.getPayerID()).thenReturn(payerID);
 		when(balanceChange.getToken()).thenReturn(Id.fromGrpcToken(nonFungibleTokenID));
+		when(balanceChange.nftId()).thenReturn(nftId1);
+		when(nftsLedger.get(nftId1, NftProperty.SPENDER)).thenReturn(EntityId.fromGrpcAccountId(payerID));
 
 		assertEquals(OK, subject.checkUsing(account, changeSet));
 	}
@@ -255,6 +256,8 @@ class MerkleAccountScopedCheckTest {
 	private static final EntityNum payerNum = EntityNum.fromAccountId(payerID);
 	private static final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
 	private static final TokenID nonFungibleTokenID = TokenID.newBuilder().setTokenNum(1235L).build();
+	private static final NftId nftId1 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
+	private static final NftId nftId2 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 2L);
 	private static final FcTokenAllowanceId fungibleAllowanceId =
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
 	private static final FcTokenAllowanceId nftAllowanceId =
@@ -266,6 +269,5 @@ class MerkleAccountScopedCheckTest {
 		CRYPTO_ALLOWANCES.put(payerNum, 100L);
 		FUNGIBLE_ALLOWANCES.put(fungibleAllowanceId, 100L);
 		NFT_ALLOWANCES.add(fungibleAllowanceId);
-		NFT_ALLOWANCES.add(nftAllowanceId);
 	}
 }

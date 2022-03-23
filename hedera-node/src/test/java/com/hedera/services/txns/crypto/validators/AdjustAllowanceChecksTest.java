@@ -229,7 +229,6 @@ class AdjustAllowanceChecksTest {
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
-		given(owner.getApprovedForAllNftsAllowances()).willReturn(existingApproveForAllNftsAllowances);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 
 
@@ -303,6 +302,7 @@ class AdjustAllowanceChecksTest {
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(payerId));
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willThrow(InvalidTransactionException.class);
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 
 		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
@@ -642,14 +642,6 @@ class AdjustAllowanceChecksTest {
 	}
 
 	@Test
-	void validateGivingExistingDuplicateSerials() {
-		final var serials = List.of(12L, 1L);
-		var validity = subject.validateSerialNums(serials, payer, token2Model);
-		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
-	}
-
-
-	@Test
 	void validateIfSerialsEmptyWithoutApproval() {
 		final List<Long> serials = List.of();
 		var validity = subject.validateSerialNums(serials, payer, token2Model);
@@ -733,7 +725,6 @@ class AdjustAllowanceChecksTest {
 
 		given(payer.getCryptoAllowances()).willReturn(existingCryptoAllowances);
 		given(payer.getFungibleTokenAllowances()).willReturn(existingTokenAllowances);
-		given(payer.getApprovedForAllNftsAllowances()).willReturn(existingApproveForAllNftsAllowances);
 		given(payer.isAssociatedWith(token2Model.getId())).willReturn(true);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);

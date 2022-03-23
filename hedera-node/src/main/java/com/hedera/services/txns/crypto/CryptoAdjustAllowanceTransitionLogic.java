@@ -207,9 +207,14 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 				final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 						spender.asEntityNum());
 				mutableApprovedForAllNftsAllowances.add(key);
+			} else if (serialNums.isEmpty()) {
+				final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
+						spender.asEntityNum());
+				mutableApprovedForAllNftsAllowances.remove(key);
 			} else {
 				for (var serialNum : serialNums) {
-					final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum);
+					final var absoluteSerial = Math.abs(serialNum);
+					final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), absoluteSerial);
 					if (serialNum < 0) {
 						nft.setSpender(Id.DEFAULT);
 					} else {

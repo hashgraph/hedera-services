@@ -81,6 +81,9 @@ class MerkleAccountTest {
 	private static final boolean otherSmartContract = false;
 	private static final boolean otherReceiverSigRequired = false;
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
+	private static final FcTokenAllowanceId tokenAllowanceKey =
+			FcTokenAllowanceId.from( EntityNum.fromLong(2000L),  EntityNum.fromLong(1000L));
+
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
@@ -106,7 +109,8 @@ class MerkleAccountTest {
 
 		cryptoAllowances = mock(TreeMap.class);
 		fungibleTokenAllowances = mock(TreeMap.class);
-		approveForAllNfts = mock(TreeSet.class);
+		approveForAllNfts = new TreeSet<>();
+		approveForAllNfts.add(tokenAllowanceKey);
 
 		delegate = mock(MerkleAccountState.class);
 

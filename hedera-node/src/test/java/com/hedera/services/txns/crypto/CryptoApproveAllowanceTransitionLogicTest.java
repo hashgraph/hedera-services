@@ -264,12 +264,13 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAcccount);
+		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		subject.doStateTransition();
 
 		assertEquals(1, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAcccount.getFungibleTokenAllowances().size());
-		assertEquals(2, ownerAcccount.getApprovedForAllNftsAllowances().size());
+		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}

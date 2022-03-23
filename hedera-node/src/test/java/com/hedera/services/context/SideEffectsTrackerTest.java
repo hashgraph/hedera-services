@@ -268,7 +268,7 @@ class SideEffectsTrackerTest {
 
 		final var trackedNftAllowances = subject.getNftAllowances();
 		assertTrue(trackedNftAllowances.containsKey(ownerNum));
-		assertEquals(nftAllowance, trackedNftAllowances.get(ownerNum));
+		assertEquals(expectedNftAllowances.get(ownerNum), trackedNftAllowances.get(ownerNum));
 
 		subject.reset();
 		assertTrue(subject.getCryptoAllowances().isEmpty());
@@ -420,6 +420,13 @@ class SideEffectsTrackerTest {
 	}};
 	private static final Set<FcTokenAllowanceId> nftAllowance = new TreeSet<>() {{
 		add(fungibleAllowanceId);
+	}};
+	private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> expectedNftAllowances =
+			new TreeMap<>() {{
+				put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
+					put(fungibleAllowanceId, nftAllowance1);
+					put(nftAllowanceId, nftAllowance2);
+				}});
 	}};
 	private static final UniqueToken nft1 = new UniqueToken(
 			Id.fromGrpcToken(bToken), 1L, Id.fromGrpcAccount(owner));
