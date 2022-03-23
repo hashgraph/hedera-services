@@ -56,7 +56,6 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_GAS_THROTTLE_SNAPSHOT;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
@@ -153,6 +152,7 @@ class MerkleNetworkContextTest {
 		subject.setLastMidnightBoundaryCheck(lastMidnightBoundaryCheck);
 		subject.setPreparedUpdateFileNum(preparedUpdateFileNum);
 		subject.setPreparedUpdateFileHash(preparedUpdateFileHash);
+		subject.markMigrationRecordsStreamed();
 	}
 
 	@AfterEach
@@ -201,6 +201,7 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
 		assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
 		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
+		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());
 		// and:
 		assertTrue(subject.isImmutable());
 		assertFalse(subjectCopy.isImmutable());
@@ -970,6 +971,7 @@ class MerkleNetworkContextTest {
 		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
 		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
 		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
+		assertFalse(subject.areMigrationRecordsStreamed());
 		// and:
 		inOrder.verify(seqNo).deserialize(in);
 		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
@@ -981,6 +983,60 @@ class MerkleNetworkContextTest {
 		assertEquals(gasLimitUsageSnapshot, subject.getGasThrottleUsageSnapshot());
 	}
 
+	@Test
+	void deserializeWorksFor0240() throws IOException {
+		// setup:
+		var in = mock(SerializableDataInputStream.class);
+		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
+		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
+		InOrder inOrder = inOrder(in, seqNo);
+
+		subject = new MerkleNetworkContext();
+
+		given(in.readInt())
+				.willReturn(usageSnapshots.length)
+				.willReturn(congestionStarts.length)
+				.willReturn(stateVersion);
+		given(in.readLong())
+				.willReturn(usageSnapshots[0].used())
+				.willReturn(usageSnapshots[1].used())
+				.willReturn(lastScannedEntity)
+				.willReturn(entitiesScannedThisSecond)
+				.willReturn(entitiesTouchedThisSecond)
+				.willReturn(preparedUpdateFileNum)
+				.willReturn(gasLimitUsageSnapshot.used());
+		given(serdes.readNullableInstant(in))
+				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
+				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
+				.willReturn(fromJava(usageSnapshots[1].lastDecisionTime()))
+				.willReturn(fromJava(congestionStarts[0]))
+				.willReturn(fromJava(congestionStarts[1]))
+				.willReturn(fromJava(lastMidnightBoundaryCheck))
+				.willReturn(fromJava(gasLimitUsageSnapshot.lastDecisionTime()));
+		given(in.readByteArray(48)).willReturn(preparedUpdateFileHash);
+		given(in.readBoolean()).willReturn(true);
+
+		// when:
+		subject.deserialize(in, MerkleNetworkContext.RELEASE_0240_VERSION);
+
+		// then:
+		assertEquals(lastMidnightBoundaryCheck, subject.lastMidnightBoundaryCheck());
+		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
+		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
+		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
+		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
+		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
+		assertTrue(subject.areMigrationRecordsStreamed());
+		// and:
+		inOrder.verify(seqNo).deserialize(in);
+		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
+		// and:
+		assertEquals(lastScannedEntity, subject.lastScannedEntity());
+		assertEquals(stateVersion, subject.getStateVersion());
+		assertEquals(preparedUpdateFileNum, subject.getPreparedUpdateFileNum());
+		assertArrayEquals(preparedUpdateFileHash, subject.getPreparedUpdateFileHash());
+		assertEquals(gasLimitUsageSnapshot, subject.getGasThrottleUsageSnapshot());
+	}
 
 	@Test
 	void deserializeWorksForNullInstants() throws IOException {
@@ -1067,6 +1123,7 @@ class MerkleNetworkContextTest {
 		inOrder.verify(serdes).writeNullableInstant(fromJava(lastMidnightBoundaryCheck), out);
 		inOrder.verify(out).writeLong(preparedUpdateFileNum);
 		inOrder.verify(out).writeByteArray(preparedUpdateFileHash);
+		inOrder.verify(out).writeBoolean(true);
 	}
 
 	@Test

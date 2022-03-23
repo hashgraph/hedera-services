@@ -60,8 +60,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -251,7 +251,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 				.given().when(
 						scheduleCreate("invalidPayer", cryptoCreate("secondary"))
 								.designatingPayer("1.2.3")
-								.hasKnownStatus(INVALID_ACCOUNT_ID)
+								.hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST)
 				)
 				.then();
 	}
@@ -512,7 +512,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
 										.receiverSigRequired(true)
 						)
 								.designatingPayer("1.2.3")
-								.hasKnownStatus(INVALID_ACCOUNT_ID)
+								.hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST)
 				);
 	}
 
