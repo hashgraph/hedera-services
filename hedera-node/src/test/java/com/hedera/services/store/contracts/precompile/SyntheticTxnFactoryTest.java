@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.keys.KeyFactory;
@@ -31,10 +32,13 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -135,6 +139,44 @@ class SyntheticTxnFactoryTest {
 
 		assertEquals(fungible, txnBody.getTokenMint().getToken());
 		assertEquals(amount, txnBody.getTokenMint().getAmount());
+	}
+
+	@Test
+	void createsExpectedAdjustAllowance() {
+		final var amount = BigInteger.ONE;
+		var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, BigInteger.ZERO, true);
+		allowances = allowances.withAdjustment(BigInteger.ONE);
+
+		final var result = subject.createAdjustAllowance(allowances);
+		final var txnBody = result.build();
+
+		assertEquals(amount.longValue(), txnBody.getCryptoAdjustAllowance().getTokenAllowances(0).getAmount());
+		assertEquals(token, txnBody.getCryptoAdjustAllowance().getTokenAllowances(0).getTokenId());
+		assertEquals(receiver, txnBody.getCryptoAdjustAllowance().getTokenAllowances(0).getSpender());
+	}
+
+	@Test
+	void createsExpectedAdjustAllowanceNFT() {
+		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
+
+		final var result = subject.createAdjustAllowance(allowances);
+		final var txnBody = result.build();
+
+		assertEquals(token, txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getTokenId());
+		assertEquals(receiver, txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getSpender());
+		assertEquals(1L, txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getSerialNumbers(0));
+	}
+
+	@Test
+	void createsAdjustAllowanceForAllNFT() {
+		var allowances = new SetApprovalForAllWrapper(receiver, true);
+
+		final var result = subject.createAdjustAllowanceForAllNFT(allowances, token);
+		final var txnBody = result.build();
+
+		assertEquals(receiver, txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getSpender());
+		assertEquals(token, txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getTokenId());
+		assertEquals(BoolValue.of(true), txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getApprovedForAll());
 	}
 
 	@Test
