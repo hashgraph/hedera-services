@@ -90,8 +90,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -481,6 +484,44 @@ class ServicesStateTest {
 		verify(subject).init(platform, addressBook, dualState);
 		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
 		ServicesState.setUniqueTokenMigrator(ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap);
+	}
+
+	private class ExpectedThrowable extends RuntimeException {
+		ExpectedThrowable() {}
+	}
+
+	@Test
+	void unmigratedDataInRelease0240SkipsInitUntilMigrated() {
+		ServicesState.setBlobMigrator(blobMigrator);
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
+
+		subject = mock(ServicesState.class);
+		doCallRealMethod().when(subject).migrate();
+		doCallRealMethod().when(subject).init(any(), any(), any());
+		doThrow(new ExpectedThrowable()).when(subject).setChild(anyInt(), any());
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0240_VERSION);
+		given(subject.getPlatformForDeferredInit()).willReturn(platform);
+		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
+		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
+
+		subject.init(platform, addressBook, dualState);
+
+		verify(subject, never()).setChild(anyInt(), any());
+		verify(subject, never()).setChild(anyInt(), any(), any(), anyBoolean());
+
+		assertThrows(ExpectedThrowable.class, subject::migrate);
+
+		verify(subject, times(2)).init(platform, addressBook, dualState);
+
+		/*
+		verifyNoInteractions(blobMigrator);
+		verifyNoInteractions(mockMigrator);
+		verify(uniqueTokenMigrator).migrate(subject, StateVersions.RELEASE_0240_VERSION);
+		verify(subject).init(platform, addressBook, dualState);
+		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
+		ServicesState.setUniqueTokenMigrator(ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap);
+		 */
 	}
 
 	@Test
