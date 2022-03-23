@@ -29,32 +29,29 @@ import com.swirlds.common.crypto.TransactionSignature;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
 public class NonPayerKeysScreen {
 	private final TransactionContext txnCtx;
 	private final InHandleActivationHelper activationHelper;
-	private final Predicate<ResponseCodeEnum> terminalSigStatusTest;
 	private final BiPredicate<JKey, TransactionSignature> validityTest;
 
 	@Inject
 	public NonPayerKeysScreen(
 			TransactionContext txnCtx,
 			InHandleActivationHelper activationHelper,
-			Predicate<ResponseCodeEnum> terminalSigStatusTest,
 			BiPredicate<JKey, TransactionSignature> validityTest
 	) {
 		this.txnCtx = txnCtx;
 		this.validityTest = validityTest;
 		this.activationHelper = activationHelper;
-		this.terminalSigStatusTest = terminalSigStatusTest;
 	}
 
-	public boolean reqKeysAreActiveGiven(ResponseCodeEnum sigStatus) {
-		if (terminalSigStatusTest.test(sigStatus)) {
+	public boolean reqKeysAreActiveGiven(final ResponseCodeEnum sigStatus) {
+		if (sigStatus != OK) {
 			txnCtx.setStatus(sigStatus);
 			return false;
 		}

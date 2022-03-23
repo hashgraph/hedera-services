@@ -48,6 +48,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -258,7 +259,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 							} else {
 								newAdminKey.ifPresent(a -> b.setAdminKey(spec.registry().getKey(a)));
 							}
-							newTreasury.ifPresent(a -> b.setTreasury(spec.registry().getAccountID(a)));
+							newTreasury.ifPresent(a -> b.setTreasury(asId(a, spec)));
 							newSupplyKey.ifPresent(k -> b.setSupplyKey(spec.registry().getKey(k)));
 							newSupplyKeySupplier.ifPresent(s -> b.setSupplyKey(s.get()));
 							newWipeKey.ifPresent(k -> b.setWipeKey(spec.registry().getKey(k)));
