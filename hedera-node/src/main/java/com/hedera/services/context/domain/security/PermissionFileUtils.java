@@ -49,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
@@ -128,6 +129,7 @@ public final class PermissionFileUtils {
 		permissionKeys.put(CryptoDelete, "cryptoDelete");
 		permissionKeys.put(CryptoApproveAllowance, "approveAllowances");
 		permissionKeys.put(CryptoAdjustAllowance, "adjustAllowance");
+		permissionKeys.put(CryptoDeleteAllowance, "deleteAllowance");
 		permissionKeys.put(CryptoAddLiveHash, "addLiveHash");
 		permissionKeys.put(CryptoDeleteLiveHash, "deleteLiveHash");
 		permissionKeys.put(FileCreate, "createFile");

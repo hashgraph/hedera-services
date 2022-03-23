@@ -8,7 +8,7 @@
                     "operations": [
                         "CryptoTransfer",
                         "CryptoCreate",
-					  "CryptoApproveAllowance", "CryptoAdjustAllowance"
+					  "CryptoApproveAllowance", "CryptoAdjustAllowance", "CryptoDeleteAllowance"
 					],
                     "opsPerSec": 10000
                 },
