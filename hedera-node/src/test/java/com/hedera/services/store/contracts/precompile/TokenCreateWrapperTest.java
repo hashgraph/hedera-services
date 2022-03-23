@@ -207,6 +207,22 @@ class TokenCreateWrapperTest {
 	}
 
 	@Test
+	void translatesFixedFeeWithNoCollectorAsExpected() {
+		// given
+		final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, token, false, false, null);
+
+		// when
+		final var result = feeWrapper.asGrpc();
+
+		// then
+		assertTrue(result.hasFixedFee());
+		assertEquals(5, result.getFixedFee().getAmount());
+		assertTrue(result.getFixedFee().hasDenominatingTokenId());
+		assertEquals(token, result.getFixedFee().getDenominatingTokenId());
+		assertFalse(result.hasFeeCollectorAccountId());
+	}
+
+	@Test
 	void translatesFixedFeeWithDenominatedTokenAsExpected() {
 		// given
 		final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, token, false, false, receiver);
@@ -292,6 +308,23 @@ class TokenCreateWrapperTest {
 	}
 
 	@Test
+	void translatesFractionalFeesWithoutCollectorAsExpected() {
+		// given
+		final var feeWrapper = new TokenCreateWrapper.FractionalFeeWrapper(4, 5, 10, 20, true, null);
+
+		// when
+		final var result = feeWrapper.asGrpc();
+
+		// then
+		assertEquals(4, result.getFractionalFee().getFractionalAmount().getNumerator());
+		assertEquals(5, result.getFractionalFee().getFractionalAmount().getDenominator());
+		assertEquals(10, result.getFractionalFee().getMinimumAmount());
+		assertEquals(20, result.getFractionalFee().getMaximumAmount());
+		assertTrue(result.getFractionalFee().getNetOfTransfers());
+		assertFalse(result.hasFeeCollectorAccountId());
+	}
+
+	@Test
 	void translatesRoyaltyFeesAsExpected() {
 		// given
 		final var fallbackFeeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, token, false, false, receiver);
@@ -305,5 +338,20 @@ class TokenCreateWrapperTest {
 		assertEquals(5, result.getRoyaltyFee().getExchangeValueFraction().getDenominator());
 		assertEquals(fallbackFeeWrapper.asGrpc().getFixedFee(), result.getRoyaltyFee().getFallbackFee());
 		assertEquals(receiver, result.getFeeCollectorAccountId());
+	}
+
+	@Test
+	void translatesRoyaltyFeeWithoutCollectorAndFallbackFeeAsExpected() {
+		// given
+		final var feeWrapper = new TokenCreateWrapper.RoyaltyFeeWrapper(4, 5, null, null);
+
+		// when
+		final var result = feeWrapper.asGrpc();
+
+		// then
+		assertEquals(4, result.getRoyaltyFee().getExchangeValueFraction().getNumerator());
+		assertEquals(5, result.getRoyaltyFee().getExchangeValueFraction().getDenominator());
+		assertFalse(result.getRoyaltyFee().hasFallbackFee());
+		assertFalse(result.hasFeeCollectorAccountId());
 	}
 }

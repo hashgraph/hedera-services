@@ -30,8 +30,10 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.codec.DecoderException;
 
@@ -389,10 +391,12 @@ final class TokenCreateWrapper {
 		}
 
 		CustomFee asGrpc() {
-			return CustomFee.newBuilder()
-				.setFixedFee(asBuilder().build())
-				.setFeeCollectorAccountId(feeCollector)
-				.build();
+			final var feeBuilder = CustomFee.newBuilder()
+					.setFixedFee(asBuilder().build());
+			if (feeCollector != null) {
+				feeBuilder.setFeeCollectorAccountId(feeCollector);
+			}
+			return feeBuilder.build();
 		}
 	}
 
@@ -406,20 +410,22 @@ final class TokenCreateWrapper {
 	) {
 
 		CustomFee asGrpc() {
-			return CustomFee.newBuilder()
-				.setFractionalFee(com.hederahashgraph.api.proto.java.FractionalFee.newBuilder()
-					.setFractionalAmount(Fraction.newBuilder()
-						.setNumerator(numerator)
-						.setDenominator(denominator)
-						.build()
-					)
-					.setMinimumAmount(minimumAmount)
-					.setMaximumAmount(maximumAmount)
-					.setNetOfTransfers(netOfTransfers)
-					.build()
-				)
-				.setFeeCollectorAccountId(feeCollector)
-				.build();
+			final var feeBuilder = CustomFee.newBuilder()
+					.setFractionalFee(FractionalFee.newBuilder()
+							.setFractionalAmount(Fraction.newBuilder()
+									.setNumerator(numerator)
+									.setDenominator(denominator)
+									.build()
+							)
+							.setMinimumAmount(minimumAmount)
+							.setMaximumAmount(maximumAmount)
+							.setNetOfTransfers(netOfTransfers)
+							.build()
+					);
+			if (feeCollector != null) {
+				feeBuilder.setFeeCollectorAccountId(feeCollector);
+			}
+			return feeBuilder.build();
 		}
 	}
 
@@ -427,18 +433,20 @@ final class TokenCreateWrapper {
 			long numerator, long denominator, FixedFeeWrapper fallbackFixedFee, AccountID feeCollector
 	) {
 		CustomFee asGrpc() {
-			return CustomFee.newBuilder()
-				.setRoyaltyFee(com.hederahashgraph.api.proto.java.RoyaltyFee.newBuilder()
+			final var royaltyFeeBuilder = RoyaltyFee.newBuilder()
 					.setExchangeValueFraction(Fraction.newBuilder()
-						.setNumerator(numerator)
-						.setDenominator(denominator)
-						.build()
-					)
-					.setFallbackFee(fallbackFixedFee.asBuilder().build())
-					.build()
-				)
-				.setFeeCollectorAccountId(feeCollector)
-				.build();
+							.setNumerator(numerator)
+							.setDenominator(denominator)
+							.build()
+					);
+			if (fallbackFixedFee != null) {
+				royaltyFeeBuilder.setFallbackFee(fallbackFixedFee.asBuilder().build());
+			}
+			final var customFeeBuilder = CustomFee.newBuilder().setRoyaltyFee(royaltyFeeBuilder.build());
+			if (feeCollector != null) {
+				customFeeBuilder.setFeeCollectorAccountId(feeCollector);
+			}
+			return customFeeBuilder.build();
 		}
 	}
 }
