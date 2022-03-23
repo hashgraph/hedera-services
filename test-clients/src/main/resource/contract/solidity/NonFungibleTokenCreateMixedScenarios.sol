@@ -28,7 +28,7 @@ contract NonFungibleTokenCreateMixedScenarios is NonFungibleTokenCreate {
         }
     }
 
-    function createTokenAndMintAndTransfer(bytes[] memory metadata, address receiver) external {
+    function createTokenAndMintAndTransfer(bytes[] memory metadata, int64[] memory serialNumbersToTransfer, address receiver) external {
         address createdToken = super.createTokenWithDefaultKeys();
 
         (int response, uint64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(createdToken, 0, metadata);
@@ -46,10 +46,12 @@ contract NonFungibleTokenCreateMixedScenarios is NonFungibleTokenCreate {
             revert ("Nonfungible associate failed");
         }
 
-        int transferResponse = HederaTokenService.transferNFT(supplyContract, receiver, createdToken, 1);
+        for(uint i = 0; i < serialNumbersToTransfer.length; i++) {
+            int transferResponse = HederaTokenService.transferNFT(supplyContract, receiver, createdToken, serialNumbersToTransfer[i]);
 
-        if(transferResponse != HederaResponseCodes.SUCCESS) {
-            revert ("Nonfungible transfer failed");
+            if(transferResponse != HederaResponseCodes.SUCCESS) {
+                revert ("Nonfungible transfer failed");
+            }
         }
     }
 }
