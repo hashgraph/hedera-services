@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -353,7 +354,7 @@ public class Account {
 		return approveForAllNfts == null ? Collections.emptySet() : approveForAllNfts;
 	}
 
-	public TreeSet<FcTokenAllowanceId> getMutableApprovedForAllNftsAllowances() {
+	public SortedSet<FcTokenAllowanceId> getMutableApprovedForAllNftsAllowances() {
 		if (approveForAllNfts == null) {
 			approveForAllNfts = new TreeSet<>();
 		}

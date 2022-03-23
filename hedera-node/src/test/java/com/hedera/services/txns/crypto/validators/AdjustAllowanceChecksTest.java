@@ -593,6 +593,13 @@ class AdjustAllowanceChecksTest {
 	}
 
 	@Test
+	void validatesIfAbsoluteZeroSerialIsNotValid() {
+		final var serials = List.of(0L);
+
+		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, subject.validateSerialNums(serials, payer, token2Model));
+	}
+
+	@Test
 	void validateSerialsOwner() {
 		final var serials = List.of(1L, 10L);
 		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1))).willReturn(token);

@@ -246,6 +246,10 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 
 		for (var serial : serialNums) {
 			var absoluteSerial = absolute(serial);
+			if (absoluteSerial == 0) {
+				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
+			}
+
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), absoluteSerial);
 			if (!nftsMap.get().containsKey(EntityNumPair.fromNftId(nftId))) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -254,9 +258,6 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			final var nft = nftsMap.get().get(EntityNumPair.fromNftId(nftId));
 			if (!validOwner(nft, ownerAccount, token)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-			}
-			if (absoluteSerial == 0) {
-				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
 		}
 

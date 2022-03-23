@@ -198,7 +198,6 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
 			tokenStore.persistNfts(nfts);
-			// TODO track persisted nfts.
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 		}
 	}

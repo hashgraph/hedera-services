@@ -116,6 +116,10 @@ class AccountTest {
 
 		subject.setProxy(Id.DEFAULT);
 		assertEquals(Id.DEFAULT, subject.getProxy());
+
+		assertTrue(subject.getMutableCryptoAllowances().isEmpty());
+		assertTrue(subject.getMutableFungibleTokenAllowances().isEmpty());
+		assertTrue(subject.getMutableApprovedForAllNftsAllowances().isEmpty());
 	}
 
 	@Test

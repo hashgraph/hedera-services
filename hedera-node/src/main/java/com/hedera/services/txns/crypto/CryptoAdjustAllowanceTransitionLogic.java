@@ -48,7 +48,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.absolute;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
@@ -226,7 +225,6 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			validateAllowanceLimitsOn(accountToAdjust);
 			tokenStore.persistNfts(nfts);
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-			// TODO track persisted nfts
 			sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), mutableApprovedForAllNftsAllowances, nfts);
 		}
 	}
@@ -290,28 +288,6 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	 */
 	private boolean exceedsAccountLimit(final Account ownerAccount) {
 		return ownerAccount.getTotalAllowances() > dynamicProperties.maxAllowanceLimitPerAccount();
-	}
-
-	/**
-	 * Adds positive serial numbers, and removes negative serial numbers if they exist in the list.
-	 *
-	 * @param oldSerials
-	 * 		existing allowance serial numbers for the account
-	 * @param opSerials
-	 * 		serial numbers given in CryptoAdjustAllowance operation
-	 * @return adjusted serial numbers to be set for the allowance
-	 */
-	private List<Long> adjustSerials(final List<Long> oldSerials, final List<Long> opSerials) {
-		List<Long> newSerials = new ArrayList<>(oldSerials);
-
-		for (final Long serial : opSerials) {
-			if (serial < 0) {
-				newSerials.remove(absolute(serial));
-			} else {
-				newSerials.add(serial);
-			}
-		}
-		return newSerials;
 	}
 
 	private void validateAllowanceLimitsOn(final Account owner) {

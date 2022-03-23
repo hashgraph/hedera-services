@@ -30,7 +30,6 @@ import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
@@ -42,7 +41,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
@@ -751,23 +749,12 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	void equalsWorksForAllowances() {
+	void equalsWorksForAllowances1() {
 		final EntityNum spenderNum1 = EntityNum.fromLong(100L);
-		final EntityNum spenderNum2 = EntityNum.fromLong(101L);
-		final EntityNum tokenForAllowance = EntityNum.fromLong(200L);
 		final Long cryptoAllowance = 100L;
-		final boolean approvedForAll = true;
-		final Long tokenAllowanceVal = 1L;
-		final List<Long> serialNumbers = new ArrayList<>();
-
-		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum1);
-		final FcTokenAllowance tokenAllowanceValue = FcTokenAllowance.from(approvedForAll, serialNumbers);
-		final NftId nftId = new NftId(0, 0, tokenForAllowance.longValue(), 1L);
 
 
 		otherCryptoAllowances.put(spenderNum1, cryptoAllowance);
-		otherApproveForAllNfts.add(tokenAllowanceKey);
-		otherFungibleTokenAllowances.put(tokenAllowanceKey, tokenAllowanceVal);
 
 		final var otherSubject = new MerkleAccountState(
 				key,
@@ -779,7 +766,59 @@ class MerkleAccountStateTest {
 				alias,
 				otherKvPairs,
 				otherCryptoAllowances,
+				fungibleTokenAllowances,
+				approveForAllNfts);
+
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForAllowances2() {
+		final EntityNum spenderNum1 = EntityNum.fromLong(100L);
+		final EntityNum tokenForAllowance = EntityNum.fromLong(200L);
+		final Long tokenAllowanceVal = 1L;
+
+		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum1);
+
+		otherFungibleTokenAllowances.put(tokenAllowanceKey, tokenAllowanceVal);
+
+		final var otherSubject = new MerkleAccountState(
+				key,
+				expiry, balance, autoRenewSecs,
+				memo,
+				deleted, smartContract, receiverSigRequired,
+				proxy,
+				number, autoAssociationMetadata,
+				alias,
+				otherKvPairs,
+				cryptoAllowances,
 				otherFungibleTokenAllowances,
+				approveForAllNfts);
+
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForAllowances3() {
+		final EntityNum spenderNum1 = EntityNum.fromLong(100L);
+		final EntityNum tokenForAllowance = EntityNum.fromLong(200L);
+
+		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum1);
+
+
+		otherApproveForAllNfts.add(tokenAllowanceKey);
+
+		final var otherSubject = new MerkleAccountState(
+				key,
+				expiry, balance, autoRenewSecs,
+				memo,
+				deleted, smartContract, receiverSigRequired,
+				proxy,
+				number, autoAssociationMetadata,
+				alias,
+				otherKvPairs,
+				cryptoAllowances,
+				fungibleTokenAllowances,
 				otherApproveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
