@@ -25,7 +25,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -56,54 +55,6 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CALL_RETURNER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_CREATE_RETURNER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADDRESS_VAL_RETURNER_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BUILD_THEN_REVERT_THEN_BUILD_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_DEPLOY_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_ADDRESS_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_GET_BYTECODE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE2_FACTORY_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_AND_RECREATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_FACTORY_GET_BYTECODE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_PLACEHOLDER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC_721_CONTRACT;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC_721_OWNER_OF_CALL;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NORMAL_DEPLOY_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OUTER_CREATOR_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_ASSOCIATE_BOTH_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_CREATE_USER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_DISSOCIATE_BOTH_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_FT_SEND_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_NFT_SEND_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_USER_HELPER_MINT_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_USER_MINT_NFT_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PRECOMPILE_CREATE2_USER_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.RELINQUISH_FUNDS_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.RETURN_THIS_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE2_FACTORY_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.REVERTING_CREATE_FACTORY_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_ASSOCIATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_BURN_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_DISSOCIATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_MINT_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_MULTIPLE_ASSOCIATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_MULTIPLE_DISSOCIATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_NFTS_TRANSFER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_NFT_TRANSFER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_TOKENS_TRANSFER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SAFE_TOKEN_TRANSFER_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_CALL_CREATOR_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_CREATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_FACTORY_BUILD_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_FACTORY_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.START_CHAIN_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_GET_BALANCE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_VACATE_ADDRESS_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WHAT_IS_FOO_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.WRONG_REPEATED_CREATE2_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -128,7 +79,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -208,20 +158,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> create2Specs() {
-		return List.of(new HapiApiSpec[]{
-						create2FactoryWorksAsExpected(),
-						canDeleteViaAlias(),
-						cannotSelfDestructToMirrorAddress(),
-						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
-						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-						canUseAliasesInPrecompilesAndContractKeys(),
-						inlineCreateCanFailSafely(),
-						inlineCreate2CanFailSafely(),
-						allLogOpcodesResolveExpectedContractId(),
-						eip1014AliasIsPriorityInErcOwnerPrecompile(),
-				}
-		);
+		return List.of(
+				create2FactoryWorksAsExpected(),
+				canDeleteViaAlias(),
+				cannotSelfDestructToMirrorAddress(),
+				priorityAddressIsCreate2ForStaticHapiCalls(),
+				priorityAddressIsCreate2ForInternalMessages(),
+				create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+				canUseAliasesInPrecompilesAndContractKeys(),
+				inlineCreateCanFailSafely(),
+				inlineCreate2CanFailSafely(),
+				allLogOpcodesResolveExpectedContractId(),
+				eip1014AliasIsPriorityInErcOwnerPrecompile());
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
@@ -542,10 +490,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	private HapiApiSpec eip1014AliasIsPriorityInErcOwnerPrecompile() {
 		final var creation2 = "create2Txn";
-		final var initcode = "initcode";
-		final var ercInitcode = "ercInitcode";
-		final var ercContract = "ercContract";
-		final var pc2User = "pc2User";
+		final var ercContract = "ERC721Contract";
+		final var pc2User = "Create2PrecompileUser";
 		final var nft = "nonFungibleToken";
 		final var multiKey = "swiss";
 		final var lookup = "ownerOfPrecompile";
@@ -561,16 +507,13 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(initcode),
-						updateLargeFile(GENESIS, initcode, extractByteCode(PRECOMPILE_CREATE2_USER_PATH)),
-						createLargeFile(GENESIS, ercInitcode, extractByteCode(ERC_721_CONTRACT)),
-						contractCreate(ercContract).omitAdminKey().bytecode(ercInitcode),
+						uploadInitCode(ercContract, pc2User),
+						contractCreate(ercContract).omitAdminKey(),
 						contractCreate(pc2User)
 								.adminKey(multiKey)
 								.payingWith(GENESIS)
-								.proxy("0.0.3")
-								.bytecode(initcode),
-						contractCall(pc2User, PC2_CREATE_USER_ABI, salt)
+								.proxy("0.0.3"),
+						contractCall(pc2User, "createUser", salt)
 								.payingWith(GENESIS)
 								.gas(4_000_000L)
 								.via(creation2),
@@ -597,7 +540,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						}),
 						sourcing(() -> getContractInfo(userLiteralId.get()).logged()),
 						sourcing(() -> contractCall(ercContract,
-								ERC_721_OWNER_OF_CALL, nftAddress.get(), 1)
+								"ownerOf", nftAddress.get(), 1)
 								.via(lookup)
 								.gas(4_000_000))
 				).then(
@@ -619,7 +562,6 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final var userContract = "Create2User";
 		final var ft = "fungibleToken";
 		final var nft = "nonFungibleToken";
-		final var otherNft = "otherNonFungibleToken";
 		final var multiKey = "swiss";
 		final var ftFail = "ofInterest";
 		final var nftFail = "alsoOfInterest";
