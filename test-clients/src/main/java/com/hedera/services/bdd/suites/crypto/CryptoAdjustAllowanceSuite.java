@@ -244,7 +244,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(1)
-										.nftAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
 										.tokenAllowancesCount(0)
 										.cryptoAllowancesContaining(spender, 100L)
 								));
@@ -323,7 +323,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(payer)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)
-										.nftAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
 										.tokenAllowancesCount(1)
 										.cryptoAllowancesContaining(spender, 200L)
 										.tokenAllowancesContaining(token, spender, 100L)
@@ -418,7 +418,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)
-										.nftAllowancesCount(3)
+										.nftApprovedForAllAllowancesCount(3)
 										.tokenAllowancesCount(2)
 										.cryptoAllowancesContaining(spender, 100L)
 										.tokenAllowancesContaining(token, spender, 100L)
@@ -462,7 +462,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)
-										.nftAllowancesCount(3)
+										.nftApprovedForAllAllowancesCount(3)
 										.tokenAllowancesCount(2)
 										.cryptoAllowancesContaining(spender, 100L)
 										.tokenAllowancesContaining(token, spender, 100L)
@@ -516,7 +516,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 				.then(
 						getAccountInfo(owner)
 								.has(accountWith()
-										.nftAllowancesCount(2)
+										.nftApprovedForAllAllowancesCount(2)
 										.nftAllowancesContaining(nft, spender, true, asList())
 										.nftAllowancesContaining(nft, spender1, false, asList(1L, 2L, 3L, 4L))
 								));
@@ -627,7 +627,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 										.tokenAllowancesContaining(token, spender, 40L)
 										.nftAllowancesContaining(nft, spender, false, List.of(3L))
 										.cryptoAllowancesCount(1)
-										.nftAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
 										.tokenAllowancesCount(1)
 								));
 	}
@@ -776,7 +776,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.has(accountWith()
 										.cryptoAllowancesCount(2)
 										.tokenAllowancesCount(1)
-										.nftAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
 								)
 				)
 				.then(
@@ -787,7 +787,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.has(accountWith()
 										.cryptoAllowancesCount(1)
 										.tokenAllowancesCount(1)
-										.nftAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
 								),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
@@ -851,7 +851,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.addNftAllowance(owner, nft, spender, false, List.of(1L)),
 						getAccountInfo(owner)
 								.has(accountWith()
-										.nftAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
 										.nftAllowancesContaining(nft, spender, false, List.of(1L))
 								),
 						cryptoAdjustAllowance()
@@ -866,7 +866,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 
 								.has(accountWith()
-										.nftAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
 										.nftAllowancesContaining(nft, spender, true, List.of())
 								));
 	}
@@ -910,7 +910,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.addNftAllowance(owner, nft, spender, false, List.of(1L)),
 						getAccountInfo(owner)
 								.has(accountWith()
-										.nftAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
 										.nftAllowancesContaining(nft, spender, false, List.of(1L))
 								),
 						cryptoAdjustAllowance()
@@ -920,7 +920,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 				.then(
 						getAccountInfo(owner)
 								.has(accountWith()
-										.nftAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
 										.nftAllowancesContaining(nft, spender, true, List.of())
 								));
 	}
@@ -1152,7 +1152,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(0)
-										.nftAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
 										.tokenAllowancesCount(0)
 								));
 	}
@@ -1212,7 +1212,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(0)
-										.nftAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
 										.tokenAllowancesCount(0)
 								));
 	}
@@ -1278,7 +1278,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(0)
-										.nftAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
 										.tokenAllowancesCount(0)
 								));
 	}
@@ -1330,7 +1330,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(1)
-										.nftAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
 										.tokenAllowancesCount(0)
 								)
 				)
@@ -1342,7 +1342,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(1)
-										.nftAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
 										.tokenAllowancesCount(0)
 								),
 						cryptoAdjustAllowance()
@@ -1355,7 +1355,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(0)
-										.nftAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
 										.tokenAllowancesCount(0)
 								));
 	}
@@ -1537,7 +1537,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(1)
-										.nftAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
 										.tokenAllowancesCount(1)
 										.cryptoAllowancesContaining(spender, 200L)
 										.tokenAllowancesContaining(token, spender, 100L)
@@ -1560,7 +1560,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(1)
-										.nftAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
 										.tokenAllowancesCount(1)
 										.cryptoAllowancesContaining(spender, 210L)
 										.tokenAllowancesContaining(token, spender, 90L)

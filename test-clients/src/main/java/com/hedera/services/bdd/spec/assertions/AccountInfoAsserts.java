@@ -355,7 +355,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts nftAllowancesCount(int count) {
+	public AccountInfoAsserts nftApprovedForAllAllowancesCount(int count) {
 		registerProvider((spec, o) -> {
 			assertEquals(count, ((AccountInfo) o).getGrantedNftAllowancesCount(),
 					"Bad NFTAllowances!");

@@ -21,28 +21,19 @@ package com.hedera.services.bdd.spec.transactions.crypto;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.BoolValue;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
-import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
-import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.usage.state.UsageAccumulator;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftWipeAllowance;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -53,11 +44,9 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.MISSING_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -74,7 +63,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 
 	@Override
 	public HederaFunctionality type() {
-		return HederaFunctionality.CryptoApproveAllowance;
+		return HederaFunctionality.CryptoDeleteAllowance;
 	}
 
 	@Override
@@ -123,8 +112,8 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 		calculateAllowances(spec, callowances, tallowances, nftallowances);
 		CryptoDeleteAllowanceTransactionBody opBody = spec
 				.txns()
-				.<CryptoDeleteAllowanceTransactionBody, CryptoDeleteAllowanceTransactionBody.Builder>body(
-						CryptoDeleteAllowanceTransactionBody.class, b -> {
+				.<CryptoDeleteAllowanceTransactionBody, CryptoDeleteAllowanceTransactionBody.Builder>
+						body(CryptoDeleteAllowanceTransactionBody.class, b -> {
 							b.addAllTokenAllowances(tallowances);
 							b.addAllCryptoAllowances(callowances);
 							b.addAllNftAllowances(nftallowances);
