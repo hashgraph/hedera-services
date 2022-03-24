@@ -38,12 +38,12 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
@@ -101,7 +102,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		final var sender = accountStore.loadAccount(senderId);
 		final var receiver = accountStore.loadContract(contractId);
 		final var callData = !op.getFunctionParameters().isEmpty()
-				? Bytes.fromHexString(CommonUtils.hex(op.getFunctionParameters().toByteArray())) : Bytes.EMPTY;
+				? Bytes.wrap(op.getFunctionParameters().toByteArray())
+				: Bytes.EMPTY;
 
 		/* --- Do the business logic --- */
 		final var result = evmTxProcessor.execute(

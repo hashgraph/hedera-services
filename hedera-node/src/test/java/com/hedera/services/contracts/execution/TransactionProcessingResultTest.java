@@ -23,11 +23,18 @@ package com.hedera.services.contracts.execution;
  */
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.BytesComparator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractStateChange;
+import com.hederahashgraph.api.proto.java.StorageChange;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.log.Log;
@@ -38,7 +45,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,7 +60,8 @@ class TransactionProcessingResultTest {
 	private static final long GAS_PRICE = 1234L;
 	private final Account logger = new Account(new Id(0, 0, 1002));
 
-	private final Bytes logTopicBytes = Bytes.fromHexString("0xce8688f853ffa65c042b72302433c25d7a230c322caba0901587534b6551091d");
+	private final Bytes logTopicBytes = Bytes.fromHexString(
+			"0xce8688f853ffa65c042b72302433c25d7a230c322caba0901587534b6551091d");
 
 	private final LogTopic logTopic = LogTopic.create(logTopicBytes);
 
@@ -83,6 +93,17 @@ class TransactionProcessingResultTest {
 		));
 		final var logList = List.of(log);
 
+		final var firstContractChanges = new TreeMap<Bytes, Pair<Bytes, Bytes>>(BytesComparator.INSTANCE);
+		firstContractChanges.put(UInt256.valueOf(1L), new ImmutablePair<>(UInt256.valueOf(1L), null));
+		final var secondContractChanges = new TreeMap<Bytes, Pair<Bytes, Bytes>>(BytesComparator.INSTANCE);
+		secondContractChanges.put(UInt256.valueOf(1L), new ImmutablePair<>(UInt256.valueOf(1L), UInt256.valueOf(2L)));
+		secondContractChanges.put(UInt256.valueOf(2L), new ImmutablePair<>(UInt256.valueOf(55L),
+				UInt256.valueOf(255L)));
+		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> contractStateChanges =
+				new TreeMap<>(BytesComparator.INSTANCE);
+		contractStateChanges.put(firstContract.getId().asEvmAddress(), firstContractChanges);
+		contractStateChanges.put(secondContract.getId().asEvmAddress(), secondContractChanges);
+
 		final var expect = ContractFunctionResult.newBuilder()
 				.setGasUsed(GAS_USAGE)
 				.setBloom(ByteString.copyFrom(LogsBloomFilter.builder().insertLogs(logList).build().toArray()));
@@ -91,13 +112,36 @@ class TransactionProcessingResultTest {
 		expect.setContractID(EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.addAllCreatedContractIDs(listOfCreatedContracts);
 
+		final var firstContractChangesRpc = ContractStateChange.newBuilder()
+				.setContractID(firstContract.getId().asGrpcContract())
+				.addStorageChanges(StorageChange.newBuilder()
+						.setSlot(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
+						.setValueRead(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
+						.build())
+				.build();
+		final var secondContractChangesRpc = ContractStateChange.newBuilder()
+				.setContractID(secondContract.getId().asGrpcContract())
+				.addStorageChanges(StorageChange.newBuilder()
+						.setSlot(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
+						.setValueRead(ByteString.copyFrom(UInt256.valueOf(1L).trimLeadingZeros().toArrayUnsafe()))
+						.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(UInt256.valueOf(2L).trimLeadingZeros().toArrayUnsafe())))
+						.build())
+				.addStorageChanges(StorageChange.newBuilder()
+						.setSlot(ByteString.copyFrom(UInt256.valueOf(2L).trimLeadingZeros().toArrayUnsafe()))
+						.setValueRead(ByteString.copyFrom(UInt256.valueOf(55L).trimLeadingZeros().toArrayUnsafe()))
+						.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(UInt256.valueOf(255L).trimLeadingZeros().toArrayUnsafe())))
+						.build())
+				.build();
+		expect.addAllStateChanges(List.of(firstContractChangesRpc, secondContractChangesRpc));
+
 		var result = TransactionProcessingResult.successful(
 				logList,
 				GAS_USAGE,
 				GAS_REFUND,
 				1234L,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				contractStateChanges);
 		result.setCreatedContracts(listOfCreatedContracts);
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
@@ -109,10 +153,6 @@ class TransactionProcessingResultTest {
 		assertEquals(expect.getContractID(), resultAsGrpc.getContractID());
 		assertEquals(ByteString.EMPTY, resultAsGrpc.getContractCallResult());
 		assertEquals(listOfCreatedContracts, resultAsGrpc.getCreatedContractIDsList());
-
-		final var mockNewAddr = Address.BLAKE2B_F_COMPRESSION.toArrayUnsafe();
-		final var creationResult = result.toCreationGrpc(mockNewAddr);
-		assertEquals(ByteString.copyFrom(mockNewAddr), creationResult.getEvmAddress().getValue());
 	}
 
 	@Test
@@ -138,13 +178,14 @@ class TransactionProcessingResultTest {
 		expect.setContractID(EntityIdUtils.contractIdFromEvmAddress(recipient.getId().asEvmAddress().toArray()));
 		expect.setErrorMessageBytes(ByteString.copyFrom(revertReason.get().toArray()));
 
-		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason, Optional.of(exception));
+		var result = TransactionProcessingResult.failed(GAS_USAGE, GAS_REFUND, GAS_PRICE, revertReason,
+				Optional.of(exception),Map.of());
 
 		assertEquals(expect.getGasUsed(), result.getGasUsed());
 		assertEquals(GAS_PRICE, result.getGasPrice());
 		assertEquals(GAS_REFUND, result.getSbhRefund());
 		assertEquals(Optional.of(exception), result.getHaltReason());
-		assertEquals(revertReason.toString(), result.toGrpc().getErrorMessage());
+		assertEquals(revertReason.get().toString(), result.toGrpc().getErrorMessage());
 	}
 
 	@Test
@@ -155,7 +196,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				Map.of());
 
 		assertEquals(GAS_PRICE, result.getGasPrice());
 	}
@@ -168,7 +210,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				Map.of());
 
 		assertEquals(GAS_REFUND, result.getSbhRefund());
 	}
@@ -181,11 +224,12 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				Map.of());
 
 		assertEquals(GAS_USAGE, result.getGasUsed());
 	}
-	
+
 	@Test
 	void assertSuccessfulStatus() {
 		var result = TransactionProcessingResult.successful(
@@ -194,7 +238,8 @@ class TransactionProcessingResultTest {
 				GAS_REFUND,
 				GAS_PRICE,
 				Bytes.EMPTY,
-				recipient.getId().asEvmAddress());
+				recipient.getId().asEvmAddress(),
+				Map.of());
 
 		assertTrue(result.isSuccessful());
 	}

@@ -22,12 +22,18 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.WorldLedgers;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.internal.FixedStack;
@@ -39,10 +45,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalLong;
+import java.util.TreeMap;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,9 +67,11 @@ class HederaOperationUtilTest {
 	@Mock
 	private HederaStackedWorldStateUpdater hederaWorldUpdater;
 	@Mock
+	private HederaWorldState.Updater updater;
+	@Mock
 	private HederaWorldState.WorldStateAccount worldStateAccount;
 	@Mock
-	private SoliditySigsVerifier sigsVerifier;
+	private EvmSigsVerifier sigsVerifier;
 	@Mock
 	private Supplier<Gas> gasSupplier;
 	@Mock
@@ -73,6 +80,8 @@ class HederaOperationUtilTest {
 	private Map<String, PrecompiledContract> precompiledContractMap;
 	@Mock
 	private ContractAliases aliases;
+	@Mock
+	private WorldLedgers ledgers;
 
 	private final Optional<Gas> expectedHaltGas = Optional.of(Gas.of(10));
 	private final Optional<Gas> expectedSuccessfulGas = Optional.of(Gas.of(100));
@@ -94,49 +103,6 @@ class HederaOperationUtilTest {
 				precompiledContractMap);
 		
 		assertSame(degenerateResult, result);
-	}
-
-	@Test
-	void computeExpiryForNewContractHappyPath() {
-		final var expectedExpiry = 20L;
-
-		Deque<MessageFrame> frameDeque = new ArrayDeque<>();
-		frameDeque.add(messageFrame);
-
-		given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
-		given(messageFrame.getContextVariable("expiry")).willReturn(OptionalLong.of(expectedExpiry));
-
-		var actualExpiry = HederaOperationUtil.newContractExpiryIn(messageFrame);
-
-		assertEquals(expectedExpiry, actualExpiry);
-		verify(messageFrame).getMessageFrameStack();
-		verify(messageFrame).getContextVariable("expiry");
-	}
-
-	@Test
-	void computeExpiryForNewContractMultipleFrames() {
-		final var expectedExpiry = 21L;
-
-		Deque<MessageFrame> frameDeque = new ArrayDeque<>();
-		frameDeque.add(messageFrame);
-		frameDeque.add(messageFrame);
-
-		final var customAddress = Address.fromHexString("0x0000000000001");
-
-		given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
-		given(messageFrame.getSenderAddress()).willReturn(customAddress);
-		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
-		given(hederaWorldUpdater.getHederaAccount(customAddress)).willReturn(worldStateAccount);
-		given(worldStateAccount.getExpiry()).willReturn(expectedExpiry);
-
-		var actualExpiry = HederaOperationUtil.newContractExpiryIn(messageFrame);
-
-		assertEquals(expectedExpiry, actualExpiry);
-		verify(messageFrame).getMessageFrameStack();
-		verify(messageFrame).getSenderAddress();
-		verify(hederaWorldUpdater).getHederaAccount(customAddress);
-		verify(worldStateAccount).getExpiry();
-		verify(messageFrame, never()).getContextVariable("expiry");
 	}
 
 	@Test
@@ -245,11 +211,11 @@ class HederaOperationUtilTest {
 		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
 		given(sigsVerifier
-				.hasActiveKeyOrNoReceiverSigReq(
-						mockTarget, Address.ALTBN128_ADD, Address.ALTBN128_MUL, Address.ALTBN128_ADD, aliases))
+				.hasActiveKeyOrNoReceiverSigReq(true,
+						mockTarget, Address.ALTBN128_ADD, ledgers))
 				.willReturn(false);
 		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
-		given(hederaWorldUpdater.aliases()).willReturn(aliases);
+		given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 
 		// when:
 		final var result = HederaOperationUtil.addressSignatureCheckExecution(
@@ -267,8 +233,46 @@ class HederaOperationUtilTest {
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
 		verify(worldStateAccount).getAddress();
-		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(
-				mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR , PRETEND_RECIPIENT_ADDR, aliases);
+		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true,
+				mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
+		verify(gasSupplier).get();
+		verify(executionSupplier, never()).get();
+	}
+
+	@Test
+	void haltsWithInvalidSignatureWhenAccountSignatureCheckExecutionForNonDelegateCall() {
+		// given:
+		final var mockTarget = Address.ZERO;
+		given(messageFrame.getRecipientAddress()).willReturn(Address.ALTBN128_MUL);
+		given(messageFrame.getContractAddress()).willReturn(Address.ALTBN128_MUL);
+		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
+		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
+		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
+		given(sigsVerifier
+				.hasActiveKeyOrNoReceiverSigReq(false,
+						mockTarget, Address.ALTBN128_MUL, ledgers))
+				.willReturn(false);
+		given(gasSupplier.get()).willReturn(expectedHaltGas.get());
+		given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
+
+		// when:
+		final var result = HederaOperationUtil.addressSignatureCheckExecution(
+				sigsVerifier,
+				messageFrame,
+				Address.ZERO,
+				gasSupplier,
+				executionSupplier,
+				(a, b) -> true, precompiledContractMap);
+
+		// then:
+		assertEquals(HederaExceptionalHaltReason.INVALID_SIGNATURE, result.getHaltReason().get());
+		assertEquals(expectedHaltGas, result.getGasCost());
+		// and:
+		verify(messageFrame).getWorldUpdater();
+		verify(hederaWorldUpdater).get(Address.ZERO);
+		verify(worldStateAccount).getAddress();
+		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(false,
+				mockTarget, PRETEND_CONTRACT_ADDR, ledgers);
 		verify(gasSupplier).get();
 		verify(executionSupplier, never()).get();
 	}
@@ -279,12 +283,12 @@ class HederaOperationUtilTest {
 		final var mockTarget = Address.ZERO;
 		givenFrameAddresses();
 		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
-		given(hederaWorldUpdater.aliases()).willReturn(aliases);
+		given(hederaWorldUpdater.trackingLedgers()).willReturn(ledgers);
 		given(hederaWorldUpdater.get(Address.ZERO)).willReturn(worldStateAccount);
 		given(worldStateAccount.getAddress()).willReturn(Address.ZERO);
 		given(sigsVerifier
-				.hasActiveKeyOrNoReceiverSigReq(
-						mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR, PRETEND_RECIPIENT_ADDR, aliases))
+				.hasActiveKeyOrNoReceiverSigReq(true,
+						mockTarget, PRETEND_RECIPIENT_ADDR, ledgers))
 				.willReturn(true);
 		given(executionSupplier.get())
 				.willReturn(new Operation.OperationResult(expectedSuccessfulGas, Optional.empty()));
@@ -305,11 +309,38 @@ class HederaOperationUtilTest {
 		verify(messageFrame).getWorldUpdater();
 		verify(hederaWorldUpdater).get(Address.ZERO);
 		verify(worldStateAccount).getAddress();
-		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(
-				mockTarget, PRETEND_RECIPIENT_ADDR, PRETEND_CONTRACT_ADDR , PRETEND_RECIPIENT_ADDR, aliases);
+		verify(sigsVerifier).hasActiveKeyOrNoReceiverSigReq(true,
+				mockTarget, PRETEND_RECIPIENT_ADDR, ledgers);
 		verify(gasSupplier, never()).get();
 		verify(executionSupplier).get();
 	}
+
+	@Test
+	void setOriginalReadValue() {
+		given(messageFrame.getRecipientAddress()).willReturn(PRETEND_RECIPIENT_ADDR);
+		given(messageFrame.popStackItem()).willReturn(Bytes.of(1));
+		given(messageFrame.getWorldUpdater()).willReturn(hederaWorldUpdater);
+		given(hederaWorldUpdater.parentUpdater()).willReturn(Optional.of(updater));
+		var frameStack = new ArrayDeque<MessageFrame>();
+		frameStack.add(messageFrame);
+
+		given(messageFrame.getMessageFrameStack()).willReturn(frameStack);
+		TreeMap<Address, Map<Bytes, Pair<Bytes, Bytes>>> map = new TreeMap<>();
+		given(updater.getStateChanges()).willReturn(map);
+		given(hederaWorldUpdater.get(PRETEND_RECIPIENT_ADDR)).willReturn(worldStateAccount);
+
+		Bytes32 key = UInt256.fromBytes(messageFrame.popStackItem());
+		Account account = messageFrame.getWorldUpdater().get(messageFrame.getRecipientAddress());
+		HederaOperationUtil.cacheExistingValue(
+				messageFrame,
+				PRETEND_RECIPIENT_ADDR,
+				key,
+				account.getStorageValue(UInt256.fromBytes(key)));
+
+		assertTrue(updater.getStateChanges().containsKey(PRETEND_RECIPIENT_ADDR));
+		assertTrue(updater.getStateChanges().get(PRETEND_RECIPIENT_ADDR).containsKey(UInt256.ONE));
+	}
+
 
 	private void givenFrameAddresses() {
 		given(messageFrame.getRecipientAddress()).willReturn(PRETEND_RECIPIENT_ADDR);

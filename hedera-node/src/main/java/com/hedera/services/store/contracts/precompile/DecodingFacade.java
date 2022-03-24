@@ -33,6 +33,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,6 +49,11 @@ public class DecodingFacade {
 	private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
 	private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
 	private static final String INT_OUTPUT = "(int)";
+	private static final String BOOL_OUTPUT = "(bool)";
+	private static final String STRING_OUTPUT = "(string)";
+
+	private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
+	private static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
 
 	private static final Function CRYPTO_TRANSFER_FUNCTION = new Function(
 			"cryptoTransfer((address,(address,int64)[],(address,address,int64)[])[])", INT_OUTPUT);
@@ -104,9 +110,31 @@ public class DecodingFacade {
 			new Function("dissociateToken(address,address)", INT_OUTPUT);
 	private static final Bytes DISSOCIATE_TOKEN_SELECTOR = Bytes.wrap(DISSOCIATE_TOKEN_FUNCTION.selector());
 	private static final ABIType<Tuple> DISSOCIATE_TOKEN_DECODER = TypeFactory.create("(bytes32,bytes32)");
-	
-	private static final List<SyntheticTxnFactory.NftExchange> NO_NFT_EXCHANGES = Collections.emptyList();
-	private static final List<SyntheticTxnFactory.FungibleTokenTransfer> NO_FUNGIBLE_TRANSFERS = Collections.emptyList();
+
+	private static final Function TOKEN_URI_NFT_FUNCTION =
+			new Function("tokenURI(uint256)", STRING_OUTPUT);
+	private static final Bytes TOKEN_URI_NFT_SELECTOR = Bytes.wrap(TOKEN_URI_NFT_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_URI_NFT_DECODER = TypeFactory.create("(uint256)");
+
+	private static final Function BALANCE_OF_TOKEN_FUNCTION =
+			new Function("balanceOf(address)", INT_OUTPUT);
+	private static final Bytes BALANCE_OF_TOKEN_SELECTOR = Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
+	private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create("(bytes32)");
+
+	private static final Function OWNER_OF_NFT_FUNCTION =
+			new Function("ownerOf(uint256)", INT_OUTPUT);
+	private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
+	private static final ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create("(uint256)");
+
+	private static final Function ERC_TRANSFER_FUNCTION =
+			new Function("transfer(address,uint256)", BOOL_OUTPUT);
+	private static final Bytes ERC_TRANSFER_SELECTOR = Bytes.wrap(ERC_TRANSFER_FUNCTION.selector());
+	private static final ABIType<Tuple> ERC_TRANSFER_DECODER = TypeFactory.create("(bytes32,uint256)");
+
+	private static final Function ERC_TRANSFER_FROM_FUNCTION =
+			new Function("transferFrom(address,address,uint256)");
+	private static final Bytes ERC_TRANSFER_FROM_SELECTOR = Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
+	private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER = TypeFactory.create("(bytes32,bytes32,uint256)");
 
 	@Inject
 	public DecodingFacade() {
@@ -156,6 +184,65 @@ public class DecodingFacade {
 			return BurnWrapper.forNonFungible(
 					tokenID, Arrays.stream(serialNumbers).boxed().toList());
 		}
+	}
+
+	public BalanceOfWrapper decodeBalanceOf(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, BALANCE_OF_TOKEN_SELECTOR, BALANCE_OF_TOKEN_DECODER);
+
+		final var account = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+
+		return new BalanceOfWrapper(account);
+	}
+
+	public List<TokenTransferWrapper> decodeErcTransfer(final Bytes input, final TokenID token,
+														final AccountID caller, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_SELECTOR, ERC_TRANSFER_DECODER);
+
+		final var recipient = convertLeftPaddedAddressToAccountId((byte[]) decodedArguments.get(0), aliasResolver);
+		final var amount = (BigInteger) decodedArguments.get(1);
+
+		final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
+		addAdjustmentAsTransfer(fungibleTransfers, token, recipient, amount.longValue());
+		addAdjustmentAsTransfer(fungibleTransfers, token, caller, -amount.longValue());
+
+		return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+	}
+
+	public List<TokenTransferWrapper> decodeERCTransferFrom(final Bytes input,
+															final TokenID token, final boolean isFungible,
+															final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, ERC_TRANSFER_FROM_SELECTOR, ERC_TRANSFER_FROM_DECODER);
+
+		final var from = convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+		final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+		if(isFungible) {
+			final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
+			final var amount = (BigInteger) decodedArguments.get(2);
+			addAdjustmentAsTransfer(fungibleTransfers, token, to, amount.longValue());
+			addAdjustmentAsTransfer(fungibleTransfers, token, from, -amount.longValue());
+			return Collections.singletonList(new TokenTransferWrapper(NO_NFT_EXCHANGES, fungibleTransfers));
+		} else {
+			final List<SyntheticTxnFactory.NftExchange> nonFungibleTransfers = new ArrayList<>();
+			final var serialNumber = (BigInteger) decodedArguments.get(2);
+			nonFungibleTransfers.add(new SyntheticTxnFactory.NftExchange(serialNumber.longValue(), token, from, to));
+			return Collections.singletonList(new TokenTransferWrapper(nonFungibleTransfers, NO_FUNGIBLE_TRANSFERS));
+		}
+	}
+
+	public OwnerOfAndTokenURIWrapper decodeOwnerOf(final Bytes input) {
+		final Tuple decodedArguments = decodeFunctionCall(input, OWNER_OF_NFT_SELECTOR, OWNER_OF_NFT_DECODER);
+
+		final var tokenId = (BigInteger) decodedArguments.get(0);
+
+		return new OwnerOfAndTokenURIWrapper(tokenId.longValue());
+	}
+
+	public OwnerOfAndTokenURIWrapper decodeTokenUriNFT(final Bytes input) {
+		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
+
+		final var tokenId = (BigInteger) decodedArguments.get(0);
+
+		return new OwnerOfAndTokenURIWrapper(tokenId.longValue());
 	}
 
 	public MintWrapper decodeMint(final Bytes input) {

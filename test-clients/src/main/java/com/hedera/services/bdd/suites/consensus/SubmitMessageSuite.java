@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.consensus;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,7 +73,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				topicIdIsValidated(),
 				messageIsValidated(),
@@ -114,7 +115,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
 				.when()
 				.then(
 						submitMessageTo("testTopic")
-                                .clearMessage()
+								.clearMessage()
 								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(INVALID_TOPIC_MESSAGE),
 						submitMessageTo("testTopic")
@@ -302,6 +303,9 @@ public class SubmitMessageSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec messageSubmissionSizeChange() {
+		final var defaultMaxBytesAllowed = 1024;
+		final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
+
 		return defaultHapiSpec("messageSubmissionSizeChange")
 				.given(
 						newKeyNamed("submitKey"),
@@ -317,17 +321,19 @@ public class SubmitMessageSuite extends HapiApiSuite {
 								.hasKnownStatus(SUCCESS),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of("consensus.message.maxBytesAllowed", "20"))
+								.overridingProps(Map.of("consensus.message.maxBytesAllowed",
+										String.valueOf(defaultMaxBytesAllowed - 1)))
 				)
 				.then(
 						submitMessageTo("testTopic")
-								.message("testmessagetestmessagetestmessagetestmessage")
+								.message(longMessage)
 								.payingWith("civilian")
 								.hasRetryPrecheckFrom(BUSY)
 								.hasKnownStatus(MESSAGE_SIZE_TOO_LARGE),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(Map.of("consensus.message.maxBytesAllowed", "1024"))
+								.overridingProps(Map.of("consensus.message.maxBytesAllowed",
+										String.valueOf(defaultMaxBytesAllowed)))
 				);
 	}
 

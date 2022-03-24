@@ -22,12 +22,15 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -63,17 +66,21 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,7 +96,7 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private MessageFrame messageFrame;
 	@Mock
-	private TxnAwareSoliditySigsVerifier sigsVerifier;
+	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
 	private AccountRecordsHistorian recordsHistorian;
 	@Mock
@@ -110,6 +117,14 @@ class HTSPrecompiledContractTest {
 	private StateView stateView;
 	@Mock
 	private PrecompilePricingUtils precompilePricingUtils;
+	@Mock
+	private HederaStackedWorldStateUpdater worldUpdater;
+	@Mock
+	private WorldLedgers wrappedLedgers;
+	@Mock
+	private UsagePricesProvider resourceCosts;
+	@Mock
+	private HederaWorldState.WorldStateAccount worldStateAccount;
 
 	private HTSPrecompiledContract subject;
 
@@ -126,7 +141,7 @@ class HTSPrecompiledContractTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
-				() -> feeCalculator, stateView, precompilePricingUtils);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
 	}
 
 	@Test
@@ -149,6 +164,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForSingleCryptoTransfer() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
@@ -156,7 +172,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -166,6 +183,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForMultipleCryptoTransfers() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(
@@ -177,7 +195,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -187,6 +206,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForTransferMultipleTokens() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
@@ -194,7 +214,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -204,6 +225,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForTransferSingleToken() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
@@ -211,7 +233,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -221,6 +244,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForTransferNfts() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
@@ -228,7 +252,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -238,6 +263,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForTransferNft() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
@@ -245,7 +271,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -255,6 +282,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForMintToken() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 		given(decoder.decodeMint(any())).willReturn(fungibleMint);
 		given(syntheticTxnFactory.createMint(any()))
@@ -263,7 +291,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -273,6 +302,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForBurnToken() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
 		given(decoder.decodeBurn(any())).willReturn(fungibleBurn);
 		given(syntheticTxnFactory.createBurn(any()))
@@ -281,7 +311,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -291,6 +322,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForAssociateTokens() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKENS);
 		given(decoder.decodeMultipleAssociations(any(), any())).willReturn(associateOp);
 		final var builder = TokenAssociateTransactionBody.newBuilder();
@@ -302,7 +334,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -312,6 +345,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForAssociateToken() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(any(), any())).willReturn(associateOp);
 		final var builder = TokenAssociateTransactionBody.newBuilder();
@@ -323,7 +357,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -333,6 +368,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForDissociateTokens() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
 		given(decoder.decodeMultipleDissociations(any(), any())).willReturn(multiDissociateOp);
 		final var builder = TokenDissociateTransactionBody.newBuilder();
@@ -344,7 +380,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -354,6 +391,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void gasRequirementReturnsCorrectValueForDissociateToken() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 		given(decoder.decodeDissociate(any(), any())).willReturn(dissociateToken);
 		given(syntheticTxnFactory.createDissociate(any()))
@@ -364,7 +402,8 @@ class HTSPrecompiledContractTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
 
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
 
 		// then
@@ -385,12 +424,14 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForCryptoTransfer() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_CRYPTO_TRANSFER);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TransferPrecompile);
@@ -399,12 +440,14 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferTokens() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKENS);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TransferPrecompile);
@@ -413,12 +456,14 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferToken() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TransferPrecompile);
@@ -427,12 +472,14 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferNfts() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFTS);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TransferPrecompile);
@@ -441,12 +488,14 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForTransferNft() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_TRANSFER_NFT);
 		given(syntheticTxnFactory.createCryptoTransfer(any()))
 				.willReturn(TransactionBody.newBuilder().setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.TransferPrecompile);
@@ -455,11 +504,13 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForMintToken() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
 		given(decoder.decodeMint(any())).willReturn(fungibleMint);
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.MintPrecompile);
@@ -468,11 +519,13 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForBurnToken() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
 		given(decoder.decodeBurn(any())).willReturn(fungibleBurn);
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.BurnPrecompile);
@@ -481,6 +534,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForAssociateTokens() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKENS);
 		final var builder = TokenAssociateTransactionBody.newBuilder();
 		builder.setAccount(multiDissociateOp.accountId());
@@ -489,7 +543,8 @@ class HTSPrecompiledContractTest {
 				.willReturn(TransactionBody.newBuilder().setTokenAssociate(builder));
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.MultiAssociatePrecompile);
@@ -498,11 +553,13 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForAssociateToken() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
 		given(decoder.decodeAssociation(any(), any())).willReturn(associateOp);
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.AssociatePrecompile);
@@ -511,6 +568,7 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeCallsCorrectImplementationForDissociateTokens() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKENS);
 		given(decoder.decodeMultipleDissociations(any(), any())).willReturn(multiDissociateOp);
 		final var builder = TokenDissociateTransactionBody.newBuilder();
@@ -520,20 +578,47 @@ class HTSPrecompiledContractTest {
 				TransactionBody.newBuilder().setTokenDissociate(builder));
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.MultiDissociatePrecompile);
 	}
 
 	@Test
+	void testsAccountIsToken() {
+		final var mockUpdater = mock(HederaStackedWorldStateUpdater.class);
+		given(messageFrame.getWorldUpdater()).willReturn(mockUpdater);
+		given(mockUpdater.get(any())).willReturn(worldStateAccount);
+		given(worldStateAccount.getNonce()).willReturn(-1L);
+
+		var result = subject.isToken(messageFrame, fungibleTokenAddr);
+
+		assertTrue(result);
+	}
+
+	@Test
+	void testsAccountIsNotToken() {
+		final var mockUpdater = mock(HederaStackedWorldStateUpdater.class);
+		given(messageFrame.getWorldUpdater()).willReturn(mockUpdater);
+		given(mockUpdater.get(any())).willReturn(worldStateAccount);
+		given(worldStateAccount.getNonce()).willReturn(1L);
+
+		var result = subject.isToken(messageFrame, fungibleTokenAddr);
+
+		assertFalse(result);
+	}
+
+	@Test
 	void computeCallsCorrectImplementationForDissociateToken() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 		given(decoder.decodeDissociate(any(), any())).willReturn(dissociateToken);
 
 		// when
-		subject.prepareComputation(input, a -> a);
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 
 		// then
 		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.DissociatePrecompile);
@@ -542,17 +627,30 @@ class HTSPrecompiledContractTest {
 	@Test
 	void computeReturnsNullForWrongInput() {
 		// given
+		givenFrameContext();
 		given(input.getInt(0)).willReturn(0x00000000);
 
 		// when
-		subject.prepareComputation(input, a -> a);
-		final var mockUpdater = mock(HederaStackedWorldStateUpdater.class);
-		given(messageFrame.getWorldUpdater()).willReturn(mockUpdater);
-
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
 		var result = subject.compute(input, messageFrame);
 
 		// then
 		assertNull(result);
 	}
-}
 
+	@Test
+	void prepareFieldsWithAliasedMessageSender() {
+		givenFrameContext();
+		given(worldUpdater.unaliased(contractAddress.toArray())).willReturn("0x000000000000000123".getBytes());
+		subject.prepareFields(messageFrame);
+
+		verify(messageFrame, times(1)).getSenderAddress();
+	}
+
+	private void givenFrameContext() {
+		given(messageFrame.getSenderAddress()).willReturn(contractAddress);
+		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+	}
+}

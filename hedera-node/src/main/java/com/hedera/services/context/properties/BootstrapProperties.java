@@ -196,8 +196,7 @@ public final class BootstrapProperties implements PropertySource {
 			"hedera.shard",
 			"ledger.numSystemAccounts",
 			"ledger.totalTinyBarFloat",
-			"ledger.id",
-			"tokens.nfts.areQueriesEnabled"
+			"ledger.id"
 	);
 
 	static final Set<String> GLOBAL_DYNAMIC_PROPS = Set.of(
@@ -215,10 +214,12 @@ public final class BootstrapProperties implements PropertySource {
 			"contracts.maxKvPairs.aggregate",
 			"contracts.maxKvPairs.individual",
 			"contracts.chainId",
+			"contracts.enableTraceability",
 			"contracts.throttle.throttleByGas",
 			"contracts.maxRefundPercentOfGasLimit",
 			"contracts.frontendThrottleMaxGasLimit",
 			"contracts.consensusThrottleMaxGasLimit",
+			"contracts.redirectTokenCalls",
 			"contracts.precompile.htsDefaultGasCost",
 			"contracts.precompile.exportRecordResults",
 			"files.maxSizeKb",
@@ -266,7 +267,8 @@ public final class BootstrapProperties implements PropertySource {
 			"consensus.message.maxBytesAllowed",
 			"upgrade.artifacts.path",
 			"hedera.allowances.maxTransactionLimit",
-			"hedera.allowances.maxAccountLimit"
+			"hedera.allowances.maxAccountLimit",
+			"hedera.allowances.isEnabled"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -412,7 +414,6 @@ public final class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.maxAllowedMints", AS_LONG),
 			entry("tokens.nfts.maxQueryRange", AS_LONG),
 			entry("tokens.nfts.useTreasuryWildcards", AS_BOOLEAN),
-			entry("tokens.nfts.areQueriesEnabled", AS_BOOLEAN),
 			entry("contracts.localCall.estRetBytes", AS_INT),
 			entry("contracts.allowCreate2", AS_BOOLEAN),
 			entry("contracts.defaultLifetime", AS_LONG),
@@ -420,9 +421,11 @@ public final class BootstrapProperties implements PropertySource {
 			entry("contracts.maxKvPairs.aggregate", AS_LONG),
 			entry("contracts.maxKvPairs.individual", AS_INT),
 			entry("contracts.chainId", AS_INT),
+			entry("contracts.enableTraceability", AS_BOOLEAN),
 			entry("contracts.maxRefundPercentOfGasLimit", AS_INT),
 			entry("contracts.frontendThrottleMaxGasLimit", AS_LONG),
 			entry("contracts.consensusThrottleMaxGasLimit", AS_LONG),
+			entry("contracts.redirectTokenCalls", AS_BOOLEAN),
 			entry("contracts.precompile.htsDefaultGasCost", AS_LONG),
 			entry("contracts.precompile.exportRecordResults", AS_BOOLEAN),
 			entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
@@ -438,6 +441,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
 			entry("stats.executionTimesToTrack", AS_INT),
 			entry("hedera.allowances.maxTransactionLimit", AS_INT),
-			entry("hedera.allowances.maxAccountLimit", AS_INT)
+			entry("hedera.allowances.maxAccountLimit", AS_INT),
+			entry("hedera.allowances.isEnabled", AS_BOOLEAN)
 	);
 }

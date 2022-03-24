@@ -77,7 +77,7 @@ class BootstrapPropertiesTest {
 			entry("bootstrap.rates.nextHbarEquiv", 1),
 			entry("bootstrap.rates.nextCentEquiv", 15),
 			entry("bootstrap.rates.nextExpiry", 4102444800L),
-			entry("bootstrap.system.entityExpiry", 4102444800L),
+			entry("bootstrap.system.entityExpiry", 1654819200L),
 			entry("bootstrap.throttleDefsJson.resource", "throttles.json"),
 			entry("accounts.addressBookAdmin", 55L),
 			entry("balances.exportDir.path", "/opt/hgcapp/accountBalances/"),
@@ -99,12 +99,14 @@ class BootstrapPropertiesTest {
 			entry("contracts.maxKvPairs.aggregate", 500_000_000L),
 			entry("contracts.maxKvPairs.individual", 163_840),
 			entry("contracts.chainId", 1),
+			entry("contracts.enableTraceability", true),
 			entry("contracts.throttle.throttleByGas", true),
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
 			entry("contracts.frontendThrottleMaxGasLimit", 5000000L),
 			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
+			entry("contracts.redirectTokenCalls", true),
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),
-			entry("contracts.precompile.exportRecordResults", false),
+			entry("contracts.precompile.exportRecordResults", true),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),
@@ -195,7 +197,6 @@ class BootstrapPropertiesTest {
 			entry("ledger.nftTransfers.maxLen", 10),
 			entry("ledger.xferBalanceChanges.maxLen", 20),
 			entry("tokens.nfts.areEnabled", true),
-			entry("tokens.nfts.areQueriesEnabled", true),
 			entry("tokens.nfts.useTreasuryWildcards", true),
 			entry("tokens.nfts.maxQueryRange", 100L),
 			entry("tokens.nfts.maxBatchSizeWipe", 10),
@@ -206,7 +207,8 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2")),
 			entry("upgrade.artifacts.path", "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),
 			entry("hedera.allowances.maxTransactionLimit", 20),
-			entry("hedera.allowances.maxAccountLimit", 100)
+			entry("hedera.allowances.maxAccountLimit", 100),
+			entry("hedera.allowances.isEnabled", true)
 	);
 
 	@Test

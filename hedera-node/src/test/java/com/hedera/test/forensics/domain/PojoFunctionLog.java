@@ -22,7 +22,7 @@ package com.hedera.test.forensics.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.hedera.services.state.submerkle.SolidityLog;
+import com.hedera.services.state.submerkle.EvmLog;
 import com.swirlds.common.CommonUtils;
 
 import java.util.Collections;
@@ -43,7 +43,7 @@ public class PojoFunctionLog {
 	private String bloom;
 	private List<String> topics = Collections.EMPTY_LIST;
 
-	public static PojoFunctionLog from(SolidityLog value) {
+	public static PojoFunctionLog from(EvmLog value) {
 		var pojo = new PojoFunctionLog();
 		pojo.setId(PojoRecord.asString(value.getContractId()));
 		if (value.getData() != null) {

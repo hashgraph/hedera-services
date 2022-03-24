@@ -42,14 +42,11 @@ import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.chan
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountNftInfos;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfos;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
-import static com.hedera.services.bdd.spec.queries.token.HapiTokenNftInfo.newTokenNftInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -116,7 +113,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						balancesChangeOnTokenTransfer(),
 						accountsMustBeExplicitlyUnfrozenOnlyIfDefaultFreezeIsTrue(),
@@ -597,16 +594,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoTransfer(movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, theContract)),
 						cryptoTransfer(movingUnique(A_TOKEN, 2).between(TOKEN_TREASURY, theAccount)),
 						getAccountBalance(theAccount).hasTokenBalance(A_TOKEN, 1),
-						getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1),
-						getAccountNftInfos(theAccount, 0, 1)
-								.hasExpectedLedgerId("0x03")
-								.hasNfts(
-										newTokenNftInfo(A_TOKEN,
-												2, theAccount, copyFromUtf8("matter"))),
-						getAccountNftInfos(theContract, 0, 1)
-								.hasNfts(
-										newTokenNftInfo(A_TOKEN,
-												1, theContract, copyFromUtf8("dark")))
+						getAccountBalance(theContract).hasTokenBalance(A_TOKEN, 1)
 				);
 	}
 
@@ -977,11 +965,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasSerialNum(1)
 								.hasMetadata(copyFromUtf8("memo"))
 								.hasTokenID(A_TOKEN)
-								.hasAccountID(FIRST_USER),
-						getAccountNftInfos(FIRST_USER, 0, 1)
-								.hasNfts(
-										newTokenNftInfo(A_TOKEN, 1, FIRST_USER, copyFromUtf8("memo"))),
-						getTxnRecord("cryptoTransferTxn").logged()
+								.hasAccountID(FIRST_USER)
 				);
 	}
 
@@ -1024,19 +1008,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 								.hasSerialNum(1)
 								.hasMetadata(copyFromUtf8("memo"))
 								.hasTokenID(A_TOKEN)
-								.hasAccountID("newTreasury"),
-						getTokenNftInfos(A_TOKEN, 0, 1)
-								.hasExpectedLedgerId("0x03")
-								.hasNfts(
-										newTokenNftInfo(A_TOKEN, 1, "newTreasury", copyFromUtf8("memo"))
-								).logged(),
-						getAccountNftInfos("newTreasury", 0, 2)
-								.hasExpectedLedgerId("0x03")
-								.hasNfts(
-										newTokenNftInfo(A_TOKEN, 1, "newTreasury", copyFromUtf8("memo")),
-										newTokenNftInfo(B_TOKEN, 1, "newTreasury", copyFromUtf8("memo2"))
-								).logged(),
-						getTxnRecord("cryptoTransferTxn").logged()
+								.hasAccountID("newTreasury")
 				);
 	}
 
@@ -1059,12 +1031,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoTransfer(
 								movingUnique(A_TOKEN, 1).between(TOKEN_TREASURY, FIRST_USER)
 
-						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-						getAccountNftInfos(TOKEN_TREASURY, 0, 1)
-								.hasNfts(
-										newTokenNftInfo(A_TOKEN, 1, TOKEN_TREASURY,
-												copyFromUtf8("memo"))
-								)
+						).hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 				);
 	}
 
@@ -2005,9 +1972,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 				).when(
 						mintToken(artToken, List.of(serialNo1Meta)),
 						tokenAssociate(harry, artToken),
-						cryptoTransfer(movingUnique(artToken, 1L).between(gabriella, harry)),
-						getAccountNftInfos(harry, 0, 1)
-								.hasNfts(newTokenNftInfo(artToken, 1L, harry, serialNo1Meta))
+						cryptoTransfer(movingUnique(artToken, 1L).between(gabriella, harry))
 				).then(
 						cryptoTransfer(movingUnique(artToken, 1L).between(harry, gabriella))
 								.fee(ONE_HBAR)
@@ -2016,10 +1981,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						getTxnRecord(uncompletableTxn)
 								.hasPriority(recordWith().tokenTransfers(changingNoNftOwners())),
 						getTokenNftInfo(artToken, 1L)
-								.hasAccountID(harry),
-						/* ✅ Should pass after fix for https://github.com/hashgraph/hedera-services/issues/1918 */
-						getAccountNftInfos(harry, 0, 1)
-								.hasNfts(newTokenNftInfo(artToken, 1L, harry, serialNo1Meta))
+								.hasAccountID(harry)
 				);
 	}
 

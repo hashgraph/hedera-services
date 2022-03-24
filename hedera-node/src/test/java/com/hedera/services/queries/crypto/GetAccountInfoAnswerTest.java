@@ -20,7 +20,6 @@ package com.hedera.services.queries.crypto;
  * ‍
  */
 
-import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
@@ -36,24 +35,22 @@ import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.store.tokens.TokenStore;
-import com.hedera.services.store.tokens.views.EmptyUniqTokenViewFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
-import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.CommonUtils;
@@ -96,8 +93,6 @@ import static org.mockito.Mockito.mock;
 class GetAccountInfoAnswerTest {
 	private StateView view;
 	@Mock
-	private TokenStore tokenStore;
-	@Mock
 	private ScheduleStore scheduleStore;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
@@ -113,6 +108,8 @@ class GetAccountInfoAnswerTest {
 	private NetworkInfo networkInfo;
 	@Mock
 	private AliasManager aliasManager;
+
+	private final MutableStateChildren children = new MutableStateChildren();
 
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	private String node = "0.0.3";
@@ -181,16 +178,10 @@ class GetAccountInfoAnswerTest {
 				.get();
 		payerAccount.setTokens(tokens);
 
-		final MutableStateChildren children = new MutableStateChildren();
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
 
-		view = new StateView(
-				tokenStore,
-				scheduleStore,
-				children,
-				EmptyUniqTokenViewFactory.EMPTY_UNIQ_TOKEN_VIEW_FACTORY,
-				networkInfo);
+		view = new StateView(scheduleStore, children, networkInfo);
 
 		subject = new GetAccountInfoAnswer(optionValidator, aliasManager);
 	}
@@ -244,7 +235,11 @@ class GetAccountInfoAnswerTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void getsTheAccountInfo() throws Throwable {
+		final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
+		children.setTokens(tokens);
+
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
 		given(token.decimals())
@@ -252,15 +247,10 @@ class GetAccountInfoAnswerTest {
 				.willReturn(1).willReturn(2).willReturn(3);
 		given(deletedToken.decimals()).willReturn(4);
 
-		given(tokenStore.exists(firstToken)).willReturn(true);
-		given(tokenStore.exists(secondToken)).willReturn(true);
-		given(tokenStore.exists(thirdToken)).willReturn(true);
-		given(tokenStore.exists(fourthToken)).willReturn(true);
-		given(tokenStore.exists(missingToken)).willReturn(false);
-		given(tokenStore.get(firstToken)).willReturn(token);
-		given(tokenStore.get(secondToken)).willReturn(token);
-		given(tokenStore.get(thirdToken)).willReturn(token);
-		given(tokenStore.get(fourthToken)).willReturn(deletedToken);
+		given(tokens.get(EntityNum.fromTokenId(firstToken))).willReturn(token);
+		given(tokens.get(EntityNum.fromTokenId(secondToken))).willReturn(token);
+		given(tokens.get(EntityNum.fromTokenId(thirdToken))).willReturn(token);
+		given(tokens.get(EntityNum.fromTokenId(fourthToken))).willReturn(deletedToken);
 		given(token.symbol()).willReturn("HEYMA");
 		given(deletedToken.symbol()).willReturn("THEWAY");
 		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
@@ -290,27 +280,27 @@ class GetAccountInfoAnswerTest {
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(memo, info.getMemo());
-		assertEquals(1, info.getCryptoAllowancesCount());
-		assertEquals(1, info.getTokenAllowancesCount());
-		assertEquals(1, info.getNftAllowancesCount());
-		assertEquals(CryptoAllowance.newBuilder()
+		assertEquals(1, info.getGrantedCryptoAllowancesCount());
+		assertEquals(1, info.getGrantedTokenAllowancesCount());
+		assertEquals(1, info.getGrantedNftAllowancesCount());
+		assertEquals(GrantedCryptoAllowance.newBuilder()
 						.setAmount(10L)
 						.setSpender(EntityNum.fromLong(1L).toGrpcAccountId())
 						.build(),
-				info.getCryptoAllowances(0));
-		assertEquals(TokenAllowance.newBuilder()
+				info.getGrantedCryptoAllowances(0));
+		assertEquals(GrantedTokenAllowance.newBuilder()
 						.setAmount(20L)
 						.setSpender(EntityNum.fromLong(2000L).toGrpcAccountId())
 						.setTokenId(EntityNum.fromLong(1000L).toGrpcTokenId())
 						.build(),
-				info.getTokenAllowances(0));
-		assertEquals(NftAllowance.newBuilder()
-						.setApprovedForAll(BoolValue.of(false))
+				info.getGrantedTokenAllowances(0));
+		assertEquals(GrantedNftAllowance.newBuilder()
+						.setApprovedForAll(false)
 						.addAllSerialNumbers(List.of(1L, 2L))
 						.setSpender(EntityNum.fromLong(2000L).toGrpcAccountId())
 						.setTokenId(EntityNum.fromLong(1000L).toGrpcTokenId())
 						.build(),
-				info.getNftAllowances(0));
+				info.getGrantedNftAllowances(0));
 
 		// and:
 		assertEquals(

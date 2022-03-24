@@ -26,6 +26,7 @@ import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCrypto
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER_ID;
 
 public enum CryptoUpdateScenarios implements TxnHandlingScenario {
@@ -40,6 +41,13 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedCryptoUpdate(MISC_ACCOUNT_ID).get()
+			));
+		}
+	},
+	CRYPTO_UPDATE_IMMUTABLE_ACCOUNT_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoUpdate(STAKING_FUND_ID).get()
 			));
 		}
 	},

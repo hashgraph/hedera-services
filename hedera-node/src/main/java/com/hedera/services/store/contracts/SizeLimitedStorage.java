@@ -27,13 +27,10 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
-import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.units.bigints.UInt256;
 
 import javax.inject.Inject;
@@ -53,7 +50,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT
 import static com.hedera.services.utils.EntityNum.fromLong;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
-import static java.util.Objects.requireNonNull;
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
 /**
@@ -67,8 +63,6 @@ import static org.apache.tuweni.units.bigints.UInt256.ZERO;
  */
 @Singleton
 public class SizeLimitedStorage {
-	private static final Logger log = LogManager.getLogger(SizeLimitedStorage.class);
-
 	public static final ContractValue ZERO_VALUE = ContractValue.from(ZERO);
 
 	// Used to upsert to a contract's doubly-linked list of storage mappings
@@ -133,11 +127,6 @@ public class SizeLimitedStorage {
 
 		commitPendingRemovals();
 		commitPendingUpdates();
-		if (touched5) {
-			final var firstKey = accounts.get().get(EntityNum.fromLong(5L)).getFirstContractStorageKey();
-			System.out.println("0.0.5 storage is now " +
-					IterableStorageUtils.joinedStorageMappings(firstKey, storage.get()));
-		}
 	}
 
 	/**
@@ -199,10 +188,6 @@ public class SizeLimitedStorage {
 		final var contractValue = virtualValueFrom(value);
 		final var kvCountImpact = incorporateKvImpact(
 				contractKey, contractValue, updatedKeys, removedKeys, newMappings, storage.get());
-		if (id.getAccountNum() == 5L) {
-			touched5 = true;
-			System.out.println("Putting " + contractKey + " -> " + contractValue + " has impact " + kvCountImpact);
-		}
 		if (kvCountImpact != 0) {
 			newUsages.computeIfAbsent(id.getAccountNum(), this::kvPairsLookup).getAndAdd(kvCountImpact);
 			totalKvPairs += kvCountImpact;
@@ -294,19 +279,18 @@ public class SizeLimitedStorage {
 		final Long contractId = key.getContractId();
 		final var hasPendingUpdate = newMappings.containsKey(key);
 		final var wasAlreadyPresent = storage.containsKey(key);
-		/* We always buffer the new mapping. */
+		// We always buffer the new mapping
 		newMappings.put(key, value);
 		if (hasPendingUpdate) {
-			/* If there was already a pending update, nothing has changed. */
+			// If there was already a pending update, net storage usage hasn't changed
 			return 0;
 		} else {
-			/* Otherwise update the contract's change set. */
+			// Otherwise update the contract's change set
 			updatedKeys.computeIfAbsent(contractId, treeSetFactory).add(key);
-			/* And drop any pending removal, returning 1 since a pending removal implies we
-			 * were about to reduce the storage used by a mapping. */
+			// Was this key about to be removed?
 			final var scopedRemovals = removedKeys.get(contractId);
-			if (scopedRemovals != null) {
-				scopedRemovals.remove(key);
+			if (scopedRemovals != null && scopedRemovals.remove(key)) {
+				// No longer, and net storage usage goes back up by 1
 				return 1;
 			}
 			return wasAlreadyPresent ? 0 : 1;
@@ -325,23 +309,25 @@ public class SizeLimitedStorage {
 		final var wasAlreadyPresent = storage.containsKey(key);
 		if (hasPendingUpdate || wasAlreadyPresent) {
 			if (hasPendingUpdate) {
-				/* We need to drop any pending update from our auxiliary data structures. */
+				// We need to drop any pending update from our auxiliary data structures.
 				final var scopedAdditions = updatedKeys.get(contractId);
-				requireNonNull(scopedAdditions,
-						() -> "A new mapping " + key + " -> " + newMappings.get(key)
-								+ " did not belong to a key addition set");
+				if (scopedAdditions == null) {
+					final var detailMsg = "A new mapping " + key + " -> " + newMappings.get(key)
+							+ " did not belong to a key addition set";
+					throw new IllegalStateException(detailMsg);
+				}
 				scopedAdditions.remove(key);
 				newMappings.remove(key);
 			}
 			if (wasAlreadyPresent) {
-				/* If there was no extant mapping for this key, no reason to explicitly remove it when we commit. */
+				// If there was no extant mapping for this key, no reason to explicitly remove it when we commit.
 				removedKeys.computeIfAbsent(key.getContractId(), treeSetFactory).add(key);
 			}
-			/* But no matter what, relative to our existing change set, this removed one mapping. */
+			// But no matter what, relative to our existing change set, this removed one mapping.
 			return -1;
 		} else {
-			/* If this key didn't have a mapping or a pending change, it doesn't affect the size,
-			 * and there is also no reason to explicitly remove it when we commit. */
+			// If this key didn't have a mapping or a pending change, it doesn't affect the size,
+			// and there is also no reason to explicitly remove it when we commit
 			return 0;
 		}
 	}
@@ -350,35 +336,11 @@ public class SizeLimitedStorage {
 		validateTrue(
 				totalKvPairs <= dynamicProperties.maxAggregateContractKvPairs(),
 				MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED);
-		try {
-			final var perContractMax = dynamicProperties.maxIndividualContractKvPairs();
-			newUsages.forEach((id, newKvPairs) ->
-					validateTrue(
-							newKvPairs.get() <= perContractMax,
-							MAX_CONTRACT_STORAGE_EXCEEDED));
-		} catch (Exception e) {
-			/*
-		newUsages.clear();
-		updatedKeys.clear();
-		removedKeys.clear();
-		newMappings.clear();
-		newFirstKeys.clear();
-			 */
-			System.out.println(newUsages);
-			for (final var entry : newUsages.entrySet()) {
-				if (entry.getValue().get() > 100) {
-					final var num = entry.getKey();
-					System.out.println(" -> 0.0." + num + " is the violator");
-					System.out.println(IterableStorageUtils.joinedStorageMappings(
-							firstKeyLookup(num), storage.get()));
-				}
-			}
-			System.out.println(updatedKeys);
-			System.out.println(removedKeys);
-			System.out.println(newMappings);
-			System.out.println(newFirstKeys);
-			throw e;
-		}
+		final var perContractMax = dynamicProperties.maxIndividualContractKvPairs();
+		newUsages.forEach((id, newKvPairs) ->
+				validateTrue(
+						newKvPairs.get() <= perContractMax,
+						MAX_CONTRACT_STORAGE_EXCEEDED));
 	}
 
 	private void commitPendingUpdates() {
@@ -409,12 +371,6 @@ public class SizeLimitedStorage {
 				firstKey = storageRemover.removeMapping(removedKey, firstKey, curStorage);
 			}
 			newFirstKeys.put(id, firstKey);
-			if (id == 5L) {
-				final var updated = updatedKeys.get(5L);
-				System.out.println("Removed(?) " + zeroedOut.size()
-						+ " keys and added(?) " + (updated != null ? updated.size() : 0)
-						+ " keys from 0.0.5 -> " + newUsages.get(5L).get() + " new usage count");
-			}
 		});
 	}
 

@@ -57,7 +57,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SimpleXfersAvoidingHotspot.class);
 
-	private static final int NUM_ACCOUNTS = 10;
+	private static final int NUM_ACCOUNTS = 100;
 
 	private AtomicLong duration = new AtomicLong(600);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
@@ -68,7 +68,7 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[] {
 						runSimpleXfers(),
@@ -78,8 +78,8 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 
 	private HapiApiSpec runSimpleXfers() {
 		return HapiApiSpec.customHapiSpec("RunTokenTransfers").withProperties(Map.of(
-				"default.keyAlgorithm", "SECP256K1"
-//				"default.keyAlgorithm", "ED25519"
+//				"default.keyAlgorithm", "SECP256K1"
+				"default.keyAlgorithm", "ED25519"
 		)).given().when().then(
 				runWithProvider(avoidantXfersFactory())
 						.lasting(duration::get, unit::get)

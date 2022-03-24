@@ -44,7 +44,7 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(GasLimitThrottlingSuite.class);
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				new HapiApiSpec[]{
 						txsUnderGasLimitAllowed(),

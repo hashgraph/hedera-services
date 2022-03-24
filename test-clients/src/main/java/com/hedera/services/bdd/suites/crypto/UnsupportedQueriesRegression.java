@@ -28,10 +28,12 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getAccountNftInfosNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getBySolidityIdNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getClaimNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getFastRecordNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getStakersNotSupported;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getTokenNftInfosNotSupported;
 
 public class UnsupportedQueriesRegression extends HapiApiSuite {
 	static final Logger log = LogManager.getLogger(UnsupportedQueriesRegression.class);
@@ -46,7 +48,7 @@ public class UnsupportedQueriesRegression extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
 						verifyUnsupportedOps(),
 				}
@@ -59,7 +61,9 @@ public class UnsupportedQueriesRegression extends HapiApiSuite {
 						getClaimNotSupported(),
 						getStakersNotSupported(),
 						getFastRecordNotSupported(),
-						getBySolidityIdNotSupported()
+						getBySolidityIdNotSupported(),
+						getTokenNftInfosNotSupported(),
+						getAccountNftInfosNotSupported()
 				);
 	}
 }

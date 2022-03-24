@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
@@ -43,6 +44,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -126,18 +128,8 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public void spawn(final AccountID id, final long balance, final HederaAccountCustomizer customizer) {
-		ledger.spawn(id, balance, customizer);
-	}
-
-	@Override
 	public void customize(final AccountID id, final HederaAccountCustomizer customizer) {
 		ledger.customizePotentiallyDeleted(id, customizer);
-	}
-
-	@Override
-	public void adjustBalance(final AccountID id, final long adjustment) {
-		ledger.adjustBalance(id, adjustment);
 	}
 
 	@Override
@@ -183,6 +175,11 @@ public class MutableEntityAccess implements EntityAccess {
 	@Override
 	public boolean isExtant(final AccountID id) {
 		return ledger.exists(id);
+	}
+
+	@Override
+	public boolean isTokenAccount(Address address) {
+		return tokensLedger.exists(EntityIdUtils.tokenIdFromEvmAddress(address));
 	}
 
 	@Override

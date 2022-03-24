@@ -53,7 +53,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.MISSING_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowance> {
@@ -105,9 +107,9 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 						.setCurrentKey(info.getKey())
 						.setCurrentlyHasProxy(info.hasProxyAccountID())
 						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
-						.setCurrentCryptoAllowances(info.getCryptoAllowancesList())
-						.setCurrentTokenAllowances(info.getTokenAllowancesList())
-						.setCurrentNftAllowances(info.getNftAllowancesList())
+						.setCurrentCryptoAllowances(info.getGrantedCryptoAllowancesList())
+						.setCurrentTokenAllowances(info.getGrantedTokenAllowancesList())
+						.setCurrentNftAllowances(info.getGrantedNftAllowancesList())
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
 				var opMeta = new CryptoAdjustAllowanceMeta(_txn.getCryptoAdjustAllowance(),
@@ -158,31 +160,34 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 			final List<NftAllowance> nftallowances) {
 		for (var entry : cryptoAllowances) {
 			final var builder = CryptoAllowance.newBuilder()
-					.setSpender(spec.registry().getAccountID(entry.spender()))
-					.setOwner(spec.registry().getAccountID(entry.owner()))
-					.setAmount(entry.amount())
-					.build();
-			callowances.add(builder);
+					.setSpender(asId(entry.spender(), spec))
+					.setAmount(entry.amount());
+			if(entry.owner() != MISSING_OWNER){
+				builder.setOwner(asId(entry.owner(), spec));
+			}
+			callowances.add(builder.build());
 		}
 
 		for (var entry : tokenAllowances) {
 			final var builder = TokenAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(entry.token()))
 					.setSpender(spec.registry().getAccountID(entry.spender()))
-					.setOwner(spec.registry().getAccountID(entry.owner()))
-					.setAmount(entry.amount())
-					.build();
-			tallowances.add(builder);
+					.setAmount(entry.amount());
+			if(entry.owner() != MISSING_OWNER){
+				builder.setOwner(spec.registry().getAccountID(entry.owner()));
+			}
+			tallowances.add(builder.build());
 		}
 		for (var entry : nftAllowances) {
 			final var builder = NftAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(entry.token()))
 					.setSpender(spec.registry().getAccountID(entry.spender()))
 					.setApprovedForAll(BoolValue.of(entry.approvedForAll()))
-					.setOwner(spec.registry().getAccountID(entry.owner()))
-					.addAllSerialNumbers(entry.serials())
-					.build();
-			nftallowances.add(builder);
+					.addAllSerialNumbers(entry.serials());
+			if(entry.owner() != MISSING_OWNER){
+				builder.setOwner(spec.registry().getAccountID(entry.owner()));
+			}
+			nftallowances.add(builder.build());
 		}
 	}
 

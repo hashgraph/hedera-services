@@ -38,6 +38,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -62,6 +63,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -121,6 +123,8 @@ class ContractCreateTransitionLogicTest {
 	private GlobalDynamicProperties properties;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private StorageExpiry storageExpiryLookup;
 
 	private ContractCreateTransitionLogic subject;
 
@@ -134,8 +138,8 @@ class ContractCreateTransitionLogicTest {
 		subject = new ContractCreateTransitionLogic(
 				hfs,
 				txnCtx, accountStore, validator,
-				worldState, recordServices, evmTxProcessor, 
-                                hederaLedger, properties, sigImpactHistorian);
+				worldState, recordServices, evmTxProcessor,
+				hederaLedger, properties, sigImpactHistorian);
 	}
 
 	@Test
@@ -152,7 +156,7 @@ class ContractCreateTransitionLogicTest {
 		givenValidTxnCtx();
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(OK);
-		given(properties.maxGas()).willReturn(gas+1);
+		given(properties.maxGas()).willReturn(gas + 1);
 
 		// expect:
 		assertEquals(OK, subject.semanticCheck().apply(contractCreateTxn));
@@ -245,14 +249,14 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		final var result = TransactionProcessingResult
-				.successful(
-						null,
-						1234L,
-						0L,
-						124L,
-						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress());
+		final var result = TransactionProcessingResult.successful(
+				null,
+				1234L,
+				0L,
+				124L,
+				Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(),
+				Map.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -321,14 +325,14 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		final var result = TransactionProcessingResult
-				.successful(
-						null,
-						1234L,
-						0L,
-						124L,
-						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress());
+		final var result = TransactionProcessingResult.successful(
+				null,
+				1234L,
+				0L,
+				124L,
+				Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(),
+				Map.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
 				.willReturn(contractAccount.getId().asEvmAddress());
@@ -383,7 +387,8 @@ class ContractCreateTransitionLogicTest {
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
 		var result = TransactionProcessingResult.failed(1234L, 0L,
-				124L, Optional.empty(), Optional.empty());
+				124L, Optional.empty(), Optional.empty(),
+				Map.of());
 		given(evmTxProcessor.execute(
 				senderAccount,
 				contractAccount.getId().asEvmAddress(),
@@ -415,15 +420,15 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given (worldState.persistProvisionalContractCreations()).willReturn(secondaryCreations);
-		final var result = TransactionProcessingResult
-				.successful(
-						null,
-						1234L,
-						0L,
-						124L,
-						Bytes.EMPTY,
-						contractAccount.getId().asEvmAddress());
+		given(worldState.persistProvisionalContractCreations()).willReturn(secondaryCreations);
+		final var result = TransactionProcessingResult.successful(
+				null,
+				1234L,
+				0L,
+				124L,
+				Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(),
+				Map.of());
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
@@ -458,7 +463,7 @@ class ContractCreateTransitionLogicTest {
 		// and:
 		given(validator.isValidAutoRenewPeriod(any())).willReturn(true);
 		given(validator.memoCheck(any())).willReturn(MEMO_TOO_LONG);
-		given(properties.maxGas()).willReturn(gas+1);
+		given(properties.maxGas()).willReturn(gas + 1);
 
 		// expect:
 		assertEquals(MEMO_TOO_LONG, subject.semanticCheck().apply(contractCreateTxn));

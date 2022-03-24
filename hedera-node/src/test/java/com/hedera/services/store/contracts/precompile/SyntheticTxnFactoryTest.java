@@ -21,16 +21,20 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
 
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,6 +48,18 @@ class SyntheticTxnFactoryTest {
 	void createsExpectedContractSkeleton() {
 		final var result = subject.createContractSkeleton();
 		assertTrue(result.hasContractCreateInstance());
+	}
+
+	@Test
+	void createsExpectedTransactionCall() {
+		final var result = subject.createTransactionCall(1, Bytes.of(1));
+		final var txnBody = result.build();
+
+		assertTrue(result.hasContractCall());
+		assertEquals(1, txnBody.getContractCall().getGas());
+		assertEquals(EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()),
+				txnBody.getContractCall().getContractID());
+		assertEquals(ByteString.copyFrom(Bytes.of(1).toArray()), txnBody.getContractCall().getFunctionParameters());
 	}
 
 	@Test

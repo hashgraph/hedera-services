@@ -53,6 +53,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -128,9 +129,11 @@ class ContractCallTransitionLogicTest {
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
-				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(), Map.of());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent, Bytes.EMPTY,
-				txnCtx.consensusTime())).willReturn(results);
+				txnCtx.consensusTime()))
+				.willReturn(results);
 		given(worldState.persistProvisionalContractCreations()).willReturn(List.of(target));
 		// when:
 		subject.doStateTransition();
@@ -163,7 +166,8 @@ class ContractCallTransitionLogicTest {
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
-				null, 1234L, 0L, 124L, Bytes.EMPTY, contractAccount.getId().asEvmAddress());
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(), Map.of());
 		given(evmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
 				Bytes.fromHexString(CommonUtils.hex(functionParams.toByteArray())), txnCtx.consensusTime()))
 				.willReturn(results);

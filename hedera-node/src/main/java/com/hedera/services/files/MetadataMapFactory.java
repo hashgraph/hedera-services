@@ -72,7 +72,7 @@ public final class MetadataMapFactory {
 
 	static HFileMeta toAttr(final byte[] bytes) {
 		try {
-			return (bytes == null) ? null : HFileMeta.deserialize(bytes);
+			return (bytes == null || bytes.length == 0) ? null : HFileMeta.deserialize(bytes);
 		} catch (final IOException internal) {
 			log.warn("Argument 'bytes={}' was not a serialized HFileMeta!", CommonUtils.hex(bytes));
 			throw new IllegalArgumentException(internal);

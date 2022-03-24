@@ -101,6 +101,9 @@ public class GlobalDynamicProperties {
 	private int maxAllowanceLimitPerAccount;
 	private boolean exportPrecompileResults;
 	private boolean create2Enabled;
+	private boolean redirectTokenCalls;
+	private boolean enableTraceability;
+	private boolean enableAllowances;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -184,6 +187,9 @@ public class GlobalDynamicProperties {
 		maxAllowanceLimitPerAccount = properties.getIntProperty("hedera.allowances.maxAccountLimit");
 		exportPrecompileResults = properties.getBooleanProperty("contracts.precompile.exportRecordResults");
 		create2Enabled = properties.getBooleanProperty("contracts.allowCreate2");
+		redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
+		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
+		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
 	}
 
 	public int maxTokensPerAccount() {
@@ -194,17 +200,29 @@ public class GlobalDynamicProperties {
 		return maxCustomFeesAllowed;
 	}
 
-	public int maxNftMetadataBytes() { return maxNftMetadataBytes; }
+	public int maxNftMetadataBytes() {
+		return maxNftMetadataBytes;
+	}
 
-	public int maxBatchSizeBurn() { return maxBatchSizeBurn; }
+	public int maxBatchSizeBurn() {
+		return maxBatchSizeBurn;
+	}
 
-	public int maxNftTransfersLen() { return maxNftTransfersLen; }
+	public int maxNftTransfersLen() {
+		return maxNftTransfersLen;
+	}
 
-	public int maxBatchSizeWipe() { return maxBatchSizeWipe; }
+	public int maxBatchSizeWipe() {
+		return maxBatchSizeWipe;
+	}
 
-	public int maxBatchSizeMint() { return maxBatchSizeMint; }
+	public int maxBatchSizeMint() {
+		return maxBatchSizeMint;
+	}
 
-	public long maxNftQueryRange() { return maxNftQueryRange; }
+	public long maxNftQueryRange() {
+		return maxNftQueryRange;
+	}
 
 	public int maxTokenSymbolUtf8Bytes() {
 		return maxTokenSymbolUtf8Bytes;
@@ -348,7 +366,7 @@ public class GlobalDynamicProperties {
 
 	public boolean areNftsEnabled() {
 		return areNftsEnabled;
-        }
+	}
 
 	public long maxNftMints() {
 		return maxNftMints;
@@ -384,7 +402,7 @@ public class GlobalDynamicProperties {
 
 	public long consensusThrottleGasLimit() {
 		return consensusThrottleMaxGasLimit;
-        }
+	}
 
 	public long htsDefaultGasCost() {
 		return htsDefaultGasCost;
@@ -418,15 +436,31 @@ public class GlobalDynamicProperties {
 		return maxMostRecentQueryableRecords;
 	}
 
-	public int maxAllowanceLimitPerTransaction() {return maxAllowanceLimitPerTransaction;}
+	public int maxAllowanceLimitPerTransaction() {
+		return maxAllowanceLimitPerTransaction;
+	}
 
-	public int maxAllowanceLimitPerAccount() {return maxAllowanceLimitPerAccount;}
+	public int maxAllowanceLimitPerAccount() {
+		return maxAllowanceLimitPerAccount;
+	}
 
 	public boolean shouldExportPrecompileResults() {
 		return exportPrecompileResults;
 	}
 
+	public boolean shouldEnableTraceability() {
+		return enableTraceability;
+	}
+
 	public boolean isCreate2Enabled() {
 		return create2Enabled;
+	}
+
+	public boolean isRedirectTokenCallsEnabled() {
+		return redirectTokenCalls;
+	}
+
+	public boolean areAllowancesEnabled() {
+		return enableAllowances;
 	}
 }

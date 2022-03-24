@@ -28,6 +28,7 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -40,7 +41,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -54,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
 	private final AliasManager aliasManager;
+	private final StorageExpiry storageExpiry;
 
 	@Inject
 	public CallLocalEvmTxProcessor(
@@ -63,11 +64,13 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final StorageExpiry storageExpiry
 	) {
 		super(livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
 		this.codeCache = codeCache;
 		this.aliasManager = aliasManager;
+		this.storageExpiry = storageExpiry;
 	}
 
 	@Override
@@ -100,7 +103,8 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 				false,
 				consensusTime,
 				true,
-				OptionalLong.empty());
+				storageExpiry.hapiStaticCallOracle(),
+				aliasManager.resolveForEvm(receiver));
 	}
 
 	@Override

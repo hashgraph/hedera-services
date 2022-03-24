@@ -480,7 +480,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	void deserializeV0240WorksForContract() throws IOException, ConstructableRegistryException {
+	void deserializeV0250WorksForContract() throws IOException, ConstructableRegistryException {
 		MerkleAccountState.serdes = new DomainSerdes();
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(EntityId.class, EntityId::new));
@@ -497,7 +497,7 @@ class MerkleAccountStateTest {
 		final var din = new SerializableDataInputStream(bais);
 
 		final var newSubject = new MerkleAccountState();
-		newSubject.deserialize(din, MerkleAccountState.RELEASE_0240_VERSION);
+		newSubject.deserialize(din, MerkleAccountState.RELEASE_0250_VERSION);
 
 		assertEquals(subject, newSubject);
 	}
@@ -924,7 +924,7 @@ class MerkleAccountStateTest {
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(MerkleAccountState.RELEASE_0240_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0250_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}

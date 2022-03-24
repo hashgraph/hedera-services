@@ -309,6 +309,22 @@ class SizeLimitedStorageTest {
 	}
 
 	@Test
+	void incorporatesNewUpdateWithOtherContractKeyBeingRemoved() {
+		given(storage.containsKey(firstAKey)).willReturn(true);
+		removedKeys.computeIfAbsent(firstAKey.getContractId(), treeSetFactory).add(firstBKey);
+		final var kvImpact = incorporateKvImpact(
+				firstAKey, aValue,
+				updatedKeys, removedKeys, newMappings,
+				storage);
+
+		assertEquals(0, kvImpact);
+		assertEquals(aValue, newMappings.get(firstAKey));
+		assertTrue(updatedKeys.containsKey(firstAKey.getContractId()));
+		assertEquals(firstAKey, updatedKeys.get(firstAKey.getContractId()).first());
+		assertFalse(removedKeys.get(firstAKey.getContractId()).contains(firstAKey));
+	}
+
+	@Test
 	void incorporatesOverwriteOfPendingUpdate() {
 		given(storage.containsKey(firstAKey)).willReturn(true);
 		newMappings.put(firstAKey, aValue);
@@ -379,7 +395,7 @@ class SizeLimitedStorageTest {
 	@Test
 	void aPendingChangeMustBeReflectedInAnAdditionSet() {
 		newMappings.put(firstAKey, aValue);
-		assertThrows(NullPointerException.class, () -> incorporateKvImpact(
+		assertThrows(IllegalStateException.class, () -> incorporateKvImpact(
 				firstAKey, ZERO_VALUE,
 				updatedKeys, removedKeys, newMappings,
 				storage));

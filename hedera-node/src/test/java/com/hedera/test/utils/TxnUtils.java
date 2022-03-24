@@ -9,9 +9,9 @@ package com.hedera.test.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -37,9 +38,16 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.SerializableDataOutputStream;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
@@ -55,6 +63,10 @@ public class TxnUtils {
 				.build();
 	}
 
+	public static CurrencyAdjustments withAdjustments(final long[] balanceChanges, final long[] accountCodes) {
+		return new CurrencyAdjustments(balanceChanges, accountCodes);
+	}
+
 	public static TransferList withAdjustments(
 			AccountID a, long A,
 			AccountID b, long B,
@@ -65,6 +77,19 @@ public class TxnUtils {
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(b).setAmount(B).build())
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(c).setAmount(C).build())
 				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(d).setAmount(D).build())
+				.build();
+	}
+
+	public static TransferList withAllowanceAdjustments(
+			AccountID a, long A, boolean isAllowedA,
+			AccountID b, long B, boolean isAllowedB,
+			AccountID c, long C, boolean isAllowedC,
+			AccountID d, long D, boolean isAllowedD) {
+		return TransferList.newBuilder()
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(a).setAmount(A).setIsApproval(isAllowedA).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(b).setAmount(B).setIsApproval(isAllowedB).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(c).setAmount(C).setIsApproval(isAllowedC).build())
+				.addAccountAmounts(AccountAmount.newBuilder().setAccountID(d).setAmount(D).setIsApproval(isAllowedD).build())
 				.build();
 	}
 
@@ -95,20 +120,20 @@ public class TxnUtils {
 			AccountID cSenderId, AccountID cReceiverId, Long cSerialNumber
 	) {
 		return TokenTransferList.newBuilder()
-						.setToken(a)
-						.addNftTransfers(NftTransfer.newBuilder()
-								.setSenderAccountID(aSenderId)
-								.setReceiverAccountID(aReceiverId)
-								.setSerialNumber(aSerialNumber))
-						.addNftTransfers(NftTransfer.newBuilder()
-								.setSenderAccountID(bSenderId)
-								.setReceiverAccountID(bReceiverId)
-								.setSerialNumber(bSerialNumber))
-						.addNftTransfers(NftTransfer.newBuilder()
-								.setSenderAccountID(cSenderId)
-								.setReceiverAccountID(cReceiverId)
-								.setSerialNumber(cSerialNumber))
-						.build();
+				.setToken(a)
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(aSenderId)
+						.setReceiverAccountID(aReceiverId)
+						.setSerialNumber(aSerialNumber))
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(bSenderId)
+						.setReceiverAccountID(bReceiverId)
+						.setSerialNumber(bSerialNumber))
+				.addNftTransfers(NftTransfer.newBuilder()
+						.setSenderAccountID(cSenderId)
+						.setReceiverAccountID(cReceiverId)
+						.setSerialNumber(cSerialNumber))
+				.build();
 	}
 
 	public static List<TokenTransferList> withTokenAdjustments(
@@ -233,5 +258,24 @@ public class TxnUtils {
 	public static void assertFailsWith(final Runnable something, final ResponseCodeEnum status) {
 		final var ex = assertThrows(InvalidTransactionException.class, something::run);
 		assertEquals(status, ex.getResponseCode());
+	}
+
+	public static <T extends SelfSerializable> void assertSerdeWorks(
+			final T original,
+			final Supplier<T> factory,
+			final int version
+	) throws IOException {
+		final var baos = new ByteArrayOutputStream();
+		final var out = new SerializableDataOutputStream(baos);
+		original.serialize(out);
+		;
+
+		final var reconstruction = factory.get();
+
+		final var bais = new ByteArrayInputStream(baos.toByteArray());
+		final var in = new SerializableDataInputStream(bais);
+		reconstruction.deserialize(in, version);
+
+		assertEquals(original, reconstruction);
 	}
 }

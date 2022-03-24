@@ -45,9 +45,6 @@ public class EvmKeyValueSource {
 		for (int i = 0; i < NUM_KEYS; i++) {
 			r.nextBytes(keyBytes);
 			keys[i] = UInt256.fromBytes(Bytes.wrap(keyBytes));
-//			if (i < 100) {
-//				System.out.println(ContractKey.from(mockId, keys[i]));
-//			}
 		}
 	}
 

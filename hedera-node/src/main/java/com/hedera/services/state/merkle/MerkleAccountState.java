@@ -59,7 +59,9 @@ import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeNftAllowances;
-import static com.hedera.services.utils.SerializationUtils.serializeAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeCryptoAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeNftAllowance;
+import static com.hedera.services.utils.SerializationUtils.serializeTokenAllowances;
 
 public class MerkleAccountState extends AbstractMerkleLeaf {
 	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
@@ -74,7 +76,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0220_VERSION = 9;
 	static final int RELEASE_0230_VERSION = 10;
 	static final int RELEASE_0240_VERSION = 11;
-	private static final int CURRENT_VERSION = RELEASE_0240_VERSION;
+	static final int RELEASE_0250_VERSION = 12;
+	private static final int CURRENT_VERSION = RELEASE_0250_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -195,7 +198,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
 			nftAllowances = deserializeNftAllowances(in);
 		}
-		if (version >= RELEASE_0240_VERSION && smartContract) {
+		if (version >= RELEASE_0250_VERSION && smartContract) {
 			byte marker = in.readByte();
 			if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
 				firstUint256KeyNonZeroBytes = marker;
@@ -221,7 +224,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(number);
 		out.writeByteArray(alias.toByteArray());
 		out.writeInt(numContractKvPairs);
-		serializeAllowances(out, cryptoAllowances, fungibleTokenAllowances, nftAllowances);
+		serializeCryptoAllowances(out, cryptoAllowances);
+		serializeTokenAllowances(out, fungibleTokenAllowances);
+		serializeNftAllowance(out, nftAllowances);
 		if (smartContract) {
 			serializePossiblyMissingKey(firstUint256Key, firstUint256KeyNonZeroBytes, out);
 		}

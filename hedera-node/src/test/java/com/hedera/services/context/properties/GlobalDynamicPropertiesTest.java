@@ -81,6 +81,8 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.expandSigsFromLastSignedState());
 		assertTrue(subject.shouldExportPrecompileResults());
 		assertFalse(subject.isCreate2Enabled());
+		assertTrue(subject.isRedirectTokenCallsEnabled());
+		assertFalse(subject.areAllowancesEnabled());
 	}
 
 	@Test
@@ -200,6 +202,8 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.expandSigsFromLastSignedState());
 		assertFalse(subject.shouldExportPrecompileResults());
 		assertTrue(subject.isCreate2Enabled());
+		assertFalse(subject.isRedirectTokenCallsEnabled());
+		assertTrue(subject.areAllowancesEnabled());
 	}
 
 	@Test
@@ -341,7 +345,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getLongProperty("contracts.consensusThrottleMaxGasLimit")).willReturn(i + 49L);
 		given(properties.getLongProperty("scheduling.triggerTxn.windBackNanos")).willReturn(i + 50L);
 		given(properties.getIntProperty("ledger.changeHistorian.memorySecs")).willReturn(i + 51);
-		given(properties.getLongProperty("contracts.precompile.htsDefaultGasCost")).willReturn(i+52L);
+		given(properties.getLongProperty("contracts.precompile.htsDefaultGasCost")).willReturn(i + 52L);
 		given(properties.getBooleanProperty("autoCreation.enabled")).willReturn(i % 2 == 0);
 		given(properties.getBooleanProperty("sigs.expandFromLastSignedState")).willReturn(i % 2 == 0);
 		given(properties.getLongProperty("contracts.maxKvPairs.aggregate")).willReturn(i + 52L);
@@ -353,6 +357,10 @@ class GlobalDynamicPropertiesTest {
 				.willReturn((i + 57) % 2 == 0);
 		given(properties.getBooleanProperty("contracts.allowCreate2"))
 				.willReturn((i + 58) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.redirectTokenCalls")).willReturn((i + 59) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.enableTraceability"))
+				.willReturn((i + 59) % 2 == 0);
+		given(properties.getBooleanProperty("hedera.allowances.isEnabled")).willReturn((i + 60) % 2 == 0);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

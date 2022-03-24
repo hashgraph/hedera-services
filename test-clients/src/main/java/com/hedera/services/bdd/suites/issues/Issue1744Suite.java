@@ -45,7 +45,7 @@ public class Issue1744Suite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				keepsRecordOfPayerIBE()
 		);

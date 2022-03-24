@@ -97,7 +97,7 @@ public class ContractPerformanceSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		List<String> perfTests;
 		try {
 			perfTests =

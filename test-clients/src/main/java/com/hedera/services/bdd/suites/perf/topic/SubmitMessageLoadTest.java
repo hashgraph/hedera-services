@@ -111,7 +111,7 @@ public class SubmitMessageLoadTest extends LoadTest {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(runSubmitMessages());
 	}
 

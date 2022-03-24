@@ -92,6 +92,11 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 		return new MerkleSpecialFiles(this);
 	}
 
+	@Override
+	public boolean isSelfHashing() {
+		return true;
+	}
+
 	/**
 	 * Checks if the current contents of the given file match the given SHA-384 hash.
 	 *

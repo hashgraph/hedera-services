@@ -34,13 +34,13 @@ import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
-import com.hedera.services.bdd.suites.contract.ContractCallLocalSuite;
-import com.hedera.services.bdd.suites.contract.ContractCallSuite;
-import com.hedera.services.bdd.suites.contract.ContractCreateSuite;
-import com.hedera.services.bdd.suites.contract.ContractDeleteSuite;
-import com.hedera.services.bdd.suites.contract.ContractGetBytecodeSuite;
-import com.hedera.services.bdd.suites.contract.ContractGetInfoSuite;
-import com.hedera.services.bdd.suites.contract.ContractUpdateSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractDeleteSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
@@ -188,7 +188,6 @@ import com.hedera.services.bdd.suites.token.TokenManagementSpecsStateful;
 import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
-import com.hedera.services.legacy.regression.SmartContractAggregatedTests;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -517,13 +516,7 @@ public class SuiteRunner {
 
 		String[] effArgs = trueArgs(args);
 		log.info("Effective args :: " + List.of(effArgs));
-		if (Arrays.asList(effArgs).contains(LEGACY_SMART_CONTRACT_TESTS)) {
-			SmartContractAggregatedTests.main(
-					new String[] {
-							System.getenv("NODES").split(":")[0],
-							args[1],
-							"1" });
-		} else if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
+		if (Stream.of(effArgs).anyMatch("-CI"::equals)) {
 			var tlsOverride = overrideOrDefault(effArgs, TLS_ARG, DEFAULT_TLS_CONFIG.toString());
 			var txnOverride = overrideOrDefault(effArgs, TXN_ARG, DEFAULT_TXN_CONFIG.toString());
 			var nodeSelectorOverride = overrideOrDefault(effArgs, NODE_SELECTOR_ARG, DEFAULT_NODE_SELECTOR.toString());

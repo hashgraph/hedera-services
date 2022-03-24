@@ -56,12 +56,13 @@ class CodeOrderResultFactoryTest {
 		assertSame(CodeOrderResultFactory.MISSING_CONTRACT_RESULT, subject.forInvalidContract());
 		assertSame(CodeOrderResultFactory.IMMUTABLE_CONTRACT_RESULT, subject.forImmutableContract());
 		assertSame(CodeOrderResultFactory.MISSING_TOPIC_RESULT, subject.forMissingTopic());
-		assertSame(CodeOrderResultFactory.MISSING_AUTORENEW_RESULT, subject.forMissingAutoRenewAccount());
+		assertSame(CodeOrderResultFactory.INVALID_AUTORENEW_RESULT, subject.forInvalidAutoRenewAccount());
 		assertSame(CodeOrderResultFactory.MISSING_TOKEN_RESULT, subject.forMissingToken());
 		assertSame(CodeOrderResultFactory.MISSING_SCHEDULE_RESULT, subject.forMissingSchedule());
 		assertSame(CodeOrderResultFactory.MISSING_SCHEDULE_RESULT, subject.forMissingSchedule());
 		assertSame(CodeOrderResultFactory.UNRESOLVABLE_SIGNERS_RESULT, subject.forUnresolvableRequiredSigners());
 		assertSame(CodeOrderResultFactory.UNSCHEDULABLE_TRANSACTION_RESULT, subject.forUnschedulableTxn());
-		assertSame(CodeOrderResultFactory.MISSING_FEE_COLLECTOR_RESULT, subject.forMissingFeeCollector());
+		assertSame(CodeOrderResultFactory.INVALID_FEE_COLLECTOR_RESULT, subject.forInvalidFeeCollector());
+		assertSame(CodeOrderResultFactory.MISSING_ALLOWANCE_OWNER_RESULT, subject.forInvalidAllowanceOwner());
 	}
 }

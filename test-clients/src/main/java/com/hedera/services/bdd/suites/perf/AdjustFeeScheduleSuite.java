@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.perf;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.utilops.LoadTest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +51,7 @@ public class AdjustFeeScheduleSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
 				updateFeesFor()
 		);

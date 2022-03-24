@@ -28,6 +28,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
+import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND_ID;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.approvedTinyBarsFromTo;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAccountToAlias;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromAliasToAlias;
@@ -60,6 +61,26 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 					newSignedCryptoTransfer()
 							.nonPayerKts(DEFAULT_PAYER_KT)
 							.transfers(tinyBarsFromAccountToAlias(DEFAULT_PAYER_ID, NO_RECEIVER_SIG_ALIAS, 1_000L))
+							.get()
+			));
+		}
+	},
+	CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(tinyBarsFromTo(FIRST_TOKEN_SENDER_ID, STAKING_FUND_ID, 1_000L))
+							.get()
+			));
+		}
+	},
+	CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedCryptoTransfer()
+							.nonPayerKts(DEFAULT_PAYER_KT)
+							.transfers(tinyBarsFromTo(STAKING_FUND_ID, NO_RECEIVER_SIG_ID, 1_000L))
 							.get()
 			));
 		}

@@ -21,8 +21,13 @@ package com.hedera.services.store.contracts;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.AccountsCommitInterceptor;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TokenRelsCommitInterceptor;
+import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -33,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -44,6 +50,9 @@ import java.util.Objects;
 
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.TokenProperty.TREASURY;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 public class WorldLedgers {
@@ -85,6 +94,17 @@ public class WorldLedgers {
 
 		this.aliases = aliases;
 		this.staticEntityAccess = staticEntityAccess;
+	}
+
+	public Address ownerOf(final NftId nft) {
+		if (!areMutable()) {
+			throw new IllegalStateException("Cannot look up owner from unavailable ledgers");
+		}
+		var owner = (EntityId) nftsLedger.get(nft, OWNER);
+		if (MISSING_ENTITY_ID.equals(owner)) {
+			owner = (EntityId) tokensLedger.get(nft.tokenId(), TREASURY);
+		}
+		return owner.toEvmAddress();
 	}
 
 	public Address canonicalAddress(final Address addressOrAlias) {
@@ -169,6 +189,33 @@ public class WorldLedgers {
 				activeLedgerWrapping(accountsLedger),
 				activeLedgerWrapping(nftsLedger),
 				activeLedgerWrapping(tokensLedger));
+	}
+
+	public WorldLedgers wrapped(final SideEffectsTracker sideEffectsTracker) {
+		if (!areMutable()) {
+			return staticLedgersWith(StackedContractAliases.wrapping(aliases), staticEntityAccess);
+		}
+
+		final var tokensCommitInterceptor = new TokensCommitInterceptor(sideEffectsTracker);
+		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor(sideEffectsTracker);
+		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor(sideEffectsTracker);
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+
+		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
+		wrappedTokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
+		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
+		wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
+		final var wrappedNftsLedger = activeLedgerWrapping(nftsLedger);
+		wrappedNftsLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
+		final var wrappedTokensLedger = activeLedgerWrapping(tokensLedger);
+		wrappedTokensLedger.setCommitInterceptor(tokensCommitInterceptor);
+
+		return new WorldLedgers(
+				StackedContractAliases.wrapping(aliases),
+				wrappedTokenRelsLedger,
+				wrappedAccountsLedger,
+				wrappedNftsLedger,
+				wrappedTokensLedger);
 	}
 
 	public ContractAliases aliases() {

@@ -27,6 +27,7 @@ import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,7 +42,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.Set;
 
 /**
@@ -50,7 +50,8 @@ import java.util.Set;
  */
 @Singleton
 public class CreateEvmTxProcessor extends EvmTxProcessor {
-	private CodeCache codeCache;
+	private final CodeCache codeCache;
+	private final StorageExpiry storageExpiry;
 
 	@Inject
 	public CreateEvmTxProcessor(
@@ -60,10 +61,12 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final GlobalDynamicProperties globalDynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap
+			final Map<String, PrecompiledContract> precompiledContractMap,
+			final StorageExpiry storageExpiry
 	) {
 		super(worldState, livePricesSource, globalDynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
 		this.codeCache = codeCache;
+		this.storageExpiry = storageExpiry;
 	}
 
 	public TransactionProcessingResult execute(
@@ -73,7 +76,7 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 			final long value,
 			final Bytes code,
 			final Instant consensusTime,
-			final long expiry
+			final long hapiExpiry
 	) {
 		final long gasPrice = gasPriceTinyBarsGiven(consensusTime);
 
@@ -87,7 +90,8 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 				true,
 				consensusTime,
 				false,
-				OptionalLong.of(expiry));
+				storageExpiry.hapiCreationOracle(hapiExpiry),
+				receiver);
 	}
 
 	@Override

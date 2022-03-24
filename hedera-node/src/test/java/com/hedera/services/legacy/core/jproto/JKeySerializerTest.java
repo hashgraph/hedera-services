@@ -21,7 +21,6 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.AtomicCounter;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -43,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.swirlds.common.CommonUtils.unhex;
@@ -257,7 +257,7 @@ class JKeySerializerTest {
 			rv = genSingleEd25519Key(pubKey2privKeyMap);
 
 			//verify the size
-			final int size = computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
+			final int size = computeNumOfExpandedKeys(rv, 1, new AtomicInteger());
 			assertEquals(1, size);
 		} else if (depth == 2) {
 			final List<Key> keys = new ArrayList<>();
@@ -268,7 +268,7 @@ class JKeySerializerTest {
 			rv = genKeyList(keys);
 
 			//verify the size
-			final int size = computeNumOfExpandedKeys(rv, 1, new AtomicCounter());
+			final int size = computeNumOfExpandedKeys(rv, 1, new AtomicInteger());
 			assertEquals(2 + numKeys * 2, size);
 		} else {
 			throw new NotImplementedException("Not implemented yet.");
@@ -288,10 +288,10 @@ class JKeySerializerTest {
 	 * 		keeps track the number of keys
 	 * @return number of expanded keys
 	 */
-	private static int computeNumOfExpandedKeys(final Key key, int depth, final AtomicCounter counter) {
+	private static int computeNumOfExpandedKeys(final Key key, int depth, final AtomicInteger counter) {
 		if (!(key.hasThresholdKey() || key.hasKeyList())) {
-			counter.increment();
-			return counter.value();
+			counter.incrementAndGet();
+			return counter.get();
 		}
 
 		final var tKeys = key.hasThresholdKey()
@@ -305,7 +305,7 @@ class JKeySerializerTest {
 			}
 		}
 
-		return counter.value();
+		return counter.get();
 	}
 
 	/**

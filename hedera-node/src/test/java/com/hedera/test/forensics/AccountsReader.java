@@ -27,7 +27,7 @@ import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -65,7 +65,7 @@ public class AccountsReader {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(CurrencyAdjustments.class, CurrencyAdjustments::new));
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(SolidityFnResult.class, SolidityFnResult::new));
+				new ClassConstructorPair(EvmFnResult.class, EvmFnResult::new));
 
 		try (MerkleDataInputStream in = new MerkleDataInputStream(Files.newInputStream(Path.of(loc)))) {
 			MerkleMap<EntityNum, MerkleAccount> fcm = in.readMerkleTree(Integer.MAX_VALUE);

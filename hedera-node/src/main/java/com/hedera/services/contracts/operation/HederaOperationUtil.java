@@ -22,11 +22,14 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.services.utils.BytesComparator;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -36,10 +39,9 @@ import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalLong;
+import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
@@ -47,44 +49,8 @@ import java.util.function.Supplier;
  * Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.operation.Operation}
  */
 public final class HederaOperationUtil {
-
 	private HederaOperationUtil() {
 		throw new UnsupportedOperationException("Utility Class");
-	}
-
-	/**
-	 * Returns the expiry to be used for a new contract. Climbs the {@link MessageFrame} and searches for the parent
-	 * {@link com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount}. The expiry to be used is
-	 * the expiry of the first account found in the stack
-	 *
-	 * @param frame
-	 * 		Current message frame
-	 * @return Expiry to be used for new contracts
-	 */
-	public static long newContractExpiryIn(MessageFrame frame) {
-		long expiry = 0;
-		HederaWorldState.WorldStateAccount hederaAccount;
-		Iterator<MessageFrame> framesIterator = frame.getMessageFrameStack().iterator();
-		MessageFrame messageFrame;
-		while (framesIterator.hasNext()) {
-			messageFrame = framesIterator.next();
-			/* if this is the initial frame from the deque, check context vars first */
-			if (!framesIterator.hasNext()) {
-				OptionalLong expiryOptional = messageFrame.getContextVariable("expiry");
-				if (expiryOptional.isPresent()) {
-					expiry = expiryOptional.getAsLong();
-					break;
-				}
-			}
-			/* check if this messageFrame's sender account can be retrieved from state */
-			final var updater = (HederaWorldUpdater) messageFrame.getWorldUpdater();
-			hederaAccount = updater.getHederaAccount(frame.getSenderAddress());
-			if (hederaAccount != null) {
-				expiry = hederaAccount.getExpiry();
-				break;
-			}
-		}
-		return expiry;
 	}
 
 	/**
@@ -92,16 +58,11 @@ public final class HederaOperationUtil {
 	 * Halts the execution of the EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if
 	 * the account does not exist, or it is deleted.
 	 *
-	 * @param frame
-	 * 		The current message frame
-	 * @param supplierAddressBytes
-	 * 		Supplier for the address bytes
-	 * @param supplierHaltGasCost
-	 * 		Supplier for the gas cost
-	 * @param supplierExecution
-	 * 		Supplier with the execution
-	 * @param addressValidator
-	 * 		Address validator predicate
+	 * @param frame                The current message frame
+	 * @param supplierAddressBytes Supplier for the address bytes
+	 * @param supplierHaltGasCost  Supplier for the gas cost
+	 * @param supplierExecution    Supplier with the execution
+	 * @param addressValidator     Address validator predicate
 	 * @return The operation result of the execution
 	 */
 	public static Operation.OperationResult addressCheckExecution(
@@ -138,23 +99,17 @@ public final class HederaOperationUtil {
 	 * provided signature is performed. If the signature is not
 	 * active, the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
 	 *
-	 * @param sigsVerifier
-	 * 		The signature
-	 * @param frame
-	 * 		The current message frame
-	 * @param address
-	 * 		The target address
-	 * @param supplierHaltGasCost
-	 * 		Supplier for the gas cost
-	 * @param supplierExecution
-	 * 		Supplier with the execution
-	 * @param addressValidator
-	 * 		Address validator predicate
+	 * @param sigsVerifier           The signature
+	 * @param frame                  The current message frame
+	 * @param address                The target address
+	 * @param supplierHaltGasCost    Supplier for the gas cost
+	 * @param supplierExecution      Supplier with the execution
+	 * @param addressValidator       Address validator predicate
 	 * @param precompiledContractMap
 	 * @return The operation result of the execution
 	 */
 	public static Operation.OperationResult addressSignatureCheckExecution(
-			final SoliditySigsVerifier sigsVerifier,
+			final EvmSigsVerifier sigsVerifier,
 			final MessageFrame frame,
 			final Address address,
 			final Supplier<Gas> supplierHaltGasCost,
@@ -179,19 +134,15 @@ public final class HederaOperationUtil {
 		// if this is a delegate call activeContract should be the recipient address
 		// otherwise it should be the contract address
 		if (isDelegateCall) {
-			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(true,
 					account.getAddress(),
 					frame.getRecipientAddress(),
-					frame.getContractAddress(),
-					frame.getRecipientAddress(),
-					updater.aliases());
+					updater.trackingLedgers());
 		} else {
-			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
+			sigReqIsMet = sigsVerifier.hasActiveKeyOrNoReceiverSigReq(false,
 					account.getAddress(),
-					frame.getRecipientAddress(),
 					frame.getContractAddress(),
-					frame.getContractAddress(),
-					updater.aliases());
+					updater.trackingLedgers());
 		}
 		if (!sigReqIsMet) {
 			return new Operation.OperationResult(
@@ -200,5 +151,21 @@ public final class HederaOperationUtil {
 		}
 
 		return supplierExecution.get();
+	}
+
+	public static void cacheExistingValue(
+			final MessageFrame frame,
+			final Address address,
+			final Bytes32 key,
+			final UInt256 storageValue
+	) {
+		// Store the read if it is the first read for the slot/address
+		var updater = frame.getMessageFrameStack().getLast().getWorldUpdater().parentUpdater().orElse(null);
+		if (updater != null) {
+			final var addressSlots =
+					((HederaWorldState.Updater) updater).getStateChanges()
+							.computeIfAbsent(address, addr -> new TreeMap<>(BytesComparator.INSTANCE));
+			addressSlots.computeIfAbsent(key, slot -> new MutablePair<>(storageValue, null));
+		}
 	}
 }

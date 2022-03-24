@@ -51,7 +51,7 @@ public class BalanceSuite extends HapiApiSuite {
 	}
 
 	@Override
-	protected List<HapiApiSpec> getSpecsInSuite() {
+	public List<HapiApiSpec> getSpecsInSuite() {
 		List<HapiApiSpec> specToRun = new ArrayList<>();
 		accounts.forEach(s -> specToRun.add(getBalance(s)));
 		return specToRun;
