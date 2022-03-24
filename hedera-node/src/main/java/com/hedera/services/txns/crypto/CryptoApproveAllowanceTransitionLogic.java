@@ -59,6 +59,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final ApproveAllowanceChecks allowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Map<Long, Account> entitiesChanged;
+	private final List<UniqueToken> nftsTouched;
 
 	@Inject
 	public CryptoApproveAllowanceTransitionLogic(
@@ -73,6 +74,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		this.allowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
 		this.entitiesChanged = new HashMap<>();
+		this.nftsTouched = new ArrayList<>();
 	}
 
 	@Override
@@ -82,6 +84,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		final AccountID payer = cryptoApproveAllowanceTxn.getTransactionID().getAccountID();
 		final var op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 		entitiesChanged.clear();
+		nftsTouched.clear();
 
 		/* --- Use models --- */
 		final Id payerId = Id.fromGrpcAccount(payer);
@@ -93,6 +96,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		applyNftAllowances(op.getNftAllowancesList(), payerAccount);
 
 		/* --- Persist the payer account --- */
+		tokenStore.persistNfts(nftsTouched);
 		for (final var entry : entitiesChanged.entrySet()) {
 			accountStore.commitAccount(entry.getValue());
 		}
@@ -184,22 +188,20 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			final var approvedForAll = allowance.getApprovedForAll();
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = allowance.getTokenId();
-			final var nfts = new ArrayList<UniqueToken>();
 
 			if (approvedForAll.getValue()) {
 				final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 						spender.asEntityNum());
 				approveForAllNftsSet.add(key);
-			} else {
-				for (var serialNum : serialNums) {
-					final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum);
-					nft.setSpender(spender);
-					nfts.add(nft);
-				}
+			}
+
+			for (var serialNum : serialNums) {
+				final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum);
+				nft.setSpender(spender);
+				nftsTouched.add(nft);
 			}
 
 			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
-			tokenStore.persistNfts(nfts);
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 		}
 	}

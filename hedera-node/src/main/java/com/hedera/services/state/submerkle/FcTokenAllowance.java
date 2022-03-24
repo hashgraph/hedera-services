@@ -54,7 +54,7 @@ public class FcTokenAllowance implements SelfSerializable {
 	static final List<Long> DEFAULT_SERIAL_NUMS = new ArrayList<>();
 
 	private boolean approvedForAll;
-	private List<Long> serialNumbers = DEFAULT_SERIAL_NUMS;
+	private List<Long> serialNumbers;
 
 	public FcTokenAllowance() {
 		/* RuntimeConstructable */
@@ -139,6 +139,9 @@ public class FcTokenAllowance implements SelfSerializable {
 	}
 
 	public void addSerialNumber(long serialNum) {
+		if (serialNumbers == null) {
+			serialNumbers = new ArrayList<>();
+		}
 		serialNumbers.add(serialNum);
 	}
 
