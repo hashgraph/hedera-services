@@ -637,7 +637,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.balanceLessThan(98 * ONE_HBAR)
 										.cryptoAllowancesContaining(spender, 9 * ONE_HBAR)
 										.tokenAllowancesContaining(fungibleToken, spender, 475)
-										.nftApprovedAllowancesContaining(nonFungibleToken, spender, false)),
+										.nftApprovedAllowancesNotContaining(nonFungibleToken, spender)),
 						getAccountInfo(otherOwner)
 								.hasToken(relationshipWith(fungibleToken).balance(970))
 								.hasToken(relationshipWith(nonFungibleToken).balance(0))
@@ -645,7 +645,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.balanceLessThan(98 * ONE_HBAR)
 										.cryptoAllowancesContaining(spender, 4 * ONE_HBAR)
 										.tokenAllowancesContaining(fungibleToken, spender, 85)
-										.nftApprovedAllowancesContaining(nonFungibleToken, spender, true)),
+										.nftApprovedAllowancesContaining(nonFungibleToken, spender)),
 						getAccountInfo(receiver)
 								.hasToken(relationshipWith(fungibleToken).balance(105))
 								.hasToken(relationshipWith(nonFungibleToken).balance(4))
@@ -828,7 +828,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.signedBy(spender)
 								.hasKnownStatus(AMOUNT_EXCEEDS_ALLOWANCE),
 						getAccountInfo(owner)
-								.has(accountWith().nftApprovedAllowancesContaining(nonFungibleToken, spender, false))
+								.has(accountWith().nftApprovedAllowancesNotContaining(nonFungibleToken, spender))
 								.hasToken(relationshipWith(nonFungibleToken).balance(2)),
 						cryptoTransfer(allowanceTinyBarsFromTo(owner, receiver, 5 * ONE_HBAR))
 								.payingWith(spender)
@@ -849,7 +849,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(0)
-										.nftApprovedAllowancesContaining(nonFungibleToken, spender, false)
+										.nftApprovedAllowancesNotContaining(nonFungibleToken, spender)
 										.tokenAllowancesContaining(fungibleToken, spender, 1400))
 				);
 	}

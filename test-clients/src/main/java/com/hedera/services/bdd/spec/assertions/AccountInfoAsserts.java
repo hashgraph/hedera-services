@@ -324,16 +324,34 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts nftApprovedAllowancesContaining(String token, String spender, boolean approvedForAll) {
+	public AccountInfoAsserts nftApprovedAllowancesContaining(String token, String spender) {
 		registerProvider((spec, o) -> {
 			var nftAllowance = GrantedNftAllowance.newBuilder()
-					.setApprovedForAll(approvedForAll)
+					.setApprovedForAll(true)
 					.setTokenId(spec.registry().getTokenID(token))
 					.setSpender(spec.registry().getAccountID(spender))
 
 					.build();
+
 			assertTrue(((AccountInfo) o).getGrantedNftAllowancesList().contains(nftAllowance),
 					"Bad NftAllowances!");
+
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts nftApprovedAllowancesNotContaining(String token, String spender) {
+		registerProvider((spec, o) -> {
+			var nftAllowance = GrantedNftAllowance.newBuilder()
+					.setApprovedForAll(false)
+					.setTokenId(spec.registry().getTokenID(token))
+					.setSpender(spec.registry().getAccountID(spender))
+
+					.build();
+
+			assertFalse(((AccountInfo) o).getGrantedNftAllowancesList().contains(nftAllowance),
+					"Bad NftAllowances!");
+
 		});
 		return this;
 	}

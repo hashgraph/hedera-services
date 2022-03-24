@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 
 public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetTokenNftInfo.class);
+	public static final String MISSING_SPENDER = "missing";
 
 	String token;
 	long serialNum;
@@ -58,9 +59,20 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	Optional<String> expectedTokenID = Optional.empty();
 	Optional<String> expectedAccountID = Optional.empty();
 	Optional<Boolean> expectedCreationTime = Optional.empty();
+	Optional<String> expectedSpenderID = Optional.empty();
 
 	public HapiGetTokenNftInfo hasAccountID(String name) {
 		expectedAccountID = Optional.of(name);
+		return this;
+	}
+
+	public HapiGetTokenNftInfo hasSpenderID(String name) {
+		expectedSpenderID = Optional.of(name);
+		return this;
+	}
+
+	public HapiGetTokenNftInfo hasNoSpender() {
+		expectedSpenderID = Optional.of(MISSING_SPENDER);
 		return this;
 	}
 
@@ -113,6 +125,23 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 					"Wrong account ID account!");
 		}
 
+
+		if (expectedSpenderID.isPresent()) {
+			if (expectedSpenderID.get().equals(MISSING_SPENDER)) {
+				Assertions.assertEquals(
+						0,
+						actualInfo.getSpenderId().getAccountNum(),
+						"Wrong account ID account!");
+			} else {
+				var id = TxnUtils.asId(expectedSpenderID.get(), spec);
+				Assertions.assertEquals(
+						id,
+						actualInfo.getSpenderId(),
+						"Wrong spender ID account!");
+			}
+
+		}
+
 		expectedMetadata.ifPresent(bytes -> Assertions.assertEquals(
 				bytes,
 				actualInfo.getMetadata(),
@@ -120,20 +149,29 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 
 		assertFor(
 				actualInfo.getCreationTime(),
+
 				expectedCreationTime,
 				(n, r) -> r.getCreationTime(token),
 				"Wrong creation time (seconds)!",
 				spec.registry());
 
 		var registry = spec.registry();
+
 		assertFor(
-				actualInfo.getNftID().getTokenID(),
+				actualInfo.getNftID().
+
+						getTokenID(),
+
 				expectedTokenID,
 				(n, r) -> r.getTokenID(n),
 				"Wrong token id!",
 				registry);
 
-		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
+		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(
+
+				rationalize(id), actualInfo.
+
+						getLedgerId()));
 	}
 
 	private <T, R> void assertFor(

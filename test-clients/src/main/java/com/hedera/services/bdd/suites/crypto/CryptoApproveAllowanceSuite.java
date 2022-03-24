@@ -193,7 +193,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.signedBy(TOKEN_TREASURY, DEFAULT_PAYER)
 				).then(
 						getAccountInfo(TOKEN_TREASURY).has(accountWith()
-										.nftApprovedAllowancesContaining(nonFungibleToken, spender, false))
+										.nftApprovedAllowancesNotContaining(nonFungibleToken, spender))
 								.logged(),
 						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 1L)
 								.between(TOKEN_TREASURY, otherReceiver))
@@ -398,7 +398,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 										.tokenAllowancesCount(1)
 										.cryptoAllowancesContaining(spender1, 100L)
 										.tokenAllowancesContaining(token, spender, 100L)
-										.nftApprovedAllowancesContaining(nft, spender, false)
+										.nftApprovedAllowancesNotContaining(nft, spender)
 								));
 	}
 
@@ -497,12 +497,12 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.has(accountWith()
 										.tokenAllowancesContaining(token, spender, 100L)
 										.cryptoAllowancesContaining(spender, ONE_HBAR)
-										.nftApprovedAllowancesContaining(nft, spender, false)),
+										.nftApprovedAllowancesNotContaining(nft, spender)),
 						getAccountInfo(owner2)
 								.has(accountWith()
 										.tokenAllowancesContaining(token, spender, 300L)
 										.cryptoAllowancesContaining(spender, 2 * ONE_HBAR)
-										.nftApprovedAllowancesContaining(nft, spender, false))
+										.nftApprovedAllowancesNotContaining(nft, spender))
 				);
 	}
 
@@ -602,7 +602,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 										.tokenAllowancesCount(2)
 										.cryptoAllowancesContaining(spender, 100L)
 										.tokenAllowancesContaining(token, spender, 100L)
-										.nftApprovedAllowancesContaining(nft, spender, false)
+										.nftApprovedAllowancesNotContaining(nft, spender)
 								));
 	}
 
@@ -654,8 +654,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner).logged()
 								.has(accountWith()
 										.nftApprovedForAllAllowancesCount(2)
-										.nftApprovedAllowancesContaining(nft, spender, true)
-										.nftApprovedAllowancesContaining(nft, spender1, false)
+										.nftApprovedAllowancesContaining(nft, spender)
+										.nftApprovedAllowancesNotContaining(nft, spender1)
 
 								));
 	}
@@ -988,7 +988,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 
 								.has(accountWith()
 										.nftApprovedForAllAllowancesCount(1)
-										.nftApprovedAllowancesContaining(nft, spender, true)
+										.nftApprovedAllowancesContaining(nft, spender)
 								));
 	}
 
@@ -1040,8 +1040,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 
 								.has(accountWith()
 										.nftApprovedForAllAllowancesCount(2)
-										.nftApprovedAllowancesContaining(nft, spender, true)
-										.nftApprovedAllowancesContaining(nft, spender1, false)
+										.nftApprovedAllowancesContaining(nft, spender)
+										.nftApprovedAllowancesNotContaining(nft, spender1)
 								));
 	}
 
@@ -1527,7 +1527,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 										.tokenAllowancesCount(1)
 										.cryptoAllowancesContaining(spender, 100L)
 										.tokenAllowancesContaining(token, spender, 100L)
-										.nftApprovedAllowancesContaining(nft, spender, false)
+										.nftApprovedAllowancesNotContaining(nft, spender)
 								));
 
 	}
@@ -1579,8 +1579,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				)
 				.then(
 						getAccountInfo(owner1).has(accountWith()
-								.nftApprovedAllowancesContaining(nft, spender, false)
-								.nftApprovedAllowancesContaining(nft, spender2, false))
+								.nftApprovedAllowancesNotContaining(nft, spender)
+								.nftApprovedAllowancesNotContaining(nft, spender2))
 				);
 	}
 
