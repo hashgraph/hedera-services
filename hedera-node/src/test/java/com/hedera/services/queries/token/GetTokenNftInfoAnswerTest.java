@@ -71,6 +71,7 @@ class GetTokenNftInfoAnswerTest {
 	private NftID nftId = NftID.newBuilder().setTokenID(asToken("1.2.3")).setSerialNumber(2).build();
 	private long fee = 1_234L;
 	private AccountID owner = asAccount("3.4.5");
+	private AccountID spender = asAccount("5.6.7");
 	private ByteString metadata = ByteString.copyFromUtf8("some metadata");
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 
@@ -88,6 +89,7 @@ class GetTokenNftInfoAnswerTest {
 				.setNftID(nftId)
 				.setCreationTime(Timestamp.newBuilder().setSeconds(1).setNanos(2))
 				.setAccountID(owner)
+				.setSpenderId(spender)
 				.setMetadata(metadata)
 				.build();
 

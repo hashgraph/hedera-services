@@ -340,12 +340,15 @@ public class StateView {
 			accountId = merkleToken.treasury().toGrpcAccountId();
 		}
 
+		final var spenderId = targetNft.getSpender().toGrpcAccountId();
+
 		final var info = TokenNftInfo.newBuilder()
 				.setLedgerId(networkInfo.ledgerId())
 				.setNftID(target)
 				.setAccountID(accountId)
 				.setCreationTime(targetNft.getCreationTime().toGrpc())
 				.setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
+				.setSpenderId(spenderId)
 				.build();
 		return Optional.of(info);
 	}
