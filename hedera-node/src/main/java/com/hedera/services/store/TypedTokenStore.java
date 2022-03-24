@@ -50,6 +50,7 @@ import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -445,10 +446,10 @@ public class TypedTokenStore {
 	public void persistNfts(List<UniqueToken> nfts) {
 		for (final var nft :nfts) {
 			final var tokenId = nft.getTokenId();
-			final var merkleNft = new MerkleUniqueToken(nft.getOwner().asEntityId(), nft.getMetadata(), nft.getCreationTime());
-			merkleNft.setSpender(nft.getSpender().asEntityId());
-			uniqueTokens.put(new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), nft.getSerialNumber()),
-					merkleNft);
+			final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), nft.getSerialNumber());
+			final var mutableNft = uniqueTokens.getRef(nftId);
+			mapModelChanges(nft, mutableNft);
+			uniqueTokens.put(nftId, mutableNft);
 		}
 	}
 
@@ -483,6 +484,14 @@ public class TypedTokenStore {
 
 	private void validateUsable(MerkleUniqueToken merkleUniqueToken) {
 		validateTrue(merkleUniqueToken != null, INVALID_NFT_ID);
+	}
+
+	private void mapModelChanges(UniqueToken nft, MerkleUniqueToken mutableNft) {
+		mutableNft.setOwner(nft.getOwner().asEntityId());
+		mutableNft.setSpender(nft.getSpender().asEntityId());
+		mutableNft.setMetadata(nft.getMetadata());
+		final var creationTime = nft.getCreationTime();
+		mutableNft.setPackedCreationTime(packedTime(creationTime.getSeconds(), creationTime.getNanos()));
 	}
 
 	private void mapModelChanges(Token token, MerkleToken mutableToken) {

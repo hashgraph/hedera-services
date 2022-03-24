@@ -500,11 +500,14 @@ class TypedTokenStoreTest {
 		nft2.setSpender(autoRenewId);
 
 		final var mut1 = new MerkleUniqueToken(treasuryId.asEntityId(), meta1, MISSING_INSTANT);
-		mut1.setSpender(autoRenewId.asEntityId());
 		final var mut2 = new MerkleUniqueToken(miscId.asEntityId(), meta2, MISSING_INSTANT);
-		mut2.setSpender(autoRenewId.asEntityId());
+		given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
+		given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
 
 		subject.persistNfts(List.of(nft1, nft2));
+
+		mut1.setSpender(autoRenewId.asEntityId());
+		mut2.setSpender(autoRenewId.asEntityId());
 
 		verify(uniqueTokens).put(nftId1, mut1);
 		verify(uniqueTokens).put(nftId2, mut2);
