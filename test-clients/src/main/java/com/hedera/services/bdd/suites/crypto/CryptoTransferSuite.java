@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Assertions;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
@@ -52,6 +53,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
@@ -59,6 +61,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PAYABLE_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -72,8 +75,10 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoAdjustAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -81,6 +86,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
@@ -88,6 +94,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.allowanceTinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -103,6 +110,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -119,9 +127,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -179,7 +191,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						allowanceTransfersWorkAsExpected(),
 						allowanceTransfersWithComplexTransfersWork(),
 						canUseMirrorAliasesForNonContractXfers(),
-						canUseEip1014AliasesForXfers()
+						canUseEip1014AliasesForXfers(),
+						cannotTransferFromImmutableAccounts(),
 				}
 		);
 	}
@@ -424,6 +437,101 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								recordWith().tokenTransfers(
 										includingFungibleMovement(moving(500, fungibleToken)
 												.between(partyLiteral.get(), counterLiteral.get())))))
+				);
+	}
+
+	private HapiApiSpec cannotTransferFromImmutableAccounts() {
+		final var initcode = "initcode";
+		final var contract = "contract";
+		final var firstStakingFund = "0.0.800";
+		final var secondStakingFund = "0.0.801";
+		final var snapshot800 = "800startBalance";
+		final var snapshot801 = "801startBalance";
+		final AtomicLong somebodyNum = new AtomicLong();
+		final var multiKey = "swiss";
+		final var mutableToken = "token";
+
+		return defaultHapiSpec("CannotTransferFromImmutableAccounts")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(initcode).path(PAYABLE_CONSTRUCTOR),
+						contractCreate(contract)
+								.bytecode(initcode)
+								.balance(ONE_HBAR)
+								.immutable()
+								.payingWith(GENESIS)
+				).when(
+						balanceSnapshot(snapshot800, firstStakingFund),
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, firstStakingFund, ONE_HBAR))
+								.signedBy(DEFAULT_PAYER),
+						getAccountBalance(firstStakingFund).hasTinyBars(changeFromSnapshot(snapshot800, ONE_HBAR)),
+
+						balanceSnapshot(snapshot801, secondStakingFund),
+						cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, secondStakingFund, ONE_HBAR))
+								.signedBy(DEFAULT_PAYER),
+						getAccountBalance(secondStakingFund).hasTinyBars(changeFromSnapshot(snapshot801, ONE_HBAR))
+				).then(
+						// Even the treasury cannot withdraw from an immutable contract
+						cryptoTransfer(tinyBarsFromTo(contract, FUNDING, ONE_HBAR))
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						// Even the treasury cannot withdraw staking funds
+						cryptoTransfer(tinyBarsFromTo(firstStakingFund, FUNDING, ONE_HBAR))
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						cryptoTransfer(tinyBarsFromTo(secondStakingFund, FUNDING, ONE_HBAR))
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						// Immutable accounts cannot be updated or deleted
+						cryptoUpdate(firstStakingFund)
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						cryptoDelete(firstStakingFund)
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE),
+						// Immutable accounts cannot serve any role for tokens
+						tokenCreate(mutableToken).adminKey(multiKey),
+						tokenAssociate(secondStakingFund, mutableToken)
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						tokenUpdate(mutableToken)
+								.payingWith(GENESIS).signedBy(GENESIS, multiKey).fee(ONE_HBAR)
+								.treasury(firstStakingFund)
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						tokenCreate("notToBe")
+								.treasury(firstStakingFund)
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						tokenCreate("notToBe")
+								.autoRenewAccount(secondStakingFund)
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
+						tokenCreate("notToBe")
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.withCustom(fixedHbarFee(5 * ONE_HBAR, firstStakingFund))
+								.hasKnownStatus(INVALID_CUSTOM_FEE_COLLECTOR),
+						// Immutable accounts cannot be topic auto-renew accounts
+						createTopic("notToBe")
+								.autoRenewAccountId(secondStakingFund)
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.hasKnownStatus(INVALID_AUTORENEW_ACCOUNT),
+						// Immutable accounts cannot be schedule transaction payers
+						scheduleCreate("notToBe",
+								cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1))
+						)
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.designatingPayer(firstStakingFund)
+								.fee(ONE_HUNDRED_HBARS)
+								.hasKnownStatus(INVALID_ACCOUNT_ID),
+						// Immutable accounts cannot approve or adjust allowances
+						cryptoApproveAllowance()
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.addCryptoAllowance(secondStakingFund, FUNDING, 100L)
+								.hasKnownStatus(INVALID_ALLOWANCE_OWNER_ID),
+						cryptoAdjustAllowance()
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
+								.addCryptoAllowance(firstStakingFund, FUNDING, 100L)
+								.hasKnownStatus(INVALID_ALLOWANCE_OWNER_ID)
 				);
 	}
 

@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.context.primitives.StateView.EMPTY_WACL;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
@@ -232,6 +233,10 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
 		if (account == null) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
 		} else {
+			final var key = account.getAccountKey();
+			if (key == null || key.isEmpty()) {
+				return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
+			}
 			return new SafeLookupResult<>(
 					new AccountSigningMetadata(
 							account.getAccountKey(), account.isReceiverSigRequired()));

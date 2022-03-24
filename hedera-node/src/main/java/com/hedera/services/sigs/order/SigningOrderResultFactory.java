@@ -122,7 +122,7 @@ public interface SigningOrderResultFactory<T> {
 	 *
 	 * @return the error summary.
 	 */
-	SigningOrderResult<T> forMissingAutoRenewAccount();
+	SigningOrderResult<T> forInvalidAutoRenewAccount();
 
 	/**
 	 * Report a failure resolving required signers for a scheduled transaction.
@@ -143,7 +143,7 @@ public interface SigningOrderResultFactory<T> {
 	 *
 	 * @return the error summary
 	 */
-	SigningOrderResult<T> forMissingFeeCollector();
+	SigningOrderResult<T> forInvalidFeeCollector();
 
 	/**
 	 * Report an invalid owner provided in a CryptoApproveAllowance or CryptoAdjustAllowance

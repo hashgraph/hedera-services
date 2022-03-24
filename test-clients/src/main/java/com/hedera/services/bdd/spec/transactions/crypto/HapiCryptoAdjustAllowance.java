@@ -53,6 +53,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.MISSING_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -159,10 +160,10 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 			final List<NftAllowance> nftallowances) {
 		for (var entry : cryptoAllowances) {
 			final var builder = CryptoAllowance.newBuilder()
-					.setSpender(spec.registry().getAccountID(entry.spender()))
+					.setSpender(asId(entry.spender(), spec))
 					.setAmount(entry.amount());
 			if(entry.owner() != MISSING_OWNER){
-				builder.setOwner(spec.registry().getAccountID(entry.owner()));
+				builder.setOwner(asId(entry.owner(), spec));
 			}
 			callowances.add(builder.build());
 		}

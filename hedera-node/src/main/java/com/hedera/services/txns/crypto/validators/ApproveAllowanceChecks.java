@@ -206,6 +206,11 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 		return OK;
 	}
 
+	@Override
+	public boolean isEnabled() {
+		return dynamicProperties.areAllowancesEnabled();
+	}
+
 	/**
 	 * Validates serial numbers for {@link NftAllowance}
 	 *
@@ -274,7 +279,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 
 		if (fungibleToken.getSupplyType().equals(TokenSupplyType.FINITE) &&
 				amount > fungibleToken.getMaxSupply()) {
- 			return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+			return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 		}
 		return OK;
 	}
