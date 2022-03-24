@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -49,11 +48,11 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -62,7 +61,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -601,7 +599,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 		final var ACCOUNT_B = "AccountB";
 		final var TOKEN_A = "TokenA";
 
-		final var ALIASED_TRANSFER = "aliasedTransfer";
+		final var ALIASED_TRANSFER = "AliasedTransfer";
 		final byte[][] ALIASED_ADDRESS = new byte[1][1];
 
 		final AtomicReference<String> childMirror = new AtomicReference<>();
@@ -620,17 +618,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.initialSupply(10000)
 								.treasury(ACCOUNT_A),
 						tokenAssociate(ACCOUNT_B, TOKEN_A),
-						fileCreate(ALIASED_TRANSFER),
-						updateLargeFile(OWNER, ALIASED_TRANSFER,
-								extractByteCode(ContractResources.ALIASED_TRANSFER_CONTRACT)),
+						uploadInitCode(ALIASED_TRANSFER),
 						contractCreate(ALIASED_TRANSFER)
-								.bytecode(ALIASED_TRANSFER)
 								.gas(300_000),
 						withOpContext(
 								(spec, opLog) -> allRunFor(
 										spec,
 										contractCall(ALIASED_TRANSFER,
-												ContractResources.ALIASED_TRANSFER_DEPLOY_WITH_CREATE2_ABI,
+												"deployWithCREATE2",
 												asAddress(spec.registry().getTokenID(TOKEN_A)))
 												.exposingResultTo(result -> {
 													final var res = (byte[])result[0];
@@ -650,7 +645,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								(spec, opLog) -> allRunFor(
 										spec,
 										contractCall(ALIASED_TRANSFER,
-												ContractResources.ALIASED_GIVE_TOKENS_TO_OPERATOR_ABI,
+												"giveTokensToOperator",
 												asAddress(spec.registry().getTokenID(TOKEN_A)),
 												asAddress(spec.registry().getAccountID(ACCOUNT_A)),
 												1500)
@@ -664,7 +659,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								(spec, opLog) -> allRunFor(
 										spec,
 										contractCall(ALIASED_TRANSFER,
-												ContractResources.ALIASED_TRANSFER_ABI,
+												"transfer",
 												asAddress(spec.registry().getAccountID(ACCOUNT_B)),
 												1000)
 												.payingWith(ACCOUNT)
@@ -956,8 +951,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														.via(tokenURITxn)
 														.hasKnownStatus(SUCCESS)
 														.gas(GAS_TO_OFFER),
-												contractCall(ERC_721_CONTRACT_NAME,
-														ContractResources.ERC_721_TOKEN_URI_CALL,
+												contractCall(ERC_721_CONTRACT,
+														"tokenURI",
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)), 2)
 														.payingWith(ACCOUNT)
 														.via(nonExistingTokenURITxn)
@@ -1072,8 +1067,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 												tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
 												cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1)
 														.between(TOKEN_TREASURY, OWNER)),
-												contractCall(ERC_721_CONTRACT_NAME,
-														ContractResources.ERC_721_BALANCE_OF_CALL,
+												contractCall(ERC_721_CONTRACT,
+														"balanceOf",
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)))
 														.payingWith(OWNER)
