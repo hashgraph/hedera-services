@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -204,6 +205,8 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isCreate2Enabled());
 		assertFalse(subject.isRedirectTokenCallsEnabled());
 		assertTrue(subject.areAllowancesEnabled());
+		assertTrue(subject.expireAccounts());
+		assertTrue(subject.expireContracts());
 	}
 
 	@Test
@@ -361,6 +364,10 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("contracts.enableTraceability"))
 				.willReturn((i + 59) % 2 == 0);
 		given(properties.getBooleanProperty("hedera.allowances.isEnabled")).willReturn((i + 60) % 2 == 0);
+		given(properties.getTypesProperty("autoRenew.targetTypes"))
+				.willReturn((i + 61) % 2 == 0
+						? EnumSet.of(EntityType.TOKEN)
+						: EnumSet.of(EntityType.ACCOUNT, EntityType.CONTRACT));
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

@@ -33,9 +33,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hedera.services.context.properties.EntityType.CONTRACT;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -149,7 +151,8 @@ class BootstrapPropertiesTest {
 			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
-			entry("autorenew.isEnabled", false),
+			entry("autorenew.isEnabled", true),
+			entry("autoRenew.targetTypes", EnumSet.of(CONTRACT)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
 			entry("autorenew.gracePeriod", 604800L),

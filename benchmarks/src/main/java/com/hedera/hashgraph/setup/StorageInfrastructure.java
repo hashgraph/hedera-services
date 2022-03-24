@@ -27,7 +27,6 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
-import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.Cryptography;
@@ -62,13 +61,6 @@ public record StorageInfrastructure(
 		final var ledger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
 
-		final var id = AccountID.newBuilder()
-				.setAccountNum(5)
-				.build();
-		System.out.println("Initial 0.0.5 K/V count is " + ledger.get(id, AccountProperty.NUM_CONTRACT_KV_PAIRS));
-		final var firstKey = accounts.get(EntityNum.fromAccountId(id)).getFirstContractStorageKey();
-		System.out.println("Initial storage is " + IterableStorageUtils.joinedStorageMappings(firstKey, storage));
-		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 		return new StorageInfrastructure(accountsRef, storageRef, ledger);
 	}
 

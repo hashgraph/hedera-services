@@ -31,6 +31,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Set;
 
+import static com.hedera.services.context.properties.EntityType.ACCOUNT;
+import static com.hedera.services.context.properties.EntityType.CONTRACT;
+
 @Singleton
 public class GlobalDynamicProperties {
 	private final HederaNumbers hederaNums;
@@ -67,6 +70,8 @@ public class GlobalDynamicProperties {
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
 	private boolean autoRenewEnabled;
+	private boolean expireAccounts;
+	private boolean expireContracts;
 	private int autoRenewNumberOfEntitiesToScan;
 	private int autoRenewMaxNumberOfEntitiesToRenewOrDelete;
 	private long autoRenewGracePeriod;
@@ -190,6 +195,9 @@ public class GlobalDynamicProperties {
 		redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
 		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
 		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
+		final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
+		expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
+		expireContracts = autoRenewTargetTypes.contains(CONTRACT);
 	}
 
 	public int maxTokensPerAccount() {
@@ -462,5 +470,13 @@ public class GlobalDynamicProperties {
 
 	public boolean areAllowancesEnabled() {
 		return enableAllowances;
+	}
+
+	public boolean expireContracts() {
+		return expireContracts;
+	}
+
+	public boolean expireAccounts() {
+		return expireAccounts;
 	}
 }
