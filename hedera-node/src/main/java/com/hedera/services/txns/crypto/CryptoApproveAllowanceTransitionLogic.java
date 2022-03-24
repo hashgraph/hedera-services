@@ -192,7 +192,9 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				approveForAllNftsSet.add(key);
 			} else {
 				for (var serialNum : serialNums) {
-					nfts.add(tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum));
+					final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum);
+					nft.setSpender(spender);
+					nfts.add(nft);
 				}
 			}
 

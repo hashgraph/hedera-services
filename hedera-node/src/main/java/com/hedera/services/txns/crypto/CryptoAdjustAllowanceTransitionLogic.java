@@ -199,7 +199,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = allowance.getTokenId();
 			final var spender = Id.fromGrpcAccount(spenderAccount);
-			final var nfts = new ArrayList<UniqueToken>();
+			final var nftsTouched = new ArrayList<UniqueToken>();
 			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
 
 			if (approvedForAll.getValue()) {
@@ -212,20 +212,15 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 				mutableApprovedForAllNftsAllowances.remove(key);
 			} else {
 				for (var serialNum : serialNums) {
-					final var absoluteSerial = Math.abs(serialNum);
-					final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), absoluteSerial);
-					if (serialNum < 0) {
-						nft.setSpender(Id.DEFAULT);
-					} else {
-						nft.setSpender(spender);
-					}
-					nfts.add(nft);
+					final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum);
+					nft.setSpender(spender);
+					nftsTouched.add(nft);
 				}
 			}
 			validateAllowanceLimitsOn(accountToAdjust);
-			tokenStore.persistNfts(nfts);
+			tokenStore.persistNfts(nftsTouched);
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-			sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), mutableApprovedForAllNftsAllowances, nfts);
+			sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), mutableApprovedForAllNftsAllowances, nftsTouched);
 		}
 	}
 

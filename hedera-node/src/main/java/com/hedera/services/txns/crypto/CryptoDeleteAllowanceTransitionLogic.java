@@ -53,6 +53,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		final TransactionBody cryptoDeleteAllowanceTxn = txnCtx.accessor().getTxn();
 		final AccountID payer = cryptoDeleteAllowanceTxn.getTransactionID().getAccountID();
 		final var op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
+		entitiesChanged.clear();
 
 		/* --- Use models --- */
 		final Id payerId = Id.fromGrpcAccount(payer);
