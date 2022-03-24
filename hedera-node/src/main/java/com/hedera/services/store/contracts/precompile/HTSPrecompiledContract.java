@@ -136,6 +136,8 @@ import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -752,7 +754,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			mintOp = decoder.decodeMint(input);
 			try {
-				validateAndSetRevertReasonIfNeeded(mintOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0, "Invalid token mint amount!");
+				validateAndSetRevertReasonIfNeeded(mintOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 1, INVALID_TOKEN_MINT_AMOUNT);
 			} catch (InvalidTransactionException e) {
 				return null;
 			}
@@ -1010,7 +1012,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			burnOp = decoder.decodeBurn(input);
 			try {
-				validateAndSetRevertReasonIfNeeded(burnOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) <= 0, "Invalid token burn amount!");
+				validateAndSetRevertReasonIfNeeded(burnOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 1, INVALID_TOKEN_BURN_AMOUNT);
 			} catch (InvalidTransactionException e) {
 				return null;
 			}
@@ -1417,10 +1419,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
 	}
 
-	private void validateAndSetRevertReasonIfNeeded(final boolean flag, final String revertMessage) {
+	private void validateAndSetRevertReasonIfNeeded(final boolean flag, final ResponseCodeEnum code) {
 		if (!flag) {
-			messageFrame.setRevertReason(Bytes.of(revertMessage.getBytes()));
-			throw new InvalidTransactionException(FAIL_INVALID);
+			messageFrame.setRevertReason(Bytes.of(code.name().getBytes()));
+			throw new InvalidTransactionException(code);
 		}
 	}
 
