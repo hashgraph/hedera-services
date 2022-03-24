@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_ALLOWANCES_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
@@ -65,6 +66,11 @@ public class DeleteAllowanceChecks {
 			final List<TokenWipeAllowance> tokenAllowances,
 			final List<NftWipeAllowance> nftAllowances,
 			final Account payerAccount) {
+		// feature flag for allowances
+		if (!isEnabled()) {
+			return NOT_SUPPORTED;
+		}
+
 		var validity = commonChecks(cryptoAllowances, tokenAllowances, nftAllowances);
 		if (validity != OK) {
 			return validity;
@@ -86,6 +92,10 @@ public class DeleteAllowanceChecks {
 		}
 
 		return OK;
+	}
+
+	private boolean isEnabled() {
+		return dynamicProperties.areAllowancesEnabled();
 	}
 
 	ResponseCodeEnum validateCryptoAllowances(final List<CryptoWipeAllowance> cryptoAllowances,

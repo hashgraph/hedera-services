@@ -37,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
@@ -226,5 +227,14 @@ class CryptoControllerTest {
 
 		// expect:
 		verify(txnResponseHelper).submit(txn, txnObserver, CryptoAdjustAllowance);
+	}
+
+	@Test
+	void forwardsDeleteAllowanceAsExpected() {
+		// when:
+		subject.deleteAllowance(txn, txnObserver);
+
+		// expect:
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoDeleteAllowance);
 	}
 }

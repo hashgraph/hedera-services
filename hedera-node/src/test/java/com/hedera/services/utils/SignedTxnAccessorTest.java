@@ -41,14 +41,17 @@ import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.NftWipeAllowance;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -64,6 +67,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -104,6 +108,7 @@ class SignedTxnAccessorTest {
 	private static final byte[] zeroByteMemoUtf8Bytes = zeroByteMemo.getBytes();
 
 	private static final AccountID spender1 = asAccount("0.0.1000");
+	private static final AccountID owner = asAccount("0.0.1001");
 	private static final TokenID token1 = asToken("0.0.2000");
 	private static final TokenID token2 = asToken("0.0.3000");
 	private static final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder().setSpender(spender1).setAmount(
@@ -112,6 +117,11 @@ class SignedTxnAccessorTest {
 			10L).setTokenId(token1).build();
 	private static final NftAllowance nftAllowance1 = NftAllowance.newBuilder().setSpender(spender1)
 			.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
+
+	private static final CryptoWipeAllowance cryptoWipeAllowance = CryptoWipeAllowance.newBuilder().setOwner(owner).build();
+	private static final TokenWipeAllowance tokenWipeAllowance = TokenWipeAllowance.newBuilder().setOwner(owner).setTokenId(token1).build();
+	private static final NftWipeAllowance nftWipeAllowance = NftWipeAllowance.newBuilder().setOwner(owner)
+			.setTokenId(token2).addAllSerialNumbers(List.of(1L, 10L)).build();
 
 
 	private static final SignatureMap expectedMap = SignatureMap.newBuilder()
@@ -615,6 +625,18 @@ class SignedTxnAccessorTest {
 		assertEquals(CryptoContextUtils.convertToNftMap(List.of(nftAllowance1)), expandedMeta.getNftAllowances());
 	}
 
+	@Test
+	void setCryptoDeleteAllowanceUsageMetaWorks() {
+		final var txn = signedCryptoDeleteAllowanceTxn();
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getCryptoDeleteAllowanceMeta(accessor);
+
+		assertEquals(96, expandedMeta.getMsgBytesUsed());
+		assertEquals(now, expandedMeta.getEffectiveNow());
+	}
+
 
 	@Test
 	void getGasLimitWorksForCreate() {
@@ -658,6 +680,10 @@ class SignedTxnAccessorTest {
 
 	private Transaction signedCryptoAdjustTxn() {
 		return buildTransactionFrom(cryptoAdjustOp());
+	}
+
+	private Transaction signedCryptoDeleteAllowanceTxn() {
+		return buildTransactionFrom(cryptoDeleteAllowanceOp());
 	}
 
 	private TransactionBody cryptoCreateOp() {
@@ -714,6 +740,20 @@ class SignedTxnAccessorTest {
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
 				.setCryptoAdjustAllowance(op)
+				.build();
+	}
+
+	private TransactionBody cryptoDeleteAllowanceOp() {
+		final var op = CryptoDeleteAllowanceTransactionBody.newBuilder()
+				.addAllCryptoAllowances(List.of(cryptoWipeAllowance))
+				.addAllTokenAllowances(List.of(tokenWipeAllowance))
+				.addAllNftAllowances(List.of(nftWipeAllowance))
+				.build();
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setCryptoDeleteAllowance(op)
 				.build();
 	}
 

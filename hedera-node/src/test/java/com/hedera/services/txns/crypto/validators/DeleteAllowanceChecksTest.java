@@ -75,6 +75,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_ALLOWANCES_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
@@ -185,6 +186,12 @@ class DeleteAllowanceChecksTest {
 		final var validity = subject.deleteAllowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, payer);
 
 		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, validity);
+	}
+
+	@Test
+	void failsWhenNotSupported(){
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
+		assertEquals(NOT_SUPPORTED, subject.deleteAllowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, payer));
 	}
 
 
