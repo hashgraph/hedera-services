@@ -88,7 +88,7 @@ public class DeleteAllowanceChecks {
 	ResponseCodeEnum validateCryptoAllowances(final List<CryptoWipeAllowance> cryptoAllowances,
 			final Account payerAccount) {
 		final var distinctOwners = cryptoAllowances.stream()
-				.map(a -> a.getOwner()).distinct().count();
+				.map(CryptoWipeAllowance::getOwner).distinct().count();
 		if (cryptoAllowances.size() != distinctOwners) {
 			return REPEATED_ALLOWANCES_TO_DELETE;
 		}
@@ -175,20 +175,20 @@ public class DeleteAllowanceChecks {
 	}
 
 	boolean repeatedAllowances(final List<NftWipeAllowance> nftAllowancesList) {
-		Map<Pair, List<Long>> nftsMap = new HashMap<>();
+		Map<Pair, List<Long>> seenNfts = new HashMap<>();
 		for (var allowance : nftAllowancesList) {
 			final var key = Pair.of(allowance.getOwner(), allowance.getTokenId());
-			if (nftsMap.containsKey(key)) {
-				if (serialsRepeated(nftsMap.get(key), allowance.getSerialNumbersList())) {
+			if (seenNfts.containsKey(key)) {
+				if (serialsRepeated(seenNfts.get(key), allowance.getSerialNumbersList())) {
 					return true;
 				} else {
 					final var list = new ArrayList<Long>();
-					list.addAll(nftsMap.get(key));
+					list.addAll(seenNfts.get(key));
 					list.addAll(allowance.getSerialNumbersList());
-					nftsMap.put(key, list);
+					seenNfts.put(key, list);
 				}
 			} else {
-				nftsMap.put(key, allowance.getSerialNumbersList());
+				seenNfts.put(key, allowance.getSerialNumbersList());
 			}
 		}
 		return false;

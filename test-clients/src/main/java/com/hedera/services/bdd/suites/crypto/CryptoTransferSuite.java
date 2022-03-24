@@ -39,7 +39,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -530,7 +529,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.balanceLessThan(98 * ONE_HBAR)
 										.cryptoAllowancesContaining(spender, 9 * ONE_HBAR)
 										.tokenAllowancesContaining(fungibleToken, spender, 475)
-										.nftAllowancesContaining(nonFungibleToken, spender, false, List.of(1L))),
+										.nftApprovedAllowancesContaining(nonFungibleToken, spender, false)),
 						getAccountInfo(otherOwner)
 								.hasToken(relationshipWith(fungibleToken).balance(970))
 								.hasToken(relationshipWith(nonFungibleToken).balance(0))
@@ -538,8 +537,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 										.balanceLessThan(98 * ONE_HBAR)
 										.cryptoAllowancesContaining(spender, 4 * ONE_HBAR)
 										.tokenAllowancesContaining(fungibleToken, spender, 85)
-										.nftAllowancesContaining(nonFungibleToken, spender, true,
-												Collections.EMPTY_LIST)),
+										.nftApprovedAllowancesContaining(nonFungibleToken, spender, true)),
 						getAccountInfo(receiver)
 								.hasToken(relationshipWith(fungibleToken).balance(105))
 								.hasToken(relationshipWith(nonFungibleToken).balance(4))
@@ -722,8 +720,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.signedBy(spender)
 								.hasKnownStatus(AMOUNT_EXCEEDS_ALLOWANCE),
 						getAccountInfo(owner)
-								.has(accountWith().nftAllowancesContaining(nonFungibleToken, spender, false,
-										List.of(2L, 6L)))
+								.has(accountWith().nftApprovedAllowancesContaining(nonFungibleToken, spender, false))
 								.hasToken(relationshipWith(nonFungibleToken).balance(2)),
 						cryptoTransfer(allowanceTinyBarsFromTo(owner, receiver, 5 * ONE_HBAR))
 								.payingWith(spender)
@@ -744,7 +741,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(0)
-										.nftAllowancesContaining(nonFungibleToken, spender, false, List.of(6L))
+										.nftApprovedAllowancesContaining(nonFungibleToken, spender, false)
 										.tokenAllowancesContaining(fungibleToken, spender, 1400))
 				);
 	}
