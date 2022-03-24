@@ -158,6 +158,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
+	public static final Bytes INVALID_MINT_AMOUNT_ERROR = Bytes.of(INVALID_TOKEN_MINT_AMOUNT.name().getBytes());
+	public static final Bytes INVALID_BURN_AMOUNT_ERROR = Bytes.of(INVALID_TOKEN_BURN_AMOUNT.name().getBytes());
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
@@ -753,9 +755,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			mintOp = decoder.decodeMint(input);
-			try {
-				validateAndSetRevertReasonIfNeeded(mintOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 1, INVALID_TOKEN_MINT_AMOUNT);
-			} catch (InvalidTransactionException e) {
+			if (mintOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) >= 1) {
+				messageFrame.setRevertReason(INVALID_MINT_AMOUNT_ERROR);
 				return null;
 			}
 			return syntheticTxnFactory.createMint(mintOp);
@@ -1011,9 +1012,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			burnOp = decoder.decodeBurn(input);
-			try {
-				validateAndSetRevertReasonIfNeeded(burnOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 1, INVALID_TOKEN_BURN_AMOUNT);
-			} catch (InvalidTransactionException e) {
+			if (burnOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) >= 1) {
+				messageFrame.setRevertReason(INVALID_BURN_AMOUNT_ERROR);
 				return null;
 			}
 			return syntheticTxnFactory.createBurn(burnOp);
@@ -1417,13 +1417,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		precompile.addImplicitCostsIn(accessor);
 		final var fees = feeCalculator.get().computeFee(accessor, EMPTY_KEY, currentView, consensusTime);
 		return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
-	}
-
-	private void validateAndSetRevertReasonIfNeeded(final boolean flag, final ResponseCodeEnum code) {
-		if (!flag) {
-			messageFrame.setRevertReason(Bytes.of(code.name().getBytes()));
-			throw new InvalidTransactionException(code);
-		}
 	}
 
 	/* --- Only used by unit tests --- */
