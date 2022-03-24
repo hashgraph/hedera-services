@@ -21,6 +21,7 @@ package com.hedera.services.state.expiry.renewal;
  */
 
 import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.utils.EntityNum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,6 +31,8 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.EnumSet;
 
+import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
+import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 
 @Singleton
@@ -48,9 +51,9 @@ public class RenewalProcess {
 
 	@Inject
 	public RenewalProcess(
-			FeeCalculator fees,
-			RenewalHelper helper,
-			RenewalRecordsHelper recordsHelper
+			final FeeCalculator fees,
+			final RenewalHelper helper,
+			final RenewalRecordsHelper recordsHelper
 	) {
 		this.fees = fees;
 		this.helper = helper;
@@ -64,30 +67,23 @@ public class RenewalProcess {
 		recordsHelper.beginRenewalCycle(now);
 	}
 
-	public boolean process(long entityNum) {
+	public EntityProcessResult process(final long entityNum) {
 		assertInCycle();
 
 		final var longNow = cycleTime.getEpochSecond();
-		final var classification = helper.classify(entityNum, longNow);
+		final var entityKey = EntityNum.fromLong(entityNum);
+		final var classification = helper.classify(entityKey, longNow);
 		if (TERMINAL_CLASSIFICATIONS.contains(classification)) {
 			log.debug("Terminal classification entity num {} ({})", entityNum, classification);
 		}
-		switch (classification) {
-			case OTHER, DETACHED_ACCOUNT, DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN:
-				break;
-			case DETACHED_ACCOUNT_GRACE_PERIOD_OVER:
-				processDetachedAccountGracePeriodOver(EntityNum.fromLong(entityNum));
-				return true;
-			case EXPIRED_ACCOUNT_READY_TO_RENEW:
-				processExpiredAccountReadyToRenew(EntityNum.fromLong(entityNum));
-				return true;
-			default:
-				return false;
-		}
-		return false;
+		return switch (classification) {
+			case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> expireAccount(entityKey);
+			case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewAccount(entityKey);
+			default -> NOTHING_TO_DO;
+		};
 	}
 
-	private void processExpiredAccountReadyToRenew(EntityNum accountId) {
+	private EntityProcessResult renewAccount(EntityNum accountId) {
 		final var lastClassified = helper.getLastClassifiedAccount();
 		final long reqPeriod = lastClassified.getAutoRenewSecs();
 		final var usageAssessment = fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime);
@@ -96,11 +92,13 @@ public class RenewalProcess {
 
 		helper.renewLastClassifiedWith(renewalFee, effPeriod);
 		recordsHelper.streamCryptoRenewal(accountId, renewalFee, lastClassified.getExpiry() + effPeriod);
+		return DONE;
 	}
 
-	private void processDetachedAccountGracePeriodOver(EntityNum accountId) {
-		final var tokensDisplaced = helper.removeLastClassifiedAccount();
-		recordsHelper.streamCryptoRemoval(accountId, tokensDisplaced.getLeft(), tokensDisplaced.getRight());
+	private EntityProcessResult expireAccount(EntityNum accountId) {
+		final var treasuryReturns = helper.removeLastClassifiedAccount();
+		recordsHelper.streamCryptoRemoval(accountId, treasuryReturns.tokenTypes(), treasuryReturns.transfers());
+		return DONE;
 	}
 
 	public void endRenewalCycle() {

@@ -1420,7 +1420,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - NONE
+                  - support-multitouch-gc-work
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

@@ -132,21 +132,16 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	}
 
 	/**
-	 * Removes an entry from the autoAccountsMap when an entity is expired and deleted from the ledger.
+	 * Ensures an alias is no longer in use, returning whether it previously was.
 	 *
-	 * @param expiredId
-	 * 		entity id that is expired
-	 * @param accounts
-	 * 		current accounts map
-	 * @return whether the alias was forgotten
+	 * @param alias the alias to forget
+	 * @return whether it was present
 	 */
-	public boolean forgetAliasIfPresent(final EntityNum expiredId, final MerkleMap<EntityNum, MerkleAccount> accounts) {
-		final var alias = accounts.get(expiredId).getAlias();
-		if (!alias.isEmpty()) {
-			curAliases().remove(alias);
-			return true;
+	public boolean forgetAlias(final ByteString alias) {
+		if (alias.isEmpty()) {
+			return false;
 		}
-		return false;
+		return curAliases().remove(alias) != null;
 	}
 
 	/**

@@ -62,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -99,8 +100,9 @@ class RenewalHelperTest {
 			.isSmartContract(true)
 			.balance(0).expirationTime(now - 1)
 			.get();
-	private final long nonExpiredAccountNum = 1L, brokeExpiredAccountNum = 2L, fundedExpiredAccountNum = 3L,
-			expiredAccountNum = 4L;
+	private final long nonExpiredAccountNum = 1L;
+	private final long brokeExpiredAccountNum = 2L;
+	private final long fundedExpiredAccountNum = 3L;
 	private final EntityId expiredTreasuryId = new EntityId(0, 0, brokeExpiredAccountNum);
 	private final EntityId treasuryId = new EntityId(0, 0, 666L);
 	private final AccountID treasuryGrpcId = treasuryId.toGrpcAccountId();
@@ -152,6 +154,7 @@ class RenewalHelperTest {
 	private void linkWellKnownEntities(final AliasManager liveAliasManager) {
 		liveAliasManager.link(nonExpiredAccount.getAlias(), EntityNum.fromLong(nonExpiredAccountNum));
 		liveAliasManager.link(expiredAccountZeroBalance.getAlias(), EntityNum.fromLong(brokeExpiredAccountNum));
+		long expiredAccountNum = 4L;
 		liveAliasManager.link(expiredDeletedAccount.getAlias(), EntityNum.fromLong(expiredAccountNum));
 		liveAliasManager.link(expiredAccountNonZeroBalance.getAlias(), EntityNum.fromLong(fundedExpiredAccountNum));
 		liveAliasManager.link(fundingAccount.getAlias(), EntityNum.fromLong(98));
@@ -160,7 +163,7 @@ class RenewalHelperTest {
 	@Test
 	void classifiesNonAccount() {
 		// expect:
-		assertEquals(OTHER, subject.classify(4L, now));
+		assertEquals(OTHER, subject.classify(EntityNum.fromLong(4L), now));
 	}
 
 	@Test
@@ -168,7 +171,7 @@ class RenewalHelperTest {
 		givenPresent(nonExpiredAccountNum, nonExpiredAccount);
 
 		// expect:
-		assertEquals(OTHER, subject.classify(nonExpiredAccountNum, now));
+		assertEquals(OTHER, subject.classify(EntityNum.fromLong(nonExpiredAccountNum), now));
 	}
 
 	@Test
@@ -176,7 +179,7 @@ class RenewalHelperTest {
 		givenPresent(nonExpiredAccountNum, contractAccount);
 
 		// expect:
-		assertEquals(OTHER, subject.classify(nonExpiredAccountNum, now));
+		assertEquals(OTHER, subject.classify(EntityNum.fromLong(nonExpiredAccountNum), now));
 	}
 
 	@Test
@@ -186,7 +189,7 @@ class RenewalHelperTest {
 		// expect:
 		assertEquals(
 				DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
-				subject.classify(brokeExpiredAccountNum, now));
+				subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now));
 	}
 
 	@Test
@@ -196,7 +199,7 @@ class RenewalHelperTest {
 		// expect:
 		assertEquals(
 				DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
-				subject.classify(brokeExpiredAccountNum, now + dynamicProps.autoRenewGracePeriod()));
+				subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now + dynamicProps.autoRenewGracePeriod()));
 	}
 
 	@Test
@@ -207,7 +210,8 @@ class RenewalHelperTest {
 		// expect:
 		assertEquals(
 				DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN,
-				subject.classify(brokeExpiredAccountNum, now + dynamicProps.autoRenewGracePeriod()));
+				subject.classify(EntityNum.fromLong(brokeExpiredAccountNum),
+						now + dynamicProps.autoRenewGracePeriod()));
 	}
 
 	@Test
@@ -217,7 +221,7 @@ class RenewalHelperTest {
 		// expect:
 		assertEquals(
 				DETACHED_ACCOUNT,
-				subject.classify(brokeExpiredAccountNum, now));
+				subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now));
 	}
 
 	@Test
@@ -225,7 +229,7 @@ class RenewalHelperTest {
 		givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance);
 
 		// expect:
-		assertEquals(EXPIRED_ACCOUNT_READY_TO_RENEW, subject.classify(fundedExpiredAccountNum, now));
+		assertEquals(EXPIRED_ACCOUNT_READY_TO_RENEW, subject.classify(EntityNum.fromLong(fundedExpiredAccountNum), now));
 		// and:
 		assertEquals(expiredAccountNonZeroBalance, subject.getLastClassifiedAccount());
 	}
@@ -235,7 +239,7 @@ class RenewalHelperTest {
 		givenPresent(fundedExpiredAccountNum, expiredAccountNonZeroBalance);
 
 		// when:
-		subject.classify(fundedExpiredAccountNum, now);
+		subject.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
 
 		// expect:
 		assertThrows(IllegalStateException.class, () -> subject.removeLastClassifiedAccount());
@@ -260,7 +264,7 @@ class RenewalHelperTest {
 		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
 
 		// when:
-		subject.classify(brokeExpiredAccountNum, now);
+		subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now);
 		// and:
 		var displacedTokens = subject.removeLastClassifiedAccount();
 
@@ -269,9 +273,8 @@ class RenewalHelperTest {
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), missingTokenGrpcId));
-		verify(aliasManager).forgetAliasIfPresent(expiredKey, accounts);
-		// and:
-		assertTrue(displacedTokens.getLeft().isEmpty());
+		verify(aliasManager).forgetAlias(expiredAccountZeroBalance.getAlias());
+		assertTrue(displacedTokens.tokenTypes().isEmpty());
 	}
 
 	@Test
@@ -286,24 +289,24 @@ class RenewalHelperTest {
 		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
 		givenModifiableRelPresent(EntityNum.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
 		given(accounts.get(expiredKey)).willReturn(expiredAccountZeroBalance);
-		given(aliasManager.forgetAliasIfPresent(expiredKey, accounts)).willReturn(true);
+		given(aliasManager.forgetAlias(expiredAccountZeroBalance.getAlias())).willReturn(true);
 
-		subject.classify(brokeExpiredAccountNum, now);
+		subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now);
 
-		var displacedTokens = subject.removeLastClassifiedAccount();
+		var treasuryReturns = subject.removeLastClassifiedAccount();
 
 		verify(backingAccounts).remove(expiredKey.toGrpcAccountId());
 		verify(sigImpactHistorian).markEntityChanged(brokeExpiredAccountNum);
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), deletedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
 		verify(tokenRels).remove(fromAccountTokenRel(grpcIdWith(brokeExpiredAccountNum), survivedTokenGrpcId));
-		verify(aliasManager).forgetAliasIfPresent(expiredKey, accounts);
+		verify(aliasManager).forgetAlias(expiredAccountZeroBalance.getAlias());
 		verify(sigImpactHistorian).markAliasChanged(expiredAccountZeroBalance.getAlias());
 		// and:
 		final var ttls = List.of(
 				ttlOf(survivedTokenGrpcId, grpcIdWith(brokeExpiredAccountNum), treasuryGrpcId, tokenBalance));
-		assertEquals(tokensFrom(ttls), displacedTokens.getLeft());
-		assertEquals(adjustmentsFrom(ttls), displacedTokens.getRight());
+		assertEquals(tokensFrom(ttls), treasuryReturns.tokenTypes());
+		assertEquals(adjustmentsFrom(ttls), treasuryReturns.transfers());
 	}
 
 	@Test
@@ -337,7 +340,7 @@ class RenewalHelperTest {
 		assertTrue(liveAliasManager.contains(expiredAccountZeroBalance.getAlias()));
 		assertTrue(backingAccounts.contains(AccountID.newBuilder().setAccountNum(brokeExpiredAccountNum).build()));
 
-		subject.classify(brokeExpiredAccountNum, now);
+		subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now);
 		subject.removeLastClassifiedAccount();
 
 		assertFalse(backingAccounts.contains(AccountID.newBuilder().setAccountNum(brokeExpiredAccountNum).build()));
@@ -353,14 +356,14 @@ class RenewalHelperTest {
 		givenPresent(98, fundingAccount, true);
 
 		// when:
-		subject.classify(fundedExpiredAccountNum, now);
+		subject.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
 		// and:
 		subject.renewLastClassifiedWith(nonZeroBalance, 3600L);
 
 		// then:
 		verify(accounts).getForModify(key);
 		verify(accounts).getForModify(fundingKey);
-		verify(aliasManager, never()).forgetAliasIfPresent(fundingKey, accounts);
+		verify(aliasManager, never()).forgetAlias(any());
 	}
 
 	@Test
@@ -375,7 +378,7 @@ class RenewalHelperTest {
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
 
 		// when:
-		subject.classify(brokeExpiredAccountNum, now);
+		subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now);
 		// expect:
 		assertThrows(IllegalStateException.class,
 				() -> subject.renewLastClassifiedWith(nonZeroBalance, 3600L));

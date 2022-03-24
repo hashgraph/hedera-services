@@ -39,15 +39,16 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
+import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
+import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.EXPIRED_ACCOUNT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -65,7 +66,7 @@ class RenewalProcessTest {
 			.autoRenewPeriod(requestedRenewalPeriod)
 			.balance(nonZeroBalance).expirationTime(now - 1)
 			.get();
-	private final long nonExpiredAccountNum = 1002L, brokeExpiredAccountNum = 1003L, fundedExpiredAccountNum = 1004L;
+	private final long nonExpiredAccountNum = 1002L;
 
 	@Mock
 	private FeeCalculator fees;
@@ -126,62 +127,54 @@ class RenewalProcessTest {
 
 	@Test
 	void doesNothingOnNonExpiredAccount() {
-		given(helper.classify(nonExpiredAccountNum, now)).willReturn(OTHER);
+		given(helper.classify(EntityNum.fromLong(nonExpiredAccountNum), now)).willReturn(OTHER);
 
-		// when:
 		subject.beginRenewalCycle(instantNow);
-		// and:
-		var wasTouched = subject.process(nonExpiredAccountNum);
+		var result = subject.process(nonExpiredAccountNum);
 
-		// then:
-		assertFalse(wasTouched);
+		assertEquals(NOTHING_TO_DO, result);
 		verifyNoMoreInteractions(helper);
 	}
 
 	@Test
 	void doesNothingDuringGracePeriod() {
-		given(helper.classify(nonExpiredAccountNum, now)).willReturn(DETACHED_ACCOUNT);
+		given(helper.classify(EntityNum.fromLong(nonExpiredAccountNum), now)).willReturn(DETACHED_ACCOUNT);
 
-		// when:
 		subject.beginRenewalCycle(instantNow);
-		// and:
-		var wasTouched = subject.process(nonExpiredAccountNum);
+		var result = subject.process(nonExpiredAccountNum);
 
 		// then:
-		assertFalse(wasTouched);
+		assertEquals(NOTHING_TO_DO, result);
 		verifyNoMoreInteractions(helper);
 	}
 
 	@Test
 	void doesNothingForTreasuryWithTokenStillLive() {
-		given(helper.classify(nonExpiredAccountNum, now)).willReturn(DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN);
+		given(helper.classify(EntityNum.fromLong(nonExpiredAccountNum), now))
+				.willReturn(DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN);
 
-		// when:
 		subject.beginRenewalCycle(instantNow);
-		// and:
-		var wasTouched = subject.process(nonExpiredAccountNum);
+		final var result = subject.process(nonExpiredAccountNum);
 
-		// then:
-		assertFalse(wasTouched);
+		assertEquals(NOTHING_TO_DO, result);
 		verifyNoMoreInteractions(helper);
 	}
 
 	@Test
 	void removesExpiredBrokeAccount() {
-		// setup:
+		final var treasuryReturns = new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
 		final Pair<List<EntityId>, List<CurrencyAdjustments>> displacements =
 				Pair.of(Collections.emptyList(), Collections.emptyList());
 
-		given(helper.classify(brokeExpiredAccountNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
-		given(helper.removeLastClassifiedAccount()).willReturn(displacements);
+		long brokeExpiredAccountNum = 1003L;
+		given(helper.classify(EntityNum.fromLong(brokeExpiredAccountNum), now))
+				.willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
+		given(helper.removeLastClassifiedAccount()).willReturn(treasuryReturns);
 
-		// when:
 		subject.beginRenewalCycle(instantNow);
-		// and:
-		var wasTouched = subject.process(brokeExpiredAccountNum);
+		final var result = subject.process(brokeExpiredAccountNum);
 
-		// then:
-		assertTrue(wasTouched);
+		assertEquals(DONE, result);
 		verify(helper).removeLastClassifiedAccount();
 		verify(recordsHelper).streamCryptoRemoval(
 				EntityNum.fromLong(brokeExpiredAccountNum),
@@ -192,20 +185,18 @@ class RenewalProcessTest {
 	@Test
 	void renewsAtExpectedFee() {
 		// setup:
+		long fundedExpiredAccountNum = 1004L;
 		var key = EntityNum.fromLong(fundedExpiredAccountNum);
 
-		given(helper.classify(fundedExpiredAccountNum, now)).willReturn(EXPIRED_ACCOUNT_READY_TO_RENEW);
+		given(helper.classify(EntityNum.fromLong(fundedExpiredAccountNum), now)).willReturn(EXPIRED_ACCOUNT_READY_TO_RENEW);
 		given(helper.getLastClassifiedAccount()).willReturn(expiredAccountNonZeroBalance);
 		given(fees.assessCryptoAutoRenewal(expiredAccountNonZeroBalance, requestedRenewalPeriod, instantNow))
 				.willReturn(new RenewAssessment(fee, actualRenewalPeriod));
 
-		// when:
 		subject.beginRenewalCycle(instantNow);
-		// and:
-		var wasTouched = subject.process(fundedExpiredAccountNum);
+		final var result = subject.process(fundedExpiredAccountNum);
 
-		// then:
-		assertTrue(wasTouched);
+		assertEquals(DONE, result);
 		verify(helper).renewLastClassifiedWith(fee, actualRenewalPeriod);
 		verify(recordsHelper).streamCryptoRenewal(key, fee, now - 1 + actualRenewalPeriod);
 	}

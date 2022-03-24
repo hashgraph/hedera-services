@@ -35,13 +35,13 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -96,14 +96,14 @@ public class RenewalHelper {
 		this.aliasManager = aliasManager;
 	}
 
-	public ExpiredEntityClassification classify(long candidateNum, long now) {
-		lastClassifiedEntityId = EntityNum.fromLong(candidateNum);
-		var currentAccounts = accounts.get();
+	public ExpiredEntityClassification classify(final EntityNum candidateNum, final long now) {
+		lastClassifiedEntityId = candidateNum;
+		final var curAccounts = accounts.get();
 
-		if (!currentAccounts.containsKey(lastClassifiedEntityId)) {
+		if (!curAccounts.containsKey(lastClassifiedEntityId)) {
 			return OTHER;
 		} else {
-			lastClassifiedAccount = currentAccounts.get(lastClassifiedEntityId);
+			lastClassifiedAccount = curAccounts.get(lastClassifiedEntityId);
 			if (lastClassifiedAccount.isSmartContract()) {
 				return OTHER;
 			}
@@ -133,33 +133,37 @@ public class RenewalHelper {
 		}
 	}
 
-	Pair<List<EntityId>, List<CurrencyAdjustments>> removeLastClassifiedAccount() {
+	TreasuryReturns removeLastClassifiedAccount() {
 		assertHasLastClassifiedAccount();
 		if (lastClassifiedAccount.getBalance() > 0) {
 			throw new IllegalStateException("Cannot remove the last classified account, has non-zero balance!");
 		}
 
-		Pair<List<EntityId>, List<CurrencyAdjustments>> displacements = Pair.of(new ArrayList<>(), new ArrayList<>());
+		List<EntityId> tokenTypes = Collections.emptyList();
+		List<CurrencyAdjustments> returnTransfers = Collections.emptyList();
 		final var lastClassifiedTokens = lastClassifiedAccount.tokens();
 		if (lastClassifiedTokens.numAssociations() > 0) {
+			tokenTypes = new ArrayList<>();
+			returnTransfers = new ArrayList<>();
 			final var grpcId = lastClassifiedEntityId.toGrpcAccountId();
 			final var currentTokens = tokens.get();
 			for (var tId : lastClassifiedTokens.asTokenIds()) {
-				doReturnToTreasury(grpcId, tId, displacements, currentTokens);
+				doReturnToTreasury(grpcId, tId, tokenTypes, returnTransfers, currentTokens);
 			}
 		}
 
-		/* Remove the entry from auto created accounts map if there is an entry in the map */
-		if (aliasManager.forgetAliasIfPresent(lastClassifiedEntityId, accounts.get())) {
+		// Remove the entry from auto created accounts map if there is an entry in the map
+		if (aliasManager.forgetAlias(lastClassifiedAccount.getAlias())) {
 			sigImpactHistorian.markAliasChanged(lastClassifiedAccount.getAlias());
 		}
 
 		backingAccounts.remove(lastClassifiedEntityId.toGrpcAccountId());
 		sigImpactHistorian.markEntityChanged(lastClassifiedEntityId.longValue());
 
-		log.debug("Removed {}, displacing {}", lastClassifiedEntityId, displacements);
+		log.debug("Removed {}, returning tokenTypes {} w/ transfers {}",
+				lastClassifiedEntityId, tokenTypes, returnTransfers);
 
-		return displacements;
+		return new TreasuryReturns(tokenTypes, returnTransfers, true);
 	}
 
 	void renewLastClassifiedWith(long fee, long renewalPeriod) {
@@ -187,10 +191,11 @@ public class RenewalHelper {
 	}
 
 	private void doReturnToTreasury(
-			AccountID expired,
-			TokenID scopedToken,
-			Pair<List<EntityId>, List<CurrencyAdjustments>> displacements,
-			MerkleMap<EntityNum, MerkleToken> currentTokens
+			final AccountID expired,
+			final TokenID scopedToken,
+			final List<EntityId> tokenTypes,
+			final List<CurrencyAdjustments> returnTransfers,
+			final MerkleMap<EntityNum, MerkleToken> currentTokens
 	) {
 		final var currentTokenRels = tokenRels.get();
 		final var expiredRel = fromAccountTokenRel(expired, scopedToken);
@@ -215,13 +220,16 @@ public class RenewalHelper {
 
 		final var treasury = token.treasury().toGrpcAccountId();
 		final boolean expiredFirst = ACCOUNT_ID_COMPARATOR.compare(expired, treasury) < 0;
-		displacements.getLeft().add(EntityId.fromGrpcTokenId(scopedToken));
+		tokenTypes.add(EntityId.fromGrpcTokenId(scopedToken));
 		final var expiredId = EntityId.fromGrpcAccountId(expired);
 		final var treasuryId = EntityId.fromGrpcAccountId(treasury);
-		displacements.getRight().add(new CurrencyAdjustments(
-				expiredFirst ? new long[] { -balance, +balance } : new long[] { +balance, -balance },
-				expiredFirst ? new long[] { expiredId.num(), treasuryId.num() } : new long[] { treasuryId.num(),
-						expiredId.num() }
+		returnTransfers.add(new CurrencyAdjustments(
+				expiredFirst
+						? new long[] { -balance, +balance }
+						: new long[] { +balance, -balance },
+				expiredFirst
+						? new long[] { expiredId.num(), treasuryId.num() }
+						: new long[] { treasuryId.num(), expiredId.num() }
 		));
 
 		final var treasuryRel = fromAccountTokenRel(treasury, scopedToken);

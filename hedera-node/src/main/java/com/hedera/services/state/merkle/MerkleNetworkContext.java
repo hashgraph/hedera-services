@@ -101,10 +101,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	/* Used at network genesis only */
 	public MerkleNetworkContext(
-			Instant consensusTimeOfLastHandledTxn,
-			SequenceNumber seqNo,
-			long lastScannedEntity,
-			ExchangeRates midnightRates
+			final Instant consensusTimeOfLastHandledTxn,
+			final SequenceNumber seqNo,
+			final long lastScannedEntity,
+			final ExchangeRates midnightRates
 	) {
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
 		this.seqNo = seqNo;
