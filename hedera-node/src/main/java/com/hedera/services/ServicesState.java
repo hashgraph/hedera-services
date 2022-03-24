@@ -31,6 +31,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
@@ -68,6 +69,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
@@ -78,6 +80,7 @@ import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0240_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
@@ -161,9 +164,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
-		if (deserializedVersionFromState < RELEASE_0220_VERSION) {
-			blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
-			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
+		if (deserializedVersionFromState < RELEASE_0240_VERSION) {
+			stakeFundingMigrator.accept(this);
+			if (deserializedVersionFromState < RELEASE_0220_VERSION) {
+				// Remove after confirming no regression tests use 0.21.x states
+				blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
+				init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
+			}
 		}
 	}
 
@@ -407,6 +414,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				networkCtx().discardPreparedUpgradeMeta();
 				dualState.setFreezeTime(null);
 			}
+			if (stateVersion < CURRENT_VERSION) {
+				// Only signal the MigrationRecordsManager to re-run if this is an upgrade
+				networkCtx().markMigrationRecordsNotYetStreamed();
+			}
 			networkCtx().setStateVersion(CURRENT_VERSION);
 
 			metadata = new StateMetadata(app, new FCHashMap<>());
@@ -475,6 +486,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		void migrateFromBinaryObjectStore(ServicesState initializingState, int deserializedVersion);
 	}
 
+	private static Consumer<ServicesState> stakeFundingMigrator = ReleaseTwentyFourMigration::ensureStakingFundAccounts;
 	private static BinaryObjectStoreMigrator blobMigrator = ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
@@ -497,5 +509,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	static void setBlobMigrator(final BinaryObjectStoreMigrator blobMigrator) {
 		ServicesState.blobMigrator = blobMigrator;
+	}
+
+	static void setStakeFundingMigrator(final Consumer<ServicesState> stakeFundingMigrator) {
+		ServicesState.stakeFundingMigrator = stakeFundingMigrator;
 	}
 }

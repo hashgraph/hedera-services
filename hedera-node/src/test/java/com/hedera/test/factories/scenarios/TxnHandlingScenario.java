@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
@@ -77,6 +78,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
+import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER_ID;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
@@ -114,6 +116,11 @@ public interface TxnHandlingScenario {
 						newAccount()
 								.balance(DEFAULT_PAYER_BALANCE)
 								.accountKeys(DEFAULT_PAYER_KT).get())
+				.withAccount(
+						STAKING_FUND_ID,
+						newAccount()
+								.balance(0)
+								.accountKeys(EMPTY_KEY).get())
 				.withAccount(
 						MASTER_PAYER_ID,
 						newAccount()

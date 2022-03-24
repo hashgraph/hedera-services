@@ -53,6 +53,8 @@ public abstract class SignedTxnFactory<T extends SignedTxnFactory<T>> {
 	public static final String MASTER_PAYER_ID = "0.0.50";
 	public static final String TREASURY_PAYER_ID = "0.0.2";
 	public static final AccountID DEFAULT_PAYER = asAccount(DEFAULT_PAYER_ID);
+	public static final String STAKING_FUND_ID = "0.0.800";
+	public static final AccountID STAKING_FUND = asAccount("0.0.800");
 	public static final KeyTree DEFAULT_PAYER_KT = KeyTree.withRoot(list(ed25519()));
 	public static final Instant DEFAULT_VALID_START = Instant.now();
 	public static final Integer DEFAULT_VALID_DURATION = 60;
