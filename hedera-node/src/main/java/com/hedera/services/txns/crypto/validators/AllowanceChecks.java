@@ -25,23 +25,30 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
@@ -173,6 +180,47 @@ public interface AllowanceChecks {
 		if (emptyAllowances(totalAllowances)) {
 			return EMPTY_ALLOWANCES;
 		}
+		return OK;
+	}
+
+	/**
+	 * Validates serial numbers for {@link NftAllowance}
+	 *
+	 * @param nftsMap
+	 * 		The MerkleMap of nftId and MerkleUniqueToken to fetch the uniqueToken's owner/spender etc..
+	 * @param serialNums
+	 * 		given serial numbers in the {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} operation
+	 * @param ownerAccount
+	 * 		owner account
+	 * @param token
+	 * 		token for which allowance is related to
+	 * @return response code after validation
+	 */
+	default ResponseCodeEnum validateSerialNums(
+			final MerkleMap<EntityNumPair, MerkleUniqueToken> nftsMap,
+			final List<Long> serialNums,
+			final Account ownerAccount,
+			final Token token) {
+		if (hasRepeatedSerials(serialNums)) {
+			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
+		}
+
+		if (serialNums.isEmpty()) {
+			return EMPTY_ALLOWANCES;
+		}
+
+		for (var serial : serialNums) {
+			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serial);
+			if (serial <= 0 || !nftsMap.containsKey(EntityNumPair.fromNftId(nftId))) {
+				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
+			}
+
+			final var nft = nftsMap.get(EntityNumPair.fromNftId(nftId));
+			if (!validOwner(nft, ownerAccount, token)) {
+				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+			}
+		}
+
 		return OK;
 	}
 
