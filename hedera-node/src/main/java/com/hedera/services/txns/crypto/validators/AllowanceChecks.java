@@ -224,7 +224,7 @@ public interface AllowanceChecks {
 		return OK;
 	}
 
-	default boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
+	static boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
 		return totalAllowances > maxLimit;
 	}
 

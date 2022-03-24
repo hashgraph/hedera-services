@@ -445,6 +445,13 @@ class DeleteAllowanceChecksTest {
 	}
 
 	@Test
+	void addsSerialsCorrectly(){
+		nftAllowances.add(nftAllowance1);
+		nftAllowances.add(nftAllowance2);
+		assertEquals(5, subject.aggregateNftAllowances(nftAllowances));
+	}
+
+	@Test
 	void validatesIfNegativeSerialsNotInExistingList() {
 		final var serials = List.of(-100L, 10L);
 

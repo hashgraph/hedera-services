@@ -26,11 +26,14 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
+import static com.hedera.services.txns.crypto.validators.AllowanceChecks.exceedsTxnLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_ALLOWANCES_TO_DELETE;
@@ -234,7 +237,14 @@ public class DeleteAllowanceChecks {
 			final List<CryptoWipeAllowance> cryptoAllowances,
 			final List<TokenWipeAllowance> tokenAllowances,
 			final List<NftWipeAllowance> nftAllowances) {
-		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size() + nftAllowances.size();
+		// each serial number of an NFT is considered as an allowance.
+		// So for Nft allowances aggregated amount is considered for limit calculati
+		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size() +
+				aggregateNftAllowances(nftAllowances);
+
+		if (exceedsTxnLimit(totalAllowances, dynamicProperties.maxAllowanceLimitPerTransaction())) {
+			return MAX_ALLOWANCES_EXCEEDED;
+		}
 		if (totalAllowances == 0) {
 			return EMPTY_ALLOWANCES;
 		}
@@ -251,5 +261,9 @@ public class DeleteAllowanceChecks {
 				return Pair.of(payerAccount, INVALID_ALLOWANCE_OWNER_ID);
 			}
 		}
+	}
+
+	int aggregateNftAllowances(List<NftWipeAllowance> nftAllowances) {
+		return nftAllowances.stream().mapToInt(a -> a.getSerialNumbersCount()).sum();
 	}
 }
