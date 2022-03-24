@@ -20,7 +20,6 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -35,6 +34,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -61,6 +61,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
+import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -77,9 +78,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,12 +99,11 @@ class HederaWorldStateTest {
 	private ContractAliases aliases;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private SideEffectsTracker sideEffectsTracker;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
 	final Id contract = new Id(0, 0, 2);
+	final EntityNum tokenNum = EntityNum.fromLong(1234);
 	final AccountID accountId = IdUtils.asAccount("0.0.12345");
 	final Bytes code = Bytes.of("0x60606060".getBytes());
 	private static final Bytes TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS = Bytes.fromHexString(
@@ -120,6 +120,20 @@ class HederaWorldStateTest {
 	void getsProvisionalContractCreations() {
 		var provisionalContractCreations = subject.persistProvisionalContractCreations();
 		assertEquals(0, provisionalContractCreations.size());
+	}
+
+	@Test
+	void skipsTokenAccountsInCommit() {
+		givenNonNullWorldLedgers();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		doAnswer(invocationOnMock -> invocationOnMock.getArguments()[0]).when(aliases).resolveForEvm(any());
+
+		final var updater = subject.updater();
+		updater.createAccount(tokenNum.toEvmAddress(), TOKEN_PROXY_ACCOUNT_NONCE, Wei.ZERO);
+
+		updater.commit();
+
+		verify(entityAccess, never()).isExtant(tokenNum.toGrpcAccountId());
 	}
 
 	@Test

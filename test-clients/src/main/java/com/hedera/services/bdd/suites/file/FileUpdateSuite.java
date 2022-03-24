@@ -538,7 +538,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						)
 								.payingWith(GENESIS)
 				).then(
-						sleepFor(1_000L),
+						sleepFor(2_000L),
 						withOpContext((spec, opLog) -> {
 							final var unrefundedOp = getTxnRecord(unrefundedTxn);
 							final var refundedOp = getTxnRecord(refundedTxn)

@@ -42,6 +42,194 @@ public class ContractResources {
 	public static final String CHILD_STORAGE_BYTECODE_PATH = bytecodePath("ChildStorage");
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 	public static final String FIBONACCI_PLUS_PATH = bytecodePath("FibonacciPlus");
+	public static final String TOP_LEVEL_TRANSFERRING_CONTRACT = bytecodePath("TopLevelTransferringContract");
+	public static final String SUB_LEVEL_TRANSFERRING_CONTRACT = bytecodePath("SubLevelTransferringContract");
+	public static final String LARGE_CONTRACT_CRYPTO_KITTIES = bytecodePath("CryptoKitties");
+	public static final String SELF_DESTRUCT_CALLABLE = bytecodePath("SelfDestructCallable");
+	public static final String TRACEABILITY_RECURSIVE_CALLS = bytecodePath("Traceability");
+	public static final String TRACEABILITY_RECURSIVE_CALLS_CALLCODE = bytecodePath("TraceabilityCallcode");
+	public static final String REVERTING_SEND_TRY = bytecodePath("RevertingSendTry");
+	public static final String ZENOS_BANK_CONTRACT = bytecodePath("ZenosBank");
+	public static final String ORDINARY_CALLS_CONTRACT = bytecodePath("HTSCalls");
+	public static final String VERSATILE_TRANSFERS_CONTRACT = bytecodePath("VersatileTransfers");
+	public static final String HBAR_FEE_COLLECTOR = bytecodePath("HbarFeeCollector");
+	public static final String NESTED_HTS_TRANSFERRER = bytecodePath("NestedHTSTransferrer");
+	public static final String DISTRIBUTOR_CONTRACT = bytecodePath("FeeDistributor");
+	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
+	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
+	public static final String SAFE_OPERATIONS_CONTRACT = bytecodePath("SafeOperationsContract");
+	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("NestedAssociateDissociateContract");
+	public static final String MINT_CONTRACT = bytecodePath("MintContract");
+	public static final String TRANSFER_AMOUNT_AND_TOKEN_CONTRACT = bytecodePath("TransferAmountAndToken");
+	public static final String NESTED_MINT_CONTRACT = bytecodePath("NestedMintContract");
+	public static final String CRYPTO_TRANSFER_CONTRACT = bytecodePath("CryptoTransferContract");
+	public static final String BURN_TOKEN = bytecodePath("BurnToken");
+	public static final String MINT_TOKEN_CONTRACT = bytecodePath("MintTokenContract");
+	public static final String MINT_NFT_CONTRACT = bytecodePath("MintNFTContract");
+	public static final String NESTED_BURN = bytecodePath("NestedBurn");
+	public static final String TRANSFER_AND_BURN = bytecodePath("TransferAndBurn");
+	public static final String GRACEFULLY_FAILING_CONTRACT_BIN = bytecodePath("GracefullyFailingContract");
+	public static final String ASSOCIATE_TRY_CATCH = bytecodePath("AssociateTryCatch");
+	public static final String CALLED_CONTRACT = bytecodePath("CalledContract");
+	public static final String DELEGATE_CONTRACT = bytecodePath("DelegateContract");
+	public static final String SERVICE_CONTRACT = bytecodePath("ServiceContract");
+	public static final String STATIC_CONTRACT = bytecodePath("StaticContract");
+	public static final String MIXED_MINT_TOKEN_CONTRACT = bytecodePath("MixedMintTokenContract");
+	public static final String ALIASED_TRANSFER_CONTRACT = bytecodePath("AliasedTransfer");
+	public static final String MIXED_FRAMES_SCENARIOS = bytecodePath("MixedFramesScenarios");
+	public static final String NESTED_CREATIONS_PATH = bytecodePath("NestedCreations");
+	public static final String ERC_20_CONTRACT = bytecodePath("ERC20Contract");
+	public static final String NESTED_ERC_20_CONTRACT = bytecodePath("NestedERC20Contract");
+	public static final String ERC_721_CONTRACT = bytecodePath("ERC721Contract");
+	public static final String CREATE2_FACTORY_PATH = bytecodePath("Create2Factory");
+	public static final String SALTING_CREATOR_FACTORY_PATH = bytecodePath("SaltingCreatorFactory");
+	public static final String ADDRESS_VAL_RETURNER_PATH = bytecodePath("AddressValueRet");
+	public static final String PRECOMPILE_CREATE2_USER_PATH = bytecodePath("Create2PrecompileUser");
+	public static final String REVERTING_CREATE_FACTORY_PATH = bytecodePath("RevertingCreateFactory");
+	public static final String REVERTING_CREATE2_FACTORY_PATH = bytecodePath("RevertingCreate2Factory");
+	public static final String NESTED_TRANSFERRING_CONTRACT_PATH = bytecodePath("NestedTransferringContract");
+	public static final String NESTED_TRANSFER_CONTRACT_1_PATH = bytecodePath("NestedTransferContract1");
+	public static final String NESTED_TRANSFER_CONTRACT_2_PATH = bytecodePath("NestedTransferContract2");
+	public static final String OUTER_CREATOR_PATH = bytecodePath("OuterCreator");
+	public static final String VARIOUS_CREATE2_CALLS_PATH = bytecodePath("VariousCreate2Calls");
+	public static final String EMIT_BLOCKTIME_PATH = bytecodePath("EmitBlockTimestamp");
+	public static final String TOY_MAKER_PATH = bytecodePath("ToyMaker");
+
+	public static final String TOYMAKER_MAKE_ABI = "{\"inputs\":[],\"name\":\"make\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String INDIRECT_CREATE_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"makerAddress\",\"type\":\"address\"}],\"name\":\"makeOpaquely\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String EMIT_TIME_ABI = "{\"inputs\":[],\"name\":\"logNow\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_NORMAL_ABI = "{\"inputs\":[],\"name\":\"makeNormalCall\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"" +
+			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_STATIC_ABI = "{\"inputs\":[],\"name\":\"makeStaticCall\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateM" +
+			"utability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_DELEGATE_ABI = "{\"inputs\":[],\"name\":\"makeDelegateCall\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String VARIOUS_CALLS_CODE_ABI = "{\"inputs\":[],\"name\":\"makeCallCode\"," +
+			"\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String CREATE_DONOR_PATH = bytecodePath("CreateDonor");
+
+	public static final String BUILD_THEN_REVERT_THEN_BUILD_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"buildThenRevertThenBuild\",\"outputs\":[]," +
+			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String RELINQUISH_FUNDS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"beneficiary\",\"type\":\"address\"}],\"name\":\"relinquishFundsTo\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String CREATE_DONOR_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
+			"\"type\":\"bytes32\"}],\"name\":\"buildDonor\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String CREATE_AND_RECREATE_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
+			"\"type\":\"bytes32\"}],\"name\":\"createAndRecreateTest\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String WRONG_REPEATED_CREATE2_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
+			"\"name\":\"bytecode\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_salt\"," +
+			"\"type\":\"uint256\"}],\"name\":\"wronglyDeployTwice\",\"outputs\":[],\"stateMutability\":\"payable\"," +
+			"\"type\":\"function\"}";
+	public static final String WHAT_IS_FOO_ABI = "{\"inputs\":[],\"name\":\"whatTheFoo\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String START_CHAIN_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"logMessage\"," +
+			"\"type\":\"bytes\"}],\"name\":\"startChain\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String NORMAL_DEPLOY_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"bytecode\"," +
+			"\"type\":\"bytes\"}],\"name\":\"deploy\",\"outputs\":[],\"stateMutability\":\"payable\"," +
+			"\"type\":\"function\"}";
+	public static final String CREATE_FACTORY_GET_BYTECODE_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_foo\"," +
+			"\"type\":\"uint256\"}],\"name\":\"getBytecode\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\"," +
+			"\"type\":\"bytes\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}";
+	public static final String PC2_CREATE_USER_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"createUser\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String PC2_ASSOCIATE_BOTH_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"token_type\",\"type\":\"address\"}],\"name\":\"associateBothTo\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String PC2_DISSOCIATE_BOTH_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"token_type\",\"type\":\"address\"}],\"name\":\"dissociateBothFrom\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String PC2_FT_SEND_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"ft_type\"," +
+			"\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"amount\",\"type\":\"int64\"}]," +
+			"\"name\":\"sendFtToUser\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\"," +
+			"\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String PC2_NFT_SEND_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"nft_type\"," +
+			"\"type\":\"address\"},{\"internalType\":\"int64\",\"name\":\"sn\",\"type\":\"int64\"}]," +
+			"\"name\":\"sendNftToUser\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String PC2_USER_MINT_NFT_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"token_type\",\"type\":\"address\"},{\"internalType\":\"bytes[]\",\"name\":\"metadata\"," +
+			"\"type\":\"bytes[]\"}],\"name\":\"mintNft\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String PC2_USER_HELPER_MINT_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"token_type\",\"type\":\"address\"},{\"internalType\":\"bytes[]\",\"name\":\"metadata\"," +
+			"\"type\":\"bytes[]\"}],\"name\":\"mintNftViaDelegate\",\"outputs\":[],\"stateMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String CREATE2_FACTORY_DEPLOY_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
+			"\"name\":\"bytecode\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_salt\",\"type\":" +
+			"\"uint256\"}],\"name\":\"deploy\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"}";
+	public static final String CREATE2_FACTORY_GET_BYTECODE_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_foo\"," +
+			"\"type\":\"uint256\"}],\"name\":\"getBytecode\",\"outputs\":[{\"internalType\":\"bytes\"," +
+			"\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}";
+	public static final String CREATE2_FACTORY_GET_ADDRESS_ABI = "{\"inputs\":[{\"internalType\":\"bytes\"," +
+			"\"name\":\"bytecode\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_salt\"," +
+			"\"type\":\"uint256\"}],\"name\":\"getAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\"," +
+			"\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String TEST_CONTRACT_VACATE_ADDRESS_ABI = "{\"inputs\":[],\"name\":\"vacateAddress\"," +
+			"\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String TEST_CONTRACT_GET_BALANCE_ABI = "{\"inputs\":[],\"name\":\"getBalance\"," +
+			"\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String SALTING_CREATOR_FACTORY_BUILD_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"buildCreator\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String SALTING_CREATOR_CREATE_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\",\"n    " +
+			"ame\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"createSaltedTestContract\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String SALTING_CREATOR_CALL_CREATOR_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"creator_address\",\"type\":\"address\"},{\"internalType\":\"bytes32\",\"name\":\"salt\"," +
+			"\"type\":\"bytes32\"}],\"name\":\"callCreator\",\"outputs\":[],\"stat    eMutability\":\"nonpayable\"," +
+			"\"type\":\"function\"}";
+	public static final String ADDRESS_VAL_CREATE_RETURNER_ABI = "{\"inputs\":[{\"internalType\":\"bytes32\"," +
+			"\"name\":\"salt\",\"type\":\"bytes32\"}],\"name\":\"createReturner\",\"outputs\":[],\"stateMutabi" +
+			"lity\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String ADDRESS_VAL_CALL_RETURNER_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"returner_address\",\"type\":\"address\"}],\"name\":\"callReturner\"," +
+			"\"outputs\":[{\"internalType\":\"uint160\",\"name\":\"\",\"type\":\"uint160\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String RETURN_THIS_ABI = "{\"inputs\":[],\"name\":\"returnThis\"," +
+			"\"outputs\":[{\"internalType\":\"uint160\",\"name\":\"\",\"type\":\"uint160\"}]," +
+			"\"stateMutability\":\"view\",\"type\":\"function\"}";
+	public static final String CREATE_PLACEHOLDER_ABI = "{\"inputs\":[],\"name\":\"createPlaceholder\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String PROPAGATE_NESTED_CREATIONS_ABI = "{\"inputs\":[],\"name\":\"propagate\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String WORKING_HOURS_CONS = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"_tokenAddress\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_treasury\"," +
+			"\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
+	public static final String WORKING_HOURS_TAKE_TICKET = "{\"inputs\":[],\"name\":\"takeTicket\"," +
+			"\"outputs\":[{\"internalType\":\"int64\",\"name\":\"serialNumber\",\"type\":\"int64\"}]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String WORKING_HOURS_WORK_TICKET = "{\"inputs\":[{\"internalType\":\"int64\"," +
+			"\"name\":\"ticketNum\",\"type\":\"int64\"}],\"name\":\"workTicket\",\"outputs\":[]," +
+			"\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String IMAP_USER_INSERT = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"k\"," +
+			"\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v\",\"type\":\"uint256\"}]," +
+			"\"name\":\"insert\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"size\"," +
+			"\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+	public static final String IMAP_USER_REMOVE = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"k\",\"type" +
+			"\":\"uint256\"}],\"name\":\"remove\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"success\"," +
+			"\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
@@ -146,6 +334,19 @@ public class ContractResources {
 			"\"name\":\"toFirst\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"toSecond\"," +
 			"\"type\":\"uint32\"}],\"name\":\"donate\",\"outputs\":[],\"payable\":true," +
 			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+
+	public static final String ALIASED_TRANSFER_DEPLOY_WITH_CREATE2_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name" +
+			"\":\"token\",\"type\":\"address\"}],\"name\":\"deployWithCREATE2\",\"outputs\":[{\"internalType\":\"address" +
+			"\",\"name\":\"operator\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String ALIASED_TRANSFER_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"" +
+			"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"" +
+			"transfer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
+	public static final String ALIASED_GIVE_TOKENS_TO_OPERATOR_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token" +
+			"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"internalType" +
+			"\":\"int64\",\"name\":\"value\",\"type\":\"int64\"}],\"name\":\"giveTokensToOperator\",\"outputs\":[],\"" +
+			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 
 	public static String bytecodePath(String bytecode) {

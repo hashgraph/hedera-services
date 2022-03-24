@@ -20,6 +20,7 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
@@ -37,10 +38,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.swirlds.common.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -110,6 +113,15 @@ class EntityIdTest {
 		final var actual = EntityId.fromAddress(typedAddress);
 		assertEquals(expected, actual);
 	}
+
+	@Test
+	void toAddressWorks() {
+		final byte[] in = unhex("000000000000000000000000000000000cdefbbb");
+		final var inter = new EntityId(0, 0, Longs.fromByteArray(Arrays.copyOfRange(in, 12, 20)));
+		final byte[] out = inter.toEvmAddress().toArrayUnsafe();
+		assertArrayEquals(in, out);
+	}
+
 
 	@Test
 	void objectContractWorks() {

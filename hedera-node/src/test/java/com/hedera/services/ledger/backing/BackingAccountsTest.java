@@ -113,6 +113,8 @@ class BackingAccountsTest {
 		// expect:
 		assertEquals(aValue, subject.getRef(a));
 		assertEquals(bValue, subject.getRef(b));
+		assertEquals(aValue, subject.getImmutableRef(a));
+		assertEquals(bValue, subject.getImmutableRef(b));
 	}
 
 	@Test
