@@ -243,7 +243,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 
 		assertEquals(1, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAccount.getApprovedForAllNftsAllowances().size());
+		assertEquals(0, ownerAccount.getApprovedForAllNftsAllowances().size());
 		assertEquals(Id.fromGrpcAccount(spender1), nft4.getSpender());
 		assertEquals(Id.fromGrpcAccount(spender1), nft5.getSpender());
 
