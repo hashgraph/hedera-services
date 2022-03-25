@@ -1,5 +1,25 @@
 package com.hedera.services.state.expiry.renewal;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -15,13 +35,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.ttlOf;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,13 +67,36 @@ class TreasuryReturnHelperTest {
 	}
 
 	@Test
-	void shortCircuitsToJustRemovingRelIfZeroBalance() {
+	void onlyRemovesIfTokenDoesntExist() {
+		givenRelPresent(num, missingTokenId, 0);
+
+		subject.updateReturns(num.toGrpcAccountId(), missingTokenGrpcId, tokenTypes, returnTransfers);
+
+		verify(tokenRels).remove(EntityNumPair.fromNums(num, missingTokenId));
+		assertTrue(tokenTypes.isEmpty());
+		assertTrue(returnTransfers.isEmpty());
+	}
+
+	@Test
+	void onlyRemovesIfTokenDeleted() {
 		givenTokenPresent(deletedTokenId, deletedToken);
-		givenRelPresent(num, deletedTokenId, 0);
+		givenRelPresent(num, deletedTokenId, 123);
 
 		subject.updateReturns(num.toGrpcAccountId(), deletedTokenGrpcId, tokenTypes, returnTransfers);
 
-		Mockito.verify(tokenRels).remove(EntityNumPair.fromNums(num, deletedTokenId));
+		verify(tokenRels).remove(EntityNumPair.fromNums(num, deletedTokenId));
+		assertTrue(tokenTypes.isEmpty());
+		assertTrue(returnTransfers.isEmpty());
+	}
+
+	@Test
+	void shortCircuitsToJustRemovingRelIfZeroBalance() {
+		givenTokenPresent(survivedTokenId, longLivedToken);
+		givenRelPresent(num, survivedTokenId, 0);
+
+		subject.updateReturns(num.toGrpcAccountId(), survivedTokenGrpcId, tokenTypes, returnTransfers);
+
+		verify(tokenRels).remove(EntityNumPair.fromNums(num, survivedTokenId));
 		assertTrue(tokenTypes.isEmpty());
 		assertTrue(returnTransfers.isEmpty());
 	}
@@ -105,21 +148,6 @@ class TreasuryReturnHelperTest {
 		).collect(Collectors.toList());
 	}
 
-	static TokenTransferList ttlOf(TokenID scope, AccountID src, AccountID dest, long amount) {
-		return TokenTransferList.newBuilder()
-				.setToken(scope)
-				.addTransfers(aaOf(src, -amount))
-				.addTransfers(aaOf(dest, +amount))
-				.build();
-	}
-
-	static AccountAmount aaOf(AccountID id, long amount) {
-		return AccountAmount.newBuilder()
-				.setAccountID(id)
-				.setAmount(amount)
-				.build();
-	}
-
 	private final long expiredNum = 2L;
 	private final long deletedTokenNum = 1234L;
 	private final long survivedTokenNum = 4321L;
@@ -143,4 +171,7 @@ class TreasuryReturnHelperTest {
 			Long.MAX_VALUE, 1L, 0,
 			"HERE", "Dreams never die",
 			true, true, treasuryId);
+	{
+		deletedToken.setDeleted(true);
+	}
 }

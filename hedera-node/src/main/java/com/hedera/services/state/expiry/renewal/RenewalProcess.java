@@ -33,30 +33,34 @@ import java.util.EnumSet;
 
 import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 
 @Singleton
 public class RenewalProcess {
 	private static final Logger log = LogManager.getLogger(RenewalProcess.class);
 
-	private static final EnumSet<ExpiredEntityClassification> TERMINAL_CLASSIFICATIONS = EnumSet.of(
+	private static final EnumSet<RenewableEntityType> TERMINAL_CLASSIFICATIONS = EnumSet.of(
 			DETACHED_ACCOUNT_GRACE_PERIOD_OVER
 	);
 
+	private final AccountGC accountGC;
 	private final FeeCalculator fees;
-	private final RenewalHelper helper;
+	private final RenewableEntityClassifier helper;
 	private final RenewalRecordsHelper recordsHelper;
 
 	private Instant cycleTime = null;
 
 	@Inject
 	public RenewalProcess(
+			final AccountGC accountGC,
 			final FeeCalculator fees,
-			final RenewalHelper helper,
+			final RenewableEntityClassifier helper,
 			final RenewalRecordsHelper recordsHelper
 	) {
 		this.fees = fees;
 		this.helper = helper;
+		this.accountGC = accountGC;
 		this.recordsHelper = recordsHelper;
 	}
 
@@ -95,10 +99,10 @@ public class RenewalProcess {
 		return DONE;
 	}
 
-	private EntityProcessResult expireAccount(EntityNum accountId) {
-		final var treasuryReturns = helper.removeLastClassifiedAccount();
-		recordsHelper.streamCryptoRemoval(accountId, treasuryReturns.tokenTypes(), treasuryReturns.transfers());
-		return DONE;
+	private EntityProcessResult expireAccount(EntityNum num) {
+		final var treasuryReturns = accountGC.expireBestEffort(num, helper.getLastClassifiedAccount());
+		recordsHelper.streamCryptoRemoval(num, treasuryReturns.tokenTypes(), treasuryReturns.transfers());
+		return treasuryReturns.finished() ? DONE : STILL_MORE_TO_DO;
 	}
 
 	public void endRenewalCycle() {

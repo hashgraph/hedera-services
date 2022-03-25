@@ -1,17 +1,35 @@
 package com.hedera.services.state.expiry.renewal;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,10 +37,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,13 +55,15 @@ class AccountGCTest {
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
+	private TreasuryReturnHelper treasuryReturnHelper;
+	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
 
 	private AccountGC subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new AccountGC(aliasManager, sigImpactHistorian, backingAccounts);
+		subject = new AccountGC(aliasManager, sigImpactHistorian, treasuryReturnHelper, backingAccounts);
 	}
 
 	@Test
@@ -52,7 +77,32 @@ class AccountGCTest {
 		assertRemovalStepsTaken(num, accountNoTokens);
 	}
 
+	@Test
+	@SuppressWarnings("unchecked")
+	void removalWithTokensWorks() {
+		final var counter = new AtomicInteger();
+		doAnswer(invocationOnMock -> {
+			final var tokenTypes = (List<EntityId>) invocationOnMock.getArgument(2);
+			final var no = counter.getAndIncrement();
+			if (no == 0) {
+				tokenTypes.add(aToken.toEntityId());
+			} else if (no == 1) {
+				tokenTypes.add(bToken.toEntityId());
+			} else {
+				tokenTypes.add(cToken.toEntityId());
+			}
+			return null;
+		}).when(treasuryReturnHelper).updateReturns(eq(num.toGrpcAccountId()), any(), any(), any());
 
+		final var expectedReturns = new TreasuryReturns(
+				List.of(aToken.toEntityId(), bToken.toEntityId(), cToken.toEntityId()),
+				Collections.emptyList(), true);
+
+		final var actualReturns = subject.expireBestEffort(num, accountWithTokens);
+
+		assertEquals(expectedReturns, actualReturns);
+		assertRemovalStepsTaken(num, accountNoTokens);
+	}
 
 	private void assertRemovalStepsTaken(final EntityNum num, final MerkleAccount account) {
 		verify(aliasManager).forgetAlias(account.getAlias());
@@ -61,27 +111,13 @@ class AccountGCTest {
 	}
 
 	private final long expiredNum = 2L;
-	private final long deletedTokenNum = 1234L;
-	private final long survivedTokenNum = 4321L;
-	private final long missingTokenNum = 5678L;
-	private final EntityId expiredTreasuryId = new EntityId(0, 0, expiredNum);
-	private final EntityId treasuryId = new EntityId(0, 0, 666L);
-	private final MerkleToken deletedToken = new MerkleToken(
-			Long.MAX_VALUE, 1L, 0,
-			"GONE", "Long lost dream",
-			true, true, expiredTreasuryId);
-	private final MerkleToken longLivedToken = new MerkleToken(
-			Long.MAX_VALUE, 1L, 0,
-			"HERE", "Dreams never die",
-			true, true, treasuryId);
+	private final long aNum = 1234L;
+	private final long bNum = 4321L;
+	private final long cNum = 5678L;
 	private final EntityNum num = EntityNum.fromLong(expiredNum);
-	private final AccountID grpcId = num.toGrpcAccountId();
-	private final EntityNum deletedTokenId = EntityNum.fromLong(deletedTokenNum);
-	private final EntityNum survivedTokenId = EntityNum.fromLong(survivedTokenNum);
-	private final EntityNum missingTokenId = EntityNum.fromLong(missingTokenNum);
-	private final TokenID deletedTokenGrpcId = deletedTokenId.toGrpcTokenId();
-	private final TokenID survivedTokenGrpcId = survivedTokenId.toGrpcTokenId();
-	private final TokenID missingTokenGrpcId = missingTokenId.toGrpcTokenId();
+	private final EntityNum aToken = EntityNum.fromLong(aNum);
+	private final EntityNum bToken = EntityNum.fromLong(bNum);
+	private final EntityNum cToken = EntityNum.fromLong(cNum);
 	private final ByteString anAlias = ByteString.copyFromUtf8("bbbb");
 	private final MerkleAccount accountNoTokens = MerkleAccountFactory.newAccount()
 			.balance(0)
@@ -91,10 +127,10 @@ class AccountGCTest {
 			.balance(0)
 			.alias(anAlias)
 			.get();
+
 	{
-		deletedToken.setDeleted(true);
 		final var associations = new MerkleAccountTokens();
-		associations.associateAll(Set.of(deletedTokenGrpcId, survivedTokenGrpcId, missingTokenGrpcId));
+		associations.associateAll(Set.of(aToken.toGrpcTokenId(), bToken.toGrpcTokenId(), cToken.toGrpcTokenId()));
 		accountWithTokens.setTokens(associations);
 	}
 }

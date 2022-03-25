@@ -90,8 +90,8 @@ class RenewalRecordsHelperTest {
 		final var bBalance = 200L;
 		final var removalTime = instantNow.plusNanos(1);
 		final var displacements = List.of(
-				RenewalHelperTest.ttlOf(aToken, from, firstTo, aBalance),
-				RenewalHelperTest.ttlOf(bToken, from, secondTo, bBalance));
+				ttlOf(aToken, from, firstTo, aBalance),
+				ttlOf(bToken, from, secondTo, bBalance));
 		final var rso = expectedRso(
 				cryptoRemovalRecord(removedId, removalTime, removedId, displacements), 1);
 
@@ -198,6 +198,21 @@ class RenewalRecordsHelperTest {
 				.setMemo(memo)
 				.setTransactionFee(fee)
 				.setTransferList(transferList)
+				.build();
+	}
+
+	static TokenTransferList ttlOf(TokenID scope, AccountID src, AccountID dest, long amount) {
+		return TokenTransferList.newBuilder()
+				.setToken(scope)
+				.addTransfers(aaOf(src, -amount))
+				.addTransfers(aaOf(dest, +amount))
+				.build();
+	}
+
+	static AccountAmount aaOf(AccountID id, long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(id)
+				.setAmount(amount)
 				.build();
 	}
 }

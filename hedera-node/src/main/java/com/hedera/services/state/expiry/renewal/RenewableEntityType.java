@@ -20,7 +20,7 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
-public enum ExpiredEntityClassification {
+public enum RenewableEntityType {
 	DETACHED_ACCOUNT,
 	EXPIRED_ACCOUNT_READY_TO_RENEW,
 	DETACHED_ACCOUNT_GRACE_PERIOD_OVER,

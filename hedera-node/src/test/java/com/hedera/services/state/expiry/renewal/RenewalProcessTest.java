@@ -23,11 +23,8 @@ package com.hedera.services.state.expiry.renewal;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,15 +34,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Collections;
-import java.util.List;
 
 import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
-import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT;
-import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
-import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
-import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.EXPIRED_ACCOUNT_READY_TO_RENEW;
-import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
+import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_ACCOUNT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.OTHER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -62,16 +59,19 @@ class RenewalProcessTest {
 	private final long actualRenewalPeriod = 3600L;
 	private final Instant instantNow = Instant.ofEpochSecond(now);
 
-	private final MerkleAccount expiredAccountNonZeroBalance = MerkleAccountFactory.newAccount()
+	private final MerkleAccount mockAccount = MerkleAccountFactory.newAccount()
 			.autoRenewPeriod(requestedRenewalPeriod)
-			.balance(nonZeroBalance).expirationTime(now - 1)
+			.balance(nonZeroBalance)
+			.expirationTime(now - 1)
 			.get();
 	private final long nonExpiredAccountNum = 1002L;
 
 	@Mock
 	private FeeCalculator fees;
 	@Mock
-	private RenewalHelper helper;
+	private RenewableEntityClassifier helper;
+	@Mock
+	private AccountGC accountGC;
 	@Mock
 	private RenewalRecordsHelper recordsHelper;
 
@@ -79,7 +79,7 @@ class RenewalProcessTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalProcess(fees, helper, recordsHelper);
+		subject = new RenewalProcess(accountGC, fees, helper, recordsHelper);
 	}
 
 	@Test
@@ -163,21 +163,41 @@ class RenewalProcessTest {
 	@Test
 	void removesExpiredBrokeAccount() {
 		final var treasuryReturns = new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), true);
-		final Pair<List<EntityId>, List<CurrencyAdjustments>> displacements =
-				Pair.of(Collections.emptyList(), Collections.emptyList());
 
 		long brokeExpiredAccountNum = 1003L;
-		given(helper.classify(EntityNum.fromLong(brokeExpiredAccountNum), now))
-				.willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
-		given(helper.removeLastClassifiedAccount()).willReturn(treasuryReturns);
+		final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
+		given(helper.classify(expiredNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
+		given(helper.getLastClassifiedAccount()).willReturn(mockAccount);
+		given(accountGC.expireBestEffort(expiredNum, mockAccount)).willReturn(treasuryReturns);
 
 		subject.beginRenewalCycle(instantNow);
 		final var result = subject.process(brokeExpiredAccountNum);
 
 		assertEquals(DONE, result);
-		verify(helper).removeLastClassifiedAccount();
+		verify(accountGC).expireBestEffort(expiredNum, mockAccount);
 		verify(recordsHelper).streamCryptoRemoval(
-				EntityNum.fromLong(brokeExpiredAccountNum),
+				expiredNum,
+				Collections.emptyList(),
+				Collections.emptyList());
+	}
+
+	@Test
+	void alertsIfNotAllExpirationWorkCanBeDone() {
+		final var treasuryReturns = new TreasuryReturns(Collections.emptyList(), Collections.emptyList(), false);
+
+		long brokeExpiredAccountNum = 1003L;
+		final var expiredNum = EntityNum.fromLong(brokeExpiredAccountNum);
+		given(helper.classify(expiredNum, now)).willReturn(DETACHED_ACCOUNT_GRACE_PERIOD_OVER);
+		given(helper.getLastClassifiedAccount()).willReturn(mockAccount);
+		given(accountGC.expireBestEffort(expiredNum, mockAccount)).willReturn(treasuryReturns);
+
+		subject.beginRenewalCycle(instantNow);
+		final var result = subject.process(brokeExpiredAccountNum);
+
+		assertEquals(STILL_MORE_TO_DO, result);
+		verify(accountGC).expireBestEffort(expiredNum, mockAccount);
+		verify(recordsHelper).streamCryptoRemoval(
+				expiredNum,
 				Collections.emptyList(),
 				Collections.emptyList());
 	}
@@ -189,8 +209,8 @@ class RenewalProcessTest {
 		var key = EntityNum.fromLong(fundedExpiredAccountNum);
 
 		given(helper.classify(EntityNum.fromLong(fundedExpiredAccountNum), now)).willReturn(EXPIRED_ACCOUNT_READY_TO_RENEW);
-		given(helper.getLastClassifiedAccount()).willReturn(expiredAccountNonZeroBalance);
-		given(fees.assessCryptoAutoRenewal(expiredAccountNonZeroBalance, requestedRenewalPeriod, instantNow))
+		given(helper.getLastClassifiedAccount()).willReturn(mockAccount);
+		given(fees.assessCryptoAutoRenewal(mockAccount, requestedRenewalPeriod, instantNow))
 				.willReturn(new RenewAssessment(fee, actualRenewalPeriod));
 
 		subject.beginRenewalCycle(instantNow);
