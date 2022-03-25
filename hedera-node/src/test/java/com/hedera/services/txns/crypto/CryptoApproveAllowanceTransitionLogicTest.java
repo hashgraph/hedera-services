@@ -31,6 +31,7 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
@@ -117,6 +118,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
+		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
 		subject.doStateTransition();
 
@@ -136,6 +139,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
+		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
 		assertEquals(0, payerAcccount.getCryptoAllowances().size());
 		assertEquals(0, payerAcccount.getFungibleTokenAllowances().size());
@@ -146,6 +151,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		assertEquals(1, payerAcccount.getCryptoAllowances().size());
 		assertEquals(1, payerAcccount.getFungibleTokenAllowances().size());
 		assertEquals(1, payerAcccount.getApprovedForAllNftsAllowances().size());
+		assertEquals(spenderId1, nft1.getSpender());
+		assertEquals(spenderId1, nft2.getSpender());
 
 		verify(accountStore).commitAccount(payerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
@@ -161,6 +168,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
+		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
 		subject.doStateTransition();
 
@@ -237,12 +246,16 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAcccount);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
+		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
+		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
 		subject.doStateTransition();
 
 		assertEquals(0, ownerAcccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAcccount.getFungibleTokenAllowances().size());
 		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
+		assertEquals(spenderId1, nft1.getSpender());
+		assertEquals(spenderId1, nft2.getSpender());
 
 		verify(accountStore).commitAccount(ownerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
@@ -265,6 +278,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		given(accountStore.loadAccountOrFailWith(ownerAcccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
+		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
 		subject.doStateTransition();
 
@@ -409,11 +424,16 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				.build();
 	}
 
+	private static final long serial1 = 1L;
+	private static final long serial2 = 10L;
 	private static final AccountID spender1 = asAccount("0.0.123");
 	private static final TokenID token1 = asToken("0.0.100");
 	private static final TokenID token2 = asToken("0.0.200");
 	private static final AccountID payerId = asAccount("0.0.5000");
 	private static final AccountID ownerId = asAccount("0.0.6000");
+	private static final Id tokenId1 = Id.fromGrpcToken(token1);
+	private static final Id tokenId2 = Id.fromGrpcToken(token2);
+	private static final Id spenderId1 = Id.fromGrpcAccount(spender1);
 	private static final Instant consensusTime = Instant.now();
 	private final Token token1Model = new Token(Id.fromGrpcToken(token1));
 	private final Token token2Model = new Token(Id.fromGrpcToken(token2));
@@ -432,10 +452,12 @@ class CryptoApproveAllowanceTransitionLogicTest {
 			.setOwner(ownerId)
 			.setTokenId(token2)
 			.setApprovedForAll(BoolValue.of(true))
-			.addAllSerialNumbers(List.of(1L, 10L)).build();
+			.addAllSerialNumbers(List.of(serial1, serial2)).build();
 	private List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
 	private List<TokenAllowance> tokenAllowances = new ArrayList<>();
 	private List<NftAllowance> nftAllowances = new ArrayList<>();
 	private final Account payerAcccount = new Account(Id.fromGrpcAccount(payerId));
 	private final Account ownerAcccount = new Account(Id.fromGrpcAccount(ownerId));
+	private final UniqueToken nft1 = new UniqueToken(tokenId1, serial1);
+	private final UniqueToken nft2 = new UniqueToken(tokenId2, serial2);
 }

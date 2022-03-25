@@ -122,19 +122,21 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		given(tokenStore.loadUniqueToken(tokenId1, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId1, serial2)).willReturn(nft2);
 		given(tokenStore.loadUniqueToken(tokenId1, serial3)).willReturn(nft3);
+		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft4);
+		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft5);
 
 		subject.doStateTransition();
 
 		assertEquals(2, ownerAccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
-		assertEquals(2, ownerAccount.getApprovedForAllNftsAllowances().size());
+		assertEquals(1, ownerAccount.getApprovedForAllNftsAllowances().size());
 		assertEquals(30L, ownerAccount.getCryptoAllowances().get(EntityNum.fromAccountId(spender1)));
 		assertEquals(10L, ownerAccount.getCryptoAllowances().get(EntityNum.fromAccountId(spender2)));
 		assertEquals(20, ownerAccount.getFungibleTokenAllowances()
 				.get(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1))));
 		assertTrue(ownerAccount.getApprovedForAllNftsAllowances().contains(
 				FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1))));
-		assertTrue(ownerAccount.getApprovedForAllNftsAllowances().contains(
+		assertFalse(ownerAccount.getApprovedForAllNftsAllowances().contains(
 				FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1))));
 		assertEquals(Id.fromGrpcAccount(spender1), nft1.getSpender());
 		assertEquals(Id.fromGrpcAccount(spender1), nft2.getSpender());
@@ -243,7 +245,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 
 		assertEquals(1, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAccount.getApprovedForAllNftsAllowances().size());
+		assertEquals(0, ownerAccount.getApprovedForAllNftsAllowances().size());
 		assertEquals(Id.fromGrpcAccount(spender1), nft4.getSpender());
 		assertEquals(Id.fromGrpcAccount(spender1), nft5.getSpender());
 
@@ -269,6 +271,8 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		given(tokenStore.loadUniqueToken(tokenId1, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId1, serial2)).willReturn(nft2);
 		given(tokenStore.loadUniqueToken(tokenId1, serial3)).willReturn(nft3);
+		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft4);
+		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft5);
 
 		subject.doStateTransition();
 
