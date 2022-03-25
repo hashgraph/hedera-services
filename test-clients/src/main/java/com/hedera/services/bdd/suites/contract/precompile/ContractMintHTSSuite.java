@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -404,11 +405,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														.gas(3_838_735L)
 														.amount(0L)
 														.functionParameters(functionParameters()
-																.forMintToken(
-																		asAddress(spec.registry()
-																				.getTokenID(nonFungibleToken)),
-																		0L,
-																		Arrays.asList("Test metadata 1"))
+																.forFunction(FunctionParameters.PrecompileFunction.MINT)
+																.withTokenAddress(asAddress(spec.registry()
+																		.getTokenID(nonFungibleToken)))
+																.withAmount(0L)
+																.withMetadata(Arrays.asList("Test metadata 1"))
+																.build()
 														)
 										),
 								recordWith()
