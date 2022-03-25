@@ -84,12 +84,12 @@ public class DecodingFacade {
 
 	private static final Function MINT_TOKEN_FUNCTION = new Function("mintToken(address,uint64,bytes[])", INT_OUTPUT);
 	private static final Bytes MINT_TOKEN_SELECTOR = Bytes.wrap(MINT_TOKEN_FUNCTION.selector());
-	private static final ABIType<Tuple> MINT_TOKEN_DECODER = TypeFactory.create("(bytes32,uint64,bytes[])");
+	private static final ABIType<Tuple> MINT_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,bytes[])");
 
 	private static final Function BURN_TOKEN_FUNCTION =
 			new Function("burnToken(address,uint64,int64[])", INT_OUTPUT);
 	private static final Bytes BURN_TOKEN_SELECTOR = Bytes.wrap(BURN_TOKEN_FUNCTION.selector());
-	private static final ABIType<Tuple> BURN_TOKEN_DECODER = TypeFactory.create("(bytes32,uint64,int64[])");
+	private static final ABIType<Tuple> BURN_TOKEN_DECODER = TypeFactory.create("(bytes32,int64,int64[])");
 
 	private static final Function ASSOCIATE_TOKENS_FUNCTION =
 			new Function("associateTokens(address,address[])", INT_OUTPUT);
@@ -174,7 +174,7 @@ public class DecodingFacade {
 		final Tuple decodedArguments = decodeFunctionCall(input, BURN_TOKEN_SELECTOR, BURN_TOKEN_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var fungibleAmount = (BigInteger) decodedArguments.get(1);
+		final var fungibleAmount = (long) decodedArguments.get(1);
 		final var serialNumbers = (long[]) decodedArguments.get(2);
 
 		if (serialNumbers.length == 0) {
@@ -249,7 +249,7 @@ public class DecodingFacade {
 		final Tuple decodedArguments = decodeFunctionCall(input, MINT_TOKEN_SELECTOR, MINT_TOKEN_DECODER);
 
 		final var tokenID = convertAddressBytesToTokenID((byte[]) decodedArguments.get(0));
-		final var fungibleAmount = (BigInteger) decodedArguments.get(1);
+		final var fungibleAmount = (long) decodedArguments.get(1);
 		final var metadataList = (byte[][]) decodedArguments.get(2);
 		final List<ByteString> metadata = Arrays.stream(metadataList).map(ByteString::copyFrom).toList();
 

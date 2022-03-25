@@ -77,17 +77,17 @@ public class HTSTestsUtil {
 	public static final Id fungibleId = Id.fromGrpcToken(fungible);
 	public static final List<Long> targetSerialNos = List.of(1L, 2L, 3L);
 	public static final BurnWrapper fungibleBurn =
-			BurnWrapper.forFungible(fungible, BigInteger.valueOf(AMOUNT));
+			BurnWrapper.forFungible(fungible, AMOUNT);
 	public static final MintWrapper fungibleMint =
-			MintWrapper.forFungible(fungible, BigInteger.valueOf(AMOUNT));
+			MintWrapper.forFungible(fungible, AMOUNT);
 	public static final BurnWrapper fungibleBurnAmountOversize =
-			BurnWrapper.forFungible(fungible, new BigInteger("2").pow(64));
+			BurnWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
 	public static final BurnWrapper fungibleBurnMaxAmount =
-			BurnWrapper.forFungible(fungible, BigInteger.valueOf(Long.MAX_VALUE));
+			BurnWrapper.forFungible(fungible, Long.MAX_VALUE);
 	public static final MintWrapper fungibleMintAmountOversize =
-			MintWrapper.forFungible(fungible, new BigInteger("2").pow(64));
+			MintWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
 	public static final MintWrapper fungibleMintMaxAmount =
-			MintWrapper.forFungible(fungible, BigInteger.valueOf(Long.MAX_VALUE));
+			MintWrapper.forFungible(fungible, Long.MAX_VALUE);
 	public static final Long serialNumber = 1L;
 	public static final BalanceOfWrapper balanceOfOp = new BalanceOfWrapper(accountMerkleId);
 	public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper = new OwnerOfAndTokenURIWrapper(serialNumber);

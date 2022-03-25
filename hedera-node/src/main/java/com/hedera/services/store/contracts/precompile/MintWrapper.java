@@ -24,22 +24,21 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 
-import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-public record MintWrapper(BigInteger amount, TokenID tokenType, List<ByteString> metadata) {
-	private static final BigInteger NONFUNGIBLE_MINT_AMOUNT = BigInteger.valueOf(-1);
+public record MintWrapper(long amount, TokenID tokenType, List<ByteString> metadata) {
+	private static final long NONFUNGIBLE_MINT_AMOUNT = -1;
 	private static final List<ByteString> FUNGIBLE_MINT_METADATA = Collections.emptyList();
 
 	public static MintWrapper forNonFungible(final TokenID tokenType, final List<ByteString> metadata) {
 		return new MintWrapper(NONFUNGIBLE_MINT_AMOUNT, tokenType, metadata);
 	}
 
-	public static MintWrapper forFungible(final TokenID tokenType, final BigInteger amount) {
+	public static MintWrapper forFungible(final TokenID tokenType, final long amount) {
 		return new MintWrapper(amount, tokenType, FUNGIBLE_MINT_METADATA);
 	}
 

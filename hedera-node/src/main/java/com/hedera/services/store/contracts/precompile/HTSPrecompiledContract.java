@@ -141,6 +141,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
@@ -755,7 +756,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			mintOp = decoder.decodeMint(input);
-			if (mintOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) >= 1) {
+			if (mintOp.amount() < 1 && mintOp.type().equals(FUNGIBLE_COMMON)) {
 				messageFrame.setRevertReason(INVALID_MINT_AMOUNT_ERROR);
 				return null;
 			}
@@ -784,7 +785,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
 				mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
 			} else {
-				mintLogic.mint(tokenId, 0, mintOp.amount().longValue(), NO_METADATA, Instant.EPOCH);
+				mintLogic.mint(tokenId, 0, mintOp.amount(), NO_METADATA, Instant.EPOCH);
 			}
 		}
 
@@ -1012,7 +1013,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			burnOp = decoder.decodeBurn(input);
-			if (burnOp.amount().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) >= 1) {
+			if (burnOp.amount()  < 1 && burnOp.type().equals(FUNGIBLE_COMMON)) {
 				messageFrame.setRevertReason(INVALID_BURN_AMOUNT_ERROR);
 				return null;
 			}
@@ -1039,7 +1040,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final var targetSerialNos = burnOp.serialNos();
 				burnLogic.burn(tokenId, 0, targetSerialNos);
 			} else {
-				burnLogic.burn(tokenId, burnOp.amount().longValue(), NO_SERIAL_NOS);
+				burnLogic.burn(tokenId, burnOp.amount(), NO_SERIAL_NOS);
 			}
 		}
 

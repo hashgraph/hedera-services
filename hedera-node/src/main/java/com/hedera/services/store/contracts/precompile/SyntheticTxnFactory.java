@@ -79,7 +79,7 @@ public class SyntheticTxnFactory {
 		if (burnWrapper.type() == NON_FUNGIBLE_UNIQUE) {
 			builder.addAllSerialNumbers(burnWrapper.serialNos());
 		} else {
-			builder.setAmount(burnWrapper.amount().longValue());
+			builder.setAmount(burnWrapper.amount());
 		}
 
 		return TransactionBody.newBuilder().setTokenBurn(builder);
@@ -92,7 +92,7 @@ public class SyntheticTxnFactory {
 		if (mintWrapper.type() == NON_FUNGIBLE_UNIQUE) {
 			builder.addAllMetadata(mintWrapper.metadata());
 		} else {
-			builder.setAmount(mintWrapper.amount().longValue());
+			builder.setAmount(mintWrapper.amount());
 		}
 
 		return TransactionBody.newBuilder().setTokenMint(builder);
