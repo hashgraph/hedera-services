@@ -20,7 +20,6 @@ package com.hedera.services.txns.crypto.validators;
  * ‍
  */
 
-import com.google.protobuf.BoolValue;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenSupplyType;
@@ -37,14 +36,10 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
-import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftWipeAllowance;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -67,21 +62,16 @@ import java.util.TreeSet;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_ALLOWANCES_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -220,7 +210,7 @@ class DeleteAllowanceChecksTest {
 		cryptoAllowances.add(CryptoWipeAllowance.newBuilder().setOwner(ownerId).build());
 
 		assertEquals(3, cryptoAllowances.size());
-		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateCryptoAllowances(cryptoAllowances, payer));
+		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateCryptoDeleteAllowances(cryptoAllowances, payer));
 	}
 
 	@Test
@@ -231,7 +221,7 @@ class DeleteAllowanceChecksTest {
 		tokenAllowances.add(TokenWipeAllowance.newBuilder().setTokenId(token2).setOwner(payerId).build());
 
 		assertEquals(5, tokenAllowances.size());
-		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateFungibleTokenAllowances(tokenAllowances, payer));
+		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateTokenDeleteAllowances(tokenAllowances, payer));
 	}
 
 	@Test
@@ -247,10 +237,10 @@ class DeleteAllowanceChecksTest {
 				.setTokenId(token1).addAllSerialNumbers(List.of(30L)).build());
 
 		assertEquals(4, nftAllowances.size());
-		assertNotEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateNftAllowances(nftAllowances, payer));
+		assertNotEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateNftDeleteAllowances(nftAllowances, payer));
 		nftAllowances.add(NftWipeAllowance.newBuilder().setOwner(ownerId)
 				.setTokenId(token1).addAllSerialNumbers(List.of(1L)).build());
-		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateNftAllowances(nftAllowances, payer));
+		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateNftDeleteAllowances(nftAllowances, payer));
 	}
 
 	@Test
@@ -261,9 +251,9 @@ class DeleteAllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance2);
 		nftAllowances.add(nftAllowance2);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willThrow(InvalidTransactionException.class);
-		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateCryptoAllowances(cryptoAllowances, payer));
-		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateFungibleTokenAllowances(tokenAllowances, payer));
-		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateNftAllowances(nftAllowances, payer));
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateCryptoDeleteAllowances(cryptoAllowances, payer));
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateTokenDeleteAllowances(tokenAllowances, payer));
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateNftDeleteAllowances(nftAllowances, payer));
 	}
 
 	@Test
@@ -282,8 +272,8 @@ class DeleteAllowanceChecksTest {
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(owner);
 		given(owner.isAssociatedWith(Id.fromGrpcToken(token1))).willReturn(false);
 		given(owner.isAssociatedWith(Id.fromGrpcToken(token2))).willReturn(false);
-		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, payer));
-		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateNftAllowances(nftAllowances, payer));
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateTokenDeleteAllowances(tokenAllowances, payer));
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateNftDeleteAllowances(nftAllowances, payer));
 	}
 
 	@Test
@@ -297,8 +287,8 @@ class DeleteAllowanceChecksTest {
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
 		tokenAllowances.add(TokenWipeAllowance.newBuilder().setTokenId(token2).build());
 		nftAllowances.add(NftWipeAllowance.newBuilder().setTokenId(token1).build());
-		assertEquals(NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES, subject.validateFungibleTokenAllowances(tokenAllowances, payer));
-		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES, subject.validateNftAllowances(nftAllowances, payer));
+		assertEquals(NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES, subject.validateTokenDeleteAllowances(tokenAllowances, payer));
+		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES, subject.validateNftDeleteAllowances(nftAllowances, payer));
 	}
 
 
@@ -384,11 +374,11 @@ class DeleteAllowanceChecksTest {
 								.build()
 				)
 				.build();
-		assertEquals(OK, subject.validateCryptoAllowances(
+		assertEquals(OK, subject.validateCryptoDeleteAllowances(
 				cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance().getCryptoAllowancesList(), payer));
-		assertEquals(OK, subject.validateFungibleTokenAllowances(
+		assertEquals(OK, subject.validateTokenDeleteAllowances(
 				cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance().getTokenAllowancesList(), payer));
-		assertEquals(OK, subject.validateNftAllowances(
+		assertEquals(OK, subject.validateNftDeleteAllowances(
 				cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance().getNftAllowancesList(), payer));
 	}
 

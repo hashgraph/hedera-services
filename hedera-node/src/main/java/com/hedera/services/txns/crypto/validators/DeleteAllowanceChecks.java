@@ -10,9 +10,11 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.EntityNumPair;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
 import com.hederahashgraph.api.proto.java.NftWipeAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -26,7 +28,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.validators.AllowanceChecks.exceedsTxnLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
@@ -76,17 +77,17 @@ public class DeleteAllowanceChecks {
 			return validity;
 		}
 
-		validity = validateCryptoAllowances(cryptoAllowances, payerAccount);
+		validity = validateCryptoDeleteAllowances(cryptoAllowances, payerAccount);
 		if (validity != OK) {
 			return validity;
 		}
 
-		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount);
+		validity = validateTokenDeleteAllowances(tokenAllowances, payerAccount);
 		if (validity != OK) {
 			return validity;
 		}
 
-		validity = validateNftAllowances(nftAllowances, payerAccount);
+		validity = validateNftDeleteAllowances(nftAllowances, payerAccount);
 		if (validity != OK) {
 			return validity;
 		}
@@ -98,7 +99,7 @@ public class DeleteAllowanceChecks {
 		return dynamicProperties.areAllowancesEnabled();
 	}
 
-	ResponseCodeEnum validateCryptoAllowances(final List<CryptoWipeAllowance> cryptoAllowances,
+	ResponseCodeEnum validateCryptoDeleteAllowances(final List<CryptoWipeAllowance> cryptoAllowances,
 			final Account payerAccount) {
 		final var distinctOwners = cryptoAllowances.stream()
 				.map(CryptoWipeAllowance::getOwner).distinct().count();
@@ -116,7 +117,7 @@ public class DeleteAllowanceChecks {
 		return OK;
 	}
 
-	public ResponseCodeEnum validateFungibleTokenAllowances(
+	public ResponseCodeEnum validateTokenDeleteAllowances(
 			final List<TokenWipeAllowance> tokenAllowancesList,
 			final Account payerAccount) {
 		if (tokenAllowancesList.isEmpty()) {
@@ -150,7 +151,7 @@ public class DeleteAllowanceChecks {
 		return OK;
 	}
 
-	public ResponseCodeEnum validateNftAllowances(
+	public ResponseCodeEnum validateNftDeleteAllowances(
 			final List<NftWipeAllowance> nftAllowancesList,
 			final Account payerAccount) {
 		if (nftAllowancesList.isEmpty()) {
@@ -188,7 +189,7 @@ public class DeleteAllowanceChecks {
 	}
 
 	boolean repeatedAllowances(final List<NftWipeAllowance> nftAllowancesList) {
-		Map<Pair, List<Long>> seenNfts = new HashMap<>();
+		Map<Pair<AccountID, TokenID>, List<Long>> seenNfts = new HashMap<>();
 		for (var allowance : nftAllowancesList) {
 			final var key = Pair.of(allowance.getOwner(), allowance.getTokenId());
 			if (seenNfts.containsKey(key)) {
