@@ -20,19 +20,12 @@ package com.hedera.services.bdd.spec.keys;
  * ‍
  */
 
-import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
-import com.hedera.services.bdd.spec.persistence.SpecKey;
-import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
 import com.hedera.services.keys.Ed25519Utils;
-import com.hedera.services.legacy.core.AccountKeyListObj;
-import com.hedera.services.legacy.core.CommonUtils;
-import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -47,7 +40,6 @@ import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.junit.jupiter.api.Assertions;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -60,7 +52,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
-import java.security.spec.InvalidKeySpecException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -76,8 +67,8 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.keys.SigMapGenerator.Nature.UNIQUE_PREFIXES;
+import static com.hedera.services.bdd.spec.persistence.SpecKey.mnemonicToEd25519Key;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asContractId;
-import static com.hedera.services.bdd.suites.utils.keypairs.SpecUtils.asLegacyKp;
 import static java.util.Map.Entry;
 import static java.util.stream.Collectors.toList;
 
@@ -101,25 +92,8 @@ public class KeyFactory implements Serializable {
 		this.setup = setup;
 		this.registry = registry;
 
-		KeyPairObj genesisKp = firstStartupKp(setup);
-		incorporate(
-				setup.genesisAccountName(),
-				genesisKp,
-				KeyShape.listSigs(ON));
-	}
-
-	public void exportSimpleKeyAsLegacyStartUpAccount(String exportKey, AccountID owner, String b64EncodedLoc) {
-		final var protoKey = registry.getKey(exportKey);
-		final var pubKeyBytes = protoKey.getEd25519().toByteArray();
-		final var hexedPubKey = com.swirlds.common.CommonUtils.hex(pubKeyBytes);
-		final var privKey = pkMap.get(hexedPubKey);
-
-		try {
-			final var b64Form = SpecUtils.ed25519KeyToOcKeystore((EdDSAPrivateKey) privKey, owner);
-			java.nio.file.Files.writeString(Paths.get(b64EncodedLoc), b64Form);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		final var genesisKey = payerKey(setup);
+		incorporate(setup.genesisAccountName(), genesisKey, KeyShape.listSigs(ON));
 	}
 
 	public void exportSimpleKey(final String loc, final String name) {
@@ -158,28 +132,19 @@ public class KeyFactory implements Serializable {
 		Ed25519Utils.writeKeyTo(key, loc, passphrase);
 	}
 
-	public void incorporateSimpleWacl(
-			String byName,
-			KeyPairObj kp
-	) throws InvalidKeySpecException, IllegalArgumentException {
-		incorporate(byName, kp, KeyShape.listOf(1));
+	public void incorporate(final String byName, final EdDSAPrivateKey key) {
+		incorporate(byName, key, ON);
 	}
 
-	public void incorporate(
-			String byName,
-			KeyPairObj kp
-	) throws InvalidKeySpecException, IllegalArgumentException {
-		incorporate(byName, kp, ON);
-	}
-
-	public void incorporate(
-			String byName,
-			KeyPairObj kp,
-			SigControl control
-	) throws InvalidKeySpecException, IllegalArgumentException {
-		String pubKeyHex = kp.getPublicKeyAbyteStr();
-		pkMap.put(pubKeyHex, kp.getPrivateKey());
+	public void incorporate(final String byName, final EdDSAPrivateKey key, final SigControl control) {
+		final var pubKeyHex = com.swirlds.common.CommonUtils.hex(key.getAbyte());
+		pkMap.put(pubKeyHex, key);
 		controlMap.put(registry.getKey(byName), control);
+	}
+
+	public void incorporateEd25519SimpleWacl(final String byName, final EdDSAPrivateKey key) {
+		final var pubKeyHex = com.swirlds.common.CommonUtils.hex(key.getAbyte());
+		incorporate(byName, pubKeyHex, key, KeyShape.listOf(1));
 	}
 
 	public void incorporate(
@@ -349,22 +314,16 @@ public class KeyFactory implements Serializable {
 		return key.hasKeyList() ? key.getKeyList() : key.getThresholdKey().getKeys();
 	}
 
-	public static KeyPairObj firstStartupKp(HapiSpecSetup setup) throws Exception {
-		if (StringUtils.isNotEmpty(setup.defaultPayerMnemonicFile())) {
-			var mnemonic = mnemonicFromFile(setup.defaultPayerMnemonicFile());
-			return asLegacyKp(SpecKey.mnemonicToEd25519Key(mnemonic));
+	public static EdDSAPrivateKey payerKey(HapiSpecSetup setup) throws Exception {
+		if (StringUtils.isNotEmpty(setup.defaultPayerKey())) {
+			return Ed25519Utils.keyFrom(com.swirlds.common.CommonUtils.unhex(setup.defaultPayerKey()));
 		} else if (StringUtils.isNotEmpty(setup.defaultPayerMnemonic())) {
-			return asLegacyKp(SpecKey.mnemonicToEd25519Key(setup.defaultPayerMnemonic()));
-		} else if (StringUtils.isNotEmpty(setup.defaultPayerPemKeyLoc())) {
-			var keyPair = SpecKey.readFirstKpFromPem(
-					new File(setup.defaultPayerPemKeyLoc()),
-					setup.defaultPayerPemKeyPassphrase());
-			return asLegacyKp(keyPair);
-		} else if (StringUtils.isNotEmpty(setup.startupAccountsLiteral())) {
-			Object keyStore = CommonUtils.convertFromBytes(CommonUtils.base64decode(setup.startupAccountsLiteral()));
-			return firstKpFrom(keyStore, setup.genesisStartupKey());
+			return mnemonicToEd25519Key(setup.defaultPayerMnemonic());
+		} else if (StringUtils.isNotEmpty(setup.defaultPayerMnemonicFile())) {
+			var mnemonic = mnemonicFromFile(setup.defaultPayerMnemonicFile());
+			return mnemonicToEd25519Key(mnemonic);
 		} else {
-			return firstListedKp(setup.startupAccountsPath(), setup.genesisStartupKey());
+			return Ed25519Utils.readKeyFrom(setup.defaultPayerPemKeyLoc(), setup.defaultPayerPemKeyPassphrase());
 		}
 	}
 
@@ -374,25 +333,6 @@ public class KeyFactory implements Serializable {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-	}
-
-	public static KeyPairObj firstListedKp(String accountInfoPath, String kpKey) throws Exception {
-		Object asObj = CommonUtils.convertFromBytes(asBase64Bytes(accountInfoPath));
-		return firstKpFrom(asObj, kpKey);
-	}
-
-	@SuppressWarnings("unchecked")
-	private static KeyPairObj firstKpFrom(Object keyStore, String name) {
-		return ((Map<String, List<AccountKeyListObj>>) keyStore)
-				.get(name)
-				.get(0)
-				.getKeyPairList()
-				.get(0);
-	}
-
-	private static byte[] asBase64Bytes(String path) throws Exception {
-		String text = new String(Files.toByteArray(new File(path)));
-		return CommonUtils.base64decode(text);
 	}
 
 	synchronized public Key generateSubjectTo(

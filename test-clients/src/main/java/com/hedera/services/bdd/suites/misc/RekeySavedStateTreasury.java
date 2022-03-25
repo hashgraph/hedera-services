@@ -21,9 +21,7 @@ package com.hedera.services.bdd.suites.misc;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -60,11 +57,10 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 	static final String devKeyPemLoc = "devGenesisKeypair.pem";
 
 	private HapiApiSpec rekeyTreasury() {
-		final var treasury = HapiPropertySource.asAccount("0.0.2");
 		final var pemLocForOriginalTreasuryKey = "stabletestnet-account2.pem";
 		final var passphraseForOriginalPemLoc = "<SECRET>";
 
-		final var hexedNewEd25519PrivateKey = CommonUtils.hex(randomUtf8Bytes(32));
+//		final var hexedNewEd25519PrivateKey = CommonUtils.hex(randomUtf8Bytes(32));
 		final var newTreasuryKey = "newTreasuryKey";
 
 		return customHapiSpec("RekeyTreasury")
@@ -79,15 +75,9 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 						keyFromPem(devKeyPemLoc)
 								.passphrase("passphrase")
 								.name(newTreasuryKey),
-						/* Use this for creating a new key */
 //						keyFromLiteral(newTreasuryKey, hexedNewEd25519PrivateKey),
-						withOpContext((spec, opLog) -> {
-							spec.keys().exportSimpleKeyAsLegacyStartUpAccount(
-									newTreasuryKey,
-									treasury,
-									newTreasuryStartUpAccountLoc);
-							spec.keys().exportSimpleKey(newTreasuryPemLoc, newTreasuryKey);
-						})
+						withOpContext((spec, opLog) ->
+								spec.keys().exportSimpleKey(newTreasuryPemLoc, newTreasuryKey))
 				).when().then(
 						cryptoUpdate(DEFAULT_PAYER).key(newTreasuryKey)
 				);

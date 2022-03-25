@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -158,7 +159,6 @@ import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferAndSubmitLoadTe
 import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.schedule.OnePendingSigScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXfersLoad;
-import com.hedera.services.bdd.suites.perf.token.AdHocTokenTransfers;
 import com.hedera.services.bdd.suites.perf.token.TokenCreatePerfSuite;
 import com.hedera.services.bdd.suites.perf.token.TokenRelStatusChanges;
 import com.hedera.services.bdd.suites.perf.token.TokenTransferBasicLoadTest;
@@ -566,7 +566,6 @@ class E2EPackageRunner {
 	@TestFactory
 	Collection<DynamicContainer> perfToken() {
 		return List.of(
-				extractSpecsFromSuite(AdHocTokenTransfers::new),
 				extractSpecsFromSuite(TokenCreatePerfSuite::new),
 				extractSpecsFromSuite(TokenRelStatusChanges::new),
 				extractSpecsFromSuite(TokenTransferBasicLoadTest::new),
