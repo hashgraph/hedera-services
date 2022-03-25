@@ -41,8 +41,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -59,7 +61,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final ApproveAllowanceChecks allowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Map<Long, Account> entitiesChanged;
-	private final List<UniqueToken> nftsTouched;
+	private final Set<UniqueToken> nftsTouched;
 
 	@Inject
 	public CryptoApproveAllowanceTransitionLogic(
@@ -74,7 +76,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		this.allowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
 		this.entitiesChanged = new HashMap<>();
-		this.nftsTouched = new ArrayList<>();
+		this.nftsTouched = new HashSet<>();
 	}
 
 	@Override
@@ -95,8 +97,10 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		applyFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
 		applyNftAllowances(op.getNftAllowancesList(), payerAccount);
 
-		/* --- Persist the payer account --- */
-		tokenStore.persistNfts(nftsTouched);
+		/* --- Persist the entities --- */
+		for (final var nft : nftsTouched) {
+			tokenStore.persistNft(nft);
+		}
 		for (final var entry : entitiesChanged.entrySet()) {
 			accountStore.commitAccount(entry.getValue());
 		}
@@ -195,13 +199,15 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				approveForAllNftsSet.add(key);
 			}
 
+			final var nfts = new ArrayList<UniqueToken>();
 			for (var serialNum : serialNums) {
 				final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum);
 				nft.setSpender(spender);
-				nftsTouched.add(nft);
+				nfts.add(nft);
 			}
 
 			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
+			nftsTouched.addAll(nfts);
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 		}
 	}

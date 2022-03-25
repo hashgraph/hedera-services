@@ -504,7 +504,8 @@ class TypedTokenStoreTest {
 		given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
 		given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
 
-		subject.persistNfts(List.of(nft1, nft2));
+		subject.persistNft(nft1);
+		subject.persistNft(nft2);
 
 		mut1.setSpender(autoRenewId.asEntityId());
 		mut2.setSpender(autoRenewId.asEntityId());

@@ -67,12 +67,12 @@ public class FcTokenAllowance implements SelfSerializable {
 
 	FcTokenAllowance(final boolean approvedForAll) {
 		this.approvedForAll = approvedForAll;
-		/* serialNums is null*/
+		this.serialNumbers = Collections.emptyList();
 	}
 
 	FcTokenAllowance(final List<Long> serialNumbers) {
 		this.serialNumbers = serialNumbers;
-		/* approvedForAll is false */
+		this.approvedForAll = false;
 	}
 
 	@Override
@@ -139,7 +139,7 @@ public class FcTokenAllowance implements SelfSerializable {
 	}
 
 	public void addSerialNumber(long serialNum) {
-		if (serialNumbers == null) {
+		if (serialNumbers.equals(Collections.emptyList())) {
 			serialNumbers = new ArrayList<>();
 		}
 		serialNumbers.add(serialNum);

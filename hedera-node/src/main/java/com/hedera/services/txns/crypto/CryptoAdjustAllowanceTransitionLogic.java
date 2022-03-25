@@ -42,8 +42,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -61,7 +63,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final Map<Long, Account> entitiesChanged;
-	private final List<UniqueToken> nftsTouched;
+	private final Set<UniqueToken> nftsTouched;
 
 	@Inject
 	public CryptoAdjustAllowanceTransitionLogic(
@@ -78,7 +80,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.entitiesChanged = new HashMap<>();
-		this.nftsTouched = new ArrayList<>();
+		this.nftsTouched = new HashSet<>();
 	}
 
 	@Override
@@ -99,8 +101,10 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		adjustFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
 		adjustNftAllowances(op.getNftAllowancesList(), payerAccount);
 
-		/* --- Persist the owner account --- */
-		tokenStore.persistNfts(nftsTouched);
+		/* --- Persist the entities --- */
+		for (final var nft : nftsTouched) {
+			tokenStore.persistNft(nft);
+		}
 		for (final var entry : entitiesChanged.entrySet()) {
 			accountStore.commitAccount(entry.getValue());
 		}
@@ -212,14 +216,17 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			} else {
 				mutableApprovedForAllNftsAllowances.remove(key);
 			}
+
+			final var nfts = new ArrayList<UniqueToken>();
 			for (var serialNum : serialNums) {
 				final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum);
 				nft.setSpender(spender);
-				nftsTouched.add(nft);
+				nfts.add(nft);
 			}
 			validateAllowanceLimitsOn(accountToAdjust);
+			nftsTouched.addAll(nfts);
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-			sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), mutableApprovedForAllNftsAllowances, nftsTouched);
+			sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), mutableApprovedForAllNftsAllowances, nfts);
 		}
 	}
 

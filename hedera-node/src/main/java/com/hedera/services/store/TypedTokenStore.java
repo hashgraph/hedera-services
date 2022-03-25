@@ -443,14 +443,12 @@ public class TypedTokenStore {
 		sideEffectsTracker.trackTokenChanges(token);
 	}
 
-	public void persistNfts(List<UniqueToken> nfts) {
-		for (final var nft :nfts) {
-			final var tokenId = nft.getTokenId();
-			final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), nft.getSerialNumber());
-			final var mutableNft = uniqueTokens.getRef(nftId);
-			mapModelChanges(nft, mutableNft);
-			uniqueTokens.put(nftId, mutableNft);
-		}
+	public void persistNft(UniqueToken nft) {
+		final var tokenId = nft.getTokenId();
+		final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), nft.getSerialNumber());
+		final var mutableNft = uniqueTokens.getRef(nftId);
+		mapModelChanges(nft, mutableNft);
+		uniqueTokens.put(nftId, mutableNft);
 	}
 
 	private void destroyRemoved(List<UniqueToken> nfts) {
