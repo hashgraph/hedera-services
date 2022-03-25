@@ -298,12 +298,82 @@ class EvmFnResultTest {
 				stateChanges,
 				gas,
 				amount,
-				"randomFunctionParameters".getBytes());
+				functionParameters);
+		final var five = new EvmFnResult(
+				contractId,
+				result,
+				"AnotherError",
+				bloom,
+				gasUsed,
+				logs,
+				createdContractIds,
+				evmAddress,
+				stateChanges,
+				gas,
+				amount,
+				functionParameters);
+		final var six = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				List.of(logFrom(1)),
+				createdContractIds,
+				evmAddress,
+				stateChanges,
+				gas,
+				amount,
+				functionParameters);
+		final var seven = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				logs,
+				List.of(new EntityId(1L, 1L, 42L)),
+				evmAddress,
+				stateChanges,
+				gas,
+				amount,
+				functionParameters);
+		final var eight = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				logs,
+				createdContractIds,
+				evmAddress,
+				Collections.emptyMap(),
+				gas,
+				amount,
+				functionParameters);
+		final var nine = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				logs,
+				createdContractIds,
+				evmAddress,
+				stateChanges,
+				gas,
+				amount,
+				"randomParameters".getBytes());
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
 		assertNotEquals(one, two);
 		assertNotEquals(one, four);
+		assertNotEquals(one, five);
+		assertNotEquals(one, six);
+		assertNotEquals(one, seven);
+		assertNotEquals(one, eight);
+		assertNotEquals(one, nine);
 		assertEquals(one, three);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
