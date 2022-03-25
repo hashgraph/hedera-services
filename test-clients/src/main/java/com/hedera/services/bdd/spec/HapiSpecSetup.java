@@ -352,9 +352,6 @@ public class HapiSpecSetup {
 	public Integer port() {
 		return props.getInteger("port");
 	}
-	public String startupAccountsPath() {
-		return props.get("startupAccounts.path");
-	}
 	public boolean statusDeferredResolvesDoAsync() {
 		return props.getBoolean("status.deferredResolves.doAsync");
 	}

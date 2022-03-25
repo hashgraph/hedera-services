@@ -179,7 +179,6 @@ import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite
 import com.hedera.services.bdd.suites.regression.SplittingThrottlesWorks;
 import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
-import com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecStateful;
@@ -607,8 +606,7 @@ class E2EPackageRunner {
 		return List.of(
 				extractSpecsFromSuite(SplittingThrottlesWorks::new),
 				extractSpecsFromSuite(SteadyStateThrottlingCheck::new),
-				extractSpecsFromSuite(UmbrellaRedux::new),
-				extractSpecsFromSuite(UmbrellaReduxWithCustomNodes::new)
+				extractSpecsFromSuite(UmbrellaRedux::new)
 		);
 	}
 

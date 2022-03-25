@@ -52,8 +52,8 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 		);
 	}
 
-	static final String newTreasuryStartUpAccountLoc = "DevStableTestnetStartUpAccount.txt";
 	static final String newTreasuryPemLoc = "dev-stabletestnet-account2.pem";
+	static final String newTreasuryPassphrase = "passphrase";
 	static final String devKeyPemLoc = "devGenesisKeypair.pem";
 
 	private HapiApiSpec rekeyTreasury() {
@@ -73,7 +73,7 @@ public class RekeySavedStateTreasury extends HapiApiSuite {
 				.given(
 						/* Use this for reusing the pem file. */
 						keyFromPem(devKeyPemLoc)
-								.passphrase("passphrase")
+								.passphrase(newTreasuryPassphrase)
 								.name(newTreasuryKey),
 //						keyFromLiteral(newTreasuryKey, hexedNewEd25519PrivateKey),
 						withOpContext((spec, opLog) ->
