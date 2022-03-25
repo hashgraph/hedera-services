@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.utils.keypairs;
  * ‍
  */
 
+import com.hedera.services.keys.Ed25519Utils;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -41,17 +42,16 @@ import static java.nio.file.Files.newBufferedWriter;
 
 public class SpecUtils {
 	public static String asSerializedOcKeystore(
-			File aes256EncryptedPkcs8Pem,
-			String passphrase,
-			AccountID id
-	) throws KeyStoreException, IOException {
-		var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
-		return asSerializedOcKeystore(keyStore.get(0), id);
+			final File aes256EncryptedPkcs8Pem,
+			final String passphrase,
+			final AccountID id
+	) throws IOException {
+		final var key = Ed25519Utils.readKeyFrom(aes256EncryptedPkcs8Pem, passphrase);
+		return asSerializedOcKeystore(Ed25519Utils.keyPairFrom(key), id);
 	}
 
 	public static KeyPairObj asOcKeystore(File aes256EncryptedPkcs8Pem, String passphrase) throws KeyStoreException {
-		var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
-		var keyPair = keyStore.get(0);
+		final var keyPair = Ed25519Utils.readKeyPairFrom(aes256EncryptedPkcs8Pem, passphrase);
 		return new KeyPairObj(
 				com.swirlds.common.CommonUtils.hex(keyPair.getPublic().getEncoded()),
 				com.swirlds.common.CommonUtils.hex(keyPair.getPrivate().getEncoded()));
@@ -89,9 +89,9 @@ public class SpecUtils {
 			File aes256EncryptedPkcs8Pem,
 			String passphrase,
 			AccountID id
-	) throws KeyStoreException, IOException {
-		var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), aes256EncryptedPkcs8Pem);
-		return asSerializedLegacyOcKeystore(keyStore.get(0), id);
+	) throws IOException {
+		final var keyPair = Ed25519Utils.readKeyPairFrom(aes256EncryptedPkcs8Pem, passphrase);
+		return asSerializedLegacyOcKeystore(keyPair, id);
 	}
 
 	public static String asSerializedLegacyOcKeystore(KeyPair keyPair, AccountID id) throws IOException {

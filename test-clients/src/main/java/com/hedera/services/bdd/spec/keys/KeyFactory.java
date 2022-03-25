@@ -26,9 +26,8 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.persistence.SpecKey;
-import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
-import com.hedera.services.bdd.suites.utils.keypairs.Ed25519PrivateKey;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
+import com.hedera.services.keys.Ed25519Utils;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.CommonUtils;
 import com.hedera.services.legacy.core.KeyPairObj;
@@ -59,7 +58,6 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.file.Paths;
-import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.spec.InvalidKeySpecException;
@@ -124,50 +122,40 @@ public class KeyFactory implements Serializable {
 		}
 	}
 
-	public void exportSimpleKey(
-			String loc,
-			String name
-	) throws KeyStoreException {
+	public void exportSimpleKey(final String loc, final String name) {
 		exportSimpleKey(loc, name, key -> key.getEd25519().toByteArray());
 	}
 
 	public void exportSimpleKey(
-			String loc,
-			String name,
-			String passphrase
-	) throws KeyStoreException {
+			final String loc,
+			final String name,
+			final String passphrase
+	) {
 		exportSimpleKey(loc, name, key -> key.getEd25519().toByteArray(), passphrase);
 	}
 
-	public void exportSimpleWacl(
-			String loc,
-			String name
-	) throws KeyStoreException {
+	public void exportSimpleWacl(final String loc, final String name) {
 		exportSimpleKey(loc, name, key -> key.getKeyList().getKeys(0).getEd25519().toByteArray());
 	}
 
 	public void exportSimpleKey(
-			String loc,
-			String name,
-			Function<Key, byte[]> targetKeyExtractor
-	) throws KeyStoreException {
+			final String loc,
+			final String name,
+			final Function<Key, byte[]> targetKeyExtractor
+	) {
 		exportSimpleKey(loc, name, targetKeyExtractor, PEM_PASSPHRASE);
 	}
 
 	public void exportSimpleKey(
-			String loc,
-			String name,
-			Function<Key, byte[]> targetKeyExtractor,
-			String passphrase
-	) throws KeyStoreException {
-		var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
-		var hexedPubKey = com.swirlds.common.CommonUtils.hex(pubKeyBytes);
-
-		var privateKey = pkMap.get(hexedPubKey);
-
-		var store = new Ed25519KeyStore.Builder().withPassword(passphrase.toCharArray()).build();
-		store.insertNewKeyPair(Ed25519PrivateKey.fromBytes(privateKey.getEncoded()));
-		store.write(new File(loc));
+			final String loc,
+			final String name,
+			final Function<Key, byte[]> targetKeyExtractor,
+			final String passphrase
+	) {
+		final var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
+		final var hexedPubKey = com.swirlds.common.CommonUtils.hex(pubKeyBytes);
+		final var key = (EdDSAPrivateKey) pkMap.get(hexedPubKey);
+		Ed25519Utils.writeKeyTo(key, loc, passphrase);
 	}
 
 	public void incorporateSimpleWacl(
@@ -426,7 +414,7 @@ public class KeyFactory implements Serializable {
 
 	private class Generation {
 		private final SigControl.KeyAlgo[] algoChoices = {
-			SigControl.KeyAlgo.ED25519, SigControl.KeyAlgo.SECP256K1
+				SigControl.KeyAlgo.ED25519, SigControl.KeyAlgo.SECP256K1
 		};
 
 		private final KeyLabel labels;
@@ -516,9 +504,9 @@ public class KeyFactory implements Serializable {
 			Assertions.assertEquals(ls.length, cs.length, "Incompatible ls and cs!");
 			int N = ls.length;
 			return KeyList.newBuilder().addAllKeys(
-					IntStream.range(0, N)
-							.mapToObj(i -> generate(cs[i], ls[i], false))
-							.collect(toList()))
+							IntStream.range(0, N)
+									.mapToObj(i -> generate(cs[i], ls[i], false))
+									.collect(toList()))
 					.build();
 		}
 	}

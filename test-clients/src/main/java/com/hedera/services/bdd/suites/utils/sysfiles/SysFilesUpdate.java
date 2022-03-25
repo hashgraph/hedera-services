@@ -29,9 +29,9 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
 import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.JutilPropsToSvcCfgBytes;
+import com.hedera.services.keys.Ed25519Utils;
 import com.hedera.services.legacy.core.AccountKeyListObj;
 import com.hedera.services.legacy.core.KeyPairObj;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
@@ -510,9 +510,7 @@ public class SysFilesUpdate extends HapiApiSuite {
 		var passphrase = Optional.ofNullable(System.getenv("PEM_PASSPHRASE")).orElse("swirlds");
 		try {
 			var keyPairFile = new File(startupAccountsPathOverride);
-			var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), pemFile);
-			var keyPair = keyStore.get(0);
-
+			final var keyPair = Ed25519Utils.readKeyPairFrom(pemFile, passphrase);
 			writeB64EncodedKeyPair(keyPairFile, keyPair);
 		} catch (Exception e) {
 			System.out.println("Could not encode '" + pemFile.toString() + "' as a usable keypair!");

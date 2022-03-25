@@ -1,10 +1,11 @@
 # Key files
 *.pem
-*.pass
-*.words
-!hedera-node/data/onboard/devGenesisKeypair.pem
 !test-clients/yahcli/localhost/keys/*.pem
+!hapi-utils/src/test/resources/vectors/genesis.pem
+!hedera-node/data/onboard/devGenesisKeypair.pem
+*.pass
 !test-clients/yahcli/localhost/keys/*.pass
+*.words
 
 # Yahcli
 test-clients/yahcli/assets/yahcli.jar
