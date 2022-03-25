@@ -67,7 +67,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final int RELEASE_0190_VERSION = 5;
 	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
-	static final int CURRENT_VERSION = RELEASE_0240_VERSION;
+	static final int RELEASE_0250_VERSION = 8;
+	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
@@ -94,6 +95,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 	private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
+	private long blockNo = 0;
+	private Instant firstConsTimeOfCurrentBlock = NULL_CONSENSUS_TIME;
 
 	public MerkleNetworkContext() {
 		/* No-op for RuntimeConstructable facility; will be followed by a call to deserialize. */
@@ -127,6 +130,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.preparedUpdateFileNum = that.preparedUpdateFileNum;
 		this.preparedUpdateFileHash = that.preparedUpdateFileHash;
 		this.migrationRecordsStreamed = that.migrationRecordsStreamed;
+		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
+		this.blockNo = that.blockNo;
 	}
 
 	/* --- Helpers that reset the received argument based on the network context */
@@ -260,6 +265,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0240_VERSION) {
 			migrationRecordsStreamed = in.readBoolean();
 		}
+		if (version >= RELEASE_0250_VERSION) {
+			final var firstBlockTime = serdes.readNullableInstant(in);
+			firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
+			blockNo = in.readLong();
+		}
 	}
 
 	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
@@ -321,6 +331,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeLong(gasThrottleUsageSnapshot.used());
 		serdes.writeNullableInstant(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out);
 		out.writeBoolean(migrationRecordsStreamed);
+		serdes.writeNullableInstant(fromJava(firstConsTimeOfCurrentBlock), out);
+		out.writeLong(blockNo);
 	}
 
 	@Override
@@ -368,6 +380,22 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				usageSnapshotsDesc() +
 				"\n  Congestion level start times are           ::" +
 				congestionStartsDesc();
+	}
+
+	public void incrementBlockNo() {
+		blockNo++;
+	}
+
+	public long getBlockNo() {
+		return blockNo;
+	}
+
+	public Instant getFirstConsTimeOfCurrentBlock() {
+		return firstConsTimeOfCurrentBlock;
+	}
+
+	public void setFirstConsTimeOfCurrentBlock(Instant firstConsTimeOfCurrentBlock) {
+		this.firstConsTimeOfCurrentBlock = firstConsTimeOfCurrentBlock;
 	}
 
 	private String usageSnapshotsDesc() {

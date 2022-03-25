@@ -413,6 +413,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				/* This was an upgrade, discard now-obsolete preparation state */
 				networkCtx().discardPreparedUpgradeMeta();
 				dualState.setFreezeTime(null);
+				System.out.println("START OVER START OVER START OVER");
+				networkCtx().setFirstConsTimeOfCurrentBlock(null);
 			}
 			if (stateVersion < CURRENT_VERSION) {
 				// Only signal the MigrationRecordsManager to re-run if this is an upgrade

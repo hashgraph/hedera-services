@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -100,6 +101,8 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_CREATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_FACTORY_BUILD_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SALTING_CREATOR_FACTORY_PATH;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SELF_ASSOC_CONS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SELF_ASSOC_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.START_CHAIN_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_GET_BALANCE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TEST_CONTRACT_VACATE_ADDRESS_ABI;
@@ -200,17 +203,18 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> create2Specs() {
 		return List.of(new HapiApiSpec[] {
-						create2FactoryWorksAsExpected(),
-						canDeleteViaAlias(),
-						cannotSelfDestructToMirrorAddress(),
-						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
-						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
-						canUseAliasesInPrecompilesAndContractKeys(),
-						inlineCreateCanFailSafely(),
-						inlineCreate2CanFailSafely(),
-						allLogOpcodesResolveExpectedContractId(),
-						eip1014AliasIsPriorityInErcOwnerPrecompile(),
+//						create2FactoryWorksAsExpected(),
+//						canDeleteViaAlias(),
+//						cannotSelfDestructToMirrorAddress(),
+//						priorityAddressIsCreate2ForStaticHapiCalls(),
+//						priorityAddressIsCreate2ForInternalMessages(),
+//						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
+//						canUseAliasesInPrecompilesAndContractKeys(),
+//						inlineCreateCanFailSafely(),
+//						inlineCreate2CanFailSafely(),
+//						allLogOpcodesResolveExpectedContractId(),
+//						eip1014AliasIsPriorityInErcOwnerPrecompile(),
+						canAssociateInConstructor(),
 				}
 		);
 	}
@@ -378,6 +382,33 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								log.info("Next entity num was {} instead of expected {}",
 										id.getAccountNum(),
 										factoryEntityNum.get() + 1)))
+				);
+	}
+
+	private HapiApiSpec canAssociateInConstructor() {
+		final var initcode = "initcode";
+		final var token = "token";
+		final var contract = "contract";
+		final var creation = "creation";
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+
+		return defaultHapiSpec("CanAssociateInConstructor")
+				.given(
+						fileCreate(initcode).path(SELF_ASSOC_PATH),
+						tokenCreate(token)
+								.exposingCreatedIdTo(id -> tokenMirrorAddr.set(hex(asAddress(HapiPropertySource.asToken(id)))))
+				).when(
+						sourcing(() -> contractCreate(
+								contract, SELF_ASSOC_CONS_ABI, tokenMirrorAddr.get()
+						)
+								.payingWith(GENESIS)
+								.omitAdminKey()
+								.bytecode(initcode)
+								.gas(4_000_000)
+								.via(creation))
+				).then(
+//						tokenDissociate(contract, token)
+						getContractInfo(contract).logged()
 				);
 	}
 

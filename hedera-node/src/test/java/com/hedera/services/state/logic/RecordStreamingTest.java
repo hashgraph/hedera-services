@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
@@ -63,12 +64,14 @@ class RecordStreamingTest {
 	private RecordStreamObject secondFollowingChildRso;
 	@Mock
 	private RecordStreamObject firstPrecedingChildRso;
+	@Mock
+	private MerkleNetworkContext networkCtx;
 
 	private RecordStreaming subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RecordStreaming(txnCtx, nonBlockingHandoff, runningHashUpdate, recordsHistorian);
+		subject = new RecordStreaming(txnCtx, nonBlockingHandoff, runningHashUpdate, recordsHistorian, () -> networkCtx);
 	}
 
 	@Test
