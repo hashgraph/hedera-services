@@ -19,8 +19,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -33,6 +35,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	private final TypedTokenStore tokenStore;
 	private final DeleteAllowanceChecks allowanceChecks;
 	private final Map<Long, Account> entitiesChanged;
+	private final Set<UniqueToken> nftsTouched;
 
 	@Inject
 	public CryptoDeleteAllowanceTransitionLogic(
@@ -45,6 +48,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		this.allowanceChecks = allowanceChecks;
 		this.tokenStore = tokenStore;
 		this.entitiesChanged = new HashMap<>();
+		this.nftsTouched = new HashSet<>();
 	}
 
 	@Override
@@ -54,6 +58,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		final AccountID payer = cryptoDeleteAllowanceTxn.getTransactionID().getAccountID();
 		final var op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
 		entitiesChanged.clear();
+		nftsTouched.clear();
 
 		/* --- Use models --- */
 		final Id payerId = Id.fromGrpcAccount(payer);
@@ -64,7 +69,10 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		deleteFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
 		deleteNftSerials(op.getNftAllowancesList());
 
-		/* --- Persist the owner accounts and tokens --- */
+		/* --- Persist the owner accounts and nfts --- */
+		for (final var nft : nftsTouched) {
+			tokenStore.persistNft(nft);
+		}
 		for (final var entry : entitiesChanged.entrySet()) {
 			accountStore.commitAccount(entry.getValue());
 		}
@@ -87,7 +95,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 				token.clearSpender();
 				nfts.add(token);
 			}
-			tokenStore.persistNfts(nfts);
+			nftsTouched.addAll(nfts);
 			nfts.clear();
 		}
 	}

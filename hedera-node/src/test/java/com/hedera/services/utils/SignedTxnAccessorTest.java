@@ -633,7 +633,7 @@ class SignedTxnAccessorTest {
 
 		final var expandedMeta = spanMapAccessor.getCryptoDeleteAllowanceMeta(accessor);
 
-		assertEquals(96, expandedMeta.getMsgBytesUsed());
+		assertEquals(136, expandedMeta.getMsgBytesUsed());
 		assertEquals(now, expandedMeta.getEffectiveNow());
 	}
 

@@ -21,6 +21,7 @@ package com.hedera.services.store.models;
  */
 
 import com.hedera.services.state.submerkle.RichInstant;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Encapsulates the state and operations of a Hedera Unique token.
@@ -101,6 +102,14 @@ public class UniqueToken {
 
 	public void setMetadata(byte[] metadata) {
 		this.metadata = metadata;
+	}
+
+	@Override
+	public int hashCode() {
+		return new HashCodeBuilder()
+				.append(tokenId)
+				.append(serialNumber)
+				.toHashCode();
 	}
 
 	public void clearSpender() {

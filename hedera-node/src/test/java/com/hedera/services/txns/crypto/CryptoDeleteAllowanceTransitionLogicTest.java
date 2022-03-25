@@ -65,9 +65,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -123,7 +126,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
 		assertEquals(1, ownerAccount.getApprovedForAllNftsAllowances().size());
 
-		verify(tokenStore).persistNfts(anyList());
+		verify(tokenStore, times(2)).persistNft(any());
 		verify(accountStore).commitAccount(ownerAccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
@@ -152,7 +155,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 
 		subject.doStateTransition();
 
-		verify(tokenStore, never()).persistNfts(anyList());
+		verify(tokenStore, never()).persistNft(any());
 		verify(accountStore).commitAccount(ownerAccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
@@ -187,7 +190,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		assertEquals(0, payerAccount.getFungibleTokenAllowances().size());
 		assertEquals(1, payerAccount.getApprovedForAllNftsAllowances().size());
 
-		verify(tokenStore).persistNfts(anyList());
+		verify(tokenStore, times(2)).persistNft(any());
 		verify(accountStore).commitAccount(payerAccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}

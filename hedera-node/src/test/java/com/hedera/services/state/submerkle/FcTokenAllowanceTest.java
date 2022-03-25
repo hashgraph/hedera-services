@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hedera.services.state.submerkle.FcTokenAllowance.DEFAULT_SERIAL_NUMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
@@ -113,7 +114,7 @@ class FcTokenAllowanceTest {
 		subject.serialize(out);
 
 		inOrder.verify(out).writeBoolean(true);
-		inOrder.verify(out).writeLongList(null);
+		inOrder.verify(out).writeLongList(DEFAULT_SERIAL_NUMS);
 	}
 
 	@Test
@@ -122,7 +123,7 @@ class FcTokenAllowanceTest {
 		final var in = mock(SerializableDataInputStream.class);
 		final var newSubject = new FcTokenAllowance();
 		given(in.readBoolean()).willReturn(true);
-		given(in.readLongList(Integer.MAX_VALUE)).willReturn(null);
+		given(in.readLongList(Integer.MAX_VALUE)).willReturn(DEFAULT_SERIAL_NUMS);
 
 		newSubject.deserialize(in, FcTokenAllowance.CURRENT_VERSION);
 
@@ -160,7 +161,7 @@ class FcTokenAllowanceTest {
 		final var withSerials = FcTokenAllowance.from(List.of(1L, 2L));
 
 		assertEquals(true, withApprovalForAll.isApprovedForAll());
-		assertEquals(null, withApprovalForAll.getSerialNumbers());
+		assertEquals(DEFAULT_SERIAL_NUMS, withApprovalForAll.getSerialNumbers());
 
 		assertEquals(false, withSerials.isApprovedForAll());
 		assertEquals(List.of(1L, 2L), withSerials.getSerialNumbers());

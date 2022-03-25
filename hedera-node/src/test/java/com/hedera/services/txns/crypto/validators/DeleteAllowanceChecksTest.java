@@ -172,6 +172,8 @@ class DeleteAllowanceChecksTest {
 		cryptoAllowances.add(cryptoAllowance1);
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 
 		final var validity = subject.deleteAllowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, payer);
 
@@ -300,6 +302,8 @@ class DeleteAllowanceChecksTest {
 
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(payerId));
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(owner);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 
 		cryptoDeleteAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -390,6 +394,8 @@ class DeleteAllowanceChecksTest {
 
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		assertEquals(OK, subject.deleteAllowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), payer));
 	}
