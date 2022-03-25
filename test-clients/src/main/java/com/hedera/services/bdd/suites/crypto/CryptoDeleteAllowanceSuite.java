@@ -329,15 +329,40 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.blankMemo()
 								.addTokenDeleteAllowance(MISSING_OWNER, token)
 								.via("baseDeleteToken"),
-						validateChargedUsdWithin("baseDeleteToken", 0.05005137960000001, 0.01),
+						validateChargedUsdWithin("baseDeleteToken", 0.0503082888, 0.01),
 						cryptoDeleteAllowance()
 								.payingWith(owner)
 								.blankMemo()
 								.addNftDeleteAllowance(MISSING_OWNER, nft, List.of(1L))
 								.via("baseDeleteNft"),
-						validateChargedUsdWithin("baseDeleteNft", 0.050154142799999996, 0.01)
+						validateChargedUsdWithin("baseDeleteNft", 0.050411052000000005, 0.01)
 				)
 				.then(
+						cryptoAdjustAllowance()
+								.payingWith(owner)
+								.addCryptoAllowance(owner, "spender2", 100L)
+								.addTokenAllowance(owner, token, "spender2", 100L)
+								.addNftAllowance(owner, nft, "spender2", false, List.of(1L)),
+						/*--- with specifying owner */
+						cryptoDeleteAllowance()
+								.payingWith(owner)
+								.addCryptoDeleteAllowance(owner)
+								.blankMemo()
+								.via("baseDelete"),
+						validateChargedUsdWithin("baseDelete", 0.05, 0.01),
+						cryptoDeleteAllowance()
+								.payingWith(owner)
+								.blankMemo()
+								.addTokenDeleteAllowance(owner, token)
+								.via("baseDeleteToken"),
+						validateChargedUsdWithin("baseDeleteToken", 0.0503082888, 0.01),
+						cryptoDeleteAllowance()
+								.payingWith(owner)
+								.blankMemo()
+								.addNftDeleteAllowance(owner, nft, List.of(1L))
+								.via("baseDeleteNft"),
+						validateChargedUsdWithin("baseDeleteNft", 0.050411052000000005, 0.01),
+
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.blankMemo()
@@ -346,26 +371,32 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.addNftAllowance(owner, nft, "spender2", false, List.of(1L)),
 						/*--- by specifying owner */
 						cryptoDeleteAllowance()
+								.payingWith(owner) // owner = 0.0499999968
+								.addCryptoDeleteAllowance(owner)
+								.signedBy(owner, payer)
+								.blankMemo()
+								.via("baseDelete1"),
+						cryptoDeleteAllowance()
 								.payingWith(payer) // owner = 0.0499999968
 								.addCryptoDeleteAllowance(owner)
 								.signedBy(owner, payer)
 								.blankMemo()
 								.via("baseDelete1"),
-						validateChargedUsdWithin("baseDelete1", 0.0814964604, 0.01),
+						validateChargedUsdWithin("baseDelete1", 0.08152215, 0.05),
 						cryptoDeleteAllowance()
 								.payingWith(payer)
 								.blankMemo()
 								.addTokenDeleteAllowance(owner, token)
 								.signedBy(owner, payer)
 								.via("baseDeleteToken1"),
-						validateChargedUsdWithin("baseDeleteToken1", 0.081547842, 0.01),
+						validateChargedUsdWithin("baseDeleteToken1", 0.0818, 0.01),
 						cryptoDeleteAllowance()
 								.payingWith(payer)
 								.blankMemo()
 								.addNftDeleteAllowance(owner, nft, List.of(1L))
 								.signedBy(owner, payer)
 								.via("baseDeleteNft1"),
-						validateChargedUsdWithin("baseDeleteNft1", 0.0816506064, 0.01),
+						validateChargedUsdWithin("baseDeleteNft1", 0.0819, 0.01),
 
 						/*-- combination with owner */
 						cryptoAdjustAllowance()
@@ -380,7 +411,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.signedBy(owner, payer)
 								.blankMemo()
 								.via("baseDeleteTokenNft"),
-						validateChargedUsdWithin("baseDeleteTokenNft", 0.0820102788, 0.01),
+						validateChargedUsdWithin("baseDeleteTokenNft", 0.0825240972, 0.01),
 
 						cryptoAdjustAllowance()
 								.payingWith(owner)
@@ -395,7 +426,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.signedBy(owner, payer)
 								.blankMemo()
 								.via("baseDeleteCryptoToken"),
-						validateChargedUsdWithin("baseDeleteCryptoToken", 0.081856134, 0.01),
+						validateChargedUsdWithin("baseDeleteCryptoToken", 0.0821130, 0.01),
 
 						cryptoAdjustAllowance()
 								.payingWith(owner)
@@ -409,7 +440,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.signedBy(owner, payer)
 								.blankMemo()
 								.via("baseDeleteCryptoNft"),
-						validateChargedUsdWithin("baseDeleteCryptoNft", 0.0819588972, 0.01),
+						validateChargedUsdWithin("baseDeleteCryptoNft", 0.082216, 0.01),
 
 						cryptoAdjustAllowance()
 								.payingWith(owner)
@@ -424,7 +455,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.signedBy(owner, payer)
 								.blankMemo()
 								.via("baseDeleteCryptoNftToken"),
-						validateChargedUsdWithin("baseDeleteCryptoNftToken", 0.0823185696, 0.01)
+						validateChargedUsdWithin("baseDeleteCryptoNftToken", 0.08283, 0.01)
 				);
 	}
 
@@ -1227,7 +1258,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.via("cryptoDeleteAllowanceTxn")
 								.logged(),
 						getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
-						validateChargedUsdWithin("cryptoDeleteAllowanceTxn", 0.0508221072, 0.01),
+						validateChargedUsdWithin("cryptoDeleteAllowanceTxn", 0.0513359, 0.01),
 						getAccountInfo(owner)
 								.has(accountWith().noAllowances()),
 						getTokenNftInfo(nft, 1L).hasNoSpender());
