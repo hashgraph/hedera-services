@@ -538,9 +538,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final Optional<ResponseCodeEnum> errorStatus,
 			final MessageFrame messageFrame
 	) {
-		// Add additional values for traceability when the transaction body is not ContractCall or ContractCreate
-		// Currently, all but the `ERCReadOnlyAbstractPrecompile` precompiles fall into this category
-		final var shouldEnrichForTraceability = !(this.precompile instanceof ERCReadOnlyAbstractPrecompile);
 		if (dynamicProperties.shouldExportPrecompileResults()) {
 			final var evmFnResult = new EvmFnResult(
 					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
@@ -552,9 +549,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					Collections.emptyList(),
 					EvmFnResult.EMPTY,
 					Collections.emptyMap(),
-					shouldEnrichForTraceability ? messageFrame.getRemainingGas().toLong() : 0L,
-					shouldEnrichForTraceability ? messageFrame.getValue().toLong() : 0L,
-					shouldEnrichForTraceability ? messageFrame.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY);
+					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getRemainingGas().toLong() : 0L,
+					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getValue().toLong() : 0L,
+					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getInputData().toArrayUnsafe() :
+							EvmFnResult.EMPTY);
 			childRecord.setContractCallResult(evmFnResult);
 		}
 	}
@@ -655,6 +653,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		default List<FcAssessedCustomFee> getCustomFees() {
 			return NO_CUSTOM_FEES;
+		}
+
+		default boolean shouldAddTraceabilityFieldsToRecord() {
+			return true;
 		}
 	}
 
@@ -1079,6 +1081,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			return 100;
+		}
+
+		@Override
+		public boolean shouldAddTraceabilityFieldsToRecord() {
+			return false;
 		}
 	}
 
