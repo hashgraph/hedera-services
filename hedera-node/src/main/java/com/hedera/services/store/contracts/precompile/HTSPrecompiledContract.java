@@ -507,17 +507,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
 
 			result = precompile.getSuccessResultFor(childRecord);
-			addContractCallResultToRecord(childRecord, result, Optional.empty());
+			addContractCallResultToRecord(childRecord, result, Optional.empty(), frame);
 		} catch (InvalidTransactionException e) {
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = precompile.getFailureResultFor(status);
-			addContractCallResultToRecord(childRecord, result, Optional.of(status));
+			addContractCallResultToRecord(childRecord, result, Optional.of(status), frame);
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
 			result = precompile.getFailureResultFor(FAIL_INVALID);
-			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID));
+			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), frame);
 		}
 
 		/*-- The updater here should always have a parent updater --*/
@@ -535,8 +535,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private void addContractCallResultToRecord(
 			final ExpirableTxnRecord.Builder childRecord,
 			final Bytes result,
-			final Optional<ResponseCodeEnum> errorStatus
+			final Optional<ResponseCodeEnum> errorStatus,
+			final MessageFrame messageFrame
 	) {
+		// Add additional values for traceability when the transaction body is not ContractCall or ContractCreate
+		// Currently, all but the `ERCReadOnlyAbstractPrecompile` precompiles fall into this category
+		final var shouldEnrichForTraceability = !(this.precompile instanceof ERCReadOnlyAbstractPrecompile);
 		if (dynamicProperties.shouldExportPrecompileResults()) {
 			final var evmFnResult = new EvmFnResult(
 					HTS_PRECOMPILE_MIRROR_ENTITY_ID,
@@ -547,7 +551,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					Collections.emptyList(),
 					Collections.emptyList(),
 					EvmFnResult.EMPTY,
-					Collections.emptyMap());
+					Collections.emptyMap(),
+					shouldEnrichForTraceability ? messageFrame.getRemainingGas().toLong() : 0L,
+					shouldEnrichForTraceability ? messageFrame.getValue().toLong() : 0L,
+					shouldEnrichForTraceability ? messageFrame.getInputData().toArrayUnsafe() : EvmFnResult.EMPTY);
 			childRecord.setContractCallResult(evmFnResult);
 		}
 	}

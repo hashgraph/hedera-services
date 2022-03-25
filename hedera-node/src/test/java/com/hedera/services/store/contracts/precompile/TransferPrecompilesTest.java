@@ -65,8 +65,9 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.hamcrest.Matchers;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -252,6 +253,9 @@ class TransferPrecompilesTest {
 		given(creator.createUnsuccessfulSyntheticRecord(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
 				.willReturn(mockRecordBuilder);
 		given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
+		given(frame.getRemainingGas()).willReturn(Gas.of(100L));
+		given(frame.getValue()).willReturn(Wei.ONE);
+		given(frame.getInputData()).willReturn(pretendArguments);
 
 		// when:
 		subject.prepareFields(frame);
@@ -264,6 +268,9 @@ class TransferPrecompilesTest {
 		ArgumentCaptor<EvmFnResult> captor = ArgumentCaptor.forClass(EvmFnResult.class);
 		verify(mockRecordBuilder).setContractCallResult(captor.capture());
 		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN.name(), captor.getValue().getError());
+		assertEquals(100L, captor.getValue().getGas());
+		assertEquals(1L, captor.getValue().getAmount());
+		assertEquals(pretendArguments.toArrayUnsafe(), captor.getValue().getFunctionParameters());
 	}
 
 	@Test
