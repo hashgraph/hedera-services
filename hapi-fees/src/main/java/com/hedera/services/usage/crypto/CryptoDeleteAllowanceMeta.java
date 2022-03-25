@@ -75,7 +75,9 @@ public class CryptoDeleteAllowanceMeta {
 	}
 
 	public long getMsgBytesUsed() {
-		return msgBytesUsed;
+		// This is to make sure the fees is the same for base case even if owner field is not specified in the
+		// transaction
+		return msgBytesUsed < CRYPTO_DELETE_ALLOWANCE_SIZE ? CRYPTO_DELETE_ALLOWANCE_SIZE : msgBytesUsed;
 	}
 
 	public static class Builder {

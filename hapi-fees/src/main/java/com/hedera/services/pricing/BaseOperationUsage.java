@@ -325,7 +325,7 @@ class BaseOperationUsage {
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setCryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody
 						.newBuilder()
-						.addCryptoAllowances(CryptoWipeAllowance.newBuilder().build()))
+						.addCryptoAllowances(CryptoWipeAllowance.newBuilder().setOwner(AN_ACCOUNT).build()))
 				.build();
 
 		final var cryptoDeleteAllowanceMeta = new CryptoDeleteAllowanceMeta(canonicalTxn.getCryptoDeleteAllowance(),
