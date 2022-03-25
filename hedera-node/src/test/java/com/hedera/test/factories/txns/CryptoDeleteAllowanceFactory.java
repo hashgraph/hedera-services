@@ -23,11 +23,11 @@ package com.hedera.test.factories.txns;
 import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
@@ -36,26 +36,26 @@ import java.util.List;
 public class CryptoDeleteAllowanceFactory extends SignedTxnFactory<CryptoDeleteAllowanceFactory> {
 	private CryptoDeleteAllowanceFactory() {}
 
-	List<CryptoWipeAllowance> cryptoAllowances;
-	List<TokenWipeAllowance> tokenAllowances;
-	List<NftWipeAllowance> nftAllowances;
+	List<CryptoRemoveAllowance> cryptoAllowances;
+	List<TokenRemoveAllowance> tokenAllowances;
+	List<NftRemoveAllowance> nftAllowances;
 
 
 	public static CryptoDeleteAllowanceFactory newSignedDeleteAllowance() {
 		return new CryptoDeleteAllowanceFactory();
 	}
 
-	public CryptoDeleteAllowanceFactory withCryptoAllowances(List<CryptoWipeAllowance> cryptoAllowances) {
+	public CryptoDeleteAllowanceFactory withCryptoAllowances(List<CryptoRemoveAllowance> cryptoAllowances) {
 		this.cryptoAllowances = cryptoAllowances;
 		return this;
 	}
 
-	public CryptoDeleteAllowanceFactory withTokenAllowances(List<TokenWipeAllowance> tokenAllowances) {
+	public CryptoDeleteAllowanceFactory withTokenAllowances(List<TokenRemoveAllowance> tokenAllowances) {
 		this.tokenAllowances = tokenAllowances;
 		return this;
 	}
 
-	public CryptoDeleteAllowanceFactory withNftAllowances(List<NftWipeAllowance> nftAllowances) {
+	public CryptoDeleteAllowanceFactory withNftAllowances(List<NftRemoveAllowance> nftAllowances) {
 		this.nftAllowances = nftAllowances;
 		return this;
 	}

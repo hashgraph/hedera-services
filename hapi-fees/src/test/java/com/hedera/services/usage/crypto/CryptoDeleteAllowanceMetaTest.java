@@ -23,9 +23,9 @@ package com.hedera.services.usage.crypto;
 import com.hedera.services.test.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
-import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,10 +42,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CryptoDeleteAllowanceMetaTest {
 	private final AccountID proxy = asAccount("0.0.1234");
-	private CryptoWipeAllowance cryptoAllowances = CryptoWipeAllowance.newBuilder().setOwner(proxy).build();
-	private TokenWipeAllowance tokenAllowances = TokenWipeAllowance.newBuilder()
+	private CryptoRemoveAllowance cryptoAllowances = CryptoRemoveAllowance.newBuilder().setOwner(proxy).build();
+	private TokenRemoveAllowance tokenAllowances = TokenRemoveAllowance.newBuilder()
 			.setOwner(proxy).setTokenId(IdUtils.asToken("0.0.1000")).build();
-	private NftWipeAllowance nftAllowances = NftWipeAllowance.newBuilder().setOwner(proxy)
+	private NftRemoveAllowance nftAllowances = NftRemoveAllowance.newBuilder().setOwner(proxy)
 			.setTokenId(IdUtils.asToken("0.0.1000"))
 			.addAllSerialNumbers(List.of(1L, 2L, 3L))
 			.build();

@@ -37,11 +37,11 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -110,22 +110,22 @@ class DeleteAllowanceChecksTest {
 	private final Token token1Model = new Token(Id.fromGrpcToken(token1));
 	private final Token token2Model = new Token(Id.fromGrpcToken(token2));
 
-	private final CryptoWipeAllowance cryptoAllowance1 = CryptoWipeAllowance.newBuilder().setOwner(ownerId).build();
-	private final CryptoWipeAllowance cryptoAllowance2 = CryptoWipeAllowance.newBuilder().setOwner(payerId).build();
+	private final CryptoRemoveAllowance cryptoAllowance1 = CryptoRemoveAllowance.newBuilder().setOwner(ownerId).build();
+	private final CryptoRemoveAllowance cryptoAllowance2 = CryptoRemoveAllowance.newBuilder().setOwner(payerId).build();
 
-	private final TokenWipeAllowance tokenAllowance1 = TokenWipeAllowance.newBuilder().setTokenId(token1).setOwner(ownerId).build();
-	private final TokenWipeAllowance tokenAllowance2 = TokenWipeAllowance.newBuilder().setTokenId(token1).setOwner(payerId).build();
+	private final TokenRemoveAllowance tokenAllowance1 = TokenRemoveAllowance.newBuilder().setTokenId(token1).setOwner(ownerId).build();
+	private final TokenRemoveAllowance tokenAllowance2 = TokenRemoveAllowance.newBuilder().setTokenId(token1).setOwner(payerId).build();
 
-	private final NftWipeAllowance nftAllowance1 = NftWipeAllowance.newBuilder().setOwner(ownerId)
+	private final NftRemoveAllowance nftAllowance1 = NftRemoveAllowance.newBuilder().setOwner(ownerId)
 			.setTokenId(token2).addAllSerialNumbers(List.of(1L, 10L)).build();
-	private final NftWipeAllowance nftAllowance2 = NftWipeAllowance.newBuilder().setOwner(ownerId)
+	private final NftRemoveAllowance nftAllowance2 = NftRemoveAllowance.newBuilder().setOwner(ownerId)
 			.setTokenId(token2).addAllSerialNumbers(List.of(20L)).build();
-	private final NftWipeAllowance nftAllowance3 = NftWipeAllowance.newBuilder().setOwner(payerId)
+	private final NftRemoveAllowance nftAllowance3 = NftRemoveAllowance.newBuilder().setOwner(payerId)
 			.setTokenId(token2).addAllSerialNumbers(List.of(30L)).build();
 
-	private List<CryptoWipeAllowance> cryptoAllowances = new ArrayList<>();
-	private List<TokenWipeAllowance> tokenAllowances = new ArrayList<>();
-	private List<NftWipeAllowance> nftAllowances = new ArrayList<>();
+	private List<CryptoRemoveAllowance> cryptoAllowances = new ArrayList<>();
+	private List<TokenRemoveAllowance> tokenAllowances = new ArrayList<>();
+	private List<NftRemoveAllowance> nftAllowances = new ArrayList<>();
 
 	private final Map<EntityNum, Long> existingCryptoAllowances = new TreeMap<>();
 	private final Map<FcTokenAllowanceId, Long> existingTokenAllowances = new TreeMap<>();
@@ -209,7 +209,7 @@ class DeleteAllowanceChecksTest {
 	@Test
 	void validatesCryptoAllowancesRepeated(){
 		cryptoAllowances.add(cryptoAllowance2);
-		cryptoAllowances.add(CryptoWipeAllowance.newBuilder().setOwner(ownerId).build());
+		cryptoAllowances.add(CryptoRemoveAllowance.newBuilder().setOwner(ownerId).build());
 
 		assertEquals(3, cryptoAllowances.size());
 		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateCryptoDeleteAllowances(cryptoAllowances, payer));
@@ -218,9 +218,9 @@ class DeleteAllowanceChecksTest {
 	@Test
 	void validatesFungibleAllowancesRepeated(){
 		tokenAllowances.add(tokenAllowance2);
-		tokenAllowances.add(TokenWipeAllowance.newBuilder().setTokenId(token1).setOwner(ownerId).build());
-		tokenAllowances.add(TokenWipeAllowance.newBuilder().setTokenId(token1).setOwner(payerId).build());
-		tokenAllowances.add(TokenWipeAllowance.newBuilder().setTokenId(token2).setOwner(payerId).build());
+		tokenAllowances.add(TokenRemoveAllowance.newBuilder().setTokenId(token1).setOwner(ownerId).build());
+		tokenAllowances.add(TokenRemoveAllowance.newBuilder().setTokenId(token1).setOwner(payerId).build());
+		tokenAllowances.add(TokenRemoveAllowance.newBuilder().setTokenId(token2).setOwner(payerId).build());
 
 		assertEquals(5, tokenAllowances.size());
 		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateTokenDeleteAllowances(tokenAllowances, payer));
@@ -233,14 +233,14 @@ class DeleteAllowanceChecksTest {
 		given(owner.isAssociatedWith(Id.fromGrpcToken(token2))).willReturn(true);
 
 		nftAllowances.add(nftAllowance2);
-		nftAllowances.add(NftWipeAllowance.newBuilder().setOwner(ownerId)
+		nftAllowances.add(NftRemoveAllowance.newBuilder().setOwner(ownerId)
 				.setTokenId(token1).addAllSerialNumbers(List.of(1L, 10L)).build());
-		nftAllowances.add(NftWipeAllowance.newBuilder().setOwner(ownerId)
+		nftAllowances.add(NftRemoveAllowance.newBuilder().setOwner(ownerId)
 				.setTokenId(token1).addAllSerialNumbers(List.of(30L)).build());
 
 		assertEquals(4, nftAllowances.size());
 		assertNotEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateNftDeleteAllowances(nftAllowances, payer));
-		nftAllowances.add(NftWipeAllowance.newBuilder().setOwner(ownerId)
+		nftAllowances.add(NftRemoveAllowance.newBuilder().setOwner(ownerId)
 				.setTokenId(token1).addAllSerialNumbers(List.of(1L)).build());
 		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateNftDeleteAllowances(nftAllowances, payer));
 	}
@@ -260,7 +260,7 @@ class DeleteAllowanceChecksTest {
 
 	@Test
 	void considersPayerIfOwnerMissing(){
-		final var allowance = CryptoWipeAllowance.newBuilder().build();
+		final var allowance = CryptoRemoveAllowance.newBuilder().build();
 		cryptoAllowances.add(allowance);
 		assertEquals(Pair.of(payer, OK), subject.fetchOwnerAccount(Id.fromGrpcAccount(allowance.getOwner()), payer));
 	}
@@ -287,8 +287,8 @@ class DeleteAllowanceChecksTest {
 		token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
-		tokenAllowances.add(TokenWipeAllowance.newBuilder().setTokenId(token2).build());
-		nftAllowances.add(NftWipeAllowance.newBuilder().setTokenId(token1).build());
+		tokenAllowances.add(TokenRemoveAllowance.newBuilder().setTokenId(token2).build());
+		nftAllowances.add(NftRemoveAllowance.newBuilder().setTokenId(token1).build());
 		assertEquals(NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES, subject.validateTokenDeleteAllowances(tokenAllowances, payer));
 		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES, subject.validateNftDeleteAllowances(nftAllowances, payer));
 	}

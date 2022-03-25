@@ -28,9 +28,10 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftSetFromGranted;
 import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
@@ -45,7 +46,7 @@ public class ExtantCryptoContext {
 	private final int currentMaxAutomaticAssociations;
 	private final Map<Long, Long> currentCryptoAllowances;
 	private final Map<AllowanceMapKey, Long> currentTokenAllowances;
-	private final Map<AllowanceMapKey, AllowanceMapValue> currentNftAllowances;
+	private final Set<AllowanceMapKey> currentNftAllowances;
 
 	private ExtantCryptoContext(ExtantCryptoContext.Builder builder) {
 		currentNumTokenRels = builder.currentNumTokenRels;
@@ -56,7 +57,7 @@ public class ExtantCryptoContext {
 		currentMaxAutomaticAssociations = builder.currentMaxAutomaticAssociations;
 		this.currentCryptoAllowances = builder.currentCryptoAllowances;
 		this.currentTokenAllowances = builder.currentTokenAllowances;
-		this.currentNftAllowances = builder.currentNftAllowances;
+		this.currentNftAllowances = builder.currentNftApproveForAllAllowances;
 	}
 
 	public long currentNonBaseRb() {
@@ -98,7 +99,7 @@ public class ExtantCryptoContext {
 		return currentTokenAllowances;
 	}
 
-	public Map<AllowanceMapKey, AllowanceMapValue> currentNftAllowances() {
+	public Set<AllowanceMapKey> currentNftAllowances() {
 		return currentNftAllowances;
 	}
 
@@ -131,7 +132,7 @@ public class ExtantCryptoContext {
 		private int currentMaxAutomaticAssociations;
 		private Map<Long, Long> currentCryptoAllowances;
 		private Map<AllowanceMapKey, Long> currentTokenAllowances;
-		private Map<AllowanceMapKey, AllowanceMapValue> currentNftAllowances;
+		private Set<AllowanceMapKey> currentNftApproveForAllAllowances;
 
 		private Builder() {
 		}
@@ -191,8 +192,8 @@ public class ExtantCryptoContext {
 			return this;
 		}
 
-		public ExtantCryptoContext.Builder setCurrentNftAllowances(List<GrantedNftAllowance> currentNftAllowances) {
-			this.currentNftAllowances = convertToNftMapFromGranted(currentNftAllowances);
+		public ExtantCryptoContext.Builder setCurrentNftApproveForAllAllowances(List<GrantedNftAllowance> currentNftApproveForAllAllowances) {
+			this.currentNftApproveForAllAllowances = convertToNftSetFromGranted(currentNftApproveForAllAllowances);
 			mask |= NFT_ALLOWANCES_MASK;
 			return this;
 		}

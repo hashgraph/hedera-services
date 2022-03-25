@@ -1099,7 +1099,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 				.then(
 						getAccountInfo(payer)
 								.has(accountWith()
-										.noCryptoAllowances(payer)
+										.noCryptoAllowances()
 										.noTokenAllowances(payer)
 										.nftApprovedAllowancesNotContaining(nft, spender)
 								),
@@ -1177,7 +1177,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 						getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
 						getAccountInfo(owner)
 								.has(accountWith().
-										noCryptoAllowances(owner)
+										noCryptoAllowances()
 										.noTokenAllowances(owner)
 										.nftApprovedAllowancesContaining(nft, spender)).logged(),
 						getTokenNftInfo(nft, 1L).hasNoSpender()

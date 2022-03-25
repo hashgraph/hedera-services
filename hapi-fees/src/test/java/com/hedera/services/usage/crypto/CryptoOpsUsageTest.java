@@ -40,14 +40,14 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
 import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
@@ -55,7 +55,7 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -111,10 +111,10 @@ class CryptoOpsUsageTest {
 			.setTokenId(IdUtils.asToken("0.0.1000"))
 			.addAllSerialNumbers(List.of(1L)).build();
 
-	private CryptoWipeAllowance cryptoDeleteAllowances = CryptoWipeAllowance.newBuilder().setOwner(proxy).build();
-	private TokenWipeAllowance tokenDeleteAllowances = TokenWipeAllowance.newBuilder()
+	private CryptoRemoveAllowance cryptoDeleteAllowances = CryptoRemoveAllowance.newBuilder().setOwner(proxy).build();
+	private TokenRemoveAllowance tokenDeleteAllowances = TokenRemoveAllowance.newBuilder()
 			.setOwner(proxy).setTokenId(IdUtils.asToken("0.0.1000")).build();
-	private NftWipeAllowance nftDeleteAllowances = NftWipeAllowance.newBuilder().setOwner(proxy)
+	private NftRemoveAllowance nftDeleteAllowances = NftRemoveAllowance.newBuilder().setOwner(proxy)
 			.setTokenId(IdUtils.asToken("0.0.1000"))
 			.addAllSerialNumbers(List.of(1L))
 			.build();
@@ -171,7 +171,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 		// and:
@@ -264,7 +264,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -296,7 +296,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(oldMaxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -358,7 +358,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -419,7 +419,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -448,8 +448,7 @@ class CryptoOpsUsageTest {
 		GrantedTokenAllowance existingTokenAllowances = GrantedTokenAllowance.newBuilder()
 				.setSpender(proxy).setAmount(100L).setTokenId(IdUtils.asToken("0.0.1000")).build();
 		GrantedNftAllowance existingNftAllowances = GrantedNftAllowance.newBuilder().setSpender(proxy)
-				.setTokenId(IdUtils.asToken("0.0.1000"))
-				.addAllSerialNumbers(List.of()).build();
+				.setTokenId(IdUtils.asToken("0.0.1000")).build();
 
 		var expected = new UsageAccumulator();
 		var baseMeta = new BaseTransactionMeta(0, 0);
@@ -470,7 +469,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(List.of(existingCryptoAllowances))
-				.setCurrentNftAllowances(List.of(existingNftAllowances))
+				.setCurrentNftApproveForAllAllowances(List.of(existingNftAllowances))
 				.setCurrentTokenAllowances(List.of(existingTokenAllowances))
 				.build();
 

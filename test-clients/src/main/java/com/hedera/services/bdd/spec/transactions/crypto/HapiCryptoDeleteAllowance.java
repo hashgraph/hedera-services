@@ -30,11 +30,11 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
-import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -106,9 +106,9 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		List<CryptoWipeAllowance> callowances = new ArrayList<>();
-		List<TokenWipeAllowance> tallowances = new ArrayList<>();
-		List<NftWipeAllowance> nftallowances = new ArrayList<>();
+		List<CryptoRemoveAllowance> callowances = new ArrayList<>();
+		List<TokenRemoveAllowance> tallowances = new ArrayList<>();
+		List<NftRemoveAllowance> nftallowances = new ArrayList<>();
 		calculateAllowances(spec, callowances, tallowances, nftallowances);
 		CryptoDeleteAllowanceTransactionBody opBody = spec
 				.txns()
@@ -122,11 +122,11 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 	}
 
 	private void calculateAllowances(final HapiApiSpec spec,
-			final List<CryptoWipeAllowance> callowances,
-			final List<TokenWipeAllowance> tallowances,
-			final List<NftWipeAllowance> nftallowances) {
+			final List<CryptoRemoveAllowance> callowances,
+			final List<TokenRemoveAllowance> tallowances,
+			final List<NftRemoveAllowance> nftallowances) {
 		for (var entry : cryptoAllowances) {
-			final var builder = CryptoWipeAllowance.newBuilder();
+			final var builder = CryptoRemoveAllowance.newBuilder();
 			if (entry.owner() != MISSING_OWNER) {
 				builder.setOwner(spec.registry().getAccountID(entry.owner()));
 			}
@@ -135,7 +135,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 		}
 
 		for (var entry : tokenAllowances) {
-			final var builder = TokenWipeAllowance.newBuilder()
+			final var builder = TokenRemoveAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(entry.token()));
 			if (entry.owner() != MISSING_OWNER) {
 				builder.setOwner(spec.registry().getAccountID(entry.owner()));
@@ -143,7 +143,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 			tallowances.add(builder.build());
 		}
 		for (var entry : nftAllowances) {
-			final var builder = NftWipeAllowance.newBuilder()
+			final var builder = NftRemoveAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(entry.token()))
 					.addAllSerialNumbers(entry.serials());
 			if (entry.owner() != MISSING_OWNER) {

@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,17 +56,14 @@ public class CryptoContextUtils {
 		return allowanceMap;
 	}
 
-	public static Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> convertToNftMapFromGranted(
+	public static Set<ExtantCryptoContext.AllowanceMapKey> convertToNftSetFromGranted(
 			final List<GrantedNftAllowance> allowances) {
-		Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> allowanceMap =
-				new HashMap<>();
+		Set<ExtantCryptoContext.AllowanceMapKey> allowancesSet = new HashSet<>();
 		for (var a : allowances) {
-			allowanceMap.put(new ExtantCryptoContext.AllowanceMapKey(a.getTokenId().getTokenNum(),
-							a.getSpender().getAccountNum()),
-					new ExtantCryptoContext.AllowanceMapValue(a.getApprovedForAll(),
-							a.getSerialNumbersList()));
+			allowancesSet.add(new ExtantCryptoContext.AllowanceMapKey(a.getTokenId().getTokenNum(),
+					a.getSpender().getAccountNum()));
 		}
-		return allowanceMap;
+		return allowancesSet;
 	}
 
 	public static Map<Long, Long> convertToCryptoMap(final List<CryptoAllowance> allowances) {
@@ -108,24 +106,10 @@ public class CryptoContextUtils {
 	}
 
 	static int getNewSerials(
-			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> newAllowances,
-			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> existingAllowances) {
+			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> newAllowances) {
 		int counter = 0;
 		for (var a : newAllowances.entrySet()) {
-			final var isApprovedForAll = a.getValue().approvedForAll().booleanValue();
-			if (existingAllowances.containsKey(a.getKey()) && !isApprovedForAll) {
-				var existingSerials = existingAllowances.get(a.getKey()).serialNums();
-				var newSerials = a.getValue().serialNums();
-				for (var s : newSerials) {
-					if (!existingSerials.contains(s) && s > 0) {
-						counter++;
-					}
-				}
-			} else {
-				if (!isApprovedForAll) {
-					counter += a.getValue().serialNums().size();
-				}
-			}
+			counter += a.getValue().serialNums().size();
 		}
 		return counter;
 	}

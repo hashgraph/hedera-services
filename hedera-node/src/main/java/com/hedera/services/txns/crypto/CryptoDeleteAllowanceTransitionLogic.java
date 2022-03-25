@@ -10,10 +10,10 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
@@ -80,7 +80,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		txnCtx.setStatus(SUCCESS);
 	}
 
-	private void deleteNftSerials(final List<NftWipeAllowance> nftAllowances) {
+	private void deleteNftSerials(final List<NftRemoveAllowance> nftAllowances) {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
@@ -100,7 +100,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private void deleteFungibleTokenAllowances(final List<TokenWipeAllowance> tokenAllowances,
+	private void deleteFungibleTokenAllowances(final List<TokenRemoveAllowance> tokenAllowances,
 			final Account payerAccount) {
 		if (tokenAllowances.isEmpty()) {
 			return;
@@ -120,7 +120,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		}
 	}
 
-	private void deleteCryptoAllowances(final List<CryptoWipeAllowance> cryptoAllowances,
+	private void deleteCryptoAllowances(final List<CryptoRemoveAllowance> cryptoAllowances,
 			final Account payerAccount) {
 		if (cryptoAllowances.isEmpty()) {
 			return;

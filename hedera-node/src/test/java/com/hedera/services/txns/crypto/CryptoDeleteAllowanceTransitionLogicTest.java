@@ -35,12 +35,12 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,8 +133,8 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 
 	@Test
 	void doesntThrowIfAllowancesDoesNotExist() {
-		final CryptoWipeAllowance cryptoAllowance = CryptoWipeAllowance.newBuilder().setOwner(ownerId).build();
-		final TokenWipeAllowance tokenAllowance = TokenWipeAllowance.newBuilder().setOwner(ownerId).setTokenId(token1).build();
+		final CryptoRemoveAllowance cryptoAllowance = CryptoRemoveAllowance.newBuilder().setOwner(ownerId).build();
+		final TokenRemoveAllowance tokenAllowance = TokenRemoveAllowance.newBuilder().setOwner(ownerId).setTokenId(token1).build();
 
 		cryptoDeleteAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -247,9 +247,9 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		token2Model.setMaxSupply(5000L);
 		token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
-		final CryptoWipeAllowance cryptoAllowance = CryptoWipeAllowance.newBuilder().build();
-		final TokenWipeAllowance tokenAllowance = TokenWipeAllowance.newBuilder().setTokenId(token1).build();
-		final NftWipeAllowance nftAllowance = NftWipeAllowance.newBuilder()
+		final CryptoRemoveAllowance cryptoAllowance = CryptoRemoveAllowance.newBuilder().build();
+		final TokenRemoveAllowance tokenAllowance = TokenRemoveAllowance.newBuilder().setTokenId(token1).build();
+		final NftRemoveAllowance nftAllowance = NftRemoveAllowance.newBuilder()
 				.setTokenId(token2)
 				.addAllSerialNumbers(List.of(12L, 10L)).build();
 
@@ -311,15 +311,15 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 	private static final Instant consensusTime = Instant.now();
 	private final Token token1Model = new Token(Id.fromGrpcToken(token1));
 	private final Token token2Model = new Token(Id.fromGrpcToken(token2));
-	private final CryptoWipeAllowance cryptoAllowance1 = CryptoWipeAllowance.newBuilder().setOwner(ownerId).build();
-	private final TokenWipeAllowance tokenAllowance1 = TokenWipeAllowance.newBuilder().setOwner(ownerId).setTokenId(token1).build();
-	private final NftWipeAllowance nftAllowance1 = NftWipeAllowance.newBuilder()
+	private final CryptoRemoveAllowance cryptoAllowance1 = CryptoRemoveAllowance.newBuilder().setOwner(ownerId).build();
+	private final TokenRemoveAllowance tokenAllowance1 = TokenRemoveAllowance.newBuilder().setOwner(ownerId).setTokenId(token1).build();
+	private final NftRemoveAllowance nftAllowance1 = NftRemoveAllowance.newBuilder()
 			.setOwner(ownerId)
 			.setTokenId(token2)
 			.addAllSerialNumbers(List.of(12L, 10L)).build();
-	private List<CryptoWipeAllowance> cryptoAllowances = new ArrayList<>();
-	private List<TokenWipeAllowance> tokenAllowances = new ArrayList<>();
-	private List<NftWipeAllowance> nftAllowances = new ArrayList<>();
+	private List<CryptoRemoveAllowance> cryptoAllowances = new ArrayList<>();
+	private List<TokenRemoveAllowance> tokenAllowances = new ArrayList<>();
+	private List<NftRemoveAllowance> nftAllowances = new ArrayList<>();
 	private final Account ownerAccount = new Account(Id.fromGrpcAccount(ownerId));
 	private final Account payerAccount = new Account(Id.fromGrpcAccount(payerId));
 

@@ -327,7 +327,6 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts nftApprovedAllowancesContaining(String token, String spender) {
 		registerProvider((spec, o) -> {
 			var nftAllowance = GrantedNftAllowance.newBuilder()
-					.setApprovedForAll(true)
 					.setTokenId(spec.registry().getTokenID(token))
 					.setSpender(spec.registry().getAccountID(spender))
 
@@ -343,7 +342,6 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts nftApprovedAllowancesNotContaining(String token, String spender) {
 		registerProvider((spec, o) -> {
 			var nftAllowance = GrantedNftAllowance.newBuilder()
-					.setApprovedForAll(false)
 					.setTokenId(spec.registry().getTokenID(token))
 					.setSpender(spec.registry().getAccountID(spender))
 
@@ -356,7 +354,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts noCryptoAllowances(String owner) {
+	public AccountInfoAsserts noCryptoAllowances() {
 		registerProvider((spec, o) -> {
 			assertTrue(((AccountInfo) o).getGrantedCryptoAllowancesList().isEmpty(),
 					"Bad NftAllowances!");

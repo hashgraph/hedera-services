@@ -11,11 +11,11 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -63,9 +63,9 @@ public class DeleteAllowanceChecks {
 	}
 
 	public ResponseCodeEnum deleteAllowancesValidation(
-			final List<CryptoWipeAllowance> cryptoAllowances,
-			final List<TokenWipeAllowance> tokenAllowances,
-			final List<NftWipeAllowance> nftAllowances,
+			final List<CryptoRemoveAllowance> cryptoAllowances,
+			final List<TokenRemoveAllowance> tokenAllowances,
+			final List<NftRemoveAllowance> nftAllowances,
 			final Account payerAccount) {
 		// feature flag for allowances
 		if (!isEnabled()) {
@@ -99,10 +99,10 @@ public class DeleteAllowanceChecks {
 		return dynamicProperties.areAllowancesEnabled();
 	}
 
-	ResponseCodeEnum validateCryptoDeleteAllowances(final List<CryptoWipeAllowance> cryptoAllowances,
+	ResponseCodeEnum validateCryptoDeleteAllowances(final List<CryptoRemoveAllowance> cryptoAllowances,
 			final Account payerAccount) {
 		final var distinctOwners = cryptoAllowances.stream()
-				.map(CryptoWipeAllowance::getOwner).distinct().count();
+				.map(CryptoRemoveAllowance::getOwner).distinct().count();
 		if (cryptoAllowances.size() != distinctOwners) {
 			return REPEATED_ALLOWANCES_TO_DELETE;
 		}
@@ -118,7 +118,7 @@ public class DeleteAllowanceChecks {
 	}
 
 	public ResponseCodeEnum validateTokenDeleteAllowances(
-			final List<TokenWipeAllowance> tokenAllowancesList,
+			final List<TokenRemoveAllowance> tokenAllowancesList,
 			final Account payerAccount) {
 		if (tokenAllowancesList.isEmpty()) {
 			return OK;
@@ -152,7 +152,7 @@ public class DeleteAllowanceChecks {
 	}
 
 	public ResponseCodeEnum validateNftDeleteAllowances(
-			final List<NftWipeAllowance> nftAllowancesList,
+			final List<NftRemoveAllowance> nftAllowancesList,
 			final Account payerAccount) {
 		if (nftAllowancesList.isEmpty()) {
 			return OK;
@@ -188,7 +188,7 @@ public class DeleteAllowanceChecks {
 		return OK;
 	}
 
-	boolean repeatedAllowances(final List<NftWipeAllowance> nftAllowancesList) {
+	boolean repeatedAllowances(final List<NftRemoveAllowance> nftAllowancesList) {
 		Map<Pair<AccountID, TokenID>, List<Long>> seenNfts = new HashMap<>();
 		for (var allowance : nftAllowancesList) {
 			final var key = Pair.of(allowance.getOwner(), allowance.getTokenId());
@@ -245,9 +245,9 @@ public class DeleteAllowanceChecks {
 	}
 
 	ResponseCodeEnum commonChecks(
-			final List<CryptoWipeAllowance> cryptoAllowances,
-			final List<TokenWipeAllowance> tokenAllowances,
-			final List<NftWipeAllowance> nftAllowances) {
+			final List<CryptoRemoveAllowance> cryptoAllowances,
+			final List<TokenRemoveAllowance> tokenAllowances,
+			final List<NftRemoveAllowance> nftAllowances) {
 		// each serial number of an NFT is considered as an allowance.
 		// So for Nft allowances aggregated amount is considered for limit calculati
 		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size() +
@@ -274,7 +274,7 @@ public class DeleteAllowanceChecks {
 		}
 	}
 
-	int aggregateNftAllowances(List<NftWipeAllowance> nftAllowances) {
+	int aggregateNftAllowances(List<NftRemoveAllowance> nftAllowances) {
 		return nftAllowances.stream().mapToInt(a -> a.getSerialNumbersCount()).sum();
 	}
 }

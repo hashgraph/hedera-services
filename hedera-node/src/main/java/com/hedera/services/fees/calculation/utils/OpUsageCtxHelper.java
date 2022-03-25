@@ -123,7 +123,7 @@ public class OpUsageCtxHelper {
 					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
 					.setCurrentCryptoAllowances(details.getGrantedCryptoAllowancesList())
 					.setCurrentTokenAllowances(details.getGrantedTokenAllowancesList())
-					.setCurrentNftAllowances(details.getGrantedNftAllowancesList())
+					.setCurrentNftApproveForAllAllowances(details.getGrantedNftAllowancesList())
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -135,7 +135,7 @@ public class OpUsageCtxHelper {
 					.setCurrentMaxAutomaticAssociations(0)
 					.setCurrentCryptoAllowances(Collections.emptyList())
 					.setCurrentTokenAllowances(Collections.emptyList())
-					.setCurrentNftAllowances(Collections.emptyList())
+					.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 					.build();
 		}
 		return cryptoContext;
@@ -156,7 +156,7 @@ public class OpUsageCtxHelper {
 					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
 					.setCurrentCryptoAllowances(details.getGrantedCryptoAllowancesList())
 					.setCurrentTokenAllowances(details.getGrantedTokenAllowancesList())
-					.setCurrentNftAllowances(details.getGrantedNftAllowancesList())
+					.setCurrentNftApproveForAllAllowances(details.getGrantedNftAllowancesList())
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -168,7 +168,7 @@ public class OpUsageCtxHelper {
 					.setCurrentMaxAutomaticAssociations(0)
 					.setCurrentCryptoAllowances(Collections.emptyList())
 					.setCurrentTokenAllowances(Collections.emptyList())
-					.setCurrentNftAllowances(Collections.emptyList())
+					.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 					.build();
 		}
 		return cryptoContext;

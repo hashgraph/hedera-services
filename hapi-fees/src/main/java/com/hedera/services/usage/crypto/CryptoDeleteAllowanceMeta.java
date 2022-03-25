@@ -22,7 +22,7 @@ package com.hedera.services.usage.crypto;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -58,7 +58,7 @@ public class CryptoDeleteAllowanceMeta {
 				+ countNftDeleteSerials(op.getNftAllowancesList()) * LONG_SIZE;
 	}
 
-	public static int countNftDeleteSerials(final List<NftWipeAllowance> nftAllowancesList) {
+	public static int countNftDeleteSerials(final List<NftRemoveAllowance> nftAllowancesList) {
 		int totalSerials = 0;
 		for (var allowance : nftAllowancesList) {
 			totalSerials += allowance.getSerialNumbersCount();

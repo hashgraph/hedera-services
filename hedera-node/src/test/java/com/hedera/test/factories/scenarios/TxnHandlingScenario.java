@@ -45,19 +45,19 @@ import com.hedera.test.factories.keys.OverlappingKeyGenerator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
@@ -591,14 +591,14 @@ public interface TxnHandlingScenario {
 			.setSpender(DEFAULT_PAYER)
 			.setAmount(500L).build());
 
-	List<CryptoWipeAllowance> cryptoDeleteAllowanceList = List.of(CryptoWipeAllowance.newBuilder()
+	List<CryptoRemoveAllowance> cryptoDeleteAllowanceList = List.of(CryptoRemoveAllowance.newBuilder()
 			.setOwner(OWNER_ACCOUNT).build());
 
-	List<CryptoWipeAllowance> cryptoDeleteAllowanceMissingOwnerList = List.of(CryptoWipeAllowance.newBuilder()
+	List<CryptoRemoveAllowance> cryptoDeleteAllowanceMissingOwnerList = List.of(CryptoRemoveAllowance.newBuilder()
 			.setOwner(MISSING_ACCOUNT)
 			.build());
 
-	List<CryptoWipeAllowance> cryptoDeleteAllowanceNoOwnerList = List.of(CryptoWipeAllowance.newBuilder().build());
+	List<CryptoRemoveAllowance> cryptoDeleteAllowanceNoOwnerList = List.of(CryptoRemoveAllowance.newBuilder().build());
 
 	TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>() {{
 		put(FcTokenAllowanceId.from(
@@ -619,12 +619,12 @@ public interface TxnHandlingScenario {
 			.setAmount(10_000L)
 			.build());
 
-	List<TokenWipeAllowance> tokenDeleteAllowanceList = List.of(TokenWipeAllowance.newBuilder()
+	List<TokenRemoveAllowance> tokenDeleteAllowanceList = List.of(TokenRemoveAllowance.newBuilder()
 			.setTokenId(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 			.setOwner(OWNER_ACCOUNT)
 			.build());
 
-	List<TokenWipeAllowance> tokenDeleteAllowanceMissingOwnerList = List.of(TokenWipeAllowance.newBuilder()
+	List<TokenRemoveAllowance> tokenDeleteAllowanceMissingOwnerList = List.of(TokenRemoveAllowance.newBuilder()
 			.setTokenId(KNOWN_TOKEN_NO_SPECIAL_KEYS)
 			.setOwner(MISSING_ACCOUNT)
 			.build());
@@ -648,12 +648,12 @@ public interface TxnHandlingScenario {
 			.setApprovedForAll(BoolValue.of(true))
 			.build());
 
-	List<NftWipeAllowance> nftDeleteAllowanceList = List.of(NftWipeAllowance.newBuilder()
+	List<NftRemoveAllowance> nftDeleteAllowanceList = List.of(NftRemoveAllowance.newBuilder()
 			.setOwner(OWNER_ACCOUNT)
 			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
 			.build());
 
-	List<NftWipeAllowance> nftDeleteAllowanceMissingOwnerList = List.of(NftWipeAllowance.newBuilder()
+	List<NftRemoveAllowance> nftDeleteAllowanceMissingOwnerList = List.of(NftRemoveAllowance.newBuilder()
 			.setOwner(MISSING_ACCOUNT)
 			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
 			.build());

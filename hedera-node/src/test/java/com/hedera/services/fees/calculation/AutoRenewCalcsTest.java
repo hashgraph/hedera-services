@@ -192,7 +192,7 @@ class AutoRenewCalcsTest {
 				.setCurrentMaxAutomaticAssociations(expiredAccount.getMaxAutomaticAssociations())
 				.setCurrentCryptoAllowances(getCryptoAllowancesList(expiredAccount))
 				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(expiredAccount))
-				.setCurrentNftAllowances(getNftAllowancesList(expiredAccount))
+				.setCurrentNftApproveForAllAllowances(getNftAllowancesList(expiredAccount))
 				.build();
 
 		// expect:

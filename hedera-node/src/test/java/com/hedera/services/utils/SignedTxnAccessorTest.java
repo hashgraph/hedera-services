@@ -44,14 +44,14 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.NftWipeAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -67,7 +67,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenWipeAllowance;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -82,9 +82,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -118,9 +115,9 @@ class SignedTxnAccessorTest {
 	private static final NftAllowance nftAllowance1 = NftAllowance.newBuilder().setSpender(spender1)
 			.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
 
-	private static final CryptoWipeAllowance cryptoWipeAllowance = CryptoWipeAllowance.newBuilder().setOwner(owner).build();
-	private static final TokenWipeAllowance tokenWipeAllowance = TokenWipeAllowance.newBuilder().setOwner(owner).setTokenId(token1).build();
-	private static final NftWipeAllowance nftWipeAllowance = NftWipeAllowance.newBuilder().setOwner(owner)
+	private static final CryptoRemoveAllowance cryptoRemoveAllowance = CryptoRemoveAllowance.newBuilder().setOwner(owner).build();
+	private static final TokenRemoveAllowance tokenRemoveAllowance = TokenRemoveAllowance.newBuilder().setOwner(owner).setTokenId(token1).build();
+	private static final NftRemoveAllowance nftRemoveAllowance = NftRemoveAllowance.newBuilder().setOwner(owner)
 			.setTokenId(token2).addAllSerialNumbers(List.of(1L, 10L)).build();
 
 
@@ -745,9 +742,9 @@ class SignedTxnAccessorTest {
 
 	private TransactionBody cryptoDeleteAllowanceOp() {
 		final var op = CryptoDeleteAllowanceTransactionBody.newBuilder()
-				.addAllCryptoAllowances(List.of(cryptoWipeAllowance))
-				.addAllTokenAllowances(List.of(tokenWipeAllowance))
-				.addAllNftAllowances(List.of(nftWipeAllowance))
+				.addAllCryptoAllowances(List.of(cryptoRemoveAllowance))
+				.addAllTokenAllowances(List.of(tokenRemoveAllowance))
+				.addAllNftAllowances(List.of(nftRemoveAllowance))
 				.build();
 		return TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()

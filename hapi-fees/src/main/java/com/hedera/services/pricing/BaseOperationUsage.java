@@ -48,7 +48,7 @@ import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoWipeAllowance;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -278,7 +278,7 @@ class BaseOperationUsage {
 				.setCurrentMaxAutomaticAssociations(0)
 				.setCurrentCryptoAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.build();
 
 		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(canonicalTxn.getCryptoApproveAllowance(), now);
@@ -310,7 +310,7 @@ class BaseOperationUsage {
 						.setAmount(1L)
 						.build()))
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.build();
 
 		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(canonicalTxn.getCryptoAdjustAllowance(), now);
@@ -325,7 +325,7 @@ class BaseOperationUsage {
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setCryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody
 						.newBuilder()
-						.addCryptoAllowances(CryptoWipeAllowance.newBuilder().setOwner(AN_ACCOUNT).build()))
+						.addCryptoAllowances(CryptoRemoveAllowance.newBuilder().setOwner(AN_ACCOUNT).build()))
 				.build();
 
 		final var cryptoDeleteAllowanceMeta = new CryptoDeleteAllowanceMeta(canonicalTxn.getCryptoDeleteAllowance(),
@@ -354,7 +354,7 @@ class BaseOperationUsage {
 				.setCurrentMaxAutomaticAssociations(0)
 				.setCurrentCryptoAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.build();
 		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
 		final var into = new UsageAccumulator();

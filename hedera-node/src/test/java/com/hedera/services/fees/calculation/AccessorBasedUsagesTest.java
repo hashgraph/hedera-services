@@ -374,7 +374,7 @@ class AccessorBasedUsagesTest {
 				.setCurrentMaxAutomaticAssociations(0)
 				.setCurrentCryptoAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.build();
 		final var accumulator = new UsageAccumulator();
 
@@ -405,7 +405,7 @@ class AccessorBasedUsagesTest {
 				.setCurrentMaxAutomaticAssociations(0)
 				.setCurrentCryptoAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.build();
 		final var accumulator = new UsageAccumulator();
 
@@ -436,7 +436,7 @@ class AccessorBasedUsagesTest {
 				.setCurrentMaxAutomaticAssociations(0)
 				.setCurrentCryptoAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
 				.build();
 		final var accumulator = new UsageAccumulator();
 
