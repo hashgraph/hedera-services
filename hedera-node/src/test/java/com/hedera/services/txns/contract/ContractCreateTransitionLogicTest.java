@@ -27,8 +27,8 @@ import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -38,7 +38,6 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -67,6 +66,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -123,12 +124,10 @@ class ContractCreateTransitionLogicTest {
 	private GlobalDynamicProperties properties;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
-	@Mock
-	private StorageExpiry storageExpiryLookup;
 
 	private ContractCreateTransitionLogic subject;
 
-	private final Instant consensusTime = Instant.now();
+	private final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
 	private final Account senderAccount = new Account(new Id(0, 0, 1002));
 	private final Account contractAccount = new Account(new Id(0, 0, 1006));
 	private TransactionBody contractCreateTxn;
@@ -225,8 +224,77 @@ class ContractCreateTransitionLogicTest {
 	}
 
 	@Test
+	void usesContractKeyWhenEmptyAdminKeySetInOp() {
+		final var op = ContractCreateTransactionBody.newBuilder()
+				.setFileID(bytecodeSrc)
+				.setInitialBalance(balance)
+				.setGas(gas)
+				.setAdminKey(IMMUTABILITY_SENTINEL_KEY)
+				.setConstructorParameters(copyFromUtf8("test"))
+				.setProxyAccountID(proxy)
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
+
+		final var txn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setContractCreateInstance(op);
+		contractCreateTxn = txn.build();
+
+		final var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
+		final var contractByteCodeString = new String(bytecode) + constructorParamsHexString;
+		final var expiry = consensusTime.getEpochSecond() + customAutoRenewPeriod;
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(hfs.exists(bytecodeSrc)).willReturn(true);
+		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
+		given(accessor.getTxn()).willReturn(contractCreateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		final var result = TransactionProcessingResult.successful(
+				null,
+				1234L,
+				0L,
+				124L,
+				Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(),
+				Map.of());
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress()))
+				.willReturn(contractAccount.getId().asEvmAddress());
+		given(evmTxProcessor.execute(
+				senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				balance,
+				Bytes.fromHexString(contractByteCodeString),
+				txnCtx.consensusTime(),
+				expiry))
+				.willReturn(result);
+		given(validator.attemptToDecodeOrThrow(IMMUTABILITY_SENTINEL_KEY, SERIALIZATION_FAILED))
+				.willReturn(EMPTY_KEY);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(evmTxProcessor).execute(senderAccount,
+				contractAccount.getId().asEvmAddress(),
+				gas,
+				balance,
+				Bytes.fromHexString(contractByteCodeString),
+				txnCtx.consensusTime(),
+				expiry);
+		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
+		final var standin = new MerkleAccount();
+		captor.getValue().customizing(standin);
+		final var accountKey = standin.getAccountKey();
+		assertThat(accountKey, instanceOf(JContractIDKey.class));
+		assertEquals(
+				contractAccount.getId().num(),
+				((JContractIDKey) accountKey).getContractID().getContractNum());
+	}
+
+	@Test
 	void usesContractKeyWhenAdminKeyNotSetInOp() {
-		var op = ContractCreateTransactionBody.newBuilder()
+		final var op = ContractCreateTransactionBody.newBuilder()
 				.setFileID(bytecodeSrc)
 				.setInitialBalance(balance)
 				.setGas(gas)
@@ -234,16 +302,14 @@ class ContractCreateTransitionLogicTest {
 				.setProxyAccountID(proxy)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(customAutoRenewPeriod).build());
 
-		var txn = TransactionBody.newBuilder()
+		final var txn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
 
-		var contractByteCodeString = new String(bytecode);
-		var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
-		contractByteCodeString += constructorParamsHexString;
-		var expiry = RequestBuilder.getExpirationTime(consensusTime,
-				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
+		final var constructorParamsHexString = CommonUtils.hex(op.getConstructorParameters().toByteArray());
+		final var contractByteCodeString = new String(bytecode) + constructorParamsHexString;
+		final var expiry = consensusTime.getEpochSecond() + customAutoRenewPeriod;
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);

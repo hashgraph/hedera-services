@@ -111,6 +111,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		var key = op.hasAdminKey()
 				? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
 				: STANDIN_CONTRACT_ID_KEY;
+		// Standardize immutable contract key format; c.f. https://github.com/hashgraph/hedera-services/issues/3037
+		if (key.isEmpty()) {
+			key = STANDIN_CONTRACT_ID_KEY;
+		}
 
 		/* --- Load the model objects --- */
 		final var sender = accountStore.loadAccount(senderId);
