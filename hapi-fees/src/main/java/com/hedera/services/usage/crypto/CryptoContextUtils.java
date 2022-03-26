@@ -109,7 +109,7 @@ public class CryptoContextUtils {
 			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> newAllowances) {
 		int counter = 0;
 		for (var a : newAllowances.entrySet()) {
-			counter += a.getValue().serialNums().size();
+			counter += a.getValue().serialNums().stream().distinct().count();
 		}
 		return counter;
 	}
