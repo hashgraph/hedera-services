@@ -1,5 +1,6 @@
 # Key files
 *.pem
+!test-clients/src/main/resource/genesis.pem
 !test-clients/yahcli/localhost/keys/*.pem
 !hapi-utils/src/test/resources/vectors/genesis.pem
 !hedera-node/data/onboard/devGenesisKeypair.pem
