@@ -60,6 +60,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.hedera.services.txns.crypto.validators.AllowanceChecks.fetchOwnerAccount;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
@@ -262,7 +263,7 @@ class DeleteAllowanceChecksTest {
 	void considersPayerIfOwnerMissing(){
 		final var allowance = CryptoRemoveAllowance.newBuilder().build();
 		cryptoAllowances.add(allowance);
-		assertEquals(Pair.of(payer, OK), subject.fetchOwnerAccount(Id.fromGrpcAccount(allowance.getOwner()), payer));
+		assertEquals(Pair.of(payer, OK), fetchOwnerAccount(Id.fromGrpcAccount(allowance.getOwner()), payer, accountStore));
 	}
 
 	@Test

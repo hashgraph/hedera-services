@@ -232,7 +232,7 @@ public interface AllowanceChecks {
 		return totalAllowances == 0;
 	}
 
-	default Pair<Account, ResponseCodeEnum> fetchOwnerAccount(Id owner, Account payerAccount,
+	static Pair<Account, ResponseCodeEnum> fetchOwnerAccount(Id owner, Account payerAccount,
 			AccountStore accountStore) {
 		if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 			return Pair.of(payerAccount, OK);

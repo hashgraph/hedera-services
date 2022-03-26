@@ -54,6 +54,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+/**
+ * Implements the {@link TransitionLogic} for a HAPI CryptoApproveAllowance transaction,
+ * and the conditions under which such logic is syntactically correct.
+ */
 public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;

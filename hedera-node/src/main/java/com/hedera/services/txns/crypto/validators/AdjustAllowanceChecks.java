@@ -95,7 +95,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var amount = allowance.getAmount();
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			final var fetchResult = AllowanceChecks.fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
@@ -138,7 +138,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 			final var amount = allowance.getAmount();
 			final var tokenId = allowance.getTokenId();
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			final var fetchResult = AllowanceChecks.fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
@@ -192,7 +192,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			final var fetchResult = AllowanceChecks.fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}

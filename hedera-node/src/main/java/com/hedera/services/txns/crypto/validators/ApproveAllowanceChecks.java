@@ -89,7 +89,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			final var amount = allowance.getAmount();
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
 
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			final var fetchResult = AllowanceChecks.fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
@@ -128,7 +128,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			final var fetchResult = AllowanceChecks.fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
@@ -173,7 +173,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			final var fetchResult = AllowanceChecks.fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}

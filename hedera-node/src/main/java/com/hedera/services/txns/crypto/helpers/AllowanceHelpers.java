@@ -169,6 +169,22 @@ public class AllowanceHelpers {
 		return Collections.emptyList();
 	}
 
+	/**
+	 * Returns owner account to be considered for the allowance changes. If the owner is missing in allowance,
+	 * considers payer of the transaction as the owner. This is same for CryptoApproveAlowance, CryptoAdjustAllowance
+	 * and CryptoDeleteAllowance transaction.Looks at entitiesChanged map before fetching from accountStore for
+	 * performance.
+	 *
+	 * @param owner
+	 * 		given owner
+	 * @param payerAccount
+	 * 		given payer for the transaction
+	 * @param accountStore
+	 * 		account store
+	 * @param entitiesChanged
+	 * 		map of all entities that are changed
+	 * @return owner account
+	 */
 	public static Account fetchOwnerAccount(final AccountID owner,
 			final Account payerAccount,
 			final AccountStore accountStore,

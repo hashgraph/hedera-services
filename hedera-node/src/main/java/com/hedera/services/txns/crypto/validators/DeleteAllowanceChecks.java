@@ -1,5 +1,25 @@
 package com.hedera.services.txns.crypto.validators;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -30,6 +50,7 @@ import java.util.stream.Collectors;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.validators.AllowanceChecks.exceedsTxnLimit;
+import static com.hedera.services.txns.crypto.validators.AllowanceChecks.fetchOwnerAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -62,6 +83,20 @@ public class DeleteAllowanceChecks {
 		this.accountStore = accountStore;
 	}
 
+	/**
+	 * Validates all allowances provided in
+	 * {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody}
+	 *
+	 * @param cryptoAllowances
+	 * 		given crypto allowances to remove
+	 * @param tokenAllowances
+	 * 		given fungible token allowances to remove
+	 * @param nftAllowances
+	 * 		given nft serials allowances to remove
+	 * @param payerAccount
+	 * 		payer for the transaction
+	 * @return validation response
+	 */
 	public ResponseCodeEnum deleteAllowancesValidation(
 			final List<CryptoRemoveAllowance> cryptoAllowances,
 			final List<TokenRemoveAllowance> tokenAllowances,
@@ -95,10 +130,17 @@ public class DeleteAllowanceChecks {
 		return OK;
 	}
 
-	private boolean isEnabled() {
-		return dynamicProperties.areAllowancesEnabled();
-	}
-
+	/**
+	 * Validates all the {@link CryptoRemoveAllowance}s in the
+	 * {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowance}
+	 * transaction
+	 *
+	 * @param cryptoAllowances
+	 * 		crypto remove allowances list
+	 * @param payerAccount
+	 * 		payer for the transaction
+	 * @return validation response
+	 */
 	ResponseCodeEnum validateCryptoDeleteAllowances(final List<CryptoRemoveAllowance> cryptoAllowances,
 			final Account payerAccount) {
 		final var distinctOwners = cryptoAllowances.stream()
@@ -109,7 +151,7 @@ public class DeleteAllowanceChecks {
 
 		for (var allowance : cryptoAllowances) {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
-			final var result = fetchOwnerAccount(owner, payerAccount);
+			final var result = fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (result.getRight() != OK) {
 				return result.getRight();
 			}
@@ -117,24 +159,34 @@ public class DeleteAllowanceChecks {
 		return OK;
 	}
 
-	public ResponseCodeEnum validateTokenDeleteAllowances(
-			final List<TokenRemoveAllowance> tokenAllowancesList,
+	/**
+	 * Validates all the {@link TokenRemoveAllowance}s in the
+	 * {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowance}
+	 * transaction
+	 *
+	 * @param tokenAllowances
+	 * 		token remove allowances list
+	 * @param payerAccount
+	 * 		payer for the transaction
+	 * @return validation response
+	 */
+	public ResponseCodeEnum validateTokenDeleteAllowances(final List<TokenRemoveAllowance> tokenAllowances,
 			final Account payerAccount) {
-		if (tokenAllowancesList.isEmpty()) {
+		if (tokenAllowances.isEmpty()) {
 			return OK;
 		}
 
-		final var distinctIds = tokenAllowancesList.stream().collect(Collectors.toSet()).size();
-		if (distinctIds != tokenAllowancesList.size()) {
+		final var distinctIds = tokenAllowances.stream().distinct().count();
+		if (distinctIds != tokenAllowances.size()) {
 			return REPEATED_ALLOWANCES_TO_DELETE;
 		}
 
-		for (final var allowance : tokenAllowancesList) {
+		for (final var allowance : tokenAllowances) {
 			final var tokenId = allowance.getTokenId();
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
 
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount);
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
@@ -151,16 +203,26 @@ public class DeleteAllowanceChecks {
 		return OK;
 	}
 
-	public ResponseCodeEnum validateNftDeleteAllowances(
-			final List<NftRemoveAllowance> nftAllowancesList,
+	/**
+	 * Validates all the {@link NftRemoveAllowance}s in the
+	 * {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowance}
+	 * transaction
+	 *
+	 * @param nftAllowances
+	 * 		nft remove allowances list
+	 * @param payerAccount
+	 * 		payer for the transaction
+	 * @return validation response
+	 */
+	public ResponseCodeEnum validateNftDeleteAllowances(final List<NftRemoveAllowance> nftAllowances,
 			final Account payerAccount) {
-		if (nftAllowancesList.isEmpty()) {
+		if (nftAllowances.isEmpty()) {
 			return OK;
 		}
-		if (repeatedAllowances(nftAllowancesList)) {
+		if (repeatedAllowances(nftAllowances)) {
 			return REPEATED_ALLOWANCES_TO_DELETE;
 		}
-		for (var allowance : nftAllowancesList) {
+		for (var allowance : nftAllowances) {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
@@ -170,7 +232,7 @@ public class DeleteAllowanceChecks {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount);
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
@@ -188,9 +250,15 @@ public class DeleteAllowanceChecks {
 		return OK;
 	}
 
-	boolean repeatedAllowances(final List<NftRemoveAllowance> nftAllowancesList) {
+	/**
+	 * Checks if the nft allowances are repeated. Also validates if the serial numbers are repeated.
+	 *
+	 * @param nftAllowances
+	 * @return
+	 */
+	boolean repeatedAllowances(final List<NftRemoveAllowance> nftAllowances) {
 		Map<Pair<AccountID, TokenID>, List<Long>> seenNfts = new HashMap<>();
-		for (var allowance : nftAllowancesList) {
+		for (var allowance : nftAllowances) {
 			final var key = Pair.of(allowance.getOwner(), allowance.getTokenId());
 			if (seenNfts.containsKey(key)) {
 				if (serialsRepeated(seenNfts.get(key), allowance.getSerialNumbersList())) {
@@ -249,7 +317,7 @@ public class DeleteAllowanceChecks {
 			final List<TokenRemoveAllowance> tokenAllowances,
 			final List<NftRemoveAllowance> nftAllowances) {
 		// each serial number of an NFT is considered as an allowance.
-		// So for Nft allowances aggregated amount is considered for limit calculati
+		// So for Nft allowances aggregated amount is considered for limit calculation
 		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size() +
 				aggregateNftAllowances(nftAllowances);
 
@@ -262,19 +330,23 @@ public class DeleteAllowanceChecks {
 		return OK;
 	}
 
-	Pair<Account, ResponseCodeEnum> fetchOwnerAccount(Id owner, Account payerAccount) {
-		if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
-			return Pair.of(payerAccount, OK);
-		} else {
-			try {
-				return Pair.of(accountStore.loadAccount(owner), OK);
-			} catch (InvalidTransactionException ex) {
-				return Pair.of(payerAccount, INVALID_ALLOWANCE_OWNER_ID);
-			}
-		}
-	}
-
+	/**
+	 * Gets sum of number of serials in the nft allowances. Considers duplicate serial numbers as well.
+	 *
+	 * @param nftAllowances
+	 * 		give nft allowances
+	 * @return number of serials
+	 */
 	int aggregateNftAllowances(List<NftRemoveAllowance> nftAllowances) {
 		return nftAllowances.stream().mapToInt(a -> a.getSerialNumbersCount()).sum();
+	}
+
+	/**
+	 * Feature flag to check for allowances is enabled/disabled
+	 *
+	 * @return true if enabled, false otherwise
+	 */
+	private boolean isEnabled() {
+		return dynamicProperties.areAllowancesEnabled();
 	}
 }

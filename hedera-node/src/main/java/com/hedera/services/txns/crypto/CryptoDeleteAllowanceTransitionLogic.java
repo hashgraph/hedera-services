@@ -1,5 +1,25 @@
 package com.hedera.services.txns.crypto;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
@@ -29,6 +49,10 @@ import java.util.function.Predicate;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+/**
+ * Implements the {@link TransitionLogic} for a HAPI CryptoDeleteAllowance transaction,
+ * and the conditions under which such logic is syntactically correct.
+ */
 public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
@@ -80,6 +104,13 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		txnCtx.setStatus(SUCCESS);
 	}
 
+	/**
+	 * Clear spender on the provided nft serials. If the owner is not provided in any allowance,
+	 * considers payer of the transaction as owner while checking if nft is owned by owner.
+	 *
+	 * @param nftAllowances
+	 * 		given nftAllowances
+	 */
 	private void deleteNftSerials(final List<NftRemoveAllowance> nftAllowances) {
 		if (nftAllowances.isEmpty()) {
 			return;
@@ -100,6 +131,16 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		}
 	}
 
+	/**
+	 * For all given token allowance sto be deleted, deletes the token entry from the fungible token allowances
+	 * map on the owner account.If the owner is not provided in any allowance, considers payer of the transaction as
+	 * owner.
+	 *
+	 * @param tokenAllowances
+	 * 		given token allowances
+	 * @param payerAccount
+	 * 		payer for the transaction
+	 */
 	private void deleteFungibleTokenAllowances(final List<TokenRemoveAllowance> tokenAllowances,
 			final Account payerAccount) {
 		if (tokenAllowances.isEmpty()) {
@@ -120,6 +161,13 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		}
 	}
 
+	/**
+	 * Deletes all the crypto allowances on given owner. If the owner is not provided in any allowance,
+	 * considers payer of the transaction as owner.
+	 *
+	 * @param cryptoAllowances
+	 * @param payerAccount
+	 */
 	private void deleteCryptoAllowances(final List<CryptoRemoveAllowance> cryptoAllowances,
 			final Account payerAccount) {
 		if (cryptoAllowances.isEmpty()) {
