@@ -64,6 +64,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
+/**
+ * Semantic check validation for {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowance} transaction
+ */
 @Singleton
 public class DeleteAllowanceChecks {
 	protected final TypedTokenStore tokenStore;

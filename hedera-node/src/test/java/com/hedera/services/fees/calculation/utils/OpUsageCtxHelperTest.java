@@ -228,7 +228,7 @@ class OpUsageCtxHelperTest {
 		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 
 		assertEquals(DEFAULT_MEMO, ctx.currentMemo());
-		assertEquals(Collections.emptyMap(), ctx.currentNftAllowances());
+		assertEquals(Collections.emptySet(), ctx.currentNftAllowances());
 		assertEquals(Collections.emptyMap(), ctx.currentTokenAllowances());
 		assertEquals(Collections.emptyMap(), ctx.currentCryptoAllowances());
 	}
