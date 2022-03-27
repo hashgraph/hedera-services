@@ -29,9 +29,11 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
@@ -67,6 +69,7 @@ import java.util.Optional;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -76,8 +79,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -118,6 +119,8 @@ class ContractCreateTransitionLogicTest {
 	private CreateEvmTxProcessor evmTxProcessor;
 	@Mock
 	private HederaLedger hederaLedger;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
 	private ContractCreateTransactionBody transactionBody;
 	@Mock
@@ -247,6 +250,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(hederaLedger.getAccountsLedger()).willReturn(accountsLedger);
 		final var result = TransactionProcessingResult.successful(
 				null,
 				1234L,
@@ -281,15 +285,11 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
 				expiry);
-		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
-		final var standin = new MerkleAccount();
-		captor.getValue().customizing(standin);
-		final var accountKey = standin.getAccountKey();
-		assertThat(accountKey, instanceOf(JContractIDKey.class));
+		final var captor = ArgumentCaptor.forClass(JKey.class);
+		verify(accountsLedger).set(eq(contractAccount.getId().asGrpcAccount()), eq(KEY), captor.capture());
 		assertEquals(
 				contractAccount.getId().num(),
-				((JContractIDKey) accountKey).getContractID().getContractNum());
+				((JContractIDKey) captor.getValue()).getContractID().getContractNum());
 	}
 
 	@Test
@@ -315,6 +315,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(hederaLedger.getAccountsLedger()).willReturn(accountsLedger);
 		final var result = TransactionProcessingResult.successful(
 				null,
 				1234L,
@@ -347,15 +348,12 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
 				expiry);
-		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
-		final var standin = new MerkleAccount();
-		captor.getValue().customizing(standin);
-		final var accountKey = standin.getAccountKey();
-		assertThat(accountKey, instanceOf(JContractIDKey.class));
+		final var captor = ArgumentCaptor.forClass(JKey.class);
+		verify(accountsLedger).set(eq(contractAccount.getId().asGrpcAccount()), eq(KEY), captor.capture());
+		final var keyUsed = captor.getValue();
 		assertEquals(
 				contractAccount.getId().num(),
-				((JContractIDKey) accountKey).getContractID().getContractNum());
+				keyUsed.getContractIDKey().getContractID().getContractNum());
 	}
 
 	@Test
@@ -391,6 +389,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
+		given(hederaLedger.getAccountsLedger()).willReturn(accountsLedger);
 		final var result = TransactionProcessingResult.successful(
 				null,
 				1234L,
@@ -423,15 +422,11 @@ class ContractCreateTransitionLogicTest {
 				Bytes.fromHexString(contractByteCodeString),
 				txnCtx.consensusTime(),
 				expiry);
-		final ArgumentCaptor<HederaAccountCustomizer> captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
-		verify(hederaLedger).customizePotentiallyDeleted(eq(contractAccount.getId().asGrpcAccount()), captor.capture());
-		final var standin = new MerkleAccount();
-		captor.getValue().customizing(standin);
-		final var accountKey = standin.getAccountKey();
-		assertThat(accountKey, instanceOf(JEd25519Key.class));
+		final var captor = ArgumentCaptor.forClass(JKey.class);
+		verify(accountsLedger).set(eq(contractAccount.getId().asGrpcAccount()), eq(KEY), captor.capture());
 		assertArrayEquals(
 				adminKey.getEd25519().toByteArray(),
-				accountKey.getEd25519());
+				captor.getValue().getEd25519());
 	}
 
 	@Test
@@ -487,6 +482,7 @@ class ContractCreateTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(worldState.persistProvisionalContractCreations()).willReturn(secondaryCreations);
+		given(hederaLedger.getAccountsLedger()).willReturn(accountsLedger);
 		final var result = TransactionProcessingResult.successful(
 				null,
 				1234L,

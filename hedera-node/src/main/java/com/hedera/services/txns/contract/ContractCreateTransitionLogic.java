@@ -27,7 +27,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
@@ -40,7 +40,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -63,7 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_
 
 @Singleton
 public class ContractCreateTransitionLogic implements TransitionLogic {
-	private static final JContractIDKey STANDIN_CONTRACT_ID_KEY = new JContractIDKey(0, 0, 0);
+	public static final JContractIDKey STANDIN_CONTRACT_ID_KEY = new JContractIDKey(0, 0, 0);
 
 	private final HederaFs hfs;
 	private final AccountStore accountStore;
@@ -103,11 +102,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 
 	@Override
 	public void doStateTransition() {
-		/* --- Translate from gRPC types --- */
+		// --- Translate from gRPC types ---
 		var contractCreateTxn = txnCtx.accessor().getTxn();
 		var op = contractCreateTxn.getContractCreateInstance();
 		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
-		final var proxyAccount = op.hasProxyAccountID() ? Id.fromGrpcAccount(op.getProxyAccountID()) : Id.DEFAULT;
 		var key = op.hasAdminKey()
 				? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
 				: STANDIN_CONTRACT_ID_KEY;
@@ -116,12 +114,13 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			key = STANDIN_CONTRACT_ID_KEY;
 		}
 
-		/* --- Load the model objects --- */
+		// --- Load the model objects ---
 		final var sender = accountStore.loadAccount(senderId);
+		final var consensusTime = txnCtx.consensusTime();
 		final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
-		long expiry = RequestBuilder.getExpirationTime(txnCtx.consensusTime(), op.getAutoRenewPeriod()).getSeconds();
+		final var expiry = consensusTime.getEpochSecond() + op.getAutoRenewPeriod().getSeconds();
 
-		/* --- Do the business logic --- */
+		// --- Do the business logic ---
 		final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
 		final var result = evmTxProcessor.execute(
 				sender,
@@ -129,34 +128,25 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				op.getGas(),
 				op.getInitialBalance(),
 				codeWithConstructorArgs,
-				txnCtx.consensusTime(),
+				consensusTime,
 				expiry);
 
-		/* --- Persist changes into state --- */
+		// --- Persist changes into state ---
 		final var createdContracts = worldState.persistProvisionalContractCreations();
 		result.setCreatedContracts(createdContracts);
 
 		if (result.isSuccessful()) {
-			/* --- Create customizer for the newly created contract --- */
-			final var account = EntityIdUtils.accountIdFromEvmAddress(newContractAddress);
-			if (key == STANDIN_CONTRACT_ID_KEY) {
-				key = new JContractIDKey(account.getShardNum(), account.getRealmNum(), account.getAccountNum());
-			}
-			final var customizer = new HederaAccountCustomizer()
-					.key(key)
-					.memo(op.getMemo())
-					.proxy(proxyAccount.asEntityId())
-					.expiry(expiry)
-					.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
-					.isSmartContract(true);
-			hederaLedger.customizePotentiallyDeleted(account, customizer);
+			final var newAccountId = EntityIdUtils.accountIdFromEvmAddress(newContractAddress);
+			final var customizer = ContractCustomizer.fromHapiCreation(key, consensusTime, op);
+			customizer.customize(newAccountId, hederaLedger.getAccountsLedger());
 		} else {
 			worldState.reclaimContractId();
 		}
-		/* --- Customize sponsored Accounts */
+
+		// --- Customize sponsored accounts
 		worldState.customizeSponsoredAccounts();
 
-		/* --- Externalise changes --- */
+		// --- Externalise changes
 		for (final var createdContract : createdContracts) {
 			sigImpactHistorian.markEntityChanged(createdContract.getContractNum());
 		}

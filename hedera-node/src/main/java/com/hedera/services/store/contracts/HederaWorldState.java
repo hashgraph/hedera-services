@@ -24,6 +24,7 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -80,6 +81,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private static final Logger log = LogManager.getLogger(HederaWorldState.class);
 
 	private static final Code EMPTY_CODE = new Code(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
+	private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
+	private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY =
+			"6080604052348015600f57600080fd5b506000610167905077618dc65efefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
 	private final EntityIdSource ids;
 	private final EntityAccess entityAccess;
@@ -89,10 +93,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
 	private final CodeCache codeCache;
 	private final GlobalDynamicProperties dynamicProperties;
-	private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
-	private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY =
-			"6080604052348015600f57600080fd5b506000610167905077618dc65efefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
 
+	// If non-null, the new contract customizations requested by the HAPI contractCreate sender
+	private ContractCustomizer hapiSenderCustomizer;
 
 	@Inject
 	public HederaWorldState(
