@@ -513,9 +513,11 @@ class ContractCreateTransitionLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(contractAccount.getId().num());
 		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
+		verify(worldState).setHapiSenderCustomizer(any());
 		verify(worldState).persistProvisionalContractCreations();
 		verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe());
 		verify(worldState, never()).reclaimContractId();
+		verify(worldState).resetHapiSenderCustomizer();
 		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
 	}
 

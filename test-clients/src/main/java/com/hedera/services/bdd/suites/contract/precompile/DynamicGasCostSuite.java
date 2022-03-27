@@ -634,6 +634,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								tokenMirrorAddr.set(hex(asSolidityAddress(asToken(id)))))
 				).when(
 						sourcing(() -> contractCreate(contract, IMMEDIATE_CHILD_ASSOC_CONS_ABI, tokenMirrorAddr.get())
+								.gas(2_000_000)
 								.adminKey(multiKey)
 								.payingWith(GENESIS)
 								.bytecode(initcode)

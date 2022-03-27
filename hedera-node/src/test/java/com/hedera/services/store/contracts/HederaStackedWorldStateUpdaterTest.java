@@ -22,9 +22,9 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
@@ -42,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -70,7 +71,9 @@ class HederaStackedWorldStateUpdaterTest {
 	@Mock
 	private HederaWorldState.WorldStateAccount account;
 	@Mock
-	private SideEffectsTracker sideEffectsTracker;
+	private HederaStackedWorldStateUpdater.CustomizerFactory customizerFactory;
+	@Mock
+	private ContractCustomizer customizer;
 
 	private HederaStackedWorldStateUpdater subject;
 
@@ -169,18 +172,29 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
+	void returnsHapiSenderCustomizationIfNoFrameCreationPending() {
+		given(worldState.hapiSenderCustomizer()).willReturn(customizer);
+
+		assertSame(customizer, subject.customizerForPendingCreation());
+	}
+
+	@Test
 	void canSponsorWithAlias() {
 		final var sponsoredId = ContractID.newBuilder().setContractNum(2).build();
 		final var sponsorAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(
 				ContractID.newBuilder().setContractNum(1).build())));
+		final var sponsorAid = EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
+
 		given(aliases.resolveForEvm(alias)).willReturn(sponsorAddr);
 		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		HederaStackedWorldStateUpdater.setCustomizerFactory(customizerFactory);
 
 		final var sponsoredAddr = Address.wrap(Bytes.wrap(EntityIdUtils.asEvmAddress(sponsoredId)));
 		given(worldState.newContractAddress(sponsorAddr)).willReturn(sponsoredAddr);
+		given(customizerFactory.apply(sponsorAid, accountsLedger)).willReturn(customizer);
 
 		final var allocated = subject.newContractAddress(alias);
-		final var sponsorAid = EntityIdUtils.accountIdFromEvmAddress(sponsorAddr.toArrayUnsafe());
 		final var allocatedAid = EntityIdUtils.accountIdFromEvmAddress(allocated.toArrayUnsafe());
 
 		assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
@@ -190,6 +204,7 @@ class HederaStackedWorldStateUpdaterTest {
 		assertTrue(subject.getSponsorMap().containsKey(sponsoredAddr));
 		assertTrue(subject.getSponsorMap().containsValue(sponsorAddr));
 		assertEquals(sponsoredId, subject.idOfLastNewAddress());
+		assertNotNull(subject.customizerForPendingCreation());
 	}
 
 	@Test

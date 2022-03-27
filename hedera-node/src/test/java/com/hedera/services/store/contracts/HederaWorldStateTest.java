@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -71,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -99,6 +101,8 @@ class HederaWorldStateTest {
 	private ContractAliases aliases;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private ContractCustomizer customizer;
 
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
@@ -114,6 +118,14 @@ class HederaWorldStateTest {
 	void setUp() {
 		CodeCache codeCache = new CodeCache(0, entityAccess);
 	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, recordsHistorian, dynamicProperties);
+	}
+
+	@Test
+	void canManageCustomizer() {
+		subject.setHapiSenderCustomizer(customizer);
+		assertSame(customizer, subject.hapiSenderCustomizer());
+		subject.resetHapiSenderCustomizer();
+		assertNull(subject.hapiSenderCustomizer());
 	}
 
 	@Test

@@ -7,6 +7,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -26,6 +27,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -76,7 +78,7 @@ class ContractCustomizerTest {
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
 
-		final var subject = ContractCustomizer.fromParentContract(sponsorId, ledger);
+		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 
 		assertCustomizesWithCryptoKey(subject, proxy);
 	}
@@ -91,7 +93,7 @@ class ContractCustomizerTest {
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
 
-		final var subject = ContractCustomizer.fromParentContract(sponsorId, ledger);
+		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 
 		assertCustomizesWithImmutableKey(subject);
 	}
@@ -121,6 +123,17 @@ class ContractCustomizerTest {
 				cryptoAdminKey, consensusNow, op);
 
 		assertCustomizesWithCryptoKey(subject, EntityId.MISSING_ENTITY_ID);
+	}
+
+	@Test
+	void customizesSyntheticWithImmutableKey() {
+		final var subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer);
+		final var op = ContractCreateTransactionBody.newBuilder();
+
+		subject.customizeSynthetic(op);
+
+		verify(accountCustomizer).customizeSynthetic(op);
+		assertEquals(MiscUtils.asKeyUnchecked(cryptoAdminKey), op.getAdminKey());
 	}
 
 	private void assertCustomizesWithCryptoKey(final ContractCustomizer subject, final EntityId expectedProxy) {

@@ -129,6 +129,30 @@ public class HederaWorldState implements HederaMutableWorldState {
 		this.dynamicProperties = dynamicProperties;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public ContractCustomizer hapiSenderCustomizer() {
+		return hapiSenderCustomizer;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void setHapiSenderCustomizer(final ContractCustomizer customizer) {
+		hapiSenderCustomizer = customizer;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void resetHapiSenderCustomizer() {
+		hapiSenderCustomizer = null;
+	}
+
 	@Override
 	public List<ContractID> persistProvisionalContractCreations() {
 		final var copy = new ArrayList<>(provisionalContractCreations);
@@ -164,7 +188,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 				entityAccess.customize(createdId, customizer);
 				recordsHistorian.customizeSuccessor(
 						ip -> isCreationOf(createdId, ip.recordBuilder()),
-						ip -> customizer.applyToSynthetic(ip.syntheticBody().getContractCreateInstanceBuilder()));
+						ip -> customizer.customizeSynthetic(ip.syntheticBody().getContractCreateInstanceBuilder()));
 			}
 		} finally {
 			// Given existence of the sponsor and created accounts, it is hard to see how anything above
@@ -446,6 +470,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 					}
 				}
 			}
+		}
+
+		@Override
+		public ContractCustomizer customizerForPendingCreation() {
+			throw new AssertionError("Not implemented");
 		}
 
 		@Override

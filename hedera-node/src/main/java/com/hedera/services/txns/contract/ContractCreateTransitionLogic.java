@@ -23,11 +23,11 @@ package com.hedera.services.txns.contract;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
+import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
@@ -36,7 +36,6 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -50,6 +49,7 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.accounts.ContractCustomizer.fromHapiCreation;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
@@ -119,32 +119,38 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		final var consensusTime = txnCtx.consensusTime();
 		final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
 		final var expiry = consensusTime.getEpochSecond() + op.getAutoRenewPeriod().getSeconds();
+		final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
 
 		// --- Do the business logic ---
-		final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
-		final var result = evmTxProcessor.execute(
-				sender,
-				newContractAddress,
-				op.getGas(),
-				op.getInitialBalance(),
-				codeWithConstructorArgs,
-				consensusTime,
-				expiry);
+		worldState.setHapiSenderCustomizer(fromHapiCreation(key, consensusTime, op));
+		TransactionProcessingResult result;
+		try {
+			result = evmTxProcessor.execute(
+					sender,
+					newContractAddress,
+					op.getGas(),
+					op.getInitialBalance(),
+					codeWithConstructorArgs,
+					consensusTime,
+					expiry);
+		} finally {
+			worldState.resetHapiSenderCustomizer();
+		}
 
 		// --- Persist changes into state ---
 		final var createdContracts = worldState.persistProvisionalContractCreations();
 		result.setCreatedContracts(createdContracts);
 
 		if (result.isSuccessful()) {
-			final var newAccountId = EntityIdUtils.accountIdFromEvmAddress(newContractAddress);
-			final var customizer = ContractCustomizer.fromHapiCreation(key, consensusTime, op);
-			customizer.customize(newAccountId, hederaLedger.getAccountsLedger());
+//			final var newAccountId = EntityIdUtils.accountIdFromEvmAddress(newContractAddress);
+//			final var customizer = fromHapiCreation(key, consensusTime, op);
+//			customizer.customize(newAccountId, hederaLedger.getAccountsLedger());
 		} else {
 			worldState.reclaimContractId();
 		}
 
 		// --- Customize sponsored accounts
-		worldState.customizeSponsoredAccounts();
+//		worldState.customizeSponsoredAccounts();
 
 		// --- Externalise changes
 		for (final var createdContract : createdContracts) {

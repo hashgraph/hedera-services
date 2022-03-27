@@ -22,6 +22,12 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -38,11 +44,19 @@ public class HederaStackedWorldStateUpdater
 		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount>
 		implements HederaWorldUpdater {
 
+	@FunctionalInterface
+	interface CustomizerFactory {
+		ContractCustomizer apply(AccountID id, TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
+	}
+
+	private static CustomizerFactory customizerFactory = ContractCustomizer::fromSponsorContract;
+
 	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final HederaMutableWorldState worldState;
 
 	private Gas sbhRefund = Gas.ZERO;
 	private ContractID lastAllocatedId = null;
+	private ContractCustomizer pendingCreationCustomizer = null;
 
 	public HederaStackedWorldStateUpdater(
 			final AbstractLedgerWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
@@ -54,6 +68,15 @@ public class HederaStackedWorldStateUpdater
 
 	public byte[] unaliased(final byte[] evmAddress) {
 		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
+	}
+
+	/**
+	 * Returns the underlying entity id of the last allocated EVM address.
+	 *
+	 * @return the id of the last allocated address
+	 */
+	public ContractID idOfLastNewAddress() {
+		return lastAllocatedId;
 	}
 
 	/**
@@ -70,11 +93,11 @@ public class HederaStackedWorldStateUpdater
 	public Address newAliasedContractAddress(final Address sponsor, final Address alias) {
 		final var mirrorAddress = newContractAddress(sponsor);
 		final var curAliases = aliases();
-		/* Only link the alias if it's not already in use, or if the target of the alleged link
-		 * doesn't actually exist. (In the first case, a CREATE2 that tries to re-use an existing
-		 * alias address is going to fail in short order; in the second case, the existing link
-		 * must have been created by an inline create2 that failed, but didn't revert us---we are
-		 * free to re-use this alias). */
+		// Only link the alias if it's not already in use, or if the target of the alleged link
+		// doesn't actually exist. (In the first case, a CREATE2 that tries to re-use an existing
+		// alias address is going to fail in short order; in the second case, the existing link
+		// must have been created by an inline create2 that failed, but didn't revert us---we are
+		// free to re-use this alias).
 		if (!curAliases.isInUse(alias) || isMissingTarget(alias)) {
 			curAliases.link(alias, mirrorAddress);
 		}
@@ -86,17 +109,15 @@ public class HederaStackedWorldStateUpdater
 		final var sponsor = aliases().resolveForEvm(sponsorAddressOrAlias);
 		final var newAddress = worldState.newContractAddress(sponsor);
 		sponsorMap.put(newAddress, sponsor);
+		final var sponsorId = accountIdFromEvmAddress(sponsor);
+		pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts());
 		lastAllocatedId = contractIdFromEvmAddress(newAddress);
 		return newAddress;
 	}
 
-	/**
-	 * Returns the underlying entity id of the last allocated EVM address.
-	 *
-	 * @return the id of the last allocated address
-	 */
-	public ContractID idOfLastNewAddress() {
-		return lastAllocatedId;
+	@Override
+	public ContractCustomizer customizerForPendingCreation() {
+		return (pendingCreationCustomizer != null) ? pendingCreationCustomizer : worldState.hapiSenderCustomizer();
 	}
 
 	public Map<Address, Address> getSponsorMap() {
@@ -150,5 +171,10 @@ public class HederaStackedWorldStateUpdater
 	private boolean isMissingTarget(final Address alias) {
 		final var target = aliases().resolveForEvm(alias);
 		return !trackingAccounts().exists(accountIdFromEvmAddress(target));
+	}
+
+	@VisibleForTesting
+	static void setCustomizerFactory(final CustomizerFactory customizerFactory) {
+		HederaStackedWorldStateUpdater.customizerFactory = customizerFactory;
 	}
 }
