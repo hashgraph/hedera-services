@@ -26,7 +26,6 @@ import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.records.TransactionRecordService;
@@ -71,7 +70,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CreateEvmTxProcessor evmTxProcessor;
-	private final HederaLedger hederaLedger;
 	private final GlobalDynamicProperties properties;
 	private final SigImpactHistorian sigImpactHistorian;
 
@@ -84,7 +82,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			final HederaWorldState worldState,
 			final TransactionRecordService recordService,
 			final CreateEvmTxProcessor evmTxProcessor,
-			final HederaLedger hederaLedger,
 			final GlobalDynamicProperties properties,
 			final SigImpactHistorian sigImpactHistorian
 	) {
@@ -96,7 +93,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		this.recordService = recordService;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.evmTxProcessor = evmTxProcessor;
-		this.hederaLedger = hederaLedger;
 		this.properties = properties;
 	}
 
@@ -138,7 +134,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		}
 
 		// --- Persist changes into state ---
-		final var createdContracts = worldState.persistProvisionalContractCreations();
+		final var createdContracts = worldState.getCreatedContractIds();
 		result.setCreatedContracts(createdContracts);
 
 		if (!result.isSuccessful()) {
@@ -159,7 +155,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			recordService.externalizeUnsuccessfulEvmCreate(result);
 		}
 	}
-
 
 	@Override
 	public Predicate<TransactionBody> applicability() {

@@ -25,20 +25,14 @@ package com.hedera.services.store.contracts;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -56,30 +50,23 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
-import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {
-	private static final Logger log = LogManager.getLogger(HederaWorldState.class);
-
 	private static final Code EMPTY_CODE = new Code(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
 	private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
 	private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY =
@@ -88,8 +75,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 	private final EntityIdSource ids;
 	private final EntityAccess entityAccess;
 	private final SigImpactHistorian sigImpactHistorian;
-	private final AccountRecordsHistorian recordsHistorian;
-	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final List<ContractID> provisionalContractCreations = new LinkedList<>();
 	private final CodeCache codeCache;
 	private final GlobalDynamicProperties dynamicProperties;
@@ -103,14 +88,12 @@ public class HederaWorldState implements HederaMutableWorldState {
 			final EntityAccess entityAccess,
 			final CodeCache codeCache,
 			final SigImpactHistorian sigImpactHistorian,
-			final AccountRecordsHistorian recordsHistorian,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.ids = ids;
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = sigImpactHistorian;
-		this.recordsHistorian = recordsHistorian;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -125,7 +108,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 		this.entityAccess = entityAccess;
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = null;
-		this.recordsHistorian = null;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -154,62 +136,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 	}
 
 	@Override
-	public List<ContractID> persistProvisionalContractCreations() {
+	public List<ContractID> getCreatedContractIds() {
 		final var copy = new ArrayList<>(provisionalContractCreations);
 		provisionalContractCreations.clear();
 		copy.sort(CONTRACT_ID_COMPARATOR);
-
 		return copy;
-	}
-
-	@Override
-	public void customizeSponsoredAccounts() {
-		Objects.requireNonNull(recordsHistorian, "A static call cannot generated sponsored accounts");
-		try {
-			for (final var entry : sponsorMap.entrySet()) {
-				final var sponsorId = accountIdFromEvmAddress(entry.getValue());
-				final var createdId = accountIdFromEvmAddress(entry.getKey());
-				if (!isValidCustomization(sponsorId, createdId)) {
-					continue;
-				}
-
-				final var sponsorKey = entityAccess.getKey(sponsorId);
-				final var createdKey = (sponsorKey instanceof JContractIDKey)
-						? STATIC_PROPERTIES.scopedContractKeyWith(createdId.getAccountNum())
-						: sponsorKey;
-				final var customizer = new HederaAccountCustomizer()
-						.key(createdKey)
-						.memo(entityAccess.getMemo(sponsorId))
-						.proxy(entityAccess.getProxy(sponsorId))
-						.autoRenewPeriod(entityAccess.getAutoRenew(sponsorId))
-						.expiry(entityAccess.getExpiry(sponsorId))
-						.isSmartContract(true);
-
-				entityAccess.customize(createdId, customizer);
-				recordsHistorian.customizeSuccessor(
-						ip -> isCreationOf(createdId, ip.recordBuilder()),
-						ip -> customizer.customizeSynthetic(ip.syntheticBody().getContractCreateInstanceBuilder()));
-			}
-		} finally {
-			// Given existence of the sponsor and created accounts, it is hard to see how anything above
-			// could throw an exception; but use try-finally here to make sure we reset the sponsor map.
-			sponsorMap.clear();
-		}
-	}
-
-	private boolean isValidCustomization(final AccountID sponsorId, final AccountID createdId) {
-		if (!entityAccess.isExtant(createdId)) {
-			final var cId = asLiteralString(createdId);
-			log.warn("Sponsored account {} was not actually created; the entity id will remain unused", cId);
-			return false;
-		}
-		if (!entityAccess.isExtant(sponsorId)) {
-			final var sId = asLiteralString(sponsorId);
-			final var cId = asLiteralString(createdId);
-			log.warn("Sponsor {} for account {} does not exist; the account will not be customized", sId, cId);
-			return false;
-		}
-		return true;
 	}
 
 	@Override
@@ -430,19 +361,13 @@ public class HederaWorldState implements HederaMutableWorldState {
 			extends AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount>
 			implements HederaWorldUpdater {
 
-		private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
-
 		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(BytesComparator.INSTANCE);
 
-		Gas sbhRefund = Gas.ZERO;
+		private int numAllocatedIds = 0;
+		private Gas sbhRefund = Gas.ZERO;
 
 		protected Updater(final HederaWorldState world, final WorldLedgers trackingLedgers) {
 			super(world, trackingLedgers);
-		}
-
-		@Override
-		public Map<Address, Address> getSponsorMap() {
-			return sponsorMap;
 		}
 
 		public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
@@ -474,7 +399,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public ContractCustomizer customizerForPendingCreation() {
-			throw new AssertionError("Not implemented");
+			// The base updater never directly buffers changes for a CONTRACT_CREATION message
+			throw new UnsupportedOperationException();
 		}
 
 		@Override
@@ -485,6 +411,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public Address newContractAddress(final Address sponsor) {
+			numAllocatedIds++;
 			return wrappedWorldView().newContractAddress(sponsor);
 		}
 
@@ -501,13 +428,17 @@ public class HederaWorldState implements HederaMutableWorldState {
 		@Override
 		public void revert() {
 			super.revert();
-
 			final var wrapped = wrappedWorldView();
-			for (int i = 0, n = sponsorMap.size(); i < n; i++) {
+			while (numAllocatedIds != 0) {
 				wrapped.reclaimContractId();
+				numAllocatedIds--;
 			}
-			sponsorMap.clear();
 			sbhRefund = Gas.ZERO;
+		}
+
+		@Override
+		public void countIdsAllocatedByStacked(final int n) {
+			numAllocatedIds += n;
 		}
 
 		@Override
@@ -541,8 +472,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 			// this commit() persists all of that information without any additional use of the deletedAccounts
 			// or updatedAccounts collections.
 			trackingLedgers().commit(impactHistorian);
-
-			wrapped.sponsorMap.putAll(sponsorMap);
 		}
 
 		private void ensureExistence(
@@ -558,9 +487,9 @@ public class HederaWorldState implements HederaMutableWorldState {
 		private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {
 			for (final var updatedAccount : getUpdatedAccounts()) {
 				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
-				/* Note that we don't have the equivalent of an account-scoped storage trie, so we can't
-				 * do anything in particular when updated.getStorageWasCleared() is true. (We will address
-				 * this in our global state expiration implementation.) */
+				// Note that we don't have the equivalent of an account-scoped storage trie, so we can't
+				// do anything in particular when updated.getStorageWasCleared() is true. (We will address
+				// this in our global state expiration implementation.)
 				final var kvUpdates = updatedAccount.getUpdatedStorage();
 				if (!kvUpdates.isEmpty()) {
 					kvUpdates.forEach((key, value) -> entityAccess.putStorage(accountId, key, value));
@@ -579,17 +508,5 @@ public class HederaWorldState implements HederaMutableWorldState {
 		public WorldStateAccount getHederaAccount(final Address address) {
 			return getForMutation(address);
 		}
-	}
-
-	static boolean isCreationOf(
-			final AccountID backingId,
-			final ExpirableTxnRecord.Builder recordBuilder
-	) {
-		final var receiptBuilder = recordBuilder.getReceiptBuilder();
-		if (receiptBuilder == null || !SUCCESS_LITERAL.equals(receiptBuilder.getStatus())) {
-			return false;
-		}
-		final var contractId = receiptBuilder.getContractId();
-		return contractId != null && contractId.matches(backingId);
 	}
 }

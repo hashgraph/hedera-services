@@ -62,17 +62,11 @@ public interface HederaMutableWorldState extends WorldState, WorldView {
 	HederaWorldUpdater updater();
 
 	/**
-	 * Returns the list of ContractIDs created by the current transaction
-	 * Clears the collected list after execution.
+	 * Returns the list of contract ids created by the current transaction.
 	 *
-	 * @return the list of ContractIDs created by this transaction.
+	 * @return the list of ids created by this transaction.
 	 */
-	List<ContractID> persistProvisionalContractCreations();
-
-	/**
-	 * Customizes sponsored accounts
-	 */
-	void customizeSponsoredAccounts();
+	List<ContractID> getCreatedContractIds();
 
 	/**
 	 * Returns the contract customizations requested by the sender of a top-level HAPI contractCreate.

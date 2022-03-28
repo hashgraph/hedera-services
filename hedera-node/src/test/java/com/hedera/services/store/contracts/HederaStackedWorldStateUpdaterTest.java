@@ -45,10 +45,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class HederaStackedWorldStateUpdaterTest {
@@ -102,7 +103,6 @@ class HederaStackedWorldStateUpdaterTest {
 			final var created = subject.newAliasedContractAddress(sponsor, alias);
 
 			assertSame(address, created);
-			assertEquals(sponsor, subject.getSponsorMap().get(address));
 			assertEquals(addressId, subject.idOfLastNewAddress());
 			verify(aliases).link(alias, address);
 		});
@@ -130,7 +130,6 @@ class HederaStackedWorldStateUpdaterTest {
 			final var created = subject.newAliasedContractAddress(sponsor, alias);
 
 			assertSame(address, created);
-			assertEquals(sponsor, subject.getSponsorMap().get(address));
 			assertEquals(addressId, subject.idOfLastNewAddress());
 			verify(aliases, never()).link(alias, address);
 		});
@@ -149,7 +148,6 @@ class HederaStackedWorldStateUpdaterTest {
 			final var created = subject.newAliasedContractAddress(sponsor, alias);
 
 			assertSame(address, created);
-			assertEquals(sponsor, subject.getSponsorMap().get(address));
 			assertEquals(addressId, subject.idOfLastNewAddress());
 			verify(aliases).link(alias, address);
 		});
@@ -173,9 +171,6 @@ class HederaStackedWorldStateUpdaterTest {
 			assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
 			assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());
 			assertEquals(sponsorAid.getAccountNum() + 1, allocatedAid.getAccountNum());
-			assertEquals(1, subject.getSponsorMap().size());
-			assertTrue(subject.getSponsorMap().containsKey(sponsoredAddr));
-			assertTrue(subject.getSponsorMap().containsValue(sponsorAddr));
 			assertEquals(sponsoredId, subject.idOfLastNewAddress());
 		});
 	}
@@ -209,27 +204,36 @@ class HederaStackedWorldStateUpdaterTest {
 			assertEquals(sponsorAid.getRealmNum(), allocatedAid.getRealmNum());
 			assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());
 			assertEquals(sponsorAid.getAccountNum() + 1, allocatedAid.getAccountNum());
-			assertEquals(1, subject.getSponsorMap().size());
-			assertTrue(subject.getSponsorMap().containsKey(sponsoredAddr));
-			assertTrue(subject.getSponsorMap().containsValue(sponsorAddr));
 			assertEquals(sponsoredId, subject.idOfLastNewAddress());
 			assertNotNull(subject.customizerForPendingCreation());
 		});
 	}
 
 	@Test
-	void revert() {
-		subject.getSponsorMap().put(Address.ECREC, Address.RIPEMD160);
+	void revertBehavesAsExpected() {
+		subject.countIdsAllocatedByStacked(3);
 		subject.addSbhRefund(Gas.of(123L));
-		assertEquals(1, subject.getSponsorMap().size());
 		assertEquals(123L, subject.getSbhRefund().toLong());
 		subject.revert();
-		assertEquals(0, subject.getSponsorMap().size());
 		assertEquals(0, subject.getSbhRefund().toLong());
+		verify(worldState, times(3)).reclaimContractId();
 	}
 
 	@Test
-	void updater() {
+	void commitPropagatesAllocatedIds() {
+
+		doCallRealMethod().when(subject).commit();
+		doCallRealMethod().when(subject).countIdsAllocatedByStacked(3);
+		given(subject.wrappedWorldView()).willReturn(updater);
+
+		subject.countIdsAllocatedByStacked(3);
+		subject.commit();
+
+		verify((HederaWorldUpdater) updater).countIdsAllocatedByStacked(3);
+	}
+
+	@Test
+	void updaterReturnsStacked() {
 		var updater = subject.updater();
 		assertEquals(HederaStackedWorldStateUpdater.class, updater.getClass());
 	}

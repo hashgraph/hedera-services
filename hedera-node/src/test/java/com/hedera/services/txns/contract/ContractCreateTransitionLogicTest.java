@@ -27,13 +27,9 @@ import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -112,10 +108,6 @@ class ContractCreateTransitionLogicTest {
 	@Mock
 	private CreateEvmTxProcessor evmTxProcessor;
 	@Mock
-	private HederaLedger hederaLedger;
-	@Mock
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	@Mock
 	private ContractCreateTransactionBody transactionBody;
 	@Mock
 	private GlobalDynamicProperties properties;
@@ -135,7 +127,7 @@ class ContractCreateTransitionLogicTest {
 				hfs,
 				txnCtx, accountStore, validator,
 				worldState, recordServices, evmTxProcessor,
-				hederaLedger, properties, sigImpactHistorian);
+				properties, sigImpactHistorian);
 	}
 
 	@Test
@@ -414,7 +406,7 @@ class ContractCreateTransitionLogicTest {
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(
 				contractAccount.getId().asEvmAddress());
-		given(worldState.persistProvisionalContractCreations()).willReturn(expectedCreatedContracts);
+		given(worldState.getCreatedContractIds()).willReturn(expectedCreatedContracts);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
@@ -440,7 +432,7 @@ class ContractCreateTransitionLogicTest {
 
 		// then:
 		verify(worldState).reclaimContractId();
-		verify(worldState).persistProvisionalContractCreations();
+		verify(worldState).getCreatedContractIds();
 		verify(txnCtx, never()).setTargetedContract(contractAccount.getId().asGrpcContract());
 		verify(recordServices).externalizeUnsuccessfulEvmCreate(result);
 	}
@@ -456,7 +448,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
-		given(worldState.persistProvisionalContractCreations()).willReturn(secondaryCreations);
+		given(worldState.getCreatedContractIds()).willReturn(secondaryCreations);
 		final var result = TransactionProcessingResult.successful(
 				null,
 				1234L,
@@ -488,7 +480,7 @@ class ContractCreateTransitionLogicTest {
 		verify(sigImpactHistorian).markEntityChanged(secondaryCreations.get(0).getContractNum());
 		verify(worldState).newContractAddress(senderAccount.getId().asEvmAddress());
 		verify(worldState).setHapiSenderCustomizer(any());
-		verify(worldState).persistProvisionalContractCreations();
+		verify(worldState).getCreatedContractIds();
 		verify(recordServices).externalizeSuccessfulEvmCreate(result, newEvmAddress.toArrayUnsafe());
 		verify(worldState, never()).reclaimContractId();
 		verify(worldState).resetHapiSenderCustomizer();

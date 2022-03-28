@@ -34,9 +34,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 
@@ -51,17 +48,18 @@ public class HederaStackedWorldStateUpdater
 
 	private static CustomizerFactory customizerFactory = ContractCustomizer::fromSponsorContract;
 
-	private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 	private final HederaMutableWorldState worldState;
 
 	private Gas sbhRefund = Gas.ZERO;
+	private int numAllocatedIds = 0;
 	private ContractID lastAllocatedId = null;
 	private ContractCustomizer pendingCreationCustomizer = null;
 
 	public HederaStackedWorldStateUpdater(
 			final AbstractLedgerWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
 			final HederaMutableWorldState worldState,
-			final WorldLedgers trackingLedgers) {
+			final WorldLedgers trackingLedgers
+	) {
 		super(updater, trackingLedgers);
 		this.worldState = worldState;
 	}
@@ -83,7 +81,8 @@ public class HederaStackedWorldStateUpdater
 	 * Given an address in mirror or alias form, returns its alias form (if it has one). We use this to make
 	 * the ADDRESS opcode prioritize CREATE2 addresses over mirror addresses.
 	 *
-	 * @param addressOrAlias a mirror or alias address
+	 * @param addressOrAlias
+	 * 		a mirror or alias address
 	 * @return the alias form of the address, if it exists
 	 */
 	public Address priorityAddress(final Address addressOrAlias) {
@@ -105,10 +104,15 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
+	public void countIdsAllocatedByStacked(final int n) {
+		numAllocatedIds += n;
+	}
+
+	@Override
 	public Address newContractAddress(final Address sponsorAddressOrAlias) {
 		final var sponsor = aliases().resolveForEvm(sponsorAddressOrAlias);
 		final var newAddress = worldState.newContractAddress(sponsor);
-		sponsorMap.put(newAddress, sponsor);
+		numAllocatedIds++;
 		final var sponsorId = accountIdFromEvmAddress(sponsor);
 		pendingCreationCustomizer = customizerFactory.apply(sponsorId, trackingAccounts());
 		lastAllocatedId = contractIdFromEvmAddress(newAddress);
@@ -118,10 +122,6 @@ public class HederaStackedWorldStateUpdater
 	@Override
 	public ContractCustomizer customizerForPendingCreation() {
 		return (pendingCreationCustomizer != null) ? pendingCreationCustomizer : worldState.hapiSenderCustomizer();
-	}
-
-	public Map<Address, Address> getSponsorMap() {
-		return sponsorMap;
 	}
 
 	@Override
@@ -136,20 +136,24 @@ public class HederaStackedWorldStateUpdater
 
 	@Override
 	public void revert() {
-		for (int i = 0; i < sponsorMap.size(); i++) {
-			worldState.reclaimContractId();
-		}
-		sponsorMap.clear();
-		sbhRefund = Gas.ZERO;
 		super.revert();
+		// Note that reclaiming entity ids here is only on a best-effort basis, since
+		// if an inline CREATE or CREATE2 fails and our frame doesn't explicitly revert,
+		// the entity id allocated in newContractAddress() will not _actually_ be used
+		while (numAllocatedIds != 0) {
+			worldState.reclaimContractId();
+			numAllocatedIds--;
+		}
+		sbhRefund = Gas.ZERO;
 	}
 
 	@Override
 	public void commit() {
-		((HederaWorldUpdater) wrappedWorldView()).getSponsorMap().putAll(sponsorMap);
-		((HederaWorldUpdater) wrappedWorldView()).addSbhRefund(sbhRefund);
-		sbhRefund = Gas.ZERO;
 		super.commit();
+		final var wrappedUpdater = ((HederaWorldUpdater) wrappedWorldView());
+		wrappedUpdater.addSbhRefund(sbhRefund);
+		wrappedUpdater.countIdsAllocatedByStacked(numAllocatedIds);
+		sbhRefund = Gas.ZERO;
 	}
 
 	@Override
@@ -159,7 +163,7 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
-	@SuppressWarnings({"unchecked", "rawtypes"})
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public WorldUpdater updater() {
 		return new HederaStackedWorldStateUpdater(
 				(AbstractLedgerWorldUpdater) this,
