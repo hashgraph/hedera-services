@@ -138,9 +138,9 @@ public class UniqueToken {
 		UniqueToken that = (UniqueToken) o;
 		return this.tokenId.equals(that.tokenId) &&
 				this.serialNumber == that.serialNumber &&
-				this.owner.equals(that.owner) &&
-				this.spender.equals(that.spender) &&
-				this.creationTime.equals(that.creationTime) &&
+				this.owner == that.owner &&
+				this.spender == that.spender &&
+				this.creationTime == that.creationTime &&
 				Arrays.equals(this.metadata, that.metadata);
 	}
 }
