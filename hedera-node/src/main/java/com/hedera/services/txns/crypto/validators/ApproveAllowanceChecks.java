@@ -27,6 +27,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.inject.Inject;
@@ -45,8 +46,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
 @Singleton
 public class ApproveAllowanceChecks extends AllowanceChecks {
 	@Inject
-	public ApproveAllowanceChecks(final GlobalDynamicProperties dynamicProperties) {
-		super(dynamicProperties);
+	public ApproveAllowanceChecks(final GlobalDynamicProperties dynamicProperties,
+			final OptionValidator validator) {
+		super(dynamicProperties, validator);
 	}
 
 	@Override

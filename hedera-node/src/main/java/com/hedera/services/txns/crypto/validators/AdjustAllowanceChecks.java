@@ -29,6 +29,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -51,8 +52,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NO
 @Singleton
 public class AdjustAllowanceChecks extends AllowanceChecks {
 	@Inject
-	public AdjustAllowanceChecks(final GlobalDynamicProperties dynamicProperties) {
-		super(dynamicProperties);
+	public AdjustAllowanceChecks(final GlobalDynamicProperties dynamicProperties,
+			final OptionValidator validator) {
+		super(dynamicProperties, validator);
 	}
 
 	@Override
@@ -65,12 +67,13 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 
 		final var key = FcTokenAllowanceId.from(token.asEntityNum(), spender.asEntityNum());
 		final var existingAllowance = existingAllowances.containsKey(key) ? existingAllowances.get(key) : 0;
+		final long aggregatedAmount = amount + existingAllowance;
 
-		if (amount + existingAllowance < 0) {
+		if (aggregatedAmount < 0) {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
 		}
 
-		if (merkleToken.supplyType().equals(TokenSupplyType.FINITE) && amount > merkleToken.maxSupply()) {
+		if (merkleToken.supplyType().equals(TokenSupplyType.FINITE) && aggregatedAmount > merkleToken.maxSupply()) {
 			return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 		}
 		return OK;

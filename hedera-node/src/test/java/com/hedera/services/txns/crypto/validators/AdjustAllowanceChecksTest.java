@@ -37,6 +37,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -109,6 +110,8 @@ class AdjustAllowanceChecksTest {
 	private StateView view;
 	@Mock
 	private MerkleToken merkleToken;
+	@Mock
+	private OptionValidator validator;
 
 	AdjustAllowanceChecks subject;
 
@@ -168,7 +171,7 @@ class AdjustAllowanceChecksTest {
 
 		addExistingAllowancesAndSerials();
 
-		subject = new AdjustAllowanceChecks(dynamicProperties);
+		subject = new AdjustAllowanceChecks(dynamicProperties, validator);
 	}
 
 	@Test

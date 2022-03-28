@@ -35,6 +35,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -108,7 +109,11 @@ class ApproveAllowanceChecksTest {
 	@Mock
 	private StateView view;
 	@Mock
-	private MerkleToken merkleToken;
+	private MerkleToken merkleToken1;
+	@Mock
+	private MerkleToken merkleToken2;
+	@Mock
+	private OptionValidator validator;
 
 	ApproveAllowanceChecks subject;
 
@@ -156,13 +161,17 @@ class ApproveAllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
-		subject = new ApproveAllowanceChecks(dynamicProperties);
+		subject = new ApproveAllowanceChecks(dynamicProperties, validator);
 	}
 
 	private void setUpForTest() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(view.loadToken(token1)).willReturn(merkleToken1);
+		given(view.loadToken(token2)).willReturn(merkleToken2);
+		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
+		given(merkleToken2.supplyType()).willReturn(TokenSupplyType.FINITE);
+		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(merkleToken2.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 
@@ -475,6 +484,8 @@ class ApproveAllowanceChecksTest {
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		given(view.loadToken(token1)).willReturn(merkleToken1);
+
 		assertEquals(OK, subject.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
 				dynamicProperties.maxAllowanceLimitPerTransaction(), view));
@@ -514,7 +525,7 @@ class ApproveAllowanceChecksTest {
 
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(false);
 
-		var validity = subject.validateSerialNums(serials, owner, merkleToken, view,
+		var validity = subject.validateSerialNums(serials, owner, merkleToken1, view,
 				Id.fromGrpcToken(token2), Id.fromGrpcAccount(spender2));
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
@@ -528,7 +539,7 @@ class ApproveAllowanceChecksTest {
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
 		given(token.getOwner()).willReturn(EntityId.MISSING_ENTITY_ID);
 
-		var validity = subject.validateSerialNums(serials, treasury, merkleToken, view,
+		var validity = subject.validateSerialNums(serials, treasury, merkleToken1, view,
 				Id.fromGrpcToken(token2), Id.fromGrpcAccount(spender2));
 		assertEquals(OK, validity);
 	}
@@ -543,7 +554,7 @@ class ApproveAllowanceChecksTest {
 				EntityId.fromGrpcAccountId(spender1));
 		given(treasury.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 
-		var validity = subject.validateSerialNums(serials, treasury, merkleToken, view,
+		var validity = subject.validateSerialNums(serials, treasury, merkleToken1, view,
 				Id.fromGrpcToken(token2), Id.fromGrpcAccount(spender2));
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
@@ -558,7 +569,7 @@ class ApproveAllowanceChecksTest {
 				EntityId.fromGrpcAccountId(spender1));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 
-		var validity = subject.validateSerialNums(serials, owner, merkleToken, view,
+		var validity = subject.validateSerialNums(serials, owner, merkleToken1, view,
 				Id.fromGrpcToken(token1), Id.fromGrpcAccount(spender1));
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
@@ -566,7 +577,7 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void validateRepeatedSerials() {
 		final var serials = List.of(1L, 10L, 1L);
-		var validity = subject.validateSerialNums(serials, owner, merkleToken, view,
+		var validity = subject.validateSerialNums(serials, owner, merkleToken1, view,
 				Id.fromGrpcToken(token2), Id.fromGrpcAccount(spender2));
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 	}
@@ -574,7 +585,7 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void validateIfSerialsEmptyWithoutApproval() {
 		final List<Long> serials = List.of();
-		var validity = subject.validateSerialNums(serials, owner, merkleToken, view,
+		var validity = subject.validateSerialNums(serials, owner, merkleToken1, view,
 				Id.fromGrpcToken(token2), Id.fromGrpcAccount(spender2));
 		assertEquals(EMPTY_ALLOWANCES, validity);
 	}

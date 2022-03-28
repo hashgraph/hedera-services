@@ -23,11 +23,13 @@ package com.hedera.services.txns.crypto.validators;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -67,10 +69,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 @Singleton
 public class AllowanceChecks {
 	private final GlobalDynamicProperties dynamicProperties;
+	private final OptionValidator validator;
 
 	@Inject
-	public AllowanceChecks(final GlobalDynamicProperties dynamicProperties) {
+	public AllowanceChecks(final GlobalDynamicProperties dynamicProperties,
+			final OptionValidator validator) {
 		this.dynamicProperties = dynamicProperties;
+		this.validator = validator;
 	}
 
 	/**
@@ -91,11 +96,11 @@ public class AllowanceChecks {
 		if (cryptoAllowances.isEmpty()) {
 			return OK;
 		}
-		final var cryptoKeys = cryptoAllowances.stream()
+		final var entities = cryptoAllowances.stream()
 				.map(allowance -> buildEntityNumPairFrom(allowance.getOwner(), allowance.getSpender(),
 						payerAccount.getId().asEntityNum()))
 				.toList();
-		if (hasRepeatedSpender(cryptoKeys)) {
+		if (hasRepeatedSpender(entities)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 
@@ -153,6 +158,10 @@ public class AllowanceChecks {
 			final var merkleToken = view.loadToken(tokenId);
 			final var token = Id.fromGrpcToken(tokenId);
 
+
+			if (merkleToken == null) {
+				return INVALID_TOKEN_ID;
+			}
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
@@ -164,7 +173,7 @@ public class AllowanceChecks {
 				return validity;
 			}
 
-			if (merkleToken.tokenType() != TokenType.FUNGIBLE_COMMON) {
+			if (!isFungibleCommon(merkleToken)) {
 				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 			}
 			validity = validateTokenBasics(ownerAccount, spender, tokenId);
@@ -219,7 +228,7 @@ public class AllowanceChecks {
 			}
 			final var ownerAccount = fetchResult.getLeft().get();
 
-			if (merkleToken.tokenType() == TokenType.FUNGIBLE_COMMON) {
+			if (isFungibleCommon(merkleToken)) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
@@ -345,11 +354,23 @@ public class AllowanceChecks {
 			return Pair.of(Optional.of(payerAccount), OK);
 		} else {
 			final var account = view.loadAccount(owner.asGrpcAccount());
-			if (account == null) {
+			if (isInvalidOwner(account)) {
 				return Pair.of(Optional.empty(), INVALID_ALLOWANCE_OWNER_ID);
 			} else {
 				return Pair.of(Optional.of(Account.loadEntity(account, owner)), OK);
 			}
+		}
+	}
+
+	private boolean isInvalidOwner(final MerkleAccount  account){
+		return account == null || account.isDeleted() || isExpired(account.getBalance(), account.getExpiry());
+	}
+
+	private boolean isExpired(long balance, long expiry) {
+		if (dynamicProperties.autoRenewEnabled() && balance == 0) {
+			return !validator.isAfterConsensusSecond(expiry);
+		} else {
+			return false;
 		}
 	}
 
@@ -367,6 +388,10 @@ public class AllowanceChecks {
 	 */
 	public boolean isEnabled() {
 		return dynamicProperties.areAllowancesEnabled();
+	}
+
+	private boolean isFungibleCommon(MerkleToken token) {
+		return token.tokenType() == TokenType.FUNGIBLE_COMMON;
 	}
 
 	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
