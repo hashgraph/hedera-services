@@ -1079,21 +1079,21 @@ public class ContractResources {
 	public static final String CREATE_FUNGIBLE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
 			"\"name\": \"contractKey\", \"type\": \"address\" } ], \"name\": \"createFungible\", " +
 			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
-			"\"type\": \"address\" }], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+			"\"type\": \"address\" }], \"stateMutability\": \"payable\", \"type\": \"function\" }";
 
 	public static final String CREATE_FUNGIBLE_WITH_FEES_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
 			"\"name\": \"contractKey\", \"type\": \"address\" } ], \"name\": \"createFungibleWithFees\", " +
 			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
-			"\"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+			"\"type\": \"address\" } ], \"stateMutability\": \"payable\", \"type\": \"function\" }";
 
 	public static final String CREATE_NON_FUNGIBLE_ABI = "{ \"inputs\": [], \"name\": \"createNonFungibleToken\", " +
 			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
-			"\"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+			"\"type\": \"address\" } ], \"stateMutability\": \"payable\", \"type\": \"function\" }";
 
 	public static final String CREATE_NON_FUNGIBLE_WITH_FEES_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
 			"\"name\": \"feeCollector\", \"type\": \"address\" } ], \"name\": \"createNonFungibleTokenWithCustomFees\", " +
 			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
-			"\"type\": \"address\" } ], \"stateMutability\": \"nonpayable\", \"type\": \"function\" }";
+			"\"type\": \"address\" } ], \"stateMutability\": \"payable\", \"type\": \"function\" }";
 
 	public static final String SAFE_MINT_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", \"name\": \"token\"," +
 			" \"type\": \"address\" }, { \"internalType\": \"uint64\", \"name\": \"amount\", \"type\": \"uint64\" }, " +

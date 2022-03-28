@@ -72,12 +72,6 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 			final PrecompiledContract contract,
 			final MessageFrame frame,
 			final OperationTracer operationTracer) {
-		// EVM value transfers are not allowed
-		if (!Objects.equals(Wei.ZERO, frame.getValue())) {
-			frame.setRevertReason(INVALID_TRANSFER);
-			frame.setState(REVERT);
-			return;
-		}
 
 		final Bytes output = contract.compute(frame.getInputData(), frame);
 		final Gas gasRequirement = contract.gasRequirement(frame.getInputData());

@@ -14,7 +14,7 @@ contract TokenCreateContract is HederaTokenService {
     using Bits for uint;
 
     // Create Fungible Token with no custom fees, with a user account as admin, contract as supply and pause key.
-    function createFungible(address contractKey) external returns (address createdTokenAddress) {
+    function createFungible(address contractKey) external payable returns (address createdTokenAddress) {
 
         // create TokenKey of type adminKey with value inherited from called account
         IHederaTokenService.KeyValue memory adminKeyValue;
@@ -40,18 +40,18 @@ contract TokenCreateContract is HederaTokenService {
         myToken.treasury = address(this);
         myToken.tokenKeys = keys;
 
-        (bool success, address token, bytes memory errorMessage) =
+        (int responseCode, address token) =
         HederaTokenService.createFungibleToken(myToken, 200, 8);
 
-        if (!success) {
-            revert (abi.decode(errorMessage, (string)));
+        if (responseCode != 22) {
+            revert ();
         }
 
         createdTokenAddress = token;
     }
 
     // Create Fungible Token with custom fees, with a user account as admin, contract as supply and pause key.
-    function createFungibleWithFees(address contractKey) external returns (address createdTokenAddress) {
+    function createFungibleWithFees(address contractKey) external payable returns (address createdTokenAddress) {
 
         // create TokenKey of type adminKey with value inherited from called account
         IHederaTokenService.KeyValue memory adminKeyValue;
@@ -81,35 +81,35 @@ contract TokenCreateContract is HederaTokenService {
         myToken.treasury = address(this);
         myToken.tokenKeys = keys;
 
-        (bool success, address token, bytes memory errorMessage) =
+        (int responseCode, address token) =
         HederaTokenService.createFungibleTokenWithCustomFees(myToken, 200, 8, fixedFees, fractionalFees);
 
-        if (!success) {
-            revert (abi.decode(errorMessage, (string)));
+        if (responseCode != 22) {
+            revert ();
         }
 
         createdTokenAddress = token;
     }
 
-    function createNonFungibleToken() external returns (address createdTokenAddress){
+    function createNonFungibleToken() external payable returns (address createdTokenAddress){
         IHederaTokenService.HederaToken memory myToken;
         myToken.name = "MyNFT";
         myToken.symbol = "MNFT";
         myToken.treasury = address(this);
 
         // create the token through HTS with default expiry and royalty fees;
-        (bool success, address token, bytes memory errorMessage) =
+        (int responseCode, address token) =
         HederaTokenService.createNonFungibleToken(myToken);
 
-        if (!success) {
-            revert (abi.decode(errorMessage, (string)));
+        if (responseCode != 22) {
+            revert ();
         }
 
         createdTokenAddress = token;
     }
 
     // Create NFT with a royalty fee, contract has the mint and admin key.
-    function createNonFungibleTokenWithCustomFees(address feeCollector) external returns (address createdTokenAddress){
+    function createNonFungibleTokenWithCustomFees(address feeCollector) external payable returns (address createdTokenAddress){
 
         // TokenKey of type adminKey and supplyKey with value this contract id
         uint adminSupplyKeyType;
@@ -141,11 +141,11 @@ contract TokenCreateContract is HederaTokenService {
         myToken.tokenKeys = keys;
 
         // create the token through HTS with default expiry and royalty fees;
-        (bool success, address token, bytes memory errorMessage) =
+        (int responseCode, address token) =
         HederaTokenService.createNonFungibleTokenWithCustomFees(myToken, fixedFees, royaltyFees);
 
-        if (!success) {
-            revert (abi.decode(errorMessage, (string)));
+        if (responseCode != 22) {
+            revert ();
         }
 
         createdTokenAddress = token;
