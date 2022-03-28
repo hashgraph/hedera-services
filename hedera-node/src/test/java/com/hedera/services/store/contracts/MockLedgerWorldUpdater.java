@@ -55,6 +55,6 @@ public class MockLedgerWorldUpdater
 
 	@Override
 	public WorldUpdater updater() {
-		return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped());
+		return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped(), customizer);
 	}
 }

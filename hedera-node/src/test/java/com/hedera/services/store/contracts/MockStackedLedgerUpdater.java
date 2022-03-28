@@ -26,23 +26,28 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class MockStackedLedgerUpdater
 		extends AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> {
+	private final ContractCustomizer customizer;
 
 	public MockStackedLedgerUpdater(
 			final AbstractLedgerWorldUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> world,
-			final WorldLedgers trackingLedgers
+			final WorldLedgers trackingLedgers,
+			final ContractCustomizer customizer
 	) {
 		super(world, trackingLedgers);
+		this.customizer = customizer;
 	}
 
 	@Override
 	public ContractCustomizer customizerForPendingCreation() {
-		throw new UnsupportedOperationException();
+		return customizer;
 	}
 
 	@Override
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public WorldUpdater updater() {
-		return new MockStackedLedgerUpdater((AbstractLedgerWorldUpdater) this,
-				trackingLedgers().wrapped(new SideEffectsTracker()));
+		return new MockStackedLedgerUpdater(
+				(AbstractLedgerWorldUpdater) this,
+				trackingLedgers().wrapped(new SideEffectsTracker()),
+				customizer);
 	}
 }

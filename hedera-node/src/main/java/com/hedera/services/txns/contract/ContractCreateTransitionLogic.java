@@ -141,16 +141,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		final var createdContracts = worldState.persistProvisionalContractCreations();
 		result.setCreatedContracts(createdContracts);
 
-		if (result.isSuccessful()) {
-//			final var newAccountId = EntityIdUtils.accountIdFromEvmAddress(newContractAddress);
-//			final var customizer = fromHapiCreation(key, consensusTime, op);
-//			customizer.customize(newAccountId, hederaLedger.getAccountsLedger());
-		} else {
+		if (!result.isSuccessful()) {
 			worldState.reclaimContractId();
 		}
-
-		// --- Customize sponsored accounts
-//		worldState.customizeSponsoredAccounts();
 
 		// --- Externalise changes
 		for (final var createdContract : createdContracts) {
