@@ -47,6 +47,7 @@ import java.util.TreeMap;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -119,6 +120,11 @@ class SideEffectsTrackerTest {
 	}
 
 	@Test
+	void usesSingletonForNoAutoAssociations() {
+		assertSame(Collections.emptyList(), subject.getTrackedAutoAssociations());
+	}
+
+	@Test
 	void tracksAndResetsAutoAssociationsAsExpected() {
 		final var expected = List.of(
 				new FcTokenAssociation(aToken.getTokenNum(), aAccount.getAccountNum()),
@@ -128,6 +134,7 @@ class SideEffectsTrackerTest {
 		subject.trackExplicitAutoAssociation(expected.get(1));
 
 		assertEquals(expected, subject.getTrackedAutoAssociations());
+		assertNotSame(subject.getInternalAutoAssociations(), subject.getTrackedAutoAssociations());
 
 		subject.reset();
 

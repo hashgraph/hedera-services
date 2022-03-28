@@ -23,7 +23,6 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -49,27 +47,20 @@ class NonPayerKeysScreenTest {
 	@Mock
 	private InHandleActivationHelper activationHelper;
 	@Mock
-	private Predicate<ResponseCodeEnum> terminalSigStatusTest;
-	@Mock
 	private BiPredicate<JKey, TransactionSignature> validityTest;
 
 	private NonPayerKeysScreen subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new NonPayerKeysScreen(txnCtx, activationHelper, terminalSigStatusTest, validityTest);
+		subject = new NonPayerKeysScreen(txnCtx, activationHelper, validityTest);
 	}
 
 	@Test
 	void terminatesWithFailedSigStatus() {
-		given(terminalSigStatusTest.test(INVALID_ACCOUNT_ID)).willReturn(true);
-
-		// when:
 		final var result = subject.reqKeysAreActiveGiven(INVALID_ACCOUNT_ID);
 
-		// then:
 		assertFalse(result);
-		// and:
 		verify(txnCtx).setStatus(INVALID_ACCOUNT_ID);
 	}
 

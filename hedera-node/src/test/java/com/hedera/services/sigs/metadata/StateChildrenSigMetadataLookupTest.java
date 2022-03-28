@@ -22,6 +22,7 @@ package com.hedera.services.sigs.metadata;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockFileNumbers;
+import com.hedera.services.context.BasicTransactionContext;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
@@ -67,6 +68,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
@@ -247,6 +249,31 @@ class StateChildrenSigMetadataLookupTest {
 
 		assertEquals(unknownAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
 		assertEquals(MISSING_ACCOUNT, result.failureIfAny());
+	}
+
+	@Test
+	void recognizesImmutableAccountWithEmptyKey() {
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
+		given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
+
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
+
+		assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+		assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
+	}
+
+	@Test
+	void recognizesImmutableAccountWithUnexpectedNullKey() {
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
+
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
+
+		assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+		assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
 	}
 
 	@Test
@@ -509,6 +536,7 @@ class StateChildrenSigMetadataLookupTest {
 	private static final AccountID mirrorAccount = AccountID.newBuilder()
 			.setAlias(knownMirrorAddress)
 			.build();
+	private static final AccountID immutableAccount = IdUtils.asAccount("0.0.800");
 	private static final AccountID unknownAccount = IdUtils.asAccount("0.0.4321");
 	private static final ContractID knownContract = IdUtils.asContract("0.0.1234");
 	private static final ContractID unknownContract = IdUtils.asContract("0.0.4321");

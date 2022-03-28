@@ -116,9 +116,6 @@ public class BaseHederaLedgerTestHelper {
 	protected AccountID deletable = AccountID.newBuilder().setAccountNum(666).build();
 	protected AccountID rand = AccountID.newBuilder().setAccountNum(2_345).build();
 	protected AccountID aliasAccountId = AccountID.newBuilder().setAlias(alias).build();
-	protected MerkleAccount randMerkleAccount = new MerkleAccount();
-	protected MerkleAccount aliasMerkleAccount = new MerkleAccount();
-	protected EntityNum aliasEntityNum = new EntityNum(5_432);
 	protected AccountID deleted = AccountID.newBuilder().setAccountNum(3_456).build();
 	protected AccountID detached = AccountID.newBuilder().setAccountNum(4_567).build();
 

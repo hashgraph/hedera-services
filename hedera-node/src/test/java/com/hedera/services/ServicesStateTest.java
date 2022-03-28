@@ -27,12 +27,14 @@ import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccount;;
+import com.hedera.services.state.merkle.MerkleDiskFs;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -73,6 +75,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
@@ -114,6 +117,8 @@ class ServicesStateTest {
 	@Mock
 	private ServicesApp app;
 	@Mock
+	private MerkleDiskFs diskFs;
+	@Mock
 	private MerkleSpecialFiles specialFiles;
 	@Mock
 	private MerkleNetworkContext networkContext;
@@ -147,6 +152,8 @@ class ServicesStateTest {
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private Consumer<ServicesState> mockMigrator;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -424,17 +431,20 @@ class ServicesStateTest {
 
 	@Test
 	void doesntMigrateWhenInitializingFromRelease0220() {
-		// given:
 		given(accounts.keySet()).willReturn(Set.of());
+		ServicesState.setStakeFundingMigrator(mockMigrator);
+
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
-		// expect:
 		assertDoesNotThrow(subject::migrate);
+
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
 	}
 
 	@Test
 	void migratesWhenInitializingFromRelease0210() {
+		ServicesState.setStakeFundingMigrator(mockMigrator);
 		ServicesState.setBlobMigrator(blobMigrator);
 
 		subject = mock(ServicesState.class);
@@ -452,6 +462,21 @@ class ServicesStateTest {
 				subject, StateVersions.RELEASE_0210_VERSION);
 		verify(subject).init(platform, addressBook, dualState);
 		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
+	}
+
+	@Test
+	void migratesWhenInitializingFromRelease0230() {
+		ServicesState.setStakeFundingMigrator(mockMigrator);
+
+		subject = mock(ServicesState.class);
+		doCallRealMethod().when(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0230_VERSION);
+
+		subject.migrate();
+
+		verify(mockMigrator).accept(subject);
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
 	}
 
 	@Test
@@ -559,7 +584,7 @@ class ServicesStateTest {
 
 	@Test
 	void nonGenesisInitReusesContextIfPresent() {
-		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
@@ -586,7 +611,7 @@ class ServicesStateTest {
 	void nonGenesisInitExitsIfStateVersionLaterThanCurrentSoftware() {
 		final var mockExit = mock(SystemExits.class);
 
-		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION + 1);
@@ -605,7 +630,7 @@ class ServicesStateTest {
 
 	@Test
 	void nonGenesisInitClearsPreparedUpgradeIfNonNullLastFrozenMatchesFreezeTime() {
-		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
@@ -625,6 +650,32 @@ class ServicesStateTest {
 		subject.init(platform, addressBook, dualState);
 
 		verify(networkContext).discardPreparedUpgradeMeta();
+		verify(dualState).setFreezeTime(null);
+	}
+
+	@Test
+	void nonGenesisInitWithOldVersionMarksMigrationRecordsNotStreamed() {
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+		final var when = Instant.ofEpochSecond(1_234_567L, 890);
+		given(dualState.getFreezeTime()).willReturn(when);
+		given(dualState.getLastFrozenTime()).willReturn(when);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook, dualState);
+
+		verify(networkContext).discardPreparedUpgradeMeta();
+		verify(networkContext).markMigrationRecordsNotYetStreamed();
 		verify(dualState).setFreezeTime(null);
 	}
 

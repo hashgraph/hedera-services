@@ -57,7 +57,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(SimpleXfersAvoidingHotspot.class);
 
-	private static final int NUM_ACCOUNTS = 10;
+	private static final int NUM_ACCOUNTS = 100;
 
 	private AtomicLong duration = new AtomicLong(600);
 	private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
@@ -78,8 +78,8 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 
 	private HapiApiSpec runSimpleXfers() {
 		return HapiApiSpec.customHapiSpec("RunTokenTransfers").withProperties(Map.of(
-				"default.keyAlgorithm", "SECP256K1"
-//				"default.keyAlgorithm", "ED25519"
+//				"default.keyAlgorithm", "SECP256K1"
+				"default.keyAlgorithm", "ED25519"
 		)).given().when().then(
 				runWithProvider(avoidantXfersFactory())
 						.lasting(duration::get, unit::get)
@@ -116,7 +116,15 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 		};
 	}
 
-	private HapiSpecOperation uniqueCreation(final String name) {
+	static HapiSpecOperation uniqueQuietCreation(final String name) {
+		return internalUniqueCreation(name, false);
+	}
+
+	static HapiSpecOperation uniqueCreation(final String name) {
+		return internalUniqueCreation(name, true);
+	}
+
+	private static HapiSpecOperation internalUniqueCreation(final String name, final boolean verbose) {
 		return withOpContext((spec, opLog) -> {
 			while (true) {
 				try {
@@ -124,6 +132,9 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 							.payingWith(GENESIS)
 							.ensuringResolvedStatusIsntFromDuplicate()
 							.balance(ONE_HUNDRED_HBARS * 10_000);
+					if (!verbose) {
+						attempt.noLogging();
+					}
 					allRunFor(spec, attempt);
 					return;
 				} catch (IllegalStateException ignore) {

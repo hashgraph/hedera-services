@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -49,6 +50,9 @@ import java.util.Objects;
 
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.TokenProperty.TREASURY;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 public class WorldLedgers {
@@ -90,6 +94,17 @@ public class WorldLedgers {
 
 		this.aliases = aliases;
 		this.staticEntityAccess = staticEntityAccess;
+	}
+
+	public Address ownerOf(final NftId nft) {
+		if (!areMutable()) {
+			throw new IllegalStateException("Cannot look up owner from unavailable ledgers");
+		}
+		var owner = (EntityId) nftsLedger.get(nft, OWNER);
+		if (MISSING_ENTITY_ID.equals(owner)) {
+			owner = (EntityId) tokensLedger.get(nft.tokenId(), TREASURY);
+		}
+		return owner.toEvmAddress();
 	}
 
 	public Address canonicalAddress(final Address addressOrAlias) {

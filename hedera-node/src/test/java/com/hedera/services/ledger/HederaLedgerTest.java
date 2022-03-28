@@ -25,7 +25,6 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -123,14 +122,6 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 				"--- TOKENS ---\n" +
 				"NONSENSE";
 		assertEquals(desired, summary);
-	}
-
-	@Test
-	void delegatesGet() {
-		final var fakeGenesis = new MerkleAccount();
-		given(accountsLedger.getFinalized(genesis)).willReturn(fakeGenesis);
-
-		assertSame(fakeGenesis, subject.get(genesis));
 	}
 
 	@Test

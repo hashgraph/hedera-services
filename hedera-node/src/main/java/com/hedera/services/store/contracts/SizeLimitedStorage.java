@@ -48,7 +48,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT
 import static com.hedera.services.utils.EntityNum.fromLong;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
-import static java.util.Objects.requireNonNull;
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
 /**
@@ -223,19 +222,18 @@ public class SizeLimitedStorage {
 		final Long contractId = key.getContractId();
 		final var hasPendingUpdate = newMappings.containsKey(key);
 		final var wasAlreadyPresent = storage.containsKey(key);
-		/* We always buffer the new mapping. */
+		// We always buffer the new mapping
 		newMappings.put(key, value);
 		if (hasPendingUpdate) {
-			/* If there was already a pending update, nothing has changed. */
+			// If there was already a pending update, net storage usage hasn't changed
 			return 0;
 		} else {
-			/* Otherwise update the contract's change set. */
+			// Otherwise update the contract's change set
 			updatedKeys.computeIfAbsent(contractId, treeSetFactory).add(key);
-			/* And drop any pending removal, returning 1 since a pending removal implies we
-			 * were about to reduce the storage used by a mapping. */
+			// Was this key about to be removed?
 			final var scopedRemovals = removedKeys.get(contractId);
-			if (scopedRemovals != null) {
-				scopedRemovals.remove(key);
+			if (scopedRemovals != null && scopedRemovals.remove(key)) {
+				// No longer, and net storage usage goes back up by 1
 				return 1;
 			}
 			return wasAlreadyPresent ? 0 : 1;
@@ -254,23 +252,25 @@ public class SizeLimitedStorage {
 		final var wasAlreadyPresent = storage.containsKey(key);
 		if (hasPendingUpdate || wasAlreadyPresent) {
 			if (hasPendingUpdate) {
-				/* We need to drop any pending update from our auxiliary data structures. */
+				// We need to drop any pending update from our auxiliary data structures.
 				final var scopedAdditions = updatedKeys.get(contractId);
-				requireNonNull(scopedAdditions,
-						() -> "A new mapping " + key + " -> " + newMappings.get(key)
-								+ " did not belong to a key addition set");
+				if (scopedAdditions == null) {
+					final var detailMsg = "A new mapping " + key + " -> " + newMappings.get(key)
+							+ " did not belong to a key addition set";
+					throw new IllegalStateException(detailMsg);
+				}
 				scopedAdditions.remove(key);
 				newMappings.remove(key);
 			}
 			if (wasAlreadyPresent) {
-				/* If there was no extant mapping for this key, no reason to explicitly remove it when we commit. */
+				// If there was no extant mapping for this key, no reason to explicitly remove it when we commit.
 				removedKeys.computeIfAbsent(key.getContractId(), treeSetFactory).add(key);
 			}
-			/* But no matter what, relative to our existing change set, this removed one mapping. */
+			// But no matter what, relative to our existing change set, this removed one mapping.
 			return -1;
 		} else {
-			/* If this key didn't have a mapping or a pending change, it doesn't affect the size,
-			 * and there is also no reason to explicitly remove it when we commit. */
+			// If this key didn't have a mapping or a pending change, it doesn't affect the size,
+			// and there is also no reason to explicitly remove it when we commit
 			return 0;
 		}
 	}

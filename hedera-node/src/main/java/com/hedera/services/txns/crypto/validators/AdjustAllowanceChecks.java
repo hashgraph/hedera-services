@@ -229,6 +229,11 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 		return OK;
 	}
 
+	@Override
+	public boolean isEnabled() {
+		return dynamicProperties.areAllowancesEnabled();
+	}
+
 	/**
 	 * Validates serial numbers for {@link NftAllowance}
 	 *

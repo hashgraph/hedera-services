@@ -104,9 +104,9 @@ class BootstrapPropertiesTest {
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
 			entry("contracts.frontendThrottleMaxGasLimit", 5000000L),
 			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
-			entry("contracts.redirectTokenCalls", false),
+			entry("contracts.redirectTokenCalls", true),
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),
-			entry("contracts.precompile.exportRecordResults", false),
+			entry("contracts.precompile.exportRecordResults", true),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),
@@ -207,7 +207,8 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2")),
 			entry("upgrade.artifacts.path", "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),
 			entry("hedera.allowances.maxTransactionLimit", 20),
-			entry("hedera.allowances.maxAccountLimit", 100)
+			entry("hedera.allowances.maxAccountLimit", 100),
+			entry("hedera.allowances.isEnabled", true)
 	);
 
 	@Test
