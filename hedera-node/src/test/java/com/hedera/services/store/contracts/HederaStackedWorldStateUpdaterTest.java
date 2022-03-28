@@ -46,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -217,19 +216,6 @@ class HederaStackedWorldStateUpdaterTest {
 		subject.revert();
 		assertEquals(0, subject.getSbhRefund().toLong());
 		verify(worldState, times(3)).reclaimContractId();
-	}
-
-	@Test
-	void commitPropagatesAllocatedIds() {
-
-		doCallRealMethod().when(subject).commit();
-		doCallRealMethod().when(subject).countIdsAllocatedByStacked(3);
-		given(subject.wrappedWorldView()).willReturn(updater);
-
-		subject.countIdsAllocatedByStacked(3);
-		subject.commit();
-
-		verify((HederaWorldUpdater) updater).countIdsAllocatedByStacked(3);
 	}
 
 	@Test
