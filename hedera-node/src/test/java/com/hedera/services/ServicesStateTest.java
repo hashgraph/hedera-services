@@ -27,8 +27,7 @@ import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
-import com.hedera.services.state.merkle.MerkleAccount;;
-import com.hedera.services.state.merkle.MerkleDiskFs;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -116,8 +115,6 @@ class ServicesStateTest {
 	private Address address;
 	@Mock
 	private ServicesApp app;
-	@Mock
-	private MerkleDiskFs diskFs;
 	@Mock
 	private MerkleSpecialFiles specialFiles;
 	@Mock
@@ -584,7 +581,7 @@ class ServicesStateTest {
 
 	@Test
 	void nonGenesisInitReusesContextIfPresent() {
-		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
@@ -611,7 +608,7 @@ class ServicesStateTest {
 	void nonGenesisInitExitsIfStateVersionLaterThanCurrentSoftware() {
 		final var mockExit = mock(SystemExits.class);
 
-		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION + 1);
@@ -630,7 +627,7 @@ class ServicesStateTest {
 
 	@Test
 	void nonGenesisInitClearsPreparedUpgradeIfNonNullLastFrozenMatchesFreezeTime() {
-		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
@@ -655,7 +652,7 @@ class ServicesStateTest {
 
 	@Test
 	void nonGenesisInitWithOldVersionMarksMigrationRecordsNotStreamed() {
-		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.SPECIAL_FILES, specialFiles);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
