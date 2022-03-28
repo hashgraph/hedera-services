@@ -42,7 +42,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
@@ -175,8 +174,15 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
-	void returnsHapiSenderCustomizationIfNoFrameCreationPending() {
-		given(worldState.hapiSenderCustomizer()).willReturn(customizer);
+	void returnsParentCustomizationIfNoFrameCreationPending() {
+		given(updater.customizerForPendingCreation()).willReturn(customizer);
+
+		assertSame(customizer, subject.customizerForPendingCreation());
+	}
+
+	@Test
+	void returnsCustomizationIfFrameCreationPending() {
+		given(updater.customizerForPendingCreation()).willReturn(customizer);
 
 		assertSame(customizer, subject.customizerForPendingCreation());
 	}
@@ -204,7 +210,7 @@ class HederaStackedWorldStateUpdaterTest {
 			assertEquals(sponsorAid.getShardNum(), allocatedAid.getShardNum());
 			assertEquals(sponsorAid.getAccountNum() + 1, allocatedAid.getAccountNum());
 			assertEquals(sponsoredId, subject.idOfLastNewAddress());
-			assertNotNull(subject.customizerForPendingCreation());
+			assertSame(customizer, subject.customizerForPendingCreation());
 		});
 	}
 

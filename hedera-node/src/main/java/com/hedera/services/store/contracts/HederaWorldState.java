@@ -399,8 +399,13 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public ContractCustomizer customizerForPendingCreation() {
-			// The base updater never directly buffers changes for a CONTRACT_CREATION message
-			throw new UnsupportedOperationException();
+			// If the base updater is asked for a customizer, it's because the originating message call
+			// was a CONTRACT_CREATION; so we must have details from a HAPI ContractCreate
+			final var hapiCustomizer = wrappedWorldView().hapiSenderCustomizer();
+			if (hapiCustomizer == null) {
+				throw new IllegalStateException("Base updater asked for customizer, but no details from HAPI are set");
+			}
+			return hapiCustomizer;
 		}
 
 		@Override

@@ -41,11 +41,6 @@ public class HederaStackedWorldStateUpdater
 		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount>
 		implements HederaWorldUpdater {
 
-	@FunctionalInterface
-	interface CustomizerFactory {
-		ContractCustomizer apply(AccountID id, TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
-	}
-
 	private static CustomizerFactory customizerFactory = ContractCustomizer::fromSponsorContract;
 
 	private final HederaMutableWorldState worldState;
@@ -121,7 +116,11 @@ public class HederaStackedWorldStateUpdater
 
 	@Override
 	public ContractCustomizer customizerForPendingCreation() {
-		return (pendingCreationCustomizer != null) ? pendingCreationCustomizer : worldState.hapiSenderCustomizer();
+		// When the ContractCreationProcessor starts, it calls createAccount() on the updater for the spawned
+		// CONTRACT_CREATION message; so actually the parent updater has the customization details
+		return (pendingCreationCustomizer != null)
+				? pendingCreationCustomizer
+				: wrappedWorldView().customizerForPendingCreation();
 	}
 
 	@Override
@@ -171,12 +170,19 @@ public class HederaStackedWorldStateUpdater
 				trackingLedgers().wrapped());
 	}
 
-	/* --- Internal helpers --- */
+	// --- Internal helpers
 	private boolean isMissingTarget(final Address alias) {
 		final var target = aliases().resolveForEvm(alias);
 		return !trackingAccounts().exists(accountIdFromEvmAddress(target));
 	}
 
+
+	@FunctionalInterface
+	interface CustomizerFactory {
+		ContractCustomizer apply(AccountID id, TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger);
+	}
+
+	// --- Only used by unit tests
 	@VisibleForTesting
 	static void setCustomizerFactory(final CustomizerFactory customizerFactory) {
 		HederaStackedWorldStateUpdater.customizerFactory = customizerFactory;

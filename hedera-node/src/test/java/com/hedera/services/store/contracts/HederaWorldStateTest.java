@@ -109,10 +109,18 @@ class HederaWorldStateTest {
 	}
 
 	@Test
-	void baseUpdaterCannotProvideSenderCustomizer() {
+	void baseUpdaterThrowsWithoutSenderCustomizer() {
 		givenNonNullWorldLedgers();
 		final var updater = subject.updater();
-		assertThrows(UnsupportedOperationException.class, updater::customizerForPendingCreation);
+		assertThrows(IllegalStateException.class, updater::customizerForPendingCreation);
+	}
+
+	@Test
+	void baseUpdaterReturnsSenderCustomizerWhenAvailable() {
+		givenNonNullWorldLedgers();
+		subject.setHapiSenderCustomizer(customizer);
+		final var updater = subject.updater();
+		assertSame(customizer, updater.customizerForPendingCreation());
 	}
 
 	@Test
