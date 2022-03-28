@@ -207,9 +207,14 @@ interface IHederaTokenService {
         // A fraction's denominator of fungible value exchanged for an NFT to collect as royalty
         uint32 denominator;
 
-        // If present, the fixed fee to assess to the NFT receiver when no fungible value is exchanged
-        // with the sender
-        FixedFee fixedFee;
+        // If present, the fee to assess to the NFT receiver when no fungible value
+        // is exchanged with the sender. Consists of:
+        // amount: the amount to charge for the fee
+        // tokenId: Specifies ID of token that should be used for fixed fee denomination
+        // useHbarsForPayment: Specifies this fee should be denominated in Hbar
+        uint32 amount;
+        address tokenId;
+        bool useHbarsForPayment;
 
         // The ID of the account to receive the custom fee, expressed as a solidity address
         address feeCollector;
@@ -310,7 +315,7 @@ interface IHederaTokenService {
         HederaToken memory token,
         uint initialTotalSupply,
         uint decimals)
-    external returns (int responseCode, address tokenAddress);
+    external payable returns (int responseCode, address tokenAddress);
 
     /// Creates a Fungible Token with the specified properties
     /// @param token the basic properties of the token being created
@@ -327,14 +332,14 @@ interface IHederaTokenService {
         uint decimals,
         FixedFee[] memory fixedFees,
         FractionalFee[] memory fractionalFees)
-    external returns (int responseCode, address tokenAddress);
+    external payable returns (int responseCode, address tokenAddress);
 
     /// Creates an Non Fungible Unique Token with the specified properties
     /// @param token the basic properties of the token being created
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return tokenAddress the created token's address
     function createNonFungibleToken(HederaToken memory token)
-    external returns (int responseCode, address tokenAddress);
+    external payable returns (int responseCode, address tokenAddress);
 
     /// Creates an Non Fungible Unique Token with the specified properties
     /// @param token the basic properties of the token being created
@@ -346,7 +351,7 @@ interface IHederaTokenService {
         HederaToken memory token,
         FixedFee[] memory fixedFees,
         RoyaltyFee[] memory royaltyFees)
-    external returns (int responseCode, address tokenAddress);
+    external payable returns (int responseCode, address tokenAddress);
 
 
     /**********************
