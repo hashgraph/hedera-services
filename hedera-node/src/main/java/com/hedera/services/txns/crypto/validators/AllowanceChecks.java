@@ -22,11 +22,14 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -36,12 +39,19 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
@@ -49,6 +59,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
@@ -95,6 +106,70 @@ public interface AllowanceChecks {
 	 */
 	ResponseCodeEnum validateNftAllowances(final List<NftAllowance> nftAllowancesList,
 			final Account payerAccount);
+
+	default ResponseCodeEnum validateNftAllowances(
+			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> nftsMap,
+			final TypedTokenStore tokenStore,
+			final AccountStore accountStore,
+			final List<NftAllowance> nftAllowancesList,
+			final Account payerAccount) {
+		if (nftAllowancesList.isEmpty()) {
+			return OK;
+		}
+
+		final List<Pair<EntityNum, FcTokenAllowanceId>> nftKeys = new ArrayList<>();
+		for (var allowance : nftAllowancesList) {
+			nftKeys.add(buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
+		}
+		if (hasRepeatedId(nftKeys)) {
+			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
+		}
+
+		for (final var allowance : nftAllowancesList) {
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			final var delegatingSpender = Id.fromGrpcAccount(allowance.getDelegatingSpender());
+			final var tokenId = allowance.getTokenId();
+			final var serialNums = allowance.getSerialNumbersList();
+			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
+			final var approvedForAll = allowance.getApprovedForAll().getValue();
+
+			if (token.isFungibleCommon()) {
+				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+			}
+
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
+			}
+			final var ownerAccount = fetchResult.getLeft();
+
+			var validity = validateTokenBasics(ownerAccount, spender, tokenId);
+			if (validity != OK) {
+				return validity;
+			}
+
+			if (approvedForAll && !delegatingSpender.equals(Id.MISSING_ID)) {
+				return DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+			} else if (!delegatingSpender.equals(Id.MISSING_ID)) {
+				final var allowanceKey = FcTokenAllowanceId.from(
+						EntityNum.fromTokenId(tokenId), delegatingSpender.asEntityNum());
+				if (!ownerAccount.getApprovedForAllNftsAllowances().contains(allowanceKey)) {
+					return DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
+				}
+			}
+
+			if (!approvedForAll) {
+				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
+				// state
+				validity = validateSerialNums(nftsMap.get(), serialNums, ownerAccount, token);
+				if (validity != OK) {
+					return validity;
+				}
+			}
+		}
+		return OK;
+	}
 
 	/**
 	 * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or

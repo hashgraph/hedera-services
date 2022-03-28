@@ -32,17 +32,13 @@ class CryptoContextUtilsTest {
 	@Test
 	void getsNewSerials() {
 		Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> newMap = new HashMap<>();
-		Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> existingMap = new HashMap<>();
 
 		newMap.put(new ExtantCryptoContext.AllowanceMapKey(1L, 2L),
 				new ExtantCryptoContext.AllowanceMapValue(true, List.of(3L, 4L)));
 		newMap.put(new ExtantCryptoContext.AllowanceMapKey(1L, 3L),
 				new ExtantCryptoContext.AllowanceMapValue(false, List.of(1L, 2L, 3L, 100L)));
 
-		existingMap.put(new ExtantCryptoContext.AllowanceMapKey(1L, 3L),
-				new ExtantCryptoContext.AllowanceMapValue(false, List.of(1L)));
-
-		assertEquals(3, CryptoContextUtils.getNewSerials(newMap, existingMap));
+		assertEquals(2, CryptoContextUtils.getNewSerials(newMap));
 	}
 
 	@Test

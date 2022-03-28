@@ -431,7 +431,7 @@ class CryptoOpsUsageTest {
 				.setSpender(proxy).setAmount(100L).setTokenId(IdUtils.asToken("0.0.1000")).build();
 		GrantedNftAllowance existingNftAllowances = GrantedNftAllowance.newBuilder().setSpender(proxy)
 				.setTokenId(IdUtils.asToken("0.0.1000"))
-				.addAllSerialNumbers(List.of()).build();
+				.build();
 
 		var expected = new UsageAccumulator();
 		var baseMeta = new BaseTransactionMeta(0, 0);

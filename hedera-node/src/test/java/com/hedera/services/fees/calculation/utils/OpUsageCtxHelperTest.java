@@ -198,8 +198,7 @@ class OpUsageCtxHelperTest {
 		given(mockInfo.getGrantedTokenAllowancesList()).willReturn(List.of(tokenAllowance));
 		given(mockInfo.getGrantedNftAllowancesList()).willReturn(List.of(nftAllowance));
 		given(mockInfo.getGrantedNftAllowancesList()).willReturn(List.of(GrantedNftAllowance.newBuilder()
-				.setTokenId(IdUtils.asToken("0.0.1000"))
-				.addAllSerialNumbers(List.of(1L, 2L, 3L)).build()));
+				.setTokenId(IdUtils.asToken("0.0.1000")).build()));
 
 		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 
@@ -411,5 +410,5 @@ class OpUsageCtxHelperTest {
 	private final GrantedTokenAllowance tokenAllowance = GrantedTokenAllowance.newBuilder().setSpender(spender1).setAmount(
 			10L).setTokenId(token1).build();
 	private final GrantedNftAllowance nftAllowance = GrantedNftAllowance.newBuilder().setSpender(spender1)
-			.setTokenId(token2).setApprovedForAll(false).addAllSerialNumbers(List.of(1L, 10L)).build();
+			.setTokenId(token2).build();
 }

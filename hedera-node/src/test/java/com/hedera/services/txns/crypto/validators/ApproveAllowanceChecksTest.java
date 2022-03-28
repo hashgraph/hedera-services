@@ -27,6 +27,7 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -53,7 +54,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
@@ -62,6 +65,8 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeat
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -485,12 +490,85 @@ class ApproveAllowanceChecksTest {
 		given(nftsMap.get(EntityNumPair.fromNftId(tokenNft2)).getOwner()).willReturn(
 				EntityId.fromGrpcAccountId(ownerId1));
 
-		final var badNftAllowance = NftAllowance.newBuilder().setSpender(spender2)
-				.addAllSerialNumbers(List.of(1L)).setTokenId(token1).setOwner(ownerId1).setApprovedForAll(
-						BoolValue.of(false)).build();
+		final var badNftAllowance = NftAllowance.newBuilder()
+				.setSpender(spender2)
+				.addAllSerialNumbers(List.of(1L))
+				.setTokenId(token1)
+				.setOwner(ownerId1)
+				.setApprovedForAll(BoolValue.of(false)).build();
 
 		nftAllowances.add(badNftAllowance);
 		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES, subject.validateNftAllowances(nftAllowances, owner));
+	}
+
+	@Test
+	void cannotGrantApproveForAllUsingDelegatingSpender() {
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+
+		final var badNftAllowance = NftAllowance.newBuilder()
+				.setSpender(spender2)
+				.addAllSerialNumbers(List.of(1L))
+				.setTokenId(token2)
+				.setOwner(ownerId1)
+				.setDelegatingSpender(spender1)
+				.setApprovedForAll(BoolValue.of(true)).build();
+
+		nftAllowances.clear();
+		nftAllowances.add(badNftAllowance);
+
+		assertEquals(DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL, subject.validateNftAllowances(nftAllowances, owner));
+	}
+
+	@Test
+	void cannotGrantExplicitNftAllowanceUsingDelegatingSpenderWithNoApproveForAllAllowance() {
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(owner.getApprovedForAllNftsAllowances()).willReturn(Collections.emptySet());
+
+		final var badNftAllowance = NftAllowance.newBuilder()
+				.setSpender(spender2)
+				.addAllSerialNumbers(List.of(1L))
+				.setTokenId(token2)
+				.setOwner(ownerId1)
+				.setDelegatingSpender(spender1)
+				.setApprovedForAll(BoolValue.of(false)).build();
+
+		nftAllowances.clear();
+		nftAllowances.add(badNftAllowance);
+
+		assertEquals(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL, subject.validateNftAllowances(nftAllowances, owner));
+	}
+
+	@Test
+	void canGrantExplicitNftAllowanceUsingDelegatingSpenderWithApproveForAllAllowance() {
+		final var allowanceKey = FcTokenAllowanceId.from(
+				EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1));
+		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
+		final EntityNumPair numpair = EntityNumPair.fromNftId(token1Nft1);
+
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(owner.getApprovedForAllNftsAllowances()).willReturn(Set.of(allowanceKey));
+		given(nftsMap.get(numpair)).willReturn(token);
+		given(nftsMap.containsKey(numpair)).willReturn(true);
+		given(token.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+
+		final var badNftAllowance = NftAllowance.newBuilder()
+				.setSpender(spender2)
+				.addAllSerialNumbers(List.of(1L))
+				.setTokenId(token2)
+				.setOwner(ownerId1)
+				.setDelegatingSpender(spender1)
+				.setApprovedForAll(BoolValue.of(false)).build();
+
+		nftAllowances.clear();
+		nftAllowances.add(badNftAllowance);
+
+		assertEquals(OK, subject.validateNftAllowances(nftAllowances, owner));
 	}
 
 	@Test

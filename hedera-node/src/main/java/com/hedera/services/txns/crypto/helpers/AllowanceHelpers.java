@@ -133,7 +133,6 @@ public class AllowanceHelpers {
 				final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
 				approveForAllNftsAllowance.setTokenId(a.getTokenNum().toGrpcTokenId());
 				approveForAllNftsAllowance.setSpender(a.getSpenderNum().toGrpcAccountId());
-				approveForAllNftsAllowance.setApprovedForAll(true);
 				nftAllowances.add(approveForAllNftsAllowance.build());
 			}
 			return nftAllowances;

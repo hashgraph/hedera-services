@@ -24,10 +24,13 @@ import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
 import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
+import org.apache.commons.lang3.builder.CompareToBuilder;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
 import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
@@ -45,7 +48,7 @@ public class ExtantCryptoContext {
 	private final int currentMaxAutomaticAssociations;
 	private final Map<Long, Long> currentCryptoAllowances;
 	private final Map<AllowanceMapKey, Long> currentTokenAllowances;
-	private final Map<AllowanceMapKey, AllowanceMapValue> currentNftAllowances;
+	private final Set<AllowanceMapKey> currentNftAllowances;
 
 	private ExtantCryptoContext(ExtantCryptoContext.Builder builder) {
 		currentNumTokenRels = builder.currentNumTokenRels;
@@ -98,7 +101,7 @@ public class ExtantCryptoContext {
 		return currentTokenAllowances;
 	}
 
-	public Map<AllowanceMapKey, AllowanceMapValue> currentNftAllowances() {
+	public Set<AllowanceMapKey> currentNftAllowances() {
 		return currentNftAllowances;
 	}
 
@@ -131,7 +134,7 @@ public class ExtantCryptoContext {
 		private int currentMaxAutomaticAssociations;
 		private Map<Long, Long> currentCryptoAllowances;
 		private Map<AllowanceMapKey, Long> currentTokenAllowances;
-		private Map<AllowanceMapKey, AllowanceMapValue> currentNftAllowances;
+		private Set<AllowanceMapKey> currentNftAllowances;
 
 		private Builder() {
 		}
@@ -198,7 +201,15 @@ public class ExtantCryptoContext {
 		}
 	}
 
-	record AllowanceMapKey(Long tokenNum, Long spenderNum) {
+	record AllowanceMapKey(Long tokenNum, Long spenderNum) implements Comparable<AllowanceMapKey>{
+
+		@Override
+		public int compareTo(@NotNull final AllowanceMapKey that) {
+			return new CompareToBuilder()
+					.append(tokenNum, that.tokenNum)
+					.append(spenderNum, that.spenderNum)
+					.toComparison();
+		}
 	}
 
 	record AllowanceMapValue(Boolean approvedForAll, List<Long> serialNums) {
