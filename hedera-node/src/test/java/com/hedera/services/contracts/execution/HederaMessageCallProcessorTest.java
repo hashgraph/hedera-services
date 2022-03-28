@@ -85,7 +85,6 @@ class HederaMessageCallProcessorTest {
 	@Test
 	void callsHederaPrecompile() {
 		given(frame.getRemainingGas()).willReturn(Gas.of(1337));
-		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 		given(frame.getContractAddress()).willReturn(HEDERA_PRECOMPILE_ADDRESS);
 		given(hederaPrecompile.gasRequirement(any())).willReturn(GAS_ONE);
@@ -116,19 +115,7 @@ class HederaMessageCallProcessorTest {
 	}
 
 	@Test
-	void valueTransferNotAllowed() {
-		given(frame.getValue()).willReturn(Wei.of(1));
-
-		subject.executeHederaPrecompile(hederaPrecompile, frame, operationTrace);
-
-		verify(frame).setRevertReason(INVALID_TRANSFER);
-		verify(frame).setState(REVERT);
-		verifyNoMoreInteractions(frame, hederaPrecompile);
-	}
-
-	@Test
 	void insufficientGasReverts() {
-		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(frame.getRemainingGas()).willReturn(GAS_ONE_K);
 		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 		given(hederaPrecompile.gasRequirement(any())).willReturn(GAS_ONE_M);
@@ -145,7 +132,6 @@ class HederaMessageCallProcessorTest {
 
 	@Test
 	void precompileError() {
-		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(frame.getRemainingGas()).willReturn(GAS_ONE_K);
 		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 		given(hederaPrecompile.gasRequirement(any())).willReturn(GAS_ONE);
