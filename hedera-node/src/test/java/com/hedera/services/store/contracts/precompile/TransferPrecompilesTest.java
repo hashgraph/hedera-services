@@ -44,8 +44,8 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
@@ -65,7 +65,6 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.hamcrest.Matchers;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -113,9 +112,9 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokens
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -767,7 +766,7 @@ class TransferPrecompilesTest {
 		given(decoder.decodeTransferToken(eq(pretendArguments), any())).willThrow(new IndexOutOfBoundsException());
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_TRANSFER_TOKEN);
 
-		assertThrows(InvalidTransactionException.class, () -> subject.prepareComputation(pretendArguments, a -> a));
+		assertDoesNotThrow(() -> subject.prepareComputation(pretendArguments, a -> a));
 	}
 
 	private void givenFrameContext() {

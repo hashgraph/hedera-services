@@ -333,7 +333,6 @@ class BurnPrecompilesTest {
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_BURN_TOKEN);
 		doCallRealMethod().when(frame).setRevertReason(any());
-		doCallRealMethod().when(frame).getRevertReason();
 		given(decoder.decodeBurn(pretendArguments)).willReturn(fungibleBurnAmountOversize);
 		// when:
 		final var result = subject.compute(pretendArguments, frame);

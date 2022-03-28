@@ -317,7 +317,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		gasRequirement = Gas.of(dynamicProperties.htsDefaultGasCost());
 
-		if (this.precompile == null) {
+		if (this.precompile == null || this.transactionBody == null) {
 			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 			return null;
 		} else if (this.messageFrame.getRevertReason().isPresent()) {
@@ -497,8 +497,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		try {
 			this.transactionBody = this.precompile.body(input, aliasResolver);
 		} catch (Exception e) {
-			log.warn("Internal precompile failure", e);
-			throw new InvalidTransactionException("Cannot decode precompile input", FAIL_INVALID);
+			transactionBody = null;
 		}
 	}
 
