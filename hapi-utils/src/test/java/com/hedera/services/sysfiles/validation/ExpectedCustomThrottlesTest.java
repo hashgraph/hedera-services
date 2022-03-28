@@ -140,6 +140,5 @@ class ExpectedCustomThrottlesTest {
 		assertTrue(OPS_FOR_RELEASE_TWENTY_FIVE.contains(GetVersionInfo), "Missing GetVersionInfo!");
 		assertTrue(OPS_FOR_RELEASE_TWENTY_FIVE.contains(TokenGetInfo), "Missing TokenGetInfo!");
 		assertTrue(OPS_FOR_RELEASE_TWENTY_FIVE.contains(ScheduleGetInfo), "Missing ScheduleGetInfo!");
-		assertTrue(OPS_FOR_RELEASE_TWENTY_FIVE.contains(ScheduleGetInfo), "Missing ScheduleGetInfo!");
 	}
 }

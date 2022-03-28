@@ -131,17 +131,17 @@ public class UniqueToken {
 		if (o == this) {
 			return true;
 		}
-		if (!o.getClass().equals(UniqueToken.class)) {
+		if (o == null || !UniqueToken.class.equals(o.getClass())) {
 			return false;
 		}
 
-		UniqueToken that = (UniqueToken)o;
+		UniqueToken that = (UniqueToken) o;
 		return this.tokenId.equals(that.tokenId) &&
 				this.serialNumber == that.serialNumber &&
-				this.owner == that.owner &&
-				this.spender == that.spender &&
-				this.creationTime == that.creationTime &&
-				Arrays.equals(this.metadata , that.metadata);
+				this.owner.equals(that.owner) &&
+				this.spender.equals(that.spender) &&
+				this.creationTime.equals(that.creationTime) &&
+				Arrays.equals(this.metadata, that.metadata);
 	}
 
 	public void clearSpender() {
