@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
@@ -56,6 +57,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -83,6 +85,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private Supplier<StateView> view;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
 	private CryptoApproveAllowanceTransactionBody op;
@@ -92,7 +96,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, accountStore, allowanceChecks,
-				dynamicProperties);
+				dynamicProperties, view);
 	}
 
 	@Test
@@ -199,7 +203,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				op.getTokenAllowancesList(),
 				op.getNftAllowancesList(),
 				payerAcccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction()))
+				dynamicProperties.maxAllowanceLimitPerTransaction(), view.get()))
 				.willReturn(OK);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));

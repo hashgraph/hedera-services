@@ -21,13 +21,12 @@ package com.hedera.services.txns.crypto.helpers;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
@@ -46,26 +45,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 public class AllowanceHelpers {
 	private AllowanceHelpers() {
 		throw new IllegalStateException("Utility class");
-	}
-
-	/**
-	 * Since each serial number in an NFTAllowance is considered as an allowance, to get total allowance
-	 * from an NFTAllowance the size of serial numbers should be added.
-	 *
-	 * @param nftAllowances
-	 * @return
-	 */
-	public static int aggregateNftAllowances(Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		int nftAllowancesTotal = 0;
-		for (var allowances : nftAllowances.entrySet()) {
-			var serials = allowances.getValue().getSerialNumbers();
-			if (!serials.isEmpty()) {
-				nftAllowancesTotal += serials.size();
-			} else {
-				nftAllowancesTotal++;
-			}
-		}
-		return nftAllowancesTotal;
 	}
 
 	/**
@@ -151,12 +130,11 @@ public class AllowanceHelpers {
 		if (!account.state().getNftAllowances().isEmpty()) {
 			List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
 			for (var a : account.state().getNftAllowances().entrySet()) {
-				final var nftAllowance = GrantedNftAllowance.newBuilder();
-				nftAllowance.setTokenId(a.getKey().getTokenNum().toGrpcTokenId());
-				nftAllowance.setSpender(a.getKey().getSpenderNum().toGrpcAccountId());
-				nftAllowance.setApprovedForAll(a.getValue().isApprovedForAll());
-				nftAllowance.addAllSerialNumbers(a.getValue().getSerialNumbers());
-				nftAllowances.add(nftAllowance.build());
+				final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
+				approveForAllNftsAllowance.setTokenId(a.getKey().getTokenNum().toGrpcTokenId());
+				approveForAllNftsAllowance.setSpender(a.getKey().getSpenderNum().toGrpcAccountId());
+				approveForAllNftsAllowance.setApprovedForAll(true);
+				nftAllowances.add(approveForAllNftsAllowance.build());
 			}
 			return nftAllowances;
 		}

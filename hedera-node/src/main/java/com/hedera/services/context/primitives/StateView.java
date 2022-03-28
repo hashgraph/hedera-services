@@ -29,6 +29,11 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingNfts;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.sourcing.KeyType;
@@ -43,6 +48,7 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -58,6 +64,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -78,6 +85,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -86,6 +94,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
@@ -532,6 +541,34 @@ public class StateView {
 
 	MerkleMap<EntityNum, MerkleToken> tokens() {
 		return stateChildren == null ? emptyMm() : stateChildren.tokens();
+	}
+
+	public BackingStore<TokenID, MerkleToken> asReadOnlyTokenStore() {
+		return new BackingTokens(() -> stateChildren.tokens());
+	}
+
+	public BackingStore<AccountID, MerkleAccount> asReadOnlyAccountStore() {
+		return new BackingAccounts(() -> stateChildren.accounts());
+	}
+
+	public BackingStore<NftId, MerkleUniqueToken> asReadOnlyNftStore() {
+		return new BackingNfts(() -> stateChildren.uniqueTokens());
+	}
+
+	public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> asReadOnlyAssociationStore() {
+		return new BackingTokenRels(() -> stateChildren.tokenAssociations());
+	}
+
+	public MerkleAccount loadAccount(AccountID id) {
+		return asReadOnlyAccountStore().getImmutableRef(id);
+	}
+
+	public MerkleToken loadToken(TokenID id) {
+		return asReadOnlyTokenStore().getImmutableRef(id);
+	}
+
+	public MerkleUniqueToken loadNft(NftId id) {
+		return asReadOnlyNftStore().getImmutableRef(id);
 	}
 
 	private TokenFreezeStatus tfsFor(final boolean flag) {

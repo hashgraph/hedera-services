@@ -20,12 +20,15 @@ package com.hedera.services.txns.crypto.validators;
  * ‍
  */
 
-import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.store.AccountStore;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -33,15 +36,27 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
@@ -49,19 +64,62 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
  * Validations for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} and
  * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transaction allowances
  */
-public interface AllowanceChecks {
+@Singleton
+public class AllowanceChecks {
+	private final GlobalDynamicProperties dynamicProperties;
+
+	@Inject
+	public AllowanceChecks(final GlobalDynamicProperties dynamicProperties) {
+		this.dynamicProperties = dynamicProperties;
+	}
+
 	/**
 	 * Validates the CryptoAllowances given in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
 	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
 	 *
-	 * @param cryptoAllowancesList
+	 * @param cryptoAllowances
 	 * 		crypto allowances list
 	 * @param payerAccount
 	 * 		Account of the payer for the Allowance approve/adjust txn
+	 * @param view
 	 * @return response code after validation
 	 */
-	ResponseCodeEnum validateCryptoAllowances(final List<CryptoAllowance> cryptoAllowancesList,
-			final Account payerAccount);
+	ResponseCodeEnum validateCryptoAllowances(
+			final List<CryptoAllowance> cryptoAllowances,
+			final Account payerAccount,
+			final StateView view) {
+		if (cryptoAllowances.isEmpty()) {
+			return OK;
+		}
+		final var cryptoKeys = cryptoAllowances.stream()
+				.map(allowance -> buildEntityNumPairFrom(allowance.getOwner(), allowance.getSpender(),
+						payerAccount.getId().asEntityNum()))
+				.toList();
+		if (hasRepeatedSpender(cryptoKeys)) {
+			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
+		}
+
+		for (final var allowance : cryptoAllowances) {
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
+			}
+
+			final var ownerAccount = fetchResult.getLeft().get();
+			var validity = validateAmount(allowance.getAmount(), ownerAccount, spender);
+			if (validity != OK) {
+				return validity;
+			}
+			validity = validateDuplicates(ownerAccount.getId(), spender);
+			if (validity != OK) {
+				return validity;
+			}
+		}
+		return OK;
+	}
 
 	/**
 	 * Validate fungible token allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
@@ -71,10 +129,51 @@ public interface AllowanceChecks {
 	 * 		token allowances list
 	 * @param payerAccount
 	 * 		Account of the payer for the Allowance approve/adjust txn
+	 * @param view
 	 * @return
 	 */
 	ResponseCodeEnum validateFungibleTokenAllowances(final List<TokenAllowance> tokenAllowancesList,
-			final Account payerAccount);
+			final Account payerAccount, final StateView view) {
+		if (tokenAllowancesList.isEmpty()) {
+			return OK;
+		}
+		final List<Pair<EntityNum, FcTokenAllowanceId>> tokenKeys = new ArrayList<>();
+		for (var allowance : tokenAllowancesList) {
+			tokenKeys.add(
+					buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
+		}
+		if (hasRepeatedId(tokenKeys)) {
+			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
+		}
+
+		for (final var allowance : tokenAllowancesList) {
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			final var tokenId = allowance.getTokenId();
+			final var merkleToken = view.loadToken(tokenId);
+			final var token = Id.fromGrpcToken(tokenId);
+
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
+			}
+
+			final var ownerAccount = fetchResult.getLeft().get();
+			var validity = validateTokenAmount(ownerAccount, allowance.getAmount(), merkleToken, token, spender);
+			if (validity != OK) {
+				return validity;
+			}
+
+			if (merkleToken.tokenType() != TokenType.FUNGIBLE_COMMON) {
+				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+			}
+			validity = validateTokenBasics(ownerAccount, spender, tokenId);
+			if (validity != OK) {
+				return validity;
+			}
+		}
+		return OK;
+	}
 
 	/**
 	 * Validate nft allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
@@ -84,10 +183,62 @@ public interface AllowanceChecks {
 	 * 		nft allowances list
 	 * @param payerAccount
 	 * 		Account of the payer for the Allowance approve/adjust txn
+	 * @param view
 	 * @return
 	 */
-	ResponseCodeEnum validateNftAllowances(final List<NftAllowance> nftAllowancesList,
-			final Account payerAccount);
+	ResponseCodeEnum validateNftAllowances(
+			final List<NftAllowance> nftAllowancesList,
+			final Account payerAccount,
+			final StateView view) {
+		if (nftAllowancesList.isEmpty()) {
+			return OK;
+		}
+		final var nftKeysList = nftAllowancesList
+				.stream()
+				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender()))
+				.toList();
+		if (hasRepeatedId(nftKeysList)) {
+			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
+		}
+
+		for (final var allowance : nftAllowancesList) {
+			final var spenderAccountId = allowance.getSpender();
+			final var tokenId = allowance.getTokenId();
+			final var serialNums = allowance.getSerialNumbersList();
+			final var merkleToken = view.loadToken(tokenId);
+			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
+			final var approvedForAll = allowance.getApprovedForAll().getValue();
+			var owner = Id.fromGrpcAccount(allowance.getOwner());
+
+			if (merkleToken == null) {
+				return INVALID_TOKEN_ID;
+			}
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
+			}
+			final var ownerAccount = fetchResult.getLeft().get();
+
+			if (merkleToken.tokenType() == TokenType.FUNGIBLE_COMMON) {
+				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+			}
+			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
+			if (validity != OK) {
+				return validity;
+			}
+
+			if (!approvedForAll) {
+				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
+				// state
+				validity = validateSerialNums(serialNums, ownerAccount, merkleToken, view, Id.fromGrpcToken(tokenId),
+						spenderId);
+				if (validity != OK) {
+					return validity;
+				}
+			}
+		}
+		return OK;
+	}
 
 	/**
 	 * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
@@ -103,13 +254,15 @@ public interface AllowanceChecks {
 	 * 		Account of the payer for the allowance approve/adjust txn.
 	 * @param maxLimitPerTxn
 	 * 		max allowance limit per transaction
+	 * @param workingView
 	 * @return response code after validation
 	 */
-	default ResponseCodeEnum allowancesValidation(final List<CryptoAllowance> cryptoAllowances,
+	public ResponseCodeEnum allowancesValidation(final List<CryptoAllowance> cryptoAllowances,
 			final List<TokenAllowance> tokenAllowances,
 			final List<NftAllowance> nftAllowances,
 			final Account payerAccount,
-			final int maxLimitPerTxn) {
+			final int maxLimitPerTxn,
+			final StateView workingView) {
 
 		// feature flag for allowances
 		if (!isEnabled()) {
@@ -120,17 +273,17 @@ public interface AllowanceChecks {
 			return validity;
 		}
 
-		validity = validateCryptoAllowances(cryptoAllowances, payerAccount);
+		validity = validateCryptoAllowances(cryptoAllowances, payerAccount, workingView);
 		if (validity != OK) {
 			return validity;
 		}
 
-		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount);
+		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount, workingView);
 		if (validity != OK) {
 			return validity;
 		}
 
-		validity = validateNftAllowances(nftAllowances, payerAccount);
+		validity = validateNftAllowances(nftAllowances, payerAccount, workingView);
 		if (validity != OK) {
 			return validity;
 		}
@@ -138,14 +291,14 @@ public interface AllowanceChecks {
 		return OK;
 	}
 
-	default ResponseCodeEnum validateCryptoAllowanceBasics(final Id ownerId, final Id spender) {
+	public ResponseCodeEnum validateDuplicates(final Id ownerId, final Id spender) {
 		if (ownerId.equals(spender)) {
 			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
 		return OK;
 	}
 
-	default ResponseCodeEnum validateTokenBasics(
+	public ResponseCodeEnum validateTokenBasics(
 			final Account ownerAccount,
 			final Id spenderId,
 			final TokenID tokenId) {
@@ -158,7 +311,7 @@ public interface AllowanceChecks {
 		return OK;
 	}
 
-	default ResponseCodeEnum commonChecks(final List<CryptoAllowance> cryptoAllowances,
+	public ResponseCodeEnum commonChecks(final List<CryptoAllowance> cryptoAllowances,
 			final List<TokenAllowance> tokenAllowances,
 			final List<NftAllowance> nftAllowances,
 			final int maxLimitPerTxn) {
@@ -176,32 +329,34 @@ public interface AllowanceChecks {
 		return OK;
 	}
 
-	default boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
+	public boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
 		return totalAllowances > maxLimit;
 	}
 
-	default boolean emptyAllowances(final int totalAllowances) {
+	public boolean emptyAllowances(final int totalAllowances) {
 		return totalAllowances == 0;
 	}
 
-	default Pair<Account, ResponseCodeEnum> fetchOwnerAccount(Id owner, Account payerAccount,
-			AccountStore accountStore) {
+	public Pair<Optional<Account>, ResponseCodeEnum> fetchOwnerAccount(
+			final Id owner,
+			final Account payerAccount,
+			final StateView view) {
 		if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
-			return Pair.of(payerAccount, OK);
+			return Pair.of(Optional.of(payerAccount), OK);
 		} else {
-			try {
-				return Pair.of(accountStore.loadAccount(owner), OK);
-			} catch (InvalidTransactionException ex) {
-				return Pair.of(payerAccount, INVALID_ALLOWANCE_OWNER_ID);
+			final var account = view.loadAccount(owner.asGrpcAccount());
+			if (account == null) {
+				return Pair.of(Optional.empty(), INVALID_ALLOWANCE_OWNER_ID);
+			} else {
+				return Pair.of(Optional.of(Account.loadEntity(account, owner)), OK);
 			}
 		}
 	}
 
-	default boolean validOwner(final MerkleUniqueToken nft,
-			final Account ownerAccount, final Token token) {
+	public boolean validOwner(final MerkleUniqueToken nft, final Account ownerAccount, final MerkleToken token) {
 		final var listedOwner = nft.getOwner();
 		return MISSING_ENTITY_ID.equals(listedOwner)
-				? ownerAccount.equals(token.getTreasury())
+				? ownerAccount.equals(token.treasury())
 				: listedOwner.equals(ownerAccount.getId().asEntityId());
 	}
 
@@ -210,5 +365,25 @@ public interface AllowanceChecks {
 	 *
 	 * @return true if the feature is enabled in {@link com.hedera.services.context.properties.GlobalDynamicProperties}
 	 */
-	boolean isEnabled();
+	public boolean isEnabled() {
+		return dynamicProperties.areAllowancesEnabled();
+	}
+
+	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
+			final Account ownerAccount,
+			final MerkleToken merkleToken,
+			final StateView view,
+			final Id token,
+			final Id spender) {
+		throw new UnsupportedOperationException();
+	}
+
+	ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender) {
+		throw new UnsupportedOperationException();
+	}
+
+	ResponseCodeEnum validateTokenAmount(final Account ownerAccount,
+			final long l, final MerkleToken merkleToken, final Id token, final Id spender) {
+		throw new UnsupportedOperationException();
+	}
 }
