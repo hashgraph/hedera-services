@@ -35,6 +35,7 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoAdjustAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
@@ -51,14 +52,16 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoAdjustAllowance.asList;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance.MISSING_OWNER;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.MISSING_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -105,8 +108,100 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 				exceedsAccountLimit(),
 				succeedsWhenTokenPausedFrozenKycRevoked(),
 				feesAsExpected(),
-				worksAsExpectedWhenDisabled()
+				worksAsExpectedWhenDisabled(),
+				approveForAllSpenderCanDelegateOnNFT()
 		});
+	}
+
+	private HapiApiSpec approveForAllSpenderCanDelegateOnNFT() {
+		final String owner = "owner";
+		final String approveForAllSpender = "spender";
+		final String delegatingSpender = "delegatingSpender";
+		final String newSpender = "newSpender";
+		final String nft = "nft";
+		return defaultHapiSpec("ApproveForAllSpenderCanDelegateOnNFTs")
+				.given(
+						newKeyNamed("supplyKey"),
+						cryptoCreate(owner)
+								.balance(ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						cryptoCreate(delegatingSpender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(newSpender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(approveForAllSpender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						tokenCreate(nft)
+								.maxSupply(10L)
+								.initialSupply(0)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(owner, nft),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b")
+						)).via("nftTokenMint"),
+						cryptoTransfer(
+								movingUnique(nft, 1L, 2L).between(TOKEN_TREASURY, owner))
+				)
+				.when(
+						cryptoAdjustAllowance()
+								.payingWith(DEFAULT_PAYER)
+								.addCryptoAllowance(owner, delegatingSpender, ONE_HBAR)
+								.addNftAllowance(owner, nft, approveForAllSpender, true, List.of())
+								.addNftAllowance(owner, nft, delegatingSpender, true, List.of(1L))
+								.addNftAllowance(owner, nft, newSpender, false, List.of(2L))
+								.signedBy(DEFAULT_PAYER, owner),
+						getAccountInfo(owner)
+								.has(accountWith()
+										.nftAllowancesCount(2)
+										.cryptoAllowancesContaining(delegatingSpender, ONE_HBAR)
+										.nftApprovedAllowancesContaining(nft, delegatingSpender)
+										.nftApprovedAllowancesContaining(nft, approveForAllSpender))
+				)
+				.then(
+						cryptoAdjustAllowance()
+								.payingWith(DEFAULT_PAYER)
+								.addCryptoAllowance(owner, delegatingSpender, ONE_HBAR)
+								.addDelegatedNftAllowance(owner, nft, newSpender, delegatingSpender, false, List.of(1L))
+								.signedBy(DEFAULT_PAYER, owner)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						cryptoAdjustAllowance()
+								.payingWith(DEFAULT_PAYER)
+								.addCryptoAllowance(owner, delegatingSpender, ONE_HBAR)
+								.addDelegatedNftAllowance(owner, nft, delegatingSpender, newSpender, false, List.of(2L))
+								.signedBy(DEFAULT_PAYER, newSpender)
+								.hasPrecheck(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL),
+						cryptoAdjustAllowance()
+								.payingWith(DEFAULT_PAYER)
+								.addCryptoAllowance(owner, delegatingSpender, ONE_HBAR)
+								.addDelegatedNftAllowance(owner, nft, newSpender, delegatingSpender, true, List.of())
+								.signedBy(DEFAULT_PAYER, delegatingSpender)
+								.hasPrecheck(DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL),
+						getTokenNftInfo(nft, 2L)
+								.hasSpenderId(newSpender),
+						getTokenNftInfo(nft, 1L)
+								.hasSpenderId(delegatingSpender),
+						cryptoAdjustAllowance()
+								.payingWith(DEFAULT_PAYER)
+								.addCryptoAllowance(owner, delegatingSpender, ONE_HBAR)
+								.addDelegatedNftAllowance(owner, nft, newSpender, delegatingSpender, false, List.of(1L))
+								.addDelegatedNftAllowance(owner, nft, approveForAllSpender, delegatingSpender, false, List.of(2L))
+								.signedBy(DEFAULT_PAYER, delegatingSpender, owner),
+						getTokenNftInfo(nft, 1L)
+								.hasSpenderId(newSpender),
+						getTokenNftInfo(nft, 2L)
+								.hasSpenderId(approveForAllSpender),
+						getAccountInfo(owner)
+								.has(accountWith()
+										.nftAllowancesCount(1)
+										.cryptoAllowancesContaining(delegatingSpender, 2*ONE_HBAR)
+										.nftApprovedAllowancesContaining(nft, delegatingSpender))
+				);
 	}
 
 	private HapiApiSpec worksAsExpectedWhenDisabled() {

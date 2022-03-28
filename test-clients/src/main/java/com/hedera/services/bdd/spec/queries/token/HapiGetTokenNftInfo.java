@@ -57,10 +57,16 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	Optional<ByteString> expectedMetadata = Optional.empty();
 	Optional<String> expectedTokenID = Optional.empty();
 	Optional<String> expectedAccountID = Optional.empty();
+	Optional<String> expectedSpenderID = Optional.empty();
 	Optional<Boolean> expectedCreationTime = Optional.empty();
 
 	public HapiGetTokenNftInfo hasAccountID(String name) {
 		expectedAccountID = Optional.of(name);
+		return this;
+	}
+
+	public HapiGetTokenNftInfo hasSpenderId(String name) {
+		expectedSpenderID = Optional.of(name);
 		return this;
 	}
 
@@ -111,6 +117,14 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 					id,
 					actualInfo.getAccountID(),
 					"Wrong account ID account!");
+		}
+
+		if (expectedSpenderID.isPresent()) {
+			var id = TxnUtils.asId(expectedSpenderID.get(), spec);
+			Assertions.assertEquals(
+					id,
+					actualInfo.getSpenderId(),
+					"Wrong spender ID on the NFT!");
 		}
 
 		expectedMetadata.ifPresent(bytes -> Assertions.assertEquals(
