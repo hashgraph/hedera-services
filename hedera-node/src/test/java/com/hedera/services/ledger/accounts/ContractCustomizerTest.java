@@ -1,5 +1,25 @@
 package com.hedera.services.ledger.accounts;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
@@ -28,6 +48,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.txns.contract.ContractCreateTransitionLogic.STANDIN_CONTRACT_ID_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -126,7 +147,7 @@ class ContractCustomizerTest {
 	}
 
 	@Test
-	void customizesSyntheticWithImmutableKey() {
+	void customizesSyntheticWithCryptoKey() {
 		final var subject = new ContractCustomizer(cryptoAdminKey, accountCustomizer);
 		final var op = ContractCreateTransactionBody.newBuilder();
 
@@ -134,6 +155,17 @@ class ContractCustomizerTest {
 
 		verify(accountCustomizer).customizeSynthetic(op);
 		assertEquals(MiscUtils.asKeyUnchecked(cryptoAdminKey), op.getAdminKey());
+	}
+
+	@Test
+	void customizesSyntheticWithImmutableKey() {
+		final var subject = new ContractCustomizer(accountCustomizer);
+		final var op = ContractCreateTransactionBody.newBuilder();
+
+		subject.customizeSynthetic(op);
+
+		verify(accountCustomizer).customizeSynthetic(op);
+		assertFalse(op.hasAdminKey());
 	}
 
 	private void assertCustomizesWithCryptoKey(final ContractCustomizer subject, final EntityId expectedProxy) {
