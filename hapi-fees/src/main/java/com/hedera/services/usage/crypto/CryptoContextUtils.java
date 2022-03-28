@@ -111,7 +111,7 @@ public class CryptoContextUtils {
 		int counter = 0;
 		for (var a : newAllowances.entrySet()) {
 			final var isApprovedForAll = a.getValue().approvedForAll();
-			if (!isApprovedForAll) {
+			if (isApprovedForAll != null && !isApprovedForAll) {
 					counter += a.getValue().serialNums().size();
 			}
 		}
