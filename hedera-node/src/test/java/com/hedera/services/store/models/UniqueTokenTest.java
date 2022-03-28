@@ -88,7 +88,7 @@ class UniqueTokenTest {
 		assertNotEquals(sub2, sub3);
 		assertNotEquals(sub1, sub3);
 		assertNotEquals(sub1, sub4);
-		assertNotEquals(sub1, null);
+		assertNotEquals(null, sub1);
 	}
 
 	@Test
