@@ -21,7 +21,6 @@ package com.hedera.services.txns.crypto.validators;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -46,14 +45,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.validators.AllowanceChecks.exceedsTxnLimit;
 import static com.hedera.services.txns.crypto.validators.AllowanceChecks.fetchOwnerAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
@@ -341,7 +338,7 @@ public class DeleteAllowanceChecks {
 	 * @return number of serials
 	 */
 	int aggregateNftAllowances(List<NftRemoveAllowance> nftAllowances) {
-		return nftAllowances.stream().mapToInt(a -> a.getSerialNumbersCount()).sum();
+		return nftAllowances.stream().mapToInt(NftRemoveAllowance::getSerialNumbersCount).sum();
 	}
 
 	/**

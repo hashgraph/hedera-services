@@ -20,8 +20,11 @@ package com.hedera.services.store.models;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.RichInstant;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import java.util.Arrays;
 
 /**
  * Encapsulates the state and operations of a Hedera Unique token.
@@ -105,11 +108,40 @@ public class UniqueToken {
 	}
 
 	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("tokenID", tokenId)
+				.add("serialNum", serialNumber)
+				.add("metadata", metadata)
+				.add("creationTime", creationTime)
+				.add("owner", owner)
+				.add("spender", spender).toString();
+	}
+
+	@Override
 	public int hashCode() {
 		return new HashCodeBuilder()
 				.append(tokenId)
 				.append(serialNumber)
 				.toHashCode();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (!o.getClass().equals(UniqueToken.class)) {
+			return false;
+		}
+
+		UniqueToken that = (UniqueToken)o;
+		return this.tokenId.equals(that.tokenId) &&
+				this.serialNumber == that.serialNumber &&
+				this.owner == that.owner &&
+				this.spender == that.spender &&
+				this.creationTime == that.creationTime &&
+				Arrays.equals(this.metadata , that.metadata);
 	}
 
 	public void clearSpender() {
