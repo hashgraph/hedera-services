@@ -116,7 +116,15 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 		};
 	}
 
-	private HapiSpecOperation uniqueCreation(final String name) {
+	static HapiSpecOperation uniqueQuietCreation(final String name) {
+		return internalUniqueCreation(name, false);
+	}
+
+	static HapiSpecOperation uniqueCreation(final String name) {
+		return internalUniqueCreation(name, true);
+	}
+
+	private static HapiSpecOperation internalUniqueCreation(final String name, final boolean verbose) {
 		return withOpContext((spec, opLog) -> {
 			while (true) {
 				try {
@@ -124,6 +132,9 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
 							.payingWith(GENESIS)
 							.ensuringResolvedStatusIsntFromDuplicate()
 							.balance(ONE_HUNDRED_HBARS * 10_000);
+					if (!verbose) {
+						attempt.noLogging();
+					}
 					allRunFor(spec, attempt);
 					return;
 				} catch (IllegalStateException ignore) {
