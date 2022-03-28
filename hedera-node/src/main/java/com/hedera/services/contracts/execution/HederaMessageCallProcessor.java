@@ -57,6 +57,31 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 		hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
 	}
 
+	// Create whitelist (0xhederanative)
+	// Pass a create2 address related to 0xhederanative
+	// 1. func(address, address)
+	// 2. sender to be create2
+	// sender, originator, contract, recipient have to always be resolved to a hedera native address
+
+	// whitelist (accounts which can do stuff) : 0x0000000001 (correlates to 0xnativecreate2address)
+	// mirrorAddress || evmAddressCreate2
+	// {require(msg.sender == mirrorAddress), sender = create2 aliased address related to 0xnativeaddress => has to
+	// pass}
+	// contract storage (storage slot), field of type address
+	// should not revert
+
+	// investigate getAddress()
+
+
+	// sender : 0x0000000001
+	// require(msg.sender == 0xnativecreate2address)
+
+	// 1. contract1 with map[address] for whitelist (isWhitelisted() bool - checks msg.sender, addToWhiteList(address))
+	// 2. another contract2 which deploys another contract via create2 - contract3, has method checkWhiteList() {address(contract1).call(isWhiteListed())}
+	// 3. contract1 addToWhiteList(mirrorAddress of the aliased contract from step 2)
+	// 4. the aliased contract3 makes a call to the whitelisted contract1 isWhiteListed(). This has to be TRUE. Currently will return FALSE.
+	// Step 4 needs to be executed both from HederaContractCall(with evmAddress) and through contract2 method(with mirrorAddress)
+
 	@Override
 	public void start(final MessageFrame frame, final OperationTracer operationTracer) {
 		var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
