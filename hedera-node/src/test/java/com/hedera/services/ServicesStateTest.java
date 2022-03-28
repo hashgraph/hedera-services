@@ -469,6 +469,8 @@ class ServicesStateTest {
 		subject = mock(ServicesState.class);
 		doCallRealMethod().when(subject).migrate();
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0230_VERSION);
+		given(subject.accounts()).willReturn(accounts);
+		given(accounts.keySet()).willReturn(Set.of());
 
 		subject.migrate();
 
