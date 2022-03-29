@@ -48,6 +48,8 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityNum;
@@ -617,5 +619,30 @@ public class StateView {
 
 	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
+	}
+
+	public Account loadEntity(final MerkleAccount merkleAccount, final Id id) {
+		final var account = new Account(id);
+		account.setExpiry(merkleAccount.getExpiry());
+		account.initBalance(merkleAccount.getBalance());
+		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
+		account.setOwnedNfts(merkleAccount.getNftsOwned());
+		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
+		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
+		if (merkleAccount.getProxy() != null) {
+			account.setProxy(merkleAccount.getProxy().asId());
+		}
+		account.setReceiverSigRequired(merkleAccount.isReceiverSigRequired());
+		account.setKey(merkleAccount.state().key());
+		account.setMemo(merkleAccount.getMemo());
+		account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
+		account.setDeleted(merkleAccount.isDeleted());
+		account.setSmartContract(merkleAccount.isSmartContract());
+		account.setAlias(merkleAccount.getAlias());
+		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
+		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
+		account.setNftAllowances(merkleAccount.getNftAllowances());
+
+		return account;
 	}
 }

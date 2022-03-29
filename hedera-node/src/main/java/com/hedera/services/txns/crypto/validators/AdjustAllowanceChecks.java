@@ -28,10 +28,7 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNumPair;
-import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.inject.Inject;

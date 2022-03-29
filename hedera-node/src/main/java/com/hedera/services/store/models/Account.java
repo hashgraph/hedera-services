@@ -372,29 +372,4 @@ public class Account {
 		// So for Nft allowances aggregated amount is considered for limit calculation.
 		return cryptoAllowances.size() + fungibleTokenAllowances.size() + aggregateNftAllowances(nftAllowances);
 	}
-
-	public static Account loadEntity(final MerkleAccount merkleAccount, final Id id) {
-		final var account = new Account(id);
-		account.setExpiry(merkleAccount.getExpiry());
-		account.initBalance(merkleAccount.getBalance());
-		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
-		account.setOwnedNfts(merkleAccount.getNftsOwned());
-		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
-		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
-		if (merkleAccount.getProxy() != null) {
-			account.setProxy(merkleAccount.getProxy().asId());
-		}
-		account.setReceiverSigRequired(merkleAccount.isReceiverSigRequired());
-		account.setKey(merkleAccount.state().key());
-		account.setMemo(merkleAccount.getMemo());
-		account.setAutoRenewSecs(merkleAccount.getAutoRenewSecs());
-		account.setDeleted(merkleAccount.isDeleted());
-		account.setSmartContract(merkleAccount.isSmartContract());
-		account.setAlias(merkleAccount.getAlias());
-		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
-		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
-		account.setNftAllowances(merkleAccount.getNftAllowances());
-
-		return account;
-	}
 }

@@ -44,8 +44,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
@@ -55,7 +53,6 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeat
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -63,7 +60,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 /**
  * Validations for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} and
@@ -355,12 +351,12 @@ public class AllowanceChecks {
 			if (isInvalidOwner(account)) {
 				return Pair.of(Optional.empty(), INVALID_ALLOWANCE_OWNER_ID);
 			} else {
-				return Pair.of(Optional.of(Account.loadEntity(account, owner)), OK);
+				return Pair.of(Optional.of(view.loadEntity(account, owner)), OK);
 			}
 		}
 	}
 
-	private boolean isInvalidOwner(final MerkleAccount  account){
+	private boolean isInvalidOwner(final MerkleAccount account) {
 		return account == null || account.isDeleted() || isExpired(account.getBalance(), account.getExpiry());
 	}
 
