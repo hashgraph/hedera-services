@@ -54,6 +54,7 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeat
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -71,7 +72,8 @@ public class AllowanceChecks {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
-	private static final String UNSUPPORTED_MSG = "Base Class, Implementation present in AdjustAllowanceChecks/ApproveAllowanceChecks";
+	private static final String UNSUPPORTED_MSG = "Base Class, Implementation present in " +
+			"AdjustAllowanceChecks/ApproveAllowanceChecks";
 
 	@Inject
 	public AllowanceChecks(final GlobalDynamicProperties dynamicProperties,
@@ -184,20 +186,22 @@ public class AllowanceChecks {
 	 * Validate fungible token allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
 	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
 	 *
-	 * @param tokenAllowancesList
+	 * @param tokenAllowances
 	 * 		token allowances list
 	 * @param payerAccount
 	 * 		Account of the payer for the Allowance approve/adjust txn
 	 * @param view
 	 * @return
 	 */
-	ResponseCodeEnum validateFungibleTokenAllowances(final List<TokenAllowance> tokenAllowancesList,
-			final Account payerAccount, final StateView view) {
-		if (tokenAllowancesList.isEmpty()) {
+	ResponseCodeEnum validateFungibleTokenAllowances(
+			final List<TokenAllowance> tokenAllowances,
+			final Account payerAccount,
+			final StateView view) {
+		if (tokenAllowances.isEmpty()) {
 			return OK;
 		}
 		final List<Pair<EntityNum, FcTokenAllowanceId>> tokenKeys = new ArrayList<>();
-		for (var allowance : tokenAllowancesList) {
+		for (var allowance : tokenAllowances) {
 			tokenKeys.add(
 					buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
 		}
@@ -205,12 +209,15 @@ public class AllowanceChecks {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 
-		for (final var allowance : tokenAllowancesList) {
+		for (final var allowance : tokenAllowances) {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var tokenId = allowance.getTokenId();
 			final var merkleToken = view.loadToken(tokenId);
-			final var token = Id.fromGrpcToken(tokenId);
+
+			if (isInvalidToken(merkleToken)) {
+				return INVALID_TOKEN_ID;
+			}
 
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
 			if (fetchResult.isEmpty()) {
@@ -222,7 +229,8 @@ public class AllowanceChecks {
 				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 			}
 
-			var validity = validateTokenAmount(ownerAccount, allowance.getAmount(), merkleToken, token, spender);
+			var validity = validateTokenAmount(ownerAccount, allowance.getAmount(), merkleToken,
+					Id.fromGrpcToken(tokenId), spender);
 			if (validity != OK) {
 				return validity;
 			}
@@ -266,10 +274,14 @@ public class AllowanceChecks {
 			final var spenderAccountId = allowance.getSpender();
 			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
-			final var merkleToken = view.loadToken(tokenId);
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final var merkleToken = view.loadToken(tokenId);
+
+			if (isInvalidToken(merkleToken)) {
+				return INVALID_TOKEN_ID;
+			}
 
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
 			if (fetchResult.isEmpty()) {
@@ -386,6 +398,10 @@ public class AllowanceChecks {
 		return MISSING_ENTITY_ID.equals(listedOwner)
 				? ownerAccount.getId().equals(token.treasury().asId())
 				: listedOwner.equals(ownerAccount.getId().asEntityId());
+	}
+
+	boolean isInvalidToken(final MerkleToken token) {
+		return token == null || token.isDeleted();
 	}
 
 	private boolean isFungibleCommon(MerkleToken token) {

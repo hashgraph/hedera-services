@@ -969,7 +969,7 @@ class StateViewTest {
 		assertEquals(account, subject.loadAccount(id));
 
 		given(subject.asReadOnlyAccountStore().getImmutableRef(id)).willReturn(null);
-		assertThrows(InvalidTransactionException.class, () -> subject.loadAccount(id));
+		assertEquals(null, subject.loadAccount(id));
 	}
 
 	@Test
@@ -984,12 +984,6 @@ class StateViewTest {
 		willCallRealMethod().given(subject).loadToken(id);
 
 		assertEquals(token, subject.loadToken(id));
-
-		given(token.isDeleted()).willReturn(true);
-		assertThrows(InvalidTransactionException.class, () -> subject.loadToken(id));
-
-		given(subject.asReadOnlyTokenStore().getImmutableRef(id)).willReturn(null);
-		assertThrows(InvalidTransactionException.class, () -> subject.loadToken(id));
 	}
 
 	@Test

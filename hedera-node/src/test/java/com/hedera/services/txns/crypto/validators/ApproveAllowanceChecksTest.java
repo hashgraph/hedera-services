@@ -81,6 +81,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -663,6 +664,16 @@ class ApproveAllowanceChecksTest {
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateNftAllowances(op.getNftAllowancesList(),
 				payerAccount, view));
 		verify(view, times(2)).loadAccount(ownerId1);
+	}
+
+	@Test
+	void validateInvalidToken(){
+		final var token = mock(MerkleToken.class);
+		given(token.isDeleted()).willReturn(true);
+		assertTrue(subject.isInvalidToken(token));
+
+		given(view.loadToken(any())).willReturn(null);
+		assertTrue(subject.isInvalidToken(view.loadToken(TokenID.newBuilder().setTokenNum(2).build())));
 	}
 
 	@Test

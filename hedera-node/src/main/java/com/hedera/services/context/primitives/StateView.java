@@ -564,22 +564,15 @@ public class StateView {
 	}
 
 	public MerkleAccount loadAccount(AccountID id) {
-		final var account = asReadOnlyAccountStore().getImmutableRef(id);
-		validateTrue(account != null, INVALID_ACCOUNT_ID);
-		return account;
+		return asReadOnlyAccountStore().getImmutableRef(id);
 	}
 
 	public MerkleToken loadToken(TokenID id) {
-		final var token = asReadOnlyTokenStore().getImmutableRef(id);
-		validateTrue(token != null, INVALID_TOKEN_ID);
-		validateFalse(token.isDeleted(), TOKEN_WAS_DELETED);
-		return token;
+		return asReadOnlyTokenStore().getImmutableRef(id);
 	}
 
 	public MerkleUniqueToken loadNft(NftId id) {
-		final var nft = asReadOnlyNftStore().getImmutableRef(id);
-		validateTrue(nft != null, INVALID_NFT_ID);
-		return nft;
+		return asReadOnlyNftStore().getImmutableRef(id);
 	}
 
 	private TokenFreezeStatus tfsFor(final boolean flag) {
