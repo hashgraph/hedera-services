@@ -31,6 +31,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -152,10 +153,12 @@ public class AllowanceChecks {
 		if (cryptoAllowances.isEmpty()) {
 			return OK;
 		}
-		final var entities = cryptoAllowances.stream()
-				.map(allowance -> buildEntityNumPairFrom(allowance.getOwner(), allowance.getSpender(),
-						payerAccount.getId().asEntityNum()))
-				.toList();
+		final List<EntityNumPair> entities = new ArrayList<>();
+		for (var allowance : cryptoAllowances) {
+			entities.add(buildEntityNumPairFrom(allowance.getOwner(), allowance.getSpender(),
+					payerAccount.getId().asEntityNum()));
+		}
+
 		if (hasRepeatedSpender(entities)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}

@@ -377,6 +377,7 @@ class AdjustAllowanceChecksTest {
 				)
 				.build();
 		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
+		given(view.loadToken(token1)).willReturn(merkleToken1);
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
@@ -391,7 +392,9 @@ class AdjustAllowanceChecksTest {
 								.build()
 				)
 				.build();
+
 		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
+		given(view.loadToken(token2)).willReturn(merkleToken2);
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
