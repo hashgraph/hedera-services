@@ -103,7 +103,6 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				validatesSerialNums(),
 				tokenExceedsMaxSupplyFails(),
 				serialsWipedIfApprovedForAll(),
-				serialsNotValidatedIfApprovedForAll(),
 				exceedsTransactionLimit(),
 				exceedsAccountLimit(),
 				succeedsWhenTokenPausedFrozenKycRevoked(),
@@ -1004,59 +1003,6 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 										"hedera.allowances.maxAccountLimit", "100")
 								)
 				);
-	}
-
-	private HapiApiSpec serialsNotValidatedIfApprovedForAll() {
-		final String owner = "owner";
-		final String spender = "spender";
-		final String spender1 = "spender1";
-		final String nft = "nft";
-		return defaultHapiSpec("serialsWipedIfApprovedForAll")
-				.given(
-						newKeyNamed("supplyKey"),
-						cryptoCreate(owner)
-								.balance(ONE_HUNDRED_HBARS)
-								.maxAutomaticTokenAssociations(10),
-						cryptoCreate(spender)
-								.balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(spender1)
-								.balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
-								.maxAutomaticTokenAssociations(10),
-						tokenCreate(nft)
-								.maxSupply(10L)
-								.initialSupply(0)
-								.supplyType(TokenSupplyType.FINITE)
-								.tokenType(NON_FUNGIBLE_UNIQUE)
-								.supplyKey("supplyKey")
-								.treasury(TOKEN_TREASURY),
-						tokenAssociate(owner, nft),
-						mintToken(nft, List.of(
-								ByteString.copyFromUtf8("a"),
-								ByteString.copyFromUtf8("b"),
-								ByteString.copyFromUtf8("c")
-						)).via("nftTokenMint"),
-						cryptoTransfer(movingUnique(nft, 1L, 2L, 3L)
-								.between(TOKEN_TREASURY, owner))
-				)
-				.when(
-						cryptoApproveAllowance()
-								.payingWith(owner)
-								.addNftAllowance(owner, nft, spender, true, List.of(1L, 1L, 1L, 1L))
-								.fee(ONE_HBAR),
-						cryptoApproveAllowance()
-								.payingWith(owner)
-								.addNftAllowance(owner, nft, spender1, false, List.of(1L, 1L, 1L))
-								.fee(ONE_HBAR)
-								.hasPrecheck(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES)
-				)
-				.then(
-						getAccountInfo(owner)
-
-								.has(accountWith()
-										.nftAllowancesCount(1)
-										.nftApprovedAllowancesContaining(nft, spender)
-								));
 	}
 
 	private HapiApiSpec serialsWipedIfApprovedForAll() {

@@ -157,6 +157,10 @@ public interface AllowanceChecks {
 				}
 			}
 
+			if (!approvedForAll && serialNums.isEmpty()) {
+				return EMPTY_ALLOWANCES;
+			}
+
 			validity = validateSerialNums(nftsMap.get(), serialNums, token);
 			if (validity != OK) {
 				return validity;
@@ -269,10 +273,6 @@ public interface AllowanceChecks {
 			final Token token) {
 		if (hasRepeatedSerials(serialNums)) {
 			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
-		}
-
-		if (serialNums.isEmpty()) {
-			return EMPTY_ALLOWANCES;
 		}
 
 		for (var serial : serialNums) {
