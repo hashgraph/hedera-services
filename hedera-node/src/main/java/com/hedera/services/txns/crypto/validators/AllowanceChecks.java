@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.AccountStore.loadMerkleAccount;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
@@ -351,7 +352,7 @@ public class AllowanceChecks {
 			if (isInvalidOwner(account)) {
 				return Pair.of(Optional.empty(), INVALID_ALLOWANCE_OWNER_ID);
 			} else {
-				return Pair.of(Optional.of(view.loadEntity(account, owner)), OK);
+				return Pair.of(Optional.of(loadMerkleAccount(account, owner)), OK);
 			}
 		}
 	}

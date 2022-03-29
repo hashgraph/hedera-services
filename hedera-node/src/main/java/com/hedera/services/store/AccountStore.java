@@ -137,7 +137,10 @@ public class AccountStore {
 		final var merkleAccount = accounts.getImmutableRef(id.asGrpcAccount());
 
 		validateUsable(merkleAccount, explicitResponseCode, nonExistingCode, deletedCode);
+		return loadMerkleAccount(merkleAccount, id);
+	}
 
+	public static Account loadMerkleAccount(final MerkleAccount merkleAccount, final Id id) {
 		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());

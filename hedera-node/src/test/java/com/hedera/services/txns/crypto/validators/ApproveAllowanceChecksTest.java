@@ -29,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -80,6 +81,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -610,14 +612,17 @@ class ApproveAllowanceChecksTest {
 		given(view.loadToken(token1Model.getId().asGrpcToken())).willReturn(merkleToken1);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
 		given(view.loadAccount(ownerId1)).willReturn(ownerAccount);
-		given(view.loadEntity(ownerAccount, Id.fromGrpcAccount(ownerId1))).willReturn(owner);
 		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
 
 		getValidTxnCtx();
 
-		assertEquals(OK,
-				subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount, view));
+		try (final var account = mockStatic(AccountStore.class)) {
+			account.when(() -> AccountStore.loadMerkleAccount(ownerAccount, Id.fromGrpcAccount(ownerId1)))
+					.thenReturn(owner);
+			assertEquals(OK,
+					subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount, view));
+		}
 		verify(view).loadAccount(ownerId1);
 
 		given(view.loadAccount(ownerId1)).willReturn(null);
@@ -631,7 +636,6 @@ class ApproveAllowanceChecksTest {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(view.loadToken(token2Model.getId().asGrpcToken())).willReturn(merkleToken2);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
-		given(view.loadEntity(ownerAccount, Id.fromGrpcAccount(ownerId1))).willReturn(owner);
 		given(merkleToken2.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
@@ -647,7 +651,12 @@ class ApproveAllowanceChecksTest {
 
 		getValidTxnCtx();
 
-		assertEquals(OK, subject.validateNftAllowances(op.getNftAllowancesList(), payerAccount, view));
+		try (final var account = mockStatic(AccountStore.class)) {
+			account.when(() -> AccountStore.loadMerkleAccount(ownerAccount, Id.fromGrpcAccount(ownerId1)))
+					.thenReturn(owner);
+			assertEquals(OK, subject.validateNftAllowances(op.getNftAllowancesList(), payerAccount, view));
+		}
+
 		verify(view).loadAccount(ownerId1);
 
 		given(view.loadAccount(ownerId1)).willReturn(null);
