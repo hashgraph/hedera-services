@@ -66,7 +66,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -85,9 +84,9 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -110,6 +109,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.swirlds.common.CommonUtils.hex;
@@ -549,23 +549,25 @@ public class StateView {
 	}
 
 	public BackingStore<TokenID, MerkleToken> asReadOnlyTokenStore() {
-		return new BackingTokens(() -> stateChildren.tokens());
+		return new BackingTokens(stateChildren::tokens);
 	}
 
 	public BackingStore<AccountID, MerkleAccount> asReadOnlyAccountStore() {
-		return new BackingAccounts(() -> stateChildren.accounts());
+		return new BackingAccounts(stateChildren::accounts);
 	}
 
 	public BackingStore<NftId, MerkleUniqueToken> asReadOnlyNftStore() {
-		return new BackingNfts(() -> stateChildren.uniqueTokens());
+		return new BackingNfts(stateChildren::uniqueTokens);
 	}
 
 	public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> asReadOnlyAssociationStore() {
-		return new BackingTokenRels(() -> stateChildren.tokenAssociations());
+		return new BackingTokenRels(stateChildren::tokenAssociations);
 	}
 
 	public MerkleAccount loadAccount(AccountID id) {
-		return asReadOnlyAccountStore().getImmutableRef(id);
+		final var account = asReadOnlyAccountStore().getImmutableRef(id);
+		validateTrue(account != null, INVALID_ACCOUNT_ID);
+		return account;
 	}
 
 	public MerkleToken loadToken(TokenID id) {

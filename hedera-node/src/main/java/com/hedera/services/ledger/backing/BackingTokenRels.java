@@ -101,4 +101,9 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 		return EntityNumPair.fromLongs(key.getLeft().getAccountNum(),
 				key.getRight().getTokenNum());
 	}
+
+	/* -- only for unit tests --*/
+	public Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> getDelegate() {
+		return delegate;
+	}
 }
