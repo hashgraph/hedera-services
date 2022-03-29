@@ -51,6 +51,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_CONS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -530,6 +531,47 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						)
 				).then(
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, 0)
+				);
+	}
+
+	private HapiApiSpec fungibleTokenMintFailure() {
+		final var theAccount = "anybody";
+		final var mintContractByteCode = "mintContractByteCode";
+		final var amount = "9223372036854775808";
+//		final var amount = "9223372036854775808";
+		final var fungibleToken = "fungibleToken";
+		final var multiKey = "purpose";
+		final var theContract = "mintContract";
+		final var firstMintTxn = "firstMintTxn";
+
+		final AtomicLong fungibleNum = new AtomicLong();
+
+		return defaultHapiSpec("FungibleMintFailure")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						fileCreate(mintContractByteCode).payingWith(theAccount),
+						updateLargeFile(theAccount, mintContractByteCode,
+								extractByteCode(ContractResources.MINT_CONTRACT)),
+						tokenCreate(fungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
+				).when(
+						sourcing(() -> contractCreate(theContract, MINT_CONS_ABI, fungibleNum.get())
+								.bytecode(mintContractByteCode).payingWith(theAccount)
+								.gas(GAS_TO_OFFER))
+				).then(
+						contractCall(theContract, MINT_FUNGIBLE_CALL_ABI, amount)
+								.via(firstMintTxn).payingWith(theAccount)
+								.alsoSigningWithFullPrefix(multiKey)
+								.gas(2_000_000L)
+								.hasKnownStatus(SUCCESS),
+						getTxnRecord(firstMintTxn).andAllChildRecords().logged()
 				);
 	}
 

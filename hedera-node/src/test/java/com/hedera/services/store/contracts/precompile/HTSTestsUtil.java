@@ -37,6 +37,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -79,6 +80,14 @@ public class HTSTestsUtil {
 			BurnWrapper.forFungible(fungible, AMOUNT);
 	public static final MintWrapper fungibleMint =
 			MintWrapper.forFungible(fungible, AMOUNT);
+	public static final BurnWrapper fungibleBurnAmountOversize =
+			BurnWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
+	public static final BurnWrapper fungibleBurnMaxAmount =
+			BurnWrapper.forFungible(fungible, Long.MAX_VALUE);
+	public static final MintWrapper fungibleMintAmountOversize =
+			MintWrapper.forFungible(fungible, new BigInteger("2").pow(64).longValue());
+	public static final MintWrapper fungibleMintMaxAmount =
+			MintWrapper.forFungible(fungible, Long.MAX_VALUE);
 	public static final Long serialNumber = 1L;
 	public static final BalanceOfWrapper balanceOfOp = new BalanceOfWrapper(accountMerkleId);
 	public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper = new OwnerOfAndTokenURIWrapper(serialNumber);
@@ -92,6 +101,8 @@ public class HTSTestsUtil {
 			BurnWrapper.forNonFungible(nonFungible, targetSerialNos);
 	public static final Bytes burnSuccessResultWith49Supply = Bytes.fromHexString(
 			"0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000031");
+	public static final Bytes burnSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
+			"0x00000000000000000000000000000000000000000000000000000000000000b70000000000000000000000000000000000000000000000000000000000000000");
 	public static final TxnReceipt.Builder receiptBuilder =
 			TxnReceipt.newBuilder().setNewTotalSupply(49).setStatus(ResponseCodeEnum.SUCCESS.name());
 	public static final ExpirableTxnRecord.Builder expirableTxnRecordBuilder = ExpirableTxnRecord.newBuilder()
@@ -103,6 +114,8 @@ public class HTSTestsUtil {
 			MintWrapper.forNonFungible(nonFungible, newMetadata);
 	public static final Bytes fungibleSuccessResultWith10Supply = Bytes.fromHexString(
 			"0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
+	public static final Bytes fungibleSuccessResultWithLongMaxValueSupply = Bytes.fromHexString(
+			"0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000007fffffffffffffff00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
 	public static final Bytes failInvalidResult = UInt256.valueOf(ResponseCodeEnum.FAIL_INVALID_VALUE);
 	public static final Instant pendingChildConsTime = Instant.ofEpochSecond(1_234_567L, 890);
 	public static final Address nonFungibleTokenAddr = nonFungibleId.asEvmAddress();

@@ -311,7 +311,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		gasRequirement = Gas.of(dynamicProperties.htsDefaultGasCost());
 
-		if (this.precompile == null) {
+		if (this.precompile == null || this.transactionBody == null) {
 			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 			return null;
 		}
@@ -489,7 +489,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			this.transactionBody = this.precompile.body(input, aliasResolver);
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
-			throw new InvalidTransactionException("Cannot decode precompile input", FAIL_INVALID);
+			transactionBody = null;
 		}
 	}
 
@@ -1318,12 +1318,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame
-	 * 		current frame
-	 * @param target
-	 * 		the element to test for key activation, in standard form
-	 * @param activationTest
-	 * 		the function which should be invoked for key validation
+	 * @param frame          current frame
+	 * @param target         the element to test for key activation, in standard form
+	 * @param activationTest the function which should be invoked for key validation
 	 * @return whether the implied key is active
 	 */
 	private boolean validateKey(
@@ -1367,14 +1364,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param isDelegateCall
-		 * 		a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
-		 * @param target
-		 * 		an address with an implicit key understood by this implementation
-		 * @param activeContract
-		 * 		the contract address that can activate a contract or delegatable contract key
-		 * @param worldLedgers
-		 * 		the worldLedgers representing current state
+		 * @param isDelegateCall a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
+		 * @param target         an address with an implicit key understood by this implementation
+		 * @param activeContract the contract address that can activate a contract or delegatable contract key
+		 * @param worldLedgers   the worldLedgers representing current state
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(
