@@ -1160,7 +1160,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addNftAllowance(owner, nft, spender, false, List.of(3L))
-								.hasPrecheck(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
+								.hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
 						cryptoAdjustAllowance()
 								.payingWith(owner)
 								.addNftAllowance(owner, nft, spender, false, List.of(2L, 2L, 3L, 3L))
