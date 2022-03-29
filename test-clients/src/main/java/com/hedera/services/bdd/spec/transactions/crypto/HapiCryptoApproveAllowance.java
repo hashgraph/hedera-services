@@ -116,7 +116,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
 						.setCurrentCryptoAllowances(info.getGrantedCryptoAllowancesList())
 						.setCurrentTokenAllowances(info.getGrantedTokenAllowancesList())
-						.setCurrentNftAllowances(info.getGrantedNftAllowancesList())
+						.setCurrentApproveForAllNftAllowances(info.getGrantedNftAllowancesList())
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
 				var opMeta = new CryptoApproveAllowanceMeta(_txn.getCryptoApproveAllowance(),

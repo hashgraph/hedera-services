@@ -57,9 +57,13 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 	private BalanceChange balanceChange;
 	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
-	public MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+	public MerkleAccountScopedCheck(
+			final GlobalDynamicProperties dynamicProperties,
+			final OptionValidator validator,
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
+		this.nftsLedger = nftsLedger;
 	}
 
 	@Override
@@ -176,7 +180,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			if (!approveForAllNftsAllowances.contains(nftAllowanceId)) {
 				final var approvedSpender = (EntityId) nftsLedger.get(balanceChange.nftId(), SPENDER);
 
-				if (!approvedSpender.toGrpcAccountId().equals(balanceChange.getPayerID())) {
+				if (!approvedSpender.matches(balanceChange.getPayerID())) {
 					return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 				}
 			}

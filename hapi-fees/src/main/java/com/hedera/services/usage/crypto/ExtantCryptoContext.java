@@ -47,8 +47,8 @@ public class ExtantCryptoContext {
 	private final boolean currentlyHasProxy;
 	private final int currentMaxAutomaticAssociations;
 	private final Map<Long, Long> currentCryptoAllowances;
-	private final Map<AllowanceMapKey, Long> currentTokenAllowances;
-	private final Set<AllowanceMapKey> currentNftAllowances;
+	private final Map<AllowanceId, Long> currentTokenAllowances;
+	private final Set<AllowanceId> currentApproveForAllNftAllowances;
 
 	private ExtantCryptoContext(ExtantCryptoContext.Builder builder) {
 		currentNumTokenRels = builder.currentNumTokenRels;
@@ -59,7 +59,7 @@ public class ExtantCryptoContext {
 		currentMaxAutomaticAssociations = builder.currentMaxAutomaticAssociations;
 		this.currentCryptoAllowances = builder.currentCryptoAllowances;
 		this.currentTokenAllowances = builder.currentTokenAllowances;
-		this.currentNftAllowances = builder.currentNftAllowances;
+		this.currentApproveForAllNftAllowances = builder.currentApproveForAllNftAllowances;
 	}
 
 	public long currentNonBaseRb() {
@@ -97,12 +97,12 @@ public class ExtantCryptoContext {
 		return currentCryptoAllowances;
 	}
 
-	public Map<AllowanceMapKey, Long> currentTokenAllowances() {
+	public Map<AllowanceId, Long> currentTokenAllowances() {
 		return currentTokenAllowances;
 	}
 
-	public Set<AllowanceMapKey> currentNftAllowances() {
-		return currentNftAllowances;
+	public Set<AllowanceId> currentNftAllowances() {
+		return currentApproveForAllNftAllowances;
 	}
 
 	public static ExtantCryptoContext.Builder newBuilder() {
@@ -133,8 +133,8 @@ public class ExtantCryptoContext {
 		private long currentExpiry;
 		private int currentMaxAutomaticAssociations;
 		private Map<Long, Long> currentCryptoAllowances;
-		private Map<AllowanceMapKey, Long> currentTokenAllowances;
-		private Set<AllowanceMapKey> currentNftAllowances;
+		private Map<AllowanceId, Long> currentTokenAllowances;
+		private Set<AllowanceId> currentApproveForAllNftAllowances;
 
 		private Builder() {
 		}
@@ -194,24 +194,26 @@ public class ExtantCryptoContext {
 			return this;
 		}
 
-		public ExtantCryptoContext.Builder setCurrentNftAllowances(List<GrantedNftAllowance> currentNftAllowances) {
-			this.currentNftAllowances = convertToNftMapFromGranted(currentNftAllowances);
+		public ExtantCryptoContext.Builder setCurrentApproveForAllNftAllowances(List<GrantedNftAllowance> currentApproveForAllNftAllowances) {
+			this.currentApproveForAllNftAllowances = convertToNftMapFromGranted(currentApproveForAllNftAllowances);
 			mask |= NFT_ALLOWANCES_MASK;
 			return this;
 		}
 	}
+}
 
-	record AllowanceMapKey(Long tokenNum, Long spenderNum) implements Comparable<AllowanceMapKey>{
 
-		@Override
-		public int compareTo(@NotNull final AllowanceMapKey that) {
-			return new CompareToBuilder()
-					.append(tokenNum, that.tokenNum)
-					.append(spenderNum, that.spenderNum)
-					.toComparison();
-		}
+
+record AllowanceId(Long tokenNum, Long spenderNum) implements Comparable<AllowanceId>{
+
+	@Override
+	public int compareTo(@NotNull final AllowanceId that) {
+		return new CompareToBuilder()
+				.append(tokenNum, that.tokenNum)
+				.append(spenderNum, that.spenderNum)
+				.toComparison();
 	}
+}
 
-	record AllowanceMapValue(Boolean approvedForAll, List<Long> serialNums) {
-	}
+record AllowanceDetails(Boolean approvedForAll, List<Long> serialNums) {
 }

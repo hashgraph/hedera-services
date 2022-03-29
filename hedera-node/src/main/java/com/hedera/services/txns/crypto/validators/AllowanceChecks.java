@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
@@ -58,7 +57,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -159,13 +157,9 @@ public interface AllowanceChecks {
 				}
 			}
 
-			if (!approvedForAll) {
-				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
-				// state
-				validity = validateSerialNums(nftsMap.get(), serialNums, ownerAccount, token);
-				if (validity != OK) {
-					return validity;
-				}
+			validity = validateSerialNums(nftsMap.get(), serialNums, token);
+			if (validity != OK) {
+				return validity;
 			}
 		}
 		return OK;
@@ -265,8 +259,6 @@ public interface AllowanceChecks {
 	 * 		The MerkleMap of nftId and MerkleUniqueToken to fetch the uniqueToken's owner/spender etc..
 	 * @param serialNums
 	 * 		given serial numbers in the {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} operation
-	 * @param ownerAccount
-	 * 		owner account
 	 * @param token
 	 * 		token for which allowance is related to
 	 * @return response code after validation
@@ -274,7 +266,6 @@ public interface AllowanceChecks {
 	default ResponseCodeEnum validateSerialNums(
 			final MerkleMap<EntityNumPair, MerkleUniqueToken> nftsMap,
 			final List<Long> serialNums,
-			final Account ownerAccount,
 			final Token token) {
 		if (hasRepeatedSerials(serialNums)) {
 			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
@@ -288,11 +279,6 @@ public interface AllowanceChecks {
 			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serial);
 			if (serial <= 0 || !nftsMap.containsKey(EntityNumPair.fromNftId(nftId))) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
-			}
-
-			final var nft = nftsMap.get(EntityNumPair.fromNftId(nftId));
-			if (!validOwner(nft, ownerAccount, token)) {
-				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
 		}
 
@@ -318,14 +304,6 @@ public interface AllowanceChecks {
 				return Pair.of(payerAccount, INVALID_ALLOWANCE_OWNER_ID);
 			}
 		}
-	}
-
-	default boolean validOwner(final MerkleUniqueToken nft,
-			final Account ownerAccount, final Token token) {
-		final var listedOwner = nft.getOwner();
-		return MISSING_ENTITY_ID.equals(listedOwner)
-				? ownerAccount.equals(token.getTreasury())
-				: listedOwner.equals(ownerAccount.getId().asEntityId());
 	}
 
 	/**

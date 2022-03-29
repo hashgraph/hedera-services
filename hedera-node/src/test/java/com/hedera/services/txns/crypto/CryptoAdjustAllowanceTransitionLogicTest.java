@@ -100,6 +100,11 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	private void setup() {
 		subject = new CryptoAdjustAllowanceTransitionLogic(txnCtx, accountStore, tokenStore,
 				adjustAllowanceChecks, dynamicProperties, sideEffectsTracker);
+		nft1.setOwner(ownerId);
+		nft2.setOwner(ownerId);
+		nft3.setOwner(ownerId);
+		nft4.setOwner(ownerId);
+		nft5.setOwner(ownerId);
 	}
 
 	@Test
@@ -228,12 +233,16 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		givenTxnCtxWithZeroAmount();
 		addExistingAllowances();
 		nft4.setSpender(Id.fromGrpcAccount(spender2));
+		nft4.setOwner(ownerId);
 		nft5.setSpender(Id.fromGrpcAccount(spender2));
+		nft5.setOwner(Id.MISSING_ID);
+		token2Model.setTreasury(ownerAccount);
+
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
-
 		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
+		given(tokenStore.loadPossiblyPausedToken(tokenId2)).willReturn(token2Model);
 		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft4);
 		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft5);
 

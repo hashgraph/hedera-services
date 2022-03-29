@@ -154,7 +154,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 		// and:
@@ -247,7 +247,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -279,7 +279,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(oldMaxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -341,7 +341,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -402,7 +402,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -452,7 +452,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(List.of(existingCryptoAllowances))
-				.setCurrentNftAllowances(List.of(existingNftAllowances))
+				.setCurrentApproveForAllNftAllowances(List.of(existingNftAllowances))
 				.setCurrentTokenAllowances(List.of(existingTokenAllowances))
 				.build();
 

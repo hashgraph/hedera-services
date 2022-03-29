@@ -20,6 +20,13 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
+import com.hedera.services.store.models.UniqueToken;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import org.junit.jupiter.api.Test;
 
@@ -27,11 +34,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 class AllowanceHelpersTest {
+	final TypedTokenStore tokenStore = mock(TypedTokenStore.class);
+	final Token token = mock(Token.class);
+	final Account treasury = mock(Account.class);
+	final Id ownerId = IdUtils.asModelId("0.0.123");
+	final Id spenderId = IdUtils.asModelId("0.0.124");
+	final Id tokenId = IdUtils.asModelId("0.0.125");
+	final long serial1 = 1L;
+	final long serial2 = 2L;
+
+	final UniqueToken nft1 = new UniqueToken(tokenId, serial1);
+	final UniqueToken nft2 = new UniqueToken(tokenId, serial2);
 
 	@Test
 	void aggregatedListCorrectly() {
@@ -47,5 +70,39 @@ class AllowanceHelpersTest {
 		list.add(Nftid);
 		list.add(Nftid2);
 		assertEquals(4, aggregateNftAllowances(list));
+	}
+
+	@Test
+	void failsToUpdateSpenderIfWrongOwner() {
+		nft1.setOwner(ownerId);
+		nft2.setOwner(spenderId);
+
+		given(tokenStore.loadUniqueToken(tokenId, serial1)).willReturn(nft1);
+		given(tokenStore.loadUniqueToken(tokenId, serial2)).willReturn(nft2);
+		given(tokenStore.loadToken(tokenId)).willReturn(token);
+		given(token.getTreasury()).willReturn(treasury);
+		given(treasury.getId()).willReturn(ownerId);
+
+		final var ex = assertThrows(InvalidTransactionException.class,
+				() -> updateSpender(tokenStore, ownerId, spenderId, tokenId, List.of(serial1, serial2)));
+
+		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, ex.getResponseCode());
+	}
+
+	@Test
+	void updatesSpenderAsExpected() {
+		nft1.setOwner(ownerId);
+		nft2.setOwner(ownerId);
+
+		given(tokenStore.loadUniqueToken(tokenId, serial1)).willReturn(nft1);
+		given(tokenStore.loadUniqueToken(tokenId, serial2)).willReturn(nft2);
+		given(tokenStore.loadToken(tokenId)).willReturn(token);
+		given(token.getTreasury()).willReturn(treasury);
+		given(treasury.getId()).willReturn(ownerId);
+
+		updateSpender(tokenStore, ownerId, spenderId, tokenId, List.of(serial1, serial2));
+
+		assertEquals(spenderId, nft1.getSpender());
+		assertEquals(spenderId, nft2.getSpender());
 	}
 }

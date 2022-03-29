@@ -98,6 +98,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private void setup() {
 		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, accountStore, tokenStore, allowanceChecks,
 				dynamicProperties);
+		nft1.setOwner(Id.fromGrpcAccount(ownerId));
+		nft2.setOwner(Id.fromGrpcAccount(ownerId));
 	}
 
 	@Test
@@ -134,6 +136,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@Test
 	void considersPayerAsOwnerIfNotMentioned() {
 		givenValidTxnCtxWithOwnerAsPayer();
+		nft1.setOwner(Id.fromGrpcAccount(payerId));
+		nft2.setOwner(Id.fromGrpcAccount(payerId));
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);

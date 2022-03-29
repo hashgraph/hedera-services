@@ -83,9 +83,8 @@ class MerkleAccountScopedCheckTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new MerkleAccountScopedCheck(dynamicProperties, validator);
+		subject = new MerkleAccountScopedCheck(dynamicProperties, validator, nftsLedger);
 		subject.setBalanceChange(balanceChange);
-		subject.setNftsLedger(nftsLedger);
 	}
 
 	@Test

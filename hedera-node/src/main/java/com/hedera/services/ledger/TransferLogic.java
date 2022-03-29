@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
@@ -99,7 +98,7 @@ public class TransferLogic {
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
 
-		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator);
+		scopedCheck = new MerkleAccountScopedCheck(dynamicProperties, validator, nftsLedger);
 	}
 
 	public void doZeroSum(final List<BalanceChange> changes) {
@@ -119,11 +118,7 @@ public class TransferLogic {
 					validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 				}
 			} else {
-				validity = accountsLedger.validate(
-						change.accountId(),
-						scopedCheck
-								.setBalanceChange(change)
-								.setNftsLedger(nftsLedger));
+				validity = accountsLedger.validate(change.accountId(), scopedCheck.setBalanceChange(change));
 
 				if (validity == OK) {
 					validity = tokenStore.tryTokenChange(change);
@@ -206,8 +201,7 @@ public class TransferLogic {
 	private void adjustNftAllowance(final BalanceChange change, final AccountID ownerID) {
 		final var allowanceId = FcTokenAllowanceId.from(
 				change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
-		final var approveForAllNftsAllowances = new TreeSet<>(
-				(Set<FcTokenAllowanceId>) accountsLedger.get(ownerID, APPROVE_FOR_ALL_NFTS_ALLOWANCES));
+		final var approveForAllNftsAllowances = (Set<FcTokenAllowanceId>) accountsLedger.get(ownerID, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
 
 		if (!approveForAllNftsAllowances.contains(allowanceId)) {
 			nftsLedger.set(change.nftId(), SPENDER, MISSING_ENTITY_ID);
