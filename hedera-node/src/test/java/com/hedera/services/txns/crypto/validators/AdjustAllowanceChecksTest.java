@@ -626,8 +626,14 @@ class AdjustAllowanceChecksTest {
 
 	@Test
 	void validateIfSerialsEmptyWithoutApproval() {
-		final List<Long> serials = List.of();
-		var validity = subject.validateSerialNums(nftsMap, serials, token2Model);
+		final var nftAllowance = NftAllowance.newBuilder().setSpender(spender1)
+				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of()).build();
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
+		given(owner.isAssociatedWith(Id.fromGrpcToken(token2))).willReturn(true);
+
+		var validity = subject.validateNftAllowances(List.of(nftAllowance), owner);
+
 		assertEquals(EMPTY_ALLOWANCES, validity);
 	}
 
