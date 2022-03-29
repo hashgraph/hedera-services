@@ -80,10 +80,9 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 		if (serialNums.isEmpty()) {
 			return EMPTY_ALLOWANCES;
 		}
-		final var nftsMap = view.asReadOnlyNftStore();
 
 		for (var serial : serialNums) {
-			final var nftId = nftsMap.getImmutableRef(NftId.withDefaultShardRealm(token.num(), serial));
+			final var nftId = view.loadNft(NftId.withDefaultShardRealm(token.num(), serial));
 			if (serial <= 0 || nftId == null) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}

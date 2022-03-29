@@ -44,6 +44,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
@@ -61,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 /**
  * Validations for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} and
@@ -158,24 +161,21 @@ public class AllowanceChecks {
 			final var merkleToken = view.loadToken(tokenId);
 			final var token = Id.fromGrpcToken(tokenId);
 
-
-			if (merkleToken == null) {
-				return INVALID_TOKEN_ID;
-			}
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
 
 			final var ownerAccount = fetchResult.getLeft().get();
+			if (!isFungibleCommon(merkleToken)) {
+				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
+			}
+
 			var validity = validateTokenAmount(ownerAccount, allowance.getAmount(), merkleToken, token, spender);
 			if (validity != OK) {
 				return validity;
 			}
 
-			if (!isFungibleCommon(merkleToken)) {
-				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
-			}
 			validity = validateTokenBasics(ownerAccount, spender, tokenId);
 			if (validity != OK) {
 				return validity;
@@ -188,7 +188,7 @@ public class AllowanceChecks {
 	 * Validate nft allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
 	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
 	 *
-	 * @param nftAllowancesList
+	 * @param nftAllowances
 	 * 		nft allowances list
 	 * @param payerAccount
 	 * 		Account of the payer for the Allowance approve/adjust txn
@@ -196,21 +196,22 @@ public class AllowanceChecks {
 	 * @return
 	 */
 	ResponseCodeEnum validateNftAllowances(
-			final List<NftAllowance> nftAllowancesList,
+			final List<NftAllowance> nftAllowances,
 			final Account payerAccount,
 			final StateView view) {
-		if (nftAllowancesList.isEmpty()) {
+		if (nftAllowances.isEmpty()) {
 			return OK;
 		}
-		final var nftKeysList = nftAllowancesList
-				.stream()
-				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender()))
-				.toList();
-		if (hasRepeatedId(nftKeysList)) {
+
+		final List<Pair<EntityNum, FcTokenAllowanceId>> nftKeys = new ArrayList<>();
+		for (var allowance : nftAllowances) {
+			nftKeys.add(buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
+		}
+		if (hasRepeatedId(nftKeys)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 
-		for (final var allowance : nftAllowancesList) {
+		for (final var allowance : nftAllowances) {
 			final var spenderAccountId = allowance.getSpender();
 			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
@@ -219,9 +220,6 @@ public class AllowanceChecks {
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
 
-			if (merkleToken == null) {
-				return INVALID_TOKEN_ID;
-			}
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
@@ -377,7 +375,7 @@ public class AllowanceChecks {
 	public boolean validOwner(final MerkleUniqueToken nft, final Account ownerAccount, final MerkleToken token) {
 		final var listedOwner = nft.getOwner();
 		return MISSING_ENTITY_ID.equals(listedOwner)
-				? ownerAccount.equals(token.treasury())
+				? ownerAccount.getId().equals(token.treasury().asId())
 				: listedOwner.equals(ownerAccount.getId().asEntityId());
 	}
 

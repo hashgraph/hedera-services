@@ -95,12 +95,11 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 			return EMPTY_ALLOWANCES;
 		}
 
-		final var existingAllowances = ownerAccount.getMutableNftAllowances();
+		final var existingAllowances = ownerAccount.getNftAllowances();
 
 		final var key = FcTokenAllowanceId.from(token.asEntityNum(), spender.asEntityNum());
 		final var existingSerials = existingAllowances.containsKey(key) ?
 				existingAllowances.get(key).getSerialNumbers() : new ArrayList<Long>();
-		final var nftsMap = view.asReadOnlyNftStore();
 
 		for (var serial : serialNums) {
 			var absoluteSerial = absolute(serial);
@@ -112,7 +111,7 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 			if (serial > 0 && existingSerials.contains(absoluteSerial)) {
 				return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 			}
-			final var merkleUniqueToken = nftsMap.getImmutableRef(nftId);
+			final var merkleUniqueToken = view.loadNft(nftId);
 			if (merkleUniqueToken == null) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}

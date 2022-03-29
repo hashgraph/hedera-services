@@ -94,6 +94,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -107,6 +108,8 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.swirlds.common.CommonUtils.hex;
 import static java.util.Collections.unmodifiableMap;
 
@@ -564,7 +567,10 @@ public class StateView {
 	}
 
 	public MerkleToken loadToken(TokenID id) {
-		return asReadOnlyTokenStore().getImmutableRef(id);
+		final var token = asReadOnlyTokenStore().getImmutableRef(id);
+		validateTrue(token != null, INVALID_TOKEN_ID);
+		validateFalse(token.isDeleted(), TOKEN_WAS_DELETED);
+		return token;
 	}
 
 	public MerkleUniqueToken loadNft(NftId id) {
