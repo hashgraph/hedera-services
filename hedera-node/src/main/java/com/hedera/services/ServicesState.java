@@ -82,6 +82,7 @@ import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTE
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0240_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0250_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 
@@ -175,7 +176,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			}
 		}
 
-		if (deserializedVersionFromState < RELEASE_0240_VERSION) {
+		if (deserializedVersionFromState < RELEASE_0250_VERSION) {
 			// add the links to the doubly linked list of MerkleTokenRelStatus map and
 			// update each account's last associated token entityNumPair
 			updateLinks();
