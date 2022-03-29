@@ -126,8 +126,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				positiveSpecs()
-//				negativeSpecs()
+				positiveSpecs(),
+				negativeSpecs()
 		);
 	}
 
@@ -140,14 +140,13 @@ public class ContractHTSSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(new HapiApiSpec[]{
-						createFungibleToken()
-//						distributeMultipleTokens(),
-//						depositAndWithdrawFungibleTokens(),
-//						transferNft(),
-//						transferMultipleNfts(),
-//						tokenTransferFromFeeCollector(),
-//						tokenTransferFromFeeCollectorStaticNestedCall(),
-//						hbarTransferFromFeeCollector()
+						distributeMultipleTokens(),
+						depositAndWithdrawFungibleTokens(),
+						transferNft(),
+						transferMultipleNfts(),
+						tokenTransferFromFeeCollector(),
+						tokenTransferFromFeeCollectorStaticNestedCall(),
+						hbarTransferFromFeeCollector()
 				}
 		);
 	}
@@ -959,37 +958,6 @@ public class ContractHTSSuite extends HapiApiSuite {
 				).then(
 						childRecordsCheck("distributeTx", CONTRACT_REVERT_EXECUTED,
 								recordWith().status(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
-				);
-	}
-
-	private HapiApiSpec createFungibleToken() {
-		return defaultHapiSpec("createFungibleToken")
-				.given(
-						cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
-						fileCreate("bytecode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCreate(CONTRACT)
-														.payingWith(ACCOUNT)
-														.bytecode("bytecode")
-														.via("creationTx")
-														.gas(GAS_TO_OFFER)))
-				).when(
-						withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCall(CONTRACT, CREATE_FUNGIBLE_ABI,
-														asAddress(spec.registry().getContractId(CONTRACT)))
-														.payingWith(ACCOUNT)
-														.gas(GAS_TO_OFFER)
-														.via("createTx")
-														.sending(100000000)))
-				).then(
-						getTxnRecord("createTx").andAllChildRecords().logged()
 				);
 	}
 
