@@ -61,7 +61,8 @@ public class EvmFnResult implements SelfSerializable {
 	static final int PRE_RELEASE_0230_VERSION = 1;
 	static final int RELEASE_0230_VERSION = 2;
 	static final int RELEASE_0240_VERSION = 3;
-	static final int MERKLE_VERSION = RELEASE_0240_VERSION;
+	static final int RELEASE_0250_VERSION = 4;
+	static final int MERKLE_VERSION = RELEASE_0250_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
@@ -72,6 +73,7 @@ public class EvmFnResult implements SelfSerializable {
 	public static final int MAX_ERROR_BYTES = Integer.MAX_VALUE;
 	public static final int MAX_RESULT_BYTES = Integer.MAX_VALUE;
 	public static final int MAX_ADDRESS_BYTES = 20;
+	public static final int MAX_FUNCTION_PARAMETERS_BYTES = Integer.MAX_VALUE;
 
 	private long gasUsed;
 	private byte[] bloom = EMPTY;
@@ -82,6 +84,9 @@ public class EvmFnResult implements SelfSerializable {
 	private List<EntityId> createdContractIds = Collections.emptyList();
 	private List<EvmLog> logs = Collections.emptyList();
 	private Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = Collections.emptyMap();
+	private long gas;
+	private long amount;
+	private byte[] functionParameters = EMPTY;
 
 	public EvmFnResult() {
 		/* RuntimeConstructable */
@@ -126,7 +131,10 @@ public class EvmFnResult implements SelfSerializable {
 			List<EvmLog> logs,
 			List<EntityId> createdContractIds,
 			byte[] evmAddress,
-			Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges
+			Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			long gas,
+			long amount,
+			byte [] functionParameters
 	) {
 		this.contractId = contractId;
 		this.result = result;
@@ -137,6 +145,9 @@ public class EvmFnResult implements SelfSerializable {
 		this.createdContractIds = createdContractIds;
 		this.evmAddress = evmAddress;
 		this.stateChanges = stateChanges;
+		this.gas = gas;
+		this.amount = amount;
+		this.functionParameters = functionParameters;
 	}
 
 	/* --- SelfSerializable --- */
@@ -180,6 +191,11 @@ public class EvmFnResult implements SelfSerializable {
 			}
 			stateChanges = state;
 		}
+		if (version >= RELEASE_0250_VERSION) {
+			gas = in.readLong();
+			amount = in.readLong();
+			functionParameters = in.readByteArray(MAX_FUNCTION_PARAMETERS_BYTES);
+		}
 	}
 
 	@Override
@@ -209,6 +225,9 @@ public class EvmFnResult implements SelfSerializable {
 				}
 			}
 		}
+		out.writeLong(gas);
+		out.writeLong(amount);
+		out.writeByteArray(functionParameters);
 	}
 
 	/* --- Object --- */
@@ -229,7 +248,10 @@ public class EvmFnResult implements SelfSerializable {
 				Objects.equals(logs, that.logs) &&
 				Objects.equals(createdContractIds, that.createdContractIds) &&
 				Arrays.equals(evmAddress, that.evmAddress) &&
-				this.stateChanges.equals(that.stateChanges);
+				this.stateChanges.equals(that.stateChanges) &&
+				gas == that.gas &&
+				amount == that.amount &&
+				Arrays.equals(functionParameters, that.functionParameters);
 	}
 
 	@Override
@@ -252,6 +274,9 @@ public class EvmFnResult implements SelfSerializable {
 				.add("logs", logs)
 				.add("stateChanges", stateChanges)
 				.add("evmAddress", hex(evmAddress))
+				.add("gas", gas)
+				.add("amount", amount)
+				.add("functionParameters", hex(functionParameters))
 				.toString();
 	}
 
@@ -296,12 +321,36 @@ public class EvmFnResult implements SelfSerializable {
 		return evmAddress;
 	}
 
+	public long getGas() {
+		return gas;
+	}
+
+	public long getAmount() {
+		return amount;
+	}
+
+	public byte[] getFunctionParameters() {
+		return functionParameters;
+	}
+
 	public void setEvmAddress(final byte[] evmAddress) {
 		this.evmAddress = evmAddress;
 	}
 
 	public void setStateChanges(final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges) {
 		this.stateChanges = stateChanges;
+	}
+
+	public void setGas(final long gas) {
+		this.gas = gas;
+	}
+
+	public void setAmount(final long amount) {
+		this.amount = amount;
+	}
+
+	public void setFunctionParameters(final byte[] functionParameters) {
+		this.functionParameters = functionParameters;
 	}
 
 	public ContractFunctionResult toGrpc() {
@@ -330,6 +379,9 @@ public class EvmFnResult implements SelfSerializable {
 			slotAccesses.forEach((slot, access) -> builder.addStorageChanges(trimmedGrpc(slot, access)));
 			grpc.addStateChanges(builder);
 		});
+		grpc.setGas(gas);
+		grpc.setAmount(amount);
+		grpc.setFunctionParameters(ByteString.copyFrom(functionParameters));
 		return grpc.build();
 	}
 
@@ -379,7 +431,10 @@ public class EvmFnResult implements SelfSerializable {
 				EvmLog.fromBesu(logs),
 				createdContractIds,
 				evmAddress,
-				stateChanges);
+				stateChanges,
+				0L,
+				0L,
+				EMPTY);
 	}
 
 
@@ -397,6 +452,9 @@ public class EvmFnResult implements SelfSerializable {
 				Collections.emptyList(),
 				Collections.emptyList(),
 				EMPTY,
-				stateChanges);
+				stateChanges,
+				0L,
+				0L,
+				EMPTY);
 	}
 }

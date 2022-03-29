@@ -507,17 +507,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
 
 			result = precompile.getSuccessResultFor(childRecord);
-			addContractCallResultToRecord(childRecord, result, Optional.empty());
+			addContractCallResultToRecord(childRecord, result, Optional.empty(), frame);
 		} catch (InvalidTransactionException e) {
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = precompile.getFailureResultFor(status);
-			addContractCallResultToRecord(childRecord, result, Optional.of(status));
+			addContractCallResultToRecord(childRecord, result, Optional.of(status), frame);
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
 			result = precompile.getFailureResultFor(FAIL_INVALID);
-			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID));
+			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), frame);
 		}
 
 		/*-- The updater here should always have a parent updater --*/
@@ -535,7 +535,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private void addContractCallResultToRecord(
 			final ExpirableTxnRecord.Builder childRecord,
 			final Bytes result,
-			final Optional<ResponseCodeEnum> errorStatus
+			final Optional<ResponseCodeEnum> errorStatus,
+			final MessageFrame messageFrame
 	) {
 		if (dynamicProperties.shouldExportPrecompileResults()) {
 			final var evmFnResult = new EvmFnResult(
@@ -547,7 +548,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					Collections.emptyList(),
 					Collections.emptyList(),
 					EvmFnResult.EMPTY,
-					Collections.emptyMap());
+					Collections.emptyMap(),
+					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getRemainingGas().toLong() : 0L,
+					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getValue().toLong() : 0L,
+					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getInputData().toArrayUnsafe() :
+							EvmFnResult.EMPTY);
 			childRecord.setContractCallResult(evmFnResult);
 		}
 	}
@@ -648,6 +653,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		default List<FcAssessedCustomFee> getCustomFees() {
 			return NO_CUSTOM_FEES;
+		}
+
+		default boolean shouldAddTraceabilityFieldsToRecord() {
+			return true;
 		}
 	}
 
@@ -1072,6 +1081,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			return 100;
+		}
+
+		@Override
+		public boolean shouldAddTraceabilityFieldsToRecord() {
+			return false;
 		}
 	}
 
