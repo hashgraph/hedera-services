@@ -84,6 +84,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 @ExtendWith(MockitoExtension.class)
@@ -772,6 +773,22 @@ class AdjustAllowanceChecksTest {
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, subject.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
 				dynamicProperties.maxAllowanceLimitPerTransaction(), view));
+	}
+	@Test
+	void validatesInvalidOwner(){
+		final var account = mock(MerkleAccount.class);
+		given(account.isDeleted()).willReturn(true);
+		assertTrue(subject.isInvalidOwner(account));
+
+		given(account.isDeleted()).willReturn(false);
+		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(account.getBalance()).willReturn(0L);
+		given(account.getExpiry()).willReturn(1234L);
+		given(validator.isAfterConsensusSecond(1234L)).willReturn(false);
+		assertTrue(subject.isInvalidOwner(account));
+
+		given(dynamicProperties.autoRenewEnabled()).willReturn(false);
+		assertFalse(subject.isInvalidOwner(account));
 	}
 
 	private void addAllowances() {

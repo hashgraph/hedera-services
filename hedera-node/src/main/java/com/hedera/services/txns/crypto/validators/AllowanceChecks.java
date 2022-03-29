@@ -109,11 +109,11 @@ public class AllowanceChecks {
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
-			if (fetchResult.getRight() != OK) {
-				return fetchResult.getRight();
+			if (fetchResult.isEmpty()) {
+				return INVALID_ALLOWANCE_OWNER_ID;
 			}
 
-			final var ownerAccount = fetchResult.getLeft().get();
+			final var ownerAccount = fetchResult.get();
 			var validity = validateAmount(allowance.getAmount(), ownerAccount, spender);
 			if (validity != OK) {
 				return validity;
@@ -159,11 +159,11 @@ public class AllowanceChecks {
 			final var token = Id.fromGrpcToken(tokenId);
 
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
-			if (fetchResult.getRight() != OK) {
-				return fetchResult.getRight();
+			if (fetchResult.isEmpty()) {
+				return INVALID_ALLOWANCE_OWNER_ID;
 			}
 
-			final var ownerAccount = fetchResult.getLeft().get();
+			final var ownerAccount = fetchResult.get();
 			if (!isFungibleCommon(merkleToken)) {
 				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 			}
@@ -218,10 +218,10 @@ public class AllowanceChecks {
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
 
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
-			if (fetchResult.getRight() != OK) {
-				return fetchResult.getRight();
+			if (fetchResult.isEmpty()) {
+				return INVALID_ALLOWANCE_OWNER_ID;
 			}
-			final var ownerAccount = fetchResult.getLeft().get();
+			final var ownerAccount = fetchResult.get();
 
 			if (isFungibleCommon(merkleToken)) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
@@ -341,27 +341,27 @@ public class AllowanceChecks {
 		return totalAllowances == 0;
 	}
 
-	public Pair<Optional<Account>, ResponseCodeEnum> fetchOwnerAccount(
+	private Optional<Account> fetchOwnerAccount(
 			final Id owner,
 			final Account payerAccount,
 			final StateView view) {
 		if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
-			return Pair.of(Optional.of(payerAccount), OK);
+			return Optional.of(payerAccount);
 		} else {
 			final var account = view.loadAccount(owner.asGrpcAccount());
 			if (isInvalidOwner(account)) {
-				return Pair.of(Optional.empty(), INVALID_ALLOWANCE_OWNER_ID);
+				return Optional.empty();
 			} else {
-				return Pair.of(Optional.of(loadMerkleAccount(account, owner)), OK);
+				return Optional.of(loadMerkleAccount(account, owner));
 			}
 		}
 	}
 
-	private boolean isInvalidOwner(final MerkleAccount account) {
+	boolean isInvalidOwner(final MerkleAccount account) {
 		return account == null || account.isDeleted() || isExpired(account.getBalance(), account.getExpiry());
 	}
 
-	private boolean isExpired(long balance, long expiry) {
+	boolean isExpired(long balance, long expiry) {
 		if (dynamicProperties.autoRenewEnabled() && balance == 0) {
 			return !validator.isAfterConsensusSecond(expiry);
 		} else {
@@ -395,15 +395,18 @@ public class AllowanceChecks {
 			final StateView view,
 			final Id token,
 			final Id spender) {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException(
+				"Base Class, Implementation present in AdjustAllowanceChecks/ApproveAllowanceChecks");
 	}
 
 	ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender) {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException(
+				"Base Class, Implementation present in AdjustAllowanceChecks/ApproveAllowanceChecks");
 	}
 
 	ResponseCodeEnum validateTokenAmount(final Account ownerAccount,
 			final long l, final MerkleToken merkleToken, final Id token, final Id spender) {
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException(
+				"Base Class, Implementation present in AdjustAllowanceChecks/ApproveAllowanceChecks");
 	}
 }
