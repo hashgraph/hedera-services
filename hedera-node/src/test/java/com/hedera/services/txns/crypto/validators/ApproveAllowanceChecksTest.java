@@ -157,8 +157,8 @@ class ApproveAllowanceChecksTest {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
-		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
-		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(tokenStore.hasAssociation(token2Model, owner)).willReturn(true);
+		given(tokenStore.hasAssociation(token1Model, owner)).willReturn(true);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
@@ -337,7 +337,7 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void validateNegativeAmounts() {
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(tokenStore.hasAssociation(token1Model, owner)).willReturn(true);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 
 		final var badCryptoAllowance = CryptoAllowance.newBuilder().setSpender(spender2).setAmount(
@@ -367,7 +367,7 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void failsWhenExceedsMaxTokenSupply() {
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(tokenStore.hasAssociation(token1Model, owner)).willReturn(true);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
 				100000L).setTokenId(token1).setOwner(ownerId1).build();
@@ -379,7 +379,7 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void failsForNftInFungibleTokenAllowances() {
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(tokenStore.hasAssociation(token1Model, owner)).willReturn(true);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
@@ -448,7 +448,7 @@ class ApproveAllowanceChecksTest {
 	void failsWhenTokenNotAssociatedToAccount() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(owner.isAssociatedWith(token1Model.getId())).willReturn(false);
+		given(tokenStore.hasAssociation(token1Model, owner)).willReturn(false);
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, owner));
 	}
 
@@ -471,7 +471,7 @@ class ApproveAllowanceChecksTest {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(tokenStore.hasAssociation(token2Model, owner)).willReturn(true);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
 
@@ -588,7 +588,7 @@ class ApproveAllowanceChecksTest {
 	void loadsOwnerAccountNotDefaultingToPayer() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(tokenStore.hasAssociation(token1Model, owner)).willReturn(true);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willReturn(owner);
 
 		getValidTxnCtx();
@@ -606,7 +606,7 @@ class ApproveAllowanceChecksTest {
 	void loadsOwnerAccountInNftNotDefaultingToPayer() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
-		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(tokenStore.hasAssociation(token2Model, owner)).willReturn(true);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
@@ -699,8 +699,8 @@ class ApproveAllowanceChecksTest {
 				EntityId.fromGrpcAccountId(ownerId1));
 		given(payerAccount.getId()).willReturn(Id.fromGrpcAccount(payer));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
-		given(payerAccount.isAssociatedWith(token1Model.getId())).willReturn(true);
-		given(payerAccount.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(tokenStore.hasAssociation(token1Model, payerAccount)).willReturn(true);
+		given(tokenStore.hasAssociation(token2Model, payerAccount)).willReturn(true);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft1))).willReturn(true);
 		given(nftsMap.containsKey(EntityNumPair.fromNftId(token2Nft2))).willReturn(true);
 		given(nftsMap.get(EntityNumPair.fromNftId(token2Nft1))).willReturn(token);
