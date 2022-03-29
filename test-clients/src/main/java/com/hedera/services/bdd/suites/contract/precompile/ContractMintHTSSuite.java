@@ -48,6 +48,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HW_MINT_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_CONS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_NON_FUNGIBLE_WITH_EVENT_CALL_ABI;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -77,6 +78,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class ContractMintHTSSuite extends HapiApiSuite {
@@ -109,7 +111,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
 				rollbackOnFailedMintAfterFungibleTransfer(),
-				rollbackOnFailedAssociateAfterNonFungibleMint()
+				rollbackOnFailedAssociateAfterNonFungibleMint(),
+				gasCostNotMetSetsInsufficientGasStatusInChildRecord()
 		);
 	}
 
@@ -512,6 +515,50 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						)
 				).then(
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, 0)
+				);
+	}
+
+	private HapiApiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
+
+		final var theAccount = "anybody";
+		final var mintContractByteCode = "mintContractByteCode";
+		final var amount = 10L;
+		final var fungibleToken = "fungibleToken";
+		final var multiKey = "purpose";
+		final var theContract = "mintContract";
+		final var firstMintTxn = "firstMintTxn";
+
+		final AtomicLong fungibleNum = new AtomicLong();
+
+		return defaultHapiSpec("gasCostNotMetSetsInsufficientGasStatusInChildRecord")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						fileCreate(mintContractByteCode).payingWith(theAccount),
+						updateLargeFile(theAccount, mintContractByteCode,
+								extractByteCode(ContractResources.MINT_CONTRACT)),
+						tokenCreate(fungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
+				).when(
+						sourcing(() -> contractCreate(theContract, MINT_CONS_ABI, fungibleNum.get())
+								.bytecode(mintContractByteCode).payingWith(theAccount)
+								.gas(GAS_TO_OFFER))
+				).then(
+						contractCall(theContract, MINT_FUNGIBLE_CALL_ABI, amount)
+								.via(firstMintTxn)
+								.payingWith(theAccount)
+								.alsoSigningWithFullPrefix(multiKey)
+								.gas(48_000),
+						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
+						childRecordsCheck(firstMintTxn, INSUFFICIENT_GAS, recordWith().status(INSUFFICIENT_GAS)),
+						getTokenInfo(fungibleToken).hasTotalSupply(0),
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, 0)
 				);
 	}
 
