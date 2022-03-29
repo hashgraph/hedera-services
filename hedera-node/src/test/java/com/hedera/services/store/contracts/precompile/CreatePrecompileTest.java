@@ -52,7 +52,9 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
@@ -60,7 +62,6 @@ import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -70,6 +71,9 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -94,6 +98,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
@@ -171,8 +176,6 @@ class CreatePrecompileTest {
 	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
-	private FeeObject mockFeeObject;
-	@Mock
 	private StateView stateView;
 	@Mock
 	private PrecompilePricingUtils precompilePricingUtils;
@@ -198,6 +201,17 @@ class CreatePrecompileTest {
 	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
 
 	private HTSPrecompiledContract subject;
+	private UpdateTrackingLedgerAccount senderMutableAccount;
+	private UpdateTrackingLedgerAccount fundingMutableAccount;
+
+	private static final long TEST_SERVICE_FEE = 100L;
+	private static final long TEST_NODE_FEE = 100_000L;
+	private static final long TEST_NETWORK_FEE = 100L;
+	private static final long EXPECTED_TINYBARS_REQUIREMENT =
+			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) +
+			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / 5;
+	private static final long SENDER_INITIAL_BALANCE = 1_000_000L;
+	private static final long FUNDING_ACCOUNT_INITIAL_BALANCE = 123_123L;
 
 	@BeforeEach
 	void setUp() {
@@ -210,6 +224,75 @@ class CreatePrecompileTest {
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
+	}
+
+	@Test
+	void gasRequirementCalculationWorks() {
+		// given
+		givenValidGasCalculation();
+		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(List.of());
+		given(decoder.decodeFungibleCreate(any(), any())).willReturn(wrapper);
+		given(mockSynthBodyBuilder.build())
+				.willReturn(TransactionBody.newBuilder().setTokenCreation(tokenCreateTransactionBody).build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTokenCreate(wrapper)).willReturn(mockSynthBodyBuilder);
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(
+				subject.getPrecompile().getMinimumFeeInTinybars(timestamp),
+				subject.gasRequirement(pretendArguments).toLong()
+		);
+		final var tinyBarsRequirement =
+				EXPECTED_TINYBARS_REQUIREMENT - subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
+		assertEquals(
+				SENDER_INITIAL_BALANCE - tinyBarsRequirement,
+				senderMutableAccount.getBalance().toLong());
+		assertEquals(
+				FUNDING_ACCOUNT_INITIAL_BALANCE + tinyBarsRequirement,
+				fundingMutableAccount.getBalance().toLong());
+	}
+
+	@Test
+	void gasRequirementIsMaxGasWhenInsufficientValueIsPassed() {
+		// given
+		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		final TokenCreateWrapper wrapper = createTokenCreateWrapperWithKeys(List.of());
+		given(decoder.decodeFungibleCreate(any(), any())).willReturn(wrapper);
+		given(mockSynthBodyBuilder.build())
+				.willReturn(TransactionBody.newBuilder().setTokenCreation(tokenCreateTransactionBody).build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTokenCreate(wrapper)).willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(100_000L, 100_000L, 100_000L));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(1L);
+		given(frame.getValue()).willReturn(Wei.of(1_000L));
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertEquals(Gas.MAX_VALUE, subject.gasRequirement(pretendArguments));
+		Mockito.verifyNoMoreInteractions(syntheticTxnFactory);
 	}
 
 	@Test
@@ -305,14 +388,11 @@ class CreatePrecompileTest {
 	@Test
 	void createFailurePath() {
 		givenMinimalFrameContext();
+		givenValidGasCalculation();
 
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(
@@ -366,18 +446,13 @@ class CreatePrecompileTest {
 
 	@Test
 	void createFailsWhenCreateChecksAreNotSuccessful() {
+		givenValidGasCalculation();
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
 						new TokenCreateWrapper.TokenKeyWrapper(
@@ -570,15 +645,9 @@ class CreatePrecompileTest {
 	private void prepareAndAssertCreateHappyPathSucceeds(TokenCreateWrapper tokenCreateWrapper) {
 		givenMinimalFrameContext();
 		givenLedgers();
+		givenValidGasCalculation();
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
-		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-				.willReturn(1L);
-		given(feeCalculator.computeFee(any(), any(), any(), any()))
-				.willReturn(mockFeeObject);
-		given(mockFeeObject.getServiceFee())
-				.willReturn(1L);
-
 		given(mockSynthBodyBuilder.build())
 				.willReturn(TransactionBody.newBuilder().setTokenCreation(tokenCreateTransactionBody).build());
 		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -670,5 +739,27 @@ class CreatePrecompileTest {
 		given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
 		given(wrappedLedgers.nfts()).willReturn(nfts);
 		given(wrappedLedgers.tokens()).willReturn(tokens);
+	}
+
+	private void givenValidGasCalculation() {
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(
+				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(1L);
+		given(frame.getValue()).willReturn(Wei.of(1_000_000L));
+
+		final var mockSenderEvmAccount = Mockito.mock(EvmAccount.class);
+		given(worldUpdater.getAccount(senderAddress)).willReturn(mockSenderEvmAccount);
+		senderMutableAccount = new UpdateTrackingLedgerAccount(senderAddress, null);
+		given(mockSenderEvmAccount.getMutable()).willReturn(senderMutableAccount);
+		senderMutableAccount.setBalance(Wei.of(SENDER_INITIAL_BALANCE));
+
+		given(dynamicProperties.fundingAccount()).willReturn(account);
+		final var mockFundingEvmAccount = mock(EvmAccount.class);
+		given(worldUpdater.getAccount(Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()))
+				.willReturn(mockFundingEvmAccount);
+		fundingMutableAccount = new UpdateTrackingLedgerAccount(EntityIdUtils.asTypedEvmAddress(account),
+				null);
+		given(mockFundingEvmAccount.getMutable()).willReturn(fundingMutableAccount);
+		fundingMutableAccount.setBalance(Wei.of(FUNDING_ACCOUNT_INITIAL_BALANCE));
 	}
 }

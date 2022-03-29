@@ -101,6 +101,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -386,15 +387,28 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
 						timestamp).build()), Instant.ofEpochSecond(blockTimestamp));
 
-		final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
-		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
+		if (precompile instanceof TokenCreatePrecompile) {
+			final var tinybarsRequirement = calculatedFeeInTinybars + (calculatedFeeInTinybars / 5)
+					- precompile.getMinimumFeeInTinybars(timestamp) * gasPriceInTinybars;
+			if (messageFrame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement))) {
+				updater.getAccount(senderAddress).getMutable()
+						.decrementBalance(Wei.of(tinybarsRequirement));
+				updater.getAccount(Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()).getMutable()
+						.incrementBalance(Wei.of(tinybarsRequirement));
+				gasRequirement = Gas.of(precompile.getMinimumFeeInTinybars(timestamp));
+			} else {
+				gasRequirement = Gas.MAX_VALUE;
+			}
+		} else {
+			final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
+			final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
+			// convert to gas cost
+			final Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
 
-		// convert to gas cost
-		final Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
-
-		// charge premium
-		gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
+			// charge premium
+			gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
+		}
 	}
 
 	void computeViewFunctionGasRequirement(final long blockTimestamp) {
@@ -1049,12 +1063,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			}
 		}
 
-		// TODO: change when gas price is calculated
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-//			Objects.requireNonNull(tokenCreateOp);
-//			return precompilePricingUtils.getMinimumPriceInTinybars(CREATE, consensusTime);
-			return 0;
+			return 100_000L;
 		}
 
 		@Override

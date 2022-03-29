@@ -430,8 +430,6 @@ class HTSPrecompiledContractTest {
 		Mockito.verifyNoMoreInteractions(syntheticTxnFactory);
 	}
 
-	//TODO: add gasRequirementReturnsCorrectValueForCreateToken() when gas is calculated
-
 	@Test
 	void computeRevertsTheFrameIfTheFrameIsStatic() {
 		given(messageFrame.isStatic()).willReturn(true);
