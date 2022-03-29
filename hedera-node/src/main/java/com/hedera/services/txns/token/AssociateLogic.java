@@ -20,7 +20,6 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
@@ -34,15 +33,12 @@ import java.util.List;
 public class AssociateLogic {
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public AssociateLogic(final TypedTokenStore tokenStore,
-						  final AccountStore accountStore,
-						  final GlobalDynamicProperties dynamicProperties) {
+						  final AccountStore accountStore) {
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	public void associate(final Id accountId, final List<TokenID> tokensList) {
@@ -53,11 +49,9 @@ public class AssociateLogic {
 		final var tokens = tokenIds.stream().map(tokenStore::loadToken).toList();
 
 		/* Associate and commit the changes */
-		account.associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);
+		final var modifiedTokenRelationships = account.associateWith(tokens, tokenStore, false, false);
 
 		accountStore.commitAccount(account);
-
-		tokens.forEach(token -> tokenStore
-				.commitTokenRelationships(List.of(token.newRelationshipWith(account, false))));
+		tokenStore.commitTokenRelationships(modifiedTokenRelationships);
 	}
 }

@@ -142,7 +142,7 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
+			validity = validateTokenBasics(ownerAccount, spenderId, token, tokenStore);
 			if (validity != OK) {
 				return validity;
 			}

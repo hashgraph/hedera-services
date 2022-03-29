@@ -103,9 +103,8 @@ class UniqueTokenTest {
 		subject.setMetadata(meta1);
 		subject.setCreationTime(RichInstant.MISSING_INSTANT);
 
-		final var expected = "UniqueToken{tokenID=Id[shard=0, realm=0, num=12345], serialNum=1," +
-				" metadata=[97, 97], creationTime=RichInstant{seconds=0, nanos=0}, " +
-				"owner=Id[shard=0, realm=0, num=12346], spender=Id[shard=0, realm=0, num=12347]}";
+		final var expected = "UniqueToken{tokenID=0.0.12345, serialNum=1, metadata=[97, 97], " +
+				"creationTime=RichInstant{seconds=0, nanos=0}, owner=0.0.12346, spender=0.0.12347}";
 
 		assertEquals(expected, subject.toString());
 	}

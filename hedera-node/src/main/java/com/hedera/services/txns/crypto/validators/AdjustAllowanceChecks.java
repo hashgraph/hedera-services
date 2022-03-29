@@ -156,7 +156,7 @@ public class AdjustAllowanceChecks implements AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateTokenBasics(ownerAccount, spender, tokenId);
+			validity = validateTokenBasics(ownerAccount, spender, token, tokenStore);
 			if (validity != OK) {
 				return validity;
 			}

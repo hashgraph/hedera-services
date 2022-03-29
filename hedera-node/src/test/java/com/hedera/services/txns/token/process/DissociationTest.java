@@ -208,6 +208,8 @@ class DissociationTest {
 		subject.addUpdatedModelRelsTo(accum);
 
 		assertEquals(2, accum.size());
+		assertEquals(token, subject.dissociatingToken());
+		assertEquals(account, subject.dissociatingAccount());
 		assertEquals(dissociatingAccountRel.getBalanceChange(), -balance);
 		assertSame(dissociatingAccountRel, accum.get(0));
 		assertTrue(dissociatingAccountRel.isDestroyed());
@@ -295,9 +297,8 @@ class DissociationTest {
 
 	@Test
 	void toStringWorks() {
-		final var desired = "Dissociation{dissociatingAccountId=Id[shard=1, realm=2, num=3], " +
-				"dissociatedTokenId=Id[shard=2, realm=3, num=4], dissociatedTokenTreasuryId=Id[shard=3, realm=4, " +
-				"num=5], expiredTokenTreasuryReceivedBalance=false}";
+		final var desired = "Dissociation{dissociatingAccountId=1.2.3, " +
+				"dissociatedTokenId=2.3.4, dissociatedTokenTreasuryId=3.4.5, expiredTokenTreasuryReceivedBalance=false}";
 
 		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 

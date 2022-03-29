@@ -37,6 +37,7 @@ import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -82,6 +83,7 @@ import static com.hedera.services.state.migration.StateVersions.RELEASE_0210_VER
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0220_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0240_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 
 /**
  * The Merkle tree root of the Hedera Services world state.
@@ -171,6 +173,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				blobMigrator.migrateFromBinaryObjectStore(this, deserializedVersionFromState);
 				init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
 			}
+		}
+
+		if (deserializedVersionFromState < RELEASE_0240_VERSION) {
+			// add the links to the doubly linked list of MerkleTokenRelStatus map and
+			// update each account's last associated token entityNumPair
+			updateLinks();
 		}
 	}
 
@@ -368,6 +376,37 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public VirtualMap<ContractKey, ContractValue> contractStorage() {
 		return getChild(StateChildIndices.CONTRACT_STORAGE);
+	}
+
+	private void updateLinks() {
+		final var accounts = accounts();
+		final var tokenRels = tokenAssociations();
+
+		for (var accountId : accounts.keySet()) {
+			var merkleAccount = accounts.getForModify(accountId);
+			int numAssociations = 0;
+			int numZeroBalances = 0;
+			EntityNumPair prevListRootKey = MISSING_NUM_PAIR;
+			for (var tokenId : merkleAccount.tokens().asTokenIds()) {
+				var newListRootKey = EntityNumPair.fromLongs(accountId.longValue(), tokenId.getTokenNum());
+				var association = tokenRels.getForModify(newListRootKey);
+				association.setNextKey(prevListRootKey);
+
+				if (prevListRootKey != MISSING_NUM_PAIR) {
+					var prevAssociation = tokenRels.getForModify(prevListRootKey);
+					prevAssociation.setPrevKey(newListRootKey);
+				}
+
+				if (association.getBalance() == 0) {
+					numZeroBalances++;
+				}
+				numAssociations++;
+				prevListRootKey = newListRootKey;
+			}
+			merkleAccount.setTokenAssociationMetadata(
+					new TokenAssociationMetadata(numAssociations, numZeroBalances, prevListRootKey));
+			merkleAccount.forgetAssociatedTokens();
+		}
 	}
 
 	private void internalInit(

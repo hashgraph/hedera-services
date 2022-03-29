@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -142,7 +141,7 @@ public interface AllowanceChecks {
 			}
 			final var ownerAccount = fetchResult.getLeft();
 
-			var validity = validateTokenBasics(ownerAccount, spender, tokenId);
+			var validity = validateTokenBasics(ownerAccount, spender, token, tokenStore);
 			if (validity != OK) {
 				return validity;
 			}
@@ -228,11 +227,12 @@ public interface AllowanceChecks {
 	default ResponseCodeEnum validateTokenBasics(
 			final Account ownerAccount,
 			final Id spenderId,
-			final TokenID tokenId) {
+			final Token token,
+			final TypedTokenStore tokenStore) {
 		if (ownerAccount.getId().equals(spenderId)) {
 			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
-		if (!ownerAccount.isAssociatedWith(Id.fromGrpcToken(tokenId))) {
+		if (!tokenStore.hasAssociation(token, ownerAccount)) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 		}
 		return OK;

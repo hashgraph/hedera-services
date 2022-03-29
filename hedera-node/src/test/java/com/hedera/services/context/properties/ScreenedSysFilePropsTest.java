@@ -63,11 +63,11 @@ class ScreenedSysFilePropsTest {
 
 	@Test
 	void delegationWorks() {
-		subject.from121 = Map.of("tokens.maxPerAccount", 42);
+		subject.from121 = Map.of("tokens.maxRelsPerInfoQuery", 42);
 
-		assertEquals(Set.of("tokens.maxPerAccount"), subject.allPropertyNames());
-		assertEquals(42, subject.getProperty("tokens.maxPerAccount"));
-		assertTrue(subject.containsProperty("tokens.maxPerAccount"));
+		assertEquals(Set.of("tokens.maxRelsPerInfoQuery"), subject.allPropertyNames());
+		assertEquals(42, subject.getProperty("tokens.maxRelsPerInfoQuery"));
+		assertTrue(subject.containsProperty("tokens.maxRelsPerInfoQuery"));
 		assertFalse(subject.containsProperty("nonsense"));
 	}
 
@@ -85,12 +85,12 @@ class ScreenedSysFilePropsTest {
 		final var oldMap = subject.from121;
 
 		subject.screenNew(withAllOf(Map.of(
-				"tokens.maxPerAccount", "42",
+				"tokens.maxRelsPerInfoQuery", "42",
 				"ledger.transfers.maxLen", "42",
 				"contracts.maxRefundPercentOfGasLimit", "42"
 		)));
 
-		assertEquals(42, subject.from121.get("tokens.maxPerAccount"));
+		assertEquals(42, subject.from121.get("tokens.maxRelsPerInfoQuery"));
 		assertEquals(42, subject.from121.get("ledger.transfers.maxLen"));
 		assertEquals(42, subject.from121.get("contracts.maxRefundPercentOfGasLimit"));
 		assertNotSame(oldMap, subject.from121);
@@ -118,7 +118,7 @@ class ScreenedSysFilePropsTest {
 
 	@ParameterizedTest
 	@CsvSource({
-			"ABC, tokens.maxPerAccount, false, NumberFormatException",
+			"ABC, tokens.maxRelsPerInfoQuery, false, NumberFormatException",
 			"CryptoCreate;CryptoTransfer;Oops, scheduling.whitelist, false, IllegalArgumentException",
 			"CryptoCreate;CryptoTransfer;CryptoGetAccountBalance, scheduling.whitelist, true,",
 			(MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES + 1) + ", tokens.maxTokenNameUtf8Bytes, true,",

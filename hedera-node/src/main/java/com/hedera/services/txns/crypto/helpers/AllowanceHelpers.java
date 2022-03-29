@@ -135,9 +135,9 @@ public class AllowanceHelpers {
 	}
 
 	public static List<GrantedNftAllowance> getNftAllowancesList(final MerkleAccount account) {
-		if (!account.state().getApproveForAllNfts().isEmpty()) {
+		if (!account.getApproveForAllNfts().isEmpty()) {
 			List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
-			for (var a : account.state().getApproveForAllNfts()) {
+			for (var a : account.getApproveForAllNfts()) {
 				final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
 				approveForAllNftsAllowance.setTokenId(a.getTokenNum().toGrpcTokenId());
 				approveForAllNftsAllowance.setSpender(a.getSpenderNum().toGrpcAccountId());
@@ -149,10 +149,10 @@ public class AllowanceHelpers {
 	}
 
 	public static List<GrantedTokenAllowance> getFungibleTokenAllowancesList(final MerkleAccount account) {
-		if (!account.state().getFungibleTokenAllowances().isEmpty()) {
+		if (!account.getFungibleTokenAllowances().isEmpty()) {
 			List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
 			final var tokenAllowance = GrantedTokenAllowance.newBuilder();
-			for (var a : account.state().getFungibleTokenAllowances().entrySet()) {
+			for (var a : account.getFungibleTokenAllowances().entrySet()) {
 				tokenAllowance.setTokenId(a.getKey().getTokenNum().toGrpcTokenId());
 				tokenAllowance.setSpender(a.getKey().getSpenderNum().toGrpcAccountId());
 				tokenAllowance.setAmount(a.getValue());
@@ -164,10 +164,10 @@ public class AllowanceHelpers {
 	}
 
 	public static List<GrantedCryptoAllowance> getCryptoAllowancesList(final MerkleAccount account) {
-		if (!account.state().getCryptoAllowances().isEmpty()) {
+		if (!account.getCryptoAllowances().isEmpty()) {
 			List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
 			final var cryptoAllowance = GrantedCryptoAllowance.newBuilder();
-			for (var a : account.state().getCryptoAllowances().entrySet()) {
+			for (var a : account.getCryptoAllowances().entrySet()) {
 				cryptoAllowance.setSpender(a.getKey().toGrpcAccountId());
 				cryptoAllowance.setAmount(a.getValue());
 				cryptoAllowances.add(cryptoAllowance.build());
