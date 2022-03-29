@@ -43,6 +43,6 @@ public record MintWrapper(long amount, TokenID tokenType, List<ByteString> metad
 	}
 
 	public TokenType type() {
-		return (!metadata.isEmpty()) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
+		return (amount == NONFUNGIBLE_MINT_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
 	}
 }

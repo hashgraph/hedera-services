@@ -177,7 +177,7 @@ public class DecodingFacade {
 		final var fungibleAmount = (long) decodedArguments.get(1);
 		final var serialNumbers = (long[]) decodedArguments.get(2);
 
-		if (serialNumbers.length == 0) {
+		if (fungibleAmount > 0) {
 			return BurnWrapper.forFungible(
 					tokenID, fungibleAmount);
 		} else {
@@ -253,7 +253,7 @@ public class DecodingFacade {
 		final var metadataList = (byte[][]) decodedArguments.get(2);
 		final List<ByteString> metadata = Arrays.stream(metadataList).map(ByteString::copyFrom).toList();
 
-		if (metadataList.length == 0) {
+		if (fungibleAmount > 0) {
 			return MintWrapper.forFungible(tokenID, fungibleAmount);
 		} else {
 			return MintWrapper.forNonFungible(

@@ -42,6 +42,6 @@ public record BurnWrapper(long amount, TokenID tokenType, List<Long> serialNos) 
 	}
 
 	public TokenType type() {
-		return !serialNos.isEmpty() ? NON_FUNGIBLE_UNIQUE: FUNGIBLE_COMMON;
+		return (amount == NONFUNGIBLE_BURN_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
 	}
 }
