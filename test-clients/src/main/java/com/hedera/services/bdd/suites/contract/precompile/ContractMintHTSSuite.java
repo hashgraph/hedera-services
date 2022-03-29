@@ -102,14 +102,15 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-//				positiveSpecs(),
+				positiveSpecs(),
 				negativeSpecs()
 		);
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
-				fungibleTokenMintFailure()
+				rollbackOnFailedMintAfterFungibleTransfer(),
+				rollbackOnFailedAssociateAfterNonFungibleMint()
 		);
 	}
 
