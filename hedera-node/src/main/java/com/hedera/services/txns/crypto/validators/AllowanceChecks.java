@@ -71,12 +71,66 @@ public class AllowanceChecks {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
+	private static final String UNSUPPORTED_MSG = "Base Class, Implementation present in AdjustAllowanceChecks/ApproveAllowanceChecks";
+
 	@Inject
 	public AllowanceChecks(final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator) {
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}
+
+	/**
+	 * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
+	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
+	 *
+	 * @param cryptoAllowances
+	 * 		crypto allowances list
+	 * @param tokenAllowances
+	 * 		fungible token allowances list
+	 * @param nftAllowances
+	 * 		nft allowances list
+	 * @param payerAccount
+	 * 		Account of the payer for the allowance approve/adjust txn.
+	 * @param maxLimitPerTxn
+	 * 		max allowance limit per transaction
+	 * @param workingView
+	 * @return response code after validation
+	 */
+	public ResponseCodeEnum allowancesValidation(final List<CryptoAllowance> cryptoAllowances,
+			final List<TokenAllowance> tokenAllowances,
+			final List<NftAllowance> nftAllowances,
+			final Account payerAccount,
+			final int maxLimitPerTxn,
+			final StateView workingView) {
+
+		// feature flag for allowances
+		if (!isEnabled()) {
+			return NOT_SUPPORTED;
+		}
+		var validity = commonChecks(cryptoAllowances, tokenAllowances, nftAllowances, maxLimitPerTxn);
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = validateCryptoAllowances(cryptoAllowances, payerAccount, workingView);
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount, workingView);
+		if (validity != OK) {
+			return validity;
+		}
+
+		validity = validateNftAllowances(nftAllowances, payerAccount, workingView);
+		if (validity != OK) {
+			return validity;
+		}
+
+		return OK;
+	}
+
 
 	/**
 	 * Validates the CryptoAllowances given in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
@@ -118,7 +172,7 @@ public class AllowanceChecks {
 			if (validity != OK) {
 				return validity;
 			}
-			validity = validateDuplicates(ownerAccount.getId(), spender);
+			validity = validateSpender(ownerAccount.getId(), spender);
 			if (validity != OK) {
 				return validity;
 			}
@@ -245,64 +299,22 @@ public class AllowanceChecks {
 	}
 
 	/**
-	 * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
-	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
+	 * Check if the allowance feature is enabled
 	 *
-	 * @param cryptoAllowances
-	 * 		crypto allowances list
-	 * @param tokenAllowances
-	 * 		fungible token allowances list
-	 * @param nftAllowances
-	 * 		nft allowances list
-	 * @param payerAccount
-	 * 		Account of the payer for the allowance approve/adjust txn.
-	 * @param maxLimitPerTxn
-	 * 		max allowance limit per transaction
-	 * @param workingView
-	 * @return response code after validation
+	 * @return true if the feature is enabled in {@link com.hedera.services.context.properties.GlobalDynamicProperties}
 	 */
-	public ResponseCodeEnum allowancesValidation(final List<CryptoAllowance> cryptoAllowances,
-			final List<TokenAllowance> tokenAllowances,
-			final List<NftAllowance> nftAllowances,
-			final Account payerAccount,
-			final int maxLimitPerTxn,
-			final StateView workingView) {
-
-		// feature flag for allowances
-		if (!isEnabled()) {
-			return NOT_SUPPORTED;
-		}
-		var validity = commonChecks(cryptoAllowances, tokenAllowances, nftAllowances, maxLimitPerTxn);
-		if (validity != OK) {
-			return validity;
-		}
-
-		validity = validateCryptoAllowances(cryptoAllowances, payerAccount, workingView);
-		if (validity != OK) {
-			return validity;
-		}
-
-		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount, workingView);
-		if (validity != OK) {
-			return validity;
-		}
-
-		validity = validateNftAllowances(nftAllowances, payerAccount, workingView);
-		if (validity != OK) {
-			return validity;
-		}
-
-		return OK;
+	public boolean isEnabled() {
+		return dynamicProperties.areAllowancesEnabled();
 	}
 
-	public ResponseCodeEnum validateDuplicates(final Id ownerId, final Id spender) {
+	private ResponseCodeEnum validateSpender(final Id ownerId, final Id spender) {
 		if (ownerId.equals(spender)) {
 			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
 		return OK;
 	}
 
-	public ResponseCodeEnum validateTokenBasics(
+	private ResponseCodeEnum validateTokenBasics(
 			final Account ownerAccount,
 			final Id spenderId,
 			final TokenID tokenId) {
@@ -333,11 +345,11 @@ public class AllowanceChecks {
 		return OK;
 	}
 
-	public boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
+	private boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
 		return totalAllowances > maxLimit;
 	}
 
-	public boolean emptyAllowances(final int totalAllowances) {
+	private boolean emptyAllowances(final int totalAllowances) {
 		return totalAllowances == 0;
 	}
 
@@ -369,20 +381,11 @@ public class AllowanceChecks {
 		}
 	}
 
-	public boolean validOwner(final MerkleUniqueToken nft, final Account ownerAccount, final MerkleToken token) {
+	boolean validOwner(final MerkleUniqueToken nft, final Account ownerAccount, final MerkleToken token) {
 		final var listedOwner = nft.getOwner();
 		return MISSING_ENTITY_ID.equals(listedOwner)
 				? ownerAccount.getId().equals(token.treasury().asId())
 				: listedOwner.equals(ownerAccount.getId().asEntityId());
-	}
-
-	/**
-	 * Check if the allowance feature is enabled
-	 *
-	 * @return true if the feature is enabled in {@link com.hedera.services.context.properties.GlobalDynamicProperties}
-	 */
-	public boolean isEnabled() {
-		return dynamicProperties.areAllowancesEnabled();
 	}
 
 	private boolean isFungibleCommon(MerkleToken token) {
@@ -395,18 +398,15 @@ public class AllowanceChecks {
 			final StateView view,
 			final Id token,
 			final Id spender) {
-		throw new UnsupportedOperationException(
-				"Base Class, Implementation present in AdjustAllowanceChecks/ApproveAllowanceChecks");
+		throw new UnsupportedOperationException(UNSUPPORTED_MSG);
 	}
 
 	ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender) {
-		throw new UnsupportedOperationException(
-				"Base Class, Implementation present in AdjustAllowanceChecks/ApproveAllowanceChecks");
+		throw new UnsupportedOperationException(UNSUPPORTED_MSG);
 	}
 
 	ResponseCodeEnum validateTokenAmount(final Account ownerAccount,
 			final long l, final MerkleToken merkleToken, final Id token, final Id spender) {
-		throw new UnsupportedOperationException(
-				"Base Class, Implementation present in AdjustAllowanceChecks/ApproveAllowanceChecks");
+		throw new UnsupportedOperationException(UNSUPPORTED_MSG);
 	}
 }

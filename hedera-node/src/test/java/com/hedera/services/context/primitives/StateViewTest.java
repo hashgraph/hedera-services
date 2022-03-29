@@ -942,7 +942,7 @@ class StateViewTest {
 	}
 
 	@Test
-	void constrcuctsBackingStores() {
+	void constructsBackingStores() {
 		assertTrue(subject.asReadOnlyAccountStore() instanceof BackingAccounts);
 		assertTrue(subject.asReadOnlyTokenStore() instanceof BackingTokens);
 		assertTrue(subject.asReadOnlyNftStore() instanceof BackingNfts);
