@@ -1261,6 +1261,18 @@ public class ContractResources {
 			"\":\"int64\",\"name\":\"value\",\"type\":\"int64\"}],\"name\":\"giveTokensToOperator\",\"outputs\":[],\"" +
 			"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
+	public static final String ADD_TO_WHITELIST_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_toBePermitted" +
+			"\",\"type\":\"address\"}],\"name\":\"addToWhitelist\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type" +
+			"\":\"function\"}";
+
+	public static final String RAW_IS_WHITELISTED_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type" +
+			"\":\"address\"}],\"name\":\"whitelist\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"" +
+			"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}";
+
+	public static final String IS_WHITELISTED_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"whitelister\"" +
+			",\"type\":\"address\"}],\"name\":\"isWhitelisted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"" +
+			"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
+
 
 	public static String bytecodePath(String bytecode) {
 		return String.format("src/main/resource/contract/bytecodes/%s.bin", bytecode);

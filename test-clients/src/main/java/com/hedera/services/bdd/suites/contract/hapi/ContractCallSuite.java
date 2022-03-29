@@ -56,8 +56,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -65,6 +67,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_TO_WHITELIST_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.APPROVE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_OF_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DECIMALS_ABI;
@@ -72,6 +75,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_INSERT;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_REMOVE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.INDIRECT_CREATE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IS_WHITELISTED_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.JURISDICTION_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.JURISDICTION_ISVALID_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.MINT_ADD_ABI;
@@ -120,6 +124,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -140,6 +145,7 @@ public class ContractCallSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallSuite.class);
 	private static final String CONTRACT_FROM = "CONTRACT_FROM";
 	private static final long depositAmount = 1000;
+	private static final long GAS_TO_OFFER = 2_000_000L;
 
 	public static void main(String... args) {
 		new ContractCallSuite().runSuiteSync();
@@ -153,47 +159,102 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				resultSizeAffectsFees(),
-				payableSuccess(),
-				depositSuccess(),
-				depositDeleteSuccess(),
-				multipleDepositSuccess(),
-				payTestSelfDestructCall(),
-				multipleSelfDestructsAreSafe(),
-				smartContractInlineAssemblyCheck(),
-				ocToken(),
-				contractTransferToSigReqAccountWithKeySucceeds(),
-				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-				minChargeIsTXGasUsedByContractCall(),
-				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-				HSCS_EVM_006_ContractHBarTransferToAccount(),
-				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-				HSCS_EVM_010_MultiSignatureAccounts(),
-				HSCS_EVM_010_ReceiverMustSignContractTx(),
-				insufficientGas(),
-				insufficientFee(),
-				nonPayable(),
-				invalidContract(),
-				smartContractFailFirst(),
-				contractTransferToSigReqAccountWithoutKeyFails(),
-				callingDestructedContractReturnsStatusDeleted(),
-				gasLimitOverMaxGasLimitFailsPrecheck(),
-				imapUserExercise(),
-				workingHoursDemo(),
-				deletedContractsCannotBeUpdated(),
-				sendHbarsToAddressesMultipleTimes(),
-				sendHbarsToDifferentAddresses(),
-				sendHbarsFromDifferentAddressessToAddress(),
-				sendHbarsFromAndToDifferentAddressess(),
-				transferNegativeAmountOfHbars(),
-				transferToCaller(),
-				transferZeroHbarsToCaller(),
-				transferZeroHbars(),
-				sendHbarsToOuterContractFromDifferentAddresses(),
-				sendHbarsToCallerFromDifferentAddresses(),
-				bitcarbonTestStillPasses(),
-				contractCreationStoragePriceMatchesFinalExpiry(),
+//				resultSizeAffectsFees(),
+//				payableSuccess(),
+//				depositSuccess(),
+//				depositDeleteSuccess(),
+//				multipleDepositSuccess(),
+//				payTestSelfDestructCall(),
+//				multipleSelfDestructsAreSafe(),
+//				smartContractInlineAssemblyCheck(),
+//				ocToken(),
+//				contractTransferToSigReqAccountWithKeySucceeds(),
+//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+//				minChargeIsTXGasUsedByContractCall(),
+//				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+//				HSCS_EVM_006_ContractHBarTransferToAccount(),
+//				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+//				HSCS_EVM_010_MultiSignatureAccounts(),
+//				HSCS_EVM_010_ReceiverMustSignContractTx(),
+//				insufficientGas(),
+//				insufficientFee(),
+//				nonPayable(),
+//				invalidContract(),
+//				smartContractFailFirst(),
+//				contractTransferToSigReqAccountWithoutKeyFails(),
+//				callingDestructedContractReturnsStatusDeleted(),
+//				gasLimitOverMaxGasLimitFailsPrecheck(),
+//				imapUserExercise(),
+//				workingHoursDemo(),
+//				deletedContractsCannotBeUpdated(),
+//				sendHbarsToAddressesMultipleTimes(),
+//				sendHbarsToDifferentAddresses(),
+//				sendHbarsFromDifferentAddressessToAddress(),
+//				sendHbarsFromAndToDifferentAddressess(),
+//				transferNegativeAmountOfHbars(),
+//				transferToCaller(),
+//				transferZeroHbarsToCaller(),
+//				transferZeroHbars(),
+//				sendHbarsToOuterContractFromDifferentAddresses(),
+//				sendHbarsToCallerFromDifferentAddresses(),
+//				bitcarbonTestStillPasses(),
+//				contractCreationStoragePriceMatchesFinalExpiry(),
+				whitelistingAliasedContract()
 		});
+	}
+
+	private HapiApiSpec whitelistingAliasedContract() {
+		final var creationTxn = "creationTxn";
+		final var mirrorWhitelistCheckTxn = "mirrorWhitelistCheckTxn";
+		final var evmWhitelistCheckTxn = "evmWhitelistCheckTxn";
+
+		final var WHITELISTER = "Whitelister";
+		final var CREATOR = "Creator";
+
+		final AtomicReference<String> childMirror = new AtomicReference<>();
+		final AtomicReference<String> childEip1014 = new AtomicReference<>();
+
+		return defaultHapiSpec("whitelistingAliasedContract")
+				.given(
+						sourcing(() -> createLargeFile(
+								DEFAULT_PAYER, WHITELISTER, literalInitcodeFor("Whitelister"))),
+						sourcing(() -> createLargeFile(
+								DEFAULT_PAYER, CREATOR, literalInitcodeFor("Creator"))),
+						withOpContext((spec, op) -> allRunFor(spec,
+						contractCreate(WHITELISTER)
+								.payingWith(DEFAULT_PAYER)
+								.bytecode(WHITELISTER)
+								.gas(GAS_TO_OFFER),
+						contractCreate(CREATOR)
+								.payingWith(DEFAULT_PAYER)
+								.bytecode(CREATOR)
+								.gas(GAS_TO_OFFER)
+								.via(creationTxn)
+						))
+				).when(
+						captureChildCreate2MetaFor(
+								1, 0,
+								"setup", creationTxn, childMirror, childEip1014),
+						withOpContext((spec, op) -> allRunFor(spec,
+								contractCall(WHITELISTER, ADD_TO_WHITELIST_ABI, childMirror.get())
+										.payingWith(DEFAULT_PAYER),
+// TODO: This line proves that ADD TO WHITELIST works
+//									contractCall(WHITELISTER, RAW_IS_WHITELISTED_ABI, childMirror.get()).payingWith(DEFAULT_PAYER).via("getTxn"),
+								contractCall(asContractString(
+												contractIdFromHexedMirrorAddress(childMirror.get())), IS_WHITELISTED_ABI,
+										getNestedContractAddress(WHITELISTER, spec))
+										.payingWith(DEFAULT_PAYER)
+										.via(mirrorWhitelistCheckTxn),
+								contractCall(CREATOR, IS_WHITELISTED_ABI,
+										getNestedContractAddress(WHITELISTER, spec))
+										.payingWith(DEFAULT_PAYER)
+										.via(evmWhitelistCheckTxn)
+						))
+				).then(
+						getTxnRecord(mirrorWhitelistCheckTxn).andAllChildRecords().logged(),
+						getTxnRecord(evmWhitelistCheckTxn).andAllChildRecords().logged(),
+						getTxnRecord("getTxn").andAllChildRecords().logged()
+				);
 	}
 
 	private HapiApiSpec contractCreationStoragePriceMatchesFinalExpiry() {
