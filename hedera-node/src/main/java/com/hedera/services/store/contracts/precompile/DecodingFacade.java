@@ -506,8 +506,8 @@ public class DecodingFacade {
 			final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
 			final var contractId = EntityIdUtils.asContract(
 					convertLeftPaddedAddressToAccountId((byte[]) keyValueTuple.get(1), aliasResolver));
-			final var ed25519 = (byte[]) keyValueTuple.get(2); //TODO: test whether decoding to byte[] is right
-			final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3); //TODO: test whether decoding to byte[] is right
+			final var ed25519 = (byte[]) keyValueTuple.get(2);
+			final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
 			final var delegatableContractId = EntityIdUtils.asContract(
 					convertLeftPaddedAddressToAccountId((byte[]) keyValueTuple.get(4), aliasResolver));
 			tokenKeys.add(new TokenKeyWrapper(keyType, new KeyValueWrapper(inheritAccountKey,

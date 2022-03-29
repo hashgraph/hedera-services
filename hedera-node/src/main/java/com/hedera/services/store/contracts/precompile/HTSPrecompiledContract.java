@@ -1036,7 +1036,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				final MessageFrame frame,
 				final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper
 		) {
-			//TODO: test the custom validation of ed25519 and ecdsasecpk256k1
 			final var key = tokenKeyWrapper.key();
 			return switch (key.getKeyValueType()) {
 				case INHERIT_ACCOUNT_KEY -> validateKey(frame, senderAddress, sigsVerifier::hasActiveKey);
