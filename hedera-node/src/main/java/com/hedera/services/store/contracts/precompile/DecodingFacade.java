@@ -577,7 +577,7 @@ public class DecodingFacade {
 					convertAddressBytesToTokenID((byte[]) royaltyFeeTuple.get(3));
 			final var fixedFeeUseHbars = (Boolean) royaltyFeeTuple.get(4);
 			FixedFeeWrapper fixedFee = null;
-			if (fixedFeeAmount != 0 || fixedFeeTokenId.getTokenNum() != 0 || fixedFeeUseHbars) {
+			if (fixedFeeAmount != 0 || fixedFeeTokenId.getTokenNum() != 0 || Boolean.TRUE.equals(fixedFeeUseHbars)) {
 				fixedFee = new FixedFeeWrapper(
 						fixedFeeAmount,
 						fixedFeeTokenId.getTokenNum() != 0 ? fixedFeeTokenId : null,
