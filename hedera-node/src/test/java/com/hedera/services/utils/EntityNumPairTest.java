@@ -101,6 +101,7 @@ class EntityNumPairTest {
 		final var modelRel = new TokenRelationship(
 				new Token(new Id(0, 0, 2)),
 				new Account(new Id(0, 0, 1)));
+		modelRel.setKey(expected);
 
 		final var actual = EntityNumPair.fromModelRel(modelRel);
 
@@ -113,7 +114,7 @@ class EntityNumPairTest {
 		final var expected = EntityNum.fromLong(bigNum);
 		final var subject = fromLongs(bigNum, 1);
 
-		final var hi = subject.getHiPhi();
+		final var hi = subject.getHiOrderAsNum();
 
 		assertEquals(expected, hi);
 	}

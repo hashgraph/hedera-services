@@ -269,7 +269,6 @@ class FcCustomFeeTest {
 
 	@Test
 	void validationRequiresAssociatedCollectorAtUpdateForFractional() {
-		given(token.getId()).willReturn(tokenId);
 		given(token.isFungibleCommon()).willReturn(true);
 		given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
 				.willReturn(collectionAccount);
@@ -288,9 +287,8 @@ class FcCustomFeeTest {
 
 	@Test
 	void validationWorksAtUpdateForWellBehavedFractional() {
-		given(token.getId()).willReturn(tokenId);
 		given(token.isFungibleCommon()).willReturn(true);
-		given(collectionAccount.isAssociatedWith(tokenId)).willReturn(true);
+		given(tokenStore.hasAssociation(token, collectionAccount)).willReturn(true);
 		given(accountStore.loadAccountOrFailWith(feeCollector.asId(), INVALID_CUSTOM_FEE_COLLECTOR))
 				.willReturn(collectionAccount);
 

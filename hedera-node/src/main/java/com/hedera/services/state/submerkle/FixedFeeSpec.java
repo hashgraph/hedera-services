@@ -81,7 +81,7 @@ public class FixedFeeSpec {
 		final var denomId = tokenDenomination.asId();
 		final var denomToken = tokenStore.loadTokenOrFailWith(denomId, INVALID_TOKEN_ID_IN_CUSTOM_FEES);
 		validateTrue(denomToken.isFungibleCommon(), CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON);
-		validateTrue(feeCollector.isAssociatedWith(denomId), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
+		validateTrue(tokenStore.hasAssociation(denomToken, feeCollector), TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR);
 	}
 
 	public static FixedFeeSpec fromGrpc(FixedFee fixedFee) {

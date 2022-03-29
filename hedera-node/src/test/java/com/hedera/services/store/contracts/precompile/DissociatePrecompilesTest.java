@@ -231,9 +231,7 @@ class DissociatePrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(
-				validator, dynamicProperties, accounts
-		)).willReturn(accountStore);
+		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
 		given(tokenStoreFactory.newTokenStore(
 				accountStore, tokens, nfts, tokenRels, NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects
 		)).willReturn(tokenStore);

@@ -177,7 +177,7 @@ public class MixedOpsMemoPerfSuite extends LoadTest {
 										"hapi.throttling.ops.consensusUpdateTopic.capacityRequired", "1.0",
 										"hapi.throttling.ops.consensusGetTopicInfo.capacityRequired", "1.0",
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired", "1.0",
-										"tokens.maxPerAccount", "10000000")),
+										"tokens.maxRelsPerInfoQuery", "10000000")),
 						sleepFor(5000),
 						newKeyNamed("adminKey"),
 						logIt(ignore -> settings.toString()),

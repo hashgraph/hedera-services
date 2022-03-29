@@ -85,9 +85,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
@@ -109,10 +109,8 @@ public class StateView {
 	public static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64L;
 	public static final AccountID WILDCARD_OWNER = AccountID.newBuilder().setAccountNum(0L).build();
 
-	static BiFunction<StateView, EntityNum, List<TokenRelationship>> tokenRelsFn = StateView::tokenRels;
-
 	static final byte[] EMPTY_BYTES = new byte[0];
-	static final MerkleMap<?, ?> EMPTY_FCM = new MerkleMap<>();
+	static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
 	static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
@@ -414,17 +412,18 @@ public class StateView {
 
 	public Optional<CryptoGetInfoResponse.AccountInfo> infoForAccount(
 			final AccountID id,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final int maxTokensForAccountInfo
 	) {
-		final var accountEntityNum = id.getAlias().isEmpty()
+		final var accountNum = id.getAlias().isEmpty()
 				? fromAccountId(id)
 				: aliasManager.lookupIdBy(id.getAlias());
-		final var account = accounts().get(accountEntityNum);
+		final var account = accounts().get(accountNum);
 		if (account == null) {
 			return Optional.empty();
 		}
 
-		final AccountID accountID = id.getAlias().isEmpty() ? id : accountEntityNum.toGrpcAccountId();
+		final AccountID accountID = id.getAlias().isEmpty() ? id : accountNum.toGrpcAccountId();
 		final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setLedgerId(networkInfo.ledgerId())
 				.setKey(asKeyUnchecked(account.getAccountKey()))
@@ -442,7 +441,7 @@ public class StateView {
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);
-		final var tokenRels = tokenRelsFn.apply(this, accountEntityNum);
+		final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -467,7 +466,8 @@ public class StateView {
 
 	public Optional<ContractGetInfoResponse.ContractInfo> infoForContract(
 			final ContractID id,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final int maxTokensForAccountInfo
 	) {
 		final var contractId = unaliased(id, aliasManager);
 		final var contract = contracts().get(contractId);
@@ -492,7 +492,7 @@ public class StateView {
 		} else {
 			info.setContractAccountID(asHexedEvmAddress(mirrorId));
 		}
-		final var tokenRels = tokenRelsFn.apply(this, contractId);
+		final var tokenRels = tokenRels(this, contract, maxTokensForAccountInfo);
 		if (!tokenRels.isEmpty()) {
 			info.addAllTokenRelationships(tokenRels);
 		}
@@ -535,7 +535,7 @@ public class StateView {
 		return stateChildren == null ? emptyVm() : stateChildren.contractStorage();
 	}
 
-	MerkleMap<EntityNum, MerkleToken> tokens() {
+	public MerkleMap<EntityNum, MerkleToken> tokens() {
 		return stateChildren == null ? emptyMm() : stateChildren.tokens();
 	}
 
@@ -551,32 +551,105 @@ public class StateView {
 		return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
 	}
 
-	static List<TokenRelationship> tokenRels(final StateView view, final EntityNum id) {
-		final var account = view.accounts().get(id);
-		final List<TokenRelationship> relationships = new ArrayList<>();
-		final var tokenIds = account.tokens().asTokenIds();
-		for (TokenID tId : tokenIds) {
-			final var optionalToken = view.tokenWith(tId);
-			final var effectiveToken = optionalToken.orElse(REMOVED_TOKEN);
-			final var relKey = fromAccountTokenRel(id.toGrpcAccountId(), tId);
-			final var relationship = view.tokenAssociations().get(relKey);
-			relationships.add(new RawTokenRelationship(
-					relationship.getBalance(),
-					tId.getShardNum(),
-					tId.getRealmNum(),
-					tId.getTokenNum(),
-					relationship.isFrozen(),
-					relationship.isKycGranted(),
-					relationship.isAutomaticAssociation()
-			).asGrpcFor(effectiveToken));
+	/**
+	 * Returns the most recent token relationships formed by the given account in the given view
+	 * of the state, up to maximum of {@code maxRels} relationships.
+	 *
+	 * @param view
+	 * 		a view of the world state
+	 * @param account
+	 * 		the account of interest
+	 * @param maxRels
+	 * 		the maximum token relationships to return
+	 * @return a list of the account's newest token relationships up to the given limit
+	 */
+	static List<TokenRelationship> tokenRels(
+			final StateView view,
+			final MerkleAccount account,
+			final int maxRels
+	) {
+		final List<TokenRelationship> grpcRels = new ArrayList<>();
+		var firstRel = account.getLastAssociation();
+		doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) -> {
+			final var grpcRel = new RawTokenRelationship(
+					rel.getBalance(),
+					STATIC_PROPERTIES.getShard(),
+					STATIC_PROPERTIES.getRealm(),
+					rel.getRelatedTokenNum(),
+					rel.isFrozen(),
+					rel.isKycGranted(),
+					rel.isAutomaticAssociation()
+			).asGrpcFor(token);
+			grpcRels.add(grpcRel);
+		});
+
+		return grpcRels;
+	}
+
+	/**
+	 * Given tokens and account-token relationships, iterates the "map-value-linked-list" of token relationships
+	 * for the given account, exposing its token relationships to the given Visitor in reverse chronological order.
+	 *
+	 * @param tokenRels
+	 * 		the source of token relationship information
+	 * @param tokens
+	 * 		the source of token information
+	 * @param account
+	 * 		the account of interest
+	 * @param visitor
+	 * 		a consumer of token and token relationship information
+	 */
+	public static void doBoundedIteration(
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
+			final MerkleMap<EntityNum, MerkleToken> tokens,
+			final MerkleAccount account,
+			final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor
+	) {
+		final var maxRels = account.getNumAssociations();
+		final var firstRel = account.getLastAssociation();
+		doBoundedIteration(tokenRels, tokens, firstRel, maxRels, visitor);
+	}
+
+	/**
+	 * Given tokens and account-token relationships, iterates the "map-value-linked-list" of token relationships
+	 * starting from a given key exposing token relationships to the given Visitor in reverse chronological order.
+	 * Terminates when there are no more reachable relationships, or the maximum number have been visited.
+	 *
+	 * @param tokenRels
+	 * 		the source of token relationship information
+	 * @param tokens
+	 * 		the source of token information
+	 * @param firstRel
+	 * 		the first relationship of interest
+	 * @param maxRels
+	 * 		the maximum number of relationships to visit
+	 * @param visitor
+	 * 		a consumer of token and token relationship information
+	 */
+	public static void doBoundedIteration(
+			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
+			final MerkleMap<EntityNum, MerkleToken> tokens,
+			final EntityNumPair firstRel,
+			final int maxRels,
+			final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor
+	) {
+		var key = firstRel;
+		var counter = 0;
+		while (!key.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRels) {
+			final var rel = tokenRels.get(key);
+			final var token = tokens.getOrDefault(key.getLowOrderAsNum(), REMOVED_TOKEN);
+			visitor.accept(token, rel);
+			key = rel.nextKey();
+			counter++;
 		}
-		return relationships;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <K, V extends MerkleNode & Keyed<K>> MerkleMap<K, V> emptyMm() {
-		return (MerkleMap<K, V>) EMPTY_FCM;
+		return (MerkleMap<K, V>) EMPTY_MM;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
 	}

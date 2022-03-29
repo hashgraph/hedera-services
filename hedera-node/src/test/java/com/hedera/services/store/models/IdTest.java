@@ -100,7 +100,7 @@ class IdTest {
 	void toStringWorks() {
 		final var id = new Id(4, 5, 6);
 
-		assertEquals("Id[shard=4, realm=5, num=6]", id.toString());
+		assertEquals("4.5.6", id.toString());
 	}
 
 	@Test
