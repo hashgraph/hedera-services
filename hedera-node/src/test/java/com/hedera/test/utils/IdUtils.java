@@ -144,6 +144,14 @@ public class IdUtils {
 				.build();
 	}
 
+	public static AccountAmount adjustFromWithAllowance(AccountID account, long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(account)
+				.setAmount(amount)
+				.setIsApproval(true)
+				.build();
+	}
+
 	public static BalanceChange hbarChange(final AccountID account, final long amount) {
 		return BalanceChange.changingHbar(adjustFrom(account, amount), null);
 	}

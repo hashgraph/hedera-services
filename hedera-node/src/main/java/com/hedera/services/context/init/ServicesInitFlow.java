@@ -33,9 +33,9 @@ public class ServicesInitFlow {
 
 	@Inject
 	public ServicesInitFlow(
-			StateInitializationFlow stateFlow,
-			StoreInitializationFlow storeFlow,
-			EntitiesInitializationFlow entitiesFlow
+			final StateInitializationFlow stateFlow,
+			final StoreInitializationFlow storeFlow,
+			final EntitiesInitializationFlow entitiesFlow
 	) {
 		this.stateFlow = stateFlow;
 		this.storeFlow = storeFlow;

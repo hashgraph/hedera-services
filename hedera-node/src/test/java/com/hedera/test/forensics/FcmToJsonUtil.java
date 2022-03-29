@@ -29,7 +29,7 @@ import com.hedera.services.state.merkle.MerkleOptionalBlob;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.SolidityFnResult;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.test.forensics.domain.PojoFs;
 import com.hedera.test.forensics.domain.PojoLedger;
@@ -105,7 +105,7 @@ public class FcmToJsonUtil {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(CurrencyAdjustments.class, CurrencyAdjustments::new));
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(SolidityFnResult.class, SolidityFnResult::new));
+				new ClassConstructorPair(EvmFnResult.class, EvmFnResult::new));
 
 		for (String dumpLoc : accountsLocs) {
 			PojoLedger.fromDisk(dumpLoc).asJsonTo(jsonSuffixed(dumpLoc));

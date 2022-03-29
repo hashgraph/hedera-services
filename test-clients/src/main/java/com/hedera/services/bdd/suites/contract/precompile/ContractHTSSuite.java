@@ -42,6 +42,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_COLLECTOR_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.HBAR_FEE_COLLECTOR_DISTRIBUTE;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TRANSFER_AMOUNT_AND_TOKEN_TRANSFER_TO_ADDRESS;
@@ -56,6 +57,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -64,6 +66,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -124,8 +127,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-			positiveSpecs(),
-			negativeSpecs()
+				positiveSpecs(),
+				negativeSpecs()
 		);
 	}
 
@@ -137,14 +140,15 @@ public class ContractHTSSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> positiveSpecs() {
-		return List.of(
-				distributeMultipleTokens(),
-				depositAndWithdrawFungibleTokens(),
-				transferNft(),
-				transferMultipleNfts(),
-				tokenTransferFromFeeCollector(),
-				tokenTransferFromFeeCollectorStaticNestedCall(),
-				hbarTransferFromFeeCollector()
+		return List.of(new HapiApiSpec[] {
+						distributeMultipleTokens(),
+						depositAndWithdrawFungibleTokens(),
+						transferNft(),
+						transferMultipleNfts(),
+						tokenTransferFromFeeCollector(),
+						tokenTransferFromFeeCollectorStaticNestedCall(),
+						hbarTransferFromFeeCollector()
+				}
 		);
 	}
 
@@ -190,7 +194,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(theContract, ContractResources.TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR,
+												contractCreate(theContract,
+														ContractResources.TRANSFER_AMOUNT_AND_TOKEN_CONSTRUCTOR,
 														asAddress(spec.registry().getTokenID(tokenWithHbarFee)))
 														.payingWith(bob)
 														.bytecode("bytecode")
@@ -334,7 +339,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.initialSupply(TOTAL_SUPPLY)
 								.treasury(TOKEN_TREASURY),
 						fileCreate("bytecode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						updateLargeFile(ACCOUNT, "bytecode",
+								extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
 						fileCreate("nestedBytecode").payingWith(ACCOUNT),
 						updateLargeFile(ACCOUNT, "nestedBytecode",
 								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
@@ -347,7 +353,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 									allRunFor(
 											spec,
 											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR,
-													getNestedContractAddress(spec))
+													getNestedContractAddress(
+															spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
 													.gas(GAS_TO_OFFER));
@@ -431,7 +438,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.between(TOKEN_TREASURY, ACCOUNT)),
 
 						fileCreate("bytecode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						updateLargeFile(ACCOUNT, "bytecode",
+								extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
 						fileCreate("nestedBytecode").payingWith(ACCOUNT),
 						updateLargeFile(ACCOUNT, "nestedBytecode",
 								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
@@ -443,8 +451,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 											.gas(GAS_TO_OFFER));
 									allRunFor(
 											spec,
-											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(
-													spec))
+											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR,
+													getNestedContractAddress(
+															spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
 													.gas(GAS_TO_OFFER));
@@ -612,7 +621,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 								.between(TOKEN_TREASURY, ACCOUNT)),
 
 						fileCreate("bytecode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						updateLargeFile(ACCOUNT, "bytecode",
+								extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
 						fileCreate("nestedBytecode").payingWith(ACCOUNT),
 						updateLargeFile(ACCOUNT, "nestedBytecode",
 								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
@@ -624,8 +634,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 											.gas(GAS_TO_OFFER));
 									allRunFor(
 											spec,
-											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(
-													spec))
+											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR,
+													getNestedContractAddress(
+															spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
 													.gas(GAS_TO_OFFER));
@@ -763,10 +774,10 @@ public class ContractHTSSuite extends HapiApiSuite {
 	}
 
 	/* --- HSCS-PREC-009 ---
-	* Contract is a custom hbar fee collector
-	* Contract that otherwise wouldn't have enough balance for a .transfer of hbars can perform the transfer after
-	* collecting the custom hbar fees from a nested token transfer through the HTS precompile
-	* */
+	 * Contract is a custom hbar fee collector
+	 * Contract that otherwise wouldn't have enough balance for a .transfer of hbars can perform the transfer after
+	 * collecting the custom hbar fees from a nested token transfer through the HTS precompile
+	 * */
 	private HapiApiSpec hbarTransferFromFeeCollector() {
 		final AtomicReference<TokenID> tokenID = new AtomicReference<>();
 		final AtomicReference<AccountID> senderAccountID = new AtomicReference<>();
@@ -830,15 +841,15 @@ public class ContractHTSSuite extends HapiApiSuite {
 											.via("distributeTx"));
 								})
 				).then(
+						getTxnRecord("distributeTx")
+								.andAllChildRecords()
+								.logged()
+								.hasPriority(recordWith().transfers(including(
+										tinyBarsFromTo(CONTRACT, SECOND_RECEIVER, CUSTOM_HBAR_FEE_AMOUNT)))),
 						childRecordsCheck("distributeTx", SUCCESS,
 								recordWith()
 										.status(SUCCESS)
-										.contractCallResult(
-												resultWith()
-														.contractCallResult(htsPrecompileResult()
-																.withStatus(SUCCESS)
-														)
-										)
+										.transfers(including(tinyBarsFromTo(ACCOUNT, CONTRACT, CUSTOM_HBAR_FEE_AMOUNT)))
 										.tokenTransfers(
 												changingFungibleBalances()
 														.including(A_TOKEN, ACCOUNT, -AMOUNT_TO_SEND)
@@ -866,7 +877,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						fileCreate("bytecode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						updateLargeFile(ACCOUNT, "bytecode",
+								extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
 						fileCreate("nestedBytecode").payingWith(ACCOUNT),
 						updateLargeFile(ACCOUNT, "nestedBytecode",
 								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
@@ -878,8 +890,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 											.gas(GAS_TO_OFFER));
 									allRunFor(
 											spec,
-											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(
-													spec))
+											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR,
+													getNestedContractAddress(
+															spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
 													.gas(GAS_TO_OFFER));
@@ -947,7 +960,8 @@ public class ContractHTSSuite extends HapiApiSuite {
 						tokenAssociate(ACCOUNT, NFT),
 						mintToken(NFT, List.of(metadata("firstMemo"), metadata("secondMemo"))),
 						fileCreate("bytecode").payingWith(ACCOUNT),
-						updateLargeFile(ACCOUNT, "bytecode", extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
+						updateLargeFile(ACCOUNT, "bytecode",
+								extractByteCode(ContractResources.VERSATILE_TRANSFERS_CONTRACT)),
 						fileCreate("nestedBytecode").payingWith(ACCOUNT),
 						updateLargeFile(ACCOUNT, "nestedBytecode",
 								extractByteCode(ContractResources.DISTRIBUTOR_CONTRACT)),
@@ -959,8 +973,9 @@ public class ContractHTSSuite extends HapiApiSuite {
 											.gas(GAS_TO_OFFER));
 									allRunFor(
 											spec,
-											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR, getNestedContractAddress(
-													spec))
+											contractCreate(CONTRACT, VERSATILE_TRANSFERS_CONSTRUCTOR,
+													getNestedContractAddress(
+															spec))
 													.payingWith(ACCOUNT)
 													.bytecode("bytecode")
 													.gas(GAS_TO_OFFER));

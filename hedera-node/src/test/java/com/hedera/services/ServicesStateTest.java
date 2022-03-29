@@ -20,11 +20,12 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
-import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleDiskFs;
@@ -32,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -55,7 +57,7 @@ import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.merkle.MerkleNode;
-import com.swirlds.fchashmap.FCOneToManyRelation;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -70,6 +72,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
@@ -130,7 +133,9 @@ class ServicesStateTest {
 	@Mock
 	private SigReqsManager sigReqsManager;
 	@Mock
-	private StateAccessor workingState;
+	private FCHashMap<ByteString, EntityNum> aliases;
+	@Mock
+	private MutableStateChildren workingState;
 	@Mock
 	private DualStateAccessor dualStateAccessor;
 	@Mock
@@ -143,6 +148,8 @@ class ServicesStateTest {
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
+	@Mock
+	private Consumer<ServicesState> mockMigrator;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -155,6 +162,20 @@ class ServicesStateTest {
 		if (APPS.includes(selfId.getId())) {
 			APPS.clear(selfId.getId());
 		}
+	}
+
+	@Test
+	void onlyInitializedIfMetadataIsSet() {
+		assertFalse(subject.isInitialized());
+		subject.setMetadata(metadata);
+		assertTrue(subject.isInitialized());
+	}
+
+	@Test
+	void getsAliasesFromMetadata() {
+		given(metadata.aliases()).willReturn(aliases);
+		subject.setMetadata(metadata);
+		assertSame(aliases, subject.aliases());
 	}
 
 	@Test
@@ -396,7 +417,6 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
-		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 
@@ -407,15 +427,18 @@ class ServicesStateTest {
 
 	@Test
 	void doesntMigrateWhenInitializingFromRelease0220() {
-		// given:
+		ServicesState.setStakeFundingMigrator(mockMigrator);
+
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
 
-		// expect:
 		assertDoesNotThrow(subject::migrate);
+
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
 	}
 
 	@Test
 	void migratesWhenInitializingFromRelease0210() {
+		ServicesState.setStakeFundingMigrator(mockMigrator);
 		ServicesState.setBlobMigrator(blobMigrator);
 
 		subject = mock(ServicesState.class);
@@ -431,6 +454,21 @@ class ServicesStateTest {
 				subject, StateVersions.RELEASE_0210_VERSION);
 		verify(subject).init(platform, addressBook, dualState);
 		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
+	}
+
+	@Test
+	void migratesWhenInitializingFromRelease0230() {
+		ServicesState.setStakeFundingMigrator(mockMigrator);
+
+		subject = mock(ServicesState.class);
+		doCallRealMethod().when(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0230_VERSION);
+
+		subject.migrate();
+
+		verify(mockMigrator).accept(subject);
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
 	}
 
 	@Test
@@ -450,7 +488,6 @@ class ServicesStateTest {
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
-		given(app.workingState()).willReturn(workingState);
 		given(platform.getSelfId()).willReturn(selfId);
 
 		// when:
@@ -474,7 +511,6 @@ class ServicesStateTest {
 		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		assertNotNull(subject.specialFiles());
 		// and:
-		verify(workingState).updateChildrenFrom(subject);
 		verify(dualStateAccessor).setDualState(dualState);
 		verify(initFlow).runWith(subject);
 		verify(appBuilder).bootstrapProps(any());
@@ -496,7 +532,6 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
-		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -548,7 +583,6 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
-		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -562,6 +596,32 @@ class ServicesStateTest {
 	}
 
 	@Test
+	void nonGenesisInitWithOldVersionMarksMigrationRecordsNotStreamed() {
+		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
+		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+
+		final var when = Instant.ofEpochSecond(1_234_567L, 890);
+		given(dualState.getFreezeTime()).willReturn(when);
+		given(dualState.getLastFrozenTime()).willReturn(when);
+		given(networkContext.getStateVersion()).willReturn(StateVersions.CURRENT_VERSION - 1);
+
+		given(app.hashLogger()).willReturn(hashLogger);
+		given(app.initializationFlow()).willReturn(initFlow);
+		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
+		given(platform.getSelfId()).willReturn(selfId);
+		// and:
+		APPS.save(selfId.getId(), app);
+
+		// when:
+		subject.init(platform, addressBook, dualState);
+
+		verify(networkContext).discardPreparedUpgradeMeta();
+		verify(networkContext).markMigrationRecordsNotYetStreamed();
+		verify(dualState).setFreezeTime(null);
+	}
+
+	@Test
 	void nonGenesisInitDoesntClearPreparedUpgradeIfBothFreezeAndLastFrozenAreNull() {
 		subject.setChild(StateChildIndices.SPECIAL_FILES, diskFs);
 		subject.setChild(StateChildIndices.NETWORK_CTX, networkContext);
@@ -571,7 +631,6 @@ class ServicesStateTest {
 
 		given(app.hashLogger()).willReturn(hashLogger);
 		given(app.initializationFlow()).willReturn(initFlow);
-		given(app.workingState()).willReturn(workingState);
 		given(app.dualStateAccessor()).willReturn(dualStateAccessor);
 		given(platform.getSelfId()).willReturn(selfId);
 		// and:
@@ -581,25 +640,6 @@ class ServicesStateTest {
 		subject.init(platform, addressBook, dualState);
 
 		verify(networkContext, never()).discardPreparedUpgradeMeta();
-	}
-
-	@Test
-	void forwardsFcomtrAsExpected() {
-		// setup:
-		final FCOneToManyRelation<EntityNum, Long> a = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<EntityNum, Long> b = new FCOneToManyRelation<>();
-		final FCOneToManyRelation<EntityNum, Long> c = new FCOneToManyRelation<>();
-		// and:
-		subject.setMetadata(metadata);
-
-		given(metadata.getUniqueTokenAssociations()).willReturn(a);
-		given(metadata.getUniqueOwnershipAssociations()).willReturn(b);
-		given(metadata.getUniqueTreasuryOwnershipAssociations()).willReturn(c);
-
-		// expect:
-		assertSame(a, subject.uniqueTokenAssociations());
-		assertSame(b, subject.uniqueOwnershipAssociations());
-		assertSame(c, subject.uniqueTreasuryOwnershipAssociations());
 	}
 
 	@Test
@@ -624,7 +664,7 @@ class ServicesStateTest {
 		final var copy = subject.copy();
 
 		// then:
-		verify(workingState).updateChildrenFrom(copy);
+		verify(workingState).updateFrom(copy);
 	}
 
 	@Test

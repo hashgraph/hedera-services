@@ -22,10 +22,10 @@ package com.hedera.services.sigs.metadata;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockFileNumbers;
+import com.hedera.services.context.BasicTransactionContext;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
+import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
@@ -67,12 +68,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -84,8 +87,6 @@ import static org.mockito.BDDMockito.given;
 class StateChildrenSigMetadataLookupTest {
 	@Mock
 	private MutableStateChildren stateChildren;
-	@Mock
-	private AliasManager aliasManager;
 	@Mock
 	private MerkleTopic topic;
 	@Mock
@@ -108,13 +109,15 @@ class StateChildrenSigMetadataLookupTest {
 	private MerkleMap<EntityNum, MerkleSchedule> schedules;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
+	@Mock
+	private FCHashMap<ByteString, EntityNum> aliases;
 
 	private StateChildrenSigMetadataLookup subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new StateChildrenSigMetadataLookup(
-				new MockFileNumbers(), aliasManager, stateChildren, tokenMetaTransform);
+				new MockFileNumbers(), stateChildren, tokenMetaTransform);
 	}
 
 	@Test
@@ -249,6 +252,31 @@ class StateChildrenSigMetadataLookupTest {
 	}
 
 	@Test
+	void recognizesImmutableAccountWithEmptyKey() {
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
+		given(account.getAccountKey()).willReturn(BasicTransactionContext.EMPTY_KEY);
+
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
+
+		assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+		assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
+	}
+
+	@Test
+	void recognizesImmutableAccountWithUnexpectedNullKey() {
+		given(stateChildren.accounts()).willReturn(accounts);
+		given(accounts.get(EntityNum.fromAccountId(immutableAccount))).willReturn(account);
+
+		final var linkedRefs = new LinkedRefs();
+		final var result = subject.accountSigningMetaFor(immutableAccount, linkedRefs);
+
+		assertEquals(immutableAccount.getAccountNum(), linkedRefs.linkedNumbers()[0]);
+		assertEquals(IMMUTABLE_ACCOUNT, result.failureIfAny());
+	}
+
+	@Test
 	void recognizesExtantAccount() {
 		given(stateChildren.accounts()).willReturn(accounts);
 		given(accounts.get(EntityNum.fromAccountId(knownAccount))).willReturn(account);
@@ -269,7 +297,8 @@ class StateChildrenSigMetadataLookupTest {
 	void recognizesExtantAlias() {
 		final var knownNum = EntityNum.fromAccountId(knownAccount);
 		given(stateChildren.accounts()).willReturn(accounts);
-		given(aliasManager.lookupIdBy(alias.getAlias())).willReturn(knownNum);
+		given(stateChildren.aliases()).willReturn(aliases);
+		given(aliases.getOrDefault(alias.getAlias(), MISSING_NUM)).willReturn(knownNum);
 		given(accounts.get(knownNum)).willReturn(account);
 		given(account.getAccountKey()).willReturn(simple);
 		given(account.isReceiverSigRequired()).willReturn(true);
@@ -288,7 +317,6 @@ class StateChildrenSigMetadataLookupTest {
 	void recognizesMirrorAddressFromAccount() {
 		final var knownNum = EntityNum.fromAccountId(knownAccount);
 		given(stateChildren.accounts()).willReturn(accounts);
-		given(aliasManager.isMirror(knownMirrorAddress.toByteArray())).willReturn(true);
 		given(accounts.get(knownNum)).willReturn(account);
 		given(account.getAccountKey()).willReturn(simple);
 		given(account.isReceiverSigRequired()).willReturn(true);
@@ -307,7 +335,6 @@ class StateChildrenSigMetadataLookupTest {
 	void recognizesExtantContractMirrorAlias() {
 		final var knownNum = EntityNum.fromContractId(knownContract);
 		given(stateChildren.accounts()).willReturn(accounts);
-		given(aliasManager.isMirror(mirrorAddressContract.getEvmAddress().toByteArray())).willReturn(true);
 		given(accounts.get(knownNum)).willReturn(account);
 		given(account.getAccountKey()).willReturn(simple);
 		given(account.isSmartContract()).willReturn(true);
@@ -327,7 +354,8 @@ class StateChildrenSigMetadataLookupTest {
 	void recognizesExtantContractAlias() {
 		final var knownNum = EntityNum.fromContractId(knownContract);
 		given(stateChildren.accounts()).willReturn(accounts);
-		given(aliasManager.lookupIdBy(aliasedContract.getEvmAddress())).willReturn(knownNum);
+		given(stateChildren.aliases()).willReturn(aliases);
+		given(aliases.getOrDefault(aliasedContract.getEvmAddress(), MISSING_NUM)).willReturn(knownNum);
 		given(accounts.get(knownNum)).willReturn(account);
 		given(account.getAccountKey()).willReturn(simple);
 		given(account.isSmartContract()).willReturn(true);
@@ -345,7 +373,8 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesMissingContractAlias() {
-		given(aliasManager.lookupIdBy(aliasedContract.getEvmAddress())).willReturn(EntityNum.MISSING_NUM);
+		given(stateChildren.aliases()).willReturn(aliases);
+		given(aliases.getOrDefault(aliasedContract.getEvmAddress(), MISSING_NUM)).willReturn(MISSING_NUM);
 
 		final var linkedRefs = new LinkedRefs();
 		final var result = subject.aliasableContractSigningMetaFor(aliasedContract, linkedRefs);
@@ -356,7 +385,8 @@ class StateChildrenSigMetadataLookupTest {
 
 	@Test
 	void recognizesMissingAlias() {
-		given(aliasManager.lookupIdBy(alias.getAlias())).willReturn(EntityNum.MISSING_NUM);
+		given(stateChildren.aliases()).willReturn(aliases);
+		given(aliases.getOrDefault(alias.getAlias(), MISSING_NUM)).willReturn(MISSING_NUM);
 
 		final var linkedRefs = new LinkedRefs();
 		final var result = subject.aliasableAccountSigningMetaFor(alias, linkedRefs);
@@ -506,6 +536,7 @@ class StateChildrenSigMetadataLookupTest {
 	private static final AccountID mirrorAccount = AccountID.newBuilder()
 			.setAlias(knownMirrorAddress)
 			.build();
+	private static final AccountID immutableAccount = IdUtils.asAccount("0.0.800");
 	private static final AccountID unknownAccount = IdUtils.asAccount("0.0.4321");
 	private static final ContractID knownContract = IdUtils.asContract("0.0.1234");
 	private static final ContractID unknownContract = IdUtils.asContract("0.0.4321");

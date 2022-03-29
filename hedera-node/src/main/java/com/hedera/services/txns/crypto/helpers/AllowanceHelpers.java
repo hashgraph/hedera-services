@@ -150,8 +150,8 @@ public class AllowanceHelpers {
 	public static List<GrantedNftAllowance> getNftAllowancesList(final MerkleAccount account) {
 		if (!account.state().getNftAllowances().isEmpty()) {
 			List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
-			final var nftAllowance = GrantedNftAllowance.newBuilder();
 			for (var a : account.state().getNftAllowances().entrySet()) {
+				final var nftAllowance = GrantedNftAllowance.newBuilder();
 				nftAllowance.setTokenId(a.getKey().getTokenNum().toGrpcTokenId());
 				nftAllowance.setSpender(a.getKey().getSpenderNum().toGrpcAccountId());
 				nftAllowance.setApprovedForAll(a.getValue().isApprovedForAll());

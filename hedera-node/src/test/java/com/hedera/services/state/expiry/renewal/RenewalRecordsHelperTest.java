@@ -134,9 +134,9 @@ class RenewalRecordsHelperTest {
 						.toArray(),
 				ttl.getTransfersList().stream()
 						.map(AccountAmount::getAccountID)
-						.map(EntityId::fromGrpcAccountId)
-						.collect(toList())
-		)).collect(Collectors.toList());
+						.mapToLong(AccountID::getAccountNum)
+						.toArray())
+		).collect(Collectors.toList());
 	}
 
 	private RecordStreamObject expectedRso(final TransactionRecord record, final int nanosOffset) {

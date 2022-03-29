@@ -21,9 +21,11 @@ package com.hedera.services.txns.crypto.validators;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -33,10 +35,12 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -106,6 +110,11 @@ public interface AllowanceChecks {
 			final List<NftAllowance> nftAllowances,
 			final Account payerAccount,
 			final int maxLimitPerTxn) {
+
+		// feature flag for allowances
+		if (!isEnabled()) {
+			return NOT_SUPPORTED;
+		}
 		var validity = commonChecks(cryptoAllowances, tokenAllowances, nftAllowances, maxLimitPerTxn);
 		if (validity != OK) {
 			return validity;
@@ -175,7 +184,8 @@ public interface AllowanceChecks {
 		return totalAllowances == 0;
 	}
 
-	default Pair<Account, ResponseCodeEnum> fetchOwnerAccount(Id owner, Account payerAccount, AccountStore accountStore) {
+	default Pair<Account, ResponseCodeEnum> fetchOwnerAccount(Id owner, Account payerAccount,
+			AccountStore accountStore) {
 		if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
 			return Pair.of(payerAccount, OK);
 		} else {
@@ -186,4 +196,19 @@ public interface AllowanceChecks {
 			}
 		}
 	}
+
+	default boolean validOwner(final MerkleUniqueToken nft,
+			final Account ownerAccount, final Token token) {
+		final var listedOwner = nft.getOwner();
+		return MISSING_ENTITY_ID.equals(listedOwner)
+				? ownerAccount.equals(token.getTreasury())
+				: listedOwner.equals(ownerAccount.getId().asEntityId());
+	}
+
+	/**
+	 * Check if the allowance feature is enabled
+	 *
+	 * @return true if the feature is enabled in {@link com.hedera.services.context.properties.GlobalDynamicProperties}
+	 */
+	boolean isEnabled();
 }

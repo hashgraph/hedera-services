@@ -66,7 +66,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final int RELEASE_0150_VERSION = 4;
 	static final int RELEASE_0190_VERSION = 5;
 	static final int RELEASE_0200_VERSION = 6;
-	static final int CURRENT_VERSION = RELEASE_0200_VERSION;
+	static final int RELEASE_0240_VERSION = 7;
+	static final int CURRENT_VERSION = RELEASE_0240_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
@@ -88,6 +89,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long entitiesTouchedThisSecond = 0L;
 	private long preparedUpdateFileNum = NO_PREPARED_UPDATE_FILE_NUM;
 	private byte[] preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
+	private boolean migrationRecordsStreamed;
 	private FeeMultiplierSource multiplierSource = null;
 	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
@@ -110,7 +112,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.midnightRates = midnightRates;
 	}
 
-	public MerkleNetworkContext(MerkleNetworkContext that) {
+	public MerkleNetworkContext(final MerkleNetworkContext that) {
 		this.consensusTimeOfLastHandledTxn = that.consensusTimeOfLastHandledTxn;
 		this.seqNo = that.seqNo.copy();
 		this.lastScannedEntity = that.lastScannedEntity;
@@ -124,6 +126,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.lastMidnightBoundaryCheck = that.lastMidnightBoundaryCheck;
 		this.preparedUpdateFileNum = that.preparedUpdateFileNum;
 		this.preparedUpdateFileHash = that.preparedUpdateFileHash;
+		this.migrationRecordsStreamed = that.migrationRecordsStreamed;
 	}
 
 	/* --- Helpers that reset the received argument based on the network context */
@@ -254,6 +257,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			var lastUsed = serdes.readNullableInstant(in);
 			gasThrottleUsageSnapshot = new DeterministicThrottle.UsageSnapshot(used, (lastUsed == null) ? null : lastUsed.toJava());
 		}
+		if (version >= RELEASE_0240_VERSION) {
+			migrationRecordsStreamed = in.readBoolean();
+		}
 	}
 
 	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
@@ -314,6 +320,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeByteArray(preparedUpdateFileHash);
 		out.writeLong(gasThrottleUsageSnapshot.used());
 		serdes.writeNullableInstant(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out);
+		out.writeBoolean(migrationRecordsStreamed);
 	}
 
 	@Override
@@ -449,6 +456,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return stateVersion;
 	}
 
+	public boolean areMigrationRecordsStreamed() {
+		return migrationRecordsStreamed;
+	}
+
 	/* --- Internal helpers --- */
 	void updateSnapshotsFrom(FunctionalityThrottling throttling) {
 		throwIfImmutable("Cannot update usage snapshots on an immutable context");
@@ -538,6 +549,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.preparedUpdateFileHash = preparedUpdateFileHash;
 	}
 
+	public void markMigrationRecordsStreamed() {
+		this.migrationRecordsStreamed = true;
+	}
+
+	public void markMigrationRecordsNotYetStreamed() {
+		this.migrationRecordsStreamed = false;
+	}
+
 	/* Only used for unit tests */
 	void setCongestionLevelStarts(Instant[] congestionLevelStarts) {
 		this.congestionLevelStarts = congestionLevelStarts;
@@ -575,11 +594,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return throttling;
 	}
 
-	public DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
+	DeterministicThrottle.UsageSnapshot getGasThrottleUsageSnapshot() {
 		return gasThrottleUsageSnapshot;
 	}
 
-	public void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
+	void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
 		this.gasThrottleUsageSnapshot = gasThrottleUsageSnapshot;
 	}
 }

@@ -68,6 +68,7 @@ import static com.hedera.services.context.properties.StaticPropertiesHolder.STAT
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
+import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
@@ -402,9 +403,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 			extends AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount>
 			implements HederaWorldUpdater {
 
-		private static final HederaAccountCustomizer CONTRACT_CUSTOMIZER =
-				new HederaAccountCustomizer().isSmartContract(true);
-
 		private final Map<Address, Address> sponsorMap = new LinkedHashMap<>();
 
 		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(BytesComparator.INSTANCE);
@@ -429,22 +427,19 @@ public class HederaWorldState implements HederaMutableWorldState {
 			return stateChanges;
 		}
 
+		@SuppressWarnings("unchecked")
 		private void addAllStorageUpdatesToStateChanges() {
-			// record storage read/write access
-			for (UpdateTrackingLedgerAccount<? extends com.hedera.services.store.models.Account> uta :
-					(Collection<UpdateTrackingLedgerAccount<? extends com.hedera.services.store.models.Account>>)
-							this.getTouchedAccounts()) {
+			for (UpdateTrackingLedgerAccount<? extends Account> uta :
+					(Collection<UpdateTrackingLedgerAccount<? extends Account>>) this.getTouchedAccounts()) {
 				final var storageUpdates = uta.getUpdatedStorage().entrySet();
 				if (!storageUpdates.isEmpty()) {
-					Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
-							stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE)
-							);
+					final Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
+							stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
 					for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
 						UInt256 key = entry.getKey();
 						UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
 						UInt256 updatedStorageValue = uta.getStorageValue(key);
-						accountChanges.put(key,
-								new ImmutablePair<>(originalStorageValue, updatedStorageValue));
+						accountChanges.put(key, new ImmutablePair<>(originalStorageValue, updatedStorageValue));
 					}
 				}
 			}
@@ -491,35 +486,28 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 			commitSizeLimitedStorageTo(entityAccess);
 
-			/* Note that both the adjustBalance() and spawn() calls in the blocks below are ONLY
-			 * needed to make sure the record's ℏ transfer list is constructed properly---the
-			 * finishing call to trackingLedgers().commits() at the end of this method will persist
-			 * all the same information. */
 			final var deletedAddresses = getDeletedAccountAddresses();
 			deletedAddresses.forEach(address -> {
 				final var accountId = accountIdFromEvmAddress(address);
 				validateTrue(impactHistorian != null, FAIL_INVALID);
 				impactHistorian.markEntityChanged(accountId.getAccountNum());
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
-				final var deletedBalance = entityAccess.getBalance(accountId);
-				entityAccess.adjustBalance(accountId, -deletedBalance);
 			});
 			for (final var updatedAccount : getUpdatedAccounts()) {
+				if (updatedAccount.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE) {
+					continue;
+				}
 				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
-
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
-				final var balanceChange = updatedAccount.getBalance().toLong() - entityAccess.getBalance(accountId);
-				entityAccess.adjustBalance(accountId, balanceChange);
-
 				if (updatedAccount.codeWasUpdated()) {
 					entityAccess.storeCode(accountId, updatedAccount.getCode());
 				}
 			}
 
 			entityAccess.recordNewKvUsageTo(trackingAccounts());
-			/* Because we have tracked all account creations, deletions, and balance changes in the ledgers,
-			this commit() persists all of that information without any additional use of the deletedAccounts
-			or updatedAccounts collections. */
+			// Because we have tracked all account creations, deletions, and balance changes in the ledgers,
+			// this commit() persists all of that information without any additional use of the deletedAccounts
+			// or updatedAccounts collections.
 			trackingLedgers().commit(impactHistorian);
 
 			wrapped.sponsorMap.putAll(sponsorMap);
@@ -532,7 +520,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 		) {
 			if (!entityAccess.isExtant(accountId)) {
 				provisionalContractCreations.add(asContract(accountId));
-				entityAccess.spawn(accountId, 0L, CONTRACT_CUSTOMIZER);
 			}
 		}
 
@@ -552,7 +539,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 		@Override
 		public WorldUpdater updater() {
-			return new HederaStackedWorldStateUpdater(this, wrappedWorldView(), trackingLedgers().wrapped());
+			return new HederaStackedWorldStateUpdater(this, wrappedWorldView(),
+					trackingLedgers().wrapped());
 		}
 
 		@Override

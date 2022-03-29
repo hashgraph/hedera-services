@@ -123,6 +123,7 @@ import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTestWithAutoAccounts;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTestWithInvalidAccounts;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferPerfSuiteWOpProvider;
+import com.hedera.services.bdd.suites.perf.crypto.NWayDistNoHotspots;
 import com.hedera.services.bdd.suites.perf.crypto.SimpleXfersAvoidingHotspot;
 import com.hedera.services.bdd.suites.perf.file.FileUpdateLoadTest;
 import com.hedera.services.bdd.suites.perf.file.MixedFileOpsLoadTest;
@@ -308,6 +309,7 @@ public class SuiteRunner {
 		put("RestartWithScheduledEntities", aof(JrsRestartTestTemplate::new));
 		/* Load tests. */
 		put("SimpleXfersAvoidingHotspot", aof(SimpleXfersAvoidingHotspot::new));
+		put("NWayDistNoHotspots", aof(NWayDistNoHotspots::new));
 		put("QueryOnlyLoadTest", aof(QueryOnlyLoadTest::new));
 		put("TokenTransfersBasicLoadTest", aof(TokenTransferBasicLoadTest::new));
 		put("AccountBalancesLoadTest", aof(AccountBalancesClientSaveLoadTest::new));

@@ -103,9 +103,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						nonNestedCryptoTransferForFungibleToken(),
-//						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-//						nonNestedCryptoTransferForNonFungibleToken(),
+						nonNestedCryptoTransferForFungibleToken(),
+						nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+						nonNestedCryptoTransferForNonFungibleToken(),
 						nonNestedCryptoTransferForMultipleNonFungibleTokens(),
 //						nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
 //						nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),

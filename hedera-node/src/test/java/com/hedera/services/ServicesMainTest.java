@@ -21,10 +21,10 @@ package com.hedera.services;
  */
 
 import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.StateAccessor;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
 import com.hedera.services.state.initialization.SystemAccountsCreator;
@@ -97,7 +97,7 @@ class ServicesMainTest {
 	@Mock
 	private NetworkCtxManager networkCtxManager;
 	@Mock
-	private StateAccessor stateAccessor;
+	private MutableStateChildren workingState;
 	@Mock
 	private AddressBook book;
 	@Mock
@@ -132,8 +132,6 @@ class ServicesMainTest {
 	private ServicesState signedState;
 	@Mock
 	private BalancesExporter balancesExporter;
-	@Mock
-	private StateAccessor latestSignedState;
 
 	private ServicesMain subject = new ServicesMain();
 
@@ -333,12 +331,11 @@ class ServicesMainTest {
 		given(app.sysFilesManager()).willReturn(systemFilesManager);
 		given(app.networkCtxManager()).willReturn(networkCtxManager);
 		given(app.consoleOut()).willReturn(Optional.of(consoleOut));
-		given(app.workingState()).willReturn(stateAccessor);
-		given(stateAccessor.addressBook()).willReturn(book);
-		given(app.workingState()).willReturn(stateAccessor);
+		given(app.workingState()).willReturn(workingState);
+		given(workingState.addressBook()).willReturn(book);
 		given(app.backingAccounts()).willReturn(backingAccounts);
 		given(app.sysAccountsCreator()).willReturn(systemAccountsCreator);
-		given(stateAccessor.accounts()).willReturn(accounts);
+		given(workingState.accounts()).willReturn(accounts);
 		given(app.ledgerValidator()).willReturn(ledgerValidator);
 		given(app.nodeInfo()).willReturn(nodeInfo);
 		given(app.platform()).willReturn(platform);

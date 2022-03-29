@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto.validators;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -36,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -55,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 
+@Singleton
 public class ApproveAllowanceChecks implements AllowanceChecks {
 	protected final TypedTokenStore tokenStore;
 	protected final AccountStore accountStore;
@@ -203,6 +206,11 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 		return OK;
 	}
 
+	@Override
+	public boolean isEnabled() {
+		return dynamicProperties.areAllowancesEnabled();
+	}
+
 	/**
 	 * Validates serial numbers for {@link NftAllowance}
 	 *
@@ -231,14 +239,15 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
 
-			final var owner = nftsMap.get().get(EntityNumPair.fromNftId(nftId)).getOwner();
-			if (!ownerAccount.getId().asEntityId().equals(owner)) {
+			final var nft = nftsMap.get().get(EntityNumPair.fromNftId(nftId));
+			if (!validOwner(nft, ownerAccount, token)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
 		}
 
 		return OK;
 	}
+
 
 	/**
 	 * Validates if given amount is less than zero
@@ -268,7 +277,8 @@ public class ApproveAllowanceChecks implements AllowanceChecks {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
 		}
 
-		if (fungibleToken != null && amount > fungibleToken.getMaxSupply()) {
+		if (fungibleToken.getSupplyType().equals(TokenSupplyType.FINITE) &&
+				amount > fungibleToken.getMaxSupply()) {
 			return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 		}
 		return OK;

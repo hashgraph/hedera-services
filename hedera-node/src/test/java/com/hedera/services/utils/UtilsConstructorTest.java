@@ -52,6 +52,7 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
+import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -60,7 +61,6 @@ import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
 import com.hedera.services.store.models.TopicConversion;
-import com.hedera.services.store.tokens.views.utils.GrpcUtils;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
@@ -108,6 +108,7 @@ class UtilsConstructorTest {
 			BitPackUtils.class,
 			LegacyStateChildIndices.class,
 			ReleaseTwentyTwoMigration.class,
+			ReleaseTwentyFourMigration.class,
 			StateChildIndices.class,
 			StateVersions.class,
 			MiscRunningAvgs.Names.class,
@@ -115,7 +116,6 @@ class UtilsConstructorTest {
 			MiscSpeedometers.Names.class,
 			MiscSpeedometers.Descriptions.class,
 			ServicesStatsConfig.class,
-			GrpcUtils.class,
 			PresolvencyFlaws.class,
 			PureValidation.class,
 			TokenListChecks.class,
