@@ -136,12 +136,9 @@ import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
@@ -159,8 +156,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
-	public static final Bytes INVALID_MINT_AMOUNT_ERROR = Bytes.of(INVALID_TOKEN_MINT_AMOUNT.name().getBytes());
-	public static final Bytes INVALID_BURN_AMOUNT_ERROR = Bytes.of(INVALID_TOKEN_BURN_AMOUNT.name().getBytes());
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
@@ -259,7 +254,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Address senderAddress;
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
-	private MessageFrame messageFrame;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -320,8 +314,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		if (this.precompile == null || this.transactionBody == null) {
 			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 			return null;
-		} else if (this.messageFrame.getRevertReason().isPresent()) {
-			return null;
 		}
 
 		if (isTokenReadOnlyTransaction) {
@@ -334,7 +326,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	void prepareFields(final MessageFrame messageFrame) {
-		this.messageFrame = messageFrame;
 		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
 		this.sideEffectsTracker = sideEffectsFactory.get();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
@@ -756,10 +747,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			mintOp = decoder.decodeMint(input);
-			if (mintOp.amount() < 1 && mintOp.type().equals(FUNGIBLE_COMMON)) {
-				messageFrame.setRevertReason(INVALID_MINT_AMOUNT_ERROR);
-				return null;
-			}
 			return syntheticTxnFactory.createMint(mintOp);
 		}
 
@@ -1013,10 +1000,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			burnOp = decoder.decodeBurn(input);
-			if (burnOp.amount()  < 1 && burnOp.type().equals(FUNGIBLE_COMMON)) {
-				messageFrame.setRevertReason(INVALID_BURN_AMOUNT_ERROR);
-				return null;
-			}
 			return syntheticTxnFactory.createBurn(burnOp);
 		}
 
