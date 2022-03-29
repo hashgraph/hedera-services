@@ -450,7 +450,6 @@ class ServicesStateTest {
 
 	@Test
 	void doesntMigrateWhenInitializingFromCurrentRelease() {
-		given(accounts.keySet()).willReturn(Set.of());
 		ServicesState.setStakeFundingMigrator(stakeFundingMigrator);
 		ServicesState.setBlobMigrator(blobMigrator);
 		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
@@ -592,6 +591,7 @@ class ServicesStateTest {
 		tokenAssociations.put(associationKey3, association3);
 
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0230_VERSION);
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, legacyUniqueTokens);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		given(accounts.keySet()).willReturn(Set.of(account1, account2));
@@ -843,30 +843,6 @@ class ServicesStateTest {
 		assertSame(addressBook, copy.addressBook());
 		assertSame(networkContext, copy.networkCtx());
 		assertSame(specialFiles, copy.specialFiles());
-	}
-
-	private List<MerkleNode> legacyChildrenWith(
-			AddressBook addressBook,
-			MerkleNetworkContext networkContext,
-			VirtualMap<UniqueTokenKey, UniqueTokenValue> nfts,
-			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
-			boolean withNfts
-	) {
-		final List<MerkleNode> legacyChildren = new ArrayList<>();
-		legacyChildren.add(addressBook);
-		legacyChildren.add(networkContext);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(tokenRels);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		if (withNfts) {
-			legacyChildren.add(nfts);
-		}
-		return legacyChildren;
 	}
 
 	private void setAllMmsTo(final MerkleMap<?, ?> mockMm) {

@@ -183,7 +183,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			migrationProcessed = true;
 		}
 		if (migrationProcessed) {
-			init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
+			if (getPlatformForDeferredInit() != null) {
+				init(getPlatformForDeferredInit(), getAddressBookForDeferredInit(), getDualStateForDeferredInit());
+			}
 		}
 
 		if (deserializedVersionFromState < RELEASE_0240_VERSION) {
