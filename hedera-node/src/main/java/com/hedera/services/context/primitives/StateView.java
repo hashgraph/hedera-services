@@ -110,6 +110,7 @@ import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.swirlds.common.CommonUtils.hex;
@@ -578,7 +579,9 @@ public class StateView {
 	}
 
 	public MerkleUniqueToken loadNft(NftId id) {
-		return asReadOnlyNftStore().getImmutableRef(id);
+		final var nft = asReadOnlyNftStore().getImmutableRef(id);
+		validateTrue(nft != null, INVALID_NFT_ID);
+		return nft;
 	}
 
 	private TokenFreezeStatus tfsFor(final boolean flag) {
