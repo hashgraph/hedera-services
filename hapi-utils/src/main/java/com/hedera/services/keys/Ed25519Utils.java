@@ -54,7 +54,7 @@ import java.security.SecureRandom;
 /**
  * Minimal utility to read/write a single Ed25519 key from/to an encrypted PEM file.
  */
-public class Ed25519Utils {
+public final class Ed25519Utils {
 	private static final int ENCRYPTOR_ITERATION_COUNT = 10_000;
 	private static final Provider BC_PROVIDER = new BouncyCastleProvider();
 	private static final Provider ED_PROVIDER = new EdDSASecurityProvider();
@@ -82,7 +82,7 @@ public class Ed25519Utils {
 				final var info = encryptedPrivateKeyInfo.decryptPrivateKeyInfo(decryptProvider);
 				return (EdDSAPrivateKey) converter.getPrivateKey(info);
 			}
-		} catch (IOException | OperatorCreationException | PKCSException e) {
+		} catch (final IOException | OperatorCreationException | PKCSException e) {
 			throw new IllegalArgumentException(e);
 		}
 	}
@@ -106,7 +106,7 @@ public class Ed25519Utils {
 				pemWriter.writeObject(new JcaPKCS8Generator(key, encryptor).generate());
 				pemWriter.flush();
 			}
-		} catch (IOException | NoSuchAlgorithmException | OperatorCreationException e) {
+		} catch (final IOException | NoSuchAlgorithmException | OperatorCreationException e) {
 			throw new IllegalArgumentException(e);
 		}
 	}
