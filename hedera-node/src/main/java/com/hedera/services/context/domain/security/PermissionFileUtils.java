@@ -128,8 +128,8 @@ public final class PermissionFileUtils {
 		permissionKeys.put(CryptoUpdate, "updateAccount");
 		permissionKeys.put(CryptoDelete, "cryptoDelete");
 		permissionKeys.put(CryptoApproveAllowance, "approveAllowances");
-		permissionKeys.put(CryptoAdjustAllowance, "adjustAllowance");
-		permissionKeys.put(CryptoDeleteAllowance, "deleteAllowance");
+		permissionKeys.put(CryptoAdjustAllowance, "adjustAllowances");
+		permissionKeys.put(CryptoDeleteAllowance, "deleteAllowances");
 		permissionKeys.put(CryptoAddLiveHash, "addLiveHash");
 		permissionKeys.put(CryptoDeleteLiveHash, "deleteLiveHash");
 		permissionKeys.put(FileCreate, "createFile");
