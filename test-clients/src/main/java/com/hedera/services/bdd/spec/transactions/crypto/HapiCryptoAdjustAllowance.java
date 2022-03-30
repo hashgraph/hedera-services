@@ -55,7 +55,8 @@ import java.util.function.Function;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.MISSING_OWNER;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance.MISSING_DELEGATING_SPENDER;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance.MISSING_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowance> {
@@ -95,6 +96,13 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 		return this;
 	}
 
+	public HapiCryptoAdjustAllowance addDelegatedNftAllowance(String owner, String token, String spender,
+			String delegatingSpender, boolean approvedForAll, List<Long> serials) {
+		nftAllowances.add(
+				NftAllowances.from(owner, token, spender, delegatingSpender, approvedForAll, serials));
+		return this;
+	}
+
 	@Override
 	protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
 		try {
@@ -109,7 +117,7 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
 						.setCurrentCryptoAllowances(info.getGrantedCryptoAllowancesList())
 						.setCurrentTokenAllowances(info.getGrantedTokenAllowancesList())
-						.setCurrentNftApproveForAllAllowances(info.getGrantedNftAllowancesList())
+						.setCurrentApproveForAllNftAllowances(info.getGrantedNftAllowancesList())
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
 				var opMeta = new CryptoAdjustAllowanceMeta(_txn.getCryptoAdjustAllowance(),
@@ -187,6 +195,9 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 			if(entry.owner() != MISSING_OWNER){
 				builder.setOwner(spec.registry().getAccountID(entry.owner()));
 			}
+			if (entry.delegatingSpender() != MISSING_DELEGATING_SPENDER) {
+				builder.setDelegatingSpender(spec.registry().getAccountID(entry.delegatingSpender()));
+			}
 			nftallowances.add(builder.build());
 		}
 	}
@@ -230,11 +241,16 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 		}
 	}
 
-	private record NftAllowances(String owner, String token, String spender, boolean approvedForAll,
+	private record NftAllowances(String owner, String token, String spender, String delegatingSpender, boolean approvedForAll,
 								 List<Long> serials) {
 		static NftAllowances from(String owner, String token, String spender, boolean approvedForAll,
 				List<Long> serials) {
-			return new NftAllowances(owner, token, spender, approvedForAll, serials);
+			return new NftAllowances(owner, token, spender, MISSING_DELEGATING_SPENDER, approvedForAll, serials);
+		}
+
+		static NftAllowances from(String owner, String token, String spender, String delegatingSpender, boolean approvedForAll,
+				List<Long> serials) {
+			return new NftAllowances(owner, token, spender, delegatingSpender, approvedForAll, serials);
 		}
 	}
 

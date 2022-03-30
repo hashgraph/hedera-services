@@ -171,7 +171,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 		// and:
@@ -264,7 +264,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -296,7 +296,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(oldMaxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -358,7 +358,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -419,7 +419,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentNftApproveForAllAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
 				.build();
 
@@ -448,7 +448,8 @@ class CryptoOpsUsageTest {
 		GrantedTokenAllowance existingTokenAllowances = GrantedTokenAllowance.newBuilder()
 				.setSpender(proxy).setAmount(100L).setTokenId(IdUtils.asToken("0.0.1000")).build();
 		GrantedNftAllowance existingNftAllowances = GrantedNftAllowance.newBuilder().setSpender(proxy)
-				.setTokenId(IdUtils.asToken("0.0.1000")).build();
+				.setTokenId(IdUtils.asToken("0.0.1000"))
+				.build();
 
 		var expected = new UsageAccumulator();
 		var baseMeta = new BaseTransactionMeta(0, 0);
@@ -469,7 +470,7 @@ class CryptoOpsUsageTest {
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
 				.setCurrentCryptoAllowances(List.of(existingCryptoAllowances))
-				.setCurrentNftApproveForAllAllowances(List.of(existingNftAllowances))
+				.setCurrentApproveForAllNftAllowances(List.of(existingNftAllowances))
 				.setCurrentTokenAllowances(List.of(existingTokenAllowances))
 				.build();
 

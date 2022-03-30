@@ -24,16 +24,17 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -63,12 +64,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -86,6 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -100,6 +101,8 @@ class GetAccountInfoAnswerTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	@Mock
+	private MerkleMap<EntityNum, MerkleToken> tokens;
+	@Mock
 	private OptionValidator optionValidator;
 	@Mock
 	private MerkleToken token;
@@ -109,14 +112,19 @@ class GetAccountInfoAnswerTest {
 	private NetworkInfo networkInfo;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private TokenAssociationMetadata tokenAssociationMetadata;
 
 	private final MutableStateChildren children = new MutableStateChildren();
 
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
-	private String node = "0.0.3";
-	private String memo = "When had I my own will?";
-	private String payer = "0.0.12345";
-	private AccountID payerId = IdUtils.asAccount(payer);
+	private final int maxTokensPerAccountInfo = 10;
+	private final String node = "0.0.3";
+	private final String memo = "When had I my own will?";
+	private final String payer = "0.0.12345";
+	private final AccountID payerId = IdUtils.asAccount(payer);
 	private MerkleAccount payerAccount;
 	private String target = payer;
 	TokenID firstToken = tokenWith(555),
@@ -126,7 +134,8 @@ class GetAccountInfoAnswerTest {
 			missingToken = tokenWith(999);
 	long firstBalance = 123, secondBalance = 234, thirdBalance = 345, fourthBalance = 456, missingBalance = 567;
 
-	private long fee = 1_234L;
+	private final long fee = 1_234L;
+	private EntityNumPair firstRelKey = fromAccountTokenRel(payerId, firstToken);
 	private Transaction paymentTxn;
 
 	private GetAccountInfoAnswer subject;
@@ -134,24 +143,36 @@ class GetAccountInfoAnswerTest {
 	@BeforeEach
 	private void setup() throws Throwable {
 		tokenRels = new MerkleMap<>();
-		tokenRels.put(
-				fromAccountTokenRel(payerId, firstToken),
-				new MerkleTokenRelStatus(firstBalance, true, true, true));
-		tokenRels.put(
-				fromAccountTokenRel(payerId, secondToken),
-				new MerkleTokenRelStatus(secondBalance, false, false, true));
-		tokenRels.put(
-				fromAccountTokenRel(payerId, thirdToken),
-				new MerkleTokenRelStatus(thirdBalance, true, true, false));
-		tokenRels.put(
-				fromAccountTokenRel(payerId, fourthToken),
-				new MerkleTokenRelStatus(fourthBalance, false, false, true));
-		tokenRels.put(
-				fromAccountTokenRel(payerId, missingToken),
-				new MerkleTokenRelStatus(missingBalance, false, false, false));
 
-		var tokens = new MerkleAccountTokens();
-		tokens.associateAll(Set.of(firstToken, secondToken, thirdToken, fourthToken, missingToken));
+		final var firstRel = new MerkleTokenRelStatus(firstBalance, true, true, true);
+		firstRel.setKey(firstRelKey);
+		final var secondRel = new MerkleTokenRelStatus(secondBalance, false, false, true);
+		final var secondRelKey = fromAccountTokenRel(payerId, secondToken);
+		secondRel.setKey(secondRelKey);
+		final var thirdRel = new MerkleTokenRelStatus(thirdBalance, true, true, false);
+		final var thirdRelKey = fromAccountTokenRel(payerId, thirdToken);
+		thirdRel.setKey(thirdRelKey);
+		final var fourthRel = new MerkleTokenRelStatus(fourthBalance, false, false, true);
+		final var fourthRelKey = fromAccountTokenRel(payerId, fourthToken);
+		fourthRel.setKey(fourthRelKey);
+		final var missingRel = new MerkleTokenRelStatus(missingBalance, false, false, false);
+		final var missingRelKey = fromAccountTokenRel(payerId, missingToken);
+		missingRel.setKey(missingRelKey);
+
+		firstRel.setNextKey(secondRelKey);
+		secondRel.setNextKey(thirdRelKey);
+		secondRel.setPrevKey(firstRelKey);
+		thirdRel.setPrevKey(secondRelKey);
+		thirdRel.setNextKey(fourthRelKey);
+		fourthRel.setPrevKey(thirdRelKey);
+		fourthRel.setNextKey(missingRelKey);
+		missingRel.setPrevKey(fourthRelKey);
+
+		tokenRels.put(firstRelKey, firstRel);
+		tokenRels.put(secondRelKey, secondRel);
+		tokenRels.put(thirdRelKey, thirdRel);
+		tokenRels.put(fourthRelKey, fourthRel);
+		tokenRels.put(missingRelKey, missingRel);
 
 		var tokenAllowanceKey = FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
 		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
@@ -177,14 +198,14 @@ class GetAccountInfoAnswerTest {
 				.fungibleTokenAllowances(fungibleTokenAllowances)
 				.explicitNftAllowances(nftAllowances)
 				.get();
-		payerAccount.setTokens(tokens);
 
 		children.setAccounts(accounts);
 		children.setTokenAssociations(tokenRels);
+		children.setTokens(tokens);
 
 		view = new StateView(scheduleStore, children, networkInfo);
 
-		subject = new GetAccountInfoAnswer(optionValidator, aliasManager);
+		subject = new GetAccountInfoAnswer(optionValidator, aliasManager, dynamicProperties);
 	}
 
 	@Test
@@ -219,12 +240,12 @@ class GetAccountInfoAnswerTest {
 
 	@Test
 	void identifiesFailInvalid() throws Throwable {
-		// setup:
+		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 		// and:
 		StateView view = mock(StateView.class);
 
-		given(view.infoForAccount(any(), any())).willReturn(Optional.empty());
+		given(view.infoForAccount(any(), any(), anyInt())).willReturn(Optional.empty());
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
@@ -238,6 +259,7 @@ class GetAccountInfoAnswerTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	void getsTheAccountInfo() throws Throwable {
+		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
 		children.setTokens(tokens);
 
@@ -247,11 +269,14 @@ class GetAccountInfoAnswerTest {
 				.willReturn(1).willReturn(2).willReturn(3)
 				.willReturn(1).willReturn(2).willReturn(3);
 		given(deletedToken.decimals()).willReturn(4);
+		given(tokens.getOrDefault(EntityNum.fromTokenId(firstToken), REMOVED_TOKEN)).willReturn(token);
+		given(tokens.getOrDefault(EntityNum.fromTokenId(secondToken), REMOVED_TOKEN)).willReturn(token);
+		given(tokens.getOrDefault(EntityNum.fromTokenId(thirdToken), REMOVED_TOKEN)).willReturn(token);
+		given(tokens.getOrDefault(EntityNum.fromTokenId(fourthToken), REMOVED_TOKEN)).willReturn(deletedToken);
+		given(tokens.getOrDefault(EntityNum.fromTokenId(missingToken), REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
+		payerAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.lastAssociation()).willReturn(firstRelKey);
 
-		given(tokens.get(EntityNum.fromTokenId(firstToken))).willReturn(token);
-		given(tokens.get(EntityNum.fromTokenId(secondToken))).willReturn(token);
-		given(tokens.get(EntityNum.fromTokenId(thirdToken))).willReturn(token);
-		given(tokens.get(EntityNum.fromTokenId(fourthToken))).willReturn(deletedToken);
 		given(token.symbol()).willReturn("HEYMA");
 		given(deletedToken.symbol()).willReturn("THEWAY");
 		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
@@ -306,20 +331,24 @@ class GetAccountInfoAnswerTest {
 				List.of(
 						new RawTokenRelationship(
 								firstBalance, 0, 0,
-								firstToken.getTokenNum(), true, true, true).asGrpcFor(token),
+								firstToken.getTokenNum(), true, true, true
+						).asGrpcFor(token),
 						new RawTokenRelationship(
 								secondBalance, 0, 0,
-								secondToken.getTokenNum(), false, false, true).asGrpcFor(token),
+								secondToken.getTokenNum(), false, false, true
+						).asGrpcFor(token),
 						new RawTokenRelationship(
 								thirdBalance, 0, 0,
-								thirdToken.getTokenNum(), true, true, false).asGrpcFor(token),
+								thirdToken.getTokenNum(), true, true, false
+						).asGrpcFor(token),
 						new RawTokenRelationship(
 								fourthBalance, 0, 0,
-								fourthToken.getTokenNum(), false, false, true).asGrpcFor(deletedToken),
+								fourthToken.getTokenNum(), false, false, true
+						).asGrpcFor(deletedToken),
 						new RawTokenRelationship(
 								missingBalance, 0, 0,
-								missingToken.getTokenNum(), false, false, false).asGrpcFor(REMOVED_TOKEN)),
-
+								missingToken.getTokenNum(), false, false, false
+						).asGrpcFor(REMOVED_TOKEN)),
 				info.getTokenRelationshipsList());
 	}
 

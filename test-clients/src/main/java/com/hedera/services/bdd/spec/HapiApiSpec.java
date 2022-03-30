@@ -717,12 +717,10 @@ public class HapiApiSpec implements Runnable {
 	public void persistContext() {
 		registry().save(contextFilePath() + "/registry.ser");
 		keyFactory.saveKeyFactory(contextFilePath());
-
 	}
 
 	public void restoreContext() {
 		registry().load(contextFilePath() + "/registry.ser");
 		keyFactory.loadKeyFactory(contextFilePath());
-
 	}
 }

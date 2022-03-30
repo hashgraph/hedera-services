@@ -137,11 +137,11 @@ public class AutoRenewCalcs {
 				.setCurrentKey(asKeyUnchecked(account.getAccountKey()))
 				.setCurrentlyHasProxy(account.getProxy() != null)
 				.setCurrentMemo(account.getMemo())
-				.setCurrentNumTokenRels(account.tokens().numAssociations())
+				.setCurrentNumTokenRels(account.getNumAssociations())
 				.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
 				.setCurrentCryptoAllowances(getCryptoAllowancesList(account))
 				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
-				.setCurrentNftApproveForAllAllowances(getNftAllowancesList(account))
+				.setCurrentApproveForAllNftAllowances(getNftAllowancesList(account))
 				.build();
 		return cryptoOpsUsage.cryptoAutoRenewRb(extantCtx);
 	}

@@ -123,7 +123,9 @@ import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPT
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_ALLOWANCE_NO_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_ALLOWANCE_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_USING_DELEGATING_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_DELEGATING_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO;
@@ -273,6 +275,7 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WI
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELEGATING_SPENDER_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
@@ -295,6 +298,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -782,6 +786,17 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsCryptoApproveAllowanceUsingDelegatingSpender() throws Throwable {
+		setupFor(CRYPTO_APPROVE_ALLOWANCE_USING_DELEGATING_SPENDER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), DELEGATING_SPENDER_KT.asKey()));
+	}
+
+	@Test
 	void getsCryptoApproveAllowanceWithSomeSpecificOwners() throws Throwable {
 		setupFor(CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO);
 
@@ -820,6 +835,16 @@ class SigRequirementsTest {
 
 		assertTrue(summary.getOrderedKeys().isEmpty());
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoApproveAllowanceMissingDelegatingSpenderInNftAllowance() throws Throwable {
+		setupFor(CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_DELEGATING_SPENDER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_DELEGATING_SPENDER, summary.getErrorReport());
 	}
 
 	@Test

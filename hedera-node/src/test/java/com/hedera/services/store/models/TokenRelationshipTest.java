@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,6 +46,10 @@ class TokenRelationshipTest {
 	private final long balance = 1_234L;
 	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
 	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
+	private final EntityNumPair key = new EntityNumPair(1234566);
+	private final EntityNumPair nextKey = new EntityNumPair(1234567);
+	private final EntityNumPair prevKey = new EntityNumPair(1234565);
+	private final int associatedTokensCount = 3;
 
 	private Token token;
 	private Account account;
@@ -54,9 +60,14 @@ class TokenRelationshipTest {
 	void setUp() {
 		token = new Token(tokenId);
 		account = new Account(accountId);
+		account.setLastAssociatedToken(key);
+		account.setNumAssociations(associatedTokensCount);
 
 		subject = new TokenRelationship(token, account);
 		subject.initBalance(balance);
+		subject.setKey(key);
+		subject.setNextKey(nextKey);
+		subject.setPrevKey(prevKey);
 	}
 
 	@Test
@@ -97,18 +108,24 @@ class TokenRelationshipTest {
 	@Test
 	void toStringAsExpected() {
 		// given:
-		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=Id[shard=1, realm=0, " +
-				"num=4321]," +
-				" expiry=0, balance=0, deleted=false, tokens=<N/A>, ownedNfts=0, alreadyUsedAutoAssociations=0, " +
-				"maxAutoAssociations=0, alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null}, " +
-				"token=Token{id=Id[shard=0, realm=0, num=1234], type=null, " +
-				"deleted=false, autoRemoved=false, treasury=null, autoRenewAccount=null, kycKey=<N/A>, " +
-				"freezeKey=<N/A>," +
-				" frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, pauseKey=<N/A>, paused=false}, " +
-				"balance=1234, balanceChange=0, frozen=false, kycGranted=false, isAutomaticAssociation=false}";
+		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=1.0.4321, " +
+				"expiry=0, balance=0, deleted=false, ownedNfts=0, alreadyUsedAutoAssociations=0, " +
+				"maxAutoAssociations=0, alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null, " +
+				"numAssociations=3, numZeroBalances=0, lastAssociatedToken=PermHashLong(0, 1234566)}, " +
+				"token=Token{id=0.0.1234, type=null, deleted=false, autoRemoved=false, treasury=null, " +
+				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
+				"currentSerialNumber=0, pauseKey=<N/A>, paused=false}, balance=1234, balanceChange=0, frozen=false, " +
+				"kycGranted=false, isAutomaticAssociation=false, " +
+				"key=PermHashLong(0, 1234566), nextKey=PermHashLong(0, 1234567), prevKey=PermHashLong(0, 1234565)}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
+	}
+
+	@Test
+	void equalsWorks() {
+		assertEquals(subject, subject);
+		assertNotEquals(subject, freezeKey);
 	}
 
 	@Test
@@ -237,6 +254,9 @@ class TokenRelationshipTest {
 	void testHashCode() {
 		var rel = new TokenRelationship(token, account);
 		rel.initBalance(balance);
+		rel.setPrevKey(prevKey);
+		rel.setKey(key);
+		rel.setNextKey(nextKey);
 		assertEquals(rel.hashCode(), subject.hashCode());
 	}
 

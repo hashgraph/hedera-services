@@ -329,27 +329,9 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 			var nftAllowance = GrantedNftAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(token))
 					.setSpender(spec.registry().getAccountID(spender))
-
 					.build();
-
 			assertTrue(((AccountInfo) o).getGrantedNftAllowancesList().contains(nftAllowance),
 					"Bad NftAllowances!");
-
-		});
-		return this;
-	}
-
-	public AccountInfoAsserts nftApprovedAllowancesNotContaining(String token, String spender) {
-		registerProvider((spec, o) -> {
-			var nftAllowance = GrantedNftAllowance.newBuilder()
-					.setTokenId(spec.registry().getTokenID(token))
-					.setSpender(spec.registry().getAccountID(spender))
-
-					.build();
-
-			assertFalse(((AccountInfo) o).getGrantedNftAllowancesList().contains(nftAllowance),
-					"Bad NftAllowances!");
-
 		});
 		return this;
 	}

@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,10 +48,10 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.validateAllowanceLimitsOn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -179,7 +178,8 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 					cryptoMap.put(spender.asEntityNum(), aggregatedAmount);
 				}
 			}
-			validateAllowanceLimitsOn(accountToAdjust);
+
+			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
 			sideEffectsTracker.setCryptoAllowances(accountToAdjust.getId().asEntityNum(), cryptoMap);
 		}
@@ -209,10 +209,11 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final var spenderAccount = allowance.getSpender();
 			final var approvedForAll = allowance.getApprovedForAll();
 			final var serialNums = allowance.getSerialNumbersList();
-			final var tokenId = allowance.getTokenId();
+			final var tokenID = allowance.getTokenId();
+			final var tokenId = Id.fromGrpcToken(tokenID);
 			final var spender = Id.fromGrpcAccount(spenderAccount);
 			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
-			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
+			final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(),
 					spender.asEntityNum());
 
 			if (approvedForAll.getValue()) {
@@ -226,7 +227,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 				nft.setSpender(spender);
 				nfts.add(nft);
 			}
-			validateAllowanceLimitsOn(accountToAdjust);
+			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
 			nftsTouched.addAll(nfts);
 			nfts.clear();
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
@@ -279,24 +280,11 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 					tokenAllowancesMap.put(key, aggregatedAmount);
 				}
 			}
-			validateAllowanceLimitsOn(accountToAdjust);
+
+			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
 			sideEffectsTracker.setFungibleTokenAllowances(accountToAdjust.getId().asEntityNum(), tokenAllowancesMap);
 		}
 	}
 
-	/**
-	 * Checks if the total allowances of an account will exceed the limit after applying this transaction
-	 *
-	 * @param ownerAccount
-	 * @return
-	 */
-	private boolean exceedsAccountLimit(final Account ownerAccount) {
-		return ownerAccount.getTotalAllowances() > dynamicProperties.maxAllowanceLimitPerAccount();
-	}
-
-	private void validateAllowanceLimitsOn(final Account owner) {
-		final var limitExceeded = exceedsAccountLimit(owner);
-		validateFalse(limitExceeded, MAX_ALLOWANCES_EXCEEDED);
-	}
 }

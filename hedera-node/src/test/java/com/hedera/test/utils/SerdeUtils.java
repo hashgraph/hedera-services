@@ -103,7 +103,10 @@ public class SerdeUtils {
 								() -> new TreeMap<>(BytesComparator.INSTANCE)
 						)),
 						(l, r) -> l,
-						() -> new TreeMap<>(BytesComparator.INSTANCE)))
+						() -> new TreeMap<>(BytesComparator.INSTANCE))),
+				that.getGas(),
+				that.getAmount(),
+				that.getFunctionParameters().isEmpty() ? EvmFnResult.EMPTY : that.getFunctionParameters().toByteArray()
 		);
 	}
 

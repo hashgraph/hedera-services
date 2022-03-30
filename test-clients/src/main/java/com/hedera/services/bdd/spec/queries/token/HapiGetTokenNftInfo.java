@@ -158,20 +158,13 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 		var registry = spec.registry();
 
 		assertFor(
-				actualInfo.getNftID().
-
-						getTokenID(),
-
+				actualInfo.getNftID().getTokenID(),
 				expectedTokenID,
 				(n, r) -> r.getTokenID(n),
 				"Wrong token id!",
 				registry);
 
-		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(
-
-				rationalize(id), actualInfo.
-
-						getLedgerId()));
+		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
 	}
 
 	private <T, R> void assertFor(

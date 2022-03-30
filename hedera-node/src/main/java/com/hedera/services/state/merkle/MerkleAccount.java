@@ -28,7 +28,9 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
@@ -55,8 +57,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		IMMUTABLE_EMPTY_FCQ.copy();
 	}
 
-	private static final int RELEASE_090_VERSION = 3;
-	static final int MERKLE_VERSION = RELEASE_090_VERSION;
+	private static final int RELEASE_0240_VERSION = 4;
+	static final int MERKLE_VERSION = RELEASE_0240_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
 
@@ -78,6 +80,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		private static final int RELEASE_090_RECORDS = 1;
 		private static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
 		static final int NUM_090_CHILDREN = 3;
+		static final int NUM_0240_CHILDREN = 2;
 
 		private ChildIndices() {
 			throw new UnsupportedOperationException("Utility Class");
@@ -114,7 +117,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	@Override
 	public int getMinimumChildCount(final int version) {
-		return ChildIndices.NUM_090_CHILDREN;
+		return ChildIndices.NUM_0240_CHILDREN;
 	}
 
 	/* --- FastCopyable --- */
@@ -190,6 +193,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
 	}
 
+	public void forgetAssociatedTokens() {
+		addDeserializedChildren(List.of(state(), records()), RELEASE_0240_VERSION);
+	}
+
 	/* ----  Bean  ---- */
 
 	public long getNftsOwned() {
@@ -227,6 +234,23 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		throwIfImmutable("Cannot change this account's alias if it's immutable.");
 		Objects.requireNonNull(alias);
 		state().setAlias(alias);
+	}
+
+	public TokenAssociationMetadata getTokenAssociationMetadata() {
+		return state().getTokenAssociationMetadata();
+	}
+
+	public void setTokenAssociationMetadata(final TokenAssociationMetadata tokenAssociationMetaData) {
+		throwIfImmutable("Cannot change this account's tokenAssociationMetaData if it is immutable");
+		state().setTokenAssociationMetadata(tokenAssociationMetaData);
+	}
+
+	public int getNumAssociations() {
+		return getTokenAssociationMetadata().numAssociations();
+	}
+
+	public EntityNumPair getLastAssociation() {
+		return getTokenAssociationMetadata().lastAssociation();
 	}
 
 	public long getBalance() {

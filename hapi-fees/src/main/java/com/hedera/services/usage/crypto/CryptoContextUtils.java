@@ -28,10 +28,10 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class CryptoContextUtils {
 	private CryptoContextUtils() {
@@ -50,18 +50,21 @@ public class CryptoContextUtils {
 			final List<GrantedTokenAllowance> allowances) {
 		Map<AllowanceId, Long> allowanceMap = new HashMap<>();
 		for (var a : allowances) {
-			allowanceMap.put(new AllowanceId(a.getTokenId().getTokenNum(), a.getSpender().getAccountNum()), a.getAmount());
+			allowanceMap.put(new AllowanceId(a.getTokenId().getTokenNum(),
+					a.getSpender().getAccountNum()), a.getAmount());
 		}
 		return allowanceMap;
 	}
 
-	public static Set<AllowanceId> convertToNftSetFromGranted(
+	public static Set<AllowanceId> convertToNftMapFromGranted(
 			final List<GrantedNftAllowance> allowances) {
-		Set<AllowanceId> allowancesSet = new HashSet<>();
+		Set<AllowanceId> approveForAllAllowances =
+				new TreeSet<>();
 		for (var a : allowances) {
-			allowancesSet.add(new AllowanceId(a.getTokenId().getTokenNum(), a.getSpender().getAccountNum()));
+			approveForAllAllowances.add(new AllowanceId(a.getTokenId().getTokenNum(),
+							a.getSpender().getAccountNum()));
 		}
-		return allowancesSet;
+		return approveForAllAllowances;
 	}
 
 	public static Map<Long, Long> convertToCryptoMap(final List<CryptoAllowance> allowances) {
@@ -76,16 +79,21 @@ public class CryptoContextUtils {
 			final List<TokenAllowance> allowances) {
 		Map<AllowanceId, Long> allowanceMap = new HashMap<>();
 		for (var a : allowances) {
-			allowanceMap.put(new AllowanceId(a.getTokenId().getTokenNum(), a.getSpender().getAccountNum()), a.getAmount());
+			allowanceMap.put(new AllowanceId(a.getTokenId().getTokenNum(),
+					a.getSpender().getAccountNum()), a.getAmount());
 		}
 		return allowanceMap;
 	}
 
-	public static Map<AllowanceId, AllowanceDetails> convertToNftMap(final List<NftAllowance> allowances) {
-		Map<AllowanceId, AllowanceDetails> allowanceMap = new HashMap<>();
+	public static Map<AllowanceId, AllowanceDetails> convertToNftMap(
+			final List<NftAllowance> allowances) {
+		Map<AllowanceId, AllowanceDetails> allowanceMap =
+				new HashMap<>();
 		for (var a : allowances) {
-			allowanceMap.put(new AllowanceId(a.getTokenId().getTokenNum(), a.getSpender().getAccountNum()),
-					new AllowanceDetails(a.getApprovedForAll().getValue(), a.getSerialNumbersList()));
+			allowanceMap.put(new AllowanceId(a.getTokenId().getTokenNum(),
+							a.getSpender().getAccountNum()),
+					new AllowanceDetails(a.getApprovedForAll().getValue(),
+							a.getSerialNumbersList()));
 		}
 		return allowanceMap;
 	}

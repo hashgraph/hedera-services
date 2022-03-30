@@ -21,6 +21,7 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -37,7 +38,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLo
 import static com.hedera.services.utils.EntityNum.areValidNums;
 
 public record EntityNumPair(long value) {
-	static final EntityNumPair MISSING_NUM_PAIR = new EntityNumPair(0);
+	public static final EntityNumPair MISSING_NUM_PAIR = new EntityNumPair(0);
 
 	public EntityNumPair {
 		Objects.requireNonNull(value);
@@ -58,14 +59,34 @@ public record EntityNumPair(long value) {
 		return fromLongs(id.num(), id.serialNo());
 	}
 
-	public EntityNum getHiPhi() {
+	public static EntityNumPair fromAccountTokenRel(Pair<AccountID, TokenID> rel) {
+		return fromAccountTokenRel(rel.getLeft(), rel.getRight());
+	}
+
+	public static EntityNumPair fromAccountTokenRel(AccountID account, TokenID token) {
+		final var accountNum = EntityNum.fromAccountId(account);
+		final var tokenNum = EntityNum.fromTokenId(token);
+		return fromLongs(accountNum.longValue(), tokenNum.longValue());
+	}
+
+	public EntityNum getHiOrderAsNum() {
 		return EntityNum.fromLong(unsignedHighOrder32From(value));
 	}
 
+	public long getLowOrderAsLong() {
+		return unsignedLowOrder32From(value);
+	}
+
+	public EntityId getHighOrderAsEntityId() {
+		return STATIC_PROPERTIES.scopedEntityIdWith(unsignedHighOrder32From(value));
+	}
+
+	public EntityId getLowOrderAsEntityId() {
+		return STATIC_PROPERTIES.scopedEntityIdWith(unsignedLowOrder32From(value));
+	}
+
 	public static EntityNumPair fromModelRel(TokenRelationship tokenRelationship) {
-		final var token = tokenRelationship.getToken();
-		final var account = tokenRelationship.getAccount();
-		return fromLongs(account.getId().num(), token.getId().num());
+		return tokenRelationship.getKey();
 	}
 
 	public Pair<AccountID, TokenID> asAccountTokenRel() {
@@ -78,6 +99,10 @@ public record EntityNumPair(long value) {
 		return Pair.of(
 				unsignedHighOrder32From(value),
 				unsignedLowOrder32From(value));
+	}
+
+	public EntityNum getLowOrderAsNum() {
+		return EntityNum.fromLong(unsignedLowOrder32From(value));
 	}
 
 	@Override

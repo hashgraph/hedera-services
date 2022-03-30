@@ -165,6 +165,14 @@ public interface TxnHandlingScenario {
 								.explicitNftAllowances(nftTokenAllowances)
 								.accountKeys(OWNER_ACCOUNT_KT).get()
 				).withAccount(
+						DELEGATING_SPENDER_ID,
+						newAccount()
+								.balance(DEFAULT_BALANCE)
+								.cryptoAllowances(cryptoAllowances)
+								.fungibleTokenAllowances(fungibleTokenAllowances)
+								.explicitNftAllowances(nftTokenAllowances)
+								.accountKeys(DELEGATING_SPENDER_KT).get()
+				).withAccount(
 						COMPLEX_KEY_ACCOUNT_ID,
 						newAccount()
 								.balance(DEFAULT_BALANCE)
@@ -417,6 +425,10 @@ public interface TxnHandlingScenario {
 	AccountID OWNER_ACCOUNT = asAccount(OWNER_ACCOUNT_ID);
 	KeyTree OWNER_ACCOUNT_KT = withRoot(ed25519());
 
+	String DELEGATING_SPENDER_ID = "0.0.1539";
+	AccountID DELEGATING_SPENDER = asAccount(DELEGATING_SPENDER_ID);
+	KeyTree DELEGATING_SPENDER_KT = withRoot(ed25519());
+
 	String SYS_ACCOUNT_ID = "0.0.666";
 
 	String DILIGENT_SIGNING_PAYER_ID = "0.0.1340";
@@ -656,5 +668,23 @@ public interface TxnHandlingScenario {
 	List<NftRemoveAllowance> nftDeleteAllowanceMissingOwnerList = List.of(NftRemoveAllowance.newBuilder()
 			.setOwner(MISSING_ACCOUNT)
 			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.build());
+
+	List<NftAllowance> delegatingNftAllowanceList = List.of(NftAllowance.newBuilder()
+			.setOwner(OWNER_ACCOUNT)
+			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.setSpender(DEFAULT_PAYER)
+			.setDelegatingSpender(DELEGATING_SPENDER)
+			.setApprovedForAll(BoolValue.of(false))
+			.addAllSerialNumbers(List.of(1L))
+			.build());
+
+	List<NftAllowance> delegatingNftAllowanceMissingOwnerList = List.of(NftAllowance.newBuilder()
+			.setOwner(OWNER_ACCOUNT)
+			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.setSpender(DEFAULT_PAYER)
+			.setDelegatingSpender(MISSING_ACCOUNT)
+			.setApprovedForAll(BoolValue.of(false))
+			.addAllSerialNumbers(List.of(1L))
 			.build());
 }

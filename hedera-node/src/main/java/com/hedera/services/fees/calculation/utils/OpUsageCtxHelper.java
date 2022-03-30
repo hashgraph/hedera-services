@@ -49,7 +49,12 @@ import java.util.function.Supplier;
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
 import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftAllowancesList;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 @Singleton
@@ -110,20 +115,23 @@ public class OpUsageCtxHelper {
 
 	public ExtantCryptoContext ctxForCryptoUpdate(TransactionBody txn) {
 		final var op = txn.getCryptoUpdateAccount();
+		final var id = op.getAccountIDToUpdate();
+		final var accountEntityNum = id.getAlias().isEmpty()
+				? fromAccountId(id)
+				: aliasManager.lookupIdBy(id.getAlias());
+		final var account = workingView.accounts().get(accountEntityNum);
 		ExtantCryptoContext cryptoContext;
-		var info = workingView.infoForAccount(op.getAccountIDToUpdate(), aliasManager);
-		if (info.isPresent()) {
-			var details = info.get();
+		if (account != null) {
 			cryptoContext = ExtantCryptoContext.newBuilder()
-					.setCurrentKey(details.getKey())
-					.setCurrentMemo(details.getMemo())
-					.setCurrentExpiry(details.getExpirationTime().getSeconds())
-					.setCurrentlyHasProxy(details.hasProxyAccountID())
-					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
-					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
-					.setCurrentCryptoAllowances(details.getGrantedCryptoAllowancesList())
-					.setCurrentTokenAllowances(details.getGrantedTokenAllowancesList())
-					.setCurrentNftApproveForAllAllowances(details.getGrantedNftAllowancesList())
+					.setCurrentKey(asKeyUnchecked(account.getAccountKey()))
+					.setCurrentMemo(account.getMemo())
+					.setCurrentExpiry(account.getExpiry())
+					.setCurrentlyHasProxy(account.getProxy() != null)
+					.setCurrentNumTokenRels(account.getNumAssociations())
+					.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
+					.setCurrentCryptoAllowances(getCryptoAllowancesList(account))
+					.setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
+					.setCurrentApproveForAllNftAllowances(getNftAllowancesList(account))
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -135,28 +143,30 @@ public class OpUsageCtxHelper {
 					.setCurrentMaxAutomaticAssociations(0)
 					.setCurrentCryptoAllowances(Collections.emptyList())
 					.setCurrentTokenAllowances(Collections.emptyList())
-					.setCurrentNftApproveForAllAllowances(Collections.emptyList())
+					.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 					.build();
 		}
 		return cryptoContext;
 	}
 
 	public ExtantCryptoContext ctxForCryptoAllowance(TransactionBody txn) {
+		final var id = txn.getTransactionID().getAccountID();
+		final var accountEntityNum = id.getAlias().isEmpty()
+				? fromAccountId(id)
+				: aliasManager.lookupIdBy(id.getAlias());
+		final var account = workingView.accounts().get(accountEntityNum);
 		ExtantCryptoContext cryptoContext;
-		var info = workingView.infoForAccount(
-				txn.getTransactionID().getAccountID(), aliasManager);
-		if (info.isPresent()) {
-			var details = info.get();
+		if (account != null) {
 			cryptoContext = ExtantCryptoContext.newBuilder()
-					.setCurrentKey(details.getKey())
-					.setCurrentMemo(details.getMemo())
-					.setCurrentExpiry(details.getExpirationTime().getSeconds())
-					.setCurrentlyHasProxy(details.hasProxyAccountID())
-					.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
-					.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
-					.setCurrentCryptoAllowances(details.getGrantedCryptoAllowancesList())
-					.setCurrentTokenAllowances(details.getGrantedTokenAllowancesList())
-					.setCurrentNftApproveForAllAllowances(details.getGrantedNftAllowancesList())
+					.setCurrentKey(asKeyUnchecked(account.getAccountKey()))
+					.setCurrentMemo(account.getMemo())
+					.setCurrentExpiry(account.getExpiry())
+					.setCurrentlyHasProxy(account.getProxy() != null)
+					.setCurrentNumTokenRels(account.getNumAssociations())
+					.setCurrentMaxAutomaticAssociations(account.getMaxAutomaticAssociations())
+					.setCurrentCryptoAllowances(getCryptoAllowancesList(account))
+					.setCurrentTokenAllowances(getFungibleTokenAllowancesList(account))
+					.setCurrentApproveForAllNftAllowances(getNftAllowancesList(account))
 					.build();
 		} else {
 			cryptoContext = ExtantCryptoContext.newBuilder()
@@ -168,7 +178,7 @@ public class OpUsageCtxHelper {
 					.setCurrentMaxAutomaticAssociations(0)
 					.setCurrentCryptoAllowances(Collections.emptyList())
 					.setCurrentTokenAllowances(Collections.emptyList())
-					.setCurrentNftApproveForAllAllowances(Collections.emptyList())
+					.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 					.build();
 		}
 		return cryptoContext;

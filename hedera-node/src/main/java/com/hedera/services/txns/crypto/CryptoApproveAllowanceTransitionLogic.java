@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,10 +47,10 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.validateAllowanceLimitsOn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -162,7 +161,8 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				continue;
 			}
 			cryptoMap.put(spender.asEntityNum(), amount);
-			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
+
+			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 		}
 	}
@@ -191,26 +191,25 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
 			final var approveForAllNftsSet = accountToApprove.getMutableApprovedForAllNftsAllowances();
 
-			final var spender = Id.fromGrpcAccount(allowance.getSpender());
-			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
+			final var spenderId = Id.fromGrpcAccount(allowance.getSpender());
+			accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
 
 			final var approvedForAll = allowance.getApprovedForAll();
 			final var serialNums = allowance.getSerialNumbersList();
-			final var tokenId = allowance.getTokenId();
+			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
 
 			if (approvedForAll.getValue()) {
-				final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
-						spender.asEntityNum());
+				final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
 				approveForAllNftsSet.add(key);
 			}
 
 			for (var serialNum : serialNums) {
 				final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum);
-				nft.setSpender(spender);
+				nft.setSpender(spenderId);
 				nfts.add(nft);
 			}
 
-			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
+			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
 			nftsTouched.addAll(nfts);
 			nfts.clear();
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
@@ -249,7 +248,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			}
 			tokensMap.put(key, amount);
 
-			validateFalse(exceedsAccountLimit(accountToApprove), MAX_ALLOWANCES_EXCEEDED);
+			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 		}
 	}

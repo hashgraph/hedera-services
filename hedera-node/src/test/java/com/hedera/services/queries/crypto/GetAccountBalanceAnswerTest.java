@@ -23,10 +23,14 @@ package com.hedera.services.queries.crypto;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -49,7 +53,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -69,9 +73,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 class GetAccountBalanceAnswerTest {
+	private final JKey multiKey = new JEd25519Key("01234578901234578901234578912".getBytes());
 	private final String accountIdLit = "0.0.12345";
 	private final AccountID target = asAccount(accountIdLit);
 	private final String contractIdLit = "0.0.12346";
+	private final int maxTokenPerAccountBalanceInfo = 10;
 	private final long balance = 1_234L;
 	private final long aBalance = 345;
 	private final long bBalance = 456;
@@ -81,15 +87,25 @@ class GetAccountBalanceAnswerTest {
 	private final TokenID bToken = IdUtils.asToken("0.0.4");
 	private final TokenID cToken = IdUtils.asToken("0.0.5");
 	private final TokenID dToken = IdUtils.asToken("0.0.6");
+	final EntityNumPair aKey = fromAccountTokenRel(target, aToken);
+	final EntityNumPair bKey = fromAccountTokenRel(target, bToken);
+	final EntityNumPair cKey = fromAccountTokenRel(target, cToken);
+	final EntityNumPair dKey = fromAccountTokenRel(target, dToken);
 
-	private MerkleToken notDeleted;
-	private MerkleToken alsoNotDeleted;
-	private MerkleToken deleted;
+	private MerkleToken notDeleted = new MerkleToken();
+	private MerkleToken alsoNotDeleted = new MerkleToken();
+	private MerkleToken deleted = new MerkleToken();
+	private MerkleToken andAlsoNotDeleted = new MerkleToken();
+
 	private final MerkleAccount accountV = MerkleAccountFactory.newAccount()
 			.balance(balance)
 			.tokens(aToken, bToken, cToken, dToken)
 			.get();
 	private final MerkleAccount contractV = MerkleAccountFactory.newContract().balance(balance).get();
+	private final MerkleTokenRelStatus aRel = new MerkleTokenRelStatus(aBalance, true, true, true);
+	private final MerkleTokenRelStatus bRel = new MerkleTokenRelStatus(bBalance, false, false, false);
+	private final MerkleTokenRelStatus cRel = new MerkleTokenRelStatus(cBalance, false, false, true);
+	private final MerkleTokenRelStatus dRel = new MerkleTokenRelStatus(dBalance, false, false, true);
 
 	private MerkleMap accounts;
 	private MerkleMap<EntityNum, MerkleToken> tokens;
@@ -98,32 +114,47 @@ class GetAccountBalanceAnswerTest {
 	private OptionValidator optionValidator;
 	private AliasManager aliasManager;
 	private ScheduleStore scheduleStore;
+	private GlobalDynamicProperties dynamicProperties;
 
 	private GetAccountBalanceAnswer subject;
 
 	@BeforeEach
 	private void setup() {
-		deleted = new MerkleToken();
 		deleted.setDeleted(true);
 		deleted.setDecimals(123);
-		notDeleted = new MerkleToken();
+		deleted.setSymbol("deletedToken");
+		deleted.setFreezeKey(multiKey);
+		deleted.setKycKey(multiKey);
+
 		notDeleted.setDecimals(1);
-		alsoNotDeleted = new MerkleToken();
+		notDeleted.setSymbol("existingToken");
+		notDeleted.setFreezeKey(multiKey);
+		notDeleted.setKycKey(multiKey);
+
 		alsoNotDeleted.setDecimals(2);
+		alsoNotDeleted.setSymbol("existingToken");
+		alsoNotDeleted.setFreezeKey(multiKey);
+		alsoNotDeleted.setKycKey(multiKey);
+
+		andAlsoNotDeleted.setDecimals(123);
+		andAlsoNotDeleted.setSymbol("existingToken");
+		andAlsoNotDeleted.setFreezeKey(multiKey);
+		andAlsoNotDeleted.setKycKey(multiKey);
+
+		dynamicProperties = mock(GlobalDynamicProperties.class);
+		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerAccountBalanceInfo);
 
 		tokenRels = new MerkleMap<>();
-		tokenRels.put(
-				fromAccountTokenRel(target, aToken),
-				new MerkleTokenRelStatus(aBalance, true, true, true));
-		tokenRels.put(
-				fromAccountTokenRel(target, bToken),
-				new MerkleTokenRelStatus(bBalance, false, false, false));
-		tokenRels.put(
-				fromAccountTokenRel(target, cToken),
-				new MerkleTokenRelStatus(cBalance, false, false, true));
-		tokenRels.put(
-				fromAccountTokenRel(target, dToken),
-				new MerkleTokenRelStatus(dBalance, false, false, true));
+		tokenRels.put(aKey, aRel);
+		aRel.setNextKey(bKey);
+		tokenRels.put(bKey, bRel);
+		bRel.setPrevKey(aKey);
+		bRel.setNextKey(cKey);
+		tokenRels.put(cKey, cRel);
+		cRel.setPrevKey(bKey);
+		cRel.setNextKey(dKey);
+		tokenRels.put(dKey, dRel);
+		dRel.setPrevKey(cKey);
 
 		accounts = mock(MerkleMap.class);
 		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);
@@ -133,6 +164,7 @@ class GetAccountBalanceAnswerTest {
 		tokens.put(EntityNum.fromTokenId(aToken), notDeleted);
 		tokens.put(EntityNum.fromTokenId(bToken), alsoNotDeleted);
 		tokens.put(EntityNum.fromTokenId(cToken), deleted);
+		tokens.put(EntityNum.fromTokenId(dToken), andAlsoNotDeleted);
 
 		scheduleStore = mock(ScheduleStore.class);
 
@@ -144,7 +176,7 @@ class GetAccountBalanceAnswerTest {
 
 		optionValidator = mock(OptionValidator.class);
 		aliasManager = mock(AliasManager.class);
-		subject = new GetAccountBalanceAnswer(aliasManager, optionValidator);
+		subject = new GetAccountBalanceAnswer(aliasManager, optionValidator, dynamicProperties);
 	}
 
 	@Test
@@ -266,6 +298,8 @@ class GetAccountBalanceAnswerTest {
 				.build();
 		final var wellKnownId = EntityNum.fromLong(12345L);
 		given(aliasManager.lookupIdBy(aliasId.getAlias())).willReturn(wellKnownId);
+		accountV.setTokenAssociationMetadata(
+				new TokenAssociationMetadata(4, 0, aKey));
 
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setAccountID(aliasId)
@@ -283,7 +317,7 @@ class GetAccountBalanceAnswerTest {
 				List.of(tokenBalanceWith(aToken, aBalance, 1),
 						tokenBalanceWith(bToken, bBalance, 2),
 						tokenBalanceWith(cToken, cBalance, 123),
-						tokenBalanceWith(dToken, dBalance, 0)
+						tokenBalanceWith(dToken, dBalance, 123)
 				),
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);
@@ -294,12 +328,13 @@ class GetAccountBalanceAnswerTest {
 	@Test
 	void answersWithAccountBalance() {
 		AccountID id = asAccount(accountIdLit);
-
 		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+		accountV.setTokenAssociationMetadata(
+				new TokenAssociationMetadata(4, 0, aKey));
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK);
@@ -314,7 +349,7 @@ class GetAccountBalanceAnswerTest {
 				List.of(tokenBalanceWith(aToken, aBalance, 1),
 						tokenBalanceWith(bToken, bBalance, 2),
 						tokenBalanceWith(cToken, cBalance, 123),
-						tokenBalanceWith(dToken, dBalance, 0)
+						tokenBalanceWith(dToken, dBalance, 123)
 				),
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);
@@ -324,14 +359,14 @@ class GetAccountBalanceAnswerTest {
 
 	@Test
 	void answersWithAccountBalanceWhenTheAccountIDIsContractID() {
-		// setup:
 		ContractID id = asContract(accountIdLit);
-
 		// given:
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setContractID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+		accountV.setTokenAssociationMetadata(
+				new TokenAssociationMetadata(4, 0, aKey));
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK);
@@ -346,7 +381,7 @@ class GetAccountBalanceAnswerTest {
 				List.of(tokenBalanceWith(aToken, aBalance, 1),
 						tokenBalanceWith(bToken, bBalance, 2),
 						tokenBalanceWith(cToken, cBalance, 123),
-						tokenBalanceWith(dToken, dBalance, 0)
+						tokenBalanceWith(dToken, dBalance, 123)
 				),
 				response.getCryptogetAccountBalance().getTokenBalancesList());
 		assertEquals(OK, status);

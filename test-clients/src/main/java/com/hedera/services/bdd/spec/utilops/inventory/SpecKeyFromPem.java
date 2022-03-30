@@ -27,18 +27,13 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.legacy.core.KeyPairObj;
+import com.hedera.services.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
-import com.swirlds.common.CommonUtils;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 
-import java.io.File;
-import java.security.KeyStoreException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
 import java.util.function.Supplier;
-
-import static com.hedera.services.bdd.suites.utils.keypairs.SpecUtils.asOcKeystore;
 
 public class SpecKeyFromPem extends UtilOp {
 	private static final String DEFAULT_PASSPHRASE = "swirlds";
@@ -107,17 +102,16 @@ public class SpecKeyFromPem extends UtilOp {
 	}
 
 	static void incorporatePem(
-			HapiApiSpec spec,
-			SigControl control,
-			String pemLoc,
-			String passphrase,
-			String name,
-			Optional<String> linkedId,
-			Optional<Supplier<String>> linkSupplier
-	) throws KeyStoreException, InvalidKeySpecException {
-
-		var ocKeystore = asOcKeystore(new File(pemLoc), passphrase);
-		var key = populatedFrom(control, ocKeystore);
+			final HapiApiSpec spec,
+			final SigControl control,
+			final String pemLoc,
+			final String passphrase,
+			final String name,
+			final Optional<String> linkedId,
+			final Optional<Supplier<String>> linkSupplier
+	) {
+		final var seed = Ed25519Utils.readKeyFrom(pemLoc, passphrase);
+		final var key = populatedFromSeed(control, seed);
 		linkedId.ifPresent(s -> {
 			spec.registry().saveAccountId(name, HapiPropertySource.asAccount(s));
 			spec.registry().saveKey(s, key);
@@ -128,23 +122,20 @@ public class SpecKeyFromPem extends UtilOp {
 			spec.registry().saveKey(s, key);
 		});
 		spec.registry().saveKey(name, key);
-		spec.keys().incorporate(name, ocKeystore, control);
+		spec.keys().incorporate(name, seed, control);
 	}
 
-	private static Key populatedFrom(
-			SigControl control,
-			KeyPairObj ocKeystore
-	) throws InvalidKeySpecException, IllegalArgumentException {
+	private static Key populatedFromSeed(final SigControl control, final EdDSAPrivateKey key) {
 		if (control == SIMPLE) {
 			return Key.newBuilder()
-					.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
+					.setEd25519(ByteString.copyFrom(key.getAbyte()))
 					.build();
 		} else if (control == SIMPLE_WACL) {
 			return Key.newBuilder()
 					.setKeyList(KeyList.newBuilder()
 							.addKeys(Key.newBuilder()
 									.setEd25519(
-											ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))))
+											ByteString.copyFrom(key.getAbyte()))))
 					.build();
 		} else {
 			throw new IllegalStateException("Cannot populate key shape " + control);

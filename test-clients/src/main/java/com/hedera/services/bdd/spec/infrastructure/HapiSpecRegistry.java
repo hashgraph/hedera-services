@@ -31,7 +31,6 @@ import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
 import com.hedera.services.bdd.spec.stats.OpObs;
 import com.hedera.services.bdd.spec.stats.ThroughputObs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.core.KeyPairObj;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
@@ -71,7 +70,7 @@ import java.util.function.Function;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.keys.KeyFactory.firstStartupKp;
+import static com.hedera.services.bdd.spec.keys.KeyFactory.payerKey;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -79,20 +78,20 @@ import static java.util.stream.Collectors.toList;
 public class HapiSpecRegistry {
 	static final Logger log = LogManager.getLogger(HapiSpecRegistry.class);
 
-	Map<String, Object> registry = new HashMap<>();
+	private final Map<String, Object> registry = new HashMap<>();
 	private final HapiSpecSetup setup;
 	private final List<OpObs> obs = new ArrayList<>();
 	private final List<ThroughputObs> throughputObs = new ArrayList<>();
 	private Map<Class, List<RegistryChangeListener>> listenersByType = new HashMap<>();
 
-	private Map<String, AccountID> autoAccountsMap = new HashMap<>();
-
-	private static final Integer ZERO = Integer.valueOf(0);
+	private static final Integer ZERO = 0;
 
 	public HapiSpecRegistry(HapiSpecSetup setup) throws Exception {
 		this.setup = setup;
-		KeyPairObj genesisKp = firstStartupKp(setup);
-		Key genesisKey = asPublicKey(genesisKp.getPublicKeyAbyteStr());
+
+		final var key = payerKey(setup);
+		final var genesisKey = asPublicKey(CommonUtils.hex(key.getAbyte()));
+
 		saveAccountId(setup.genesisAccountName(), setup.genesisAccount());
 		saveKey(setup.genesisAccountName(), asKeyList(genesisKey));
 		saveAccountId(setup.defaultPayerName(), setup.defaultPayer());
