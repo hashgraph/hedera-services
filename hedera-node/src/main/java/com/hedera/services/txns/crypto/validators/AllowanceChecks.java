@@ -22,13 +22,16 @@ package com.hedera.services.txns.crypto.validators;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -43,10 +46,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.store.AccountStore.loadMerkleAccount;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
@@ -55,7 +56,6 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeat
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -97,7 +97,8 @@ public class AllowanceChecks {
 	 * 		Account of the payer for the allowance approve/adjust txn.
 	 * @param maxLimitPerTxn
 	 * 		max allowance limit per transaction
-	 * @param workingView
+	 * @param view
+	 * 		working view
 	 * @return response code after validation
 	 */
 	public ResponseCodeEnum allowancesValidation(final List<CryptoAllowance> cryptoAllowances,
@@ -105,28 +106,36 @@ public class AllowanceChecks {
 			final List<NftAllowance> nftAllowances,
 			final Account payerAccount,
 			final int maxLimitPerTxn,
-			final StateView workingView) {
+			final StateView view) {
 
 		// feature flag for allowances
 		if (!isEnabled()) {
 			return NOT_SUPPORTED;
 		}
+
 		var validity = commonChecks(cryptoAllowances, tokenAllowances, nftAllowances, maxLimitPerTxn);
 		if (validity != OK) {
 			return validity;
 		}
 
-		validity = validateCryptoAllowances(cryptoAllowances, payerAccount, workingView);
+		final var accountStore = new AccountStore(validator, dynamicProperties, view.asReadOnlyAccountStore());
+		validity = validateCryptoAllowances(cryptoAllowances, payerAccount, accountStore);
+		if (validity != OK) {
+			return validity;
+		}
+		final var tokenStore = new TypedTokenStore(accountStore,
+				view.asReadOnlyTokenStore(),
+				view.asReadOnlyNftStore(),
+				view.asReadOnlyAssociationStore(),
+				null,
+				null,
+				null);
+		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount, tokenStore, accountStore);
 		if (validity != OK) {
 			return validity;
 		}
 
-		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount, workingView);
-		if (validity != OK) {
-			return validity;
-		}
-
-		validity = validateNftAllowances(nftAllowances, payerAccount, workingView);
+		validity = validateNftAllowances(nftAllowances, payerAccount, tokenStore, accountStore);
 		if (validity != OK) {
 			return validity;
 		}
@@ -143,13 +152,13 @@ public class AllowanceChecks {
 	 * 		crypto allowances list
 	 * @param payerAccount
 	 * 		Account of the payer for the Allowance approve/adjust txn
-	 * @param view
+	 * @param accountStore
 	 * @return response code after validation
 	 */
 	ResponseCodeEnum validateCryptoAllowances(
 			final List<CryptoAllowance> cryptoAllowances,
 			final Account payerAccount,
-			final StateView view) {
+			final AccountStore accountStore) {
 		if (cryptoAllowances.isEmpty()) {
 			return OK;
 		}
@@ -167,12 +176,12 @@ public class AllowanceChecks {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
-			if (fetchResult.isEmpty()) {
-				return INVALID_ALLOWANCE_OWNER_ID;
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
 			}
+			final var ownerAccount = fetchResult.getLeft();
 
-			final var ownerAccount = fetchResult.get();
 			var validity = validateAmount(allowance.getAmount(), ownerAccount, spender);
 			if (validity != OK) {
 				return validity;
@@ -193,13 +202,14 @@ public class AllowanceChecks {
 	 * 		token allowances list
 	 * @param payerAccount
 	 * 		Account of the payer for the Allowance approve/adjust txn
-	 * @param view
+	 * @param accountStore
 	 * @return
 	 */
 	ResponseCodeEnum validateFungibleTokenAllowances(
 			final List<TokenAllowance> tokenAllowances,
 			final Account payerAccount,
-			final StateView view) {
+			final TypedTokenStore tokenStore,
+			final AccountStore accountStore) {
 		if (tokenAllowances.isEmpty()) {
 			return OK;
 		}
@@ -216,24 +226,18 @@ public class AllowanceChecks {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
 			final var tokenId = allowance.getTokenId();
-			final var merkleToken = view.loadToken(tokenId);
+			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 
-			if (isInvalidToken(merkleToken)) {
-				return INVALID_TOKEN_ID;
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
 			}
-
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
-			if (fetchResult.isEmpty()) {
-				return INVALID_ALLOWANCE_OWNER_ID;
-			}
-
-			final var ownerAccount = fetchResult.get();
-			if (!isFungibleCommon(merkleToken)) {
+			final var ownerAccount = fetchResult.getLeft();
+			if (!token.isFungibleCommon()) {
 				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 			}
 
-			var validity = validateTokenAmount(ownerAccount, allowance.getAmount(), merkleToken,
-					Id.fromGrpcToken(tokenId), spender);
+			var validity = validateTokenAmount(ownerAccount, allowance.getAmount(), token, spender);
 			if (validity != OK) {
 				return validity;
 			}
@@ -255,12 +259,14 @@ public class AllowanceChecks {
 	 * @param payerAccount
 	 * 		Account of the payer for the Allowance approve/adjust txn
 	 * @param view
+	 * @param accountStore
 	 * @return
 	 */
 	ResponseCodeEnum validateNftAllowances(
 			final List<NftAllowance> nftAllowances,
 			final Account payerAccount,
-			final StateView view) {
+			final TypedTokenStore tokenStore,
+			final AccountStore accountStore) {
 		if (nftAllowances.isEmpty()) {
 			return OK;
 		}
@@ -280,19 +286,14 @@ public class AllowanceChecks {
 			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
 			final var approvedForAll = allowance.getApprovedForAll().getValue();
 			var owner = Id.fromGrpcAccount(allowance.getOwner());
-			final var merkleToken = view.loadToken(tokenId);
+			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
 
-			if (isInvalidToken(merkleToken)) {
-				return INVALID_TOKEN_ID;
+			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
+			if (fetchResult.getRight() != OK) {
+				return fetchResult.getRight();
 			}
-
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, view);
-			if (fetchResult.isEmpty()) {
-				return INVALID_ALLOWANCE_OWNER_ID;
-			}
-			final var ownerAccount = fetchResult.get();
-
-			if (isFungibleCommon(merkleToken)) {
+			final var ownerAccount = fetchResult.getLeft();
+			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
 			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
@@ -303,8 +304,7 @@ public class AllowanceChecks {
 			if (!approvedForAll) {
 				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
 				// state
-				validity = validateSerialNums(serialNums, ownerAccount, merkleToken, view, Id.fromGrpcToken(tokenId),
-						spenderId);
+				validity = validateSerialNums(serialNums, ownerAccount, token, tokenStore, spenderId);
 				if (validity != OK) {
 					return validity;
 				}
@@ -368,38 +368,24 @@ public class AllowanceChecks {
 		return totalAllowances == 0;
 	}
 
-	private Optional<Account> fetchOwnerAccount(
+	private Pair<Account, ResponseCodeEnum> fetchOwnerAccount(
 			final Id owner,
 			final Account payerAccount,
-			final StateView view) {
+			final AccountStore accountStore) {
 		if (owner.equals(Id.MISSING_ID) || owner.equals(payerAccount.getId())) {
-			return Optional.of(payerAccount);
+			return Pair.of(payerAccount, OK);
 		} else {
-			final var account = view.loadAccount(owner.asGrpcAccount());
-			if (isInvalidOwner(account)) {
-				return Optional.empty();
-			} else {
-				return Optional.of(loadMerkleAccount(account, owner));
+			try {
+				return Pair.of(accountStore.loadAccount(owner), OK);
+			} catch (InvalidTransactionException ex) {
+				return Pair.of(payerAccount, INVALID_ALLOWANCE_OWNER_ID);
 			}
 		}
 	}
 
-	boolean isInvalidOwner(final MerkleAccount account) {
-		return account == null || account.isDeleted() || isExpired(account.getBalance(), account.getExpiry());
-	}
-
-	boolean isExpired(long balance, long expiry) {
-		if (dynamicProperties.autoRenewEnabled() && balance == 0) {
-			return !validator.isAfterConsensusSecond(expiry);
-		} else {
-			return false;
-		}
-	}
-
-	boolean validOwner(final MerkleUniqueToken nft, final Account ownerAccount, final MerkleToken token) {
-		final var listedOwner = nft.getOwner();
+	boolean validOwner(final EntityId listedOwner, final Account ownerAccount, final Token token) {
 		return MISSING_ENTITY_ID.equals(listedOwner)
-				? ownerAccount.getId().equals(token.treasury().asId())
+				? ownerAccount.getId().equals(token.getTreasury().getId())
 				: listedOwner.equals(ownerAccount.getId().asEntityId());
 	}
 
@@ -413,9 +399,8 @@ public class AllowanceChecks {
 
 	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
 			final Account ownerAccount,
-			final MerkleToken merkleToken,
-			final StateView view,
-			final Id token,
+			final Token token,
+			final TypedTokenStore tokenStore,
 			final Id spender) {
 		throw new UnsupportedOperationException(UNSUPPORTED_MSG);
 	}
@@ -424,8 +409,8 @@ public class AllowanceChecks {
 		throw new UnsupportedOperationException(UNSUPPORTED_MSG);
 	}
 
-	ResponseCodeEnum validateTokenAmount(final Account ownerAccount,
-			final long l, final MerkleToken merkleToken, final Id token, final Id spender) {
+	ResponseCodeEnum validateTokenAmount(final Account ownerAccount, final long amount, final Token token,
+			final Id spender) {
 		throw new UnsupportedOperationException(UNSUPPORTED_MSG);
 	}
 }

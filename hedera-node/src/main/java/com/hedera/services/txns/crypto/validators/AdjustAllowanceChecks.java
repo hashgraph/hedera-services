@@ -20,14 +20,16 @@ package com.hedera.services.txns.crypto.validators;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenSupplyType;
-import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
@@ -57,12 +59,11 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 	@Override
 	ResponseCodeEnum validateTokenAmount(final Account ownerAccount,
 			final long amount,
-			final MerkleToken merkleToken,
-			final Id token,
+			final Token token,
 			final Id spender) {
 		final var existingAllowances = ownerAccount.getFungibleTokenAllowances();
 
-		final var key = FcTokenAllowanceId.from(token.asEntityNum(), spender.asEntityNum());
+		final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spender.asEntityNum());
 		final var existingAllowance = existingAllowances.containsKey(key) ? existingAllowances.get(key) : 0;
 		final long aggregatedAmount = amount + existingAllowance;
 
@@ -70,7 +71,7 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
 		}
 
-		if (merkleToken.supplyType().equals(TokenSupplyType.FINITE) && aggregatedAmount > merkleToken.maxSupply()) {
+		if (token.getSupplyType().equals(TokenSupplyType.FINITE) && aggregatedAmount > token.getMaxSupply()) {
 			return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 		}
 		return OK;
@@ -80,9 +81,8 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 	ResponseCodeEnum validateSerialNums(
 			final List<Long> serialNums,
 			final Account ownerAccount,
-			final MerkleToken merkleToken,
-			final StateView view,
-			final Id token,
+			final Token token,
+			final TypedTokenStore tokenStore,
 			final Id spender) {
 		if (hasRepeatedSerials(serialNums)) {
 			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
@@ -94,13 +94,13 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 
 		final var existingAllowances = ownerAccount.getNftAllowances();
 
-		final var key = FcTokenAllowanceId.from(token.asEntityNum(), spender.asEntityNum());
+		final var key = FcTokenAllowanceId.from(token.getId().asEntityNum(), spender.asEntityNum());
 		final var existingSerials = existingAllowances.containsKey(key) ?
 				existingAllowances.get(key).getSerialNumbers() : new ArrayList<Long>();
 
 		for (var serial : serialNums) {
 			var absoluteSerial = absolute(serial);
-			final var nftId = NftId.withDefaultShardRealm(token.num(), absoluteSerial);
+			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), absoluteSerial);
 
 			if ((serial < 0 && !existingSerials.contains(absoluteSerial)) || absoluteSerial == 0) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -108,11 +108,14 @@ public class AdjustAllowanceChecks extends AllowanceChecks {
 			if (serial > 0 && existingSerials.contains(absoluteSerial)) {
 				return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 			}
-			final var merkleUniqueToken = view.loadNft(nftId);
-			if (merkleUniqueToken == null) {
+			final MerkleUniqueToken merkleUniqueToken;
+			try {
+				merkleUniqueToken = tokenStore.loadUniqueToken(nftId);
+			} catch (InvalidTransactionException ex) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
-			if (!validOwner(merkleUniqueToken, ownerAccount, merkleToken)) {
+
+			if (!validOwner(merkleUniqueToken.getOwner(), ownerAccount, token)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
 		}

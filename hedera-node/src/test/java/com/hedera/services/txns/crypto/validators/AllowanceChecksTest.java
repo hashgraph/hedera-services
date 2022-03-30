@@ -43,13 +43,13 @@ class AllowanceChecksTest {
 
 	@Test
 	void unsupportedMethods() {
-		willCallRealMethod().given(subject).validateTokenAmount(any(), anyLong(), any(), any(), any());
-		willCallRealMethod().given(subject).validateSerialNums(anyList(), any(), any(), any(), any(), any());
+		willCallRealMethod().given(subject).validateTokenAmount(any(), anyLong(), any(), any());
+		willCallRealMethod().given(subject).validateSerialNums(anyList(), any(), any(), any(), any());
 		willCallRealMethod().given(subject).validateAmount(anyLong(), any(), any());
 		assertThrows(UnsupportedOperationException.class,
-				() -> subject.validateSerialNums(anyList(), any(), any(), any(), any(), any()));
+				() -> subject.validateSerialNums(anyList(), any(), any(), any(), any()));
 		assertThrows(UnsupportedOperationException.class,
-				() -> subject.validateTokenAmount(any(), anyLong(), any(), any(), any()));
+				() -> subject.validateTokenAmount(any(), anyLong(), any(), any()));
 		assertThrows(UnsupportedOperationException.class,
 				() -> subject.validateAmount(anyLong(), any(), any()));
 	}

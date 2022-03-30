@@ -23,12 +23,10 @@ package com.hedera.services.context.primitives;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingNfts;
-import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -49,7 +47,6 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -124,14 +121,11 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.willCallRealMethod;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith({ MockitoExtension.class })
 class StateViewTest {
@@ -953,51 +947,51 @@ class StateViewTest {
 		assertEquals(tokenRels, ((BackingTokenRels) subject.asReadOnlyAssociationStore()).getDelegate().get());
 	}
 
-	@Test
-	void loadsAccounts() {
-		final var id = AccountID.newBuilder().setAccountNum(2).build();
-		final MerkleAccount account = mock(MerkleAccount.class);
-
-		subject = mock(StateView.class);
-		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
-		given(subject.asReadOnlyAccountStore()).willReturn(store);
-		given(store.getImmutableRef(id)).willReturn(account);
-		willCallRealMethod().given(subject).loadAccount(id);
-
-		given(subject.asReadOnlyAccountStore().getImmutableRef(id)).willReturn(account);
-
-		assertEquals(account, subject.loadAccount(id));
-
-		given(subject.asReadOnlyAccountStore().getImmutableRef(id)).willReturn(null);
-		assertEquals(null, subject.loadAccount(id));
-	}
-
-	@Test
-	void loadsToken() {
-		final var id = TokenID.newBuilder().setTokenNum(2).build();
-
-		final MerkleToken token = mock(MerkleToken.class);
-		subject = mock(StateView.class);
-		final BackingStore<TokenID, MerkleToken> store = mock(BackingTokens.class);
-		given(subject.asReadOnlyTokenStore()).willReturn(store);
-		given(store.getImmutableRef(id)).willReturn(token);
-		willCallRealMethod().given(subject).loadToken(id);
-
-		assertEquals(token, subject.loadToken(id));
-	}
-
-	@Test
-	void loadsNfts() {
-		final var id = NftId.withDefaultShardRealm(2, 3);
-		final MerkleUniqueToken token = mock(MerkleUniqueToken.class);
-		subject = mock(StateView.class);
-		final BackingStore<NftId, MerkleUniqueToken> store = mock(BackingNfts.class);
-		given(subject.asReadOnlyNftStore()).willReturn(store);
-		given(store.getImmutableRef(id)).willReturn(token);
-		willCallRealMethod().given(subject).loadNft(id);
-
-		assertEquals(token, subject.loadNft(id));
-	}
+//	@Test
+//	void loadsAccounts() {
+//		final var id = AccountID.newBuilder().setAccountNum(2).build();
+//		final MerkleAccount account = mock(MerkleAccount.class);
+//
+//		subject = mock(StateView.class);
+//		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+//		given(subject.asReadOnlyAccountStore()).willReturn(store);
+//		given(store.getImmutableRef(id)).willReturn(account);
+//		willCallRealMethod().given(subject).loadAccount(id);
+//
+//		given(subject.asReadOnlyAccountStore().getImmutableRef(id)).willReturn(account);
+//
+//		assertEquals(account, subject.loadAccount(id));
+//
+//		given(subject.asReadOnlyAccountStore().getImmutableRef(id)).willReturn(null);
+//		assertEquals(null, subject.loadAccount(id));
+//	}
+//
+//	@Test
+//	void loadsToken() {
+//		final var id = TokenID.newBuilder().setTokenNum(2).build();
+//
+//		final MerkleToken token = mock(MerkleToken.class);
+//		subject = mock(StateView.class);
+//		final BackingStore<TokenID, MerkleToken> store = mock(BackingTokens.class);
+//		given(subject.asReadOnlyTokenStore()).willReturn(store);
+//		given(store.getImmutableRef(id)).willReturn(token);
+//		willCallRealMethod().given(subject).loadToken(id);
+//
+//		assertEquals(token, subject.loadToken(id));
+//	}
+//
+//	@Test
+//	void loadsNfts() {
+//		final var id = NftId.withDefaultShardRealm(2, 3);
+//		final MerkleUniqueToken token = mock(MerkleUniqueToken.class);
+//		subject = mock(StateView.class);
+//		final BackingStore<NftId, MerkleUniqueToken> store = mock(BackingNfts.class);
+//		given(subject.asReadOnlyNftStore()).willReturn(store);
+//		given(store.getImmutableRef(id)).willReturn(token);
+//		willCallRealMethod().given(subject).loadNft(id);
+//
+//		assertEquals(token, subject.loadNft(id));
+//	}
 
 	private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
 	private final byte[] nftMeta = "abcdefgh".getBytes();

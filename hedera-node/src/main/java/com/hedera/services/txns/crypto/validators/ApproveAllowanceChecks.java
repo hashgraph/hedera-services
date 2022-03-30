@@ -20,13 +20,15 @@ package com.hedera.services.txns.crypto.validators;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenSupplyType;
-import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
@@ -52,14 +54,15 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 	}
 
 	@Override
-	ResponseCodeEnum validateTokenAmount(final Account ownerAccount, final long amount,
-			final MerkleToken merkleToken, final Id fungibleToken,
+	ResponseCodeEnum validateTokenAmount(final Account ownerAccount,
+			final long amount,
+			final Token token,
 			final Id spender) {
 		if (amount < 0) {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
 		}
 
-		if (merkleToken.supplyType().equals(TokenSupplyType.FINITE) && amount > merkleToken.maxSupply()) {
+		if (token.getSupplyType().equals(TokenSupplyType.FINITE) && amount > token.getMaxSupply()) {
 			return AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 		}
 		return OK;
@@ -69,9 +72,8 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 	ResponseCodeEnum validateSerialNums(
 			final List<Long> serialNums,
 			final Account ownerAccount,
-			final MerkleToken merkleToken,
-			final StateView view,
-			final Id token,
+			final Token token,
+			final TypedTokenStore tokenStore,
 			final Id spender) {
 		if (hasRepeatedSerials(serialNums)) {
 			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
@@ -82,11 +84,16 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 		}
 
 		for (var serial : serialNums) {
-			final var nftId = view.loadNft(NftId.withDefaultShardRealm(token.num(), serial));
+			final MerkleUniqueToken nftId;
+			try {
+				nftId = tokenStore.loadUniqueToken(NftId.withDefaultShardRealm(token.getId().num(), serial));
+			} catch (InvalidTransactionException ex) {
+				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
+			}
 			if (serial <= 0 || nftId == null) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
-			if (!validOwner(nftId, ownerAccount, merkleToken)) {
+			if (!validOwner(nftId.getOwner(), ownerAccount, token)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
 		}

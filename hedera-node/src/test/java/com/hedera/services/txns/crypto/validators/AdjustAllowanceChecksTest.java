@@ -23,15 +23,22 @@ package com.hedera.services.txns.crypto.validators;
 import com.google.protobuf.BoolValue;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingNfts;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -85,7 +92,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 
 @ExtendWith(MockitoExtension.class)
 class AdjustAllowanceChecksTest {
@@ -111,6 +117,10 @@ class AdjustAllowanceChecksTest {
 	private MerkleAccount ownerAccount;
 	@Mock
 	private MerkleUniqueToken uniqueToken;
+	@Mock
+	private AccountStore accountStore;
+	@Mock
+	private TypedTokenStore tokenStore;
 
 	AdjustAllowanceChecks subject;
 
@@ -268,81 +278,93 @@ class AdjustAllowanceChecksTest {
 		nftAllowances.add(nftAllowance1);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 
-		given(payer.getId()).willReturn(Id.fromGrpcAccount(payerId));
-		given(view.loadAccount(ownerId)).willReturn(ownerAccount);
-		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		given(view.loadToken(token2)).willReturn(merkleToken1);
-		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+		final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
+		final BackingStore<NftId, MerkleUniqueToken> nfts = mock(BackingNfts.class);
+		given(view.asReadOnlyAccountStore()).willReturn(store);
+		given(view.asReadOnlyTokenStore()).willReturn(tokens);
+		given(view.asReadOnlyNftStore()).willReturn(nfts);
+
+		given(store.getImmutableRef(ownerId)).willReturn(ownerAccount);
+		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
+		given(nfts.getImmutableRef(token2Nft1)).willReturn(uniqueToken);
+		given(nfts.getImmutableRef(token2Nft2)).willReturn(uniqueToken);
+
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
-		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		given(view.asReadOnlyTokenStore().getImmutableRef(token1)).willReturn(merkleToken1);
+		given(view.asReadOnlyTokenStore().getImmutableRef(token2)).willReturn(merkleToken2);
+		given(merkleToken1.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
+		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
+		given(ownerAccount.tokens()).willReturn(new MerkleAccountTokens());
+		given(ownerAccount.state()).willReturn(new MerkleAccountState());
+		given(uniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
+		given(payer.getId()).willReturn(Id.fromGrpcAccount(payerId));
+		given(owner.isAssociatedWith(Id.fromGrpcToken(token2))).willReturn(true);
+		given(payer.isAssociatedWith(Id.fromGrpcToken(token2))).willReturn(true);
+
+		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoAdjustAllowance(
+						CryptoAdjustAllowanceTransactionBody.newBuilder()
+								.addAllCryptoAllowances(cryptoAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
-		try (final var account = mockStatic(AccountStore.class)) {
-			account.when(() -> AccountStore.loadMerkleAccount(ownerAccount, Id.fromGrpcAccount(ownerId)))
-					.thenReturn(owner);
-			cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
-					.setTransactionID(ourTxnId())
-					.setCryptoAdjustAllowance(
-							CryptoAdjustAllowanceTransactionBody.newBuilder()
-									.addAllCryptoAllowances(cryptoAllowances)
-									.build()
-					)
-					.build();
-			op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
-			given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
+						dynamicProperties.maxAllowanceLimitPerTransaction(), view));
 
-			assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
-					subject.allowancesValidation(op.getCryptoAllowancesList(),
-							op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
-							dynamicProperties.maxAllowanceLimitPerTransaction(), view));
+		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoAdjustAllowance(
+						CryptoAdjustAllowanceTransactionBody.newBuilder()
+								.addAllTokenAllowances(tokenAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
 
-			cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
-					.setTransactionID(ourTxnId())
-					.setCryptoAdjustAllowance(
-							CryptoAdjustAllowanceTransactionBody.newBuilder()
-									.addAllTokenAllowances(tokenAllowances)
-									.build()
-					)
-					.build();
-			op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
+		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
+						dynamicProperties.maxAllowanceLimitPerTransaction(), view));
 
-			assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
-					subject.allowancesValidation(op.getCryptoAllowancesList(),
-							op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
-							dynamicProperties.maxAllowanceLimitPerTransaction(), view));
+		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoAdjustAllowance(
+						CryptoAdjustAllowanceTransactionBody.newBuilder()
+								.addAllNftAllowances(nftAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
 
-			cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
-					.setTransactionID(ourTxnId())
-					.setCryptoAdjustAllowance(
-							CryptoAdjustAllowanceTransactionBody.newBuilder()
-									.addAllNftAllowances(nftAllowances)
-									.build()
-					)
-					.build();
-			op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
+		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
+						dynamicProperties.maxAllowanceLimitPerTransaction(), view));
 
-			assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
-					subject.allowancesValidation(op.getCryptoAllowancesList(),
-							op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
-							dynamicProperties.maxAllowanceLimitPerTransaction(), view));
+		nftAllowances.clear();
+		nftAllowances.add(nftAllowance2);
+		cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setCryptoAdjustAllowance(
+						CryptoAdjustAllowanceTransactionBody.newBuilder()
+								.addAllNftAllowances(nftAllowances)
+								.build()
+				)
+				.build();
+		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
 
-			nftAllowances.clear();
-			nftAllowances.add(nftAllowance2);
-			cryptoAdjustAllowanceTxn = TransactionBody.newBuilder()
-					.setTransactionID(ourTxnId())
-					.setCryptoAdjustAllowance(
-							CryptoAdjustAllowanceTransactionBody.newBuilder()
-									.addAllNftAllowances(nftAllowances)
-									.build()
-					)
-					.build();
-			op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
-
-			assertEquals(OK,
-					subject.allowancesValidation(op.getCryptoAllowancesList(),
-							op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
-							dynamicProperties.maxAllowanceLimitPerTransaction(), view));
-		}
+		assertEquals(OK,
+				subject.allowancesValidation(op.getCryptoAllowancesList(),
+						op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
+						dynamicProperties.maxAllowanceLimitPerTransaction(), view));
 	}
 
 	@Test
@@ -362,6 +384,8 @@ class AdjustAllowanceChecksTest {
 				)
 				.build();
 		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
+//		given(view.asReadOnlyAccountStore().loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payer);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(owner);
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
@@ -377,7 +401,7 @@ class AdjustAllowanceChecksTest {
 				)
 				.build();
 		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
-		given(view.loadToken(token1)).willReturn(merkleToken1);
+//		given(view.loadToken(token1)).willReturn(merkleToken1);
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
@@ -394,7 +418,7 @@ class AdjustAllowanceChecksTest {
 				.build();
 
 		op = cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance();
-		given(view.loadToken(token2)).willReturn(merkleToken2);
+//		given(view.loadToken(token2)).willReturn(merkleToken2);
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
@@ -430,11 +454,14 @@ class AdjustAllowanceChecksTest {
 				)
 				.build();
 		assertEquals(OK, subject.validateCryptoAllowances(
-				cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance().getCryptoAllowancesList(), payer, view));
+				cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance().getCryptoAllowancesList(), payer,
+				accountStore));
 		assertEquals(OK, subject.validateFungibleTokenAllowances(
-				cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance().getTokenAllowancesList(), payer, view));
+				cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance().getTokenAllowancesList(),
+				payer, tokenStore, accountStore));
 		assertEquals(OK, subject.validateNftAllowances(
-				cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance().getNftAllowancesList(), payer, view));
+				cryptoAdjustAllowanceTxn.getCryptoAdjustAllowance().getNftAllowancesList(), payer, tokenStore,
+				accountStore));
 	}
 
 	@Test
@@ -452,20 +479,21 @@ class AdjustAllowanceChecksTest {
 				addAllSerialNumbers(List.of(1L, 1L)).build();
 
 		cryptoAllowances.add(badCryptoAllowance);
-		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER, subject.validateCryptoAllowances(cryptoAllowances, payer,
-				view));
+		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER,
+				subject.validateCryptoAllowances(cryptoAllowances, payer, accountStore));
 
 		tokenAllowances.add(badTokenAllowance);
-		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER, subject.validateFungibleTokenAllowances(tokenAllowances, payer,
-				view));
+		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER,
+				subject.validateFungibleTokenAllowances(tokenAllowances, payer, tokenStore, accountStore));
 
 		nftAllowances.add(badNftAllowance);
-		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER, subject.validateNftAllowances(nftAllowances, payer, view));
+		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER,
+				subject.validateNftAllowances(nftAllowances, payer, tokenStore, accountStore));
 
 		nftAllowances.clear();
 		nftAllowances.add(badNftAllowance1);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, subject.validateNftAllowances(nftAllowances, payer,
-				view));
+				tokenStore, accountStore));
 	}
 
 	@Test
@@ -475,16 +503,15 @@ class AdjustAllowanceChecksTest {
 				-10L).setOwner(ownerId).build();
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
 				-20L).setTokenId(token1).setOwner(ownerId).build();
-		try (final var account = mockStatic(AccountStore.class)) {
-			account.when(() -> AccountStore.loadMerkleAccount(ownerAccount, Id.fromGrpcAccount(ownerId)))
-					.thenReturn(owner);
-			cryptoAllowances.add(badCryptoAllowance);
-			assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateCryptoAllowances(cryptoAllowances, payer, view));
+		cryptoAllowances.add(badCryptoAllowance);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(owner);
+		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
+		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateCryptoAllowances(cryptoAllowances, payer,
+				accountStore));
 
-			tokenAllowances.add(badTokenAllowance);
-			assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, payer,
-					view));
-		}
+		tokenAllowances.add(badTokenAllowance);
+		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, payer,
+				tokenStore, accountStore));
 	}
 
 	@Test
@@ -492,21 +519,18 @@ class AdjustAllowanceChecksTest {
 		givenNecessaryStubs();
 		given(owner.getCryptoAllowances()).willReturn(existingCryptoAllowances);
 		given(owner.getFungibleTokenAllowances()).willReturn(existingTokenAllowances);
-		try (final var account = mockStatic(AccountStore.class)) {
-			account.when(() -> AccountStore.loadMerkleAccount(ownerAccount, Id.fromGrpcAccount(ownerId)))
-					.thenReturn(owner);
-			final var badCryptoAllowance = CryptoAllowance.newBuilder().setSpender(spender2).setAmount(
-					-30L).setOwner(ownerId).build();
-			final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
-					-20L).setTokenId(token1).setOwner(ownerId).build();
+		final var badCryptoAllowance = CryptoAllowance.newBuilder().setSpender(spender2).setAmount(
+				-30L).setOwner(ownerId).build();
+		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
+				-20L).setTokenId(token1).setOwner(ownerId).build();
 
-			cryptoAllowances.add(badCryptoAllowance);
-			assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateCryptoAllowances(cryptoAllowances, payer, view));
+		cryptoAllowances.add(badCryptoAllowance);
+		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateCryptoAllowances(cryptoAllowances, payer,
+				accountStore));
 
-			tokenAllowances.add(badTokenAllowance);
-			assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, payer,
-					view));
-		}
+		tokenAllowances.add(badTokenAllowance);
+		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, payer,
+				tokenStore, accountStore));
 	}
 
 	@Test
@@ -515,12 +539,12 @@ class AdjustAllowanceChecksTest {
 		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES, subject.validateCryptoAllowances(cryptoAllowances, payer,
-				view));
 		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
-				subject.validateFungibleTokenAllowances(tokenAllowances, payer, view));
+				subject.validateCryptoAllowances(cryptoAllowances, payer, accountStore));
+		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
+				subject.validateFungibleTokenAllowances(tokenAllowances, payer, tokenStore, accountStore));
 		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES, subject.validateNftAllowances(nftAllowances, payer,
-				view));
+				tokenStore, accountStore));
 	}
 
 	@Test
@@ -528,7 +552,7 @@ class AdjustAllowanceChecksTest {
 		tokenAllowances.clear();
 		addExistingAllowancesAndSerials();
 
-		given(view.loadToken(token1)).willReturn(merkleToken1);
+//		given(view.loadToken(token1)).willReturn(merkleToken1);
 		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.FINITE);
 
@@ -540,26 +564,22 @@ class AdjustAllowanceChecksTest {
 
 		tokenAllowances.add(badTokenAllowance);
 		assertEquals(AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY, subject.validateFungibleTokenAllowances(tokenAllowances, payer,
-				view));
+				tokenStore, accountStore));
 	}
 
 	@Test
 	void failsForNftInFungibleTokenAllowances() {
 		givenNecessaryStubs();
-		given(view.loadAccount(ownerId)).willReturn(ownerAccount);
-		given(view.loadToken(token2)).willReturn(merkleToken2);
+//		given(view.loadAccount(ownerId)).willReturn(ownerAccount);
+//		given(view.loadToken(token2)).willReturn(merkleToken2);
 		given(merkleToken2.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
 				100000L).setTokenId(token2).setOwner(payerId).build();
 
 		tokenAllowances.add(badTokenAllowance);
-		try (final var account = mockStatic(AccountStore.class)) {
-			account.when(() -> AccountStore.loadMerkleAccount(ownerAccount, Id.fromGrpcAccount(ownerId)))
-					.thenReturn(owner);
-			assertEquals(NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES,
-					subject.validateFungibleTokenAllowances(tokenAllowances, payer,
-							view));
-		}
+		assertEquals(NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES,
+				subject.validateFungibleTokenAllowances(tokenAllowances, payer,
+						tokenStore, accountStore));
 	}
 
 	@Test
@@ -567,28 +587,18 @@ class AdjustAllowanceChecksTest {
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(payerId));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(false);
-		given(view.loadAccount(ownerId)).willReturn(ownerAccount);
-		given(view.loadToken(token1)).willReturn(merkleToken1);
+//		given(view.loadAccount(ownerId)).willReturn(ownerAccount);
+//		given(view.loadToken(token1)).willReturn(merkleToken1);
 		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
-		try (final var account = mockStatic(AccountStore.class)) {
-			account.when(() -> AccountStore.loadMerkleAccount(ownerAccount, Id.fromGrpcAccount(ownerId)))
-					.thenReturn(owner);
-			assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateFungibleTokenAllowances(tokenAllowances,
-					payer,
-					view));
-		}
+		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateFungibleTokenAllowances(tokenAllowances,
+				payer, tokenStore, accountStore));
 	}
 
 	@Test
 	void happyPath() {
 		setUpForTest();
 		getValidTxnCtx();
-		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
-		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-		given(view.loadToken(token1)).willReturn(merkleToken1);
-		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
 		assertEquals(OK, subject.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
 				dynamicProperties.maxAllowanceLimitPerTransaction(), view));
@@ -601,14 +611,14 @@ class AdjustAllowanceChecksTest {
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
-		given(view.loadNft((token1Nft1))).willReturn(uniqueToken);
-		given(view.loadNft((token1Nft1)).getOwner()).willReturn(Id.fromGrpcAccount(ownerId).asEntityId());
-		given(view.loadNft((tokenNft2))).willReturn(uniqueToken);
-		given(view.loadNft((tokenNft2)).getOwner()).willReturn(Id.fromGrpcAccount(ownerId).asEntityId());
+//		given(view.loadNft((token1Nft1))).willReturn(uniqueToken);
+//		given(view.loadNft((token1Nft1)).getOwner()).willReturn(Id.fromGrpcAccount(ownerId).asEntityId());
+//		given(view.loadNft((tokenNft2))).willReturn(uniqueToken);
+//		given(view.loadNft((tokenNft2)).getOwner()).willReturn(Id.fromGrpcAccount(ownerId).asEntityId());
 		given(uniqueToken.getOwner()).willReturn(Id.fromGrpcAccount(ownerId).asEntityId());
-		given(view.loadToken(token1)).willReturn(merkleToken1);
+//		given(view.loadToken(token1)).willReturn(merkleToken1);
 		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(view.loadToken(token2)).willReturn(merkleToken2);
+//		given(view.loadToken(token2)).willReturn(merkleToken2);
 		given(merkleToken2.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		final var badNftAllowance = NftAllowance.newBuilder().setSpender(spender2)
@@ -616,15 +626,16 @@ class AdjustAllowanceChecksTest {
 						BoolValue.of(false)).build();
 
 		nftAllowances.add(badNftAllowance);
-		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES, subject.validateNftAllowances(nftAllowances, payer, view));
+		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES,
+				subject.validateNftAllowances(nftAllowances, payer, tokenStore, accountStore));
 	}
 
 	@Test
 	void validateSerialsExistence() {
 		final var serials = List.of(1L, 10L);
 
-		var validity = subject.validateSerialNums(serials, payer, merkleToken1, view,
-				Id.fromGrpcToken(token1), Id.fromGrpcAccount(spender1));
+		var validity = subject.validateSerialNums(serials, payer, token1Model, tokenStore,
+				Id.fromGrpcAccount(spender1));
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
 
@@ -634,15 +645,15 @@ class AdjustAllowanceChecksTest {
 		token2Model.setTreasury(treasury);
 		given(treasury.getId()).willReturn(Id.fromGrpcAccount(spender2));
 
-		given(view.loadNft((token2Nft2))).willReturn(uniqueToken);
-		given(view.loadNft((token2Nft2)).getOwner()).willReturn(Id.MISSING_ID.asEntityId());
-		given(view.loadNft((token2Nft1))).willReturn(uniqueToken);
-		given(view.loadNft((token2Nft1)).getOwner()).willReturn(Id.MISSING_ID.asEntityId());
+//		given(view.loadNft((token2Nft2))).willReturn(uniqueToken);
+//		given(view.loadNft((token2Nft2)).getOwner()).willReturn(Id.MISSING_ID.asEntityId());
+//		given(view.loadNft((token2Nft1))).willReturn(uniqueToken);
+//		given(view.loadNft((token2Nft1)).getOwner()).willReturn(Id.MISSING_ID.asEntityId());
 		given(uniqueToken.getOwner()).willReturn(Id.MISSING_ID.asEntityId());
 		given(merkleToken2.treasury()).willReturn(Id.fromGrpcAccount(spender2).asEntityId());
 
-		var validity = subject.validateSerialNums(serials, treasury, merkleToken2, view,
-				Id.fromGrpcToken(token2), Id.fromGrpcAccount(spender2));
+		var validity = subject.validateSerialNums(serials, treasury, token2Model, tokenStore,
+				Id.fromGrpcAccount(spender2));
 		assertEquals(OK, validity);
 	}
 
@@ -651,16 +662,16 @@ class AdjustAllowanceChecksTest {
 		final var serials = List.of(1L);
 		token2Model.setTreasury(treasury);
 
-		given(view.loadNft((token2Nft2))).willReturn(uniqueToken);
-		given(view.loadNft((token2Nft2)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
-		given(view.loadNft((token2Nft1))).willReturn(uniqueToken);
-		given(view.loadNft((token2Nft1)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
+//		given(view.loadNft((token2Nft2))).willReturn(uniqueToken);
+//		given(view.loadNft((token2Nft2)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
+//		given(view.loadNft((token2Nft1))).willReturn(uniqueToken);
+//		given(view.loadNft((token2Nft1)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
 		given(uniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
 
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 
-		var validity = subject.validateSerialNums(serials, owner, merkleToken1, view,
-				Id.fromGrpcToken(token2), Id.fromGrpcAccount(spender1));
+		var validity = subject.validateSerialNums(serials, owner, token1Model, tokenStore,
+				Id.fromGrpcAccount(spender1));
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
 
@@ -668,8 +679,8 @@ class AdjustAllowanceChecksTest {
 	void returnsIfSerialsFail() {
 		final var serials = List.of(1L, 10L);
 
-		var validity = subject.validateSerialNums(serials, payer, merkleToken1, view,
-				Id.fromGrpcToken(token1), Id.fromGrpcAccount(spender1));
+		var validity = subject.validateSerialNums(serials, payer, token1Model, tokenStore,
+				Id.fromGrpcAccount(spender1));
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
 
@@ -677,8 +688,8 @@ class AdjustAllowanceChecksTest {
 	void validatesIfNegativeSerialsNotInExistingList() {
 		final var serials = List.of(-100L, 10L);
 
-		var validity = subject.validateSerialNums(serials, payer, merkleToken1, view,
-				Id.fromGrpcToken(token1), Id.fromGrpcAccount(spender1));
+		var validity = subject.validateSerialNums(serials, payer, token1Model, tokenStore,
+				Id.fromGrpcAccount(spender1));
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
 
@@ -687,14 +698,14 @@ class AdjustAllowanceChecksTest {
 		final var serials = List.of(1L, 10L);
 
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		given(view.loadNft((token2Nft2))).willReturn(uniqueToken);
-		given(view.loadNft((token2Nft2)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
-		given(view.loadNft((token2Nft1))).willReturn(uniqueToken);
-		given(view.loadNft((token2Nft1)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
+//		given(view.loadNft((token2Nft2))).willReturn(uniqueToken);
+//		given(view.loadNft((token2Nft2)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
+//		given(view.loadNft((token2Nft1))).willReturn(uniqueToken);
+//		given(view.loadNft((token2Nft1)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
 		given(uniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
 
-		var validity = subject.validateSerialNums(serials, payer, merkleToken1, view,
-				Id.fromGrpcToken(token2), Id.fromGrpcAccount(spender1));
+		var validity = subject.validateSerialNums(serials, payer, token2Model, tokenStore,
+				Id.fromGrpcAccount(spender1));
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
 
@@ -703,33 +714,31 @@ class AdjustAllowanceChecksTest {
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 
 		var serials = List.of(1L, 10L, 1L);
-		var validity = subject.validateSerialNums(serials, payer, merkleToken1, view,
-				Id.fromGrpcToken(token1), Id.fromGrpcAccount(spender1));
+		var validity = subject.validateSerialNums(serials, payer, token1Model, tokenStore,
+				Id.fromGrpcAccount(spender1));
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 
 		serials = List.of(10L, 4L);
-		validity = subject.validateSerialNums(serials, payer, merkleToken1, view,
-				Id.fromGrpcToken(token1), Id.fromGrpcAccount(spender1));
+		validity = subject.validateSerialNums(serials, payer, token1Model, tokenStore, Id.fromGrpcAccount(spender1));
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 
 		final NftId token1Nft1 = new NftId(0, 0, token1.getTokenNum(), 20L);
 		final NftId tokenNft2 = new NftId(0, 0, token1.getTokenNum(), 4L);
-		given(view.loadNft(token1Nft1)).willReturn(token);
-		given(view.loadNft(tokenNft2)).willReturn(token);
-		given(view.loadNft(token1Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
-		given(view.loadNft(tokenNft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
+//		given(view.loadNft(token1Nft1)).willReturn(token);
+//		given(view.loadNft(tokenNft2)).willReturn(token);
+//		given(view.loadNft(token1Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
+//		given(view.loadNft(tokenNft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 
 		serials = List.of(20L, 4L);
-		validity = subject.validateSerialNums(serials, payer, merkleToken1, view,
-				Id.fromGrpcToken(token1), Id.fromGrpcAccount(spender1));
+		validity = subject.validateSerialNums(serials, payer, token1Model, tokenStore, Id.fromGrpcAccount(spender1));
 		assertEquals(OK, validity);
 	}
 
 	@Test
 	void validateRepeatedNegativeSerials() {
 		final var serials = List.of(-1L, 10L, 1L);
-		var validity = subject.validateSerialNums(serials, payer, merkleToken1, view,
-				Id.fromGrpcToken(token1), Id.fromGrpcAccount(spender1));
+		var validity = subject.validateSerialNums(serials, payer, token1Model, tokenStore,
+				Id.fromGrpcAccount(spender1));
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 	}
 
@@ -740,8 +749,8 @@ class AdjustAllowanceChecksTest {
 				FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)),
 				FcTokenAllowance.from(false, List.of(12L, 10L)));
 		given(payer.getNftAllowances()).willReturn(existingNftAllowances);
-		var validity = subject.validateSerialNums(serials, payer, merkleToken1, view,
-				Id.fromGrpcToken(token1), Id.fromGrpcAccount(spender1));
+		var validity = subject.validateSerialNums(serials, payer, token1Model, tokenStore,
+				Id.fromGrpcAccount(spender1));
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
 	}
 
@@ -749,8 +758,8 @@ class AdjustAllowanceChecksTest {
 	@Test
 	void validateIfSerialsEmptyWithoutApproval() {
 		final List<Long> serials = List.of();
-		var validity = subject.validateSerialNums(serials, payer, merkleToken1, view,
-				Id.fromGrpcToken(token1), Id.fromGrpcAccount(spender1));
+		var validity = subject.validateSerialNums(serials, payer, token1Model, tokenStore,
+				Id.fromGrpcAccount(spender1));
 		assertEquals(EMPTY_ALLOWANCES, validity);
 	}
 
@@ -776,22 +785,6 @@ class AdjustAllowanceChecksTest {
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, subject.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), payer,
 				dynamicProperties.maxAllowanceLimitPerTransaction(), view));
-	}
-	@Test
-	void validatesInvalidOwner(){
-		final var account = mock(MerkleAccount.class);
-		given(account.isDeleted()).willReturn(true);
-		assertTrue(subject.isInvalidOwner(account));
-
-		given(account.isDeleted()).willReturn(false);
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
-		given(account.getBalance()).willReturn(0L);
-		given(account.getExpiry()).willReturn(1234L);
-		given(validator.isAfterConsensusSecond(1234L)).willReturn(false);
-		assertTrue(subject.isInvalidOwner(account));
-
-		given(dynamicProperties.autoRenewEnabled()).willReturn(false);
-		assertFalse(subject.isInvalidOwner(account));
 	}
 
 	private void addAllowances() {
@@ -828,10 +821,6 @@ class AdjustAllowanceChecksTest {
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(payerId));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId));
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
-		given(view.loadAccount(ownerId)).willReturn(ownerAccount);
-		given(view.loadToken(token1)).willReturn(merkleToken1);
-		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
 		addExistingAllowancesAndSerials();
 	}
 
@@ -843,8 +832,6 @@ class AdjustAllowanceChecksTest {
 
 	private void setUpForTest() {
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
-		given(view.loadToken(token1)).willReturn(merkleToken1);
-		given(view.loadToken(token2)).willReturn(merkleToken2);
 		given(payer.isAssociatedWith(token1Model.getId())).willReturn(true);
 		given(payer.isAssociatedWith(token2Model.getId())).willReturn(true);
 
@@ -856,13 +843,29 @@ class AdjustAllowanceChecksTest {
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
 
-		given(view.loadNft(token1Nft1)).willReturn(token);
-		given(view.loadNft(tokenNft2)).willReturn(token);
-		given(view.loadNft(token1Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
-		given(view.loadNft(tokenNft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
-
-		given(view.loadToken(token1)).willReturn(merkleToken1);
 		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
+
+		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+		final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
+		final BackingStore<NftId, MerkleUniqueToken> nfts = mock(BackingNfts.class);
+		given(view.asReadOnlyAccountStore()).willReturn(store);
+		given(view.asReadOnlyTokenStore()).willReturn(tokens);
+		given(view.asReadOnlyNftStore()).willReturn(nfts);
+
+		given(store.getImmutableRef(ownerId)).willReturn(ownerAccount);
+		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
+		given(nfts.getImmutableRef(token2Nft1)).willReturn(uniqueToken);
+		given(nfts.getImmutableRef(token2Nft2)).willReturn(uniqueToken);
+
+		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
+		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
+		given(view.asReadOnlyTokenStore().getImmutableRef(token1)).willReturn(merkleToken1);
+		given(view.asReadOnlyTokenStore().getImmutableRef(token2)).willReturn(merkleToken2);
+		given(merkleToken1.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
+		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
+		given(ownerAccount.tokens()).willReturn(new MerkleAccountTokens());
+		given(ownerAccount.state()).willReturn(new MerkleAccountState());
+		given(uniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 	}
 }

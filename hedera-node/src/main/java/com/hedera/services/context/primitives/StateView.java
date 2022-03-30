@@ -93,8 +93,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
@@ -107,10 +105,6 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.swirlds.common.CommonUtils.hex;
 import static java.util.Collections.unmodifiableMap;
 
@@ -140,6 +134,11 @@ public class StateView {
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, HFileMeta> fileAttrs;
+
+	private BackingStore<TokenID, MerkleToken> backingTokens = null;
+	private BackingStore<AccountID, MerkleAccount> backingAccounts = null;
+	private BackingStore<NftId, MerkleUniqueToken> backingNfts = null;
+	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = null;
 
 	public StateView(
 			@Nullable final ScheduleStore scheduleStore,
@@ -548,31 +547,31 @@ public class StateView {
 	}
 
 	public BackingStore<TokenID, MerkleToken> asReadOnlyTokenStore() {
-		return new BackingTokens(stateChildren::tokens);
+		if (backingTokens == null) {
+			backingTokens = new BackingTokens(stateChildren::tokens);
+		}
+		return backingTokens;
 	}
 
 	public BackingStore<AccountID, MerkleAccount> asReadOnlyAccountStore() {
-		return new BackingAccounts(stateChildren::accounts);
+		if (backingAccounts == null) {
+			backingAccounts = new BackingAccounts(stateChildren::accounts);
+		}
+		return backingAccounts;
 	}
 
 	public BackingStore<NftId, MerkleUniqueToken> asReadOnlyNftStore() {
-		return new BackingNfts(stateChildren::uniqueTokens);
+		if (backingNfts == null) {
+			backingNfts = new BackingNfts(stateChildren::uniqueTokens);
+		}
+		return backingNfts;
 	}
 
 	public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> asReadOnlyAssociationStore() {
-		return new BackingTokenRels(stateChildren::tokenAssociations);
-	}
-
-	public MerkleAccount loadAccount(AccountID id) {
-		return asReadOnlyAccountStore().getImmutableRef(id);
-	}
-
-	public MerkleToken loadToken(TokenID id) {
-		return asReadOnlyTokenStore().getImmutableRef(id);
-	}
-
-	public MerkleUniqueToken loadNft(NftId id) {
-		return asReadOnlyNftStore().getImmutableRef(id);
+		if (backingRels == null) {
+			backingRels = new BackingTokenRels(stateChildren::tokenAssociations);
+		}
+		return backingRels;
 	}
 
 	private TokenFreezeStatus tfsFor(final boolean flag) {

@@ -323,6 +323,12 @@ public class TypedTokenStore {
 		token.setLoadedUniqueTokens(loadedUniqueTokens);
 	}
 
+	public MerkleUniqueToken loadUniqueToken(NftId nftId) {
+		final var merkleUniqueToken = uniqueTokens.getImmutableRef(nftId);
+		validateUsable(merkleUniqueToken);
+		return merkleUniqueToken;
+	}
+
 	/**
 	 * Use carefully. Returns a model of the requested token which may be marked as deleted or
 	 * even marked as auto-removed if the Merkle state has no token with that id.

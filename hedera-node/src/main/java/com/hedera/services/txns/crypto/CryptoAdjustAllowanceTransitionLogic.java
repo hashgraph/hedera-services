@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.absolute;
@@ -62,7 +61,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final Map<Long, Account> entitiesChanged;
-	private final Supplier<StateView> currentView;
+	private final StateView workingView;
 
 	@Inject
 	public CryptoAdjustAllowanceTransitionLogic(
@@ -71,13 +70,13 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final AdjustAllowanceChecks allowanceChecks,
 			final GlobalDynamicProperties dynamicProperties,
 			final SideEffectsTracker sideEffectsTracker,
-			final Supplier<StateView> currentView) {
+			final StateView workingView) {
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 		this.adjustAllowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
-		this.currentView = currentView;
+		this.workingView = workingView;
 		this.entitiesChanged = new HashMap<>();
 	}
 
@@ -122,7 +121,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 		return adjustAllowanceChecks.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), payerAccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction(), currentView.get());
+				dynamicProperties.maxAllowanceLimitPerTransaction(), workingView);
 	}
 
 	/**

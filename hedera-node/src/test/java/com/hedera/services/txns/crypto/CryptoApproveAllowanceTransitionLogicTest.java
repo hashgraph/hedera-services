@@ -57,7 +57,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -86,7 +85,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private Supplier<StateView> view;
+	private StateView view;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
 	private CryptoApproveAllowanceTransactionBody op;
@@ -203,7 +202,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				op.getTokenAllowancesList(),
 				op.getNftAllowancesList(),
 				payerAcccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction(), view.get()))
+				dynamicProperties.maxAllowanceLimitPerTransaction(), view))
 				.willReturn(OK);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));
