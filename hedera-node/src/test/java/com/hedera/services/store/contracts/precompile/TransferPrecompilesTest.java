@@ -237,7 +237,6 @@ class TransferPrecompilesTest {
 	void transferFailsFastGivenWrongSyntheticValidity() {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
-		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -265,7 +264,7 @@ class TransferPrecompilesTest {
 				.willReturn(mockRecordBuilder);
 		given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
 		given(frame.getRemainingGas()).willReturn(Gas.of(100L));
-		given(frame.getValue()).willReturn(Wei.ONE);
+		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(frame.getInputData()).willReturn(pretendArguments);
 
 		// when:
@@ -280,7 +279,7 @@ class TransferPrecompilesTest {
 		verify(mockRecordBuilder).setContractCallResult(captor.capture());
 		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN.name(), captor.getValue().getError());
 		assertEquals(100L, captor.getValue().getGas());
-		assertEquals(1L, captor.getValue().getAmount());
+		assertEquals(0L, captor.getValue().getAmount());
 		assertEquals(pretendArguments.toArrayUnsafe(), captor.getValue().getFunctionParameters());
 	}
 

@@ -29,7 +29,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.exceptions.ValidationUtils;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
@@ -152,6 +151,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -352,8 +352,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		if (this.precompile == null || this.transactionBody == null) {
 			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
-			return null;
-		} else if (this.messageFrame.getRevertReason().isPresent()) {
 			return null;
 		}
 
@@ -942,15 +940,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			};
 
 			/* --- Validate Solidity input and massage it to be able to transform it to tokenCreateTxnBody --- */
+			verifySolidityInput();
 			try {
-				verifySolidityInput();
 				replaceInheritedKeysWithSenderKey();
-			} catch (InvalidTransactionException e) {
-				return null;
 			} catch (DecoderException e) {
-				final var errorMessage = "Sender key could not be decoded - " + e.getMessage();
-				messageFrame.setRevertReason(Bytes.wrap(errorMessage.getBytes()));
-				return null;
+				throw new InvalidTransactionException(FAIL_INVALID);
 			}
 
 			return syntheticTxnFactory.createTokenCreate(tokenCreateOp);
@@ -969,9 +963,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tinybarsRequirement = calculatedFeeInTinybars + (calculatedFeeInTinybars / 5)
 					- precompile.getMinimumFeeInTinybars(timestamp) * gasPriceInTinybars;
 
-			ValidationUtils.validateTrue(
-					messageFrame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)),
-					INSUFFICIENT_TX_FEE);
+			validateTrue(messageFrame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
 
 			updater.getAccount(senderAddress).getMutable()
 					.decrementBalance(Wei.of(tinybarsRequirement));
@@ -987,14 +979,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
 			final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
 			final var result = tokenCreateChecks.validatorForConsTime(creationTime).apply(transactionBody.build());
-			ValidationUtils.validateTrue(result == OK, result);
+			validateTrue(result == OK, result);
 
 			/* --- Check required signatures --- */
 			final var treasuryId = Id.fromGrpcAccount(tokenCreateOp.getTreasury());
 			final var treasuryHasSigned = validateKey(frame, treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey);
-			ValidationUtils.validateTrue(treasuryHasSigned, INVALID_SIGNATURE);
+			validateTrue(treasuryHasSigned, INVALID_SIGNATURE);
 			tokenCreateOp.getAdminKey().ifPresent(tokenKeyWrapper ->
-					ValidationUtils.validateTrue(validateAdminKey(frame, tokenKeyWrapper), INVALID_SIGNATURE));
+					validateTrue(validateAdminKey(frame, tokenKeyWrapper), INVALID_SIGNATURE));
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var scopedAccountStore = createAccountStore();
@@ -1017,9 +1009,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			 */
 			if (tokenCreateOp.isFungible()) {
 				validateTrue(tokenCreateOp.getInitSupply().compareTo(BigInteger.valueOf(Long.MAX_VALUE)) < 1,
-						"Initial token supply cannot by higher than " + Long.MAX_VALUE);
+						INVALID_TRANSACTION_BODY);
 				validateTrue(tokenCreateOp.getDecimals().compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) < 1,
-						"Token decimals cannot be higher than " + Integer.MAX_VALUE);
+						INVALID_TRANSACTION_BODY);
 			}
 
 			/*
@@ -1037,13 +1029,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			if (!tokenKeys.isEmpty()) {
 				for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
 					final var tokenKey = tokenKeys.get(i);
-					validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, "Token key must have exactly 1 key " +
-							"value set.");
+					validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
 					final var tokenKeyBitField = tokenKey.keyType().intValue();
-					validateTrue(tokenKeyBitField != 0, "Key passed without key type to apply it to.");
+					validateTrue(tokenKeyBitField != 0, INVALID_TRANSACTION_BODY);
 					for (int j = i + 1; j < tokenKeysSize; j++) {
 						validateTrue((tokenKeyBitField & tokenKeys.get(j).keyType().intValue()) == 0,
-								"Multiple keys supplied for the same key type.");
+								INVALID_TRANSACTION_BODY);
 					}
 				}
 			}
@@ -1054,8 +1045,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			 */
 			if (!tokenCreateOp.getFixedFees().isEmpty()) {
 				for (final var fixedFee: tokenCreateOp.getFixedFees()) {
-					validateTrue(fixedFee.getFixedFeePayment() != INVALID_PAYMENT, "In FixedFee, only 1 of tokenId, " +
-						"useHbarsForPayment, useCurrentTokenForPayment should be set!");
+					validateTrue(fixedFee.getFixedFeePayment() != INVALID_PAYMENT, INVALID_TRANSACTION_BODY);
 				}
 			}
 		}
@@ -1088,13 +1078,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return keyActiveTest.test(key);
 		}
 
-		private void validateTrue(final boolean flag, final String revertMessage) {
-			if (!flag) {
-				messageFrame.setRevertReason(Bytes.of(revertMessage.getBytes()));
-				throw new InvalidTransactionException(FAIL_INVALID);
-			}
-		}
-
 		@Override
 		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
 			return 100_000L;
@@ -1103,7 +1086,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final var receiptBuilder = childRecord.getReceiptBuilder();
-			ValidationUtils.validateTrue(receiptBuilder != null, FAIL_INVALID);
+			validateTrue(receiptBuilder != null, FAIL_INVALID);
 			return encoder.encodeCreateSuccess(
 					asTypedEvmAddress(childRecord.getReceiptBuilder().getTokenId().toGrpcTokenId()));
 		}

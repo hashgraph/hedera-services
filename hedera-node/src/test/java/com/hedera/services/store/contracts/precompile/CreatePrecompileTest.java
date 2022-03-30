@@ -718,8 +718,6 @@ class CreatePrecompileTest {
 		given(decoder.decodeNonFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN);
 		given(frame.getSenderAddress()).willReturn(senderAddress);
-		doCallRealMethod().when(frame).setRevertReason(any());
-		doCallRealMethod().when(frame).getRevertReason();
 
 		// when:
 		final var result = subject.compute(pretendArguments, frame);
