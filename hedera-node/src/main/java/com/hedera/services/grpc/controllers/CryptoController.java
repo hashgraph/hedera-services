@@ -152,7 +152,7 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	}
 
 	@Override
-	public void adjustAllowance(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+	public void adjustAllowances(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, CryptoAdjustAllowance);
 	}
 

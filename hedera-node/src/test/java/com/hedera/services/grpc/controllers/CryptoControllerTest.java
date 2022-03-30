@@ -222,7 +222,7 @@ class CryptoControllerTest {
 	@Test
 	void forwardsAdjustAsExpected() {
 		// when:
-		subject.adjustAllowance(txn, txnObserver);
+		subject.adjustAllowances(txn, txnObserver);
 
 		// expect:
 		verify(txnResponseHelper).submit(txn, txnObserver, CryptoAdjustAllowance);
