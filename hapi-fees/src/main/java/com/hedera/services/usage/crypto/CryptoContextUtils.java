@@ -110,10 +110,7 @@ public class CryptoContextUtils {
 			final Map<AllowanceId, AllowanceDetails> newAllowances) {
 		int counter = 0;
 		for (var a : newAllowances.entrySet()) {
-			final var isApprovedForAll = a.getValue().approvedForAll();
-			if (isApprovedForAll != null && !isApprovedForAll) {
-					counter += a.getValue().serialNums().size();
-			}
+			counter += a.getValue().serialNums().size();
 		}
 		return counter;
 	}
