@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -56,18 +57,21 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final ApproveAllowanceChecks allowanceChecks;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Map<Long, Account> entitiesChanged;
+	private final StateView workingView;
 
 	@Inject
 	public CryptoApproveAllowanceTransitionLogic(
 			final TransactionContext txnCtx,
 			final AccountStore accountStore,
 			final ApproveAllowanceChecks allowanceChecks,
-			final GlobalDynamicProperties dynamicProperties) {
+			final GlobalDynamicProperties dynamicProperties,
+			final StateView workingView) {
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 		this.allowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
 		this.entitiesChanged = new HashMap<>();
+		this.workingView = workingView;
 	}
 
 	@Override
@@ -115,7 +119,8 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 				op.getTokenAllowancesList(),
 				op.getNftAllowancesList(),
 				payerAccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction());
+				dynamicProperties.maxAllowanceLimitPerTransaction(),
+				workingView);
 	}
 
 	/**
