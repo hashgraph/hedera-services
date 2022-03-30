@@ -332,7 +332,7 @@ public class TypedTokenStore {
 		token.setLoadedUniqueTokens(loadedUniqueTokens);
 	}
 
-	public MerkleUniqueToken loadUniqueToken(NftId nftId) {
+	public MerkleUniqueToken loadUniqueToken(final NftId nftId) {
 		final var merkleUniqueToken = uniqueTokens.getImmutableRef(nftId);
 		validateUsable(merkleUniqueToken);
 		return merkleUniqueToken;

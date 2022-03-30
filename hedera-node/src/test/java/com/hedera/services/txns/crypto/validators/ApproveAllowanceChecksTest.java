@@ -570,6 +570,14 @@ class ApproveAllowanceChecksTest {
 	}
 
 	@Test
+	void validateNegativeSerials() {
+		final var serials = List.of(-1L, 10L);
+		var validity = subject.validateSerialNums(serials, owner, token2Model, tokenStore,
+				Id.fromGrpcAccount(spender2));
+		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
+	}
+
+	@Test
 	void approvesAllowanceFromTreasury() {
 		final var serials = List.of(1L);
 		token2Model.setTreasury(treasury);

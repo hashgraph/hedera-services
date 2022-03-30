@@ -84,15 +84,16 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 		}
 
 		for (var serial : serialNums) {
+			if (serial <= 0) {
+				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
+			}
 			final MerkleUniqueToken nftId;
 			try {
 				nftId = tokenStore.loadUniqueToken(NftId.withDefaultShardRealm(token.getId().num(), serial));
 			} catch (InvalidTransactionException ex) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
-			if (serial <= 0 || nftId == null) {
-				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
-			}
+
 			if (!validOwner(nftId.getOwner(), ownerAccount, token)) {
 				return SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 			}
