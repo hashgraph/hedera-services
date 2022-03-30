@@ -223,7 +223,6 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
 			nftsTouched.addAll(nfts);
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-			sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), mutableApprovedForAllNftsAllowances, nfts);
 		}
 	}
 

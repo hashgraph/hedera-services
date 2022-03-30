@@ -486,7 +486,6 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getTxnRecord("approveTxn")
 								.hasCryptoAllowance(payer, spender1, 100L)
 								.hasTokenAllowance(payer, token, spender, 100L)
-								.hasNftAllowance(payer, nft, spender, false, List.of(1L))
 								.logged()
 				)
 				.then(
@@ -954,8 +953,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
 						getTxnRecord("maxExceeded")
 								.hasCryptoAllowanceCount(0)
-								.hasTokenAllowanceCount(0)
-								.hasNftAllowanceCount(0),
+								.hasTokenAllowanceCount(0),
 						// reset
 						fileUpdate(APP_PROPERTIES)
 								.fee(ONE_HUNDRED_HBARS)
@@ -1544,10 +1542,8 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getTxnRecord("multiOwnerTxn")
 								.hasCryptoAllowance(owner1, spender, ONE_HBAR)
 								.hasTokenAllowance(owner1, token, spender, 100L)
-								.hasNftAllowance(owner1, nft, spender, false, List.of(1L))
 								.hasCryptoAllowance(owner2, spender, 2 * ONE_HBAR)
 								.hasTokenAllowance(owner2, token, spender, 300L)
-								.hasNftAllowance(owner2, nft, spender, false, List.of(4L, 5L))
 								.logged()
 				)
 				.then(
@@ -1621,8 +1617,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 						getTxnRecord("otherAdjustTxn")
 								.logged()
 								.hasCryptoAllowance(owner, spender, 200L)
-								.hasTokenAllowance(owner, token, spender, 100L)
-								.hasNftAllowance(owner, nft, spender, false, List.of(1L)),
+								.hasTokenAllowance(owner, token, spender, 100L),
 						validateChargedUsdWithin("otherAdjustTxn", 0.05296, 0.01),
 						getAccountInfo(owner)
 								.has(accountWith()
@@ -1643,8 +1638,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.logged(),
 						getTxnRecord("adjustTxn")
 								.hasCryptoAllowance(owner, spender, 210L)
-								.hasTokenAllowance(owner, token, spender, 90L)
-								.hasNftAllowance(owner, nft, spender, false, List.of(2L)),
+								.hasTokenAllowance(owner, token, spender, 90L),
 						validateChargedUsdWithin("adjustTxn", 0.05173, 0.01),
 						getAccountInfo(owner)
 								.has(accountWith()

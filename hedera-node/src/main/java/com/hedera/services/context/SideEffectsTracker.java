@@ -87,7 +87,6 @@ public class SideEffectsTracker {
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 	private Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = Collections.emptyMap();
 	private Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances = Collections.emptyMap();
-	private Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = Collections.emptyMap();
 
 	@Inject
 	public SideEffectsTracker() {
@@ -451,25 +450,6 @@ public class SideEffectsTracker {
 		this.fungibleTokenAllowances.put(ownerNum, fungibleTokenAllowances);
 	}
 
-	public Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> getNftAllowances() {
-		return nftAllowances;
-	}
-
-	public void setNftAllowances(Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances) {
-		this.nftAllowances = nftAllowances;
-	}
-
-	public void setNftAllowances(
-			final EntityNum ownerNum,
-			final Set<FcTokenAllowanceId> approveForAllNftsAllowances,
-			final List<UniqueToken> nfts) {
-		if (this.nftAllowances.equals(Collections.emptyMap())) {
-			this.nftAllowances = new TreeMap<>();
-		}
-
-		this.nftAllowances.put(ownerNum, buildNftAllowanceMap(approveForAllNftsAllowances, nfts));
-	}
-
 	/**
 	 * Clears all side effects tracked since the last call to this method.
 	 */
@@ -482,7 +462,6 @@ public class SideEffectsTracker {
 		newEntityAlias = ByteString.EMPTY;
 		cryptoAllowances = Collections.emptyMap();
 		fungibleTokenAllowances = Collections.emptyMap();
-		nftAllowances = Collections.emptyMap();
 	}
 
 	/**

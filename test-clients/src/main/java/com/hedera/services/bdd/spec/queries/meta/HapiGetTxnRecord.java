@@ -21,7 +21,6 @@ package com.hedera.services.bdd.spec.queries.meta;
  */
 
 import com.google.common.base.MoreObjects;
-import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -107,7 +106,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private List<Pair<String, String>> newTokenAssociations = new ArrayList<>();
 	private List<ExpectedCryptoAllowance> expectedCryptoAllowances = new ArrayList<>();
 	private List<ExpectedTokenAllowance> expectedTokenAllowances = new ArrayList<>();
-	private List<ExpectedNftAllowance> expectedNftAllowances = new ArrayList<>();
 	private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
 	private Optional<TransactionID> explicitTxnId = Optional.empty();
 	private Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
@@ -126,7 +124,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 	private Optional<Integer> cryptoAllowanceCount = Optional.empty();
 	private Optional<Integer> tokenAllowanceCount = Optional.empty();
-	private Optional<Integer> nftAllowanceCount = Optional.empty();
 
 	private Consumer<List<?>> eventDataObserver;
 	private Predicate<Abi.Event> eventMatcher;
@@ -238,12 +235,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord hasTokenAllowance(final String owner, final String token, final String spender, final long allowance) {
 		expectedTokenAllowances.add(new ExpectedTokenAllowance(owner, token, spender, allowance));
-		return this;
-	}
-
-	public HapiGetTxnRecord hasNftAllowance(final String owner, final String token, final String spender
-			, final boolean isApproveForAll, final List<Long> serialNums) {
-		expectedNftAllowances.add(new ExpectedNftAllowance(owner, token, spender, isApproveForAll, serialNums));
 		return this;
 	}
 
@@ -360,11 +351,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
 	public HapiGetTxnRecord hasTokenAllowanceCount(final int tokenAllowanceCount) {
 		this.tokenAllowanceCount = Optional.of(tokenAllowanceCount);
-		return this;
-	}
-
-	public HapiGetTxnRecord hasNftAllowanceCount(final int nftAllowanceCount) {
-		this.nftAllowanceCount = Optional.of(nftAllowanceCount);
 		return this;
 	}
 
@@ -576,31 +562,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 			}
 			assertTrue(found, "Couldn't find token allowance with ->" +
 					" owner : " + ownerId + " token : " + tokenId + " spender : " + spenderId + " allowance : " + allowance);
-		}
-		nftAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getNftAdjustmentsCount(),
-				"expected nftAllowanceCount was : " + n + " but is : " + actualRecord.getNftAdjustmentsCount()));
-
-		for (var expectedNftAllowance : expectedNftAllowances) {
-			final var ownerId = spec.registry().getAccountID(expectedNftAllowance.owner());
-			final var tokenId = spec.registry().getTokenID(expectedNftAllowance.token());
-			final var spenderId = spec.registry().getAccountID(expectedNftAllowance.spender());
-			final var isApprovedForAll = BoolValue.of(expectedNftAllowance.isApproveForAll());
-			final var serialNums = expectedNftAllowance.serialNums();
-			boolean found = false;
-			for (var actualAllowance : actualRecord.getNftAdjustmentsList()) {
-				if (
-						actualAllowance.getOwner().equals(ownerId) &&
-						actualAllowance.getTokenId().equals(tokenId) &&
-						actualAllowance.getSpender().equals(spenderId) &&
-						(!actualAllowance.hasApprovedForAll() || actualAllowance.getApprovedForAll().equals(isApprovedForAll)) &&
-						actualAllowance.getSerialNumbersList().equals(serialNums)
-				) {
-					found = true;
-				}
-			}
-			assertTrue(found, "Couldn't find nft allowance with ->" +
-					" owner : " + ownerId + " token : " + tokenId + " spender : " + spenderId +
-					" isApprovedForAll : " + isApprovedForAll + " serialNums : " + serialNums);
 		}
 	}
 
