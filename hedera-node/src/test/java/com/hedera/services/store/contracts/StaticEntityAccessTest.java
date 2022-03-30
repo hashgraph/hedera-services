@@ -28,7 +28,10 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
@@ -36,8 +39,10 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
@@ -53,6 +58,9 @@ import java.math.BigInteger;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -75,11 +83,15 @@ class StaticEntityAccessTest {
 	@Mock
 	private HederaAccountCustomizer customizer;
 	@Mock
+	private MerkleMap<EntityNum, MerkleToken> tokens;
+	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private VirtualMap<ContractKey, ContractValue> storage;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
+	@Mock
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 
 	private StaticEntityAccess subject;
 
@@ -96,7 +108,6 @@ class StaticEntityAccessTest {
 	private static final ByteString pretendAlias =
 			ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
 
-	private final long someExpiry = 1_234_567L;
 	private final MerkleAccount someNonContractAccount = new HederaAccountCustomizer()
 			.isReceiverSigRequired(false)
 			.key(key)
@@ -121,9 +132,12 @@ class StaticEntityAccessTest {
 
 	@BeforeEach
 	void setUp() {
+		given(stateView.tokens()).willReturn(tokens);
 		given(stateView.storage()).willReturn(blobs);
 		given(stateView.accounts()).willReturn(accounts);
 		given(stateView.contractStorage()).willReturn(storage);
+		given(stateView.tokenAssociations()).willReturn(tokenAssociations);
+
 		subject = new StaticEntityAccess(stateView, aliases, validator, dynamicProperties);
 	}
 
@@ -241,5 +255,72 @@ class StaticEntityAccessTest {
 	@Test
 	void fetchWithoutValueReturnsNull() {
 		assertNull(subject.fetchCodeIfPresent(id));
+	}
+
+	@Test
+	void failsWithInvalidTokenIdGivenMissing() {
+		assertFailsWith(() -> subject.typeOf(tokenId), INVALID_TOKEN_ID);
+		assertFailsWith(() -> subject.nameOf(tokenId), INVALID_TOKEN_ID);
+		assertFailsWith(() -> subject.supplyOf(tokenId), INVALID_TOKEN_ID);
+		assertFailsWith(() -> subject.symbolOf(tokenId), INVALID_TOKEN_ID);
+		assertFailsWith(() -> subject.decimalsOf(tokenId), INVALID_TOKEN_ID);
+		assertFailsWith(() -> subject.balanceOf(accountId, tokenId), INVALID_TOKEN_ID);
+	}
+
+	@Test
+	void getsExpectedTokenMeta() {
+		given(tokens.get(tokenNum)).willReturn(token);
+
+		assertEquals(name, subject.nameOf(tokenId));
+		assertEquals(symbol, subject.symbolOf(tokenId));
+		assertEquals(decimals, subject.decimalsOf(tokenId));
+		assertEquals(totalSupply, subject.supplyOf(tokenId));
+		assertEquals(type, subject.typeOf(tokenId));
+	}
+
+	@Test
+	void rejectsMissingAccount() {
+		given(tokens.get(tokenNum)).willReturn(token);
+		assertFailsWith(() -> subject.balanceOf(accountId, tokenId), INVALID_ACCOUNT_ID);
+	}
+
+	@Test
+	void getsZeroBalanceIfNoAssociation() {
+		given(tokens.get(tokenNum)).willReturn(token);
+		given(accounts.containsKey(accountNum)).willReturn(true);
+		assertEquals(0, subject.balanceOf(accountId, tokenId));
+	}
+
+	@Test
+	void getsExpectedBalanceIfAssociationExists() {
+		given(tokens.get(tokenNum)).willReturn(token);
+		given(accounts.containsKey(accountNum)).willReturn(true);
+		final var relStatus = new MerkleTokenRelStatus(balance, false, false, false);
+		given(tokenAssociations.get(EntityNumPair.fromAccountTokenRel(accountId, tokenId))).willReturn(relStatus);
+		assertEquals(balance, subject.balanceOf(accountId, tokenId));
+	}
+
+	private static final int decimals = 666666;
+	private static final long someExpiry = 1_234_567L;
+	private static final long totalSupply = 4242;
+	private static final long balance = 2424;
+	private static final TokenType type = TokenType.NON_FUNGIBLE_UNIQUE;
+	private static final String name = "Sunlight on a broken column";
+	private static final String symbol = "THM1925";
+	private static final EntityNum tokenNum = EntityNum.fromLong(666);
+	private static final EntityNum accountNum = EntityNum.fromLong(888);
+	private static final TokenID tokenId = tokenNum.toGrpcTokenId();
+	private static final AccountID accountId = accountNum.toGrpcAccountId();
+	private static final MerkleToken token = new MerkleToken(
+			someExpiry,
+			totalSupply,
+			decimals,
+			symbol,
+			name,
+			false,
+			true,
+			EntityId.MISSING_ENTITY_ID);
+	{
+		token.setTokenType(type);
 	}
 }

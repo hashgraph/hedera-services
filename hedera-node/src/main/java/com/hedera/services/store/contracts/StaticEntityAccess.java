@@ -30,7 +30,10 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
@@ -39,7 +42,9 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
@@ -49,31 +54,39 @@ import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Objects;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 public class StaticEntityAccess implements EntityAccess {
+	private final StateView view;
 	private final ContractAliases aliases;
 	private final OptionValidator validator;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final MerkleMap<EntityNum, MerkleToken> tokens;
 	private final MerkleMap<EntityNum, MerkleAccount> accounts;
+	private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private final VirtualMap<ContractKey, ContractValue> storage;
 	private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
-	private final StateView stateView;
 
 	public StaticEntityAccess(
-			final StateView stateView,
+			final StateView view,
 			final ContractAliases aliases,
 			final OptionValidator validator,
 			final GlobalDynamicProperties dynamicProperties
 	) {
+		this.view = view;
 		this.aliases = aliases;
 		this.validator = validator;
 		this.dynamicProperties = dynamicProperties;
-		this.bytecode = stateView.storage();
-		this.storage = stateView.contractStorage();
-		this.accounts = stateView.accounts();
-		this.stateView = stateView;
+		this.bytecode = view.storage();
+		this.storage = view.contractStorage();
+		this.accounts = view.accounts();
+		this.tokens = view.tokens();
+		this.tokenAssociations = view.tokenAssociations();
 	}
 
 	@Override
@@ -165,7 +178,7 @@ public class StaticEntityAccess implements EntityAccess {
 
 	@Override
 	public boolean isTokenAccount(Address address) {
-		return stateView.tokenExists(EntityIdUtils.tokenIdFromEvmAddress(address));
+		return view.tokenExists(EntityIdUtils.tokenIdFromEvmAddress(address));
 	}
 
 	@Override
@@ -207,5 +220,84 @@ public class StaticEntityAccess implements EntityAccess {
 	@Override
 	public void recordNewKvUsageTo(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		throw new UnsupportedOperationException();
+	}
+
+	// We don't put these methods on the EntityAccess interface, because they would never be used when processing
+	// a non-static EVM call; then the WorldLedgers should get all such information from its ledgers
+	/**
+	 * Returns the name of the given token.
+	 *
+	 * @param tokenId the token of interest
+	 * @return the token's name
+	 */
+	public String nameOf(final TokenID tokenId) {
+		final var token = lookupToken(tokenId);
+		return token.name();
+	}
+
+	/**
+	 * Returns the symbol of the given token.
+	 *
+	 * @param tokenId the token of interest
+	 * @return the token's symbol
+	 */
+	public String symbolOf(final TokenID tokenId) {
+		final var token = lookupToken(tokenId);
+		return token.symbol();
+	}
+
+	/**
+	 * Returns the supply of the given token.
+	 *
+	 * @param tokenId the token of interest
+	 * @return the token's supply
+	 */
+	public long supplyOf(final TokenID tokenId) {
+		final var token = lookupToken(tokenId);
+		return token.totalSupply();
+	}
+
+	/**
+	 * Returns the decimals of the given token.
+	 *
+	 * @param tokenId the token of interest
+	 * @return the token's decimals
+	 */
+	public int decimalsOf(final TokenID tokenId) {
+		final var token = lookupToken(tokenId);
+		return token.decimals();
+	}
+
+	/**
+	 * Returns the type of the given token.
+	 *
+	 * @param tokenId the token of interest
+	 * @return the token's type
+	 */
+	public TokenType typeOf(final TokenID tokenId) {
+		final var token = lookupToken(tokenId);
+		return token.tokenType();
+	}
+
+	/**
+	 * Returns the balance of the given account for the given token.
+	 *
+	 * @param accountId the account of interest
+	 * @param tokenId the token of interest
+	 * @return the token's supply
+	 */
+	public long balanceOf(final AccountID accountId, final TokenID tokenId) {
+		lookupToken(tokenId);
+		final var accountNum = EntityNum.fromAccountId(accountId);
+		validateTrue(accounts.containsKey(accountNum), INVALID_ACCOUNT_ID);
+		final var balanceKey = fromAccountTokenRel(accountId, tokenId);
+		final var relStatus = tokenAssociations.get(balanceKey);
+		return (relStatus != null) ? relStatus.getBalance() : 0;
+	}
+
+	private MerkleToken lookupToken(final TokenID tokenId) {
+		final var token = tokens.get(EntityNum.fromTokenId(tokenId));
+		validateTrue(token != null, INVALID_TOKEN_ID);
+		return token;
 	}
 }

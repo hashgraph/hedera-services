@@ -40,7 +40,6 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -115,15 +114,8 @@ import java.util.function.UnaryOperator;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
-import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
-import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
-import static com.hedera.services.ledger.properties.TokenProperty.NAME;
-import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
-import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
-import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
-import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
@@ -136,6 +128,7 @@ import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -406,49 +399,47 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile();
 					case ABI_ID_REDIRECT_FOR_TOKEN -> {
 						final var tokenAddress = input.slice(4, 20);
-						final var tokenID = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress.toArray());
+						final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress.toArray());
 						final var nestedInput = input.slice(24);
-						final var tokensLedger = ledgers.tokens();
-						final var isFungibleToken = TokenType.FUNGIBLE_COMMON.equals(tokensLedger.get(tokenID,
-								TOKEN_TYPE));
+						final var isFungibleToken = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
 
 						Precompile nestedPrecompile;
 						this.isTokenReadOnlyTransaction = true;
 						final var nestedFunctionSelector = nestedInput.getInt(0);
 
 						if (ABI_ID_NAME == nestedFunctionSelector) {
-							nestedPrecompile = new NamePrecompile(tokenID);
+							nestedPrecompile = new NamePrecompile(tokenId);
 						} else if (ABI_ID_SYMBOL == nestedFunctionSelector) {
-							nestedPrecompile = new SymbolPrecompile(tokenID);
+							nestedPrecompile = new SymbolPrecompile(tokenId);
 						} else if (ABI_ID_DECIMALS == nestedFunctionSelector) {
 							if (!isFungibleToken) {
-								throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON,
-										FAIL_INVALID);
+								throw new InvalidTransactionException(
+										NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 							}
-							nestedPrecompile = new DecimalsPrecompile(tokenID);
+							nestedPrecompile = new DecimalsPrecompile(tokenId);
 						} else if (ABI_ID_TOTAL_SUPPLY_TOKEN == nestedFunctionSelector) {
-							nestedPrecompile = new TotalSupplyPrecompile(tokenID);
+							nestedPrecompile = new TotalSupplyPrecompile(tokenId);
 						} else if (ABI_ID_BALANCE_OF_TOKEN == nestedFunctionSelector) {
-							nestedPrecompile = new BalanceOfPrecompile(tokenID);
+							nestedPrecompile = new BalanceOfPrecompile(tokenId);
 						} else if (ABI_ID_OWNER_OF_NFT == nestedFunctionSelector) {
 							if (isFungibleToken) {
-								throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON,
-										FAIL_INVALID);
+								throw new InvalidTransactionException(
+										NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 							}
-							nestedPrecompile = new OwnerOfPrecompile(tokenID);
+							nestedPrecompile = new OwnerOfPrecompile(tokenId);
 						} else if (ABI_ID_TOKEN_URI_NFT == nestedFunctionSelector) {
 							if (isFungibleToken) {
-								throw new InvalidTransactionException(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON,
-										FAIL_INVALID);
+								throw new InvalidTransactionException(
+										NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 							}
-							nestedPrecompile = new TokenURIPrecompile(tokenID);
+							nestedPrecompile = new TokenURIPrecompile(tokenId);
 						} else if (ABI_ID_ERC_TRANSFER == nestedFunctionSelector) {
 							this.isTokenReadOnlyTransaction = false;
 							if (!isFungibleToken) {
-								throw new InvalidTransactionException(NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON,
-										FAIL_INVALID);
+								throw new InvalidTransactionException(
+										NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
 							}
-							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.senderAddress, isFungibleToken);
+							nestedPrecompile = new ERCTransferPrecompile(tokenId, this.senderAddress, isFungibleToken);
 						} else {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = null;
@@ -508,12 +499,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			result = precompile.getSuccessResultFor(childRecord);
 			addContractCallResultToRecord(childRecord, result, Optional.empty(), frame);
-		} catch (InvalidTransactionException e) {
+		} catch (final InvalidTransactionException e) {
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = precompile.getFailureResultFor(status);
 			addContractCallResultToRecord(childRecord, result, Optional.of(status), frame);
-		} catch (Exception e) {
+		} catch (final Exception e) {
 			log.warn("Internal precompile failure", e);
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
 			result = precompile.getFailureResultFor(FAIL_INVALID);
@@ -1055,10 +1046,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected abstract class ERCReadOnlyAbstractPrecompile implements Precompile {
-		protected TokenID tokenID;
+		protected TokenID tokenId;
 
-		protected ERCReadOnlyAbstractPrecompile(final TokenID tokenID) {
-			this.tokenID = tokenID;
+		protected ERCReadOnlyAbstractPrecompile(final TokenID tokenId) {
+			this.tokenId = tokenId;
 		}
 
 		@Override
@@ -1104,8 +1095,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID,
-						aliasResolver);
+				case ABI_ID_ERC_TRANSFER ->
+						decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID, aliasResolver);
 				default -> throw new InvalidTransactionException(
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + nestedInput + ")",
 						FAIL_INVALID);
@@ -1160,61 +1151,49 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class NamePrecompile extends ERCReadOnlyAbstractPrecompile {
-
-		public NamePrecompile(TokenID tokenID) {
-			super(tokenID);
+		public NamePrecompile(TokenID tokenId) {
+			super(tokenId);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
-			final var name = (String) tokensLedger.get(tokenID, NAME);
-
+			final var name = ledgers.nameOf(tokenId);
 			return encoder.encodeName(name);
 		}
 	}
 
 	protected class SymbolPrecompile extends ERCReadOnlyAbstractPrecompile {
-
-		public SymbolPrecompile(final TokenID tokenID) {
-			super(tokenID);
+		public SymbolPrecompile(final TokenID tokenId) {
+			super(tokenId);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
-			final var symbol = (String) tokensLedger.get(tokenID, SYMBOL);
-
+			final var symbol = ledgers.symbolOf(tokenId);
 			return encoder.encodeSymbol(symbol);
 		}
 	}
 
 	protected class DecimalsPrecompile extends ERCReadOnlyAbstractPrecompile {
-
-		public DecimalsPrecompile(final TokenID tokenID) {
-			super(tokenID);
+		public DecimalsPrecompile(final TokenID tokenId) {
+			super(tokenId);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
-			final var decimals = (Integer) tokensLedger.get(tokenID, DECIMALS);
-
+			final var decimals = ledgers.decimalsOf(tokenId);
 			return encoder.encodeDecimals(decimals);
 		}
 	}
 
 	protected class TotalSupplyPrecompile extends ERCReadOnlyAbstractPrecompile {
-
 		public TotalSupplyPrecompile(final TokenID tokenID) {
 			super(tokenID);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger = ledgers.tokens();
-			final var totalSupply = (long) tokensLedger.get(tokenID, TOTAL_SUPPLY);
-
+			final var totalSupply = ledgers.totalSupplyOf(tokenId);
 			return encoder.encodeTotalSupply(totalSupply);
 		}
 	}
@@ -1237,7 +1216,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
-			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(),
+			var nftId = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(),
 					tokenUriWrapper.tokenId());
 			// If the requested serial num doesn't exist, we return the standard ERC error message
 			var metaData = nftsLedger.exists(nftId)
@@ -1258,7 +1237,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			final var wrapper = decoder.decodeOwnerOf(input.slice(24));
-			nft = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), wrapper.tokenId());
+			nft = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), wrapper.tokenId());
 			validateTrue(ledgers.nfts().exists(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
 
 			return super.body(input, aliasResolver);
@@ -1288,9 +1267,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final var tokenRelsLedger = ledgers.tokenRels();
-			final var rel = asTokenRel(balanceWrapper.accountId(), tokenID);
-			final var balance = tokenRelsLedger.exists(rel) ? (long) tokenRelsLedger.get(rel, TOKEN_BALANCE) : 0L;
+			final var balance = ledgers.balanceOf(balanceWrapper.accountId(), tokenId);
 			return encoder.encodeBalance(balance);
 		}
 	}

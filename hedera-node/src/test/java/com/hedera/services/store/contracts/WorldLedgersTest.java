@@ -56,7 +56,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
+import static com.hedera.services.ledger.properties.TokenProperty.NAME;
+import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
+import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
+import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -69,8 +79,10 @@ import static org.mockito.Mockito.verify;
 class WorldLedgersTest {
 	private static final NftId target = new NftId(0, 0, 123, 456);
 	private static final TokenID nft = target.tokenId();
+	private static final TokenID fungibleToken = TokenID.newBuilder().setTokenNum(789).build();
 	private static final EntityId treasury = new EntityId(0, 0, 666);
 	private static final EntityId notTreasury = new EntityId(0, 0, 777);
+	private static final AccountID accountID = treasury.toGrpcAccountId();
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final Address sponsor = Address.fromHexString("0xcba");
 
@@ -300,4 +312,76 @@ class WorldLedgersTest {
 		final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
 		assertSame(liveAliases, stackedAliases.wrappedAliases());
 	}
+
+	@Test
+	void staticLedgersUseEntityAccessForTokenMetadata() {
+		given(staticEntityAccess.decimalsOf(fungibleToken)).willReturn(decimals);
+		given(staticEntityAccess.supplyOf(fungibleToken)).willReturn(totalSupply);
+		given(staticEntityAccess.symbolOf(fungibleToken)).willReturn(symbol);
+		given(staticEntityAccess.nameOf(fungibleToken)).willReturn(name);
+		given(staticEntityAccess.balanceOf(accountID, fungibleToken)).willReturn(balance);
+		given(staticEntityAccess.typeOf(fungibleToken)).willReturn(FUNGIBLE_COMMON);
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+
+		assertEquals(name, subject.nameOf(fungibleToken));
+		assertEquals(symbol, subject.symbolOf(fungibleToken));
+		assertEquals(decimals, subject.decimalsOf(fungibleToken));
+		assertEquals(balance, subject.balanceOf(accountID, fungibleToken));
+		assertEquals(totalSupply, subject.totalSupplyOf(fungibleToken));
+		assertEquals(FUNGIBLE_COMMON, subject.typeOf(fungibleToken));
+	}
+
+	@Test
+	void failsIfNoFungibleTokenMetaAvailableFromLedgers() {
+		assertFailsWith(() -> subject.nameOf(fungibleToken), INVALID_TOKEN_ID);
+		assertFailsWith(() -> subject.symbolOf(fungibleToken), INVALID_TOKEN_ID);
+		assertFailsWith(() -> subject.decimalsOf(fungibleToken), INVALID_TOKEN_ID);
+		assertFailsWith(() -> subject.totalSupplyOf(fungibleToken), INVALID_TOKEN_ID);
+		assertFailsWith(() -> subject.balanceOf(accountID, fungibleToken), INVALID_TOKEN_ID);
+	}
+
+	@Test
+	void failsIfAccountMissingFromLedgers() {
+		given(tokensLedger.exists(fungibleToken)).willReturn(true);
+		assertFailsWith(() -> subject.balanceOf(accountID, fungibleToken), INVALID_ACCOUNT_ID);
+	}
+
+	@Test
+	void getsAccountBalanceWhenPresent() {
+		final var key = Pair.of(accountID, fungibleToken);
+		given(tokensLedger.exists(fungibleToken)).willReturn(true);
+		given(accountsLedger.exists(accountID)).willReturn(true);
+		given(tokenRelsLedger.exists(key)).willReturn(true);
+		given(tokenRelsLedger.get(key, TOKEN_BALANCE)).willReturn(balance);
+		assertEquals(balance, subject.balanceOf(accountID, fungibleToken));
+	}
+
+	@Test
+	void getsZeroBalanceWhenNoKeyPresent() {
+		given(tokensLedger.exists(fungibleToken)).willReturn(true);
+		given(accountsLedger.exists(accountID)).willReturn(true);
+		assertEquals(0, subject.balanceOf(accountID, fungibleToken));
+	}
+
+	@Test
+	void getsFungibleTokenMetaAvailableFromLedgers() {
+		given(tokensLedger.get(fungibleToken, DECIMALS)).willReturn(decimals);
+		given(tokensLedger.get(fungibleToken, TOTAL_SUPPLY)).willReturn(totalSupply);
+		given(tokensLedger.get(fungibleToken, NAME)).willReturn(name);
+		given(tokensLedger.get(fungibleToken, SYMBOL)).willReturn(symbol);
+		given(tokensLedger.get(fungibleToken, TOKEN_TYPE)).willReturn(FUNGIBLE_COMMON);
+
+		assertEquals(name, subject.nameOf(fungibleToken));
+		assertEquals(symbol, subject.symbolOf(fungibleToken));
+		assertEquals(decimals, subject.decimalsOf(fungibleToken));
+		assertEquals(totalSupply, subject.totalSupplyOf(fungibleToken));
+		assertEquals(FUNGIBLE_COMMON, subject.typeOf(fungibleToken));
+	}
+
+	private static final int decimals = 666666;
+	private static final long totalSupply = 4242;
+	private static final long balance = 2424;
+	private static final String name = "Sunlight on a broken column";
+	private static final String symbol = "THM1925";
 }
