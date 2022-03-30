@@ -39,7 +39,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -125,7 +125,7 @@ class ApproveAllowanceChecksTest {
 	@Mock
 	private AccountStore accountStore;
 	@Mock
-	private TypedTokenStore tokenStore;
+	private ReadOnlyTokenStore tokenStore;
 
 	ApproveAllowanceChecks subject;
 

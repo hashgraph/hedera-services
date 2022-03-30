@@ -24,7 +24,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -54,7 +54,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 	}
 
 	@Override
-	ResponseCodeEnum validateTokenAmount(final Account ownerAccount,
+	public ResponseCodeEnum validateTokenAmount(final Account ownerAccount,
 			final long amount,
 			final Token token,
 			final Id spender) {
@@ -69,11 +69,11 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 	}
 
 	@Override
-	ResponseCodeEnum validateSerialNums(
+	public ResponseCodeEnum validateSerialNums(
 			final List<Long> serialNums,
 			final Account ownerAccount,
 			final Token token,
-			final TypedTokenStore tokenStore,
+			final ReadOnlyTokenStore tokenStore,
 			final Id spender) {
 		if (hasRepeatedSerials(serialNums)) {
 			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
@@ -103,7 +103,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 	}
 
 	@Override
-	ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender) {
+	public ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender) {
 		if (amount < 0) {
 			return NEGATIVE_ALLOWANCE_AMOUNT;
 		}

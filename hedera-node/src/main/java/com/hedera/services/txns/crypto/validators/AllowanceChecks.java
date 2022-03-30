@@ -26,7 +26,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -39,8 +39,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,16 +63,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
  * Validations for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} and
  * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transaction allowances
  */
-@Singleton
-public class AllowanceChecks {
+public abstract class AllowanceChecks {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
 	private static final String UNSUPPORTED_MSG = "Base Class, Implementation present in " +
 			"AdjustAllowanceChecks/ApproveAllowanceChecks";
 
-	@Inject
-	public AllowanceChecks(final GlobalDynamicProperties dynamicProperties,
+	protected AllowanceChecks(final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator) {
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
@@ -120,13 +116,10 @@ public class AllowanceChecks {
 		if (validity != OK) {
 			return validity;
 		}
-		final var tokenStore = new TypedTokenStore(accountStore,
+		final var tokenStore = new ReadOnlyTokenStore(accountStore,
 				view.asReadOnlyTokenStore(),
 				view.asReadOnlyNftStore(),
-				view.asReadOnlyAssociationStore(),
-				null,
-				null,
-				null);
+				view.asReadOnlyAssociationStore());
 		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount, tokenStore, accountStore);
 		if (validity != OK) {
 			return validity;
@@ -205,7 +198,7 @@ public class AllowanceChecks {
 	ResponseCodeEnum validateFungibleTokenAllowances(
 			final List<TokenAllowance> tokenAllowances,
 			final Account payerAccount,
-			final TypedTokenStore tokenStore,
+			final ReadOnlyTokenStore tokenStore,
 			final AccountStore accountStore) {
 		if (tokenAllowances.isEmpty()) {
 			return OK;
@@ -261,7 +254,7 @@ public class AllowanceChecks {
 	ResponseCodeEnum validateNftAllowances(
 			final List<NftAllowance> nftAllowances,
 			final Account payerAccount,
-			final TypedTokenStore tokenStore,
+			final ReadOnlyTokenStore tokenStore,
 			final AccountStore accountStore) {
 		if (nftAllowances.isEmpty()) {
 			return OK;
@@ -329,7 +322,7 @@ public class AllowanceChecks {
 			final Account ownerAccount,
 			final Id spenderId,
 			final Token token,
-			final TypedTokenStore tokenStore) {
+			final ReadOnlyTokenStore tokenStore) {
 		if (ownerAccount.getId().equals(spenderId)) {
 			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
@@ -386,20 +379,15 @@ public class AllowanceChecks {
 				: listedOwner.equals(ownerAccount.getId().asEntityId());
 	}
 
-	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
+	public abstract ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
 			final Account ownerAccount,
 			final Token token,
-			final TypedTokenStore tokenStore,
-			final Id spender) {
-		throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-	}
+			final ReadOnlyTokenStore tokenStore,
+			final Id spender);
 
-	ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender) {
-		throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-	}
+	public abstract ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender);
 
-	ResponseCodeEnum validateTokenAmount(final Account ownerAccount, final long amount, final Token token,
-			final Id spender) {
-		throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-	}
+	public abstract ResponseCodeEnum validateTokenAmount(final Account ownerAccount, final long amount,
+			final Token token,
+			final Id spender);
 }

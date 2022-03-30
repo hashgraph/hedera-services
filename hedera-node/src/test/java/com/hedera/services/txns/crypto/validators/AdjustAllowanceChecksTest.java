@@ -41,7 +41,7 @@ import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -125,7 +125,7 @@ class AdjustAllowanceChecksTest {
 	@Mock
 	private AccountStore accountStore;
 	@Mock
-	private TypedTokenStore tokenStore;
+	private ReadOnlyTokenStore tokenStore;
 
 	AdjustAllowanceChecks subject;
 
