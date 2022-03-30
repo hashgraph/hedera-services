@@ -199,7 +199,7 @@ public class HapiCryptoAdjustAllowance extends HapiTxnOp<HapiCryptoAdjustAllowan
 
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::adjustAllowance;
+		return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::adjustAllowances;
 	}
 
 	@Override

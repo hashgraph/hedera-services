@@ -42,10 +42,13 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.validators.AllowanceChecks.exceedsTxnLimit;
 import static com.hedera.services.txns.crypto.validators.AllowanceChecks.fetchOwnerAccount;
@@ -143,9 +146,14 @@ public class DeleteAllowanceChecks {
 	 */
 	ResponseCodeEnum validateCryptoDeleteAllowances(final List<CryptoRemoveAllowance> cryptoAllowances,
 			final Account payerAccount) {
-		final var distinctOwners = cryptoAllowances.stream()
-				.map(CryptoRemoveAllowance::getOwner).distinct().count();
-		if (cryptoAllowances.size() != distinctOwners) {
+		final Set<AccountID> distinctOwners = new HashSet<>();
+		for (var allowance : cryptoAllowances) {
+			if (!distinctOwners.contains(allowance.getOwner())) {
+				distinctOwners.add(allowance.getOwner());
+			}
+		}
+
+		if (cryptoAllowances.size() != distinctOwners.size()) {
 			return REPEATED_ALLOWANCES_TO_DELETE;
 		}
 

@@ -45,8 +45,8 @@ public class ExtantCryptoContext {
 	private final boolean currentlyHasProxy;
 	private final int currentMaxAutomaticAssociations;
 	private final Map<Long, Long> currentCryptoAllowances;
-	private final Map<AllowanceMapKey, Long> currentTokenAllowances;
-	private final Set<AllowanceMapKey> currentNftAllowances;
+	private final Map<AllowanceId, Long> currentTokenAllowances;
+	private final Set<AllowanceId> currentNftAllowances;
 
 	private ExtantCryptoContext(ExtantCryptoContext.Builder builder) {
 		currentNumTokenRels = builder.currentNumTokenRels;
@@ -95,11 +95,11 @@ public class ExtantCryptoContext {
 		return currentCryptoAllowances;
 	}
 
-	public Map<AllowanceMapKey, Long> currentTokenAllowances() {
+	public Map<AllowanceId, Long> currentTokenAllowances() {
 		return currentTokenAllowances;
 	}
 
-	public Set<AllowanceMapKey> currentNftAllowances() {
+	public Set<AllowanceId> currentNftAllowances() {
 		return currentNftAllowances;
 	}
 
@@ -131,8 +131,8 @@ public class ExtantCryptoContext {
 		private long currentExpiry;
 		private int currentMaxAutomaticAssociations;
 		private Map<Long, Long> currentCryptoAllowances;
-		private Map<AllowanceMapKey, Long> currentTokenAllowances;
-		private Set<AllowanceMapKey> currentNftApproveForAllAllowances;
+		private Map<AllowanceId, Long> currentTokenAllowances;
+		private Set<AllowanceId> currentNftApproveForAllAllowances;
 
 		private Builder() {
 		}
@@ -197,11 +197,5 @@ public class ExtantCryptoContext {
 			mask |= NFT_ALLOWANCES_MASK;
 			return this;
 		}
-	}
-
-	record AllowanceMapKey(Long tokenNum, Long spenderNum) {
-	}
-
-	record AllowanceMapValue(Boolean approvedForAll, List<Long> serialNums) {
 	}
 }

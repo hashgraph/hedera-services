@@ -223,7 +223,7 @@ class CryptoControllerTest {
 	@Test
 	void forwardsAdjustAsExpected() {
 		// when:
-		subject.adjustAllowance(txn, txnObserver);
+		subject.adjustAllowances(txn, txnObserver);
 
 		// expect:
 		verify(txnResponseHelper).submit(txn, txnObserver, CryptoAdjustAllowance);
@@ -232,7 +232,7 @@ class CryptoControllerTest {
 	@Test
 	void forwardsDeleteAllowanceAsExpected() {
 		// when:
-		subject.deleteAllowance(txn, txnObserver);
+		subject.deleteAllowances(txn, txnObserver);
 
 		// expect:
 		verify(txnResponseHelper).submit(txn, txnObserver, CryptoDeleteAllowance);

@@ -67,8 +67,8 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	public static final String ADD_LIVE_HASH_METRIC = "addLiveHash";
 	public static final String DELETE_LIVE_HASH_METRIC = "deleteLiveHash";
 	public static final String CRYPTO_APPROVE_ALLOWANCES = "approveAllowances";
-	public static final String CRYPTO_ADJUST_ALLOWANCE = "adjustAllowance";
-	public static final String CRYPTO_DELETE_ALLOWANCE = "deleteAllowance";
+	public static final String CRYPTO_ADJUST_ALLOWANCE = "adjustAllowances";
+	public static final String CRYPTO_DELETE_ALLOWANCE = "deleteAllowances";
 
 	private final MetaAnswers metaAnswers;
 	private final CryptoAnswers cryptoAnswers;
@@ -154,12 +154,12 @@ public class CryptoController extends CryptoServiceGrpc.CryptoServiceImplBase {
 	}
 
 	@Override
-	public void adjustAllowance(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+	public void adjustAllowances(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, CryptoAdjustAllowance);
 	}
 
 	@Override
-	public void deleteAllowance(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+	public void deleteAllowances(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, CryptoDeleteAllowance);
 	}
 

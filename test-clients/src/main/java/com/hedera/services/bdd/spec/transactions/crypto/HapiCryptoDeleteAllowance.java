@@ -161,7 +161,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-		return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::deleteAllowance;
+		return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::deleteAllowances;
 	}
 
 	@Override

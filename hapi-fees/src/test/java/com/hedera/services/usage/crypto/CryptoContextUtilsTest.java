@@ -31,16 +31,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class CryptoContextUtilsTest {
 	@Test
 	void getsNewSerials() {
-		Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> newMap = new HashMap<>();
-		Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> existingMap = new HashMap<>();
+		Map<AllowanceId, AllowanceDetails> newMap = new HashMap<>();
+		Map<AllowanceId, AllowanceDetails> existingMap = new HashMap<>();
 
-		newMap.put(new ExtantCryptoContext.AllowanceMapKey(1L, 2L),
-				new ExtantCryptoContext.AllowanceMapValue(true, List.of(3L, 4L)));
-		newMap.put(new ExtantCryptoContext.AllowanceMapKey(1L, 3L),
-				new ExtantCryptoContext.AllowanceMapValue(false, List.of(1L, 2L, 3L, 100L)));
+		newMap.put(new AllowanceId(1L, 2L),
+				new AllowanceDetails(true, List.of(3L, 4L)));
+		newMap.put(new AllowanceId(1L, 3L),
+				new AllowanceDetails(false, List.of(1L, 2L, 3L, 100L)));
 
-		existingMap.put(new ExtantCryptoContext.AllowanceMapKey(1L, 3L),
-				new ExtantCryptoContext.AllowanceMapValue(false, List.of(1L)));
+		existingMap.put(new AllowanceId(1L, 3L),
+				new AllowanceDetails(false, List.of(1L)));
 
 		assertEquals(6, CryptoContextUtils.getNewSerials(newMap));
 	}
@@ -63,16 +63,16 @@ class CryptoContextUtilsTest {
 
 	@Test
 	void getsChangedTokenKeys() {
-		Map<ExtantCryptoContext.AllowanceMapKey, Long> newMap = new HashMap<>();
-		Map<ExtantCryptoContext.AllowanceMapKey, Long> existingMap = new HashMap<>();
+		Map<AllowanceId, Long> newMap = new HashMap<>();
+		Map<AllowanceId, Long> existingMap = new HashMap<>();
 
-		newMap.put(new ExtantCryptoContext.AllowanceMapKey(1L, 2L), 2L);
-		newMap.put(new ExtantCryptoContext.AllowanceMapKey(2L, 2L), 2L);
-		newMap.put(new ExtantCryptoContext.AllowanceMapKey(3L, 2L), 2L);
+		newMap.put(new AllowanceId(1L, 2L), 2L);
+		newMap.put(new AllowanceId(2L, 2L), 2L);
+		newMap.put(new AllowanceId(3L, 2L), 2L);
 
-		existingMap.put(new ExtantCryptoContext.AllowanceMapKey(1L, 2L), 2L);
-		existingMap.put(new ExtantCryptoContext.AllowanceMapKey(4L, 2L), 2L);
-		existingMap.put(new ExtantCryptoContext.AllowanceMapKey(3L, 5L), 2L);
+		existingMap.put(new AllowanceId(1L, 2L), 2L);
+		existingMap.put(new AllowanceId(4L, 2L), 2L);
+		existingMap.put(new AllowanceId(3L, 5L), 2L);
 
 		assertEquals(2, CryptoContextUtils.getChangedTokenKeys(newMap.keySet(), existingMap.keySet()));
 	}
