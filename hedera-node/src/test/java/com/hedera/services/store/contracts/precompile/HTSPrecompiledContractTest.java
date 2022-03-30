@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -76,6 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -646,6 +648,22 @@ class HTSPrecompiledContractTest {
 		subject.prepareFields(messageFrame);
 
 		verify(messageFrame, times(1)).getSenderAddress();
+	}
+
+	@Test
+	void computeInternalThrowsExceptionForInsufficientGas() {
+		// given
+		givenFrameContext();
+		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
+		given(decoder.decodeMint(any())).willReturn(fungibleMint);
+		given(messageFrame.getRemainingGas()).willReturn(Gas.ZERO);
+
+		// when
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
+
+		// then
+		assertThrows(InvalidTransactionException.class, () -> subject.computeInternal(messageFrame));
 	}
 
 	private void givenFrameContext() {

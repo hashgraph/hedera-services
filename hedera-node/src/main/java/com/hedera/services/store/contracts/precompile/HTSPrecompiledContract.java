@@ -135,6 +135,7 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -297,7 +298,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
- 		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
+		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
 
 		if (messageFrame.isStatic() && !isRedirectProxy) {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
@@ -498,6 +499,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
+			if (frame.getRemainingGas().compareTo(gasRequirement) < 0) {
+				throw new InvalidTransactionException(INSUFFICIENT_GAS);
+			}
 			precompile.run(frame);
 			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
 			// synthetic record, as the ledger interceptors will populate the sideEffectsTracker
@@ -1304,12 +1308,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame
-	 * 		current frame
-	 * @param target
-	 * 		the element to test for key activation, in standard form
-	 * @param activationTest
-	 * 		the function which should be invoked for key validation
+	 * @param frame          current frame
+	 * @param target         the element to test for key activation, in standard form
+	 * @param activationTest the function which should be invoked for key validation
 	 * @return whether the implied key is active
 	 */
 	private boolean validateKey(
@@ -1353,14 +1354,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param isDelegateCall
-		 * 		a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
-		 * @param target
-		 * 		an address with an implicit key understood by this implementation
-		 * @param activeContract
-		 * 		the contract address that can activate a contract or delegatable contract key
-		 * @param worldLedgers
-		 * 		the worldLedgers representing current state
+		 * @param isDelegateCall a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
+		 * @param target         an address with an implicit key understood by this implementation
+		 * @param activeContract the contract address that can activate a contract or delegatable contract key
+		 * @param worldLedgers   the worldLedgers representing current state
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(

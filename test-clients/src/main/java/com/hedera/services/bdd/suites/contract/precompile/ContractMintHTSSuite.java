@@ -556,7 +556,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.alsoSigningWithFullPrefix(multiKey)
 								.gas(48_000),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
-						childRecordsCheck(firstMintTxn, INSUFFICIENT_GAS, recordWith().status(INSUFFICIENT_GAS)),
+						childRecordsCheck(firstMintTxn, SUCCESS, recordWith().status(INSUFFICIENT_GAS)),
 						getTokenInfo(fungibleToken).hasTotalSupply(0),
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, 0)
 				);
