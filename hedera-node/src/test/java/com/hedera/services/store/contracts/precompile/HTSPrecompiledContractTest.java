@@ -86,6 +86,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.create
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
@@ -720,6 +721,22 @@ class HTSPrecompiledContractTest {
 		var result = subject.compute(input, messageFrame);
 
 		// then
+		assertNull(result);
+	}
+
+	@Test
+	void computeReturnsNullForEmptyTransactionBody() {
+		// given
+		givenFrameContext();
+		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
+		given(decoder.decodeMint(any())).willReturn(fungibleMintAmountOversize);
+
+		// when
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
+
+		// then
+		var result = subject.compute(input, messageFrame);
 		assertNull(result);
 	}
 
