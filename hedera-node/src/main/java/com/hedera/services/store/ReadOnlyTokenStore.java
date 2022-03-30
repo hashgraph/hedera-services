@@ -1,5 +1,25 @@
 package com.hedera.services.store;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -152,21 +172,6 @@ public class ReadOnlyTokenStore {
 		return tokenRels.getImmutableRef(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
 	}
 
-	private TokenRelationship buildTokenRelationship(
-			final Token token, final Account account, final MerkleTokenRelStatus merkleTokenRel) {
-		final var tokenRelationship = new TokenRelationship(token, account);
-		tokenRelationship.initBalance(merkleTokenRel.getBalance());
-		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
-		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
-		tokenRelationship.setAutomaticAssociation(merkleTokenRel.isAutomaticAssociation());
-		tokenRelationship.setKey(merkleTokenRel.getKey());
-		tokenRelationship.setNextKey(merkleTokenRel.nextKey());
-		tokenRelationship.setPrevKey(merkleTokenRel.prevKey());
-		tokenRelationship.markAsPersisted();
-
-		return tokenRelationship;
-	}
-
 	/**
 	 * Returns a model of the requested token, with operations that can be used to
 	 * implement business logic in a transaction.
@@ -288,6 +293,11 @@ public class ReadOnlyTokenStore {
 		return token;
 	}
 
+	public TokenRelationship getLatestTokenRelationship(final Account account) {
+		var latestTokenId = Id.fromGrpcToken(account.getLastAssociatedToken().asAccountTokenRel().getRight());
+		return loadTokenRelationship(loadPossiblyDeletedOrAutoRemovedToken(latestTokenId), account);
+	}
+
 	private void validateUsable(MerkleTokenRelStatus merkleTokenRelStatus) {
 		validateTrue(merkleTokenRelStatus != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 	}
@@ -345,8 +355,19 @@ public class ReadOnlyTokenStore {
 		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
 	}
 
-	public TokenRelationship getLatestTokenRelationship(final Account account) {
-		var latestTokenId = Id.fromGrpcToken(account.getLastAssociatedToken().asAccountTokenRel().getRight());
-		return loadTokenRelationship(loadPossiblyDeletedOrAutoRemovedToken(latestTokenId), account);
+	private TokenRelationship buildTokenRelationship(
+			final Token token, final Account account, final MerkleTokenRelStatus merkleTokenRel) {
+		final var tokenRelationship = new TokenRelationship(token, account);
+		tokenRelationship.initBalance(merkleTokenRel.getBalance());
+		tokenRelationship.setKycGranted(merkleTokenRel.isKycGranted());
+		tokenRelationship.setFrozen(merkleTokenRel.isFrozen());
+		tokenRelationship.setAutomaticAssociation(merkleTokenRel.isAutomaticAssociation());
+		tokenRelationship.setKey(merkleTokenRel.getKey());
+		tokenRelationship.setNextKey(merkleTokenRel.nextKey());
+		tokenRelationship.setPrevKey(merkleTokenRel.prevKey());
+		tokenRelationship.markAsPersisted();
+
+		return tokenRelationship;
 	}
+
 }

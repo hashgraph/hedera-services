@@ -67,9 +67,6 @@ public abstract class AllowanceChecks {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final OptionValidator validator;
 
-	private static final String UNSUPPORTED_MSG = "Base Class, Implementation present in " +
-			"AdjustAllowanceChecks/ApproveAllowanceChecks";
-
 	protected AllowanceChecks(final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator) {
 		this.dynamicProperties = dynamicProperties;
