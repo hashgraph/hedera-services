@@ -83,7 +83,6 @@ class MerkleAccountStateTest {
 	private static final int alreadyUsedAutoAssociations = 123;
 	private static final int autoAssociationMetadata =
 			buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
-	private static final int tokenIdsIndex = 345;
 	private static final Key aliasKey = Key.newBuilder()
 			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
 	private static final ByteString alias = aliasKey.getECDSASecp256K1();
@@ -407,50 +406,6 @@ class MerkleAccountStateTest {
 		given(in.readByteArray(Integer.MAX_VALUE)).willReturn(alias.toByteArray());
 
 		newSubject.deserialize(in, MerkleAccountState.RELEASE_0220_VERSION);
-
-		// then:
-		assertEquals(subject, newSubject);
-	}
-
-	@Test
-	void deserializeV0230Works() throws IOException {
-		final var in = mock(SerializableDataInputStream.class);
-		subject.setApproveForAllNfts(new TreeSet<>());
-		subject.setNftsOwned(nftsOwned);
-		subject.setTokenAssociationMetadata(EMPTY_TOKEN_ASSOCIATION_META);
-		final var newSubject = new MerkleAccountState();
-		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
-		given(in.readLong())
-				.willReturn(expiry)
-				.willReturn(balance)
-				.willReturn(autoRenewSecs)
-				.willReturn(nftsOwned)
-				.willReturn(spenderNum1.longValue())
-				.willReturn(cryptoAllowance)
-				.willReturn(tokenAllowanceVal);
-		given(in.readNormalisedString(anyInt())).willReturn(memo);
-		given(in.readBoolean())
-				.willReturn(deleted)
-				.willReturn(smartContract)
-				.willReturn(receiverSigRequired)
-				.willReturn(approvedForAll);
-		given(in.readInt())
-				.willReturn(autoAssociationMetadata)
-				.willReturn(number)
-				.willReturn(kvPairs)
-				.willReturn(cryptoAllowances.size())
-				.willReturn(fungibleTokenAllowances.size())
-				.willReturn(approveForAllNfts.size());
-		given(serdes.readNullableSerializable(in)).willReturn(proxy);
-		given(in.readByteArray(Integer.MAX_VALUE)).willReturn(alias.toByteArray());
-		given(in.readSerializable())
-				.willReturn(tokenAllowanceKey1)
-				.willReturn(tokenAllowanceKey1)
-				.willReturn(tokenAllowanceValue);
-		given(in.readLongList(Integer.MAX_VALUE))
-				.willReturn(serialNumbers);
-
-		newSubject.deserialize(in, MerkleAccountState.RELEASE_0230_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);

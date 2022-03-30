@@ -69,8 +69,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0180_VERSION = 7;
 	static final int RELEASE_0210_VERSION = 8;
 	static final int RELEASE_0220_VERSION = 9;
-	static final int RELEASE_0230_VERSION = 10;
-	static final int RELEASE_0250_VERSION = 11;
+	static final int RELEASE_0250_VERSION = 10;
 	private static final int CURRENT_VERSION = RELEASE_0250_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
@@ -179,11 +178,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0220_VERSION) {
 			numContractKvPairs = in.readInt();
 		}
-		if (version >= RELEASE_0230_VERSION) {
+		if (version >= RELEASE_0250_VERSION) {
 			cryptoAllowances = deserializeCryptoAllowances(in);
 			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
-		}
-		if (version >= RELEASE_0250_VERSION) {
 			approveForAllNfts = deserializeApproveForAllNftsAllowances(in);
 			tokenAssociationMetaData =
 					new TokenAssociationMetadata(in.readInt(), in.readInt(), new EntityNumPair(in.readLong()));
