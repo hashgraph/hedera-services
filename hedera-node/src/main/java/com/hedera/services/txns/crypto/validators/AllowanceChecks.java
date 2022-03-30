@@ -23,8 +23,6 @@ package com.hedera.services.txns.crypto.validators;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
@@ -387,14 +385,6 @@ public class AllowanceChecks {
 		return MISSING_ENTITY_ID.equals(listedOwner)
 				? ownerAccount.getId().equals(token.getTreasury().getId())
 				: listedOwner.equals(ownerAccount.getId().asEntityId());
-	}
-
-	boolean isInvalidToken(final MerkleToken token) {
-		return token == null || token.isDeleted();
-	}
-
-	private boolean isFungibleCommon(MerkleToken token) {
-		return token.tokenType() == TokenType.FUNGIBLE_COMMON;
 	}
 
 	ResponseCodeEnum validateSerialNums(final List<Long> serialNums,

@@ -23,9 +23,16 @@ package com.hedera.services.txns.crypto.validators;
 import com.google.protobuf.BoolValue;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingNfts;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -80,8 +87,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ApproveAllowanceChecksTest {
@@ -163,20 +174,30 @@ class ApproveAllowanceChecksTest {
 
 	private void setUpForTest() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-//		given(view.loadToken(token1)).willReturn(merkleToken1);
-//		given(view.loadToken(token2)).willReturn(merkleToken2);
 		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
 		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(merkleToken2.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 
-		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
-		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
-//		given(view.loadNft(token1Nft1)).willReturn(token);
-//		given(view.loadNft(tokenNft2)).willReturn(token);
-//		given(view.loadNft(token1Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
-//		given(view.loadNft(tokenNft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+		final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
+		final BackingStore<NftId, MerkleUniqueToken> nfts = mock(BackingNfts.class);
+		given(view.asReadOnlyAccountStore()).willReturn(store);
+		given(view.asReadOnlyTokenStore()).willReturn(tokens);
+		given(view.asReadOnlyNftStore()).willReturn(nfts);
+
+		given(store.getImmutableRef(ownerId1)).willReturn(ownerAccount);
+		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
+		given(tokens.getImmutableRef(token2)).willReturn(merkleToken2);
+		given(nfts.getImmutableRef(token2Nft1)).willReturn(uniqueToken);
+		given(nfts.getImmutableRef(token2Nft2)).willReturn(uniqueToken);
+
+		given(merkleToken1.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(ownerAccount.tokens()).willReturn(new MerkleAccountTokens());
+		given(ownerAccount.state()).willReturn(new MerkleAccountState());
+		given(uniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
 	}
 
 	@Test
@@ -324,7 +345,14 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void failsIfOwnerSameAsSpender() {
-		setUpForTest();
+		given(uniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
+		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(owner.isAssociatedWith(Id.fromGrpcToken(token1))).willReturn(true);
+		given(owner.isAssociatedWith(Id.fromGrpcToken(token2))).willReturn(true);
+		given(tokenStore.loadUniqueToken(token2Nft1)).willReturn(uniqueToken);
+		given(tokenStore.loadUniqueToken(token2Nft2)).willReturn(uniqueToken);
 
 		final var badCryptoAllowance = CryptoAllowance.newBuilder().
 				setSpender(ownerId1).setOwner(ownerId1).setAmount(10L).build();
@@ -349,10 +377,10 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void validateNegativeAmounts() {
-//		given(view.loadToken(token1)).willReturn(merkleToken1);
-		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.FINITE);
-		given(merkleToken1.maxSupply()).willReturn(1000000L);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 
@@ -386,10 +414,9 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void failsWhenExceedsMaxTokenSupply() {
-//		given(view.loadToken(token1)).willReturn(merkleToken1);
-		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.FINITE);
-		given(merkleToken1.maxSupply()).willReturn(10L);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
@@ -402,8 +429,10 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void failsForNftInFungibleTokenAllowances() {
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-//		given(view.loadToken(token1)).willReturn(merkleToken1);
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		final var badTokenAllowance = TokenAllowance.newBuilder().setSpender(spender2).setAmount(
 				100000L).setTokenId(token2).setOwner(ownerId1).build();
 
@@ -414,10 +443,23 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void returnsInvalidOwnerIdOnceValidationOnceFailed() {
-//		given(view.loadAccount(ownerId1)).willReturn(null);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(120);
-//		given(view.loadToken(token2)).willReturn(merkleToken2);
-//		given(view.loadToken(token1)).willReturn(merkleToken1);
+
+		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
+		final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
+		final BackingStore<NftId, MerkleUniqueToken> nfts = mock(BackingNfts.class);
+		given(view.asReadOnlyAccountStore()).willReturn(store);
+		given(view.asReadOnlyTokenStore()).willReturn(tokens);
+		given(view.asReadOnlyNftStore()).willReturn(nfts);
+		given(store.getImmutableRef(ownerId1)).willThrow(InvalidTransactionException.class);
+
+		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
+		given(tokens.getImmutableRef(token2)).willReturn(merkleToken2);
+		given(merkleToken1.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
+		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
+		given(store.getImmutableRef(payer)).willReturn(ownerAccount);
+		given(ownerAccount.tokens()).willReturn(new MerkleAccountTokens());
+		given(ownerAccount.state()).willReturn(new MerkleAccountState());
 
 		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -470,11 +512,9 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void failsWhenTokenNotAssociatedToAccount() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-//		given(view.loadToken(token1)).willReturn(merkleToken1);
-		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.FINITE);
-		given(merkleToken1.maxSupply()).willReturn(1000000L);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(false);
+
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, owner,
 				tokenStore, accountStore));
 	}
@@ -486,7 +526,6 @@ class ApproveAllowanceChecksTest {
 
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-//		given(view.loadToken(token1)).willReturn(merkleToken1);
 
 		assertEquals(OK, subject.allowancesValidation(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList(), owner,
@@ -496,18 +535,16 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void fungibleInNFTAllowances() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-//		given(view.loadToken(token2)).willReturn(merkleToken2);
-//		given(view.loadToken(token1)).willReturn(merkleToken1);
-		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
-//		given(view.loadNft(token1Nft1)).willReturn(token);
-//		given(view.loadNft(tokenNft2)).willReturn(token);
-
-//		given(view.loadNft(token1Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
-//		given(view.loadNft(tokenNft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(tokenStore.loadUniqueToken(token1Nft1)).willReturn(token);
+		given(tokenStore.loadUniqueToken(tokenNft2)).willReturn(token);
+		given(tokenStore.loadUniqueToken(token1Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(tokenStore.loadUniqueToken(tokenNft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
 
 		final var badNftAllowance = NftAllowance.newBuilder().setSpender(spender2)
 				.addAllSerialNumbers(List.of(1L)).setTokenId(token1).setOwner(ownerId1).setApprovedForAll(
@@ -521,10 +558,9 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void validateSerialsExistence() {
 		final var serials = List.of(1L, 10L);
+		given(tokenStore.loadUniqueToken(token2Nft1)).willThrow(InvalidTransactionException.class);
 
-//		given(view.loadNft((token2Nft1))).willReturn(null);
-
-		var validity = subject.validateSerialNums(serials, owner, token1Model, tokenStore,
+		var validity = subject.validateSerialNums(serials, owner, token2Model, tokenStore,
 				Id.fromGrpcAccount(spender2));
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
 	}
@@ -533,12 +569,11 @@ class ApproveAllowanceChecksTest {
 	void approvesAllowanceFromTreasury() {
 		final var serials = List.of(1L);
 		token2Model.setTreasury(treasury);
-//		given(view.loadNft((token2Nft1))).willReturn(token);
+		given(tokenStore.loadUniqueToken(token2Nft1)).willReturn(token);
 		given(token.getOwner()).willReturn(EntityId.MISSING_ENTITY_ID);
-		given(merkleToken1.treasury()).willReturn(Id.fromGrpcAccount(spender2).asEntityId());
 		given(treasury.getId()).willReturn(Id.fromGrpcAccount(spender2));
 
-		var validity = subject.validateSerialNums(serials, treasury, token1Model, tokenStore,
+		var validity = subject.validateSerialNums(serials, treasury, token2Model, tokenStore,
 				Id.fromGrpcAccount(spender2));
 		assertEquals(OK, validity);
 	}
@@ -546,9 +581,12 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void rejectsAllowanceFromInvalidTreasury() {
 		final var serials = List.of(1L);
-//		given(view.loadNft((token2Nft1))).willReturn(token);
-//		given(view.loadNft((token2Nft1)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
 		given(treasury.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+
+		given(tokenStore.loadUniqueToken(token2Nft1)).willReturn(uniqueToken);
+		given(tokenStore.loadUniqueToken(token2Nft2)).willReturn(uniqueToken);
+		given(tokenStore.loadUniqueToken(token2Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
+		given(tokenStore.loadUniqueToken(token2Nft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
 
 		var validity = subject.validateSerialNums(serials, treasury, token2Model, tokenStore,
 				Id.fromGrpcAccount(spender2));
@@ -558,14 +596,11 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void validateSerialsOwner() {
 		final var serials = List.of(1L, 10L);
-//		given(view.loadNft((token2Nft2))).willReturn(uniqueToken);
-//		given(view.loadNft((token2Nft2)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
-//		given(view.loadNft((token2Nft1))).willReturn(uniqueToken);
-//		given(view.loadNft((token2Nft1)).getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(tokenStore.loadUniqueToken(token2Nft1)).willReturn(uniqueToken);
 		given(uniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(spender1));
 
-		var validity = subject.validateSerialNums(serials, owner, token1Model, tokenStore,
+		var validity = subject.validateSerialNums(serials, owner, token2Model, tokenStore,
 				Id.fromGrpcAccount(spender2));
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
@@ -615,57 +650,49 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void loadsOwnerAccountNotDefaultingToPayer() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-//		given(view.loadToken(token1Model.getId().asGrpcToken())).willReturn(merkleToken1);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(owner.isAssociatedWith(token1Model.getId())).willReturn(true);
-//		given(view.loadAccount(ownerId1)).willReturn(ownerAccount);
-		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willReturn(owner);
 
 		getValidTxnCtx();
-//		verify(view).loadAccount(ownerId1);
 
-//		given(view.loadAccount(ownerId1)).willReturn(null);
+		assertEquals(OK, subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount, tokenStore,
+				accountStore));
+		verify(accountStore).loadAccount(Id.fromGrpcAccount(ownerId1));
+
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willThrow(InvalidTransactionException.class);
+
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount, tokenStore,
 						accountStore));
-//		verify(view, times(2)).loadAccount(ownerId1);
 	}
 
 	@Test
 	void loadsOwnerAccountInNftNotDefaultingToPayer() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-//		given(view.loadToken(token2Model.getId().asGrpcToken())).willReturn(merkleToken2);
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(owner.isAssociatedWith(token2Model.getId())).willReturn(true);
-		given(merkleToken2.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
-//		given(view.loadNft(token1Nft1)).willReturn(token);
-//		given(view.loadNft(tokenNft2)).willReturn(token);
-//
-//		given(view.loadNft(token1Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
-//		given(view.loadNft(tokenNft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
 
+		given(tokenStore.loadUniqueToken(token1Nft1)).willReturn(token);
+		given(tokenStore.loadUniqueToken(tokenNft2)).willReturn(token);
+		given(tokenStore.loadUniqueToken(token1Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(tokenStore.loadUniqueToken(tokenNft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-//		given(view.loadAccount(ownerId1)).willReturn(ownerAccount);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willReturn(owner);
 
 		getValidTxnCtx();
-//		verify(view).loadAccount(ownerId1);
-//
-//		given(view.loadAccount(ownerId1)).willReturn(null);
+
+		assertEquals(OK,
+				subject.validateNftAllowances(op.getNftAllowancesList(), payerAccount, tokenStore, accountStore));
+		verify(accountStore).loadAccount(Id.fromGrpcAccount(ownerId1));
+
+		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willThrow(InvalidTransactionException.class);
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateNftAllowances(op.getNftAllowancesList(),
 				payerAccount, tokenStore, accountStore));
-//		verify(view, times(2)).loadAccount(ownerId1);
-	}
-
-	@Test
-	void validateInvalidToken() {
-		final var token = mock(MerkleToken.class);
-		given(token.isDeleted()).willReturn(true);
-		assertTrue(subject.isInvalidToken(token));
-
-//		given(view.loadToken(any())).willReturn(null);
-//		assertTrue(subject.isInvalidToken(view.loadToken(TokenID.newBuilder().setTokenNum(2).build())));
+		verify(accountStore, times(2)).loadAccount(Id.fromGrpcAccount(ownerId1));
 	}
 
 	@Test
@@ -694,7 +721,7 @@ class ApproveAllowanceChecksTest {
 		assertEquals(OK, subject.validateCryptoAllowances(
 				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getCryptoAllowancesList(),
 				payerAccount, accountStore));
-//		verify(view, never()).loadAccount(any());
+		verify(accountStore, never()).loadAccount(any());
 
 		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -705,7 +732,7 @@ class ApproveAllowanceChecksTest {
 		assertEquals(OK, subject.validateFungibleTokenAllowances(
 				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getTokenAllowancesList(),
 				payerAccount, tokenStore, accountStore));
-//		verify(view, never()).loadAccount(any());
+		verify(accountStore, never()).loadAccount(any());
 
 
 		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
@@ -717,36 +744,28 @@ class ApproveAllowanceChecksTest {
 		assertEquals(OK, subject.validateNftAllowances(
 				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getNftAllowancesList(), payerAccount,
 				tokenStore, accountStore));
-//		verify(view, never()).loadAccount(any());
+		verify(accountStore, never()).loadAccount(any());
 	}
 
 	private void setupNeeded() {
-//		given(view.loadToken(token2Model.getId().asGrpcToken())).willReturn(merkleToken2);
-//		given(view.loadToken(token1Model.getId().asGrpcToken())).willReturn(merkleToken1);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 
 		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
 		final NftId tokenNft2 = new NftId(0, 0, token2.getTokenNum(), 10L);
 
-//		given(view.loadNft(token1Nft1)).willReturn(token);
-//		given(view.loadNft(tokenNft2)).willReturn(token);
-
-//		given(view.loadNft(token1Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
-//		given(view.loadNft(tokenNft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(tokenStore.loadUniqueToken(token1Nft1)).willReturn(token);
+		given(tokenStore.loadUniqueToken(tokenNft2)).willReturn(token);
+		given(tokenStore.loadUniqueToken(token1Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(tokenStore.loadUniqueToken(tokenNft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
 		given(payerAccount.getId()).willReturn(Id.fromGrpcAccount(payer));
-//		given(view.loadToken(token1Model.getId().asGrpcToken())).willReturn(merkleToken1);
+		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(payerAccount.isAssociatedWith(token1Model.getId())).willReturn(true);
 		given(payerAccount.isAssociatedWith(token2Model.getId())).willReturn(true);
-//		given(view.loadNft(token2Nft1)).willReturn(token);
-//		given(view.loadNft(token2Nft2)).willReturn(token);
-
-//		given(view.loadNft(token2Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(payer));
-//		given(view.loadNft(token2Nft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(payer));
-//
-//		given(view.loadToken(token1)).willReturn(merkleToken1);
-		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-//		given(view.loadToken(token2)).willReturn(merkleToken2);
-		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.FINITE);
-		given(merkleToken1.maxSupply()).willReturn(1000000L);
+		given(tokenStore.loadUniqueToken(token2Nft1)).willReturn(token);
+		given(tokenStore.loadUniqueToken(token2Nft2)).willReturn(token);
+		given(tokenStore.loadUniqueToken(token2Nft1).getOwner()).willReturn(EntityId.fromGrpcAccountId(payer));
+		given(tokenStore.loadUniqueToken(token2Nft2).getOwner()).willReturn(EntityId.fromGrpcAccountId(payer));
 	}
 
 	private void addAllowances() {
