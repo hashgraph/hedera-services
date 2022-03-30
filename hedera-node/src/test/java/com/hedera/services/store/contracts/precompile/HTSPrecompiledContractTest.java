@@ -780,7 +780,8 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, а -> а);
 
 		// then
-		assertThrows(InvalidTransactionException.class, () -> subject.getPrecompile().handleSentHbars(messageFrame));
+		final var precompile = subject.getPrecompile();
+		assertThrows(InvalidTransactionException.class, () -> precompile.handleSentHbars(messageFrame));
 
 		verify(messageFrame).setRevertReason(INVALID_TRANSFER);
 		verify(messageFrame).setState(REVERT);

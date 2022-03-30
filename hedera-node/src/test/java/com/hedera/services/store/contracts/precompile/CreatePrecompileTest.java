@@ -297,7 +297,8 @@ class CreatePrecompileTest {
 		subject.prepareFields(frame);
 		subject.prepareComputation(pretendArguments, a -> a);
 
-		assertThrows(InvalidTransactionException.class, () -> subject.getPrecompile().handleSentHbars(frame));
+		final var precompile = subject.getPrecompile();
+		assertThrows(InvalidTransactionException.class, () -> precompile.handleSentHbars(frame));
 
 		// then
 		Mockito.verifyNoMoreInteractions(syntheticTxnFactory);
