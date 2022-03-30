@@ -424,7 +424,7 @@ public class DecodingFacade {
 		return Dissociation.multiDissociation(accountID, tokenIDs);
 	}
 
-	public TokenCreateWrapper decodeFungibleCreate(final Bytes input, UnaryOperator<byte[]> aliasResolver) {
+	public TokenCreateWrapper decodeFungibleCreate(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_CREATE_FUNGIBLE_SELECTOR,
 				TOKEN_CREATE_FUNGIBLE_DECODER);
 
@@ -432,7 +432,10 @@ public class DecodingFacade {
 				decodedArguments.get(2), aliasResolver);
 	}
 
-	public TokenCreateWrapper decodeFungibleCreateWithFees(final Bytes input, UnaryOperator<byte[]> aliasResolver) {
+	public TokenCreateWrapper decodeFungibleCreateWithFees(
+			final Bytes input,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
 		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR,
 				TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER);
 
