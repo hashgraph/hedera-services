@@ -27,7 +27,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
@@ -35,7 +34,7 @@ import static java.util.stream.Collectors.toMap;
 public class MapPropertySource implements HapiPropertySource {
 	private static final Logger log = LogManager.getLogger(MapPropertySource.class);
 	private static final Set<String> KEYS_TO_CENSOR = Set.of(
-		"startupAccounts.literal", "default.payer.pemKeyPassphrase"
+		"default.payer.key", "default.payer.pemKeyPassphrase"
 	);
 
 	public static MapPropertySource parsedFromCommaDelimited(String literal) {

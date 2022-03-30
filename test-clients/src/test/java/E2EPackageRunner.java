@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -158,7 +159,6 @@ import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferAndSubmitLoadTe
 import com.hedera.services.bdd.suites.perf.mixedops.MixedTransferCallAndSubmitLoadTest;
 import com.hedera.services.bdd.suites.perf.schedule.OnePendingSigScheduledXfersLoad;
 import com.hedera.services.bdd.suites.perf.schedule.ReadyToRunScheduledXfersLoad;
-import com.hedera.services.bdd.suites.perf.token.AdHocTokenTransfers;
 import com.hedera.services.bdd.suites.perf.token.TokenCreatePerfSuite;
 import com.hedera.services.bdd.suites.perf.token.TokenRelStatusChanges;
 import com.hedera.services.bdd.suites.perf.token.TokenTransferBasicLoadTest;
@@ -179,7 +179,6 @@ import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite
 import com.hedera.services.bdd.suites.regression.SplittingThrottlesWorks;
 import com.hedera.services.bdd.suites.regression.SteadyStateThrottlingCheck;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
-import com.hedera.services.bdd.suites.regression.UmbrellaReduxWithCustomNodes;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecStateful;
@@ -566,7 +565,6 @@ class E2EPackageRunner {
 	@TestFactory
 	Collection<DynamicContainer> perfToken() {
 		return List.of(
-				extractSpecsFromSuite(AdHocTokenTransfers::new),
 				extractSpecsFromSuite(TokenCreatePerfSuite::new),
 				extractSpecsFromSuite(TokenRelStatusChanges::new),
 				extractSpecsFromSuite(TokenTransferBasicLoadTest::new),
@@ -608,8 +606,7 @@ class E2EPackageRunner {
 		return List.of(
 				extractSpecsFromSuite(SplittingThrottlesWorks::new),
 				extractSpecsFromSuite(SteadyStateThrottlingCheck::new),
-				extractSpecsFromSuite(UmbrellaRedux::new),
-				extractSpecsFromSuite(UmbrellaReduxWithCustomNodes::new)
+				extractSpecsFromSuite(UmbrellaRedux::new)
 		);
 	}
 

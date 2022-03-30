@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static com.hedera.services.state.submerkle.EvmFnResult.RELEASE_0250_VERSION;
 import static com.hedera.test.utils.TxnUtils.assertSerdeWorks;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomAddress;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomBytes;
@@ -39,7 +40,6 @@ import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.ra
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomEvmWord;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomStateChangePair;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.registerRecordConstructables;
-import static com.hedera.services.state.submerkle.EvmFnResult.RELEASE_0240_VERSION;
 
 class EvmFnResultSerdeTest {
 	@Test
@@ -55,9 +55,12 @@ class EvmFnResultSerdeTest {
 				List.of(),
 				List.of(),
 				randomBytes(20),
-				Collections.emptyMap());
+				Collections.emptyMap(),
+				123321,
+				1233211233,
+				randomBytes(64));
 
-		assertSerdeWorks(subject, EvmFnResult::new, RELEASE_0240_VERSION);
+		assertSerdeWorks(subject, EvmFnResult::new, RELEASE_0250_VERSION);
 	}
 
 	@Test
@@ -74,9 +77,12 @@ class EvmFnResultSerdeTest {
 					List.of(),
 					List.of(),
 					randomBytes(20),
-					randomStateChanges(5, 10));
+					randomStateChanges(5, 10),
+					123321,
+					1233211233,
+					randomBytes(64));
 
-			assertSerdeWorks(subject, EvmFnResult::new, RELEASE_0240_VERSION);
+			assertSerdeWorks(subject, EvmFnResult::new, RELEASE_0250_VERSION);
 		}
 	}
 

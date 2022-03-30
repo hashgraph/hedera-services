@@ -34,7 +34,6 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.keypairs.SpecUtils;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hedera.services.bdd.suites.utils.validation.domain.ConsensusScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.ContractScenario;
@@ -51,6 +50,7 @@ import com.hedera.services.bdd.suites.utils.validation.domain.SysFilesUpScenario
 import com.hedera.services.bdd.suites.utils.validation.domain.UpdateAction;
 import com.hedera.services.bdd.suites.utils.validation.domain.ValidationConfig;
 import com.hedera.services.bdd.suites.utils.validation.domain.VersionInfoScenario;
+import com.hedera.services.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -76,7 +76,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.KeyStoreException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -234,21 +233,21 @@ public class ValidationScenarios extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		var specs = Stream.of(
-				Optional.of(recordPayerBalance(startingBalance::set)),
-				ofNullable(skipScenarioPayer() ? null : ensureScenarioPayer()),
-				ofNullable(params.getScenarios().contains(CRYPTO) ? cryptoScenario() : null),
-				ofNullable(params.getScenarios().contains(VERSIONS) ? versionsScenario() : null),
-				ofNullable(params.getScenarios().contains(FILE) ? fileScenario() : null),
-				ofNullable(params.getScenarios().contains(CONTRACT) ? contractScenario() : null),
-				ofNullable(params.getScenarios().contains(CONSENSUS) ? consensusScenario() : null),
-				ofNullable(params.getScenarios().contains(SYSTEM_KEYS) ? getSystemKeys() : null),
-				ofNullable(params.getScenarios().contains(TRANSFERS_ONLY) ? doJustTransfers() : null),
-				ofNullable(params.getScenarios().contains(SYS_FILES_DOWN) ? sysFilesDown() : null),
-				ofNullable(params.getScenarios().contains(SYS_FILES_UP) ? sysFilesUp() : null),
-				ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? ensureBytecode() : null),
-				ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? feeSnapshots() : null),
-				ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? updatePaymentCsv() : null),
-				ofNullable(params.getScenarios().isEmpty() ? null : recordPayerBalance(endingBalance::set)))
+						Optional.of(recordPayerBalance(startingBalance::set)),
+						ofNullable(skipScenarioPayer() ? null : ensureScenarioPayer()),
+						ofNullable(params.getScenarios().contains(CRYPTO) ? cryptoScenario() : null),
+						ofNullable(params.getScenarios().contains(VERSIONS) ? versionsScenario() : null),
+						ofNullable(params.getScenarios().contains(FILE) ? fileScenario() : null),
+						ofNullable(params.getScenarios().contains(CONTRACT) ? contractScenario() : null),
+						ofNullable(params.getScenarios().contains(CONSENSUS) ? consensusScenario() : null),
+						ofNullable(params.getScenarios().contains(SYSTEM_KEYS) ? getSystemKeys() : null),
+						ofNullable(params.getScenarios().contains(TRANSFERS_ONLY) ? doJustTransfers() : null),
+						ofNullable(params.getScenarios().contains(SYS_FILES_DOWN) ? sysFilesDown() : null),
+						ofNullable(params.getScenarios().contains(SYS_FILES_UP) ? sysFilesUp() : null),
+						ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? ensureBytecode() : null),
+						ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? feeSnapshots() : null),
+						ofNullable(params.getScenarios().contains(FEE_SNAPSHOTS) ? updatePaymentCsv() : null),
+						ofNullable(params.getScenarios().isEmpty() ? null : recordPayerBalance(endingBalance::set)))
 				.flatMap(Optional::stream)
 				.collect(toList());
 		System.out.println(specs.stream().map(HapiApiSpec::getName).collect(toList()));
@@ -276,7 +275,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given().when().then(
 							withOpContext((spec, opLog) -> {
 								if (feeSnapshots.getOpsConfig().getBytecode() == null) {
@@ -322,7 +321,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"cost.snapshot.dir", "fees",
 							"cost.snapshot.mode", "TAKE",
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
 									.name(SCENARIO_PAYER_NAME)
@@ -517,7 +516,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given().when().then(
 							withOpContext((spec, opLog) -> {
 								var payments = HapiApiSpec.costSnapshotFrom(
@@ -603,7 +602,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
 									.name(SCENARIO_PAYER_NAME)
@@ -640,22 +639,22 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given(
 							LongStream.of(payers).mapToObj(payer ->
-									keyFromPem(() -> pemForAccount(payer))
-											.name(String.format("payer%d", payer))
-											.passphrase(passphraseFor(payer))
-											.linkedTo(() -> String.format("0.0.%d", payer)))
+											keyFromPem(() -> pemForAccount(payer))
+													.name(String.format("payer%d", payer))
+													.passphrase(passphraseFor(payer))
+													.linkedTo(() -> String.format("0.0.%d", payer)))
 									.toArray(HapiSpecOperation[]::new)
 					).when().then(
 							sys.getUpdates().stream().map(action ->
-									updateLargeFile(
-											String.format("payer%d", action.getPayer()),
-											String.format("0.0.%d", action.getNum()),
-											appropriateContents(action.getNum()),
-											true,
-											OptionalLong.of(10_000_000_000L)))
+											updateLargeFile(
+													String.format("payer%d", action.getPayer()),
+													String.format("0.0.%d", action.getNum()),
+													appropriateContents(action.getNum()),
+													true,
+													OptionalLong.of(10_000_000_000L)))
 									.toArray(HapiSpecOperation[]::new)
 					);
 		} catch (Exception e) {
@@ -690,7 +689,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
 									.name(SCENARIO_PAYER_NAME)
@@ -780,7 +779,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given().when().then(flattened(
 							Arrays.stream(accounts)
 									.mapToObj(num -> getAccountInfo(String.format("0.0.%d", num))
@@ -809,7 +808,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given().when().then(
 							withOpContext((spec, opLog) -> {
 								var lookup = getAccountBalance(() -> idLiteral(targetNetwork().getBootstrap()));
@@ -835,7 +834,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given(
 					).when().then(
 							ensureValidatedAccountExistence(
@@ -872,7 +871,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
 									.name(SCENARIO_PAYER_NAME)
@@ -906,7 +905,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
 									.name(SCENARIO_PAYER_NAME)
@@ -1010,9 +1009,9 @@ public class ValidationScenarios extends HapiApiSuite {
 				allRunFor(spec, check);
 
 				var info = check.getResponse().getCryptoGetInfo().getAccountInfo();
-				var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), KeyFactory.PEM_PASSPHRASE);
+				final var key = Ed25519Utils.readKeyFrom(pemLoc, KeyFactory.PEM_PASSPHRASE);
 				var expectedKey = Key.newBuilder()
-						.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
+						.setEd25519(ByteString.copyFrom(key.getAbyte()))
 						.build();
 				Assertions.assertEquals(
 						expectedKey,
@@ -1020,7 +1019,7 @@ public class ValidationScenarios extends HapiApiSuite {
 						String.format("Account 0.0.%d had a different key than expected!", accountNo));
 				spec.registry().saveKey(name, expectedKey);
 				spec.registry().saveAccountId(name, accountId(accountNo));
-				spec.keys().incorporate(name, ocKeystore);
+				spec.keys().incorporate(name, key);
 
 				if (info.getBalance() < minBalance) {
 					var transfer = cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, name, (minBalance - info.getBalance())))
@@ -1057,7 +1056,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
 									.name(SCENARIO_PAYER_NAME)
@@ -1127,12 +1126,12 @@ public class ValidationScenarios extends HapiApiSuite {
 	}
 
 	private static HapiSpecOperation ensureValidatedFileExistence(
-			String name,
-			String contentsLoc,
-			String pemLoc,
-			LongSupplier num,
-			LongConsumer numUpdate,
-			Consumer<String> contentsUpdate
+			final String name,
+			final String contentsLoc,
+			final String pemLoc,
+			final LongSupplier num,
+			final LongConsumer numUpdate,
+			final Consumer<String> contentsUpdate
 	) {
 		return UtilVerbs.withOpContext((spec, opLog) -> {
 			long fileNo = num.getAsLong();
@@ -1143,28 +1142,27 @@ public class ValidationScenarios extends HapiApiSuite {
 						.setNodeFrom(ValidationScenarios::nextNode);
 				allRunFor(spec, infoCheck);
 
-				var info = infoCheck.getResponse().getFileGetInfo().getFileInfo();
-				var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), KeyFactory.PEM_PASSPHRASE);
+				final var info = infoCheck.getResponse().getFileGetInfo().getFileInfo();
+				final var key = Ed25519Utils.readKeyFrom(pemLoc, KeyFactory.PEM_PASSPHRASE);
 				var expectedKey = Key.newBuilder()
 						.setKeyList(KeyList.newBuilder()
 								.addKeys(Key.newBuilder()
 										.setEd25519(
-												ByteString.copyFrom(
-														CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))))
+												ByteString.copyFrom(key.getAbyte()))))
 						.build();
 				Assertions.assertEquals(
 						expectedKey.getKeyList(),
 						info.getKeys(),
 						String.format("File 0.0.%d had a different key than expected!", fileNo));
 
-				var contentsCheck = getFileContents(literal)
+				final var contentsCheck = getFileContents(literal)
 						.setNodeFrom(ValidationScenarios::nextNode)
 						.hasContents(ignore -> expectedContents);
 				allRunFor(spec, contentsCheck);
 
 				spec.registry().saveKey(name, expectedKey);
 				spec.registry().saveFileId(name, fileId(fileNo));
-				spec.keys().incorporateSimpleWacl(name, ocKeystore);
+				spec.keys().incorporateEd25519SimpleWacl(name, key);
 			} else {
 				var contents = (contentsLoc != null)
 						? Files.readAllBytes(Paths.get(pathTo(contentsLoc)))
@@ -1213,7 +1211,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
 									.name(SCENARIO_PAYER_NAME)
@@ -1303,9 +1301,9 @@ public class ValidationScenarios extends HapiApiSuite {
 				allRunFor(spec, infoCheck);
 
 				var info = infoCheck.getResponse().getContractGetInfo().getContractInfo();
-				var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), KeyFactory.PEM_PASSPHRASE);
+				final var key = Ed25519Utils.readKeyFrom(pemLoc, KeyFactory.PEM_PASSPHRASE);
 				var expectedKey = Key.newBuilder()
-						.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
+						.setEd25519(ByteString.copyFrom(key.getAbyte()))
 						.build();
 				Assertions.assertEquals(
 						expectedKey,
@@ -1329,7 +1327,7 @@ public class ValidationScenarios extends HapiApiSuite {
 				spec.registry().saveKey(name, expectedKey);
 				spec.registry().saveContractId(name, contractId(contractNo));
 				spec.registry().saveAccountId(name, accountId(contractNo));
-				spec.keys().incorporate(name, ocKeystore);
+				spec.keys().incorporate(name, key);
 			} else {
 				var baseName = (bytecodeLoc != null) ? bytecodeLoc : DEFAULT_BYTECODE_RESOURCE;
 				var bytecode = (bytecodeLoc != null)
@@ -1405,7 +1403,7 @@ public class ValidationScenarios extends HapiApiSuite {
 							"default.node", defaultNode(),
 							"fees.useFixedOffer", "true",
 							"fees.fixedOffer", "" + FEE_TO_OFFER,
-							"startupAccounts.literal", payerKeystoreLiteral()
+							"default.payer.key", payerKeySeed()
 					)).given(
 							keyFromPem(() -> pemForAccount(targetNetwork().getScenarioPayer()))
 									.name(SCENARIO_PAYER_NAME)
@@ -1487,9 +1485,9 @@ public class ValidationScenarios extends HapiApiSuite {
 				allRunFor(spec, check);
 
 				var info = check.getResponse().getConsensusGetTopicInfo().getTopicInfo();
-				var ocKeystore = SpecUtils.asOcKeystore(new File(pemLoc), KeyFactory.PEM_PASSPHRASE);
+				final var key = Ed25519Utils.readKeyFrom(pemLoc, KeyFactory.PEM_PASSPHRASE);
 				var expectedKey = Key.newBuilder()
-						.setEd25519(ByteString.copyFrom(CommonUtils.unhex(ocKeystore.getPublicKeyAbyteStr())))
+						.setEd25519(ByteString.copyFrom(key.getAbyte()))
 						.build();
 				Assertions.assertEquals(
 						expectedKey,
@@ -1498,7 +1496,7 @@ public class ValidationScenarios extends HapiApiSuite {
 				expectedSeqNo.set(info.getSequenceNumber() + 1);
 				spec.registry().saveKey(name, expectedKey);
 				spec.registry().saveTopicId(name, topicId(topicNo));
-				spec.keys().incorporate(name, ocKeystore);
+				spec.keys().incorporate(name, key);
 			} else {
 				var create = createTopic(name)
 						.setNodeFrom(ValidationScenarios::nextNode)
@@ -1710,15 +1708,15 @@ public class ValidationScenarios extends HapiApiSuite {
 		return validationConfig.getNetworks().get(params.getTargetNetwork());
 	}
 
-	private static String payerKeystoreLiteral() throws IOException, KeyStoreException {
-		String loc = pemForAccount(targetNetwork().getBootstrap());
+	private static String payerKeySeed() throws IOException {
+		final var loc = pemForAccount(targetNetwork().getBootstrap());
 		var f = new File(loc);
 		if (!f.exists()) {
 			log.error(String.format("Missing bootstrap PEM @ '%s', exiting.", loc));
 		}
 
-		return SpecUtils.asSerializedOcKeystore(f, params.getRawPassphrase(),
-				accountId(targetNetwork().getBootstrap()));
+		final var payerKey = Ed25519Utils.readKeyFrom(f, params.getRawPassphrase());
+		return CommonUtils.hex(payerKey.getSeed());
 	}
 
 	private static AccountID accountId(long num) {
