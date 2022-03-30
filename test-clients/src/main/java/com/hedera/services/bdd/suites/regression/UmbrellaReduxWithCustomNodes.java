@@ -55,7 +55,6 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
     public static String nodeId = "0.0.";
     public static String nodeAddress = "";
     public static String payer = "0.0.";
-    public static String startUpAccount = "";
     public static int topic_running_hash_version = 0;
 
     private AtomicLong duration = new AtomicLong(1);
@@ -75,15 +74,13 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
             log.info("using default nodeId {} and node address {} -- RUNNING CUSTOM NET MIGRATION ",
                     nodeId, nodeAddress);
             payer +=  defaultSetup.defaultPayer().getAccountNum();
-            startUpAccount =  defaultSetup.startupAccountsPath();
             topic_running_hash_version = defaultSetup.defaultTopicRunningHashVersion();
         }
         else{
             nodeId += args[0];
             nodeAddress = args[1];
             payer += args[2];
-            startUpAccount = args[3];
-            topic_running_hash_version = Integer.parseInt(args[4]);
+            topic_running_hash_version = Integer.parseInt(args[3]);
         }
 
         UmbrellaReduxWithCustomNodes umbrellaReduxWithCustomNodes = new UmbrellaReduxWithCustomNodes();
@@ -105,8 +102,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
                         "default.topic.runningHash.version",topic_running_hash_version,
                         "default.node",nodeId,
                         "default.payer", payer,
-                        "nodes", nodeAddress + ":" + nodeId,
-                        "startupAccounts.path", startUpAccount
+                        "nodes", nodeAddress + ":" + nodeId
                 ))
                 .given(
                         newKeyNamed("submitKey"),
@@ -136,8 +132,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
                         "status.wait.timeout.ms", Integer.toString(1_000 * statusTimeoutSecs.get()),
                         "default.node",nodeId,
                         "default.payer", payer,
-                        "nodes", nodeAddress + ":" + nodeId,
-                        "startupAccounts.path", startUpAccount))
+                        "nodes", nodeAddress + ":" + nodeId))
                 .given().when().then(
                         withOpContext((spec, opLog) -> configureFromCi(spec)),
                         runWithProvider(factoryFrom(props::get))

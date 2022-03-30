@@ -20,11 +20,14 @@ package com.hedera.services.bdd.suites.contract.precompile;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -69,6 +72,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -77,9 +81,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.utils.contracts.FunctionParameters.functionParameters;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContractMintHTSSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractMintHTSSuite.class);
@@ -384,6 +390,8 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 										)
 						)
 				).then(
+						assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(nestedTransferTxn),
+						withOpContext((spec, opLog) -> allRunFor(spec,
 						getTxnRecord(nestedTransferTxn).andAllChildRecords().logged(),
 						childRecordsCheck(nestedTransferTxn, SUCCESS,
 								recordWith()
@@ -397,6 +405,16 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 																.withTotalSupply(1L)
 																.withSerialNumbers(1L)
 														)
+														.gas(3_838_735L)
+														.amount(0L)
+														.functionParameters(functionParameters()
+																.forFunction(FunctionParameters.PrecompileFunction.MINT)
+																.withTokenAddress(asAddress(spec.registry()
+																		.getTokenID(nonFungibleToken)))
+																.withAmount(0L)
+																.withMetadata(Arrays.asList("Test metadata 1"))
+																.build()
+														)
 										),
 								recordWith()
 										.status(SUCCESS)
@@ -404,7 +422,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												.changingNFTBalances()
 												.including(nonFungibleToken, TOKEN_TREASURY, theRecipient, 1)
 										)
-						)
+						)))
 				);
 	}
 
@@ -516,6 +534,63 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 				).then(
 						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, 0)
 				);
+	}
+
+	private HapiApiSpec fungibleTokenMintFailure() {
+		final var theAccount = "anybody";
+		final var mintContractByteCode = "mintContractByteCode";
+		final var amount = "9223372036854775808";
+//		final var amount = "9223372036854775808";
+		final var fungibleToken = "fungibleToken";
+		final var multiKey = "purpose";
+		final var theContract = "mintContract";
+		final var firstMintTxn = "firstMintTxn";
+
+		final AtomicLong fungibleNum = new AtomicLong();
+
+		return defaultHapiSpec("FungibleMintFailure")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(theAccount).balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						fileCreate(mintContractByteCode).payingWith(theAccount),
+						updateLargeFile(theAccount, mintContractByteCode,
+								extractByteCode(ContractResources.MINT_CONTRACT)),
+						tokenCreate(fungibleToken)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2]))
+				).when(
+						sourcing(() -> contractCreate(theContract, MINT_CONS_ABI, fungibleNum.get())
+								.bytecode(mintContractByteCode).payingWith(theAccount)
+								.gas(GAS_TO_OFFER))
+				).then(
+						contractCall(theContract, MINT_FUNGIBLE_CALL_ABI, amount)
+								.via(firstMintTxn).payingWith(theAccount)
+								.alsoSigningWithFullPrefix(multiKey)
+								.gas(2_000_000L)
+								.hasKnownStatus(SUCCESS),
+						getTxnRecord(firstMintTxn).andAllChildRecords().logged()
+				);
+	}
+
+	@NotNull
+	private CustomSpecAssert assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(final String nestedTransferTxn) {
+		return assertionsHold((spec, log) -> {
+			var subOp = getTxnRecord(nestedTransferTxn);
+			allRunFor(spec, subOp);
+
+			var record = subOp.getResponseRecord();
+
+			final var contractCallResult =
+					record.getContractCallResult();
+			assertEquals(0L, contractCallResult.getGas());
+			assertEquals(0L, contractCallResult.getAmount());
+			assertEquals(ByteString.EMPTY, contractCallResult.getFunctionParameters());
+		});
 	}
 
 	private HapiApiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {

@@ -30,7 +30,8 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
-import static com.hedera.services.bdd.suites.misc.RekeySavedStateTreasury.newTreasuryStartUpAccountLoc;
+import static com.hedera.services.bdd.suites.misc.RekeySavedStateTreasury.newTreasuryPassphrase;
+import static com.hedera.services.bdd.suites.misc.RekeySavedStateTreasury.newTreasuryPemLoc;
 
 /**
  * Given a network with a "re-keyed" treasury account, we want to use this the
@@ -56,7 +57,8 @@ public class FreezeRekeyedState extends HapiApiSuite {
 				.withProperties(Map.of(
 						"nodes", "localhost",
 						"default.payer", "0.0.2",
-						"startupAccounts.path", newTreasuryStartUpAccountLoc
+						"default.payer.pemKeyLoc", newTreasuryPemLoc,
+						"default.payer.pemKeyPassphrase", newTreasuryPassphrase
 				))
 				.given().when().then(
 						freezeOnly().startingIn(60).seconds()

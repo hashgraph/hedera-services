@@ -43,6 +43,8 @@ import static org.mockito.Mockito.times;
 
 class MerkleTokenRelStatusTest {
 	private final long numbers = BitPackUtils.packedNums(123, 456);
+	private final long nextKey = EntityNumPair.fromLongs(123, 457).value();
+	private final long prevKey = EntityNumPair.fromLongs(123, 455).value();
 
 	private static final long balance = 666;
 	private static final boolean frozen = true;
@@ -54,6 +56,8 @@ class MerkleTokenRelStatusTest {
 	@BeforeEach
 	private void setup() {
 		subject = new MerkleTokenRelStatus(balance, frozen, kycGranted,  automaticAssociation, numbers);
+		subject.setNextKey(new EntityNumPair(nextKey));
+		subject.setPrevKey(new EntityNumPair(prevKey));
 	}
 
 	@Test
@@ -65,6 +69,8 @@ class MerkleTokenRelStatusTest {
 		final var five = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers - 1);
 		final var six = new MerkleTokenRelStatus(balance, frozen, kycGranted, !automaticAssociation, numbers);
 		final var seven = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation, numbers);
+		seven.setNextKey(new EntityNumPair(nextKey));
+		seven.setPrevKey(new EntityNumPair(prevKey));
 		final var eight = subject;
 
 		assertNotEquals(subject, new Object());
@@ -77,7 +83,7 @@ class MerkleTokenRelStatusTest {
 		assertEquals(subject, eight);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
-		assertEquals(subject.hashCode(), five.hashCode());
+		assertEquals(subject.hashCode(), seven.hashCode());
 	}
 
 	@Test
@@ -97,10 +103,14 @@ class MerkleTokenRelStatusTest {
 		inOrder.verify(out).writeLong(balance);
 		inOrder.verify(out, times(2)).writeBoolean(true);
 		inOrder.verify(out).writeLong(numbers);
+		inOrder.verify(out).writeLong(nextKey);
+		inOrder.verify(out).writeLong(prevKey);
 	}
 
 	@Test
 	void deserializeWorksForPre0180() throws IOException {
+		subject.setNextKey(new EntityNumPair(0));
+		subject.setPrevKey(new EntityNumPair(0));
 		final var in = mock(SerializableDataInputStream.class);
 		final var defaultSubject = new MerkleTokenRelStatus();
 		given(in.readLong()).willReturn(balance);
@@ -119,6 +129,8 @@ class MerkleTokenRelStatusTest {
 
 	@Test
 	void deserializeWorksFor0180PreSdk() throws IOException {
+		subject.setNextKey(new EntityNumPair(0));
+		subject.setPrevKey(new EntityNumPair(0));
 		final var in = mock(SerializableDataInputStream.class);
 		final var defaultSubject = new MerkleTokenRelStatus();
 		given(in.readLong()).willReturn(balance);
@@ -136,6 +148,8 @@ class MerkleTokenRelStatusTest {
 
 	@Test
 	void deserializeWorksFor0180PostSdk() throws IOException {
+		subject.setNextKey(new EntityNumPair(0));
+		subject.setPrevKey(new EntityNumPair(0));
 		final var in = mock(SerializableDataInputStream.class);
 		final var defaultSubject = new MerkleTokenRelStatus();
 		given(in.readLong()).willReturn(balance).willReturn(numbers);
@@ -148,9 +162,27 @@ class MerkleTokenRelStatusTest {
 	}
 
 	@Test
+	void deserializeWorksForV0240() throws IOException {
+		final var in = mock(SerializableDataInputStream.class);
+		final var defaultSubject = new MerkleTokenRelStatus();
+		given(in.readLong())
+				.willReturn(balance)
+				.willReturn(numbers)
+				.willReturn(nextKey)
+				.willReturn(prevKey);
+		given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted).willReturn(automaticAssociation);
+
+		defaultSubject.deserialize(in, MerkleTokenRelStatus.RELEASE_0240_VERSION);
+
+		// then:
+		assertEquals(subject, defaultSubject);
+	}
+
+	@Test
 	void toStringWorks() {
 		final var desired = "MerkleTokenRelStatus{balance=666, isFrozen=true, hasKycGranted=true, " +
-				"key=528280977864 <-> (0.0.123, 0.0.456), isAutomaticAssociation=false}";
+				"key=528280977864 <-> (0.0.123, 0.0.456), isAutomaticAssociation=false, " +
+				"nextKey=528280977865 <-> (0.0.123, 0.0.457), prevKey=528280977863 <-> (0.0.123, 0.0.455)}";
 		assertEquals(desired, subject.toString());
 	}
 

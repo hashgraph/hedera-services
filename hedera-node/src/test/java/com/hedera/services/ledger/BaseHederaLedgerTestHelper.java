@@ -34,17 +34,19 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -69,7 +71,8 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKENS;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
+import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -184,15 +187,19 @@ public class BaseHederaLedgerTestHelper {
 		when(accountsLedger.get(id, MAX_AUTOMATIC_ASSOCIATIONS)).thenReturn(8);
 		when(accountsLedger.get(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).thenReturn(5);
 		when(accountsLedger.exists(id)).thenReturn(true);
-		var tokens = new MerkleAccountTokens();
-		tokens.associateAll(tokenInfo.keySet());
-		when(accountsLedger.get(id, TOKENS)).thenReturn(tokens);
 		// and:
+		final int numAssociations = 10;
+		final int numZeroBalances = 6;
+		var tokenAssociationKey = EntityNumPair.MISSING_NUM_PAIR;
 		for (TokenID tId : tokenInfo.keySet()) {
 			var info = tokenInfo.get(tId);
 			var relationship = BackingTokenRels.asTokenRel(id, tId);
 			when(tokenRelsLedger.get(relationship, TOKEN_BALANCE)).thenReturn(info.balance);
+			when(tokenRelsLedger.get(relationship, NEXT_KEY)).thenReturn(tokenAssociationKey);
+			tokenAssociationKey = EntityNumPair.fromLongs(id.getAccountNum(), tId.getTokenNum());
 		}
+		when(accountsLedger.get(id, TOKEN_ASSOCIATION_METADATA)).thenReturn(
+				new TokenAssociationMetadata(numAssociations, numZeroBalances, tokenAssociationKey));
 	}
 
 	protected void addDeletedAccountToLedger(AccountID id) {

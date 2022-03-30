@@ -28,7 +28,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0039;
 import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
-import com.hedera.services.bdd.suites.utils.keypairs.Ed25519KeyStore;
+import com.hedera.services.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
@@ -44,7 +44,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.SplittableRandom;
@@ -170,12 +169,8 @@ public class SpecKey {
 			}
 			Key simpleKey = spec.keys().generate(spec, KeyFactory.KeyType.SIMPLE);
 			forms.completeIntake(spec.registry(), simpleKey);
-			try {
-				spec.keys().exportSimpleKey(qPemLoc, forms.name(), passphrase);
-				log.info("Created new simple key at PEM loc '{}'.", qPemLoc);
-			} catch (KeyStoreException e) {
-				throw new IllegalStateException(String.format("Cannot generate key to PEM loc '%s'!", qPemLoc), e);
-			}
+			spec.keys().exportSimpleKey(qPemLoc, forms.name(), passphrase);
+			log.info("Created new simple key at PEM loc '{}'.", qPemLoc);
 			return;
 		}
 
@@ -201,14 +196,8 @@ public class SpecKey {
 				loc);
 	}
 
-	public static KeyPair readFirstKpFromPem(File store, String passphrase) {
-		try {
-			var keyStore = Ed25519KeyStore.read(passphrase.toCharArray(), store);
-			return keyStore.get(0);
-		} catch (KeyStoreException kse) {
-			throw new IllegalStateException(
-					String.format("Unusable key at alleged PEM loc '%s'!", store.getPath()), kse);
-		}
+	public static KeyPair readFirstKpFromPem(File pem, String passphrase) {
+		return Ed25519Utils.readKeyPairFrom(pem, passphrase);
 	}
 
 	private Key asSimpleHederaKey(byte[] A) {

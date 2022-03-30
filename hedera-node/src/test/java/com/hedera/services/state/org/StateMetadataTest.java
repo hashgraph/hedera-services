@@ -62,7 +62,7 @@ class StateMetadataTest {
 	}
 
 	@Test
-	void releasesUnreleasedAliasesOnRelease() {
+	void releasesAliasesOnRelease() {
 		subject.release();
 
 		verify(aliases).release();
