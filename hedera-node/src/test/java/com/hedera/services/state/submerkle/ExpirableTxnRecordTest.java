@@ -695,7 +695,7 @@ class ExpirableTxnRecordTest {
 				" " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
 				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=}, " +
+				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
 				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
@@ -721,7 +721,7 @@ class ExpirableTxnRecordTest {
 				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null, " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
 				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=}, " +
+				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, tokenAdjustments=0.0.3" +
 				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
@@ -748,7 +748,7 @@ class ExpirableTxnRecordTest {
 				" " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
 				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=}, " +
+				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
 				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +

@@ -20,7 +20,6 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -55,13 +54,12 @@ class AssociateLogicTest {
 	@Mock private Token secondModelToken;
 	@Mock private TokenRelationship firstModelTokenRel;
 	@Mock private TokenRelationship secondModelTokenRel;
-	@Mock private GlobalDynamicProperties dynamicProperties;
 
 	private AssociateLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new AssociateLogic(tokenStore, accountStore, dynamicProperties);
+		subject = new AssociateLogic(tokenStore, accountStore);
 	}
 
 	@Test
@@ -72,14 +70,13 @@ class AssociateLogicTest {
 		given(accountStore.loadAccount(accountId)).willReturn(modelAccount);
 		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
 		given(tokenStore.loadToken(secondTokenId)).willReturn(secondModelToken);
-		given(firstModelToken.newRelationshipWith(modelAccount, false)).willReturn(firstModelTokenRel);
-		given(secondModelToken.newRelationshipWith(modelAccount, false)).willReturn(secondModelTokenRel);
+		given(modelAccount.associateWith(tokens, tokenStore, false, false))
+				.willReturn(List.of(firstModelTokenRel, secondModelTokenRel));
 
 		subject.associate(accountId, tokenIds);
 
-		verify(modelAccount).associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);
+		verify(modelAccount).associateWith(tokens, tokenStore, false, false);
 		verify(accountStore).commitAccount(modelAccount);
-		verify(tokenStore).commitTokenRelationships(List.of(firstModelTokenRel));
-		verify(tokenStore).commitTokenRelationships(List.of(secondModelTokenRel));
+		verify(tokenStore).commitTokenRelationships(List.of(firstModelTokenRel, secondModelTokenRel));
 	}
 }

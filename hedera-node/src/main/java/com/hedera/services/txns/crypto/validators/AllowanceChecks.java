@@ -37,7 +37,6 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
@@ -240,7 +239,7 @@ public class AllowanceChecks {
 				return validity;
 			}
 
-			validity = validateTokenBasics(ownerAccount, spender, tokenId);
+			validity = validateTokenBasics(ownerAccount, spender, token, tokenStore);
 			if (validity != OK) {
 				return validity;
 			}
@@ -256,7 +255,6 @@ public class AllowanceChecks {
 	 * 		nft allowances list
 	 * @param payerAccount
 	 * 		Account of the payer for the Allowance approve/adjust txn
-	 * @param view
 	 * @param accountStore
 	 * @return
 	 */
@@ -294,7 +292,7 @@ public class AllowanceChecks {
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 			}
-			var validity = validateTokenBasics(ownerAccount, spenderId, tokenId);
+			var validity = validateTokenBasics(ownerAccount, spenderId, token, tokenStore);
 			if (validity != OK) {
 				return validity;
 			}
@@ -330,11 +328,12 @@ public class AllowanceChecks {
 	private ResponseCodeEnum validateTokenBasics(
 			final Account ownerAccount,
 			final Id spenderId,
-			final TokenID tokenId) {
+			final Token token,
+			final TypedTokenStore tokenStore) {
 		if (ownerAccount.getId().equals(spenderId)) {
 			return SPENDER_ACCOUNT_SAME_AS_OWNER;
 		}
-		if (!ownerAccount.isAssociatedWith(Id.fromGrpcToken(tokenId))) {
+		if (!tokenStore.hasAssociation(token, ownerAccount)) {
 			return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 		}
 		return OK;
