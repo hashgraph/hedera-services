@@ -296,7 +296,6 @@ class CallEvmTxProcessorTest {
 	void assertTransactionSenderAndValue() {
 		// setup:
 		doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
-		given(worldState.updater()).willReturn(mock(HederaWorldState.Updater.class));
 		given(codeCache.getIfPresent(any())).willReturn(new Code());
 		given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
 		given(transaction.getValue()).willReturn(Wei.of(1L));
@@ -318,7 +317,7 @@ class CallEvmTxProcessorTest {
 						.miningBeneficiary(mock(Address.class))
 						.blockHashLookup(h -> null);
 		//when:
-		MessageFrame buildMessageFrame = callEvmTxProcessor.buildInitialFrame(commonInitialFrame, worldState.updater(),
+		MessageFrame buildMessageFrame = callEvmTxProcessor.buildInitialFrame(commonInitialFrame,
 				(Address) transaction.getTo().get(), Bytes.EMPTY);
 
 		//expect:

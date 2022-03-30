@@ -196,16 +196,18 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			frame.mergeWarmedUpFields(childFrame);
 			frame.pushStackItem(Words.fromAddress(childFrame.getContractAddress()));
 
-			/* https://github.com/hashgraph/hedera-services/issues/2807
-			* Add an in-progress record so that if everything succeeds, we can externalize the newly
-			* created contract in the record stream with both its 0.0.X id and its EVM address. */
+			// Add an in-progress record so that if everything succeeds, we can externalize the newly
+			// created contract in the record stream with both its 0.0.X id and its EVM address.
+			// C.f. https://github.com/hashgraph/hedera-services/issues/2807
 			final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 			final var sideEffects = new SideEffectsTracker();
 			sideEffects.trackNewContract(updater.idOfLastNewAddress(), childFrame.getContractAddress());
 			final var childRecord = creator.createSuccessfulSyntheticRecord(
 					NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 			childRecord.onlyExternalizeIfSuccessful();
-			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxnFactory.createContractSkeleton());
+			final var opCustomizer = updater.customizerForPendingCreation();
+			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
+			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp);
 		} else {
 			frame.setReturnData(childFrame.getOutputData());
 			frame.pushStackItem(UInt256.ZERO);

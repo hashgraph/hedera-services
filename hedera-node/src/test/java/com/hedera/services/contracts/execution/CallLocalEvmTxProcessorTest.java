@@ -164,7 +164,6 @@ class CallLocalEvmTxProcessorTest {
 	void assertTransactionSenderAndValue() {
 		// setup:
 		doReturn(Optional.of(receiver.getId().asEvmAddress())).when(transaction).getTo();
-		given(worldState.updater()).willReturn(mock(HederaWorldState.Updater.class));
 		given(codeCache.getIfPresent(any())).willReturn(new Code());
 		given(transaction.getSender()).willReturn(sender.getId().asEvmAddress());
 		given(transaction.getValue()).willReturn(Wei.of(1L));
@@ -187,7 +186,7 @@ class CallLocalEvmTxProcessorTest {
 						.blockHashLookup(h -> null);
 		//when:
 		MessageFrame buildMessageFrame = callLocalEvmTxProcessor.buildInitialFrame(commonInitialFrame,
-				worldState.updater(), (Address) transaction.getTo().get(), Bytes.EMPTY);
+				(Address) transaction.getTo().get(), Bytes.EMPTY);
 
 		//expect:
 		assertEquals(transaction.getSender(), buildMessageFrame.getSenderAddress());

@@ -20,15 +20,27 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class MockLedgerWorldUpdater
 		extends AbstractLedgerWorldUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> {
 
+	private final ContractCustomizer customizer;
 
-	public MockLedgerWorldUpdater(final HederaWorldState world, final WorldLedgers trackingLedgers) {
+	public MockLedgerWorldUpdater(
+			final HederaWorldState world,
+			final WorldLedgers trackingLedgers,
+			final ContractCustomizer customizer
+	) {
 		super(world, trackingLedgers);
+		this.customizer = customizer;
+	}
+
+	@Override
+	public ContractCustomizer customizerForPendingCreation() {
+		return customizer;
 	}
 
 	@Override
@@ -43,6 +55,6 @@ public class MockLedgerWorldUpdater
 
 	@Override
 	public WorldUpdater updater() {
-		return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped());
+		return new MockStackedLedgerUpdater(this, trackingLedgers().wrapped(), customizer);
 	}
 }
