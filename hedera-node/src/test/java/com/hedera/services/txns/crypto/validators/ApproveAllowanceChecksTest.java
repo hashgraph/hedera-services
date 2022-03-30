@@ -37,6 +37,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
@@ -66,7 +67,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
@@ -75,6 +78,8 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeat
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -85,7 +90,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBL
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -353,13 +357,12 @@ class ApproveAllowanceChecksTest {
 
 	@Test
 	void failsIfOwnerSameAsSpender() {
-		given(uniqueToken.getOwner()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(tokenId1)).willReturn(token1Model);
 		given(tokenStore.loadPossiblyPausedToken(tokenId2)).willReturn(token2Model);
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.hasAssociation(token1Model, owner)).willReturn(true);
 		given(tokenStore.hasAssociation(token2Model, owner)).willReturn(true);
-		given(tokenStore.loadUniqueToken(tokenId1, 1L)).willReturn(uniqueToken);
+		given(tokenStore.loadUniqueToken(tokenId2, 1L)).willReturn(uniqueToken);
 		given(tokenStore.loadUniqueToken(tokenId2, 10L)).willReturn(uniqueToken);
 
 		final var badCryptoAllowance = CryptoAllowance.newBuilder().
@@ -513,6 +516,75 @@ class ApproveAllowanceChecksTest {
 	}
 
 	@Test
+	void cannotGrantApproveForAllUsingDelegatingSpender() {
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(tokenStore.hasAssociation(token2Model, owner)).willReturn(true);
+
+		final var badNftAllowance = NftAllowance.newBuilder()
+				.setSpender(spender2)
+				.addAllSerialNumbers(List.of(1L))
+				.setTokenId(token2)
+				.setOwner(ownerId1)
+				.setDelegatingSpender(spender1)
+				.setApprovedForAll(BoolValue.of(true)).build();
+
+		nftAllowances.clear();
+		nftAllowances.add(badNftAllowance);
+
+		assertEquals(DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL,
+				subject.validateNftAllowances(tokenStore, accountStore, nftAllowances, owner));
+	}
+
+	@Test
+	void cannotGrantExplicitNftAllowanceUsingDelegatingSpenderWithNoApproveForAllAllowance() {
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(tokenStore.hasAssociation(token2Model, owner)).willReturn(true);
+		given(owner.getApprovedForAllNftsAllowances()).willReturn(Collections.emptySet());
+
+		final var badNftAllowance = NftAllowance.newBuilder()
+				.setSpender(spender2)
+				.addAllSerialNumbers(List.of(1L))
+				.setTokenId(token2)
+				.setOwner(ownerId1)
+				.setDelegatingSpender(spender1)
+				.setApprovedForAll(BoolValue.of(false)).build();
+
+		nftAllowances.clear();
+		nftAllowances.add(badNftAllowance);
+
+		assertEquals(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL,
+				subject.validateNftAllowances(tokenStore, accountStore, nftAllowances, owner));
+	}
+
+	@Test
+	void canGrantExplicitNftAllowanceUsingDelegatingSpenderWithApproveForAllAllowance() {
+		final var allowanceKey = FcTokenAllowanceId.from(
+				EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1));
+		final NftId token1Nft1 = new NftId(0, 0, token2.getTokenNum(), 1L);
+		final EntityNumPair numpair = EntityNumPair.fromNftId(token1Nft1);
+
+		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
+		given(tokenStore.hasAssociation(token2Model, owner)).willReturn(true);
+		given(owner.getApprovedForAllNftsAllowances()).willReturn(Set.of(allowanceKey));
+
+		final var badNftAllowance = NftAllowance.newBuilder()
+				.setSpender(spender2)
+				.addAllSerialNumbers(List.of(1L))
+				.setTokenId(token2)
+				.setOwner(ownerId1)
+				.setDelegatingSpender(spender1)
+				.setApprovedForAll(BoolValue.of(false)).build();
+
+		nftAllowances.clear();
+		nftAllowances.add(badNftAllowance);
+
+		assertEquals(OK, subject.validateNftAllowances(tokenStore, accountStore, nftAllowances, owner));
+	}
+
+	@Test
 	void failsWhenTokenNotAssociatedToAccount() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
@@ -539,9 +611,8 @@ class ApproveAllowanceChecksTest {
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(tokenStore.hasAssociation(token2Model, owner)).willReturn(true);
-		given(tokenStore.loadUniqueToken(tokenId1, 1L)).willReturn(uniqueToken);
-		given(tokenStore.loadUniqueToken(tokenId1, 10L)).willReturn(uniqueToken);
-		given(uniqueToken.getOwner()).willReturn(Id.fromGrpcAccount(ownerId1));
+		given(tokenStore.loadUniqueToken(tokenId2, 1L)).willReturn(uniqueToken);
+		given(tokenStore.loadUniqueToken(tokenId2, 10L)).willReturn(uniqueToken);
 
 		final var badNftAllowance = NftAllowance.newBuilder().setSpender(spender2)
 				.addAllSerialNumbers(List.of(1L)).setTokenId(token1).setOwner(ownerId1).setApprovedForAll(
@@ -572,36 +643,10 @@ class ApproveAllowanceChecksTest {
 	void approvesAllowanceFromTreasury() {
 		final var serials = List.of(1L);
 		token2Model.setTreasury(treasury);
-		given(tokenStore.loadUniqueToken(tokenId1, 1L)).willReturn(uniqueToken);
-		given(uniqueToken.getOwner()).willReturn(Id.MISSING_ID);
-		given(treasury.getId()).willReturn(Id.fromGrpcAccount(spender2));
+		given(tokenStore.loadUniqueToken(tokenId2, 1L)).willReturn(uniqueToken);
 
 		var validity = subject.validateSerialNums(serials, token2Model, tokenStore);
 		assertEquals(OK, validity);
-	}
-
-	@Test
-	void rejectsAllowanceFromInvalidTreasury() {
-		final var serials = List.of(1L);
-		given(treasury.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-
-		given(tokenStore.loadUniqueToken(tokenId1, 1L)).willReturn(uniqueToken);
-		given(tokenStore.loadUniqueToken(tokenId1, 10L)).willReturn(uniqueToken);
-		given(uniqueToken.getOwner()).willReturn(Id.fromGrpcAccount(spender1));
-
-		var validity = subject.validateSerialNums(serials, token2Model, tokenStore);
-		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
-	}
-
-	@Test
-	void validateSerialsOwner() {
-		final var serials = List.of(1L, 10L);
-		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-		given(tokenStore.loadUniqueToken(tokenId1, 1L)).willReturn(uniqueToken);
-		given(uniqueToken.getOwner()).willReturn(Id.fromGrpcAccount(spender1));
-
-		var validity = subject.validateSerialNums(serials, token2Model, tokenStore);
-		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, validity);
 	}
 
 	@Test
@@ -609,13 +654,6 @@ class ApproveAllowanceChecksTest {
 		final var serials = List.of(1L, 10L, 1L);
 		var validity = subject.validateSerialNums(serials, token2Model, tokenStore);
 		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
-	}
-
-	@Test
-	void validateIfSerialsEmptyWithoutApproval() {
-		final List<Long> serials = List.of();
-		var validity = subject.validateSerialNums(serials, token2Model, tokenStore);
-		assertEquals(EMPTY_ALLOWANCES, validity);
 	}
 
 	@Test
@@ -670,7 +708,6 @@ class ApproveAllowanceChecksTest {
 
 		given(tokenStore.loadUniqueToken(tokenId2, 1L)).willReturn(uniqueToken);
 		given(tokenStore.loadUniqueToken(tokenId2, 10L)).willReturn(uniqueToken);
-		given(uniqueToken.getOwner()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willReturn(owner);
 
@@ -742,7 +779,6 @@ class ApproveAllowanceChecksTest {
 		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
 		given(tokenStore.loadUniqueToken(tokenId2, 1L)).willReturn(uniqueToken);
 		given(tokenStore.loadUniqueToken(tokenId2, 10L)).willReturn(uniqueToken);
-		given(uniqueToken.getOwner()).willReturn(Id.fromGrpcAccount(ownerId1));
 		given(payerAccount.getId()).willReturn(Id.fromGrpcAccount(payer));
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(tokenStore.hasAssociation(token1Model, payerAccount)).willReturn(true);

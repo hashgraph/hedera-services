@@ -84,12 +84,6 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		return this;
 	}
 
-	public MerkleAccountScopedCheck setNftsLedger(
-			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
-		this.nftsLedger = nftsLedger;
-		return this;
-	}
-
 	private ResponseCodeEnum internalCheck(
 			@Nullable final MerkleAccount account,
 			@Nullable final Function<AccountProperty, Object> extantProps,

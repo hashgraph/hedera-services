@@ -28,7 +28,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
@@ -113,10 +112,6 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 			}
 		}
 		sideEffectsTracker.trackTokenBalanceChanges(tokenRelationships);
-	}
-
-	public boolean hasAssociation(Token token, Account account) {
-		return tokenRels.contains(Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
 	}
 
 	private void persistNonDestroyed(
