@@ -88,27 +88,27 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				canHaveMultipleOwners(),
-//				noOwnerDefaultsToPayer(),
-//				invalidSpenderFails(),
-//				invalidOwnerFails(),
+				canHaveMultipleOwners(),
+				noOwnerDefaultsToPayer(),
+				invalidSpenderFails(),
+				invalidOwnerFails(),
 				happyPathWorks(),
-//				emptyAllowancesRejected(),
-//				spenderSameAsOwnerFails(),
-//				spenderAccountRepeatedFails(),
-//				negativeAmountWorksAsExpectedForFungible(),
-//				tokenNotAssociatedToAccountFails(),
-//				invalidTokenTypeFails(),
-//				validatesSerialNums(),
-//				tokenExceedsMaxSupplyFails(),
-//				serialsWipedIfApprovedForAll(),
-//				serialsInAscendingOrder(),
-//				exceedsTransactionLimit(),
-//				exceedsAccountLimit(),
-//				succeedsWhenTokenPausedFrozenKycRevoked(),
+				emptyAllowancesRejected(),
+				spenderSameAsOwnerFails(),
+				spenderAccountRepeatedFails(),
+				negativeAmountWorksAsExpectedForFungible(),
+				tokenNotAssociatedToAccountFails(),
+				invalidTokenTypeFails(),
+				validatesSerialNums(),
+				tokenExceedsMaxSupplyFails(),
+				serialsWipedIfApprovedForAll(),
+				serialsInAscendingOrder(),
+				exceedsTransactionLimit(),
+				exceedsAccountLimit(),
+				succeedsWhenTokenPausedFrozenKycRevoked(),
 				feesAsExpected(),
-//				worksAsExpectedWhenDisabled(),
-//				approveForAllSpenderCanDelegateOnNFT()
+				worksAsExpectedWhenDisabled(),
+				approveForAllSpenderCanDelegateOnNFT()
 		});
 	}
 
@@ -618,7 +618,7 @@ public class CryptoAdjustAllowanceSuite extends HapiApiSuite {
 								.via("adjustNftSingleApproveForAll")
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("adjustNftSingleApproveForAll", 0.05, 0.01),
+						validateChargedUsdWithin("adjustNftSingleApproveForAll", 0.05063, 0.01),
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)
