@@ -38,6 +38,7 @@ import java.util.Optional;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 /**
  * Overrides Besu precompiler handling, so we can break model layers in Precompile execution
@@ -71,6 +72,8 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 			final OperationTracer operationTracer) {
 
 		final Bytes output = contract.compute(frame.getInputData(), frame);
+		if (frame.getState() == REVERT)
+			return;
 		final Gas gasRequirement = contract.gasRequirement(frame.getInputData());
 		operationTracer.tracePrecompileCall(frame, gasRequirement, output);
 		if (frame.getRemainingGas().compareTo(gasRequirement) < 0) {

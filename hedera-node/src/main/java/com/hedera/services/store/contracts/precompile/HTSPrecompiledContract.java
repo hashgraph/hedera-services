@@ -123,6 +123,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
@@ -147,11 +148,14 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
@@ -356,6 +360,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		if (isTokenReadOnlyTransaction) {
 			computeViewFunctionGasRequirement(messageFrame.getBlockValues().getTimestamp());
+		} else if (precompile instanceof TokenCreatePrecompile) {
+			gasRequirement = Gas.of(precompile.getMinimumFeeInTinybars(Timestamp.newBuilder()
+					.setSeconds(messageFrame.getBlockValues().getTimestamp()).build()));
 		} else {
 			computeGasRequirement(messageFrame.getBlockValues().getTimestamp());
 		}
@@ -387,28 +394,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
 						timestamp).build()), Instant.ofEpochSecond(blockTimestamp));
 
-		if (precompile instanceof TokenCreatePrecompile) {
-			final var tinybarsRequirement = calculatedFeeInTinybars + (calculatedFeeInTinybars / 5)
-					- precompile.getMinimumFeeInTinybars(timestamp) * gasPriceInTinybars;
-			if (messageFrame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement))) {
-				updater.getAccount(senderAddress).getMutable()
-						.decrementBalance(Wei.of(tinybarsRequirement));
-				updater.getAccount(Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()).getMutable()
-						.incrementBalance(Wei.of(tinybarsRequirement));
-				gasRequirement = Gas.of(precompile.getMinimumFeeInTinybars(timestamp));
-			} else {
-				gasRequirement = Gas.MAX_VALUE;
-			}
-		} else {
-			final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
-			final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
+		final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
+		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
-			// convert to gas cost
-			final Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
+		// convert to gas cost
+		final Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
 
-			// charge premium
-			gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
-		}
+		// charge premium
+		gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
 	}
 
 	void computeViewFunctionGasRequirement(final long blockTimestamp) {
@@ -558,6 +551,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
+			precompile.handleSentHbars(frame);
 			precompile.run(frame);
 			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
 			// synthetic record, as the ledger interceptors will populate the sideEffectsTracker
@@ -701,6 +695,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	/* --- The precompile implementations --- */
 	interface Precompile {
 		TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver);
+
+		default void handleSentHbars(MessageFrame frame) {
+			if (!Objects.equals(Wei.ZERO, frame.getValue())) {
+				frame.setRevertReason(INVALID_TRANSFER);
+				frame.setState(REVERT);
+
+				throw new InvalidTransactionException(INVALID_FEE_SUBMITTED);
+			}
+		}
 
 		void run(MessageFrame frame);
 
@@ -946,6 +949,30 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			return syntheticTxnFactory.createTokenCreate(tokenCreateOp);
 		}
+
+		@Override
+		public void handleSentHbars(MessageFrame frame) {
+			final var timestampSeconds = frame.getBlockValues().getTimestamp();
+			final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
+			final var gasPriceInTinybars = feeCalculator.get()
+					.estimatedGasPriceInTinybars(ContractCall, timestamp);
+			final var calculatedFeeInTinybars = gasFeeInTinybars(
+					transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
+							timestamp).build()), Instant.ofEpochSecond(timestampSeconds));
+
+			final var tinybarsRequirement = calculatedFeeInTinybars + (calculatedFeeInTinybars / 5)
+					- precompile.getMinimumFeeInTinybars(timestamp) * gasPriceInTinybars;
+
+			ValidationUtils.validateTrue(
+					messageFrame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)),
+					INSUFFICIENT_TX_FEE);
+
+			updater.getAccount(senderAddress).getMutable()
+					.decrementBalance(Wei.of(tinybarsRequirement));
+			updater.getAccount(Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()).getMutable()
+					.incrementBalance(Wei.of(tinybarsRequirement));
+		}
+
 
 		@Override
 		public void run(MessageFrame frame)  {

@@ -74,6 +74,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
+import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -112,6 +113,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timest
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -227,8 +229,13 @@ class CreatePrecompileTest {
 	}
 
 	@Test
-	void gasRequirementCalculationWorks() {
+	void gasAndValueRequirementCalculationWorksAsExpected() {
 		// given
+		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		givenValidGasCalculation();
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -244,9 +251,7 @@ class CreatePrecompileTest {
 				.willReturn(mockSynthBodyBuilder);
 		given(syntheticTxnFactory.createTokenCreate(wrapper)).willReturn(mockSynthBodyBuilder);
 
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.compute(pretendArguments, frame);
 
 		// then
 		assertEquals(
@@ -264,7 +269,7 @@ class CreatePrecompileTest {
 	}
 
 	@Test
-	void gasRequirementIsMaxGasWhenInsufficientValueIsPassed() {
+	void gasAndValueRequirementThrowsWhenValueIsNotSufficient() {
 		// given
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -285,13 +290,16 @@ class CreatePrecompileTest {
 				new FeeObject(100_000L, 100_000L, 100_000L));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(1L);
 		given(frame.getValue()).willReturn(Wei.of(1_000L));
+		final var blockValuesMock = mock(BlockValues.class);
+		given(frame.getBlockValues()).willReturn(blockValuesMock);
+		given(blockValuesMock.getTimestamp()).willReturn(timestamp.getSeconds());
 
 		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		subject.prepareComputation(pretendArguments, a -> a);
+
+		assertThrows(InvalidTransactionException.class, () -> subject.getPrecompile().handleSentHbars(frame));
 
 		// then
-		assertEquals(Gas.MAX_VALUE, subject.gasRequirement(pretendArguments));
 		Mockito.verifyNoMoreInteractions(syntheticTxnFactory);
 	}
 
@@ -746,6 +754,10 @@ class CreatePrecompileTest {
 				new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
 		given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(1L);
 		given(frame.getValue()).willReturn(Wei.of(1_000_000L));
+
+		final var blockValuesMock = mock(BlockValues.class);
+		given(frame.getBlockValues()).willReturn(blockValuesMock);
+		given(blockValuesMock.getTimestamp()).willReturn(timestamp.getSeconds());
 
 		final var mockSenderEvmAccount = Mockito.mock(EvmAccount.class);
 		given(worldUpdater.getAccount(senderAddress)).willReturn(mockSenderEvmAccount);

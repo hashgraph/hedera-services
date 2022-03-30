@@ -93,6 +93,7 @@ class HederaMessageCallProcessorTest {
 		subject.start(frame, operationTrace);
 
 		verify(hederaPrecompile).compute(Bytes.EMPTY, frame);
+		verify(frame).getState();
 		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, Bytes.EMPTY);
 		verify(frame).decrementRemainingGas(GAS_ONE);
 		verify(frame).setOutputData(Bytes.EMPTY);
@@ -126,6 +127,7 @@ class HederaMessageCallProcessorTest {
 		verify(frame).setState(EXCEPTIONAL_HALT);
 		verify(frame).decrementRemainingGas(GAS_ONE_K);
 		verify(hederaPrecompile).compute(Bytes.EMPTY, frame);
+		verify(frame).getState();
 		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE_M, null);
 		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
 	}
@@ -139,6 +141,7 @@ class HederaMessageCallProcessorTest {
 
 		subject.executeHederaPrecompile(hederaPrecompile, frame, operationTrace);
 
+		verify(frame).getState();
 		verify(frame).setState(EXCEPTIONAL_HALT);
 		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, null);
 		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
