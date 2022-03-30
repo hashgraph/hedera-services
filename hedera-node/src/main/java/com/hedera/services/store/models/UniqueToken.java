@@ -39,16 +39,19 @@ public class UniqueToken {
 	private Id owner;
 	private Id spender;
 	private byte[] metadata;
+	private NftId nftId;
 
 	public UniqueToken(Id tokenId, long serialNumber) {
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;
+		nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
 	}
 
 	public UniqueToken(Id tokenId, long serialNumber, Id owner) {
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;
 		this.owner = owner;
+		nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
 	}
 
 	public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
@@ -57,6 +60,11 @@ public class UniqueToken {
 		this.creationTime = creationTime;
 		this.owner = owner;
 		this.metadata = metadata;
+		nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
+	}
+
+	public NftId getNftId() {
+		return nftId;
 	}
 
 	public Id getTokenId() {

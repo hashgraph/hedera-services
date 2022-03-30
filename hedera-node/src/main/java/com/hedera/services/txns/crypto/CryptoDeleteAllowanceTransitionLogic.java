@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -60,19 +61,22 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	private final DeleteAllowanceChecks allowanceChecks;
 	private final Map<Long, Account> entitiesChanged;
 	private final Set<UniqueToken> nftsTouched;
+	private final StateView workingView;
 
 	@Inject
 	public CryptoDeleteAllowanceTransitionLogic(
 			final TransactionContext txnCtx,
 			final AccountStore accountStore,
 			final DeleteAllowanceChecks allowanceChecks,
-			final TypedTokenStore tokenStore) {
+			final TypedTokenStore tokenStore,
+			final StateView workingView) {
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 		this.allowanceChecks = allowanceChecks;
 		this.tokenStore = tokenStore;
 		this.entitiesChanged = new HashMap<>();
 		this.nftsTouched = new HashSet<>();
+		this.workingView = workingView;
 	}
 
 	@Override
@@ -200,6 +204,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 				op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(),
 				op.getNftAllowancesList(),
-				payerAccount);
+				payerAccount,
+				workingView);
 	}
 }

@@ -106,12 +106,13 @@ public class CryptoContextUtils {
 		return totalSerials;
 	}
 
-	static int getNewSerials(final Map<AllowanceId, AllowanceDetails> newAllowances) {
-		int count = 0;
+	static int getNewSerials(
+			final Map<AllowanceId, AllowanceDetails> newAllowances) {
+		int counter = 0;
 		for (var a : newAllowances.entrySet()) {
-			count += a.getValue().serialNums().size();
+			counter += a.getValue().serialNums().size();
 		}
-		return count;
+		return counter;
 	}
 
 

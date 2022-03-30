@@ -474,7 +474,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						// Even the treasury cannot withdraw from an immutable contract
 						cryptoTransfer(tinyBarsFromTo(contract, FUNDING, ONE_HBAR))
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
-								.hasKnownStatus(INVALID_ACCOUNT_ID),
+								.hasKnownStatus(INVALID_SIGNATURE),
 						// Even the treasury cannot withdraw staking funds
 						cryptoTransfer(tinyBarsFromTo(firstStakingFund, FUNDING, ONE_HBAR))
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)

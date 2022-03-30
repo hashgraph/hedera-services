@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
@@ -66,6 +67,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final Map<Long, Account> entitiesChanged;
+	private final StateView workingView;
 	private final Set<UniqueToken> nftsTouched;
 
 	@Inject
@@ -75,13 +77,15 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final TypedTokenStore tokenStore,
 			final AdjustAllowanceChecks allowanceChecks,
 			final GlobalDynamicProperties dynamicProperties,
-			final SideEffectsTracker sideEffectsTracker) {
+			final SideEffectsTracker sideEffectsTracker,
+			final StateView workingView) {
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
 		this.adjustAllowanceChecks = allowanceChecks;
 		this.dynamicProperties = dynamicProperties;
 		this.sideEffectsTracker = sideEffectsTracker;
+		this.workingView = workingView;
 		this.entitiesChanged = new HashMap<>();
 		this.nftsTouched = new HashSet<>();
 	}
@@ -130,8 +134,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		final var op = cryptoAllowanceTxn.getCryptoAdjustAllowance();
 		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 		return adjustAllowanceChecks.allowancesValidation(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList(), payerAccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction());
+				op.getTokenAllowancesList(), op.getNftAllowancesList(), payerAccount, workingView);
 	}
 
 	/**
@@ -199,7 +202,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
-		final var nfts = new ArrayList<UniqueToken>();
+
 		for (var allowance : nftAllowances) {
 			final var owner = allowance.getOwner();
 
@@ -222,16 +225,11 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 				mutableApprovedForAllNftsAllowances.remove(key);
 			}
 
-			for (var serialNum : serialNums) {
-				final var nft = tokenStore.loadUniqueToken(Id.fromGrpcToken(tokenId), serialNum);
-				nft.setSpender(spender);
-				nfts.add(nft);
-			}
+			final var nfts = updateSpender(tokenStore, accountToAdjust.getId(), spender, tokenId, serialNums);
+
 			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
 			nftsTouched.addAll(nfts);
-			nfts.clear();
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-			sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), mutableApprovedForAllNftsAllowances, nfts);
 		}
 	}
 

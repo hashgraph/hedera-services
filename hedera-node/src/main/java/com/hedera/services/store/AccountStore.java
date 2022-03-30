@@ -136,9 +136,11 @@ public class AccountStore {
 	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode,
 			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
 		final var merkleAccount = accounts.getImmutableRef(id.asGrpcAccount());
-
 		validateUsable(merkleAccount, explicitResponseCode, nonExistingCode, deletedCode);
+		return loadMerkleAccount(merkleAccount, id);
+	}
 
+	private Account loadMerkleAccount(final MerkleAccount merkleAccount, final Id id) {
 		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());

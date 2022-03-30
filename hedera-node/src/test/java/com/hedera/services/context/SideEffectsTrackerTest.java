@@ -256,7 +256,6 @@ class SideEffectsTrackerTest {
 	void tracksAndResetsAllowanceAdjusts() {
 		subject.setFungibleTokenAllowances(ownerNum, fungibleAllowance);
 		subject.setCryptoAllowances(ownerNum, cryptoAllowance);
-		subject.setNftAllowances(ownerNum, nftAllowance, List.of(nft1, nft2));
 
 		final var trackedCryptoAllowances = subject.getCryptoAllowances();
 		assertTrue(trackedCryptoAllowances.containsKey(ownerNum));
@@ -266,14 +265,9 @@ class SideEffectsTrackerTest {
 		assertTrue(trackedTokenAllowances.containsKey(ownerNum));
 		assertEquals(fungibleAllowance, trackedTokenAllowances.get(ownerNum));
 
-		final var trackedNftAllowances = subject.getNftAllowances();
-		assertTrue(trackedNftAllowances.containsKey(ownerNum));
-		assertEquals(expectedNftAllowances.get(ownerNum), trackedNftAllowances.get(ownerNum));
-
 		subject.reset();
 		assertTrue(subject.getCryptoAllowances().isEmpty());
 		assertTrue(subject.getFungibleTokenAllowances().isEmpty());
-		assertTrue(subject.getNftAllowances().isEmpty());
 	}
 
 	@Test
@@ -338,11 +332,9 @@ class SideEffectsTrackerTest {
 
 	@Test
 	void gettersAndSettersWork() {
-		subject.setNftAllowances(nftAllowances);
 		subject.setFungibleTokenAllowances(fungibleAllowances);
 		subject.setCryptoAllowances(cryptoAllowances);
 
-		assertEquals(nftAllowances, subject.getNftAllowances());
 		assertEquals(cryptoAllowances, subject.getCryptoAllowances());
 		assertEquals(fungibleAllowances, subject.getFungibleTokenAllowances());
 	}

@@ -48,7 +48,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.MISSING_OWNER;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance.MISSING_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowance> {

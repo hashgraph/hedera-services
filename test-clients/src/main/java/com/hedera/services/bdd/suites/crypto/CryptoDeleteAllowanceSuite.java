@@ -51,11 +51,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance.MISSING_OWNER;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
-import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.MISSING_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
@@ -741,8 +741,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
 						getTxnRecord("maxExceeded")
 								.hasCryptoAllowanceCount(0)
-								.hasTokenAllowanceCount(0)
-								.hasNftAllowanceCount(0),
+								.hasTokenAllowanceCount(0),
 						// reset
 						fileUpdate(APP_PROPERTIES)
 								.fee(ONE_HUNDRED_HBARS)
@@ -1004,12 +1003,12 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.has(accountWith()
 										.tokenAllowancesContaining(token, spender, 100L)
 										.cryptoAllowancesContaining(spender, ONE_HBAR)
-										.nftApprovedAllowancesNotContaining(nft, spender)),
+										.nftApprovedForAllAllowancesCount(0)),
 						getAccountInfo(owner2)
 								.has(accountWith()
 										.tokenAllowancesContaining(token, spender, 300L)
 										.cryptoAllowancesContaining(spender, 2 * ONE_HBAR)
-										.nftApprovedAllowancesNotContaining(nft, spender)),
+										.nftApprovedForAllAllowancesCount(0)),
 						getTokenNftInfo(nft, 1L).hasSpenderID(spender),
 						getTokenNftInfo(nft, 4L).hasSpenderID(spender),
 						getTokenNftInfo(nft, 5L).hasSpenderID(spender)
@@ -1101,7 +1100,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.has(accountWith()
 										.noCryptoAllowances()
 										.noTokenAllowances(payer)
-										.nftApprovedAllowancesNotContaining(nft, spender)
+										.nftApprovedForAllAllowancesCount(0)
 								),
 						getTokenNftInfo(nft, 1L).hasNoSpender()
 				);

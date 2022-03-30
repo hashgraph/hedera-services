@@ -138,13 +138,6 @@ public class FcTokenAllowance implements SelfSerializable {
 		return serialNumbers;
 	}
 
-	public void addSerialNumber(long serialNum) {
-		if (serialNumbers.equals(Collections.emptyList())) {
-			serialNumbers = new ArrayList<>();
-		}
-		serialNumbers.add(serialNum);
-	}
-
 	public static FcTokenAllowance from(
 			final boolean approvedForAll,
 			final List<Long> serialNumbers) {

@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -66,10 +67,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -87,6 +86,8 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private StateView view;
 
 	private TransactionBody cryptoDeleteAllowanceTxn;
 	private CryptoDeleteAllowanceTransactionBody op;
@@ -96,7 +97,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoDeleteAllowanceTransitionLogic(txnCtx, accountStore, deleteAllowanceChecks, tokenStore);
+		subject = new CryptoDeleteAllowanceTransitionLogic(txnCtx, accountStore, deleteAllowanceChecks, tokenStore, view);
 	}
 
 	@Test
@@ -164,7 +165,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 	void semanticCheckDelegatesWorks() {
 		givenValidTxnCtx();
 		given(deleteAllowanceChecks.deleteAllowancesValidation(op.getCryptoAllowancesList(), op.getTokenAllowancesList(),
-				op.getNftAllowancesList(), payerAccount)).willReturn(OK);
+				op.getNftAllowancesList(), payerAccount, view)).willReturn(OK);
 
 		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
 
