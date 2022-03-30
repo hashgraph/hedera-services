@@ -217,7 +217,7 @@ public class AllowanceHelpers {
 	 * 		The serial numbers of the NFT type to update the spender.
 	 * @return A list of UniqueTokens that we updated.
 	 */
-	public static ArrayList<UniqueToken> updateSpender(
+	public static List<UniqueToken> updateSpender(
 			final TypedTokenStore tokenStore,
 			final Id ownerId,
 			final Id spenderId,

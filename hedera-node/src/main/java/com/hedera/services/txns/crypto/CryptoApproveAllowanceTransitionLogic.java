@@ -250,14 +250,4 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		accountToApprove.setFungibleTokenAllowances(tokensMap);
 		entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 	}
-
-	/**
-	 * Checks if the total allowances of an account will exceed the limit after applying this transaction
-	 *
-	 * @param ownerAccount
-	 * @return
-	 */
-	private boolean exceedsAccountLimit(final Account ownerAccount) {
-		return ownerAccount.getTotalAllowances() > dynamicProperties.maxAllowanceLimitPerAccount();
-	}
 }

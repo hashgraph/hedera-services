@@ -76,6 +76,7 @@ class AllowanceHelpersTest {
 	void failsToUpdateSpenderIfWrongOwner() {
 		nft1.setOwner(ownerId);
 		nft2.setOwner(spenderId);
+		final var serials = List.of(serial1, serial2);
 
 		given(tokenStore.loadUniqueToken(tokenId, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId, serial2)).willReturn(nft2);
@@ -84,7 +85,7 @@ class AllowanceHelpersTest {
 		given(treasury.getId()).willReturn(ownerId);
 
 		final var ex = assertThrows(InvalidTransactionException.class,
-				() -> updateSpender(tokenStore, ownerId, spenderId, tokenId, List.of(serial1, serial2)));
+				() -> updateSpender(tokenStore, ownerId, spenderId, tokenId, serials));
 
 		assertEquals(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO, ex.getResponseCode());
 	}
