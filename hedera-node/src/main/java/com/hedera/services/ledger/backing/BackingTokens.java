@@ -82,4 +82,9 @@ public class BackingTokens implements BackingStore<TokenID, MerkleToken> {
     public MerkleToken getImmutableRef(TokenID id) {
         return delegate.get().get(fromTokenId(id));
     }
+
+    /* -- only for unit tests --*/
+    public Supplier<MerkleMap<EntityNum, MerkleToken>> getDelegate() {
+        return delegate;
+    }
 }

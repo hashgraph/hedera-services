@@ -22,6 +22,7 @@ package com.hedera.services.txns.crypto;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
@@ -88,6 +89,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private PlatformTxnAccessor accessor;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
+	@Mock
+	private StateView view;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
 	private CryptoApproveAllowanceTransactionBody op;
@@ -97,7 +100,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, accountStore, tokenStore, allowanceChecks,
-				dynamicProperties);
+				dynamicProperties, view);
 		nft1.setOwner(Id.fromGrpcAccount(ownerId));
 		nft2.setOwner(Id.fromGrpcAccount(ownerId));
 	}
@@ -213,7 +216,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				op.getTokenAllowancesList(),
 				op.getNftAllowancesList(),
 				payerAcccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction()))
+				dynamicProperties.maxAllowanceLimitPerTransaction(), view))
 				.willReturn(OK);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));
