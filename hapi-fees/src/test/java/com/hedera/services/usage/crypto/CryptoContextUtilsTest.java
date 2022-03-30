@@ -38,7 +38,7 @@ class CryptoContextUtilsTest {
 		newMap.put(new AllowanceId(1L, 3L),
 				new AllowanceDetails(false, List.of(1L, 2L, 3L, 100L)));
 
-		assertEquals(4, CryptoContextUtils.getNewSerials(newMap));
+		assertEquals(6, CryptoContextUtils.getNewSerials(newMap));
 	}
 
 	@Test

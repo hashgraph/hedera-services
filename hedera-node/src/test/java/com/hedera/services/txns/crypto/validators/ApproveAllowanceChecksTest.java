@@ -575,19 +575,6 @@ class ApproveAllowanceChecksTest {
 	}
 
 	@Test
-	void validateIfSerialsEmptyWithoutApproval() {
-		final var nftAllowance = NftAllowance.newBuilder().setSpender(spender1)
-				.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of()).build();
-		given(tokenStore.loadPossiblyPausedToken(token2Model.getId())).willReturn(token2Model);
-		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-		given(tokenStore.hasAssociation(token2Model, owner)).willReturn(true);
-
-		var validity = subject.validateNftAllowances(List.of(nftAllowance), owner);
-
-		assertEquals(EMPTY_ALLOWANCES, validity);
-	}
-
-	@Test
 	void semanticCheckForEmptyAllowancesInOp() {
 		cryptoApproveAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())

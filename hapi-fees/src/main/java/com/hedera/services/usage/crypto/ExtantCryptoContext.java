@@ -202,8 +202,6 @@ public class ExtantCryptoContext {
 	}
 }
 
-
-
 record AllowanceId(Long tokenNum, Long spenderNum) implements Comparable<AllowanceId>{
 
 	@Override

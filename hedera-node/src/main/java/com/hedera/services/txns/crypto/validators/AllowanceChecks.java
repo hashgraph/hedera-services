@@ -156,10 +156,6 @@ public interface AllowanceChecks {
 				}
 			}
 
-			if (!approvedForAll && serialNums.isEmpty()) {
-				return EMPTY_ALLOWANCES;
-			}
-
 			validity = validateSerialNums(nftsMap.get(), serialNums, token);
 			if (validity != OK) {
 				return validity;

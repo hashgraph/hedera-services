@@ -1141,12 +1141,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.payingWith(owner)
 								.addNftAllowance(owner, nft, spender, false, List.of(2L, 2L, 3L, 3L))
 								.fee(ONE_HUNDRED_HBARS)
-								.hasPrecheck(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES),
-						cryptoApproveAllowance()
-								.payingWith(owner)
-								.addNftAllowance(owner, nft, spender, false, List.of())
-								.fee(ONE_HUNDRED_HBARS)
-								.hasPrecheck(EMPTY_ALLOWANCES)
+								.hasPrecheck(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES)
 				)
 				.then();
 	}
