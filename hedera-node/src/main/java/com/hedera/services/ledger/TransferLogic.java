@@ -45,18 +45,16 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
-import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 @Singleton
@@ -163,7 +161,7 @@ public class TransferLogic {
 			} else if (change.isApprovedAllowance() && change.isForFungibleToken()) {
 				adjustFungibleTokenAllowance(change, accountId);
 			} else if (change.isApprovedAllowance() && change.isForNft()) {
-				adjustNftAllowance(change, accountId);
+				nftsLedger.set(change.nftId(), SPENDER, MISSING_ENTITY_ID);
 			}
 		}
 	}
@@ -196,16 +194,6 @@ public class TransferLogic {
 			hbarAllowances.remove(payerNum);
 		}
 		accountsLedger.set(ownerID, CRYPTO_ALLOWANCES, hbarAllowances);
-	}
-
-	private void adjustNftAllowance(final BalanceChange change, final AccountID ownerID) {
-		final var allowanceId = FcTokenAllowanceId.from(
-				change.getToken().asEntityNum(), EntityNum.fromAccountId(change.getPayerID()));
-		final var approveForAllNftsAllowances = (Set<FcTokenAllowanceId>) accountsLedger.get(ownerID, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
-
-		if (!approveForAllNftsAllowances.contains(allowanceId)) {
-			nftsLedger.set(change.nftId(), SPENDER, MISSING_ENTITY_ID);
-		}
 	}
 
 	private void adjustFungibleTokenAllowance(final BalanceChange change, final AccountID ownerID) {
