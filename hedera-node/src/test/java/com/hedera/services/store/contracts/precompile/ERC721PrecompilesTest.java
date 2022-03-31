@@ -321,7 +321,6 @@ class ERC721PrecompilesTest {
     @Test
     void ownerOf() {
         givenMinimalFrameContext();
-        given(wrappedLedgers.nfts()).willReturn(nfts);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
@@ -337,9 +336,8 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-        given(nfts.exists(any())).willReturn(true);
         given(wrappedLedgers.ownerOf(any())).willReturn(senderAddress);
-        given(worldUpdater.priorityAddress(senderAddress)).willReturn(senderAddress);
+        given(wrappedLedgers.canonicalAddress(senderAddress)).willReturn(senderAddress);
         given(encoder.encodeOwner(senderAddress)).willReturn(successResult);
 
         // when:
@@ -355,7 +353,6 @@ class ERC721PrecompilesTest {
     @Test
     void erc20FailureResultIsNull() {
         givenMinimalFrameContext();
-        given(wrappedLedgers.nfts()).willReturn(nfts);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
@@ -371,9 +368,8 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-        given(nfts.exists(any())).willReturn(true);
         given(wrappedLedgers.ownerOf(any())).willReturn(senderAddress);
-        given(worldUpdater.priorityAddress(senderAddress)).willThrow(IllegalStateException.class);
+        given(wrappedLedgers.canonicalAddress(senderAddress)).willThrow(IllegalStateException.class);
 
         // when:
         subject.prepareFields(frame);

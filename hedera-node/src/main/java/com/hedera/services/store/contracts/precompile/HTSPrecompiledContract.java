@@ -129,7 +129,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -141,7 +140,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 	public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
 			Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
-	public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID = EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
+	public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID =
+			EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
@@ -290,9 +290,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
- 		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
+		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
 
-		if (messageFrame.isStatic() && !isRedirectProxy) {
+		final var isPlausibleStaticCall = isRedirectProxy && isTokenReadOnlyTransaction;
+		if (messageFrame.isStatic() && !isPlausibleStaticCall) {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
 			return null;
 		}
@@ -315,7 +316,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			computeGasRequirement(messageFrame.getBlockValues().getTimestamp());
 		}
 
-		return computeInternal(messageFrame);
+		if (ledgers.areMutable()) {
+			return computeInternal(messageFrame);
+		} else {
+			return fetchInternal(messageFrame);
+		}
 	}
 
 	void prepareFields(final MessageFrame messageFrame) {
@@ -511,7 +516,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), frame);
 		}
 
-		/*-- The updater here should always have a parent updater --*/
+		// This should always have a parent stacked updater
 		final var parentUpdater = updater.parentUpdater();
 		if (parentUpdater.isPresent()) {
 			final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
@@ -520,6 +525,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
 		}
 
+		return result;
+	}
+
+	protected Bytes fetchInternal(final MessageFrame frame) {
+		Bytes result;
+		try {
+			precompile.run(frame);
+			result = precompile.getSuccessResultFor(null);
+		} catch (final InvalidTransactionException e) {
+			final var status = e.getResponseCode();
+			result = precompile.getFailureResultFor(status);
+		} catch (final Exception e) {
+			log.warn("Internal precompile failure", e);
+			result = precompile.getFailureResultFor(FAIL_INVALID);
+		}
 		return result;
 	}
 
@@ -749,9 +769,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(
-				final MessageFrame frame
-		) {
+		public void run(final MessageFrame frame) {
 			Objects.requireNonNull(mintOp);
 
 			/* --- Check required signatures --- */
@@ -1095,8 +1113,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_ERC_TRANSFER ->
-						decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID, aliasResolver);
+				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID,
+						aliasResolver);
 				default -> throw new InvalidTransactionException(
 						"Transfer precompile received unknown functionId=" + functionId + " (via " + nestedInput + ")",
 						FAIL_INVALID);
@@ -1238,15 +1256,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			final var wrapper = decoder.decodeOwnerOf(input.slice(24));
 			nft = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), wrapper.tokenId());
-			validateTrue(ledgers.nfts().exists(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
-
 			return super.body(input, aliasResolver);
 		}
 
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final var owner = ledgers.ownerOf(nft);
-			final var priorityAddress = updater.priorityAddress(owner);
+			final var priorityAddress = ledgers.canonicalAddress(owner);
 			return encoder.encodeOwner(priorityAddress);
 		}
 	}
@@ -1293,9 +1309,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame          current frame
-	 * @param target         the element to test for key activation, in standard form
-	 * @param activationTest the function which should be invoked for key validation
+	 * @param frame
+	 * 		current frame
+	 * @param target
+	 * 		the element to test for key activation, in standard form
+	 * @param activationTest
+	 * 		the function which should be invoked for key validation
 	 * @return whether the implied key is active
 	 */
 	private boolean validateKey(
@@ -1311,7 +1330,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return activationTest.apply(true, target, recipient, ledgers);
 		} else {
 			final var parentFrame = getParentFrame(frame);
-			return activationTest.apply(parentFrame.isPresent() && isDelegateCall(parentFrame.get()), target, sender, ledgers);
+			return activationTest.apply(parentFrame.isPresent() && isDelegateCall(parentFrame.get()), target, sender,
+					ledgers);
 		}
 	}
 
@@ -1339,10 +1359,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param isDelegateCall a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
-		 * @param target         an address with an implicit key understood by this implementation
-		 * @param activeContract the contract address that can activate a contract or delegatable contract key
-		 * @param worldLedgers   the worldLedgers representing current state
+		 * @param isDelegateCall
+		 * 		a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
+		 * @param target
+		 * 		an address with an implicit key understood by this implementation
+		 * @param activeContract
+		 * 		the contract address that can activate a contract or delegatable contract key
+		 * @param worldLedgers
+		 * 		the worldLedgers representing current state
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(

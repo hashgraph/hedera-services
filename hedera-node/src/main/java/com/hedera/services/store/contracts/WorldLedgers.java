@@ -65,6 +65,7 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 public class WorldLedgers {
 	private final ContractAliases aliases;
@@ -141,9 +142,10 @@ public class WorldLedgers {
 
 	public Address ownerOf(final NftId nft) {
 		if (!areMutable()) {
-			throw new IllegalStateException("Cannot look up owner from unavailable ledgers");
+			return staticEntityAccess.ownerOf(nft);
 		}
 		var owner = (EntityId) nftsLedger.get(nft, OWNER);
+		validateTrue(owner != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
 		if (MISSING_ENTITY_ID.equals(owner)) {
 			owner = (EntityId) tokensLedger.get(nft.tokenId(), TREASURY);
 		}

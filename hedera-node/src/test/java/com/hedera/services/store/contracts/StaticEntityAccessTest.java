@@ -32,11 +32,13 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -47,6 +49,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,13 +57,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -92,6 +98,8 @@ class StaticEntityAccessTest {
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+	@Mock
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
 
 	private StaticEntityAccess subject;
 
@@ -111,7 +119,7 @@ class StaticEntityAccessTest {
 	private final MerkleAccount someNonContractAccount = new HederaAccountCustomizer()
 			.isReceiverSigRequired(false)
 			.key(key)
-			.proxy(EntityId.MISSING_ENTITY_ID)
+			.proxy(MISSING_ENTITY_ID)
 			.isDeleted(false)
 			.expiry(someExpiry)
 			.memo("")
@@ -122,7 +130,7 @@ class StaticEntityAccessTest {
 			.isReceiverSigRequired(false)
 			.alias(pretendAlias)
 			.key(key)
-			.proxy(EntityId.MISSING_ENTITY_ID)
+			.proxy(MISSING_ENTITY_ID)
 			.isDeleted(false)
 			.expiry(someExpiry)
 			.memo("")
@@ -137,6 +145,7 @@ class StaticEntityAccessTest {
 		given(stateView.accounts()).willReturn(accounts);
 		given(stateView.contractStorage()).willReturn(storage);
 		given(stateView.tokenAssociations()).willReturn(tokenAssociations);
+		given(stateView.uniqueTokens()).willReturn(nfts);
 
 		subject = new StaticEntityAccess(stateView, aliases, validator, dynamicProperties);
 	}
@@ -300,6 +309,32 @@ class StaticEntityAccessTest {
 		assertEquals(balance, subject.balanceOf(accountId, tokenId));
 	}
 
+	@Test
+	void ownerOfThrowsForMissingNft() {
+		assertFailsWith(() -> subject.ownerOf(nft), INVALID_TOKEN_NFT_SERIAL_NUMBER);
+	}
+
+	@Test
+	void ownerOfTranslatesWildcardOwner() {
+		given(nfts.get(nftKey)).willReturn(treasuryOwned);
+		given(tokens.get(nftKey.getHiOrderAsNum())).willReturn(token);
+		final var actual = subject.ownerOf(nft);
+		assertEquals(treasuryAddress, actual);
+	}
+
+	@Test
+	void ownerOfReturnsNonTreasuryOwner() {
+		given(nfts.get(nftKey)).willReturn(accountOwned);
+		final var expected = accountNum.toEvmAddress();
+		final var actual = subject.ownerOf(nft);
+		assertEquals(expected, actual);
+	}
+
+	private static final NftId nft = new NftId(0, 0, 123, 456);
+	private static final EntityNumPair nftKey = EntityNumPair.fromNftId(nft);
+	private static final MerkleUniqueToken treasuryOwned = new MerkleUniqueToken(
+			MISSING_ENTITY_ID, "There, the eyes are".getBytes(StandardCharsets.UTF_8),
+			new RichInstant(1, 2));
 	private static final int decimals = 666666;
 	private static final long someExpiry = 1_234_567L;
 	private static final long totalSupply = 4242;
@@ -309,6 +344,11 @@ class StaticEntityAccessTest {
 	private static final String symbol = "THM1925";
 	private static final EntityNum tokenNum = EntityNum.fromLong(666);
 	private static final EntityNum accountNum = EntityNum.fromLong(888);
+	private static final EntityNum treasuryNum = EntityNum.fromLong(999);
+	private static final MerkleUniqueToken accountOwned = new MerkleUniqueToken(
+			accountNum.toEntityId(), "There, is a tree swinging".getBytes(StandardCharsets.UTF_8),
+			new RichInstant(2, 3));
+	private static final Address treasuryAddress = treasuryNum.toEvmAddress();
 	private static final TokenID tokenId = tokenNum.toGrpcTokenId();
 	private static final AccountID accountId = accountNum.toGrpcAccountId();
 	private static final MerkleToken token = new MerkleToken(
@@ -319,7 +359,7 @@ class StaticEntityAccessTest {
 			name,
 			false,
 			true,
-			EntityId.MISSING_ENTITY_ID);
+			treasuryNum.toEntityId());
 	{
 		token.setTokenType(type);
 	}

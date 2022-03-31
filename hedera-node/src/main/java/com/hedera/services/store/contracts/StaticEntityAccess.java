@@ -34,11 +34,13 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -56,10 +58,12 @@ import java.util.Objects;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 public class StaticEntityAccess implements EntityAccess {
 	private final StateView view;
@@ -68,6 +72,7 @@ public class StaticEntityAccess implements EntityAccess {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final MerkleMap<EntityNum, MerkleToken> tokens;
 	private final MerkleMap<EntityNum, MerkleAccount> accounts;
+	private final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
 	private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private final VirtualMap<ContractKey, ContractValue> storage;
 	private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
@@ -86,6 +91,7 @@ public class StaticEntityAccess implements EntityAccess {
 		this.storage = view.contractStorage();
 		this.accounts = view.accounts();
 		this.tokens = view.tokens();
+		this.nfts = view.uniqueTokens();
 		this.tokenAssociations = view.tokenAssociations();
 	}
 
@@ -293,6 +299,25 @@ public class StaticEntityAccess implements EntityAccess {
 		final var balanceKey = fromAccountTokenRel(accountId, tokenId);
 		final var relStatus = tokenAssociations.get(balanceKey);
 		return (relStatus != null) ? relStatus.getBalance() : 0;
+	}
+
+	/**
+	 * Returns the EVM address of the owner of the given NFT.
+	 *
+	 * @param nftId the NFT of interest
+	 * @return the owner address
+	 */
+	public Address ownerOf(final NftId nftId) {
+		final var key = EntityNumPair.fromNftId(nftId);
+		var nft = nfts.get(key);
+		validateTrue(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+		var owner = nft.getOwner();
+		if (MISSING_ENTITY_ID.equals(owner)) {
+			final var token = tokens.get(key.getHiOrderAsNum());
+			validateTrue(token != null, INVALID_TOKEN_ID);
+			owner = token.treasury();
+		}
+		return EntityIdUtils.asTypedEvmAddress(owner);
 	}
 
 	private MerkleToken lookupToken(final TokenID tokenId) {

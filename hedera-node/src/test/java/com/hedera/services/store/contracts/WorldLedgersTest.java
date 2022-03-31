@@ -70,7 +70,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -108,6 +107,16 @@ class WorldLedgersTest {
 	@BeforeEach
 	void setUp() {
 		subject = new WorldLedgers(aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
+	}
+
+	@Test
+	void usesStaticAccessIfNotUsableLedgers() {
+		final var owner = EntityNum.fromLong(1001).toEvmAddress();
+		given(staticEntityAccess.ownerOf(target)).willReturn(owner);
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+
+		assertSame(owner, subject.ownerOf(target));
 	}
 
 	@Test
@@ -179,7 +188,7 @@ class WorldLedgersTest {
 
 	@Test
 	void mirrorWithAliasUsesAliasAsCanonicalSource() {
-		final var id= EntityIdUtils.accountIdFromEvmAddress(sponsor);
+		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
 		given(accountsLedger.exists(id)).willReturn(true);
 		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
 		assertEquals(alias, subject.canonicalAddress(sponsor));
@@ -297,7 +306,6 @@ class WorldLedgersTest {
 		assertFalse(nullAccounts.areMutable());
 		assertFalse(nullNfts.areMutable());
 		assertFalse(nullTokens.areMutable());
-		assertThrows(IllegalStateException.class, () -> nullAccounts.ownerOf(target));
 
 		final var wrappedUnusable = nullAccounts.wrapped();
 		assertSame(((StackedContractAliases) wrappedUnusable.aliases()).wrappedAliases(), nullAccounts.aliases());
