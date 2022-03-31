@@ -61,7 +61,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
-	private final DeleteAllowanceChecks allowanceChecks;
+	private final DeleteAllowanceChecks deleteAllowanceChecks;
 	private final Map<Long, Account> entitiesChanged;
 	private final Set<UniqueToken> nftsTouched;
 	private final StateView workingView;
@@ -70,12 +70,12 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	public CryptoDeleteAllowanceTransitionLogic(
 			final TransactionContext txnCtx,
 			final AccountStore accountStore,
-			final DeleteAllowanceChecks allowanceChecks,
+			final DeleteAllowanceChecks deleteAllowanceChecks,
 			final TypedTokenStore tokenStore,
 			final StateView workingView) {
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
-		this.allowanceChecks = allowanceChecks;
+		this.deleteAllowanceChecks = deleteAllowanceChecks;
 		this.tokenStore = tokenStore;
 		this.entitiesChanged = new HashMap<>();
 		this.nftsTouched = new HashSet<>();
@@ -117,7 +117,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	 *
 	 * @param nftAllowances
 	 * 		given nftAllowances
-	 * @param payerAccount
+	 * @param payerAccount payer for the transaction
 	 */
 	private void deleteNftSerials(final List<NftRemoveAllowance> nftAllowances, final Account payerAccount) {
 		if (nftAllowances.isEmpty()) {
@@ -128,7 +128,8 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		for (var allowance : nftAllowances) {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
-			final var accountToWipe = fetchOwnerAccount(allowance.getOwner(), payerAccount, accountStore);
+			final var accountToWipe = fetchOwnerAccount(allowance.getOwner(), payerAccount, accountStore,
+					entitiesChanged);
 			final var token = tokenStore.loadPossiblyPausedToken(tokenId);
 
 			for (var serial : serialNums) {
@@ -176,8 +177,8 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	 * Deletes all the crypto allowances on given owner. If the owner is not provided in any allowance,
 	 * considers payer of the transaction as owner.
 	 *
-	 * @param cryptoAllowances
-	 * @param payerAccount
+	 * @param cryptoAllowances given crypto allowances
+	 * @param payerAccount payer for the transaction
 	 */
 	private void deleteCryptoAllowances(final List<CryptoRemoveAllowance> cryptoAllowances,
 			final Account payerAccount) {
@@ -207,7 +208,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		final var op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
 		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 
-		return allowanceChecks.deleteAllowancesValidation(
+		return deleteAllowanceChecks.deleteAllowancesValidation(
 				op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(),
 				op.getNftAllowancesList(),

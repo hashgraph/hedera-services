@@ -261,7 +261,8 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 	 * Checks if the nft allowances are repeated. Also validates if the serial numbers are repeated.
 	 *
 	 * @param nftAllowances
-	 * @return
+	 * 		given nft allowance
+	 * @return true if repeated , false otherwise
 	 */
 	boolean repeatedAllowances(final List<NftRemoveAllowance> nftAllowances) {
 		Map<Pair<AccountID, TokenID>, List<Long>> seenNfts = new HashMap<>();
@@ -283,7 +284,7 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 		return false;
 	}
 
-	boolean serialsRepeated(final List<Long> existingSerials, final List<Long> newSerials) {
+	private boolean serialsRepeated(final List<Long> existingSerials, final List<Long> newSerials) {
 		for (var serial : newSerials) {
 			if (existingSerials.contains(serial)) {
 				return true;
@@ -320,7 +321,8 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 			final List<TokenRemoveAllowance> tokenAllowances,
 			final List<NftRemoveAllowance> nftAllowances) {
 		// each serial number of an NFT is considered as an allowance.
-		// So for Nft allowances aggregated amount is considered for limit calculation
+		// So for Nft allowances aggregated amount is considered for transaction limit calculation.
+		// Number of serials will not be counted for allowance on account.
 		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size() +
 				aggregateNftDeleteAllowances(nftAllowances);
 

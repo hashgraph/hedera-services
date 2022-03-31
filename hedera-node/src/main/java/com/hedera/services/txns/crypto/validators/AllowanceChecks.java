@@ -346,7 +346,7 @@ public abstract class AllowanceChecks {
 		return validateTotalAllowances(totalAllowances);
 	}
 
-	protected ResponseCodeEnum validateTotalAllowances(final int totalAllowances) {
+	ResponseCodeEnum validateTotalAllowances(final int totalAllowances) {
 		if (exceedsTxnLimit(totalAllowances, dynamicProperties.maxAllowanceLimitPerTransaction())) {
 			return MAX_ALLOWANCES_EXCEEDED;
 		}
@@ -365,7 +365,7 @@ public abstract class AllowanceChecks {
 	 * 		token for which allowance is related to
 	 * @return response code after validation
 	 */
-	protected ResponseCodeEnum validateSerialNums(
+	ResponseCodeEnum validateSerialNums(
 			final List<Long> serialNums,
 			final Token token,
 			final ReadOnlyTokenStore tokenStore) {
@@ -411,7 +411,7 @@ public abstract class AllowanceChecks {
 	}
 
 	/* --- Abstract methods to be implemented by ApproveAllowanceChecks, AdjustAllowanceChecks. They will not be needed
-	 for DeleteAllowanceChecks */
+	 for DeleteAllowanceChecks since deleteAllowance doesn't validate amounts */
 	public abstract ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender);
 
 	public abstract ResponseCodeEnum validateTokenAmount(final Account ownerAccount, final long amount,

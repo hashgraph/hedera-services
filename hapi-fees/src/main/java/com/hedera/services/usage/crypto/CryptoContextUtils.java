@@ -58,8 +58,7 @@ public class CryptoContextUtils {
 
 	public static Set<AllowanceId> convertToNftMapFromGranted(
 			final List<GrantedNftAllowance> allowances) {
-		Set<AllowanceId> approveForAllAllowances =
-				new TreeSet<>();
+		Set<AllowanceId> approveForAllAllowances = new TreeSet<>();
 		for (var a : allowances) {
 			approveForAllAllowances.add(new AllowanceId(a.getTokenId().getTokenNum(),
 							a.getSpender().getAccountNum()));

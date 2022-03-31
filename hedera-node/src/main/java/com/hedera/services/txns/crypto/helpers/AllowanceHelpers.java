@@ -200,17 +200,11 @@ public class AllowanceHelpers {
 		final var ownerId = Id.fromGrpcAccount(owner);
 		if (owner.equals(AccountID.getDefaultInstance()) || owner.equals(payerAccount.getId().asGrpcAccount())) {
 			return payerAccount;
-		} else if (entitiesChanged != null && entitiesChanged.containsKey(ownerId.num())) {
+		} else if (entitiesChanged.containsKey(ownerId.num())) {
 			return entitiesChanged.get(ownerId.num());
 		} else {
 			return accountStore.loadAccountOrFailWith(ownerId, INVALID_ALLOWANCE_OWNER_ID);
 		}
-	}
-
-	public static Account fetchOwnerAccount(final AccountID owner,
-			final Account payerAccount,
-			final AccountStore accountStore) {
-		return fetchOwnerAccount(owner, payerAccount, accountStore, null);
 	}
 
 	public static EntityNumPair buildEntityNumPairFrom(AccountID owner, AccountID spender, final EntityNum payer) {
@@ -256,6 +250,18 @@ public class AllowanceHelpers {
 		return nfts;
 	}
 
+	/**
+	 * Checks the owner of token is treasury or the owner id given in allowance. If not, considers as an invalid owner
+	 * and returns false.
+	 *
+	 * @param nft
+	 * 		given nft
+	 * @param ownerId
+	 * 		owner given in allowance
+	 * @param token
+	 * 		token for which nft belongs to
+	 * @return
+	 */
 	public static boolean validOwner(final UniqueToken nft, final Id ownerId, final Token token) {
 		final var listedOwner = nft.getOwner();
 		return MISSING_ID.equals(listedOwner)
@@ -264,7 +270,10 @@ public class AllowanceHelpers {
 	}
 
 	/**
-	 * Checks if the total allowances of an account will exceed the limit after applying this transaction
+	 * Checks if the total allowances of an account will exceed the limit after applying this transaction.
+	 * This limit doesn't include number of serials for nfts, since they are  not stored on account. The limit
+	 * includes number of crypto allowances, number of fungible token allowances and number of approvedForAll Nft
+	 * allowances on owner account
 	 *
 	 * @param owner
 	 * 		The Account to validate the allowances limit on.
