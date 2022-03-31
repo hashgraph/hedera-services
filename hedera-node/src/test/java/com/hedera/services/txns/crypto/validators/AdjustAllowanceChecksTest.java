@@ -172,7 +172,6 @@ class AdjustAllowanceChecksTest {
 	private final Map<EntityNum, Long> existingCryptoAllowances = new TreeMap<>();
 	private final Map<FcTokenAllowanceId, Long> existingTokenAllowances = new TreeMap<>();
 	private final Set<FcTokenAllowanceId> existingApproveForAllNftsAllowances = new TreeSet<>();
-	private List<Long> existingSerials = new ArrayList<>();
 
 	private TransactionBody cryptoAdjustAllowanceTxn;
 	private CryptoAdjustAllowanceTransactionBody op;
@@ -771,6 +770,7 @@ class AdjustAllowanceChecksTest {
 				new TokenAssociationMetadata(1, 0, EntityNumPair.MISSING_NUM_PAIR));
 		given(ownerAccount.state()).willReturn(new MerkleAccountState());
 		given(merkleUniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
+		given(merkleUniqueToken.getSpender()).willReturn(EntityId.fromGrpcAccountId(spender1));
 		given(store.getImmutableRef(ownerId)).willReturn(ownerAccount);
 		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
 		given(tokens.getImmutableRef(token2)).willReturn(merkleToken2);
