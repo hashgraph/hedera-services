@@ -223,6 +223,10 @@ public class AllowanceHelpers {
 			final Id spenderId,
 			final Id tokenId,
 			final List<Long> serialNums) {
+		if (serialNums.isEmpty()) {
+			return Collections.emptyList();
+		}
+
 		final var nfts = new ArrayList<UniqueToken>();
 		for (var serialNum : serialNums) {
 			final var nft = tokenStore.loadUniqueToken(tokenId, serialNum);

@@ -22,9 +22,6 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.RichInstant;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
-import java.util.Arrays;
 
 /**
  * Encapsulates the state and operations of a Hedera Unique token.
@@ -39,16 +36,19 @@ public class UniqueToken {
 	private Id owner;
 	private Id spender;
 	private byte[] metadata;
+	private NftId nftId;
 
 	public UniqueToken(Id tokenId, long serialNumber) {
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;
+		this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
 	}
 
 	public UniqueToken(Id tokenId, long serialNumber, Id owner) {
 		this.tokenId = tokenId;
 		this.serialNumber = serialNumber;
 		this.owner = owner;
+		this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
 	}
 
 	public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
@@ -57,12 +57,18 @@ public class UniqueToken {
 		this.creationTime = creationTime;
 		this.owner = owner;
 		this.metadata = metadata;
+		this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
+	}
+
+	public NftId getNftId() {
+		return nftId;
 	}
 
 	public Id getTokenId() {
 		return tokenId;
 	}
 
+	// only used in unit tests
 	public void setTokenId(Id tokenId) {
 		this.tokenId = tokenId;
 	}
@@ -71,6 +77,7 @@ public class UniqueToken {
 		return serialNumber;
 	}
 
+	// only used in unit tests
 	public void setSerialNumber(long serialNumber) {
 		this.serialNumber = serialNumber;
 	}
@@ -116,31 +123,5 @@ public class UniqueToken {
 				.add("creationTime", creationTime)
 				.add("owner", owner)
 				.add("spender", spender).toString();
-	}
-
-	@Override
-	public int hashCode() {
-		return new HashCodeBuilder()
-				.append(tokenId)
-				.append(serialNumber)
-				.toHashCode();
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (o == this) {
-			return true;
-		}
-		if (o == null || !UniqueToken.class.equals(o.getClass())) {
-			return false;
-		}
-
-		UniqueToken that = (UniqueToken) o;
-		return this.tokenId.equals(that.tokenId) &&
-				this.serialNumber == that.serialNumber &&
-				this.owner == that.owner &&
-				this.spender == that.spender &&
-				this.creationTime == that.creationTime &&
-				Arrays.equals(this.metadata, that.metadata);
 	}
 }

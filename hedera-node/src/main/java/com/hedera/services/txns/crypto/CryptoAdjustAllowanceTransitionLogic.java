@@ -29,6 +29,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
@@ -42,10 +43,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -64,7 +63,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private final SideEffectsTracker sideEffectsTracker;
 	private final Map<Long, Account> entitiesChanged;
 	private final StateView workingView;
-	private final Set<UniqueToken> nftsTouched;
+	private final Map<NftId, UniqueToken>  nftsTouched;
 
 	@Inject
 	public CryptoAdjustAllowanceTransitionLogic(
@@ -83,7 +82,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		this.sideEffectsTracker = sideEffectsTracker;
 		this.workingView = workingView;
 		this.entitiesChanged = new HashMap<>();
-		this.nftsTouched = new HashSet<>();
+		this.nftsTouched = new HashMap<>();
 	}
 
 	@Override
@@ -105,7 +104,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		adjustNftAllowances(op.getNftAllowancesList(), payerAccount);
 
 		/* --- Persist the entities --- */
-		for (final var nft : nftsTouched) {
+		for (final var nft : nftsTouched.values()) {
 			tokenStore.persistNft(nft);
 		}
 		for (final var entry : entitiesChanged.entrySet()) {
@@ -222,10 +221,12 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 				mutableApprovedForAllNftsAllowances.remove(key);
 			}
 
-			final var nfts = updateSpender(tokenStore, accountToAdjust.getId(), spender, tokenId, serialNums);
-
 			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
-			nftsTouched.addAll(nfts);
+
+			final var nfts = updateSpender(tokenStore, accountToAdjust.getId(), spender, tokenId, serialNums);
+			for (var nft : nfts) {
+				nftsTouched.put(nft.getNftId(), nft);
+			}
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
 		}
 	}
