@@ -1503,6 +1503,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(receiver)
 								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(receiver)
+								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
 								.maxAutomaticTokenAssociations(10),
 						tokenCreate(nft)
