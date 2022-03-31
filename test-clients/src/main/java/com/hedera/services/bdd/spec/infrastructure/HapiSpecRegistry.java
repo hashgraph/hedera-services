@@ -639,7 +639,7 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean hasAccountId(String name) {
-		return hasVia(this::getAccountID, name);
+		return registry.get(full(name, AccountID.class)) != null;
 	}
 
 	public AccountID getAccountID(String name) {
@@ -655,6 +655,10 @@ public class HapiSpecRegistry {
 
 	public String getAccountIdName(AccountID account) {
 		return get(asAccountString(account), String.class);
+	}
+
+	public boolean hasAccountIdName(AccountID accountId) {
+		return registry.get(full(asAccountString(accountId), String.class))	!= null;
 	}
 
 	public void removeAccount(String name) {
