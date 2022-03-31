@@ -499,9 +499,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
-			if (frame.getRemainingGas().compareTo(gasRequirement) < 0) {
-				throw new InvalidTransactionException(INSUFFICIENT_GAS);
-			}
+			validateTrue(frame.getRemainingGas().compareTo(gasRequirement) >= 0, INSUFFICIENT_GAS);
+
 			precompile.run(frame);
 			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
 			// synthetic record, as the ledger interceptors will populate the sideEffectsTracker
