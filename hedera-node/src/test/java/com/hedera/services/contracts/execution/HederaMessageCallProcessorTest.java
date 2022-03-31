@@ -39,7 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.hedera.services.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
@@ -144,6 +143,19 @@ class HederaMessageCallProcessorTest {
 		verify(frame).getState();
 		verify(frame).setState(EXCEPTIONAL_HALT);
 		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, null);
+		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
+	}
+
+	@Test
+	void revertedPrecompileReturns() {
+		given(frame.getInputData()).willReturn(Bytes.EMPTY);
+		given(hederaPrecompile.compute(any(), any())).willReturn(null);
+		given(frame.getState()).willReturn(REVERT);
+
+		subject.executeHederaPrecompile(hederaPrecompile, frame, operationTrace);
+
+		verify(frame).getState();
+		verify(hederaPrecompile).compute(Bytes.EMPTY, frame);
 		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
 	}
 }
