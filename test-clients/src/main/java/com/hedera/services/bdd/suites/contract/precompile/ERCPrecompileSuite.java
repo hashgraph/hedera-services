@@ -109,15 +109,15 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> ERC_20() {
 		return List.of(
-				getErc20TokenName(),
-				getErc20TokenSymbol(),
-				getErc20TokenDecimals(),
-				getErc20TotalSupply(),
-				getErc20BalanceOfAccount(),
+//				getErc20TokenName(),
+//				getErc20TokenSymbol(),
+//				getErc20TokenDecimals(),
+//				getErc20TotalSupply(),
+//				getErc20BalanceOfAccount(),
 				transferErc20Token(),
-				erc20AllowanceReturnsFails(),
-				erc20ApproveReturnsFails(),
-				getErc20TokenDecimalsFromErc721TokenFails(),
+//				erc20AllowanceReturnsFails(),
+//				erc20ApproveReturnsFails(),
+//				getErc20TokenDecimalsFromErc721TokenFails(),
 				transferErc20TokenFromErc721TokenFails(),
 				transferErc20TokenReceiverContract(),
 				transferErc20TokenSenderAccount(),
@@ -127,14 +127,14 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> ERC_721() {
 		return List.of(
-				getErc721TokenName(),
-				getErc721Symbol(),
-				getErc721TokenURI(),
-				getErc721OwnerOf(),
-				getErc721BalanceOf(),
-				getErc721TotalSupply(),
-				getErc721TokenURIFromErc20TokenFails(),
-				getErc721OwnerOfFromErc20TokenFails()
+//				getErc721TokenName(),
+//				getErc721Symbol(),
+//				getErc721TokenURI(),
+//				getErc721OwnerOf(),
+//				getErc721BalanceOf(),
+//				getErc721TotalSupply(),
+//				getErc721TokenURIFromErc20TokenFails(),
+//				getErc721OwnerOfFromErc20TokenFails()
 		);
 	}
 
