@@ -21,28 +21,49 @@ package com.hedera.services.bdd.suites.contract.precompile;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
+import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_FUNGIBLE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_FUNGIBLE_WITH_FEES_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_NON_FUNGIBLE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_NON_FUNGIBLE_WITH_FEES_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_CREATE_CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInHbarsInSchedule;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -72,61 +93,112 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				fungibleTokenCreate()
-//				fungibleWithFeesTokenCreate()
+				fungibleTokenCreateHappyPath(),
+				fungibleWithFeesTokenCreateHappyPath(),
 //				nonFungibleTokenCreate(),
-//				nonFungibleWithFeesTokenCreate()
+				nonFungibleWithFeesTokenCreateHappyPath()
 		);
 	}
 
-	private HapiApiSpec fungibleTokenCreate() {
+	private HapiApiSpec fungibleTokenCreateHappyPath() {
 		final var contractName = "contractName";
 		final var tokenCreateContract = "tokenCreateContract";
+		final var tokenCreateContractAsKey = "tokenCreateContractAsKey";
 		final var firstCreateTxn = "firstCreateTxn";
 
-		final AtomicReference<AccountID> accountID = new AtomicReference<>();
 		final AtomicReference<String> contractID = new AtomicReference<>();
+
+		final AtomicLong createTokenNum = new AtomicLong();
 		final String ACCOUNT = "account";
-		return defaultHapiSpec("HelloWorldFungibleMint")
+		final String accountKey = "accountKey";
+		return defaultHapiSpec("fungibleCreate")
 				.given(
+						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
+						newKeyNamed(accountKey),
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS)
-								.exposingCreatedIdTo(accountID::set),
+								.key(accountKey),
 						fileCreate(contractName),
 						updateLargeFile(GENESIS, contractName, extractByteCode(TOKEN_CREATE_CONTRACT)),
 						contractCreate(tokenCreateContract)
 								.bytecode(contractName)
 								.gas(GAS_TO_OFFER)
 								.exposingNumTo(num -> contractID.set(asHexedSolidityAddress(0, 0, num)))
+								.adminKey(accountKey)
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
 												contractCall(tokenCreateContract, CREATE_FUNGIBLE_ABI,
-														asAddress(spec.registry().getAccountID(ACCOUNT)))
+														asAddress(spec.registry().getContractId(tokenCreateContract)))
 														.via(firstCreateTxn)
 														.gas(GAS_TO_OFFER)
-														.sending(30 * ONE_HBAR)
+														.sending(10 * ONE_HBAR)
 														.payingWith(ACCOUNT)
+														.exposingResultTo(result -> {
+															log.info("Explicit create result is {}", result[0]);
+															final var res = (byte[])result[0];
+															createTokenNum.set(new BigInteger(res).longValueExact());
+														}),
+												newKeyNamed(tokenCreateContractAsKey)
+														.shape(CONTRACT.signedWith(tokenCreateContract))
 										)
 						)
 				).then(
 						getTxnRecord(firstCreateTxn).andAllChildRecords().logged(),
 						getAccountBalance(ACCOUNT).logged(),
-						getAccountBalance(tokenCreateContract).logged()
+						getAccountBalance(tokenCreateContract).logged(),
+						getContractInfo(tokenCreateContract).logged(),
+						childRecordsCheck(firstCreateTxn, ResponseCodeEnum.SUCCESS,
+								TransactionRecordAsserts.recordWith()
+										.status(ResponseCodeEnum.SUCCESS)),
+						sourcing(() -> {
+							final var token = asTokenString(TokenID.newBuilder()
+									.setTokenNum(createTokenNum.get())
+									.build()
+							);
+							return getTokenInfo(token).logged()
+											.hasTokenType(TokenType.FUNGIBLE_COMMON)
+											.hasSymbol("MTK")
+											.hasName("MyToken")
+											.hasDecimals(8)
+											.hasTotalSupply(200)
+											.hasEntityMemo("memo")
+											.hasTreasury(tokenCreateContract)
+											.hasAutoRenewAccount("0.0.2")
+											.hasAutoRenewPeriod(8000000L)
+											.hasSupplyType(TokenSupplyType.INFINITE)
+											.searchKeysGlobally()
+											.hasAdminKey(accountKey)
+											.hasSupplyKey(tokenCreateContractAsKey)
+											.hasPauseKey(tokenCreateContractAsKey)
+											.hasPauseStatus(TokenPauseStatus.Unpaused);
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
-	private HapiApiSpec fungibleWithFeesTokenCreate() {
+	private HapiApiSpec fungibleWithFeesTokenCreateHappyPath() {
 		final var contractName = "contractName";
 		final var tokenCreateContract = "tokenCreateContract";
 		final var firstCreateTxn = "firstCreateTxn";
 
 		final String ACCOUNT = "account";
-		return defaultHapiSpec("HelloWorldFungibleMint")
+		final String ACCOUNT2 = "account2";
+		final String ed25519Key = "ed25519Key";
+		final String ecdsaKey = "ecdsaKey";
+		final AtomicLong createdTokenNum = new AtomicLong();
+		return defaultHapiSpec("fungibleWithFeesCreate")
 				.given(
-						cryptoCreate(ACCOUNT),
+						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
+						newKeyNamed(ed25519Key).shape(ED25519),
+						newKeyNamed(ecdsaKey).shape(SECP256K1),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_HUNDRED_HBARS)
+								.key(ed25519Key),
+						cryptoCreate(ACCOUNT2)
+								.key(ecdsaKey),
 						fileCreate(contractName),
 						updateLargeFile(GENESIS, contractName, extractByteCode(TOKEN_CREATE_CONTRACT)),
 						contractCreate(tokenCreateContract)
@@ -138,13 +210,51 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(tokenCreateContract, CREATE_FUNGIBLE_WITH_FEES_ABI,
-														asAddress(spec.registry().getAccountID(ACCOUNT)))
+														spec.registry().getKey(ed25519Key).getEd25519().toByteArray(),
+														spec.registry().getKey(ecdsaKey).getECDSASecp256K1().toByteArray())
 														.via(firstCreateTxn)
+														.payingWith(ACCOUNT)
+														.sending(20 * ONE_HBAR)
 														.gas(GAS_TO_OFFER)
+														.exposingResultTo(result -> {
+															log.info("Explicit create result is {}", result[0]);
+															final var res = (byte[])result[0];
+															createdTokenNum.set(new BigInteger(res).longValueExact());
+														})
 										)
 						)
 				).then(
-						getTxnRecord(firstCreateTxn).andAllChildRecords().logged()
+						getTxnRecord(firstCreateTxn).andAllChildRecords().logged(),
+						getAccountBalance(ACCOUNT).logged(),
+						getAccountBalance(tokenCreateContract).logged(),
+						getContractInfo(tokenCreateContract).logged(),
+						childRecordsCheck(firstCreateTxn, ResponseCodeEnum.SUCCESS,
+								TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
+						sourcing(() -> {
+							final var token = asTokenString(TokenID.newBuilder()
+									.setTokenNum(createdTokenNum.get())
+									.build()
+							);
+							return getTokenInfo(token).logged()
+									.hasTokenType(TokenType.FUNGIBLE_COMMON)
+									.hasSymbol("MTK")
+									.hasName("MyToken")
+									.hasDecimals(8)
+									.hasTotalSupply(200)
+									.hasEntityMemo("memo")
+									.hasTreasury(ACCOUNT)
+									.hasAutoRenewAccount(ACCOUNT)
+									.hasAutoRenewPeriod(8000000L)
+									.hasSupplyType(TokenSupplyType.INFINITE)
+									.searchKeysGlobally()
+									.hasAdminKey(ed25519Key)
+									.hasKycKey(ecdsaKey)
+									.hasFreezeKey(ecdsaKey)
+									.hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
+									.hasCustom(fixedHbarFeeInSchedule(4, ACCOUNT))
+									.hasCustom(fractionalFeeInSchedule(5, 6, 55, OptionalLong.of(100), true, ACCOUNT));
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 
@@ -175,14 +285,17 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec nonFungibleWithFeesTokenCreate() {
+	private HapiApiSpec nonFungibleWithFeesTokenCreateHappyPath() {
 		final var contractName = "contractName";
 		final var tokenCreateContract = "tokenCreateContract";
 		final var firstCreateTxn = "firstCreateTxn";
-
-		return defaultHapiSpec("HelloWorldFungibleMint")
+		final String ACCOUNT = "account";
+		final AtomicLong createdTokenNum = new AtomicLong();
+		return defaultHapiSpec("nonFungibleWithFeesCreate")
 				.given(
-						cryptoCreate("treasury"),
+						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
+						cryptoCreate(ACCOUNT)
+								.balance(ONE_MILLION_HBARS),
 						fileCreate(contractName),
 						updateLargeFile(GENESIS, contractName, extractByteCode(TOKEN_CREATE_CONTRACT)),
 						contractCreate(tokenCreateContract)
@@ -194,12 +307,46 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(tokenCreateContract, CREATE_NON_FUNGIBLE_WITH_FEES_ABI,
-														asAddress(spec.registry().getAccountID("treasury")))
+														asAddress(spec.registry().getAccountID(ACCOUNT)))
 														.via(firstCreateTxn)
+														.payingWith(ACCOUNT)
+														.sending(20 * ONE_HBAR)
+														.gas(GAS_TO_OFFER)
+														.exposingResultTo(result -> {
+															log.info("Explicit create result is {}", result[0]);
+															final var res = (byte[])result[0];
+															createdTokenNum.set(new BigInteger(res).longValueExact());
+														})
 										)
 						)
 				).then(
-						getTxnRecord(firstCreateTxn).andAllChildRecords().logged()
+						getTxnRecord(firstCreateTxn).andAllChildRecords().logged(),
+						getAccountBalance(ACCOUNT).logged(),
+						getAccountBalance(tokenCreateContract).logged(),
+						getContractInfo(tokenCreateContract).logged(),
+						childRecordsCheck(firstCreateTxn, ResponseCodeEnum.SUCCESS,
+								TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
+						sourcing(() -> {
+							final var token = asTokenString(TokenID.newBuilder()
+									.setTokenNum(createdTokenNum.get())
+									.build()
+							);
+							return getTokenInfo(token).logged()
+									.hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+									.hasSymbol("NFT")
+									.hasName("MyNFT")
+									.hasDecimals(0)
+									.hasTotalSupply(0)
+									.hasEntityMemo("nftMemo")
+									.hasTreasury(tokenCreateContract)
+									.hasAutoRenewAccount(ACCOUNT)
+									.hasAutoRenewPeriod(8000000L)
+									.hasSupplyType(TokenSupplyType.FINITE)
+									.hasCustom(fixedHbarFeeInSchedule(4, tokenCreateContract))
+									.hasCustom(royaltyFeeWithFallbackInHbarsInSchedule(4, 5, 5, tokenCreateContract))
+									.hasMaxSupply(55);
+						}),
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}
 

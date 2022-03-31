@@ -1081,10 +1081,7 @@ public class ContractResources {
 			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
 			"\"type\": \"address\" }], \"stateMutability\": \"payable\", \"type\": \"function\" }";
 
-	public static final String CREATE_FUNGIBLE_WITH_FEES_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
-			"\"name\": \"contractKey\", \"type\": \"address\" } ], \"name\": \"createFungibleWithFees\", " +
-			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
-			"\"type\": \"address\" } ], \"stateMutability\": \"payable\", \"type\": \"function\" }";
+	public static final String CREATE_FUNGIBLE_WITH_FEES_ABI = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"ed25519Key\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"ecdsaKey\",\"type\":\"bytes\"}],\"name\":\"createFungibleWithFees\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"createdTokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	public static final String CREATE_NON_FUNGIBLE_ABI = "{ \"inputs\": [], \"name\": \"createNonFungibleToken\", " +
 			"\"outputs\": [ { \"internalType\": \"address\", \"name\": \"createdTokenAddress\", " +
