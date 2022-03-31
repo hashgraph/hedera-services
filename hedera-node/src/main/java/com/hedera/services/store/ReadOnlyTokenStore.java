@@ -234,20 +234,29 @@ public class ReadOnlyTokenStore {
 	public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
 		final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
 		for (long serialNumber : serialNumbers) {
-			final var nftId = NftId.withDefaultShardRealm(token.getId().num(), serialNumber);
-			final var merkleUniqueToken = uniqueTokens.getImmutableRef(nftId);
-			validateUsable(merkleUniqueToken);
-			final var uniqueToken = new UniqueToken(token.getId(), serialNumber);
-			initModelFields(uniqueToken, merkleUniqueToken);
+			final var uniqueToken = loadUniqueToken(token.getId(), serialNumber);
 			loadedUniqueTokens.put(serialNumber, uniqueToken);
 		}
 		token.setLoadedUniqueTokens(loadedUniqueTokens);
 	}
 
-	public MerkleUniqueToken loadUniqueToken(final NftId nftId) {
+	/**
+	 * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to
+	 * implement business logic in a transaction.
+	 *
+	 * @param tokenId
+	 * 		TokenId of the NFT
+	 * @param serialNum
+	 * 		Serial number of the NFT
+	 * @return The {@link UniqueToken} model of the requested unique token
+	 */
+	public UniqueToken loadUniqueToken(Id tokenId, Long serialNum) {
+		final var nftId = NftId.withDefaultShardRealm(tokenId.num(), serialNum);
 		final var merkleUniqueToken = uniqueTokens.getImmutableRef(nftId);
 		validateUsable(merkleUniqueToken);
-		return merkleUniqueToken;
+		final var uniqueToken = new UniqueToken(tokenId, serialNum);
+		initModelFields(uniqueToken, merkleUniqueToken);
+		return uniqueToken;
 	}
 
 	/**
@@ -353,6 +362,7 @@ public class ReadOnlyTokenStore {
 		uniqueToken.setCreationTime(immutableUniqueToken.getCreationTime());
 		uniqueToken.setMetadata(immutableUniqueToken.getMetadata());
 		uniqueToken.setOwner(immutableUniqueToken.getOwner().asId());
+		uniqueToken.setSpender(immutableUniqueToken.getSpender().asId());
 	}
 
 	private TokenRelationship buildTokenRelationship(

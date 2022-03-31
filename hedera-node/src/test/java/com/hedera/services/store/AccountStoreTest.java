@@ -128,13 +128,13 @@ class AccountStoreTest {
 	void canAlwaysLoadWithNonzeroBalance() {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		miscMerkleAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(firstRelKey);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(firstRelKey);
 		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
 		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
 		miscAccount.setCryptoAllowances(Collections.emptyMap());
 		miscAccount.setFungibleTokenAllowances(Collections.emptyMap());
-		miscAccount.setNftAllowances(Collections.emptyMap());
+		miscAccount.setApproveForAllNfts(Collections.emptySet());
 
 		// when:
 		final var actualAccount = subject.loadAccount(miscId);
@@ -178,7 +178,7 @@ class AccountStoreTest {
 		// then:
 		assertEquals(expectedReplacement, miscMerkleAccount);
 		// and:
-		assertEquals(thirdRelKey , miscMerkleAccount.getLastAssociation());
+		assertEquals(thirdRelKey , miscMerkleAccount.getLatestAssociation());
 	}
 
 	@Test

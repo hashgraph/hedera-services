@@ -159,9 +159,9 @@ public class AccountStore {
 		account.setAlias(merkleAccount.getAlias());
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
-		account.setNftAllowances(merkleAccount.getNftAllowances());
+		account.setApproveForAllNfts(merkleAccount.getApproveForAllNfts());
 		final var tokenAssociationMetadata = merkleAccount.getTokenAssociationMetadata();
-		account.setLastAssociatedToken(tokenAssociationMetadata.lastAssociation());
+		account.setLastAssociatedToken(tokenAssociationMetadata.latestAssociation());
 		account.setNumAssociations(tokenAssociationMetadata.numAssociations());
 		account.setNumZeroBalances(tokenAssociationMetadata.numZeroBalances());
 
@@ -198,7 +198,7 @@ public class AccountStore {
 		mutableAccount.setSmartContract(model.isSmartContract());
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
-		mutableAccount.setNftAllowances(model.getMutableNftAllowances());
+		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNftsAllowances());
 		final var tokenAssociationMetadata = new TokenAssociationMetadata(
 				model.getNumAssociations(), model.getNumZeroBalances(), model.getLastAssociatedToken());
 		mutableAccount.setTokenAssociationMetadata(tokenAssociationMetadata);

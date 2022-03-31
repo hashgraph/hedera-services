@@ -43,17 +43,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static com.hedera.services.state.submerkle.TokenAssociationMetadata.EMPTY_TOKEN_ASSOCIATION_META;
 import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,7 +83,6 @@ class MerkleAccountStateTest {
 	private static final int alreadyUsedAutoAssociations = 123;
 	private static final int autoAssociationMetadata =
 			buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
-	private static final int tokenIdsIndex = 345;
 	private static final Key aliasKey = Key.newBuilder()
 			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
 	private static final ByteString alias = aliasKey.getECDSASecp256K1();
@@ -105,7 +103,8 @@ class MerkleAccountStateTest {
 	private static final int associatedTokensCount = 3;
 	private static final int numZeroBalances = 2;
 
-	private static final EntityNum spenderNum = EntityNum.fromLong(1000L);
+	private static final EntityNum spenderNum1 = EntityNum.fromLong(1000L);
+	private static final EntityNum spenderNum2 = EntityNum.fromLong(3000L);
 	private static final EntityNum tokenForAllowance = EntityNum.fromLong(2000L);
 	private static final EntityNumPair associationKey = EntityNumPair.fromLongs(number, tokenForAllowance.longValue());
 	private static final Long cryptoAllowance = 10L;
@@ -115,16 +114,17 @@ class MerkleAccountStateTest {
 
 	private static final TokenAssociationMetadata tokenAssociationMetadata = new TokenAssociationMetadata(
 			associatedTokensCount, numZeroBalances , associationKey);
-	private static final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum);
+	private static final FcTokenAllowanceId tokenAllowanceKey1 = FcTokenAllowanceId.from(tokenForAllowance, spenderNum1);
+	private static final FcTokenAllowanceId tokenAllowanceKey2 = FcTokenAllowanceId.from(tokenForAllowance, spenderNum2);
 	private static final FcTokenAllowance tokenAllowanceValue = FcTokenAllowance.from(approvedForAll, serialNumbers);
 
 	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>();
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
+	private TreeSet<FcTokenAllowanceId> approveForAllNfts = new TreeSet<>();
 
 	TreeMap<EntityNum, Long> otherCryptoAllowances = new TreeMap<>();
 	TreeMap<FcTokenAllowanceId, Long> otherFungibleTokenAllowances = new TreeMap<>();
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> otherNftAllowances = new TreeMap<>();
+	TreeSet<FcTokenAllowanceId> otherApproveForAllNfts = new TreeSet<>();
 
 	private DomainSerdes serdes;
 
@@ -132,9 +132,9 @@ class MerkleAccountStateTest {
 
 	@BeforeEach
 	void setup() {
-		cryptoAllowances.put(spenderNum, cryptoAllowance);
-		nftAllowances.put(tokenAllowanceKey, tokenAllowanceValue);
-		fungibleTokenAllowances.put(tokenAllowanceKey, tokenAllowanceVal);
+		cryptoAllowances.put(spenderNum1, cryptoAllowance);
+		approveForAllNfts.add(tokenAllowanceKey2);
+		fungibleTokenAllowances.put(tokenAllowanceKey1, tokenAllowanceVal);
 
 		subject = new MerkleAccountState(
 				key,
@@ -148,7 +148,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 		subject.setTokenAssociationMetadata(tokenAssociationMetadata);
 		serdes = mock(DomainSerdes.class);
 		MerkleAccountState.serdes = serdes;
@@ -177,7 +177,7 @@ class MerkleAccountStateTest {
 						"alias=" + alias.toStringUtf8() + ", " +
 						"cryptoAllowances=" + cryptoAllowances + ", " +
 						"fungibleTokenAllowances=" + fungibleTokenAllowances + ", " +
-						"nftAllowances=" + nftAllowances + ", " +
+						"approveForAllNfts=" + approveForAllNfts + ", " +
 						"numAssociations=" + associatedTokensCount + ", " +
 						"numZeroBalances=" + numZeroBalances + ", " +
 						"lastAssociation=" + associationKey.value() + "<->" +
@@ -204,7 +204,7 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setProxy(proxy));
 		assertThrows(MutabilityException.class, () -> subject.setMaxAutomaticAssociations(maxAutoAssociations));
 		assertThrows(MutabilityException.class, () -> subject.setCryptoAllowances(cryptoAllowances));
-		assertThrows(MutabilityException.class, () -> subject.setNftAllowances(nftAllowances));
+		assertThrows(MutabilityException.class, () -> subject.setApproveForAllNfts(approveForAllNfts));
 		assertThrows(MutabilityException.class,
 				() -> subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations));
 	}
@@ -412,50 +412,7 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	void deserializeV0230Works() throws IOException {
-		final var in = mock(SerializableDataInputStream.class);
-		subject.setNftsOwned(nftsOwned);
-		subject.setTokenAssociationMetadata(EMPTY_TOKEN_ASSOCIATION_META);
-		final var newSubject = new MerkleAccountState();
-		given(serdes.readNullable(argThat(in::equals), any(IoReadingFunction.class))).willReturn(key);
-		given(in.readLong())
-				.willReturn(expiry)
-				.willReturn(balance)
-				.willReturn(autoRenewSecs)
-				.willReturn(nftsOwned)
-				.willReturn(spenderNum.longValue())
-				.willReturn(cryptoAllowance)
-				.willReturn(tokenAllowanceVal);
-		given(in.readNormalisedString(anyInt())).willReturn(memo);
-		given(in.readBoolean())
-				.willReturn(deleted)
-				.willReturn(smartContract)
-				.willReturn(receiverSigRequired)
-				.willReturn(approvedForAll);
-		given(in.readInt())
-				.willReturn(autoAssociationMetadata)
-				.willReturn(number)
-				.willReturn(kvPairs)
-				.willReturn(cryptoAllowances.size())
-				.willReturn(fungibleTokenAllowances.size())
-				.willReturn(nftAllowances.size());
-		given(serdes.readNullableSerializable(in)).willReturn(proxy);
-		given(in.readByteArray(Integer.MAX_VALUE)).willReturn(alias.toByteArray());
-		given(in.readSerializable())
-				.willReturn(tokenAllowanceKey)
-				.willReturn(tokenAllowanceKey)
-				.willReturn(tokenAllowanceValue);
-		given(in.readLongList(Integer.MAX_VALUE))
-				.willReturn(serialNumbers);
-
-		newSubject.deserialize(in, MerkleAccountState.RELEASE_0230_VERSION);
-
-		// then:
-		assertEquals(subject, newSubject);
-	}
-
-	@Test
-	void deserializeV0240Works() throws IOException {
+	void deserializeV0250Works() throws IOException {
 		final var in = mock(SerializableDataInputStream.class);
 		subject.setNftsOwned(nftsOwned);
 		final var newSubject = new MerkleAccountState();
@@ -465,7 +422,7 @@ class MerkleAccountStateTest {
 				.willReturn(balance)
 				.willReturn(autoRenewSecs)
 				.willReturn(nftsOwned)
-				.willReturn(spenderNum.longValue())
+				.willReturn(spenderNum1.longValue())
 				.willReturn(cryptoAllowance)
 				.willReturn(tokenAllowanceVal)
 				.willReturn(associationKey.value());
@@ -481,19 +438,19 @@ class MerkleAccountStateTest {
 				.willReturn(kvPairs)
 				.willReturn(cryptoAllowances.size())
 				.willReturn(fungibleTokenAllowances.size())
-				.willReturn(nftAllowances.size())
+				.willReturn(approveForAllNfts.size())
 				.willReturn(associatedTokensCount)
 				.willReturn(numZeroBalances);
 		given(serdes.readNullableSerializable(in)).willReturn(proxy);
 		given(in.readByteArray(Integer.MAX_VALUE)).willReturn(alias.toByteArray());
 		given(in.readSerializable())
-				.willReturn(tokenAllowanceKey)
-				.willReturn(tokenAllowanceKey)
+				.willReturn(tokenAllowanceKey1)
+				.willReturn(tokenAllowanceKey2)
 				.willReturn(tokenAllowanceValue);
 		given(in.readLongList(Integer.MAX_VALUE))
 				.willReturn(serialNumbers);
 
-		newSubject.deserialize(in, MerkleAccountState.RELEASE_0240_VERSION);
+		newSubject.deserialize(in, MerkleAccountState.RELEASE_0250_VERSION);
 
 		// then:
 		assertEquals(subject, newSubject);
@@ -518,16 +475,15 @@ class MerkleAccountStateTest {
 		inOrder.verify(out).writeByteArray(alias.toByteArray());
 
 		inOrder.verify(out).writeInt(cryptoAllowances.size());
-		inOrder.verify(out).writeLong(spenderNum.longValue());
+		inOrder.verify(out).writeLong(spenderNum1.longValue());
 		inOrder.verify(out).writeLong(cryptoAllowance);
 
 		inOrder.verify(out).writeInt(fungibleTokenAllowances.size());
-		inOrder.verify(out).writeSerializable(tokenAllowanceKey, true);
+		inOrder.verify(out).writeSerializable(tokenAllowanceKey1, true);
 		inOrder.verify(out).writeLong(tokenAllowanceVal);
 
-		inOrder.verify(out).writeInt(nftAllowances.size());
-		inOrder.verify(out).writeSerializable(tokenAllowanceKey, true);
-		inOrder.verify(out).writeSerializable(tokenAllowanceValue, true);
+		inOrder.verify(out).writeInt(approveForAllNfts.size());
+		inOrder.verify(out).writeSerializable(tokenAllowanceKey2, true);
 
 		inOrder.verify(out).writeLong(associationKey.value());
 	}
@@ -564,7 +520,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -583,7 +539,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -602,7 +558,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -621,7 +577,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -640,7 +596,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -659,7 +615,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -678,7 +634,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -697,7 +653,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -716,7 +672,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -734,7 +690,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -752,7 +708,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -770,7 +726,83 @@ class MerkleAccountStateTest {
 				otherKvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
+
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForAllowances1() {
+		final EntityNum spenderNum1 = EntityNum.fromLong(100L);
+		final Long cryptoAllowance = 100L;
+
+
+		otherCryptoAllowances.put(spenderNum1, cryptoAllowance);
+
+		final var otherSubject = new MerkleAccountState(
+				key,
+				expiry, balance, autoRenewSecs,
+				memo,
+				deleted, smartContract, receiverSigRequired,
+				proxy,
+				number, autoAssociationMetadata,
+				alias,
+				otherKvPairs,
+				otherCryptoAllowances,
+				fungibleTokenAllowances,
+				approveForAllNfts);
+
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForAllowances2() {
+		final EntityNum spenderNum1 = EntityNum.fromLong(100L);
+		final EntityNum tokenForAllowance = EntityNum.fromLong(200L);
+		final Long tokenAllowanceVal = 1L;
+
+		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum1);
+
+		otherFungibleTokenAllowances.put(tokenAllowanceKey, tokenAllowanceVal);
+
+		final var otherSubject = new MerkleAccountState(
+				key,
+				expiry, balance, autoRenewSecs,
+				memo,
+				deleted, smartContract, receiverSigRequired,
+				proxy,
+				number, autoAssociationMetadata,
+				alias,
+				otherKvPairs,
+				cryptoAllowances,
+				otherFungibleTokenAllowances,
+				approveForAllNfts);
+
+		assertNotEquals(subject, otherSubject);
+	}
+
+	@Test
+	void equalsWorksForAllowances3() {
+		final EntityNum spenderNum1 = EntityNum.fromLong(100L);
+		final EntityNum tokenForAllowance = EntityNum.fromLong(200L);
+
+		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum1);
+
+
+		otherApproveForAllNfts.add(tokenAllowanceKey);
+
+		final var otherSubject = new MerkleAccountState(
+				key,
+				expiry, balance, autoRenewSecs,
+				memo,
+				deleted, smartContract, receiverSigRequired,
+				proxy,
+				number, autoAssociationMetadata,
+				alias,
+				otherKvPairs,
+				cryptoAllowances,
+				fungibleTokenAllowances,
+				otherApproveForAllNfts);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -788,7 +820,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 		TokenAssociationMetadata otherTokenAssociationMetadata = new TokenAssociationMetadata(
 				associatedTokensCount, numZeroBalances+1 , associationKey);
 
@@ -798,40 +830,8 @@ class MerkleAccountStateTest {
 	}
 
 	@Test
-	void equalsWorksForAllowances() {
-		final EntityNum spenderNum = EntityNum.fromLong(100L);
-		final EntityNum tokenForAllowance = EntityNum.fromLong(200L);
-		final Long cryptoAllowance = 100L;
-		final boolean approvedForAll = true;
-		final Long tokenAllowanceVal = 1L;
-		final List<Long> serialNumbers = new ArrayList<>();
-
-		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum);
-		final FcTokenAllowance tokenAllowanceValue = FcTokenAllowance.from(approvedForAll, serialNumbers);
-
-		otherCryptoAllowances.put(spenderNum, cryptoAllowance);
-		otherNftAllowances.put(tokenAllowanceKey, tokenAllowanceValue);
-		otherFungibleTokenAllowances.put(tokenAllowanceKey, tokenAllowanceVal);
-
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number, autoAssociationMetadata,
-				alias,
-				otherKvPairs,
-				otherCryptoAllowances,
-				otherFungibleTokenAllowances,
-				otherNftAllowances);
-
-		assertNotEquals(subject, otherSubject);
-	}
-
-	@Test
 	void merkleMethodsWork() {
-		assertEquals(MerkleAccountState.RELEASE_0240_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0250_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
@@ -851,7 +851,7 @@ class MerkleAccountStateTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 		identicalSubject.setTokenAssociationMetadata(tokenAssociationMetadata);
 
 		final var otherSubject = new MerkleAccountState(
@@ -866,7 +866,7 @@ class MerkleAccountStateTest {
 				otherKvPairs,
 				otherCryptoAllowances,
 				otherFungibleTokenAllowances,
-				otherNftAllowances);
+				otherApproveForAllNfts);
 
 		assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
 		assertNotEquals(subject.hashCode(), otherSubject.hashCode());
@@ -896,38 +896,10 @@ class MerkleAccountStateTest {
 		assertEquals(changeMax, defaultSubject.getMaxAutomaticAssociations());
 	}
 
-	@Test
-	void addingAndRemovingToMapsWork() {
-		final EntityNum spenderNum = EntityNum.fromLong(2000L);
-		final EntityNum tokenForAllowance = EntityNum.fromLong(4000L);
-		final Long cryptoAllowance = 100L;
-		final boolean approvedForAll = false;
-		final Long tokenAllowanceVal = 10L;
-		final List<Long> serialNumbers = List.of(3L, 4L);
-		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum);
-
-		subject.addCryptoAllowance(spenderNum, cryptoAllowance);
-		subject.addFungibleTokenAllowance(tokenForAllowance, spenderNum, tokenAllowanceVal);
-		subject.addNftAllowance(tokenForAllowance, spenderNum, approvedForAll, serialNumbers);
-		assertTrue(subject.getCryptoAllowances().containsKey(spenderNum));
-		assertTrue(subject.getNftAllowances().containsKey(tokenAllowanceKey));
-		assertEquals(2, subject.getCryptoAllowances().size());
-		assertEquals(2, subject.getNftAllowances().size());
-
-		subject.removeCryptoAllowance(spenderNum);
-		subject.removeFungibleTokenAllowance(tokenForAllowance, spenderNum);
-		subject.removeNftAllowance(tokenForAllowance, spenderNum);
-
-		assertFalse(subject.getCryptoAllowances().containsKey(spenderNum));
-		assertFalse(subject.getNftAllowances().containsKey(tokenAllowanceKey));
-		assertEquals(1, subject.getCryptoAllowances().size());
-		assertEquals(1, subject.getNftAllowances().size());
-	}
-
 	private void setEmptyAllowances() {
 		subject.setCryptoAllowances(new TreeMap<>());
 		subject.setFungibleTokenAllowances(new TreeMap<>());
-		subject.setNftAllowances(new TreeMap<>());
+		subject.setApproveForAllNfts(new TreeSet<>());
 	}
 
 	@Test
@@ -935,7 +907,7 @@ class MerkleAccountStateTest {
 		var subject = new MerkleAccountState();
 		assertEquals(Collections.emptyMap(), subject.getCryptoAllowances());
 		assertEquals(Collections.emptyMap(), subject.getFungibleTokenAllowances());
-		assertEquals(Collections.emptyMap(), subject.getNftAllowances());
+		assertEquals(Collections.emptySet(), subject.getApproveForAllNfts());
 	}
 
 	@Test
@@ -943,10 +915,10 @@ class MerkleAccountStateTest {
 		var subject = new MerkleAccountState();
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
-		subject.setNftAllowances(nftAllowances);
+		subject.setApproveForAllNfts(approveForAllNfts);
 		assertEquals(cryptoAllowances, subject.getCryptoAllowances());
 		assertEquals(fungibleTokenAllowances, subject.getFungibleTokenAllowances());
-		assertEquals(nftAllowances, subject.getNftAllowances());
+		assertEquals(approveForAllNfts, subject.getApproveForAllNfts());
 	}
 
 }

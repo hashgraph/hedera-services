@@ -48,13 +48,15 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 
 	static final int PRE_RELEASE_0180_VERSION = 1;
 	static final int RELEASE_0180_VERSION = 2;
+	static final int RELEASE_0250_VERSION = 3;
 
-	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
+	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
 
 	public static final int UPPER_BOUND_METADATA_BYTES = 1024;
 
 	private int ownerCode;
+	private int spenderCode;
 	private long packedCreationTime;
 	private byte[] metadata;
 	private long numbers;
@@ -120,6 +122,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		var that = (MerkleUniqueToken) o;
 		return this.numbers == that.numbers &&
 				this.ownerCode == that.ownerCode &&
+				this.spenderCode == that.spenderCode &&
 				this.packedCreationTime == that.packedCreationTime &&
 				Objects.deepEquals(this.metadata, that.metadata);
 	}
@@ -129,6 +132,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		return Objects.hash(
 				numbers,
 				ownerCode,
+				spenderCode,
 				packedCreationTime,
 				Arrays.hashCode(metadata));
 	}
@@ -143,6 +147,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 				.add("owner", EntityId.fromIdentityCode(ownerCode).toAbbrevString())
 				.add("creationTime", then)
 				.add("metadata", metadata)
+				.add("spender", EntityId.fromIdentityCode(spenderCode).toAbbrevString())
 				.toString();
 	}
 
@@ -165,6 +170,9 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		if (version >= RELEASE_0180_VERSION) {
 			numbers = in.readLong();
 		}
+		if (version >= RELEASE_0250_VERSION) {
+			spenderCode = in.readInt();
+		}
 	}
 
 	@Override
@@ -173,13 +181,16 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		out.writeLong(packedCreationTime);
 		out.writeByteArray(metadata);
 		out.writeLong(numbers);
+		out.writeInt(spenderCode);
 	}
 
 	/* --- FastCopyable --- */
 	@Override
 	public MerkleUniqueToken copy() {
 		setImmutable(true);
-		return new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
+		final var copy = new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
+		copy.setSpender(EntityId.fromIdentityCode(spenderCode));
+		return copy;
 	}
 
 	public void setOwner(EntityId owner) {
@@ -189,6 +200,15 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public EntityId getOwner() {
 		return new EntityId(0, 0, BitPackUtils.numFromCode(ownerCode));
+	}
+
+	public void setSpender(EntityId spender) {
+		throwIfImmutable("Cannot change this unique token's spender if it's immutable.");
+		this.spenderCode = spender.identityCode();
+	}
+
+	public EntityId getSpender() {
+		return new EntityId(0, 0, BitPackUtils.numFromCode(spenderCode));
 	}
 
 	public byte[] getMetadata() {

@@ -27,7 +27,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
@@ -44,6 +43,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedMap;
 
 public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<EntityNum> {
@@ -249,8 +249,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return getTokenAssociationMetadata().numAssociations();
 	}
 
-	public EntityNumPair getLastAssociation() {
-		return getTokenAssociationMetadata().lastAssociation();
+	public EntityNumPair getLatestAssociation() {
+		return getTokenAssociationMetadata().latestAssociation();
 	}
 
 	public long getBalance() {
@@ -374,22 +374,17 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setCryptoAllowancesUnsafe(cryptoAllowances);
 	}
 
-	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
-		return state().getNftAllowances();
+	public Set<FcTokenAllowanceId> getApproveForAllNfts() {
+		return state().getApproveForAllNfts();
 	}
 
-	public void setNftAllowances(final SortedMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		throwIfImmutable("Cannot change this account's Nft allowances if it's immutable.");
-		state().setNftAllowances(nftAllowances);
+	public void setApproveForAllNfts(final Set<FcTokenAllowanceId> approveForAllNfts) {
+		throwIfImmutable("Cannot change this account's approved for all NFTs allowances if it's immutable.");
+		state().setApproveForAllNfts(approveForAllNfts);
 	}
 
-	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowancesUnsafe() {
-		return state().getNftAllowancesUnsafe();
-	}
-
-	public void setNftAllowancesUnsafe(final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		throwIfImmutable("Cannot change this account's nft allowances if it's immutable.");
-		state().setNftAllowancesUnsafe(nftAllowances);
+	public Set<FcTokenAllowanceId> getApproveForAllNftsUnsafe() {
+		return state().getApproveForAllNftsUnsafe();
 	}
 
 	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {

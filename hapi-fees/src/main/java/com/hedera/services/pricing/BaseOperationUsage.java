@@ -270,7 +270,7 @@ class BaseOperationUsage {
 				.setCurrentMaxAutomaticAssociations(0)
 				.setCurrentCryptoAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.build();
 
 		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(canonicalTxn.getCryptoApproveAllowance(), now);
@@ -302,7 +302,7 @@ class BaseOperationUsage {
 						.setAmount(1L)
 						.build()))
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.build();
 
 		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(canonicalTxn.getCryptoAdjustAllowance(), now);
@@ -330,7 +330,7 @@ class BaseOperationUsage {
 				.setCurrentMaxAutomaticAssociations(0)
 				.setCurrentCryptoAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.build();
 		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
 		final var into = new UsageAccumulator();

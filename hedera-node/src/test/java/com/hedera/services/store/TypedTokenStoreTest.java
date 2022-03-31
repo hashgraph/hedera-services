@@ -54,10 +54,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -376,6 +379,38 @@ class TypedTokenStoreTest {
 		subject.persistNew(newToken);
 		verify(tokens).put(any(), any());
 		verify(sideEffectsTracker).trackTokenChanges(newToken);
+	}
+
+	@Test
+	void persistsNftsAsExpected() {
+		final var nftId1 = new NftId(1, 2, 3, 1);
+		final var nftId2 = new NftId(1, 2, 3, 2);
+		final var nft1 = new UniqueToken(IdUtils.asModelId("1.2.3"), 1L);
+		final var nft2 = new UniqueToken(IdUtils.asModelId("1.2.3"), 2L);
+		final var meta1 = "aa".getBytes(StandardCharsets.UTF_8);
+		final var meta2 = "bb".getBytes(StandardCharsets.UTF_8);
+		nft1.setOwner(treasuryId);
+		nft1.setMetadata(meta1);
+		nft1.setCreationTime(MISSING_INSTANT);
+		nft1.setSpender(autoRenewId);
+		nft2.setOwner(miscId);
+		nft2.setMetadata(meta2);
+		nft2.setCreationTime(MISSING_INSTANT);
+		nft2.setSpender(autoRenewId);
+
+		final var mut1 = new MerkleUniqueToken(treasuryId.asEntityId(), meta1, MISSING_INSTANT);
+		final var mut2 = new MerkleUniqueToken(miscId.asEntityId(), meta2, MISSING_INSTANT);
+		given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
+		given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
+
+		subject.persistNft(nft1);
+		subject.persistNft(nft2);
+
+		mut1.setSpender(autoRenewId.asEntityId());
+		mut2.setSpender(autoRenewId.asEntityId());
+
+		verify(uniqueTokens).put(nftId1, mut1);
+		verify(uniqueTokens).put(nftId2, mut2);
 	}
 
 	@Test

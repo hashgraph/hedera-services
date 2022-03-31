@@ -227,10 +227,10 @@ public class CryptoOpsUsage {
 		adjustedBytesCount += adjustedTokenBytes * TOKEN_ALLOWANCE_SIZE;
 
 		final var adjustedNftBytes = getChangedTokenKeys(cryptoAdjustMeta.getNftAllowances().keySet(),
-				ctx.currentNftAllowances().keySet());
+				ctx.currentNftAllowances());
 		adjustedBytesCount += adjustedNftBytes * NFT_ALLOWANCE_SIZE;
 
-		final var adjustedSerials = getNewSerials(cryptoAdjustMeta.getNftAllowances(), ctx.currentNftAllowances());
+		final var adjustedSerials = getNewSerials(cryptoAdjustMeta.getNftAllowances());
 		adjustedBytesCount += adjustedSerials * LONG_SIZE;
 
 		return adjustedBytesCount;

@@ -54,8 +54,8 @@ class CryptoAdjustAllowanceMetaTest {
 			.setTokenId(IdUtils.asToken("0.0.1000"))
 			.addAllSerialNumbers(List.of(1L, 2L, 3L)).build();
 	private Map<Long, Long> cryptoAllowancesMap = new HashMap<>();
-	private Map<ExtantCryptoContext.AllowanceMapKey, Long> tokenAllowancesMap = new HashMap<>();
-	private Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> nftAllowancesMap =
+	private Map<AllowanceId, Long> tokenAllowancesMap = new HashMap<>();
+	private Map<AllowanceId, AllowanceDetails> nftAllowancesMap =
 			new HashMap<>();
 
 	@BeforeEach
@@ -68,9 +68,9 @@ class CryptoAdjustAllowanceMetaTest {
 	@Test
 	void allGettersAndToStringWork() {
 		final var expected = "CryptoAdjustAllowanceMeta{cryptoAllowances={1234=10}, " +
-				"tokenAllowances={AllowanceMapKey[tokenNum=1000, spenderNum=1234]=10}, " +
-				"nftAllowances={AllowanceMapKey[tokenNum=1000, " +
-				"spenderNum=1234]=AllowanceMapValue[approvedForAll=false," +
+				"tokenAllowances={AllowanceId[tokenNum=1000, spenderNum=1234]=10}, " +
+				"nftAllowances={AllowanceId[tokenNum=1000, " +
+				"spenderNum=1234]=AllowanceDetails[approvedForAll=false," +
 				" serialNums=[1, 2, 3]]}, effectiveNow=1234567, msgBytesUsed=112}";
 		final var now = 1_234_567;
 		final var subject = CryptoAdjustAllowanceMeta.newBuilder()
@@ -111,9 +111,9 @@ class CryptoAdjustAllowanceMetaTest {
 		final var expectedTokenMap = new HashMap<>();
 		final var expectedNftMap = new HashMap<>();
 		expectedCryptoMap.put(proxy.getAccountNum(), 10L);
-		expectedTokenMap.put(new ExtantCryptoContext.AllowanceMapKey(1000L, proxy.getAccountNum()), 10L);
-		expectedNftMap.put(new ExtantCryptoContext.AllowanceMapKey(1000L, proxy.getAccountNum()),
-				new ExtantCryptoContext.AllowanceMapValue(false, List.of(1L, 2L, 3L)));
+		expectedTokenMap.put(new AllowanceId(1000L, proxy.getAccountNum()), 10L);
+		expectedNftMap.put(new AllowanceId(1000L, proxy.getAccountNum()),
+				new AllowanceDetails(false, List.of(1L, 2L, 3L)));
 		assertEquals(expectedCryptoMap, subject.getCryptoAllowances());
 		assertEquals(expectedTokenMap, subject.getTokenAllowances());
 		assertEquals(expectedNftMap, subject.getNftAllowances());

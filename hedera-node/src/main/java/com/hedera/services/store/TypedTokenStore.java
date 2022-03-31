@@ -43,6 +43,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
 /**
@@ -205,6 +206,14 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		sideEffectsTracker.trackTokenChanges(token);
 	}
 
+	public void persistNft(UniqueToken nft) {
+		final var tokenId = nft.getTokenId();
+		final var nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), nft.getSerialNumber());
+		final var mutableNft = uniqueTokens.getRef(nftId);
+		mapModelChanges(nft, mutableNft);
+		uniqueTokens.put(nftId, mutableNft);
+	}
+
 	private void destroyRemoved(List<UniqueToken> nfts) {
 		for (final var nft : nfts) {
 			uniqueTokens.remove(NftId.withDefaultShardRealm(nft.getTokenId().num(), nft.getSerialNumber()));
@@ -247,6 +256,14 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		}
 
 		mutableToken.setExpiry(token.getExpiry());
+	}
+
+	private void mapModelChanges(UniqueToken nft, MerkleUniqueToken mutableNft) {
+		mutableNft.setOwner(nft.getOwner().asEntityId());
+		mutableNft.setSpender(nft.getSpender().asEntityId());
+		mutableNft.setMetadata(nft.getMetadata());
+		final var creationTime = nft.getCreationTime();
+		mutableNft.setPackedCreationTime(packedTime(creationTime.getSeconds(), creationTime.getNanos()));
 	}
 
 	@FunctionalInterface

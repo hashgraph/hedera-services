@@ -153,6 +153,7 @@ class StateViewTest {
 	private final AccountID accountWithAlias = asAccountWithAlias("aaaa");
 	private final AccountID treasuryOwnerId = asAccount("0.0.0");
 	private final AccountID nftOwnerId = asAccount("0.0.44");
+	private final AccountID nftSpenderId = asAccount("0.0.66");
 	private final ScheduleID scheduleId = asSchedule("0.0.8");
 	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
 	private final ContractID cid = asContract("0.0.1");
@@ -924,6 +925,22 @@ class StateViewTest {
 	}
 
 	@Test
+	void getsSpenderAsExpected() {
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		final var optionalNftInfo = subject.infoForNft(targetNftId);
+
+		assertTrue(optionalNftInfo.isPresent());
+		final var info = optionalNftInfo.get();
+		assertEquals(ledgerId, info.getLedgerId());
+		assertEquals(targetNftId, info.getNftID());
+		assertEquals(nftOwnerId, info.getAccountID());
+		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcAccountId(info.getSpenderId()));
+		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
+		assertArrayEquals(nftMeta, info.getMetadata().toByteArray());
+	}
+
+	@Test
 	void interpolatesTreasuryIdOnNftGet() {
 		targetNft.setOwner(MISSING_ENTITY_ID);
 
@@ -945,6 +962,7 @@ class StateViewTest {
 	@Test
 	void getNftsAsExpected() {
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
+		targetNft.setSpender(EntityId.fromGrpcAccountId(nftSpenderId));
 
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
 
@@ -953,6 +971,7 @@ class StateViewTest {
 		assertEquals(ledgerId, info.getLedgerId());
 		assertEquals(targetNftId, info.getNftID());
 		assertEquals(nftOwnerId, info.getAccountID());
+		assertEquals(nftSpenderId, info.getSpenderId());
 		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
 		assertArrayEquals(nftMeta, info.getMetadata().toByteArray());
 	}

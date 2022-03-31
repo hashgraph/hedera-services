@@ -23,7 +23,6 @@ package com.hedera.services.txns.crypto.validators;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
@@ -42,19 +41,23 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -122,7 +125,7 @@ public abstract class AllowanceChecks {
 			return validity;
 		}
 
-		validity = validateNftAllowances(nftAllowances, payerAccount, tokenStore, accountStore);
+		validity = validateNftAllowances(tokenStore, accountStore, nftAllowances, payerAccount);
 		if (validity != OK) {
 			return validity;
 		}
@@ -241,59 +244,66 @@ public abstract class AllowanceChecks {
 	 * Validate nft allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
 	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
 	 *
-	 * @param nftAllowances
-	 * 		nft allowances list
-	 * @param payerAccount
-	 * 		Account of the payer for the Allowance approve/adjust txn
+	 * @param tokenStore
 	 * @param accountStore
+	 * @param nftAllowancesList
+	 * @param payerAccount
 	 * @return
 	 */
 	ResponseCodeEnum validateNftAllowances(
-			final List<NftAllowance> nftAllowances,
-			final Account payerAccount,
 			final ReadOnlyTokenStore tokenStore,
-			final AccountStore accountStore) {
-		if (nftAllowances.isEmpty()) {
+			final AccountStore accountStore,
+			final List<NftAllowance> nftAllowancesList,
+			final Account payerAccount) {
+		if (nftAllowancesList.isEmpty()) {
 			return OK;
 		}
 
 		final List<Pair<EntityNum, FcTokenAllowanceId>> nftKeys = new ArrayList<>();
-		for (var allowance : nftAllowances) {
+		for (var allowance : nftAllowancesList) {
 			nftKeys.add(buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
 		}
 		if (hasRepeatedId(nftKeys)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 
-		for (final var allowance : nftAllowances) {
-			final var spenderAccountId = allowance.getSpender();
+		for (final var allowance : nftAllowancesList) {
+			final var owner = Id.fromGrpcAccount(allowance.getOwner());
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			final var delegatingSpender = Id.fromGrpcAccount(allowance.getDelegatingSpender());
 			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
-			final var spenderId = Id.fromGrpcAccount(spenderAccountId);
-			final var approvedForAll = allowance.getApprovedForAll().getValue();
-			var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
+			final var approvedForAll = allowance.getApprovedForAll().getValue();
+
+			if (token.isFungibleCommon()) {
+				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
+			}
 
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
 				return fetchResult.getRight();
 			}
 			final var ownerAccount = fetchResult.getLeft();
-			if (token.isFungibleCommon()) {
-				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
-			}
-			var validity = validateTokenBasics(ownerAccount, spenderId, token, tokenStore);
+
+			var validity = validateTokenBasics(ownerAccount, spender, token, tokenStore);
 			if (validity != OK) {
 				return validity;
 			}
 
-			if (!approvedForAll) {
-				// if approvedForAll is true no need to validate all serial numbers, since they will not be stored in
-				// state
-				validity = validateSerialNums(serialNums, ownerAccount, token, tokenStore, spenderId);
-				if (validity != OK) {
-					return validity;
+			if (approvedForAll && !delegatingSpender.equals(Id.MISSING_ID)) {
+				return DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
+			} else if (!delegatingSpender.equals(Id.MISSING_ID)) {
+				final var allowanceKey = FcTokenAllowanceId.from(
+						EntityNum.fromTokenId(tokenId), delegatingSpender.asEntityNum());
+				if (!ownerAccount.getApprovedForAllNftsAllowances().contains(allowanceKey)) {
+					return DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
 				}
+			}
+
+			validity = validateSerialNums(serialNums, token, tokenStore);
+			if (validity != OK) {
+				return validity;
 			}
 		}
 		return OK;
@@ -347,6 +357,38 @@ public abstract class AllowanceChecks {
 		return OK;
 	}
 
+	/**
+	 * Validates serial numbers for {@link NftAllowance}
+	 *
+	 * @param serialNums
+	 * 		given serial numbers in the {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} operation
+	 * @param token
+	 * 		token for which allowance is related to
+	 * @return response code after validation
+	 */
+	ResponseCodeEnum validateSerialNums(
+			final List<Long> serialNums,
+			final Token token,
+			final ReadOnlyTokenStore tokenStore) {
+		if (hasRepeatedSerials(serialNums)) {
+			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
+		}
+
+		for (var serial : serialNums) {
+			if (serial <= 0) {
+				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
+			}
+
+			try {
+				tokenStore.loadUniqueToken(token.getId(), serial);
+			} catch (InvalidTransactionException ex) {
+				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
+			}
+		}
+
+		return OK;
+	}
+
 	private boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
 		return totalAllowances > maxLimit;
 	}
@@ -369,18 +411,6 @@ public abstract class AllowanceChecks {
 			}
 		}
 	}
-
-	boolean validOwner(final EntityId listedOwner, final Account ownerAccount, final Token token) {
-		return MISSING_ENTITY_ID.equals(listedOwner)
-				? ownerAccount.getId().equals(token.getTreasury().getId())
-				: listedOwner.equals(ownerAccount.getId().asEntityId());
-	}
-
-	public abstract ResponseCodeEnum validateSerialNums(final List<Long> serialNums,
-			final Account ownerAccount,
-			final Token token,
-			final ReadOnlyTokenStore tokenStore,
-			final Id spender);
 
 	public abstract ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender);
 

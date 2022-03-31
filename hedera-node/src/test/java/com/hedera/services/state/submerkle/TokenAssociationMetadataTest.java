@@ -32,16 +32,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TokenAssociationMetadataTest {
 	final int numAssociations = 10;
 	final int numZeroBalances = 7;
-	final EntityNumPair lastAssociation = EntityNumPair.fromLongs(1001L, 1002L);
+	final EntityNumPair latestAssociation = EntityNumPair.fromLongs(1001L, 1002L);
 	final TokenAssociationMetadata subject =
-			new TokenAssociationMetadata(numAssociations, numZeroBalances, lastAssociation);
+			new TokenAssociationMetadata(numAssociations, numZeroBalances, latestAssociation);
 
 	@Test
 	void equalsWorks() {
-		final var other1 = new TokenAssociationMetadata(numAssociations+1, numZeroBalances, lastAssociation);
-		final var other2 = new TokenAssociationMetadata(numAssociations, numZeroBalances-1, lastAssociation);
+		final var other1 = new TokenAssociationMetadata(numAssociations+1, numZeroBalances, latestAssociation);
+		final var other2 = new TokenAssociationMetadata(numAssociations, numZeroBalances-1, latestAssociation);
 		final var other3 = new TokenAssociationMetadata(numAssociations, numZeroBalances, MISSING_NUM_PAIR);
-		final var identicalSubject = new TokenAssociationMetadata(numAssociations, numZeroBalances, lastAssociation);
+		final var identicalSubject = new TokenAssociationMetadata(numAssociations, numZeroBalances, latestAssociation);
 
 		assertEquals(subject, identicalSubject);
 		assertNotEquals(subject, other1);
@@ -53,7 +53,7 @@ class TokenAssociationMetadataTest {
 	@Test
 	void toStringWorks() {
 		final var expected = "TokenAssociationMetadata[numAssociations=" + numAssociations +
-				", numZeroBalances=" + numZeroBalances + ", lastAssociation=" + lastAssociation + "]";
+				", numZeroBalances=" + numZeroBalances + ", latestAssociation=" + latestAssociation + "]";
 
 		assertEquals(expected, subject.toString());
 	}

@@ -350,12 +350,15 @@ public class StateView {
 			accountId = merkleToken.treasury().toGrpcAccountId();
 		}
 
+		final var spenderId = targetNft.getSpender().toGrpcAccountId();
+
 		final var info = TokenNftInfo.newBuilder()
 				.setLedgerId(networkInfo.ledgerId())
 				.setNftID(target)
 				.setAccountID(accountId)
 				.setCreationTime(targetNft.getCreationTime().toGrpc())
 				.setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
+				.setSpenderId(spenderId)
 				.build();
 		return Optional.of(info);
 	}
@@ -604,7 +607,7 @@ public class StateView {
 			final int maxRels
 	) {
 		final List<TokenRelationship> grpcRels = new ArrayList<>();
-		var firstRel = account.getLastAssociation();
+		var firstRel = account.getLatestAssociation();
 		doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) -> {
 			final var grpcRel = new RawTokenRelationship(
 					rel.getBalance(),
@@ -641,7 +644,7 @@ public class StateView {
 			final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor
 	) {
 		final var maxRels = account.getNumAssociations();
-		final var firstRel = account.getLastAssociation();
+		final var firstRel = account.getLatestAssociation();
 		doBoundedIteration(tokenRels, tokens, firstRel, maxRels, visitor);
 	}
 
