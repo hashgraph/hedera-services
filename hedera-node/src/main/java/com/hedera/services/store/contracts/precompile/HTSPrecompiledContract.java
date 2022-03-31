@@ -90,7 +90,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -130,7 +129,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
@@ -143,7 +141,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID =
 			EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
-	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
@@ -151,7 +148,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			"Error decoding precompile input".getBytes());
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
-	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
 	private static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
@@ -475,10 +471,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				sideEffects);
 	}
 
-	private static Bytes resultFrom(final ResponseCodeEnum status) {
-		return UInt256.valueOf(status.getNumber());
-	}
-
 	void decodeInput(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 		this.transactionBody = TransactionBody.newBuilder();
 		try {
@@ -639,35 +631,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 				TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
 				BackingStore<TokenID, MerkleToken> backingTokens);
-	}
-
-	/* --- The precompile implementations --- */
-	interface Precompile {
-		TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver);
-
-		void run(MessageFrame frame);
-
-		long getMinimumFeeInTinybars(Timestamp consensusTime);
-
-		default void addImplicitCostsIn(TxnAccessor accessor) {
-			/* No-op */
-		}
-
-		default Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
-			return SUCCESS_RESULT;
-		}
-
-		default Bytes getFailureResultFor(ResponseCodeEnum status) {
-			return resultFrom(status);
-		}
-
-		default List<FcAssessedCustomFee> getCustomFees() {
-			return NO_CUSTOM_FEES;
-		}
-
-		default boolean shouldAddTraceabilityFieldsToRecord() {
-			return true;
-		}
 	}
 
 	private abstract class AbstractAssociatePrecompile implements Precompile {
@@ -1160,11 +1123,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			return encoder.encodeEcFungibleTransfer(true);
-		}
-
-		@Override
-		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-			return resultFrom(status);
 		}
 	}
 
