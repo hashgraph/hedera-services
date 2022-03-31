@@ -63,7 +63,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private final SideEffectsTracker sideEffectsTracker;
 	private final Map<Long, Account> entitiesChanged;
 	private final StateView workingView;
-	private final Map<NftId, UniqueToken>  nftsTouched;
+	private final Map<NftId, UniqueToken> nftsTouched;
 
 	@Inject
 	public CryptoAdjustAllowanceTransitionLogic(
