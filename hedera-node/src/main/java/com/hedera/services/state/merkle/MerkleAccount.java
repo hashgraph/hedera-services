@@ -249,8 +249,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return getTokenAssociationMetadata().numAssociations();
 	}
 
-	public EntityNumPair getLastAssociation() {
-		return getTokenAssociationMetadata().lastAssociation();
+	public EntityNumPair getLatestAssociation() {
+		return getTokenAssociationMetadata().latestAssociation();
 	}
 
 	public long getBalance() {

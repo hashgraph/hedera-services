@@ -31,14 +31,14 @@ import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
  *
  * numAssociations: tracks the total token association the account currently have.
  * numZeroBalances: tracks the number of token associations with zero balances on this account.
- * lastAssociation: tracks the latest token association of the account.
+ * latestAssociation: tracks the latest token association of the account.
  */
-public record TokenAssociationMetadata(int numAssociations, int numZeroBalances, EntityNumPair lastAssociation) {
+public record TokenAssociationMetadata(int numAssociations, int numZeroBalances, EntityNumPair latestAssociation) {
 	public static final TokenAssociationMetadata EMPTY_TOKEN_ASSOCIATION_META = new TokenAssociationMetadata(
 			0, 0, MISSING_NUM_PAIR);
 
 	public TokenAssociationMetadata {
-		Objects.requireNonNull(lastAssociation);
+		Objects.requireNonNull(latestAssociation);
 	}
 
 	public boolean hasNoTokenBalances() {
