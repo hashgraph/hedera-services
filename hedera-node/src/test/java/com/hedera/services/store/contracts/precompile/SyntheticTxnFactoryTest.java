@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
@@ -32,6 +33,9 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigInteger;
 import java.util.Collections;
@@ -51,13 +55,20 @@ import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class SyntheticTxnFactoryTest {
 	private final SyntheticTxnFactory subject = new SyntheticTxnFactory();
 
+	@Mock
+	private ContractCustomizer customizer;
+
 	@Test
 	void createsExpectedContractSkeleton() {
-		final var result = subject.createContractSkeleton();
+		final var result = subject.contractCreation(customizer);
+		verify(customizer).customizeSynthetic(any());
 		assertTrue(result.hasContractCreateInstance());
 	}
 

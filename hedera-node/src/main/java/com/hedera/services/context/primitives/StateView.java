@@ -29,6 +29,11 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingNfts;
+import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.sourcing.KeyType;
@@ -43,6 +48,7 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -76,6 +82,7 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -125,6 +132,11 @@ public class StateView {
 	Map<byte[], byte[]> contractBytecode;
 	Map<FileID, byte[]> fileContents;
 	Map<FileID, HFileMeta> fileAttrs;
+
+	private BackingStore<TokenID, MerkleToken> backingTokens = null;
+	private BackingStore<AccountID, MerkleAccount> backingAccounts = null;
+	private BackingStore<NftId, MerkleUniqueToken> backingNfts = null;
+	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingRels = null;
 
 	public StateView(
 			@Nullable final ScheduleStore scheduleStore,
@@ -532,6 +544,34 @@ public class StateView {
 
 	public MerkleMap<EntityNum, MerkleToken> tokens() {
 		return stateChildren == null ? emptyMm() : stateChildren.tokens();
+	}
+
+	public BackingStore<TokenID, MerkleToken> asReadOnlyTokenStore() {
+		if (backingTokens == null) {
+			backingTokens = new BackingTokens(stateChildren::tokens);
+		}
+		return backingTokens;
+	}
+
+	public BackingStore<AccountID, MerkleAccount> asReadOnlyAccountStore() {
+		if (backingAccounts == null) {
+			backingAccounts = new BackingAccounts(stateChildren::accounts);
+		}
+		return backingAccounts;
+	}
+
+	public BackingStore<NftId, MerkleUniqueToken> asReadOnlyNftStore() {
+		if (backingNfts == null) {
+			backingNfts = new BackingNfts(stateChildren::uniqueTokens);
+		}
+		return backingNfts;
+	}
+
+	public BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> asReadOnlyAssociationStore() {
+		if (backingRels == null) {
+			backingRels = new BackingTokenRels(stateChildren::tokenAssociations);
+		}
+		return backingRels;
 	}
 
 	private TokenFreezeStatus tfsFor(final boolean flag) {

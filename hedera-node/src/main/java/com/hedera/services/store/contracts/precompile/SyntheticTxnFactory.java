@@ -21,6 +21,7 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -61,8 +62,9 @@ public class SyntheticTxnFactory {
 	public SyntheticTxnFactory() {
 	}
 
-	public TransactionBody.Builder createContractSkeleton() {
+	public TransactionBody.Builder contractCreation(final ContractCustomizer customizer) {
 		final var builder = ContractCreateTransactionBody.newBuilder();
+		customizer.customizeSynthetic(builder);
 		return TransactionBody.newBuilder().setContractCreateInstance(builder);
 	}
 

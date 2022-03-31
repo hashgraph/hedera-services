@@ -23,6 +23,7 @@ package com.hedera.services.txns.crypto;
 import com.google.protobuf.BoolValue;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
@@ -85,6 +86,8 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
+	@Mock
+	private StateView view;
 
 	private TransactionBody cryptoAdjustAllowanceTxn;
 	private CryptoAdjustAllowanceTransactionBody op;
@@ -94,7 +97,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoAdjustAllowanceTransitionLogic(txnCtx, accountStore,
-				adjustAllowanceChecks, dynamicProperties, sideEffectsTracker);
+				adjustAllowanceChecks, dynamicProperties, sideEffectsTracker, view);
 	}
 
 	@Test
@@ -229,7 +232,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 		given(adjustAllowanceChecks.allowancesValidation(op.getCryptoAllowancesList(), op.getTokenAllowancesList(),
 				op.getNftAllowancesList(), ownerAcccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction())).willReturn(OK);
+				dynamicProperties.maxAllowanceLimitPerTransaction(), view)).willReturn(OK);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoAdjustAllowanceTxn));
 	}

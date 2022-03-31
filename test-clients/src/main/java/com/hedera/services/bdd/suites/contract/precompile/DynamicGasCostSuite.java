@@ -49,6 +49,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -72,6 +73,7 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_PLACEHOLDER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC_721_CONTRACT;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC_721_OWNER_OF_CALL;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMMEDIATE_CHILD_ASSOC_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.NORMAL_DEPLOY_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.OUTER_CREATOR_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PC2_ASSOCIATE_BOTH_ABI;
@@ -211,6 +213,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						inlineCreate2CanFailSafely(),
 						allLogOpcodesResolveExpectedContractId(),
 						eip1014AliasIsPriorityInErcOwnerPrecompile(),
+						childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
 				}
 		);
 	}
@@ -612,13 +615,44 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				);
 	}
 
+	private HapiApiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
+		final var initcode = "initcode";
+		final var ft = "fungibleToken";
+		final var multiKey = "swiss";
+		final var creationAndAssociation = "creationAndAssociation";
+
+		final var contract = "contract";
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+		final AtomicReference<String> childMirrorAddr = new AtomicReference<>();
+
+		return defaultHapiSpec("childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(TOKEN_TREASURY),
+						fileCreate(initcode).path(ContractResources.IMMEDIATE_CHILD_ASSOC_PATH),
+						tokenCreate(ft).exposingCreatedIdTo(id ->
+								tokenMirrorAddr.set(hex(asSolidityAddress(asToken(id)))))
+				).when(
+						sourcing(() -> contractCreate(contract, IMMEDIATE_CHILD_ASSOC_CONS_ABI, tokenMirrorAddr.get())
+								.gas(2_000_000)
+								.adminKey(multiKey)
+								.payingWith(GENESIS)
+								.bytecode(initcode)
+								.exposingNumTo(n -> childMirrorAddr.set("0.0." + (n + 1)))
+								.via(creationAndAssociation))
+				).then(
+						sourcing(() ->
+								getContractInfo(childMirrorAddr.get())
+										.logged())
+				);
+	}
+
 	private HapiApiSpec canUseAliasesInPrecompilesAndContractKeys() {
 		final var creation2 = "create2Txn";
 		final var initcode = "initcode";
 		final var pc2User = "pc2User";
 		final var ft = "fungibleToken";
 		final var nft = "nonFungibleToken";
-		final var otherNft = "otherNonFungibleToken";
 		final var multiKey = "swiss";
 		final var ftFail = "ofInterest";
 		final var nftFail = "alsoOfInterest";

@@ -25,6 +25,10 @@ import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingNfts;
+import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -152,8 +156,10 @@ class StateViewTest {
 	private final ScheduleID scheduleId = asSchedule("0.0.8");
 	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
 	private final ContractID cid = asContract("0.0.1");
-	private final EntityNumPair tokenAssociationId = EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), tokenId.getTokenNum());
-	private final EntityNumPair nftAssociationId = EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), nftTokenId.getTokenNum());
+	private final EntityNumPair tokenAssociationId = EntityNumPair.fromLongs(tokenAccountId.getAccountNum(),
+			tokenId.getTokenNum());
+	private final EntityNumPair nftAssociationId = EntityNumPair.fromLongs(tokenAccountId.getAccountNum(),
+			nftTokenId.getTokenNum());
 	private final byte[] cidAddress = asEvmAddress(0, 0, cid.getContractNum());
 	private final AccountID autoRenew = asAccount("0.0.6");
 	private final AccountID creatorAccountID = asAccount("0.0.7");
@@ -173,6 +179,7 @@ class StateViewTest {
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNum, MerkleTopic> topics;
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	private VirtualMap<ContractKey, ContractValue> contractStorage;
@@ -300,7 +307,7 @@ class StateViewTest {
 		bytecode = mock(Map.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 
-		final var uniqueTokens = new MerkleMap<EntityNumPair, MerkleUniqueToken>();
+		uniqueTokens = new MerkleMap<>();
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
@@ -754,7 +761,7 @@ class StateViewTest {
 		final var children = new MutableStateChildren();
 		children.setTopics(topics);
 
-		subject = new StateView( null, children, null);
+		subject = new StateView(null, children, null);
 
 		final var actualTopics = subject.topics();
 
@@ -767,7 +774,7 @@ class StateViewTest {
 		children.setContractStorage(contractStorage);
 		children.setStorage(storage);
 
-		subject = new StateView( null, children, null);
+		subject = new StateView(null, children, null);
 
 		final var actualStorage = subject.storage();
 		final var actualContractStorage = subject.contractStorage();
@@ -975,6 +982,18 @@ class StateViewTest {
 		assertFalse(subject.scheduleExists(scheduleId));
 		assertFalse(subject.tokenExists(tokenId));
 		assertEquals(0, subject.numNftsOwnedBy(nftOwnerId));
+	}
+
+	@Test
+	void constructsBackingStores() {
+		assertTrue(subject.asReadOnlyAccountStore() instanceof BackingAccounts);
+		assertTrue(subject.asReadOnlyTokenStore() instanceof BackingTokens);
+		assertTrue(subject.asReadOnlyNftStore() instanceof BackingNfts);
+		assertTrue(subject.asReadOnlyAssociationStore() instanceof BackingTokenRels);
+		assertEquals(tokens, ((BackingTokens) subject.asReadOnlyTokenStore()).getDelegate().get());
+		assertEquals(contracts, ((BackingAccounts) subject.asReadOnlyAccountStore()).getDelegate().get());
+		assertEquals(uniqueTokens, ((BackingNfts) subject.asReadOnlyNftStore()).getDelegate().get());
+		assertEquals(tokenRels, ((BackingTokenRels) subject.asReadOnlyAssociationStore()).getDelegate().get());
 	}
 
 	private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);
