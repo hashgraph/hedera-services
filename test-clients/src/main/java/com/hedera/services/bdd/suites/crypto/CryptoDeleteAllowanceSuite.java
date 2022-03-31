@@ -801,7 +801,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 						cryptoDeleteAllowance()
 								.payingWith(owner)
 								.addNftDeleteAllowance(owner, nft, List.of(3L))
-								.hasPrecheck(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
+								.hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
 						cryptoDeleteAllowance()
 								.payingWith(owner)
 								.addNftDeleteAllowance(owner, nft, List.of(1L, 1L, 2L))
@@ -1100,7 +1100,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.has(accountWith()
 										.noCryptoAllowances()
 										.noTokenAllowances(payer)
-										.nftApprovedForAllAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(1)
 								),
 						getTokenNftInfo(nft, 1L).hasNoSpender()
 				);
@@ -1186,6 +1186,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 	private HapiApiSpec happyPathWorks() {
 		final String owner = "owner";
 		final String spender = "spender";
+		final String spender1 = "spender1";
 		final String token = "token";
 		final String nft = "nft";
 		return defaultHapiSpec("happyPathWorks")
@@ -1195,6 +1196,8 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.balance(ONE_HUNDRED_HBARS)
 								.maxAutomaticTokenAssociations(10),
 						cryptoCreate(spender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender1)
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
 								.maxAutomaticTokenAssociations(10),
@@ -1228,7 +1231,8 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender, 100L)
 								.addTokenAllowance(owner, token, spender, 100L)
-								.addNftAllowance(owner, nft, spender, false, List.of(1L))
+								.addNftAllowance(owner, nft, spender, false, List.of(1L, 2L))
+								.addNftAllowance(owner, nft, spender1, false, List.of(3L))
 								.via("otherAdjustTxn"),
 						getAccountInfo(owner)
 								.has(accountWith()
@@ -1238,7 +1242,9 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 										.cryptoAllowancesContaining(spender, 100L)
 										.tokenAllowancesContaining(token, spender, 100L)
 								),
-						getTokenNftInfo(nft, 1L).hasSpenderID(spender)
+						getTokenNftInfo(nft, 1L).hasSpenderID(spender),
+						getTokenNftInfo(nft, 2L).hasSpenderID(spender),
+						getTokenNftInfo(nft, 3L).hasSpenderID(spender1)
 				)
 				.then(
 						cryptoDeleteAllowance()
@@ -1252,15 +1258,17 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.payingWith(owner)
 								.addCryptoDeleteAllowance(owner)
 								.addTokenDeleteAllowance(owner, token)
-								.addNftDeleteAllowance(owner, nft, List.of(1L))
+								.addNftDeleteAllowance(owner, nft, List.of(1L, 2L, 3L))
 								.blankMemo()
 								.via("cryptoDeleteAllowanceTxn")
 								.logged(),
 						getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
-						validateChargedUsdWithin("cryptoDeleteAllowanceTxn", 0.0513359, 0.01),
+						validateChargedUsdWithin("cryptoDeleteAllowanceTxn", 0.051541, 0.01),
 						getAccountInfo(owner)
 								.has(accountWith().noAllowances()),
-						getTokenNftInfo(nft, 1L).hasNoSpender());
+						getTokenNftInfo(nft, 1L).hasNoSpender(),
+						getTokenNftInfo(nft, 2L).hasNoSpender(),
+						getTokenNftInfo(nft, 3L).hasNoSpender());
 	}
 
 	@Override

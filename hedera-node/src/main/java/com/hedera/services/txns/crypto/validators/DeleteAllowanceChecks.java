@@ -47,7 +47,6 @@ import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -181,7 +180,7 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 			return OK;
 		}
 
-		final var distinctIds = new HashSet(tokenAllowances);
+		final Set<TokenRemoveAllowance> distinctIds = new HashSet<>(tokenAllowances);
 		if (distinctIds.size() != tokenAllowances.size()) {
 			return REPEATED_ALLOWANCES_TO_DELETE;
 		}
