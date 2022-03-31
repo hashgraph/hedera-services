@@ -229,7 +229,7 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenApproveAccountNotFound() {
-		given(workingView.infoForAccount(any(), any(), anyInt())).willReturn(Optional.empty());
+		given(workingView.accounts()).willReturn(new MerkleMap<>());
 
 		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 

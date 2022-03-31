@@ -114,8 +114,6 @@ class ApproveAllowanceChecksTest {
 	@Mock
 	private Account payerAccount;
 	@Mock
-	private MerkleUniqueToken token;
-	@Mock
 	private StateView view;
 	@Mock
 	private MerkleToken merkleToken1;
@@ -228,7 +226,6 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void failsIfAllowanceFeatureIsNotTurnedOn() {
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
-		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		assertNoRepeated();
 
 		cryptoAllowances.add(cryptoAllowance2);

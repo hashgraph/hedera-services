@@ -197,7 +197,6 @@ class AdjustAllowanceChecksTest {
 	@Test
 	void failsIfAllowanceFeatureIsNotTurnedOn() {
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
-		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 
 		cryptoAllowances.add(cryptoAllowance2);
 		tokenAllowances.add(tokenAllowance2);

@@ -200,11 +200,17 @@ public class AllowanceHelpers {
 		final var ownerId = Id.fromGrpcAccount(owner);
 		if (owner.equals(AccountID.getDefaultInstance()) || owner.equals(payerAccount.getId().asGrpcAccount())) {
 			return payerAccount;
-		} else if (entitiesChanged.containsKey(ownerId.num())) {
+		} else if (entitiesChanged != null && entitiesChanged.containsKey(ownerId.num())) {
 			return entitiesChanged.get(ownerId.num());
 		} else {
 			return accountStore.loadAccountOrFailWith(ownerId, INVALID_ALLOWANCE_OWNER_ID);
 		}
+	}
+
+	public static Account fetchOwnerAccount(final AccountID owner,
+			final Account payerAccount,
+			final AccountStore accountStore) {
+		return fetchOwnerAccount(owner, payerAccount, accountStore, null);
 	}
 
 	public static EntityNumPair buildEntityNumPairFrom(AccountID owner, AccountID spender, final EntityNum payer) {
@@ -250,7 +256,7 @@ public class AllowanceHelpers {
 		return nfts;
 	}
 
-	private static boolean validOwner(final UniqueToken nft, final Id ownerId, final Token token) {
+	public static boolean validOwner(final UniqueToken nft, final Id ownerId, final Token token) {
 		final var listedOwner = nft.getOwner();
 		return MISSING_ID.equals(listedOwner)
 				? ownerId.equals(token.getTreasury().getId())

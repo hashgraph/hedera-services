@@ -23,7 +23,10 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -33,6 +36,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
@@ -63,8 +67,10 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -85,8 +91,6 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 	@Mock
 	private PlatformTxnAccessor accessor;
 	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
 	private StateView view;
 
 	private TransactionBody cryptoDeleteAllowanceTxn;
@@ -97,7 +101,8 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new CryptoDeleteAllowanceTransitionLogic(txnCtx, accountStore, deleteAllowanceChecks, tokenStore, view);
+		subject = new CryptoDeleteAllowanceTransitionLogic(txnCtx, accountStore, deleteAllowanceChecks, tokenStore,
+				view);
 	}
 
 	@Test
@@ -115,7 +120,15 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
-		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(ownerAccount);
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(
+				ownerAccount);
+
+		token2Model.setTreasury(ownerAccount);
+		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
+		given(tokenStore.loadUniqueToken(Id.fromGrpcToken(token2), 12L)).willReturn(uniqueToken2);
+		given(tokenStore.loadUniqueToken(Id.fromGrpcToken(token2), 10L)).willReturn(uniqueToken1);
+		uniqueToken1.setOwner(Id.MISSING_ID);
+		uniqueToken2.setOwner(Id.MISSING_ID);
 
 		assertEquals(2, ownerAccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
@@ -133,9 +146,54 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 	}
 
 	@Test
+	void canDeleteAllowancesOnTreasury() {
+		givenValidTxnCtx();
+		addExistingAllowances(ownerAccount);
+		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(ownerAccount);
+		token2Model.setTreasury(ownerAccount);
+		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
+		given(tokenStore.loadUniqueToken(Id.fromGrpcToken(token2), 12L)).willReturn(uniqueToken2);
+		given(tokenStore.loadUniqueToken(Id.fromGrpcToken(token2), 10L)).willReturn(uniqueToken1);
+		uniqueToken1.setOwner(Id.MISSING_ID);
+		uniqueToken2.setOwner(Id.MISSING_ID);
+
+		assertEquals(1, ownerAccount.getApprovedForAllNftsAllowances().size());
+
+		subject.doStateTransition();
+
+		assertEquals(1, ownerAccount.getApprovedForAllNftsAllowances().size());
+		verify(tokenStore, times(2)).persistNft(any());
+		verify(accountStore).commitAccount(ownerAccount);
+		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
+	}
+
+	@Test
+	void failsDeleteAllowancesOnInvalidTreasury() {
+		givenValidTxnCtx();
+
+		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(
+				ownerAccount);
+		token2Model.setTreasury(payerAccount);
+		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
+		given(tokenStore.loadUniqueToken(Id.fromGrpcToken(token2), 12L)).willReturn(uniqueToken2);
+		uniqueToken1.setOwner(Id.MISSING_ID);
+		uniqueToken2.setOwner(Id.MISSING_ID);
+
+		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+	}
+
+
+	@Test
 	void doesntThrowIfAllowancesDoesNotExist() {
 		final CryptoRemoveAllowance cryptoAllowance = CryptoRemoveAllowance.newBuilder().setOwner(ownerId).build();
-		final TokenRemoveAllowance tokenAllowance = TokenRemoveAllowance.newBuilder().setOwner(ownerId).setTokenId(token1).build();
+		final TokenRemoveAllowance tokenAllowance = TokenRemoveAllowance.newBuilder().setOwner(ownerId).setTokenId(
+				token1).build();
 
 		cryptoDeleteAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -149,7 +207,8 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 
 		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
-		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(ownerAccount);
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(
+				ownerAccount);
 
 		assertEquals(0, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
@@ -164,7 +223,8 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 	@Test
 	void semanticCheckDelegatesWorks() {
 		givenValidTxnCtx();
-		given(deleteAllowanceChecks.deleteAllowancesValidation(op.getCryptoAllowancesList(), op.getTokenAllowancesList(),
+		given(deleteAllowanceChecks.deleteAllowancesValidation(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(),
 				op.getNftAllowancesList(), payerAccount, view)).willReturn(OK);
 
 		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
@@ -180,6 +240,10 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
+		given(tokenStore.loadUniqueToken(token2Model.getId(), 12L)).willReturn(uniqueToken1);
+		given(tokenStore.loadUniqueToken(token2Model.getId(), 10L)).willReturn(uniqueToken2);
+		uniqueToken1.setOwner(payerAccount.getId());
+		uniqueToken2.setOwner(payerAccount.getId());
 
 		assertEquals(2, payerAccount.getCryptoAllowances().size());
 		assertEquals(1, payerAccount.getFungibleTokenAllowances().size());
@@ -293,7 +357,8 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		existingCryptoAllowances.put(EntityNum.fromAccountId(spender2), 10L);
 		existingTokenAllowances.put(
 				FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1)), 10L);
-		existingNftAllowances.add(FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1)));
+		existingNftAllowances.add(
+				FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1)));
 
 		ownerAccount.setCryptoAllowances(existingCryptoAllowances);
 		ownerAccount.setFungibleTokenAllowances(existingTokenAllowances);
@@ -313,7 +378,8 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 	private final Token token1Model = new Token(Id.fromGrpcToken(token1));
 	private final Token token2Model = new Token(Id.fromGrpcToken(token2));
 	private final CryptoRemoveAllowance cryptoAllowance1 = CryptoRemoveAllowance.newBuilder().setOwner(ownerId).build();
-	private final TokenRemoveAllowance tokenAllowance1 = TokenRemoveAllowance.newBuilder().setOwner(ownerId).setTokenId(token1).build();
+	private final TokenRemoveAllowance tokenAllowance1 = TokenRemoveAllowance.newBuilder().setOwner(ownerId).setTokenId(
+			token1).build();
 	private final NftRemoveAllowance nftAllowance1 = NftRemoveAllowance.newBuilder()
 			.setOwner(ownerId)
 			.setTokenId(token2)

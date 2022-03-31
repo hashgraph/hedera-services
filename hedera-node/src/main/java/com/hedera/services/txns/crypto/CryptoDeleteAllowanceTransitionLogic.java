@@ -47,7 +47,10 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.validOwner;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 /**
@@ -95,7 +98,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		/* --- Do the business logic --- */
 		deleteCryptoAllowances(op.getCryptoAllowancesList(), payerAccount);
 		deleteFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
-		deleteNftSerials(op.getNftAllowancesList());
+		deleteNftSerials(op.getNftAllowancesList(), payerAccount);
 
 		/* --- Persist the owner accounts and nfts --- */
 		for (final var nft : nftsTouched) {
@@ -114,8 +117,9 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	 *
 	 * @param nftAllowances
 	 * 		given nftAllowances
+	 * @param payerAccount
 	 */
-	private void deleteNftSerials(final List<NftRemoveAllowance> nftAllowances) {
+	private void deleteNftSerials(final List<NftRemoveAllowance> nftAllowances, final Account payerAccount) {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
@@ -124,11 +128,14 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		for (var allowance : nftAllowances) {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
+			final var accountToWipe = fetchOwnerAccount(allowance.getOwner(), payerAccount, accountStore);
+			final var token = tokenStore.loadPossiblyPausedToken(tokenId);
 
 			for (var serial : serialNums) {
-				final var token = tokenStore.loadUniqueToken(tokenId, serial);
-				token.clearSpender();
-				nfts.add(token);
+				final var nft = tokenStore.loadUniqueToken(tokenId, serial);
+				validateTrue(validOwner(nft, accountToWipe.getId(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+				nft.clearSpender();
+				nfts.add(nft);
 			}
 			nftsTouched.addAll(nfts);
 			nfts.clear();
