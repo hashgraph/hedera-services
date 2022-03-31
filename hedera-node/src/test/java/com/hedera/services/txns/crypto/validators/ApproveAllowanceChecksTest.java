@@ -212,6 +212,7 @@ class ApproveAllowanceChecksTest {
 		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
 		given(ownerAccount.state()).willReturn(new MerkleAccountState());
 		given(merkleUniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(merkleUniqueToken.getSpender()).willReturn(EntityId.fromGrpcAccountId(spender1));
 	}
 
 	@Test

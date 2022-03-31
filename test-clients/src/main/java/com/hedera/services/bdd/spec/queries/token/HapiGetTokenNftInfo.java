@@ -41,6 +41,7 @@ import java.util.function.BiFunction;
 
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetTokenNftInfo.class);
@@ -111,7 +112,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 		var actualInfo = response.getTokenGetNftInfo().getNft();
 
 		if (expectedSerialNum.isPresent()) {
-			Assertions.assertEquals(
+			assertEquals(
 					expectedSerialNum.getAsLong(),
 					actualInfo.getNftID().getSerialNumber(),
 					"Wrong serial num!");
@@ -119,7 +120,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 
 		if (expectedAccountID.isPresent()) {
 			var id = TxnUtils.asId(expectedAccountID.get(), spec);
-			Assertions.assertEquals(
+			assertEquals(
 					id,
 					actualInfo.getAccountID(),
 					"Wrong account ID account!");
@@ -142,7 +143,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 
 		}
 
-		expectedMetadata.ifPresent(bytes -> Assertions.assertEquals(
+		expectedMetadata.ifPresent(bytes -> assertEquals(
 				bytes,
 				actualInfo.getMetadata(),
 				"Wrong metadata!"));
@@ -164,7 +165,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 				"Wrong token id!",
 				registry);
 
-		expectedLedgerId.ifPresent(id -> Assertions.assertEquals(rationalize(id), actualInfo.getLedgerId()));
+		expectedLedgerId.ifPresent(id -> assertEquals(rationalize(id), actualInfo.getLedgerId()));
 	}
 
 	private <T, R> void assertFor(
@@ -176,7 +177,7 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	) {
 		if (possible.isPresent()) {
 			var expected = expectedFn.apply(possible.get(), registry);
-			Assertions.assertEquals(expected, actual, error);
+			assertEquals(expected, actual, error);
 		}
 	}
 

@@ -28,10 +28,10 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 public class CryptoContextUtils {
 	private CryptoContextUtils() {
@@ -58,7 +58,8 @@ public class CryptoContextUtils {
 
 	public static Set<AllowanceId> convertToNftMapFromGranted(
 			final List<GrantedNftAllowance> allowances) {
-		Set<AllowanceId> approveForAllAllowances = new TreeSet<>();
+		Set<AllowanceId> approveForAllAllowances =
+				new HashSet<>();
 		for (var a : allowances) {
 			approveForAllAllowances.add(new AllowanceId(a.getTokenId().getTokenNum(),
 							a.getSpender().getAccountNum()));

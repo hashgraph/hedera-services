@@ -40,10 +40,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -63,7 +61,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	private final TypedTokenStore tokenStore;
 	private final DeleteAllowanceChecks deleteAllowanceChecks;
 	private final Map<Long, Account> entitiesChanged;
-	private final Set<UniqueToken> nftsTouched;
+	private final List<UniqueToken> nftsTouched;
 	private final StateView workingView;
 
 	@Inject
@@ -78,7 +76,7 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		this.deleteAllowanceChecks = deleteAllowanceChecks;
 		this.tokenStore = tokenStore;
 		this.entitiesChanged = new HashMap<>();
-		this.nftsTouched = new HashSet<>();
+		this.nftsTouched = new ArrayList<>();
 		this.workingView = workingView;
 	}
 

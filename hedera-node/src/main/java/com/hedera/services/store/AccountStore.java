@@ -161,7 +161,7 @@ public class AccountStore {
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
 		account.setApproveForAllNfts(merkleAccount.getApproveForAllNfts());
 		final var tokenAssociationMetadata = merkleAccount.getTokenAssociationMetadata();
-		account.setLastAssociatedToken(tokenAssociationMetadata.lastAssociation());
+		account.setLastAssociatedToken(tokenAssociationMetadata.latestAssociation());
 		account.setNumAssociations(tokenAssociationMetadata.numAssociations());
 		account.setNumZeroBalances(tokenAssociationMetadata.numZeroBalances());
 

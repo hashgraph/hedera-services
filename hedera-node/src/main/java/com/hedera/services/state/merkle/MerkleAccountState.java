@@ -208,7 +208,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		serializeApproveForAllNftsAllowances(out, approveForAllNfts);
 		out.writeInt(tokenAssociationMetaData.numAssociations());
 		out.writeInt(tokenAssociationMetaData.numZeroBalances());
-		out.writeLong(tokenAssociationMetaData.lastAssociation().value());
+		out.writeLong(tokenAssociationMetaData.latestAssociation().value());
 	}
 
 	/* --- Copyable --- */
@@ -313,8 +313,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("approveForAllNfts", approveForAllNfts)
 				.add("numAssociations", tokenAssociationMetaData.numAssociations())
 				.add("numZeroBalances", tokenAssociationMetaData.numZeroBalances())
-				.add("lastAssociation", tokenAssociationMetaData.lastAssociation().value()
-						+ "<->" + asRelationshipLiteral(tokenAssociationMetaData.lastAssociation().value()))
+				.add("lastAssociation", tokenAssociationMetaData.latestAssociation().value()
+						+ "<->" + asRelationshipLiteral(tokenAssociationMetaData.latestAssociation().value()))
 				.toString();
 	}
 

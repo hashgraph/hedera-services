@@ -531,6 +531,7 @@ class DeleteAllowanceChecksTest {
 		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(ownerMerkleAccount.state()).willReturn(new MerkleAccountState());
 		given(merkleUniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
+		given(merkleUniqueToken.getSpender()).willReturn(Id.MISSING_ID.asEntityId());
 
 		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
 		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);

@@ -554,6 +554,7 @@ public class SigRequirements {
 			final var owner = allowance.getOwner();
 			var delegatingEntity = allowance.hasDelegatingSpender() ?
 					allowance.getDelegatingSpender() : owner;
+			// ApproveForAll allowance grant can only be granted by the owner.
 			delegatingEntity = allowance.getApprovedForAll().getValue() ? owner : delegatingEntity;
 
 			if ((includeOwnerIfNecessary(payer, delegatingEntity, requiredKeys, linkedRefs)) != NONE) {
