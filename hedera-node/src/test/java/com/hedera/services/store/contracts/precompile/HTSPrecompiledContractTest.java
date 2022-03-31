@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -34,12 +35,14 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.Gas;
@@ -73,10 +76,12 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -126,6 +131,10 @@ class HTSPrecompiledContractTest {
 	private UsagePricesProvider resourceCosts;
 	@Mock
 	private HederaWorldState.WorldStateAccount worldStateAccount;
+	@Mock
+	private TransactionBody.Builder mockSynthBodyBuilder;
+	@Mock
+	private FeeObject mockFeeObject;
 
 	private HTSPrecompiledContract subject;
 
@@ -663,6 +672,29 @@ class HTSPrecompiledContractTest {
 		subject.prepareFields(messageFrame);
 
 		verify(messageFrame, times(1)).getSenderAddress();
+	}
+
+	@Test
+	void computeInternalThrowsExceptionForInsufficientGas() {
+		// given
+		givenFrameContext();
+		given(input.getInt(0)).willReturn(ABI_ID_MINT_TOKEN);
+		given(decoder.decodeMint(any())).willReturn(fungibleMint);
+		given(messageFrame.getRemainingGas()).willReturn(Gas.ZERO);
+		given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
+		given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class))).willReturn(mockSynthBodyBuilder);
+		given(mockFeeObject.getServiceFee()).willReturn(1L);
+
+		// when
+		subject.prepareFields(messageFrame);
+		subject.prepareComputation(input, а -> а);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+
+		// then
+		assertThrows(InvalidTransactionException.class, () -> subject.computeInternal(messageFrame));
 	}
 
 	private void givenFrameContext() {
