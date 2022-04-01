@@ -93,15 +93,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public MerkleAccount(final List<MerkleNode> children) {
-		super(ChildIndices.NUM_090_CHILDREN);
+		super(ChildIndices.NUM_0240_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
 	public MerkleAccount() {
-		addDeserializedChildren(List.of(
-				new MerkleAccountState(),
-				new FCQueue<ExpirableTxnRecord>(),
-				new MerkleAccountTokens()), MERKLE_VERSION);
+		addDeserializedChildren(List.of(new MerkleAccountState(), new FCQueue<ExpirableTxnRecord>()), MERKLE_VERSION);
 	}
 
 	/* --- MerkleInternal --- */
