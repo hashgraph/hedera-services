@@ -413,13 +413,13 @@ class HTSPrecompiledContractTest {
 	}
 
 	@Test
-	void computeRevertsTheFrameIfTheFrameIsStatic() {
+	void computeCostedRevertsTheFrameIfTheFrameIsStatic() {
 		given(messageFrame.isStatic()).willReturn(true);
 
-		var result = subject.compute(input, messageFrame);
+		final var result = subject.computeCosted(input, messageFrame);
 
 		verify(messageFrame).setRevertReason(Bytes.of("HTS precompiles are not static".getBytes()));
-		assertNull(result);
+		assertNull(result.getValue());
 	}
 
 	@Test

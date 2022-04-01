@@ -454,6 +454,10 @@ public final class MiscUtils {
 		}
 	}
 
+	public static Timestamp asSecondsTimestamp(final long now) {
+		return Timestamp.newBuilder().setSeconds(now).build();
+	}
+
 	public static Timestamp asTimestamp(final long packedTime) {
 		return Timestamp.newBuilder()
 				.setSeconds(unsignedHighOrder32From(packedTime))

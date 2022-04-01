@@ -58,6 +58,8 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
+import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculator;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -74,10 +76,8 @@ import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -117,6 +117,7 @@ import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_S
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.services.store.contracts.precompile.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
@@ -125,10 +126,12 @@ import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 @Singleton
@@ -141,11 +144,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID =
 			EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
+	private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
+			.setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
+			.build();
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
-	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
-			"Error decoding precompile input".getBytes());
+	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON =
+			Bytes.of("Error decoding precompile input".getBytes());
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -165,6 +171,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private TokenStoreFactory tokenStoreFactory = TypedTokenStore::new;
 	private HederaTokenStoreFactory hederaTokenStoreFactory = HederaTokenStore::new;
 	private AccountStoreFactory accountStoreFactory = AccountStore::new;
+	private RedirectExecutorFactory redirectExecutorFactory = RedirectViewExecutor::new;
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
 
 	private final EntityCreator creator;
@@ -206,25 +213,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected static final int ABI_ID_REDIRECT_FOR_TOKEN = 0x618dc65e;
 
 	//name()
-	protected static final int ABI_ID_NAME = 0x06fdde03;
+	public static final int ABI_ID_NAME = 0x06fdde03;
 	//symbol()
-	protected static final int ABI_ID_SYMBOL = 0x95d89b41;
+	public static final int ABI_ID_SYMBOL = 0x95d89b41;
 	//decimals()
-	protected static final int ABI_ID_DECIMALS = 0x313ce567;
+	public static final int ABI_ID_DECIMALS = 0x313ce567;
 	//totalSupply()
-	protected static final int ABI_ID_TOTAL_SUPPLY_TOKEN = 0x18160ddd;
+	public static final int ABI_ID_TOTAL_SUPPLY_TOKEN = 0x18160ddd;
 	//balanceOf(address account)
-	protected static final int ABI_ID_BALANCE_OF_TOKEN = 0x70a08231;
+	public static final int ABI_ID_BALANCE_OF_TOKEN = 0x70a08231;
 	//transfer(address recipient, uint256 amount)
-	protected static final int ABI_ID_ERC_TRANSFER = 0xa9059cbb;
+	public static final int ABI_ID_ERC_TRANSFER = 0xa9059cbb;
 	//transferFrom(address sender, address recipient, uint256 amount)
 	//transferFrom(address from, address to, uint256 tokenId)
-	protected static final int ABI_ID_ERC_TRANSFER_FROM = 0x23b872dd;
+	public static final int ABI_ID_ERC_TRANSFER_FROM = 0x23b872dd;
 
 	//ownerOf(uint256 tokenId)
-	protected static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
+	public static final int ABI_ID_OWNER_OF_NFT = 0x6352211e;
 	//tokenURI(uint256 tokenId)
-	protected static final int ABI_ID_TOKEN_URI_NFT = 0xc87b56dd;
+	public static final int ABI_ID_TOKEN_URI_NFT = 0xc87b56dd;
 
 	//Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
 	//Transfer(address indexed from, address indexed to, uint256 value)
@@ -279,58 +286,59 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.resourceCosts = resourceCosts;
 	}
 
+	public Pair<Gas, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
+		if (frame.isStatic()) {
+			if (!isTokenProxyRedirect(input)) {
+				frame.setRevertReason(STATIC_CALL_REVERT_REASON);
+				return Pair.of(defaultGas(), null);
+			} else {
+				final var proxyUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+				if (!proxyUpdater.hasMutableLedgers()) {
+					final var executor = redirectExecutorFactory.newRedirectExecutor(
+							input, frame, encoder, this::computeViewFunctionGas);
+					return executor.computeCosted();
+				}
+			}
+		}
+		final var result = compute(input, frame);
+		return Pair.of(gasRequirement, result);
+	}
+
 	@Override
 	public Gas gasRequirement(final Bytes bytes) {
 		return gasRequirement;
 	}
 
 	@Override
-	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
-		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
-
-		final var isPlausibleStaticCall = isRedirectProxy && isTokenReadOnlyTransaction;
-		if (messageFrame.isStatic() && !isPlausibleStaticCall) {
-			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
-			return null;
-		}
-
-		prepareFields(messageFrame);
-		final UnaryOperator<byte[]> aliasResolver = updater::unaliased;
-
-		prepareComputation(input, aliasResolver);
-
-		gasRequirement = Gas.of(dynamicProperties.htsDefaultGasCost());
-
+	public Bytes compute(final Bytes input, final MessageFrame frame) {
+		prepareFields(frame);
+		prepareComputation(input, updater::unaliased);
+		gasRequirement = defaultGas();
 		if (this.precompile == null || this.transactionBody == null) {
-			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
+			frame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 			return null;
 		}
 
+		final var now = frame.getBlockValues().getTimestamp();
 		if (isTokenReadOnlyTransaction) {
-			computeViewFunctionGasRequirement(messageFrame.getBlockValues().getTimestamp());
+			computeViewFunctionGasRequirement(now);
 		} else {
-			computeGasRequirement(messageFrame.getBlockValues().getTimestamp());
+			computeGasRequirement(now);
 		}
-
-		if (ledgers.areMutable()) {
-			return computeInternal(messageFrame);
-		} else {
-			return fetchInternal(messageFrame);
-		}
+		return computeInternal(frame);
 	}
 
-	void prepareFields(final MessageFrame messageFrame) {
-		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
+	void prepareFields(final MessageFrame frame) {
+		this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 		this.sideEffectsTracker = sideEffectsFactory.get();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
 
-		final var unaliasedSenderAddress = updater.unaliased(messageFrame.getSenderAddress().toArray());
+		final var unaliasedSenderAddress = updater.unaliased(frame.getSenderAddress().toArray());
 		if (unaliasedSenderAddress != null) {
 			this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
-			return;
+		} else {
+			this.senderAddress = frame.getSenderAddress();
 		}
-
-		this.senderAddress = messageFrame.getSenderAddress();
 	}
 
 	void computeGasRequirement(final long blockTimestamp) {
@@ -354,28 +362,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	void computeViewFunctionGasRequirement(final long blockTimestamp) {
-		final Timestamp timestamp = Timestamp.newBuilder().setSeconds(
-				blockTimestamp).build();
-		final var usagePrices = resourceCosts.defaultPricesGiven(HederaFunctionality.TokenGetInfo, timestamp);
-		final var transactionGetRecordQuery = TransactionGetRecordQuery.newBuilder()
-				.build();
-		final var query = Query.newBuilder().setTransactionGetRecord(transactionGetRecordQuery);
-		final var fee =
-				feeCalculator.get().estimatePayment(query.buildPartial(), usagePrices, currentView, timestamp,
-						ResponseType.ANSWER_ONLY);
+		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
+		gasRequirement =  computeViewFunctionGas(now, precompile.getMinimumFeeInTinybars(now));
+	}
 
-		final long gasPriceInTinybars = feeCalculator.get().estimatedGasPriceInTinybars(ContractCall, timestamp);
+	Gas computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
+		final var calculator = feeCalculator.get();
+		final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
+		final var fees = calculator.estimatePayment(
+				SYNTHETIC_REDIRECT_QUERY, usagePrices, currentView, now, ANSWER_ONLY);
 
-		final long calculatedFeeInTinybars = fee.getNetworkFee() + fee.getNodeFee() + fee.getServiceFee();
-
-		final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp);
-		final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
+		final long gasPriceInTinybars = calculator.estimatedGasPriceInTinybars(ContractCall, now);
+		final long calculatedFeeInTinybars = fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
+		final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
 
 		// convert to gas cost
 		final Gas baseGasCost = Gas.of((actualFeeInTinybars + gasPriceInTinybars - 1) / gasPriceInTinybars);
 
 		// charge premium
-		gasRequirement = baseGasCost.plus((baseGasCost.dividedBy(5)));
+		return baseGasCost.plus((baseGasCost.dividedBy(5)));
 	}
 
 	void prepareComputation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
@@ -399,15 +404,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case ABI_ID_DISSOCIATE_TOKENS -> new MultiDissociatePrecompile();
 					case ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile();
 					case ABI_ID_REDIRECT_FOR_TOKEN -> {
-						final var tokenAddress = input.slice(4, 20);
-						final var tokenId = EntityIdUtils.tokenIdFromEvmAddress(tokenAddress.toArray());
-						final var nestedInput = input.slice(24);
+						final var target = DescriptorUtils.getRedirectTarget(input);
+						final var tokenId = target.tokenId();
 						final var isFungibleToken = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
-
 						Precompile nestedPrecompile;
 						this.isTokenReadOnlyTransaction = true;
-						final var nestedFunctionSelector = nestedInput.getInt(0);
-
+						final var nestedFunctionSelector = target.descriptor();
 						if (ABI_ID_NAME == nestedFunctionSelector) {
 							nestedPrecompile = new NamePrecompile(tokenId);
 						} else if (ABI_ID_SYMBOL == nestedFunctionSelector) {
@@ -445,7 +447,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = null;
 						}
-
 						yield nestedPrecompile;
 					}
 					default -> null;
@@ -517,21 +518,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			throw new InvalidTransactionException("HTS precompile frame had no parent updater", FAIL_INVALID);
 		}
 
-		return result;
-	}
-
-	protected Bytes fetchInternal(final MessageFrame frame) {
-		Bytes result;
-		try {
-			precompile.run(frame);
-			result = precompile.getSuccessResultFor(null);
-		} catch (final InvalidTransactionException e) {
-			final var status = e.getResponseCode();
-			result = precompile.getFailureResultFor(status);
-		} catch (final Exception e) {
-			log.warn("Internal precompile failure", e);
-			result = precompile.getFailureResultFor(FAIL_INVALID);
-		}
 		return result;
 	}
 
@@ -631,6 +617,15 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger,
 				TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger,
 				BackingStore<TokenID, MerkleToken> backingTokens);
+	}
+
+	@FunctionalInterface
+	interface RedirectExecutorFactory {
+		RedirectViewExecutor newRedirectExecutor(
+				Bytes input,
+				MessageFrame frame,
+				EncodingFacade encoder,
+				RedirectGasCalculator gasCalculator);
 	}
 
 	private abstract class AbstractAssociatePrecompile implements Precompile {
@@ -1158,6 +1153,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final var decimals = ledgers.decimalsOf(tokenId);
+			System.out.println("(SINGLETON) Returning: " + decimals);
 			return encoder.encodeDecimals(decimals);
 		}
 	}
@@ -1359,6 +1355,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return !contract.equals(recipient);
 	}
 
+	private Gas defaultGas() {
+		return Gas.of(dynamicProperties.htsDefaultGasCost());
+	}
+
 	private long gasFeeInTinybars(final TransactionBody.Builder txBody, final Instant consensusTime) {
 		final var signedTxn = SignedTransaction.newBuilder()
 				.setBodyBytes(txBody.build().toByteString())
@@ -1409,6 +1409,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	void setAssociateLogicFactory(final AssociateLogicFactory associateLogicFactory) {
 		this.associateLogicFactory = associateLogicFactory;
+	}
+
+	void setRedirectExecutorFactory(final HTSPrecompiledContract.RedirectExecutorFactory redirectExecutorFactory) {
+		this.redirectExecutorFactory = redirectExecutorFactory;
 	}
 
 	public Precompile getPrecompile() {

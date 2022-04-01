@@ -236,7 +236,6 @@ class ERC20PrecompilesTest {
     void invalidNestedFunctionSelector () {
         givenMinimalFrameContextWithoutParentUpdater();
 
-        given(frame.isStatic()).willReturn(true);
         given(nestedPretendArguments.getInt(0)).willReturn(0);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
