@@ -85,16 +85,6 @@ class MigrationRecordsManagerTest {
 	}
 
 	@Test
-	void doesntStreamRewardAccountCreationIfNotGenesis() {
-		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(Instant.MAX);
-
-		subject.publishMigrationRecords(now);
-
-		verifyNoInteractions(sigImpactHistorian);
-		verifyNoInteractions(recordsHistorian);
-	}
-
-	@Test
 	void ifContextIndicatesRecordsNeedToBeStreamedThenDoesSo() {
 		final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
 		final var synthBody = expectedSyntheticCreate();
