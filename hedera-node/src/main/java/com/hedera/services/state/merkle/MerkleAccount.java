@@ -93,15 +93,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public MerkleAccount(final List<MerkleNode> children) {
-		super(ChildIndices.NUM_090_CHILDREN);
+		super(ChildIndices.NUM_0240_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
 	public MerkleAccount() {
-		addDeserializedChildren(List.of(
-				new MerkleAccountState(),
-				new FCQueue<ExpirableTxnRecord>(),
-				new MerkleAccountTokens()), MERKLE_VERSION);
+		addDeserializedChildren(List.of(new MerkleAccountState(), new FCQueue<ExpirableTxnRecord>()), MERKLE_VERSION);
 	}
 
 	/* --- MerkleInternal --- */
@@ -150,8 +147,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 			return false;
 		}
 		final var that = (MerkleAccount) o;
-		return this.state().equals(that.state()) &&
-				this.records().equals(that.records());
+		return this.state().equals(that.state()) && this.records().equals(that.records());
 	}
 
 	@Override
@@ -174,11 +170,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public FCQueue<ExpirableTxnRecord> records() {
 		return getChild(ChildIndices.RELEASE_090_RECORDS);
-	}
-
-	public void setRecords(final FCQueue<ExpirableTxnRecord> payerRecords) {
-		throwIfImmutable("Cannot change this account's transaction records if it's immutable.");
-		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
 	}
 
 	public MerkleAccountTokens tokens() {

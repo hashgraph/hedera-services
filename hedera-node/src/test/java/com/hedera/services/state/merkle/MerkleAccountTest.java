@@ -145,12 +145,23 @@ class MerkleAccountTest {
 	}
 
 	@Test
+	void equalsIncorporatesRecords() {
+		final var otherRecords = mock(FCQueue.class);
+
+		final var otherSubject = new MerkleAccount(List.of(state, otherRecords, tokens));
+
+		assertNotEquals(otherSubject, subject);
+	}
+
+	@Test
 	void forgetsTokensChildAsExpected() {
 		assertNotNull(subject.tokens());
 
 		subject.forgetAssociatedTokens();
 
 		assertNull(subject.tokens());
+		assertEquals(2, subject.getNumberOfChildren());
+		assertEquals(2, subject.copy().getNumberOfChildren());
 	}
 
 	@Test
@@ -292,7 +303,7 @@ class MerkleAccountTest {
 	}
 
 	@Test
-	void objectContractMet() {
+	void copyStillWorksWithPre0250() {
 		final var one = new MerkleAccount();
 		final var two = new MerkleAccount(List.of(state, payerRecords, tokens));
 		final var three = two.copy();
@@ -305,6 +316,16 @@ class MerkleAccountTest {
 		assertEquals(two, three);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
+		assertEquals(two.hashCode(), three.hashCode());
+	}
+
+	@Test
+	void copyWorksWith0250() {
+		final var two = new MerkleAccount(List.of(state, payerRecords));
+		final var three = two.copy();
+
+		verify(payerRecords).copy();
+		assertEquals(two, three);
 		assertEquals(two.hashCode(), three.hashCode());
 	}
 
