@@ -24,6 +24,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -135,13 +136,14 @@ public class AccountStore {
 	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode,
 			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
 		final var merkleAccount = accounts.getImmutableRef(id.asGrpcAccount());
-
 		validateUsable(merkleAccount, explicitResponseCode, nonExistingCode, deletedCode);
+		return loadMerkleAccount(merkleAccount, id);
+	}
 
+	private Account loadMerkleAccount(final MerkleAccount merkleAccount, final Id id) {
 		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
-		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
 		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
@@ -157,7 +159,11 @@ public class AccountStore {
 		account.setAlias(merkleAccount.getAlias());
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
-		account.setNftAllowances(merkleAccount.getNftAllowances());
+		account.setApproveForAllNfts(merkleAccount.getApproveForAllNfts());
+		final var tokenAssociationMetadata = merkleAccount.getTokenAssociationMetadata();
+		account.setLastAssociatedToken(tokenAssociationMetadata.latestAssociation());
+		account.setNumAssociations(tokenAssociationMetadata.numAssociations());
+		account.setNumZeroBalances(tokenAssociationMetadata.numZeroBalances());
 
 		return account;
 	}
@@ -173,7 +179,6 @@ public class AccountStore {
 		final var grpcId = id.asGrpcAccount();
 		final var mutableAccount = accounts.getRef(grpcId);
 		mapModelToMutable(account, mutableAccount);
-		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 		accounts.put(grpcId, mutableAccount);
 	}
 
@@ -193,7 +198,10 @@ public class AccountStore {
 		mutableAccount.setSmartContract(model.isSmartContract());
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
-		mutableAccount.setNftAllowances(model.getMutableNftAllowances());
+		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNftsAllowances());
+		final var tokenAssociationMetadata = new TokenAssociationMetadata(
+				model.getNumAssociations(), model.getNumZeroBalances(), model.getLastAssociatedToken());
+		mutableAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,

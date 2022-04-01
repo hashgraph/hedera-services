@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,27 +46,25 @@ public class CryptoContextUtils {
 		return allowanceMap;
 	}
 
-	public static Map<ExtantCryptoContext.AllowanceMapKey, Long> convertToTokenMapFromGranted(
+	public static Map<AllowanceId, Long> convertToTokenMapFromGranted(
 			final List<GrantedTokenAllowance> allowances) {
-		Map<ExtantCryptoContext.AllowanceMapKey, Long> allowanceMap = new HashMap<>();
+		Map<AllowanceId, Long> allowanceMap = new HashMap<>();
 		for (var a : allowances) {
-			allowanceMap.put(new ExtantCryptoContext.AllowanceMapKey(a.getTokenId().getTokenNum(),
+			allowanceMap.put(new AllowanceId(a.getTokenId().getTokenNum(),
 					a.getSpender().getAccountNum()), a.getAmount());
 		}
 		return allowanceMap;
 	}
 
-	public static Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> convertToNftMapFromGranted(
+	public static Set<AllowanceId> convertToNftMapFromGranted(
 			final List<GrantedNftAllowance> allowances) {
-		Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> allowanceMap =
-				new HashMap<>();
+		Set<AllowanceId> approveForAllAllowances =
+				new HashSet<>();
 		for (var a : allowances) {
-			allowanceMap.put(new ExtantCryptoContext.AllowanceMapKey(a.getTokenId().getTokenNum(),
-							a.getSpender().getAccountNum()),
-					new ExtantCryptoContext.AllowanceMapValue(a.getApprovedForAll(),
-							a.getSerialNumbersList()));
+			approveForAllAllowances.add(new AllowanceId(a.getTokenId().getTokenNum(),
+							a.getSpender().getAccountNum()));
 		}
-		return allowanceMap;
+		return approveForAllAllowances;
 	}
 
 	public static Map<Long, Long> convertToCryptoMap(final List<CryptoAllowance> allowances) {
@@ -76,24 +75,24 @@ public class CryptoContextUtils {
 		return allowanceMap;
 	}
 
-	public static Map<ExtantCryptoContext.AllowanceMapKey, Long> convertToTokenMap(
+	public static Map<AllowanceId, Long> convertToTokenMap(
 			final List<TokenAllowance> allowances) {
-		Map<ExtantCryptoContext.AllowanceMapKey, Long> allowanceMap = new HashMap<>();
+		Map<AllowanceId, Long> allowanceMap = new HashMap<>();
 		for (var a : allowances) {
-			allowanceMap.put(new ExtantCryptoContext.AllowanceMapKey(a.getTokenId().getTokenNum(),
+			allowanceMap.put(new AllowanceId(a.getTokenId().getTokenNum(),
 					a.getSpender().getAccountNum()), a.getAmount());
 		}
 		return allowanceMap;
 	}
 
-	public static Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> convertToNftMap(
+	public static Map<AllowanceId, AllowanceDetails> convertToNftMap(
 			final List<NftAllowance> allowances) {
-		Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> allowanceMap =
+		Map<AllowanceId, AllowanceDetails> allowanceMap =
 				new HashMap<>();
 		for (var a : allowances) {
-			allowanceMap.put(new ExtantCryptoContext.AllowanceMapKey(a.getTokenId().getTokenNum(),
+			allowanceMap.put(new AllowanceId(a.getTokenId().getTokenNum(),
 							a.getSpender().getAccountNum()),
-					new ExtantCryptoContext.AllowanceMapValue(a.getApprovedForAll().getValue(),
+					new AllowanceDetails(a.getApprovedForAll().getValue(),
 							a.getSerialNumbersList()));
 		}
 		return allowanceMap;
@@ -108,24 +107,10 @@ public class CryptoContextUtils {
 	}
 
 	static int getNewSerials(
-			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> newAllowances,
-			final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> existingAllowances) {
+			final Map<AllowanceId, AllowanceDetails> newAllowances) {
 		int counter = 0;
 		for (var a : newAllowances.entrySet()) {
-			final var isApprovedForAll = a.getValue().approvedForAll().booleanValue();
-			if (existingAllowances.containsKey(a.getKey()) && !isApprovedForAll) {
-				var existingSerials = existingAllowances.get(a.getKey()).serialNums();
-				var newSerials = a.getValue().serialNums();
-				for (var s : newSerials) {
-					if (!existingSerials.contains(s) && s > 0) {
-						counter++;
-					}
-				}
-			} else {
-				if (!isApprovedForAll) {
-					counter += a.getValue().serialNums().size();
-				}
-			}
+			counter += a.getValue().serialNums().size();
 		}
 		return counter;
 	}
@@ -141,8 +126,8 @@ public class CryptoContextUtils {
 		return counter;
 	}
 
-	static int getChangedTokenKeys(final Set<ExtantCryptoContext.AllowanceMapKey> newKeys,
-			final Set<ExtantCryptoContext.AllowanceMapKey> existingKeys) {
+	static int getChangedTokenKeys(final Set<AllowanceId> newKeys,
+			final Set<AllowanceId> existingKeys) {
 		int counter = 0;
 		for (var key : newKeys) {
 			if (!existingKeys.contains(key)) {

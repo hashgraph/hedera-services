@@ -44,6 +44,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
@@ -71,6 +72,7 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -79,6 +81,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -388,6 +391,8 @@ class ERC20PrecompilesTest {
                 .willReturn(1L);
         given(encoder.encodeName(any())).willReturn(successResult);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
+
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -399,6 +404,11 @@ class ERC20PrecompilesTest {
         // and:
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        ArgumentCaptor<EvmFnResult> captor = ArgumentCaptor.forClass(EvmFnResult.class);
+        verify(mockRecordBuilder).setContractCallResult(captor.capture());
+        assertEquals(0L, captor.getValue().getGas());
+        assertEquals(0L, captor.getValue().getAmount());
+        assertEquals(EvmFnResult.EMPTY, captor.getValue().getFunctionParameters());
     }
 
     @Test
@@ -867,6 +877,7 @@ class ERC20PrecompilesTest {
     private void givenMinimalFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(Gas.of(300));
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);

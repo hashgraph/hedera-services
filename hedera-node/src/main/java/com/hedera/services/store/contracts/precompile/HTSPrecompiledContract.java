@@ -145,6 +145,7 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -326,7 +327,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
- 		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
+		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
 
 		if (messageFrame.isStatic() && !isRedirectProxy) {
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
@@ -340,7 +341,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 		gasRequirement = Gas.of(dynamicProperties.htsDefaultGasCost());
 
-		if (this.precompile == null) {
+		if (this.precompile == null || this.transactionBody == null) {
 			messageFrame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
 			return null;
 		}
@@ -532,7 +533,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			this.transactionBody = this.precompile.body(input, aliasResolver);
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
-			throw new InvalidTransactionException("Cannot decode precompile input", FAIL_INVALID);
+			transactionBody = null;
 		}
 	}
 
@@ -541,6 +542,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		Bytes result;
 		ExpirableTxnRecord.Builder childRecord;
 		try {
+			validateTrue(frame.getRemainingGas().compareTo(gasRequirement) >= 0, INSUFFICIENT_GAS);
+
 			precompile.run(frame);
 			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
 			// synthetic record, as the ledger interceptors will populate the sideEffectsTracker
@@ -550,17 +553,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
 
 			result = precompile.getSuccessResultFor(childRecord);
-			addContractCallResultToRecord(childRecord, result, Optional.empty());
+			addContractCallResultToRecord(childRecord, result, Optional.empty(), frame);
 		} catch (InvalidTransactionException e) {
 			final var status = e.getResponseCode();
 			childRecord = creator.createUnsuccessfulSyntheticRecord(status);
 			result = precompile.getFailureResultFor(status);
-			addContractCallResultToRecord(childRecord, result, Optional.of(status));
+			addContractCallResultToRecord(childRecord, result, Optional.of(status), frame);
 		} catch (Exception e) {
 			log.warn("Internal precompile failure", e);
 			childRecord = creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID);
 			result = precompile.getFailureResultFor(FAIL_INVALID);
-			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID));
+			addContractCallResultToRecord(childRecord, result, Optional.of(FAIL_INVALID), frame);
 		}
 
 		/*-- The updater here should always have a parent updater --*/
@@ -578,7 +581,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private void addContractCallResultToRecord(
 			final ExpirableTxnRecord.Builder childRecord,
 			final Bytes result,
-			final Optional<ResponseCodeEnum> errorStatus
+			final Optional<ResponseCodeEnum> errorStatus,
+			final MessageFrame messageFrame
 	) {
 		if (dynamicProperties.shouldExportPrecompileResults()) {
 			final var evmFnResult = new EvmFnResult(
@@ -590,7 +594,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					Collections.emptyList(),
 					Collections.emptyList(),
 					EvmFnResult.EMPTY,
-					Collections.emptyMap());
+					Collections.emptyMap(),
+					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getRemainingGas().toLong() : 0L,
+					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getValue().toLong() : 0L,
+					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getInputData().toArrayUnsafe() :
+							EvmFnResult.EMPTY);
 			childRecord.setContractCallResult(evmFnResult);
 		}
 	}
@@ -609,9 +617,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@FunctionalInterface
 	interface AssociateLogicFactory {
 		AssociateLogic newAssociateLogic(
-				TypedTokenStore tokenStore,
-				AccountStore accountStore,
-				GlobalDynamicProperties dynamicProperties);
+				final TypedTokenStore tokenStore,
+				final AccountStore accountStore);
 	}
 
 	@FunctionalInterface
@@ -700,6 +707,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		default List<FcAssessedCustomFee> getCustomFees() {
 			return NO_CUSTOM_FEES;
 		}
+
+		default boolean shouldAddTraceabilityFieldsToRecord() {
+			return true;
+		}
 	}
 
 	private abstract class AbstractAssociatePrecompile implements Precompile {
@@ -719,8 +730,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tokenStore = createTokenStore(accountStore, sideEffectsTracker);
 
 			/* --- Execute the transaction and capture its results --- */
-			final var associateLogic = associateLogicFactory.newAssociateLogic(
-					tokenStore, accountStore, dynamicProperties);
+			final var associateLogic = associateLogicFactory.newAssociateLogic(tokenStore, accountStore);
 			associateLogic.associate(accountId, associateOp.tokenIds());
 		}
 
@@ -1123,6 +1133,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			return 100;
+		}
+
+		@Override
+		public boolean shouldAddTraceabilityFieldsToRecord() {
+			return false;
 		}
 	}
 
@@ -1633,12 +1648,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 * (as needed for e.g. the {@link TransferLogic} implementation), we can assume the target address
 	 * is a mirror address. All other addresses we resolve to their mirror form before proceeding.
 	 *
-	 * @param frame
-	 * 		current frame
-	 * @param target
-	 * 		the element to test for key activation, in standard form
-	 * @param activationTest
-	 * 		the function which should be invoked for key validation
+	 * @param frame          current frame
+	 * @param target         the element to test for key activation, in standard form
+	 * @param activationTest the function which should be invoked for key validation
 	 * @return whether the implied key is active
 	 */
 	private boolean validateKey(
@@ -1682,14 +1694,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		 * <p>
 		 * Note the target address might not imply an account key, but e.g. a token supply key.
 		 *
-		 * @param isDelegateCall
-		 * 		a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
-		 * @param target
-		 * 		an address with an implicit key understood by this implementation
-		 * @param activeContract
-		 * 		the contract address that can activate a contract or delegatable contract key
-		 * @param worldLedgers
-		 * 		the worldLedgers representing current state
+		 * @param isDelegateCall a flag showing if the message represented by the active frame is invoked via {@code delegatecall}
+		 * @param target         an address with an implicit key understood by this implementation
+		 * @param activeContract the contract address that can activate a contract or delegatable contract key
+		 * @param worldLedgers   the worldLedgers representing current state
 		 * @return whether the implicit key has an active signature in this context
 		 */
 		boolean apply(

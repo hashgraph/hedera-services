@@ -27,9 +27,10 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.AfterEach;
@@ -39,12 +40,15 @@ import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -76,18 +80,23 @@ class MerkleAccountTest {
 	private static final long otherExpiry = 7_234_567L;
 	private static final long otherBalance = 666_666L;
 	private static final long otherAutoRenewSecs = 432_765L;
+	private static final EntityNumPair lastAssociationKey =  EntityNumPair.fromLongs(123, 456);
 	private static final String otherMemo = "Another memo";
 	private static final boolean otherDeleted = false;
 	private static final boolean otherSmartContract = false;
 	private static final boolean otherReceiverSigRequired = false;
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
+	private static final FcTokenAllowanceId tokenAllowanceKey =
+			FcTokenAllowanceId.from( EntityNum.fromLong(2000L),  EntityNum.fromLong(1000L));
+	private static final TokenAssociationMetadata tokenAssociationMetaData = new TokenAssociationMetadata(
+			0, 0, lastAssociationKey);
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
 	private MerkleAccountTokens tokens;
 	private TreeMap<EntityNum, Long> cryptoAllowances;
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
+	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
 
 	private MerkleAccountState delegate;
 
@@ -105,8 +114,9 @@ class MerkleAccountTest {
 		given(tokens.copy()).willReturn(tokens);
 
 		cryptoAllowances = mock(TreeMap.class);
-		nftAllowances = mock(TreeMap.class);
 		fungibleTokenAllowances = mock(TreeMap.class);
+		approveForAllNfts = new TreeSet<>();
+		approveForAllNfts.add(tokenAllowanceKey);
 
 		delegate = mock(MerkleAccountState.class);
 
@@ -122,7 +132,8 @@ class MerkleAccountTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
+		state.setTokenAssociationMetadata(tokenAssociationMetaData);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);
@@ -131,6 +142,15 @@ class MerkleAccountTest {
 	@AfterEach
 	void cleanup() {
 		MerkleAccount.serdes = new DomainSerdes();
+	}
+
+	@Test
+	void forgetsTokensChildAsExpected() {
+		assertNotNull(subject.tokens());
+
+		subject.forgetAssociatedTokens();
+
+		assertNull(subject.tokens());
 	}
 
 	@Test
@@ -165,7 +185,7 @@ class MerkleAccountTest {
 	@Test
 	void merkleMethodsWork() {
 		assertEquals(
-				MerkleAccount.ChildIndices.NUM_090_CHILDREN,
+				MerkleAccount.ChildIndices.NUM_0240_CHILDREN,
 				subject.getMinimumChildCount(MerkleAccount.MERKLE_VERSION));
 		assertEquals(MerkleAccount.MERKLE_VERSION, subject.getVersion());
 		assertEquals(MerkleAccount.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
@@ -206,7 +226,8 @@ class MerkleAccountTest {
 		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
 		assertEquals(state.getCryptoAllowances().entrySet(), subject.getCryptoAllowances().entrySet());
 		assertEquals(state.getFungibleTokenAllowances().entrySet(), subject.getFungibleTokenAllowances().entrySet());
-		assertEquals(state.getNftAllowances().entrySet(), subject.getNftAllowances().entrySet());
+		assertEquals(state.getApproveForAllNfts(), subject.getApproveForAllNfts());
+		assertEquals(state.getTokenAssociationMetadata(), subject.getTokenAssociationMetadata());
 	}
 
 	@Test
@@ -241,7 +262,8 @@ class MerkleAccountTest {
 		subject.setNumContractKvPairs(kvPairs);
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
-		subject.setNftAllowances(nftAllowances);
+		subject.setApproveForAllNfts(approveForAllNfts);
+		subject.setTokenAssociationMetadata(tokenAssociationMetaData);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -260,7 +282,8 @@ class MerkleAccountTest {
 		verify(delegate).setAlias(alias);
 		verify(delegate).setCryptoAllowances(cryptoAllowances);
 		verify(delegate).setFungibleTokenAllowances(fungibleTokenAllowances);
-		verify(delegate).setNftAllowances(nftAllowances);
+		verify(delegate).setApproveForAllNfts(approveForAllNfts);
+		verify(delegate).setTokenAssociationMetadata(tokenAssociationMetaData);
 	}
 
 	@Test

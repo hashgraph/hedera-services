@@ -426,7 +426,9 @@ public class DomainSerdesTest {
 						.setErrorMessage("Couldn't figure it out immediately!")
 						.setGasUsed(55L)
 						.addLogInfo(ContractLoginfo.newBuilder()
-								.setData(ByteString.copyFrom("Nonsensical!".getBytes()))).build()))
+								.setData(ByteString.copyFrom("Nonsensical!".getBytes())))
+						.setGas(1_000_000L)
+						.setFunctionParameters(ByteString.copyFrom("Sensible!".getBytes())).build()))
 				.build();
 	}
 }

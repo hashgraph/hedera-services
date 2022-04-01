@@ -231,7 +231,13 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 			final var synthTxn = synthFrom(inProgress.syntheticBody(), child);
 			final var synthHash = noThrowSha384HashOf(synthTxn.getSignedTransactionBytes().toByteArray());
 			child.setTxnHash(synthHash);
-			recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime));
+			if (sigNum > 0) {
+				recordObjs.add(new RecordStreamObject(child.build(), synthTxn, childConsTime));
+			} else {
+				// With multiple preceding child records, we add them to the stream in reverse order of
+				// creation so that their consensus timestamps will appear in chronological order
+				recordObjs.add(0, new RecordStreamObject(child.build(), synthTxn, childConsTime));
+			}
 		}
 	}
 

@@ -250,7 +250,7 @@ public final class BootstrapProperties implements PropertySource {
 			"scheduling.whitelist",
 			"scheduling.triggerTxn.windBackNanos",
 			"sigs.expandFromLastSignedState",
-			"tokens.maxPerAccount",
+			"tokens.maxRelsPerInfoQuery",
 			"tokens.maxSymbolUtf8Bytes",
 			"tokens.maxTokenNameUtf8Bytes",
 			"tokens.maxCustomFeesAllowed",
@@ -267,7 +267,8 @@ public final class BootstrapProperties implements PropertySource {
 			"consensus.message.maxBytesAllowed",
 			"upgrade.artifacts.path",
 			"hedera.allowances.maxTransactionLimit",
-			"hedera.allowances.maxAccountLimit"
+			"hedera.allowances.maxAccountLimit",
+			"hedera.allowances.isEnabled"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -400,7 +401,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("netty.prod.maxConnectionIdle", AS_LONG),
 			entry("netty.prod.keepAliveTime", AS_LONG),
 			entry("netty.prod.keepAliveTimeout", AS_LONG),
-			entry("tokens.maxPerAccount", AS_INT),
+			entry("tokens.maxRelsPerInfoQuery", AS_INT),
 			entry("tokens.maxCustomFeesAllowed", AS_INT),
 			entry("tokens.maxCustomFeeDepth", AS_INT),
 			entry("tokens.maxSymbolUtf8Bytes", AS_INT),
@@ -440,6 +441,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
 			entry("stats.executionTimesToTrack", AS_INT),
 			entry("hedera.allowances.maxTransactionLimit", AS_INT),
-			entry("hedera.allowances.maxAccountLimit", AS_INT)
+			entry("hedera.allowances.maxAccountLimit", AS_INT),
+			entry("hedera.allowances.isEnabled", AS_BOOLEAN)
 	);
 }
