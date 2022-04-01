@@ -112,6 +112,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -502,6 +503,21 @@ class HederaTokenStoreTest {
 
 		assertEquals(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT, status);
 	}
+
+	@Test
+	void cannotAutoAssociateIfAccountReachedTokenAssociationLimit() {
+		given(tokenRelsLedger.contains(Pair.of(sponsor, misc))).willReturn(false);
+		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
+		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
+		given(properties.areTokenAssociationsLimited()).willReturn(true);
+		given(properties.maxTokensPerAccount()).willReturn(associatedTokensCount);
+
+
+		final var status = subject.autoAssociate(sponsor, misc);
+
+		assertEquals(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED, status);
+	}
+
 	@Test
 	void autoAssociatingHappyPathWorksOnEmptyExistingAssociations() {
 		final var key = asTokenRel(sponsor, misc);
@@ -541,6 +557,8 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
 		given(tokenRelsLedger.get(sponsorNft, NEXT_KEY)).willReturn(MISSING_NUM_PAIR);
+		given(properties.areTokenAssociationsLimited()).willReturn(true);
+		given(properties.maxTokensPerAccount()).willReturn(associatedTokensCount+1);
 
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);

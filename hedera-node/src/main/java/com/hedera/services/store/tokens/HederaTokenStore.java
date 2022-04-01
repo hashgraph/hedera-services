@@ -102,6 +102,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
@@ -226,6 +227,13 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			if (tokenRelsLedger.contains(Pair.of(aId, tId))) {
 				return TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 			}
+			final var tokenAssociationMetadata =
+					(TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
+
+			if (properties.areTokenAssociationsLimited() &&
+					tokenAssociationMetadata.numAssociations() == properties.maxTokensPerAccount()) {
+				return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+			}
 
 			var validity = OK;
 			var maxAutomaticAssociations = (int) accountsLedger.get(aId, MAX_AUTOMATIC_ASSOCIATIONS);
@@ -237,9 +245,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			if (validity == OK) {
-				final var tokenAssociationMetadata =
-						(TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
-
 				final var lastAssociation = tokenAssociationMetadata.latestAssociation();
 				var numAssociations = tokenAssociationMetadata.numAssociations();
 				var numZeroBalances = tokenAssociationMetadata.numZeroBalances();

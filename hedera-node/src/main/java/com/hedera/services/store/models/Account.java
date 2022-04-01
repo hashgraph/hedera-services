@@ -22,6 +22,7 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.TypedTokenStore;
@@ -54,6 +55,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAuto
 import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 /**
@@ -200,14 +202,22 @@ public class Account {
 	 * 		boolean flag to denote if its an automaticAssociation.
 	 * @param shouldEnableRelationship
 	 * 		boolean flag to denote if the new relationships have to enabled by default without considering the KYC key and Freeze Key
+	 * @param dynamicProperties
+	 * 		GlobalDynamicProperties to fetch the token associations limit and enforce it.
 	 * @return A list of TokenRelationships [new and old] that are touched by associating the tokens to this account.
 	 */
 	public List<TokenRelationship> associateWith(
 			final List<Token> tokens,
 			final TypedTokenStore tokenStore,
 			final boolean isAutomaticAssociation,
-			final boolean shouldEnableRelationship) {
+			final boolean shouldEnableRelationship,
+			final GlobalDynamicProperties dynamicProperties) {
 		List<TokenRelationship> tokenRelationshipsToPersist = new ArrayList<>();
+
+		final var proposedTotalAssociations = tokens.size() + numAssociations;
+		validateFalse(exceedsTokenAssociationLimit(dynamicProperties, proposedTotalAssociations),
+				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
 		var currKey = lastAssociatedToken;
 		TokenRelationship prevRel = currKey.equals(MISSING_NUM_PAIR) ?
 				null : tokenStore.getLatestTokenRelationship(this);
@@ -346,6 +356,11 @@ public class Account {
 
 	private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
 		return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
+	}
+
+	private boolean exceedsTokenAssociationLimit(GlobalDynamicProperties dynamicProperties, int totalAssociations) {
+		return dynamicProperties.areTokenAssociationsLimited() &&
+				totalAssociations > dynamicProperties.maxTokensPerAccount();
 	}
 
 	/* NOTE: The object methods below are only overridden to improve

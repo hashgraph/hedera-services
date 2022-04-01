@@ -171,7 +171,7 @@ class AccountStoreTest {
 		final var model = subject.loadAccount(miscId);
 
 		// when:
-		model.associateWith(List.of(aThirdToken), tokenStore, false, false);
+		model.associateWith(List.of(aThirdToken), tokenStore, false, false, dynamicProperties);
 		// and:
 		subject.commitAccount(model);
 

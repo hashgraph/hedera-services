@@ -21,6 +21,7 @@ package com.hedera.services.store.models;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.token.process.Dissociation;
@@ -40,6 +41,7 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutom
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -80,6 +82,7 @@ class AccountTest {
 	private Account subject;
 	private OptionValidator validator;
 	private TypedTokenStore tokenStore;
+	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	void setUp() {
@@ -104,6 +107,7 @@ class AccountTest {
 
 		validator = mock(ContextOptionValidator.class);
 		tokenStore = mock(TypedTokenStore.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
 	}
 
 	@Test
@@ -364,8 +368,22 @@ class AccountTest {
 
 		// expect:
 		assertFailsWith(
-				() -> subject.associateWith(List.of(alreadyAssocToken), tokenStore, false, false),
+				() -> subject.associateWith(List.of(alreadyAssocToken), tokenStore, false, false, dynamicProperties),
 				TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+	}
+
+	@Test
+	void failsOnCrossingAssociationLimit() {
+		// setup:
+		final var alreadyAssocToken = new Token(new Id(0, 0, 666));
+		given(tokenStore.hasAssociation(alreadyAssocToken, subject)).willReturn(false);
+		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(numAssociations);
+
+		// expect:
+		assertFailsWith(
+				() -> subject.associateWith(List.of(alreadyAssocToken), tokenStore, false, false, dynamicProperties),
+				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 	}
 
 	@Test
@@ -374,9 +392,11 @@ class AccountTest {
 		final var firstNewToken = new Token(new Id(0, 0, 888));
 		final var secondNewToken = new Token(new Id(0, 0, 999));
 		subject.setAutoAssociationMetadata(autoAssociationMetadata);
+		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(numAssociations+2);
 
 		// when:
-		subject.associateWith(List.of(firstNewToken, secondNewToken), tokenStore, true, true);
+		subject.associateWith(List.of(firstNewToken, secondNewToken), tokenStore, true, true, dynamicProperties);
 
 		// expect:
 		assertEquals(numAssociations + 2, subject.getNumAssociations());
@@ -445,7 +465,7 @@ class AccountTest {
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);
 
 		assertFailsWith(
-				() -> subject.associateWith(List.of(firstNewToken), tokenStore, true, true),
+				() -> subject.associateWith(List.of(firstNewToken), tokenStore, true, true, dynamicProperties),
 				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 	}
 
@@ -455,7 +475,7 @@ class AccountTest {
 		subject.setMaxAutomaticAssociations(maxAutoAssociations);
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations - 1);
 
-		subject.associateWith(List.of(firstNewToken), tokenStore, true, false);
+		subject.associateWith(List.of(firstNewToken), tokenStore, true, false, dynamicProperties);
 
 		assertEquals(maxAutoAssociations, subject.getAlreadyUsedAutomaticAssociations());
 	}

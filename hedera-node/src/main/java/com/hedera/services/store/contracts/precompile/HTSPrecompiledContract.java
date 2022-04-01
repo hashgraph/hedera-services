@@ -575,7 +575,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	interface AssociateLogicFactory {
 		AssociateLogic newAssociateLogic(
 				final TypedTokenStore tokenStore,
-				final AccountStore accountStore);
+				final AccountStore accountStore,
+				final GlobalDynamicProperties dynamicProperties);
 	}
 
 	@FunctionalInterface
@@ -679,7 +680,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tokenStore = createTokenStore(accountStore, sideEffectsTracker);
 
 			/* --- Execute the transaction and capture its results --- */
-			final var associateLogic = associateLogicFactory.newAssociateLogic(tokenStore, accountStore);
+			final var associateLogic = associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties);
 			associateLogic.associate(accountId, associateOp.tokenIds());
 		}
 

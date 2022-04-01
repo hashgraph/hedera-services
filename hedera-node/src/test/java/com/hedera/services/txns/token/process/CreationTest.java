@@ -176,7 +176,7 @@ class CreationTest {
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
 		given(treasury.getLastAssociatedToken()).willReturn(EntityNumPair.MISSING_NUM_PAIR);
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
-		given(listing.listFrom(provisionalToken, tokenStore)).willReturn(List.of(newRel));
+		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
 		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
 		subject.setProvisionalId(provisionalId);
@@ -198,7 +198,7 @@ class CreationTest {
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
 		given(treasury.getLastAssociatedToken()).willReturn(new EntityNumPair(12345));
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
-		given(listing.listFrom(provisionalToken, tokenStore)).willReturn(List.of(oldRel, newRel));
+		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(oldRel, newRel));
 		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
 		subject.setProvisionalId(provisionalId);
@@ -220,7 +220,7 @@ class CreationTest {
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
 		given(treasury.getLastAssociatedToken()).willReturn(new EntityNumPair(12345));
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
-		given(listing.listFrom(provisionalToken, tokenStore)).willReturn(List.of(newRel));
+		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
 
 		subject.setProvisionalId(provisionalId);
 		subject.setProvisionalToken(provisionalToken);
