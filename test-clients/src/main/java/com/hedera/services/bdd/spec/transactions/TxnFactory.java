@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
@@ -374,6 +375,11 @@ public class TxnFactory {
 	}
 
 	public Consumer<CryptoAdjustAllowanceTransactionBody.Builder> defaultDef_CryptoAdjustAllowanceTransactionBody() {
+		return builder -> {
+		};
+	}
+
+	public Consumer<CryptoDeleteAllowanceTransactionBody.Builder> defaultDef_CryptoDeleteAllowanceTransactionBody() {
 		return builder -> {
 		};
 	}

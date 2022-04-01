@@ -56,6 +56,7 @@ class MerkleUniqueTokenTest {
 
 	private final long numbers = BitPackUtils.packedNums(123, 456);
 	private EntityId owner;
+	private EntityId spender;
 	private EntityId otherOwner;
 	private byte[] metadata;
 	private byte[] otherMetadata;
@@ -68,6 +69,7 @@ class MerkleUniqueTokenTest {
 	void setup() {
 		owner = new EntityId(0, 0, 3);
 		otherOwner = new EntityId(0, 0, 4);
+		spender = new EntityId(0, 0, 5);
 		metadata = "Test NFT".getBytes();
 		otherMetadata = "Test NFT2".getBytes();
 		timestamp = RichInstant.fromJava(Instant.ofEpochSecond(timestampL));
@@ -75,6 +77,7 @@ class MerkleUniqueTokenTest {
 
 		subject = new MerkleUniqueToken(owner, metadata, timestamp);
 		subject.setKey(new EntityNumPair(numbers));
+		subject.setSpender(spender);
 	}
 
 	@Test
@@ -90,8 +93,11 @@ class MerkleUniqueTokenTest {
 		other3.setKey(key);
 		var other4 = new MerkleUniqueToken(owner, metadata, timestamp);
 		other4.setKey(new EntityNumPair(numbers + 1));
+		var other5 = new MerkleUniqueToken(owner, metadata, timestamp);
+		other5.setKey(key);
 		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
 		identical.setKey(key);
+		identical.setSpender(spender);
 
 		// expect
 		assertNotEquals(subject, new Object());
@@ -99,6 +105,7 @@ class MerkleUniqueTokenTest {
 		assertNotEquals(subject, other2);
 		assertNotEquals(subject, other3);
 		assertNotEquals(subject, other4);
+		assertNotEquals(subject, other5);
 		assertEquals(subject, identical);
 	}
 
@@ -107,6 +114,7 @@ class MerkleUniqueTokenTest {
 		// given:
 		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
 		identical.setKey(new EntityNumPair(numbers));
+		identical.setSpender(spender);
 		var other = new MerkleUniqueToken(otherOwner, otherMetadata, otherTimestamp);
 
 		// expect:
@@ -120,7 +128,7 @@ class MerkleUniqueTokenTest {
 		assertEquals("MerkleUniqueToken{" +
 						"id=0.0.123.456, owner=0.0.3, " +
 						"creationTime=1970-01-15T06:56:07Z, " +
-						"metadata=" + Arrays.toString(metadata) + "}",
+						"metadata=" + Arrays.toString(metadata) + ", spender=0.0.5}",
 				subject.toString());
 	}
 
@@ -151,6 +159,7 @@ class MerkleUniqueTokenTest {
 		inOrder.verify(out).writeLong(packedTime(timestamp.getSeconds(), timestamp.getNanos()));
 		inOrder.verify(out).writeByteArray(metadata);
 		inOrder.verify(out).writeLong(numbers);
+		inOrder.verify(out).writeInt(spender.identityCode());
 	}
 
 	@Test
@@ -158,6 +167,7 @@ class MerkleUniqueTokenTest {
 		// setup:
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 		// and:
+		subject.setSpender(EntityId.MISSING_ENTITY_ID);
 		final var packedTime = packedTime(timestamp.getSeconds(), timestamp.getNanos());
 
 		given(in.readByteArray(anyInt())).willReturn(metadata);
@@ -183,6 +193,7 @@ class MerkleUniqueTokenTest {
 		// setup:
 		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
 		// and:
+		subject.setSpender(EntityId.MISSING_ENTITY_ID);
 		final var packedTime = packedTime(timestamp.getSeconds(), timestamp.getNanos());
 
 		given(in.readByteArray(anyInt())).willReturn(metadata);
@@ -194,6 +205,29 @@ class MerkleUniqueTokenTest {
 
 		// when:
 		read.deserialize(in, MerkleUniqueToken.RELEASE_0180_VERSION);
+
+		// then:
+		assertEquals(subject, read);
+	}
+
+	@Test
+	void deserializeWorksForV0250() throws IOException {
+		// setup:
+		SerializableDataInputStream in = mock(SerializableDataInputStream.class);
+		// and:
+		final var packedTime = packedTime(timestamp.getSeconds(), timestamp.getNanos());
+
+		given(in.readByteArray(anyInt())).willReturn(metadata);
+		given(in.readLong()).willReturn(packedTime).willReturn(numbers);
+		given(in.readInt())
+				.willReturn(owner.identityCode())
+				.willReturn(spender.identityCode());
+
+		// and:
+		var read = new MerkleUniqueToken();
+
+		// when:
+		read.deserialize(in, MerkleUniqueToken.RELEASE_0250_VERSION);
 
 		// then:
 		assertEquals(subject, read);

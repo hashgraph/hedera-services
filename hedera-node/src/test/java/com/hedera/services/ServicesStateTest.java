@@ -569,7 +569,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void migratesWhenInitializingFromStateWithReleaseLessThan0240() {
+	void migratesWhenInitializingFromStateWithReleaseLessThan0250() {
 		var merkleAccount1 = mock(MerkleAccount.class);
 		var merkleAccount2 = mock(MerkleAccount.class);
 		var merkleAccountTokens1 = mock(MerkleAccountTokens.class);
@@ -590,7 +590,7 @@ class ServicesStateTest {
 		tokenAssociations.put(associationKey2, association2);
 		tokenAssociations.put(associationKey3, association3);
 
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0230_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0240_VERSION);
 		subject.setChild(StateChildIndices.UNIQUE_TOKENS, legacyUniqueTokens);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);

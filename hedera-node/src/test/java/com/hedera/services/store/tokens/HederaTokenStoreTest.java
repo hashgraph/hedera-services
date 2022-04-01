@@ -507,7 +507,7 @@ class HederaTokenStoreTest {
 		final var key = asTokenRel(sponsor, misc);
 
 		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(MISSING_NUM_PAIR);
 		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
@@ -535,7 +535,7 @@ class HederaTokenStoreTest {
 		final var key = asTokenRel(sponsor, misc);
 
 		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(sponsorRelNftKey);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(sponsorRelNftKey);
 		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
 		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
@@ -566,7 +566,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(MISSING_NUM_PAIR);
 
 
 		// auto associate a fungible token
@@ -685,7 +685,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.exists(counterpartyNft)).willReturn(false);
 		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
 		given(accountsLedger.get(counterparty, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(MISSING_NUM_PAIR);
 		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
 		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
@@ -720,7 +720,7 @@ class HederaTokenStoreTest {
 		given(tokenRelsLedger.get(counterpartyNft, TOKEN_BALANCE)).willReturn(startCounterpartyANfts);
 		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
 		given(accountsLedger.get(counterparty, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(MISSING_NUM_PAIR);
 		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
 		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
@@ -752,7 +752,7 @@ class HederaTokenStoreTest {
 		given(nftsLedger.get(tNft, NftProperty.OWNER)).willReturn(EntityId.fromGrpcAccountId(counterparty));
 		given(accountsLedger.get(counterparty, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
 		given(accountsLedger.get(primaryTreasury, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(MISSING_NUM_PAIR);
 		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
 		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
@@ -789,7 +789,7 @@ class HederaTokenStoreTest {
 		given(backingTokens.getImmutableRef(tNft.tokenId()).treasury()).willReturn(sender);
 		given(accountsLedger.get(counterparty, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
 		given(accountsLedger.get(primaryTreasury, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(MISSING_NUM_PAIR);
 		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
 		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
@@ -1492,7 +1492,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(anotherFeeCollector, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(5);
 		given(accountsLedger.get(anotherFeeCollector, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(3);
 		given(accountsLedger.get(anotherFeeCollector, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(MISSING_NUM_PAIR);
 		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
 		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
@@ -1509,7 +1509,7 @@ class HederaTokenStoreTest {
 	void performsValidAdjustment() {
 		given(tokenRelsLedger.get(treasuryMisc, TOKEN_BALANCE)).willReturn(1L);
 		given(accountsLedger.get(treasury, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(MISSING_NUM_PAIR);
 		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
 		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 
@@ -1559,7 +1559,7 @@ class HederaTokenStoreTest {
 		final var fungibleChange = BalanceChange.changingFtUnits(Id.fromGrpcToken(misc), misc, aa, payer);
 		fungibleChange.setExpectedDecimals(2);
 		given(accountsLedger.get(sponsor, TOKEN_ASSOCIATION_METADATA)).willReturn(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(MISSING_NUM_PAIR);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(MISSING_NUM_PAIR);
 		given(tokenAssociationMetadata.numZeroBalances()).willReturn(2);
 		given(tokenAssociationMetadata.numAssociations()).willReturn(5);
 

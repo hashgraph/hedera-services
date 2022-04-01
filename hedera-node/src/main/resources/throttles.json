@@ -6,7 +6,7 @@
     "throttleGroups" : [ {
       "opsPerSec" : 10000,
       "milliOpsPerSec" : 10000000,
-      "operations" : [ "ScheduleCreate", "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords", "ConsensusCreateTopic", "ConsensusSubmitMessage", "ConsensusUpdateTopic", "ConsensusDeleteTopic", "ConsensusGetTopicInfo", "TokenGetNftInfo", "TokenGetInfo", "ScheduleDelete", "ScheduleGetInfo", "FileGetContents", "FileGetInfo", "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", "TransactionGetRecord", "GetVersionInfo", "TokenGetAccountNftInfos", "TokenGetNftInfos", "CryptoApproveAllowance", "CryptoAdjustAllowance"]
+      "operations" : [ "ScheduleCreate", "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords", "ConsensusCreateTopic", "ConsensusSubmitMessage", "ConsensusUpdateTopic", "ConsensusDeleteTopic", "ConsensusGetTopicInfo", "TokenGetNftInfo", "TokenGetInfo", "ScheduleDelete", "ScheduleGetInfo", "FileGetContents", "FileGetInfo", "ContractUpdate", "ContractDelete", "ContractGetInfo", "ContractGetBytecode", "ContractGetRecords", "ContractCallLocal", "TransactionGetRecord", "GetVersionInfo", "TokenGetAccountNftInfos", "TokenGetNftInfos", "CryptoApproveAllowance", "CryptoAdjustAllowance", "CryptoDeleteAllowance"]
     }, {
       "opsPerSec" : 13,
       "milliOpsPerSec" : 13000,

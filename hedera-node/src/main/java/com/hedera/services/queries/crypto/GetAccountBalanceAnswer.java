@@ -98,7 +98,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
 			final var account = accounts.get(key);
 			opAnswer.setBalance(account.getBalance());
 			final var maxRels = dynamicProperties.maxTokensRelsPerInfoQuery();
-			final var firstRel = account.getLastAssociation();
+			final var firstRel = account.getLatestAssociation();
 			doBoundedIteration(view.tokenAssociations(), view.tokens(), firstRel, maxRels, (token, rel) ->
 					opAnswer.addTokenBalances(TokenBalance.newBuilder()
 							.setTokenId(token.grpcId())

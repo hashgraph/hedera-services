@@ -23,6 +23,7 @@ package com.hedera.services.txns.span;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.utils.TxnAccessor;
 import org.junit.jupiter.api.Assertions;
@@ -177,5 +178,18 @@ class ExpandHandleSpanMapAccessorTest {
 		assertEquals(Collections.emptyMap(), subject.getCryptoAdjustMeta(accessor).getNftAllowances());
 		assertEquals(112, subject.getCryptoAdjustMeta(accessor).getMsgBytesUsed());
 		assertEquals(now, subject.getCryptoAdjustMeta(accessor).getEffectiveNow());
+	}
+
+	@Test
+	void testsForCryptoDeleteMetaAsExpected() {
+		final var now = Instant.now().getEpochSecond();
+		final var opMeta = CryptoDeleteAllowanceMeta.newBuilder()
+				.msgBytesUsed(112)
+				.effectiveNow(now)
+				.build();
+
+		subject.setCryptoDeleteAllowanceMeta(accessor, opMeta);
+		assertEquals(112, subject.getCryptoDeleteAllowanceMeta(accessor).getMsgBytesUsed());
+		assertEquals(now, subject.getCryptoDeleteAllowanceMeta(accessor).getEffectiveNow());
 	}
 }

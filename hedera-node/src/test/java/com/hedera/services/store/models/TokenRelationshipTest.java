@@ -110,7 +110,7 @@ class TokenRelationshipTest {
 		// given:
 		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=1.0.4321, " +
 				"expiry=0, balance=0, deleted=false, ownedNfts=0, alreadyUsedAutoAssociations=0, " +
-				"maxAutoAssociations=0, alias=, cryptoAllowances=null, fungibleTokenAllowances=null, nftAllowances=null, " +
+				"maxAutoAssociations=0, alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null, " +
 				"numAssociations=3, numZeroBalances=0, lastAssociatedToken=PermHashLong(0, 1234566)}, " +
 				"token=Token{id=0.0.1234, type=null, deleted=false, autoRemoved=false, treasury=null, " +
 				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +

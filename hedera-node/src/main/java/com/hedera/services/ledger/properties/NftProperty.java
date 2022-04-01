@@ -59,5 +59,16 @@ public enum NftProperty implements BeanProperty<UniqueTokenValue> {
 		public Function<UniqueTokenValue, Object> getter() {
 			return UniqueTokenValue::getMetadata;
 		}
+	},
+	SPENDER {
+		@Override
+		public BiConsumer<MerkleUniqueToken, Object> setter() {
+			return (t, o) -> t.setSpender((EntityId) o);
+		}
+
+		@Override
+		public Function<MerkleUniqueToken, Object> getter() {
+			return MerkleUniqueToken::getSpender;
+		}
 	}
 }

@@ -22,10 +22,8 @@ package com.hedera.services.ledger.accounts;
 
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -57,11 +55,8 @@ public final class HederaAccountCustomizer extends
 		super(AccountProperty.class, OPTION_PROPERTIES, new ChangeSummaryManager<>());
 	}
 
-	public void applyToSynthetic(final ContractCreateTransactionBody.Builder op) {
+	public void customizeSynthetic(final ContractCreateTransactionBody.Builder op) {
 		final var changes = getChanges();
-		if (changes.containsKey(AccountProperty.KEY)) {
-			op.setAdminKey(MiscUtils.asKeyUnchecked((JKey) changes.get(AccountProperty.KEY)));
-		}
 		if (changes.containsKey(AccountProperty.MEMO)) {
 			op.setMemo((String) changes.get(AccountProperty.MEMO));
 		}

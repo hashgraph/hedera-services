@@ -107,6 +107,15 @@ public class UniqueTokenValue implements VirtualValue {
 	@Override
 	public void release() { /* no-op */ }
 
+	public EntityId getSpender() {
+		throw new UnsupportedOperationException("TODO: Implement me");
+	}
+
+	public void setSpender(final EntityId asEntityId) {
+		throwIfImmutable();
+		throw new UnsupportedOperationException("TODO: Implement me");
+	}
+
 	interface CheckedConsumer<T> {
 		void accept(T t) throws IOException;
 	}

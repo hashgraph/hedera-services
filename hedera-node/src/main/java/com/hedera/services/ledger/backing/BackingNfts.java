@@ -81,4 +81,9 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
 	public long size() {
 		return delegate.get().size();
 	}
+
+	/* -- only for unit tests --*/
+	public Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> getDelegate() {
+		return delegate;
+	}
 }

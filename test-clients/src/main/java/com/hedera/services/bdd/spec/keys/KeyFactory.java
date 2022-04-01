@@ -40,13 +40,7 @@ import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.junit.jupiter.api.Assertions;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.file.Paths;
@@ -479,83 +473,5 @@ public class KeyFactory implements Serializable {
 			default:
 				return generateSubjectTo(spec, ON, keyGen);
 		}
-	}
-
-	public void saveKeyFactory(String dir) {
-		// Note: here we didn't save and restore pkMap for KeyFactory is to avoid
-		// Serialization and de-serialization of PrivateKey, which is not easy.
-		// Instead, we use GENESIS key for the migration test accounts and serve the
-		// same purpose.
-		//		savePkMap(dir + "/pkmap.ser");
-		saveControlMap(dir + "/controlmap.ser");
-	}
-
-	public void loadKeyFactory(String dir) {
-		loadControlMap(dir + "/controlmap.ser");
-	}
-
-	public void saveControlMap(String path) {
-		FileOutputStream fos = null;
-		ObjectOutputStream oos = null;
-		log.info("Serialize controlMap to : " + path);
-		try {
-			fos = new FileOutputStream(path);
-			oos = new ObjectOutputStream(fos);
-			oos.writeObject(controlMap);
-			oos.close();
-			fos.close();
-			oos = null;
-			fos = null;
-		} catch (NotSerializableException e) {
-			log.error("Serializable exception catched while serialize for " + path + ":" + e);
-		} catch (FileNotFoundException e) {
-			log.error("File not found exception catched while serialize for  " + path + ":" + e);
-		} catch (Exception e) {
-			log.error("Other exception catched while serialize for " + path + ":" + e);
-		} finally {
-			try {
-				if (oos != null) {
-					oos.close();
-				}
-				if (fos != null) {
-					fos.close();
-				}
-
-			} catch (IOException e) {
-				log.error("Error while closing file " + path + ":" + e);
-			}
-		}
-		log.info("Successfully serialized controlMap to : " + path);
-	}
-
-	@SuppressWarnings("unchecked")
-	public void loadControlMap(String path) {
-		FileInputStream fis = null;
-		ObjectInputStream ois = null;
-
-		log.info("Deserialize controlMap from : " + path);
-		try {
-			fis = new FileInputStream(path);
-			ois = new ObjectInputStream(fis);
-			controlMap = (Map<Key, SigControl>) ois.readObject();
-
-			ois.close();
-			fis.close();
-			fis = null;
-		} catch (Exception e) {
-			log.error("De-serializable exception catched while working on " + path + ":" + e);
-		} finally {
-			try {
-				if (ois != null) {
-					ois.close();
-				}
-				if (fis != null) {
-					fis.close();
-				}
-			} catch (IOException e) {
-				log.error("File closing exception catched while closing " + path + ":" + e);
-			}
-		}
-		log.info(" Sucessfully de-serialized controlMap from " + path);
 	}
 }

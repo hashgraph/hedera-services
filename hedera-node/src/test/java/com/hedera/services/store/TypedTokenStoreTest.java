@@ -4,7 +4,7 @@ package com.hedera.services.store;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,16 +54,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -173,7 +172,8 @@ class TypedTokenStoreTest {
 	@Test
 	void persistsExtantTokenRelAsExpected() {
 		// setup:
-		final var expectedReplacementTokenRel = new MerkleTokenRelStatus(balance * 2, !frozen, !kycGranted, automaticAssociation);
+		final var expectedReplacementTokenRel = new MerkleTokenRelStatus(balance * 2, !frozen, !kycGranted,
+				automaticAssociation);
 		expectedReplacementTokenRel.setKey(miscTokenRelId);
 		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
 		givenModifiableRelationship(miscTokenRelId, miscTokenMerkleRel);
@@ -205,8 +205,8 @@ class TypedTokenStoreTest {
 
 		// then:
 		verify(tokenRels).remove(Pair.of(
-                      STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
-		      STATIC_PROPERTIES.scopedTokenWith(tokenNum)));
+				STATIC_PROPERTIES.scopedAccountWith(miscAccountNum),
+				STATIC_PROPERTIES.scopedTokenWith(tokenNum)));
 		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(destroyedRel));
 	}
 
@@ -236,133 +236,6 @@ class TypedTokenStoreTest {
 				STATIC_PROPERTIES.scopedTokenWith(tokenNum)), expectedNewTokenRel);
 		// and:
 		verify(sideEffectsTracker).trackTokenBalanceChanges(List.of(newTokenRel));
-	}
-
-	/* --- Token loading --- */
-	@Test
-	void reportsExpectedNftsMinted() {
-		given(uniqueTokens.size()).willReturn(123L);
-		// expect:
-		assertEquals(123L, subject.currentMintedNfts());
-	}
-
-	@Test
-	void canLoadPausedTokenUsingLoadPossiblyPausedToken() {
-		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
-		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
-		givenToken(merkleTokenId, merkleToken);
-		merkleToken.setPaused(true);
-		token.setPaused(true);
-
-		final var actualToken = subject.loadPossiblyPausedToken(tokenId);
-
-		assertEquals(token.toString(), actualToken.toString());
-		assertEquals(token.isPaused(), actualToken.isPaused());
-		assertTrue(actualToken.isPaused());
-	}
-
-	@Test
-	void failsLoadPossiblyPausedTokenMissingToken() {
-		assertLoadPossiblyPausedTokenFailsWith(INVALID_TOKEN_ID);
-	}
-
-	@Test
-	void failsLoadPossiblyPausedTokenDeletedToken() {
-		givenToken(merkleTokenId, merkleToken);
-		merkleToken.setDeleted(true);
-
-		assertLoadPossiblyPausedTokenFailsWith(TOKEN_WAS_DELETED);
-	}
-
-	@Test
-	void loadsExpectedToken() {
-		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
-		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
-		givenToken(merkleTokenId, merkleToken);
-
-		// when:
-		final var actualToken = subject.loadToken(tokenId);
-
-		// then:
-		/* JKey does not override equals properly, have to compare string representations here */
-		assertEquals(token.toString(), actualToken.toString());
-	}
-
-	@Test
-	void failsLoadingTokenWithDetachedAutoRenewAccount() {
-		given(accountStore.loadAccount(autoRenewId))
-				.willThrow(new InvalidTransactionException(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
-		givenToken(merkleTokenId, merkleToken);
-
-		assertTokenLoadFailsWith(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
-	}
-
-	@Test
-	void failsLoadingMissingToken() {
-		assertTokenLoadFailsWith(INVALID_TOKEN_ID);
-	}
-
-	@Test
-	void canLoadAutoRemovedTokenIfAllowed() {
-		final var autoRemovedToken = subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
-
-		assertEquals(tokenId, autoRemovedToken.getId());
-		assertTrue(autoRemovedToken.isBelievedToHaveBeenAutoRemoved());
-	}
-
-	@Test
-	void loadsActuallyDeletedTokenAsExpected() {
-		givenToken(merkleTokenId, merkleToken);
-		merkleToken.setDeleted(true);
-
-		final var deletedToken = subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
-
-		assertEquals(token.getId(), deletedToken.getId());
-	}
-
-	@Test
-	void failsLoadingDeletedToken() {
-		givenToken(merkleTokenId, merkleToken);
-		merkleToken.setDeleted(true);
-
-		assertTokenLoadFailsWith(TOKEN_WAS_DELETED);
-	}
-
-	@Test
-	void failsLoadingPausedTokenUsingLoadPossiblyDeletedOrAutoRemovedToken() {
-		givenToken(merkleTokenId, merkleToken);
-		merkleToken.setPaused(true);
-		assertLoadPossiblyDeletedTokenFailsWith(TOKEN_IS_PAUSED);
-	}
-
-	@Test
-	void failsLoadingPausedToken() {
-		givenToken(merkleTokenId, merkleToken);
-		merkleToken.setPaused(true);
-
-		assertTokenLoadFailsWith(TOKEN_IS_PAUSED);
-	}
-
-	@Test
-	void loadOrFailsCantLoadPausedToken() {
-		givenToken(merkleTokenId, merkleToken);
-		merkleToken.setPaused(true);
-		assertFailsWith(() -> subject.loadTokenOrFailWith(tokenId, FAIL_INVALID), FAIL_INVALID);
-	}
-
-	@Test
-	void loadsUniqueTokens() {
-		final var aToken = new Token(miscId);
-		final var uniqueTokenValue = new UniqueTokenValue();
-		final var serialNumbers = List.of(1L, 2L);
-		given(uniqueTokens.getImmutableRef(any())).willReturn(uniqueTokenValue);
-
-		subject.loadUniqueTokens(aToken, serialNumbers);
-
-		assertEquals(2, aToken.getLoadedUniqueTokens().size());
-
-		given(uniqueTokens.getImmutableRef(any())).willReturn(null);
-		assertThrows(InvalidTransactionException.class, () -> subject.loadUniqueTokens(aToken, serialNumbers));
 	}
 
 	@Test
@@ -458,7 +331,8 @@ class TypedTokenStoreTest {
 		// and:
 		verify(sideEffectsTracker).trackTokenChanges(modelToken);
 		verify(uniqueTokens).put(expectedNewUniqTokenId, expectedNewUniqToken);
-		verify(uniqueTokens).put(NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo), expectedNewUniqToken);
+		verify(uniqueTokens).put(NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo),
+				expectedNewUniqToken);
 		verify(uniqueTokens).remove(expectedPastUniqTokenId);
 
 		// when:
@@ -508,6 +382,38 @@ class TypedTokenStoreTest {
 	}
 
 	@Test
+	void persistsNftsAsExpected() {
+		final var nftId1 = new NftId(1, 2, 3, 1);
+		final var nftId2 = new NftId(1, 2, 3, 2);
+		final var nft1 = new UniqueToken(IdUtils.asModelId("1.2.3"), 1L);
+		final var nft2 = new UniqueToken(IdUtils.asModelId("1.2.3"), 2L);
+		final var meta1 = "aa".getBytes(StandardCharsets.UTF_8);
+		final var meta2 = "bb".getBytes(StandardCharsets.UTF_8);
+		nft1.setOwner(treasuryId);
+		nft1.setMetadata(meta1);
+		nft1.setCreationTime(MISSING_INSTANT);
+		nft1.setSpender(autoRenewId);
+		nft2.setOwner(miscId);
+		nft2.setMetadata(meta2);
+		nft2.setCreationTime(MISSING_INSTANT);
+		nft2.setSpender(autoRenewId);
+
+		final var mut1 = new UniqueTokenValue(treasuryId.num(), MISSING_INSTANT, meta1);
+		final var mut2 = new UniqueTokenValue(miscId.num(), MISSING_INSTANT, meta2);
+		given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
+		given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
+
+		subject.persistNft(nft1);
+		subject.persistNft(nft2);
+
+		mut1.setSpender(autoRenewId.asEntityId());
+		mut2.setSpender(autoRenewId.asEntityId());
+
+		verify(uniqueTokens).put(nftId1, mut1);
+		verify(uniqueTokens).put(nftId2, mut2);
+	}
+
+	@Test
 	void loadOrFailsWorksAsExpected() {
 		assertFailsWith(() -> subject.loadTokenOrFailWith(Id.DEFAULT, FAIL_INVALID), FAIL_INVALID);
 		given(tokens.getImmutableRef(any())).willReturn(merkleToken);
@@ -533,22 +439,6 @@ class TypedTokenStoreTest {
 
 	private void givenModifiableToken(final EntityNum anId, final MerkleToken aToken) {
 		given(tokens.getRef(anId.toGrpcTokenId())).willReturn(aToken);
-	}
-
-	private void assertTokenLoadFailsWith(final ResponseCodeEnum status) {
-		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadToken(tokenId));
-		assertEquals(status, ex.getResponseCode());
-	}
-
-	private void assertLoadPossiblyPausedTokenFailsWith(final ResponseCodeEnum status) {
-		final var ex = assertThrows(InvalidTransactionException.class, () -> subject.loadPossiblyPausedToken(tokenId));
-		assertEquals(status, ex.getResponseCode());
-	}
-
-	private void assertLoadPossiblyDeletedTokenFailsWith(final ResponseCodeEnum status) {
-		final var ex = assertThrows(InvalidTransactionException.class,
-				() -> subject.loadPossiblyDeletedOrAutoRemovedToken(tokenId));
-		assertEquals(status, ex.getResponseCode());
 	}
 
 	private void assertMiscRelLoadFailsWith(final ResponseCodeEnum status) {

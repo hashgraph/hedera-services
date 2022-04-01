@@ -240,7 +240,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				final var tokenAssociationMetadata =
 						(TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
 
-				final var lastAssociation = tokenAssociationMetadata.lastAssociation();
+				final var lastAssociation = tokenAssociationMetadata.latestAssociation();
 				var numAssociations = tokenAssociationMetadata.numAssociations();
 				var numZeroBalances = tokenAssociationMetadata.numZeroBalances();
 
@@ -430,11 +430,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		accountsLedger.set(from, TOKEN_ASSOCIATION_METADATA, new TokenAssociationMetadata(
 				fromTokenAssociationMetaData.numAssociations(),
 				updatedFromNumZeroBalances,
-				fromTokenAssociationMetaData.lastAssociation()));
+				fromTokenAssociationMetaData.latestAssociation()));
 		accountsLedger.set(to, TOKEN_ASSOCIATION_METADATA, new TokenAssociationMetadata(
 				toTokenAssociationMetaData.numAssociations(),
 				updatedToNumZeroBalances,
-				toTokenAssociationMetaData.lastAssociation()));
+				toTokenAssociationMetaData.latestAssociation()));
 		tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
 		tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
 
@@ -527,7 +527,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 				new TokenAssociationMetadata(
 						tokenAssociationMetadata.numAssociations(),
 						updatedNumZeroBalance,
-						tokenAssociationMetadata.lastAssociation()));
+						tokenAssociationMetadata.latestAssociation()));
 		sideEffectsTracker.trackTokenUnitsChange(tId, aId, adjustment);
 		return OK;
 	}
