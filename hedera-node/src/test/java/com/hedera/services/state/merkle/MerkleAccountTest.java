@@ -200,7 +200,6 @@ class MerkleAccountTest {
 		assertEquals(
 				"MerkleAccount{state=" + state.toString()
 						+ ", # records=" + 3
-						+ ", tokens=" + "[1.2.3, 2.3.4]"
 						+ "}",
 				subject.toString());
 	}

@@ -135,10 +135,9 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		}
 
 		setImmutable(true);
-		return new MerkleAccount(List.of(
-				state().copy(),
-				records().copy(),
-				tokens().copy()), this);
+		return getNumberOfChildren() == ChildIndices.NUM_090_CHILDREN ?
+				new MerkleAccount(List.of(state().copy(), records().copy(), tokens().copy()), this) :
+				new MerkleAccount(List.of(state().copy(), records().copy()), this);
 	}
 
 	/* ---- Object ---- */
@@ -152,13 +151,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		}
 		final var that = (MerkleAccount) o;
 		return this.state().equals(that.state()) &&
-				this.records().equals(that.records()) &&
-				this.tokens().equals(that.tokens());
+				this.records().equals(that.records());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(state(), records(), tokens());
+		return Objects.hash(state(), records());
 	}
 
 	@Override
@@ -166,7 +164,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return MoreObjects.toStringHelper(MerkleAccount.class)
 				.add("state", state())
 				.add("# records", records().size())
-				.add("tokens", tokens().readableTokenIds())
 				.toString();
 	}
 
