@@ -81,6 +81,8 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -227,9 +229,7 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenApproveAccountNotFound() {
-		var accounts = mock(MerkleMap.class);
-		given(workingView.accounts()).willReturn(accounts);
-		given(accounts.get(any())).willReturn(null);
+		given(workingView.accounts()).willReturn(new MerkleMap<>());
 
 		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 

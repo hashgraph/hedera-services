@@ -130,6 +130,11 @@ import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPT
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_ALLOWANCE_NO_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_ALLOWANCE_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO;
@@ -887,6 +892,58 @@ class SigRequirementsTest {
 	@Test
 	void getsCryptoAdjustAllowanceMissingOwnerInNftAllowance() throws Throwable {
 		setupFor(CRYPTO_ADJUST_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoDeleteAllowanceVanilla() throws Throwable {
+		setupFor(CRYPTO_DELETE_ALLOWANCE_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoDeleteAllowanceWithSomeSpecificOwners() throws Throwable {
+		setupFor(CRYPTO_DELETE_ALLOWANCE_NO_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
+	}
+
+	@Test
+	void getsCryptoDeleteAllowanceMissingOwnerInFungibleTokenAllowance() throws Throwable {
+		setupFor(CRYPTO_DELETE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoDeleteAllowanceMissingOwnerInCryptoAllowance() throws Throwable {
+		setupFor(CRYPTO_DELETE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoDeleteAllowanceMissingOwnerInNftAllowance() throws Throwable {
+		setupFor(CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO);
 
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 

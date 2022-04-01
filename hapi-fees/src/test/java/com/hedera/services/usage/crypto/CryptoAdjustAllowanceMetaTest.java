@@ -69,9 +69,8 @@ class CryptoAdjustAllowanceMetaTest {
 	void allGettersAndToStringWork() {
 		final var expected = "CryptoAdjustAllowanceMeta{cryptoAllowances={1234=10}, " +
 				"tokenAllowances={AllowanceId[tokenNum=1000, spenderNum=1234]=10}, " +
-				"nftAllowances={AllowanceId[tokenNum=1000, " +
-				"spenderNum=1234]=AllowanceDetails[approvedForAll=false," +
-				" serialNums=[1, 2, 3]]}, effectiveNow=1234567, msgBytesUsed=112}";
+				"nftAllowances={AllowanceId[tokenNum=1000, spenderNum=1234]=AllowanceDetails[approvedForAll=false, " +
+				"serialNums=[1, 2, 3]]}, effectiveNow=1234567, msgBytesUsed=112}";
 		final var now = 1_234_567;
 		final var subject = CryptoAdjustAllowanceMeta.newBuilder()
 				.msgBytesUsed(112)

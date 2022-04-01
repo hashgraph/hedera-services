@@ -24,8 +24,6 @@ import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
 import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
-import org.apache.commons.lang3.builder.CompareToBuilder;
-import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -200,18 +198,4 @@ public class ExtantCryptoContext {
 			return this;
 		}
 	}
-}
-
-record AllowanceId(Long tokenNum, Long spenderNum) implements Comparable<AllowanceId>{
-
-	@Override
-	public int compareTo(@NotNull final AllowanceId that) {
-		return new CompareToBuilder()
-				.append(tokenNum, that.tokenNum)
-				.append(spenderNum, that.spenderNum)
-				.toComparison();
-	}
-}
-
-record AllowanceDetails(Boolean approvedForAll, List<Long> serialNums) {
 }

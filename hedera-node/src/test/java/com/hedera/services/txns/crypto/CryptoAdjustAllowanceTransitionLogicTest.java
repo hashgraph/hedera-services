@@ -203,8 +203,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	void semanticCheckDelegatesWorks() {
 		givenValidTxnCtx();
 		given(adjustAllowanceChecks.allowancesValidation(op.getCryptoAllowancesList(), op.getTokenAllowancesList(),
-				op.getNftAllowancesList(), ownerAccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction(), view)).willReturn(OK);
+				op.getNftAllowancesList(), ownerAccount, view)).willReturn(OK);
 		given(accountStore.loadAccount(ownerAccount.getId())).willReturn(ownerAccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoAdjustAllowanceTxn));
 	}

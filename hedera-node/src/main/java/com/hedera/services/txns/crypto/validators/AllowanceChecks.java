@@ -88,8 +88,6 @@ public abstract class AllowanceChecks {
 	 * 		nft allowances list
 	 * @param payerAccount
 	 * 		Account of the payer for the allowance approve/adjust txn.
-	 * @param maxLimitPerTxn
-	 * 		max allowance limit per transaction
 	 * @param view
 	 * 		working view
 	 * @return response code after validation
@@ -98,7 +96,6 @@ public abstract class AllowanceChecks {
 			final List<TokenAllowance> tokenAllowances,
 			final List<NftAllowance> nftAllowances,
 			final Account payerAccount,
-			final int maxLimitPerTxn,
 			final StateView view) {
 
 		// feature flag for allowances
@@ -106,7 +103,7 @@ public abstract class AllowanceChecks {
 			return NOT_SUPPORTED;
 		}
 
-		var validity = commonChecks(cryptoAllowances, tokenAllowances, nftAllowances, maxLimitPerTxn);
+		var validity = commonChecks(cryptoAllowances, tokenAllowances, nftAllowances);
 		if (validity != OK) {
 			return validity;
 		}
@@ -339,16 +336,18 @@ public abstract class AllowanceChecks {
 		return OK;
 	}
 
-	public ResponseCodeEnum commonChecks(final List<CryptoAllowance> cryptoAllowances,
+	ResponseCodeEnum commonChecks(final List<CryptoAllowance> cryptoAllowances,
 			final List<TokenAllowance> tokenAllowances,
-			final List<NftAllowance> nftAllowances,
-			final int maxLimitPerTxn) {
+			final List<NftAllowance> nftAllowances) {
 		// each serial number of an NFT is considered as an allowance.
 		// So for Nft allowances aggregated amount is considered for limit calculation.
 		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size()
 				+ aggregateNftAllowances(nftAllowances);
+		return validateTotalAllowances(totalAllowances);
+	}
 
-		if (exceedsTxnLimit(totalAllowances, maxLimitPerTxn)) {
+	ResponseCodeEnum validateTotalAllowances(final int totalAllowances) {
+		if (exceedsTxnLimit(totalAllowances, dynamicProperties.maxAllowanceLimitPerTransaction())) {
 			return MAX_ALLOWANCES_EXCEEDED;
 		}
 		if (emptyAllowances(totalAllowances)) {
@@ -378,7 +377,6 @@ public abstract class AllowanceChecks {
 			if (serial <= 0) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}
-
 			try {
 				tokenStore.loadUniqueToken(token.getId(), serial);
 			} catch (InvalidTransactionException ex) {
@@ -389,15 +387,15 @@ public abstract class AllowanceChecks {
 		return OK;
 	}
 
-	private boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
+	boolean exceedsTxnLimit(final int totalAllowances, final int maxLimit) {
 		return totalAllowances > maxLimit;
 	}
 
-	private boolean emptyAllowances(final int totalAllowances) {
+	boolean emptyAllowances(final int totalAllowances) {
 		return totalAllowances == 0;
 	}
 
-	private Pair<Account, ResponseCodeEnum> fetchOwnerAccount(
+	Pair<Account, ResponseCodeEnum> fetchOwnerAccount(
 			final Id owner,
 			final Account payerAccount,
 			final AccountStore accountStore) {
@@ -412,6 +410,8 @@ public abstract class AllowanceChecks {
 		}
 	}
 
+	/* --- Abstract methods to be implemented by ApproveAllowanceChecks, AdjustAllowanceChecks. They will not be needed
+	 for DeleteAllowanceChecks since deleteAllowance doesn't validate amounts */
 	public abstract ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender);
 
 	public abstract ResponseCodeEnum validateTokenAmount(final Account ownerAccount, final long amount,
