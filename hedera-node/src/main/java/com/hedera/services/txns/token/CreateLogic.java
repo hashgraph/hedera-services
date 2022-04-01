@@ -52,13 +52,13 @@ public class CreateLogic {
 
 	@Inject
 	public CreateLogic(
-			AccountStore accountStore,
-			TypedTokenStore tokenStore,
-			GlobalDynamicProperties dynamicProperties,
-			SigImpactHistorian sigImpactHistorian,
-			SideEffectsTracker sideEffectsTracker,
-			EntityIdSource entityIdSource,
-			OptionValidator validator
+			final AccountStore accountStore,
+			final TypedTokenStore tokenStore,
+			final GlobalDynamicProperties dynamicProperties,
+			final SigImpactHistorian sigImpactHistorian,
+			final SideEffectsTracker sideEffectsTracker,
+			final EntityIdSource entityIdSource,
+			final OptionValidator validator
 	) {
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
@@ -69,7 +69,7 @@ public class CreateLogic {
 		this.validator = validator;
 	}
 
-	public void create(long now, AccountID activePayer, TokenCreateTransactionBody op) {
+	public void create(final long now, final AccountID activePayer, final TokenCreateTransactionBody op) {
 		final var creation = creationFactory.processFrom(accountStore, tokenStore, dynamicProperties, op);
 
 		/* --- Create the model objects --- */
@@ -86,7 +86,7 @@ public class CreateLogic {
 	}
 
 	// Only used in unit-tests
-	public void setCreationFactory(Creation.CreationFactory creationFactory) {
+	public void setCreationFactory(final Creation.CreationFactory creationFactory) {
 		this.creationFactory = creationFactory;
 	}
 }

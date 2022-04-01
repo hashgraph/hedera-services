@@ -927,7 +927,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		protected TokenCreateWrapper tokenCreateOp;
 
 		@Override
-		public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			tokenCreateOp = switch (functionId) {
 				case ABI_ID_CREATE_FUNGIBLE_TOKEN -> decoder.decodeFungibleCreate(input, aliasResolver);
 				case ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES ->
@@ -951,7 +951,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void handleSentHbars(MessageFrame frame) {
+		public void handleSentHbars(final MessageFrame frame) {
 			final var timestampSeconds = frame.getBlockValues().getTimestamp();
 			final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
 			final var gasPriceInTinybars = feeCalculator.get()
@@ -973,7 +973,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 
 		@Override
-		public void run(MessageFrame frame)  {
+		public void run(final MessageFrame frame)  {
 			Objects.requireNonNull(tokenCreateOp);
 
 			/* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
@@ -1079,7 +1079,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
 			return 100_000L;
 		}
 
