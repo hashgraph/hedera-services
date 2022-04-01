@@ -65,6 +65,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
@@ -177,11 +178,11 @@ class GetAccountInfoAnswerTest {
 		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
 		TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap();
 		TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap();
-		TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap();
+		TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>();
 
 		cryptoAllowances.put(EntityNum.fromLong(1L), 10L);
 		fungibleTokenAllowances.put(tokenAllowanceKey, 20L);
-		nftAllowances.put(tokenAllowanceKey, tokenAllowanceValue);
+		nftAllowances.add(tokenAllowanceKey);
 
 		payerAccount = MerkleAccountFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
@@ -195,7 +196,7 @@ class GetAccountInfoAnswerTest {
 				.expirationTime(9_999_999L)
 				.cryptoAllowances(cryptoAllowances)
 				.fungibleTokenAllowances(fungibleTokenAllowances)
-				.nftAllowances(nftAllowances)
+				.explicitNftAllowances(nftAllowances)
 				.get();
 
 		children.setAccounts(accounts);
@@ -274,7 +275,7 @@ class GetAccountInfoAnswerTest {
 		given(tokens.getOrDefault(EntityNum.fromTokenId(fourthToken), REMOVED_TOKEN)).willReturn(deletedToken);
 		given(tokens.getOrDefault(EntityNum.fromTokenId(missingToken), REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
 		payerAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.lastAssociation()).willReturn(firstRelKey);
+		given(tokenAssociationMetadata.latestAssociation()).willReturn(firstRelKey);
 
 		given(token.symbol()).willReturn("HEYMA");
 		given(deletedToken.symbol()).willReturn("THEWAY");
@@ -320,8 +321,6 @@ class GetAccountInfoAnswerTest {
 						.build(),
 				info.getGrantedTokenAllowances(0));
 		assertEquals(GrantedNftAllowance.newBuilder()
-						.setApprovedForAll(false)
-						.addAllSerialNumbers(List.of(1L, 2L))
 						.setSpender(EntityNum.fromLong(2000L).toGrpcAccountId())
 						.setTokenId(EntityNum.fromLong(1000L).toGrpcTokenId())
 						.build(),

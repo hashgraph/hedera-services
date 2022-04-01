@@ -237,6 +237,7 @@ class TransferPrecompilesTest {
 	void transferFailsFastGivenWrongSyntheticValidity() {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
+		given(frame.getRemainingGas()).willReturn(Gas.of(300));
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -352,6 +353,7 @@ class TransferPrecompilesTest {
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
+		given(frame.getRemainingGas()).willReturn(Gas.of(300));
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 
@@ -814,6 +816,7 @@ class TransferPrecompilesTest {
 	private void givenMinimalFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(frame.getRemainingGas()).willReturn(Gas.of(300));
 		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);

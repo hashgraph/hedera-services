@@ -246,6 +246,7 @@ class ReadOnlyTokenStoreTest {
 		final var merkleUniqueToken = mock(MerkleUniqueToken.class);
 		final var serialNumbers = List.of(1L, 2L);
 		given(merkleUniqueToken.getOwner()).willReturn(new EntityId(Id.DEFAULT));
+		given(merkleUniqueToken.getSpender()).willReturn(new EntityId(Id.DEFAULT));
 		given(uniqueTokens.getImmutableRef(any())).willReturn(merkleUniqueToken);
 
 		subject.loadUniqueTokens(aToken, serialNumbers);

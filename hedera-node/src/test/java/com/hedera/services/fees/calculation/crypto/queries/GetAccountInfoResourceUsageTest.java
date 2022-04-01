@@ -96,8 +96,7 @@ class GetAccountInfoResourceUsageTest {
 	private GrantedTokenAllowance tokenAllowances = GrantedTokenAllowance.newBuilder()
 			.setSpender(proxy).setAmount(10L).setTokenId(IdUtils.asToken("0.0.1000")).build();
 	private GrantedNftAllowance nftAllowances = GrantedNftAllowance.newBuilder().setSpender(proxy)
-			.setTokenId(IdUtils.asToken("0.0.1000"))
-			.addAllSerialNumbers(List.of(1L, 2L, 3L)).build();
+			.setTokenId(IdUtils.asToken("0.0.1000")).build();
 
 	@BeforeEach
 	private void setup() {
