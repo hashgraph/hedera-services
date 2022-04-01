@@ -167,7 +167,6 @@ public class ExpiringCreations implements EntityCreator {
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations())
 				.setCryptoAllowances(sideEffectsTracker.getCryptoAllowances())
-				.setNftAllowances(sideEffectsTracker.getNftAllowances())
 				.setFungibleTokenAllowances(sideEffectsTracker.getFungibleTokenAllowances());
 
 		if (sideEffectsTracker.hasTrackedAutoCreation()) {

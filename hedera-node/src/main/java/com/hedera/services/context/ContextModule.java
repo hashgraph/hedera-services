@@ -21,7 +21,6 @@ package com.hedera.services.context;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.blob.BinaryObjectStore;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -50,11 +49,5 @@ public interface ContextModule {
 	@Singleton
 	static AccountID provideEffectiveNodeAccount(NodeInfo nodeInfo) {
 		return nodeInfo.hasSelfAccount() ? nodeInfo.selfAccount() : AccountID.getDefaultInstance();
-	}
-
-	@Provides
-	@Singleton
-	static Supplier<BinaryObjectStore> provideBinaryObjectStore() {
-		return BinaryObjectStore::getInstance;
 	}
 }

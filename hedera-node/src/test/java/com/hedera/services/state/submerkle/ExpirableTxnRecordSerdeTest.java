@@ -34,8 +34,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
 import java.util.TreeMap;
@@ -53,9 +51,7 @@ class ExpirableTxnRecordSerdeTest {
 				.setCryptoAllowances(randomCryptoAllowances(
 						10, 2, 3))
 				.setFungibleTokenAllowances(randomFungibleAllowances(
-						10, 10, 2, 3))
-				.setNftAllowances(randomNftAllowances(
-						10, 10, 2, 3, 5));
+						10, 10, 2, 3));
 
 		final var subject = builder.build();
 
@@ -160,38 +156,6 @@ class ExpirableTxnRecordSerdeTest {
 				final var tNum = tokens[r.nextInt(tokens.length)];
 				final var key = new FcTokenAllowanceId(tNum, bNum);
 				allowances.put(key, r.nextLong(Long.MAX_VALUE));
-			}
-		}
-		return ans;
-	}
-
-	private Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>>  randomNftAllowances(
-			final int numUniqueAccounts,
-			final int numUniqueTokens,
-			final int numSpenders,
-			final int numAllowancesPerSpender,
-			final int numSerialNosPerNonUniversalAllowance
-	) {
-		final EntityNum[] accounts = randomNums(numUniqueAccounts);
-		final EntityNum[] tokens = randomNums(numUniqueTokens);
-
-		final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> ans = new TreeMap<>();
-		for (int i = 0; i < numSpenders; i++) {
-			final var aNum = accounts[r.nextInt(accounts.length)];
-			final var allowances = ans.computeIfAbsent(aNum, a -> new TreeMap<>());
-			for (int j = 0; j < numAllowancesPerSpender; j++) {
-				final var bNum = accounts[r.nextInt(accounts.length)];
-				final var tNum = tokens[r.nextInt(tokens.length)];
-				final var key = new FcTokenAllowanceId(tNum, bNum);
-				if (r.nextBoolean()) {
-					allowances.put(key, new FcTokenAllowance(true));
-				} else {
-					final List<Long> serialNos = new ArrayList<>();
-					for (int k = 0; k < numSerialNosPerNonUniversalAllowance; k++) {
-						serialNos.add(r.nextLong(BitPackUtils.MAX_NUM_ALLOWED));
-					}
-					allowances.put(key, new FcTokenAllowance(false, serialNos));
-				}
 			}
 		}
 		return ans;

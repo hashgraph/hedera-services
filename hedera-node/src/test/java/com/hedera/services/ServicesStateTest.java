@@ -34,7 +34,6 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
-import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
@@ -143,8 +142,6 @@ class ServicesStateTest {
 	private ServicesInitFlow initFlow;
 	@Mock
 	private ServicesApp.Builder appBuilder;
-	@Mock
-	private ServicesState.BinaryObjectStoreMigrator blobMigrator;
 	@Mock
 	private PrefetchProcessor prefetchProcessor;
 	@Mock
@@ -375,14 +372,11 @@ class ServicesStateTest {
 	@Test
 	void minimumVersionIsRelease0190() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_0190_AND_020_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_0220_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
 	void minimumChildCountsAsExpected() {
-		assertEquals(
-				StateChildIndices.NUM_0210_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0190_AND_020_VERSION));
 		assertEquals(
 				StateChildIndices.NUM_POST_0210_CHILDREN,
 				subject.getMinimumChildCount(StateVersions.RELEASE_0230_VERSION));
@@ -397,17 +391,6 @@ class ServicesStateTest {
 		// expect:
 		assertEquals(0x8e300b0dfdafbb1aL, subject.getClassId());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.getVersion());
-	}
-
-	@Test
-	void defersInitWhenInitializingFromRelease0190() {
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0190_AND_020_VERSION);
-
-		subject.init(platform, addressBook, dualState);
-
-		assertSame(platform, subject.getPlatformForDeferredInit());
-		assertSame(addressBook, subject.getAddressBookForDeferredInit());
-		assertSame(dualState, subject.getDualStateForDeferredInit());
 	}
 
 	@Test
@@ -440,29 +423,6 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void migratesWhenInitializingFromRelease0210() {
-		ServicesState.setStakeFundingMigrator(mockMigrator);
-		ServicesState.setBlobMigrator(blobMigrator);
-
-		subject = mock(ServicesState.class);
-		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0210_VERSION);
-		given(subject.getPlatformForDeferredInit()).willReturn(platform);
-		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
-		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
-		given(subject.accounts()).willReturn(accounts);
-		given(accounts.keySet()).willReturn(Set.of());
-
-		subject.migrate();
-
-		verify(blobMigrator).migrateFromBinaryObjectStore(
-				subject, StateVersions.RELEASE_0210_VERSION);
-		verify(subject).init(platform, addressBook, dualState);
-		ServicesState.setBlobMigrator(ReleaseTwentyTwoMigration::migrateFromBinaryObjectStore);
-		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
-	}
-
-	@Test
 	void migratesWhenInitializingFromRelease0230() {
 		ServicesState.setStakeFundingMigrator(mockMigrator);
 
@@ -479,7 +439,7 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void migratesWhenInitializingFromStateWithReleaseLessThan0240() {
+	void migratesWhenInitializingFromStateWithReleaseLessThan0250() {
 		var merkleAccount1 = mock(MerkleAccount.class);
 		var merkleAccount2 = mock(MerkleAccount.class);
 		var merkleAccountTokens1 = mock(MerkleAccountTokens.class);
@@ -500,7 +460,7 @@ class ServicesStateTest {
 		tokenAssociations.put(associationKey2, association2);
 		tokenAssociations.put(associationKey3, association3);
 
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0230_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0240_VERSION);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		given(accounts.keySet()).willReturn(Set.of(account1, account2));
