@@ -32,7 +32,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
@@ -65,9 +64,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
@@ -80,6 +81,8 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -171,7 +174,7 @@ class OpUsageCtxHelperTest {
 		given(workingView.accounts()).willReturn(accounts);
 		given(accounts.get(any())).willReturn(merkleAccount);
 		given(merkleAccount.getCryptoAllowances()).willReturn(Collections.emptyMap());
-		given(merkleAccount.getNftAllowances()).willReturn(Collections.emptyMap());
+		given(merkleAccount.getApproveForAllNfts()).willReturn(Collections.emptySet());
 		given(merkleAccount.getFungibleTokenAllowances()).willReturn(Collections.emptyMap());
 		given(merkleAccount.getAccountKey()).willReturn(asUsableFcKey(key).get());
 		given(merkleAccount.getMemo()).willReturn(memo);
@@ -191,7 +194,6 @@ class OpUsageCtxHelperTest {
 	void returnsExpectedCtxForCryptoApproveAccount() {
 		var accounts = mock(MerkleMap.class);
 		var merkleAccount = mock(MerkleAccount.class);
-		var tokenAssociationMetadata = mock(TokenAssociationMetadata.class);
 		given(workingView.accounts()).willReturn(accounts);
 		given(accounts.get(any())).willReturn(merkleAccount);
 		given(merkleAccount.getAccountKey()).willReturn(asUsableFcKey(key).get());
@@ -201,7 +203,7 @@ class OpUsageCtxHelperTest {
 		given(merkleAccount.getProxy()).willReturn(new EntityId());
 		given(merkleAccount.getCryptoAllowances()).willReturn(cryptoAllowance);
 		given(merkleAccount.getFungibleTokenAllowances()).willReturn(tokenAllowance);
-		given(merkleAccount.getNftAllowances()).willReturn(nftAllowance);
+		given(merkleAccount.getApproveForAllNfts()).willReturn(nftAllowance);
 
 		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 
@@ -227,14 +229,12 @@ class OpUsageCtxHelperTest {
 
 	@Test
 	void returnsMissingCtxWhenApproveAccountNotFound() {
-		var accounts = mock(MerkleMap.class);
-		given(workingView.accounts()).willReturn(accounts);
-		given(accounts.get(any())).willReturn(null);
+		given(workingView.accounts()).willReturn(new MerkleMap<>());
 
 		final var ctx = subject.ctxForCryptoAllowance(TransactionBody.getDefaultInstance());
 
 		assertEquals(DEFAULT_MEMO, ctx.currentMemo());
-		assertEquals(Collections.emptyMap(), ctx.currentNftAllowances());
+		assertEquals(Collections.emptySet(), ctx.currentNftAllowances());
 		assertEquals(Collections.emptyMap(), ctx.currentTokenAllowances());
 		assertEquals(Collections.emptyMap(), ctx.currentCryptoAllowances());
 	}
@@ -422,9 +422,8 @@ class OpUsageCtxHelperTest {
 				EntityNum.fromAccountId(spender1)), 10L);
 	}};
 
-	private final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowance = new HashMap<>() {{
-		put(FcTokenAllowanceId.from(new EntityNum(1000),
-						EntityNum.fromAccountId(spender1)),
-				FcTokenAllowance.from(List.of(1L, 2L, 3L)));
+	private final Set<FcTokenAllowanceId> nftAllowance = new HashSet<>() {{
+		add(FcTokenAllowanceId.from(new EntityNum(1000),
+						EntityNum.fromAccountId(spender1)));
 	}};
 }

@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -110,7 +109,6 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	@Override
 	protected MessageFrame buildInitialFrame(
 			final MessageFrame.Builder baseInitialFrame,
-			final HederaWorldUpdater updater,
 			final Address to,
 			final Bytes payload
 	) {

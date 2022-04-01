@@ -27,7 +27,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
@@ -41,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
@@ -86,6 +86,8 @@ class MerkleAccountTest {
 	private static final boolean otherSmartContract = false;
 	private static final boolean otherReceiverSigRequired = false;
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
+	private static final FcTokenAllowanceId tokenAllowanceKey =
+			FcTokenAllowanceId.from( EntityNum.fromLong(2000L),  EntityNum.fromLong(1000L));
 	private static final TokenAssociationMetadata tokenAssociationMetaData = new TokenAssociationMetadata(
 			0, 0, lastAssociationKey);
 
@@ -93,8 +95,8 @@ class MerkleAccountTest {
 	private FCQueue<ExpirableTxnRecord> payerRecords;
 	private MerkleAccountTokens tokens;
 	private TreeMap<EntityNum, Long> cryptoAllowances;
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
+	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
 
 	private MerkleAccountState delegate;
 
@@ -112,8 +114,9 @@ class MerkleAccountTest {
 		given(tokens.copy()).willReturn(tokens);
 
 		cryptoAllowances = mock(TreeMap.class);
-		nftAllowances = mock(TreeMap.class);
 		fungibleTokenAllowances = mock(TreeMap.class);
+		approveForAllNfts = new TreeSet<>();
+		approveForAllNfts.add(tokenAllowanceKey);
 
 		delegate = mock(MerkleAccountState.class);
 
@@ -129,7 +132,7 @@ class MerkleAccountTest {
 				kvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				nftAllowances);
+				approveForAllNfts);
 		state.setTokenAssociationMetadata(tokenAssociationMetaData);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
@@ -223,7 +226,7 @@ class MerkleAccountTest {
 		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
 		assertEquals(state.getCryptoAllowances().entrySet(), subject.getCryptoAllowances().entrySet());
 		assertEquals(state.getFungibleTokenAllowances().entrySet(), subject.getFungibleTokenAllowances().entrySet());
-		assertEquals(state.getNftAllowances().entrySet(), subject.getNftAllowances().entrySet());
+		assertEquals(state.getApproveForAllNfts(), subject.getApproveForAllNfts());
 		assertEquals(state.getTokenAssociationMetadata(), subject.getTokenAssociationMetadata());
 	}
 
@@ -259,7 +262,7 @@ class MerkleAccountTest {
 		subject.setNumContractKvPairs(kvPairs);
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
-		subject.setNftAllowances(nftAllowances);
+		subject.setApproveForAllNfts(approveForAllNfts);
 		subject.setTokenAssociationMetadata(tokenAssociationMetaData);
 
 		verify(delegate).setExpiry(otherExpiry);
@@ -279,7 +282,7 @@ class MerkleAccountTest {
 		verify(delegate).setAlias(alias);
 		verify(delegate).setCryptoAllowances(cryptoAllowances);
 		verify(delegate).setFungibleTokenAllowances(fungibleTokenAllowances);
-		verify(delegate).setNftAllowances(nftAllowances);
+		verify(delegate).setApproveForAllNfts(approveForAllNfts);
 		verify(delegate).setTokenAssociationMetadata(tokenAssociationMetaData);
 	}
 

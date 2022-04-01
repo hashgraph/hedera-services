@@ -68,7 +68,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				simpleFactoryWorks(),
 				stackedFactoryWorks(),
 				resetOnFactoryFailureWorks(),
@@ -79,7 +79,7 @@ public class CreateOperationSuite extends HapiApiSuite {
 //				factoryQuickSelfDestructContract(),
 				contractCreateWithNewOpInConstructor(),
 				childContractStorageWorks()
-		);
+		});
 	}
 
 	private HapiApiSpec factoryAndSelfDestructInConstructorContract() {
@@ -326,7 +326,8 @@ public class CreateOperationSuite extends HapiApiSuite {
 						getTxnRecord("AbandoningParentTxn")
 								.saveCreatedContractListToRegistry("AbandoningParent")
 								.logged(),
-						UtilVerbs.contractListWithPropertiesInheritedFrom("AbandoningParentCreateResult", 6, "AbandoningParentParentInfo")
+						UtilVerbs.contractListWithPropertiesInheritedFrom("AbandoningParentCreateResult", 6,
+								"AbandoningParentParentInfo")
 				);
 	}
 

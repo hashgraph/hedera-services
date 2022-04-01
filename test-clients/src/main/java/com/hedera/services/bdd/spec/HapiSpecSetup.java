@@ -216,9 +216,6 @@ public class HapiSpecSetup {
 	public AccountID defaultProxy() {
 		return props.getAccount("default.proxy");
 	}
-	public AccountID defaultProxyName() {
-		return props.getAccount("default.proxy.name");
-	}
 	public long defaultQueueSaturationMs() { return props.getLong("default.queueSaturation.ms"); }
 	public RealmID defaultRealm() {
 		return props.getRealm("default.realm");
@@ -299,15 +296,6 @@ public class HapiSpecSetup {
 	}
 	public String updateFeatureName() { return props.get("update.feature.name"); }
 
-	public FileID migrationFileID() { return props.getFile("migration.file.id"); }
-	public String migrationFileName() { return props.get("migration.file.name"); }
-	public AccountID migrationAccountAID() { return props.getAccount("migration.crypto.AccountA.id"); }
-	public String migrationAccountAName() { return props.get("migration.crypto.AccountA.name"); }
-	public AccountID migrationAccountBID() { return props.getAccount("migration.crypto.AccountB.id"); }
-	public String migrationAccountBName() { return props.get("migration.crypto.AccountB.name"); }
-	public ContractID migrationSmartContractID() { return props.getContract("migration.smartContract.id"); }
-	public String migrationSmartContractName() { return props.get("migration.smartContract.name"); }
-
 	public AccountID fundingAccount() { return props.getAccount("funding.account"); }
 	public String fundingAccountName() { return props.get("funding.account.name"); }
 	public AccountID genesisAccount() { return props.getAccount("genesis.account"); }
@@ -387,7 +375,6 @@ public class HapiSpecSetup {
 		}
 		return useTls;
 	}
-
 	TxnProtoStructure txnProtoStructure() {
 		var protoStructure = props.getTxnConfig("txn.proto.structure");
 		if (TxnProtoStructure.ALTERNATE == protoStructure) {
