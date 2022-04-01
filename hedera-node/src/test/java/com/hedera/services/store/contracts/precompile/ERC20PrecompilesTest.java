@@ -236,9 +236,9 @@ class ERC20PrecompilesTest {
     void invalidNestedFunctionSelector () {
         givenMinimalFrameContextWithoutParentUpdater();
 
-        given(frame.isStatic()).willReturn(true);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(nestedPretendArguments.getInt(0)).willReturn(0);
+        given(worldUpdater.hasMutableLedgers()).willReturn(true);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         subject.prepareFields(frame);
@@ -252,6 +252,7 @@ class ERC20PrecompilesTest {
         givenMinimalFrameContext();
 
         given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(worldUpdater.hasMutableLedgers()).willReturn(true);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_NAME);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -299,6 +300,7 @@ class ERC20PrecompilesTest {
         given(hederaTokenStoreFactory.newHederaTokenStore(
                 ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);
+        given(worldUpdater.hasMutableLedgers()).willReturn(true);
 
         given(transferLogicFactory.newLogic(
                 accounts, nfts, tokenRels, hederaTokenStore,

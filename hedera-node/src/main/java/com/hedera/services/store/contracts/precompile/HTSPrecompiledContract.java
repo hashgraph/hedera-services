@@ -149,10 +149,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
 	public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
 			Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
-	public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID = EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
+	public static final EntityId HTS_PRECOMPILE_MIRROR_ENTITY_ID =
+			EntityId.fromGrpcContractId(HTS_PRECOMPILE_MIRROR_ID);
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
+	private static final Bytes UNSUPPORTED_REDIRECT_REVERT_REASON =
+			Bytes.of("Redirects not supported in ContractCallLocal query".getBytes());
 	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
@@ -298,9 +301,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame messageFrame) {
- 		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
-
-		if (messageFrame.isStatic() && !isRedirectProxy) {
+		final var isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
+		if (isRedirectProxy) {
+			final var proxyUpdater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
+			if (!proxyUpdater.hasMutableLedgers()) {
+				// A ContractCallLocal cannot use the token proxy redirects
+				messageFrame.setRevertReason(UNSUPPORTED_REDIRECT_REVERT_REASON);
+				return null;
+			}
+		} else if (messageFrame.isStatic()) {
+			// Within a ContractCall or ContractCreate, only the redirect precompiles can use a static call
 			messageFrame.setRevertReason(STATIC_CALL_REVERT_REASON);
 			return null;
 		}
@@ -1328,7 +1338,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return activationTest.apply(true, target, recipient, ledgers);
 		} else {
 			final var parentFrame = getParentFrame(frame);
-			return activationTest.apply(parentFrame.isPresent() && isDelegateCall(parentFrame.get()), target, sender, ledgers);
+			return activationTest.apply(parentFrame.isPresent() && isDelegateCall(parentFrame.get()), target, sender,
+					ledgers);
 		}
 	}
 

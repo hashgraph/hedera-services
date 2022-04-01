@@ -44,6 +44,8 @@ import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC_20_DECIMALS_CALL;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -102,27 +104,27 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
-				ERC_20(),
-				ERC_721()
+				ERC_20()
+//				ERC_721()
 		);
 	}
 
 	List<HapiApiSpec> ERC_20() {
-		return List.of(
-				getErc20TokenName(),
-				getErc20TokenSymbol(),
+		return List.of(new HapiApiSpec[] {
+//				getErc20TokenName(),
+//				getErc20TokenSymbol(),
 				getErc20TokenDecimals(),
-				getErc20TotalSupply(),
-				getErc20BalanceOfAccount(),
-				transferErc20Token(),
-				erc20AllowanceReturnsFails(),
-				erc20ApproveReturnsFails(),
-				getErc20TokenDecimalsFromErc721TokenFails(),
-				transferErc20TokenFromErc721TokenFails(),
-				transferErc20TokenReceiverContract(),
-				transferErc20TokenSenderAccount(),
-				transferErc20TokenAliasedSender()
-		);
+//				getErc20TotalSupply(),
+//				getErc20BalanceOfAccount(),
+//				transferErc20Token(),
+//				erc20AllowanceReturnsFails(),
+//				erc20ApproveReturnsFails(),
+//				getErc20TokenDecimalsFromErc721TokenFails(),
+//				transferErc20TokenFromErc721TokenFails(),
+//				transferErc20TokenReceiverContract(),
+//				transferErc20TokenSenderAccount(),
+//				transferErc20TokenAliasedSender()
+		});
 	}
 
 	List<HapiApiSpec> ERC_721() {
@@ -241,6 +243,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	private HapiApiSpec getErc20TokenDecimals() {
 		final var decimals = 10;
 		final var decimalsTxn = "decimalsTxn";
+		final AtomicReference<byte[]> tokenAddr = new AtomicReference<>();
 
 		return defaultHapiSpec("ERC_20_DECIMALS")
 				.given(
@@ -256,22 +259,24 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 								.adminKey(MULTI_KEY)
 								.supplyKey(MULTI_KEY),
 						fileCreate(ERC_20_CONTRACT_NAME),
-						updateLargeFile(ACCOUNT, ERC_20_CONTRACT_NAME, extractByteCode(ContractResources.ERC_20_CONTRACT)),
+						updateLargeFile(ACCOUNT, ERC_20_CONTRACT_NAME,
+								extractByteCode(ContractResources.ERC_20_CONTRACT)),
 						contractCreate(ERC_20_CONTRACT_NAME)
 								.bytecode(ERC_20_CONTRACT_NAME)
 								.gas(300_000)
 				).when(withOpContext(
-								(spec, opLog) ->
-										allRunFor(
-												spec,
-												contractCall(ERC_20_CONTRACT_NAME,
-														ContractResources.ERC_20_DECIMALS_CALL,
-														asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)))
-														.payingWith(ACCOUNT)
-														.via(decimalsTxn)
-														.hasKnownStatus(SUCCESS)
-														.gas(GAS_TO_OFFER)
-										)
+								(spec, opLog) -> {
+									tokenAddr.set(asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN)));
+									final var nonStaticLookup = contractCall(ERC_20_CONTRACT_NAME,
+											ERC_20_DECIMALS_CALL,
+											tokenAddr.get()
+									)
+											.payingWith(ACCOUNT)
+											.via(decimalsTxn)
+											.hasKnownStatus(SUCCESS)
+											.gas(GAS_TO_OFFER);
+									allRunFor(spec, nonStaticLookup);
+								}
 						)
 				).then(
 						childRecordsCheck(decimalsTxn, SUCCESS,
@@ -281,10 +286,9 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 												resultWith()
 														.contractCallResult(htsPrecompileResult()
 																.forFunction(HTSPrecompileResult.FunctionType.DECIMALS)
-																.withDecimals(decimals)
-														)
-										)
-						)
+																.withDecimals(decimals)))),
+						sourcing(() -> contractCallLocal(ERC_20_CONTRACT_NAME, ERC_20_DECIMALS_CALL, tokenAddr.get())
+								.hasAnswerOnlyPrecheck(CONTRACT_REVERT_EXECUTED))
 				);
 	}
 
@@ -829,7 +833,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												contractCall(ERC_20_CONTRACT_NAME,
-														ContractResources.ERC_20_DECIMALS_CALL,
+														ERC_20_DECIMALS_CALL,
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)))
 														.payingWith(ACCOUNT)
 														.via(invalidDecimalsTxn)
