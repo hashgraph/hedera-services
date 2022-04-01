@@ -890,18 +890,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 *     passing random bytes through the {@code encode()} Solidity method), which cannot be decoded to a valid
 	 *     {@link TokenCreateWrapper}.
 	 *     		<ul>
-	 *     		 	<li><b>result</b> - (TBD) the {@link DecodingFacade} throws an exception and null is returned
-	 *     		 	from the {@link HTSPrecompiledContract}</li>
-	 *     		 	<li><b>gas cost</b> - TBD</li>
+	 *     		 	<li><b>result</b> - the {@link DecodingFacade} throws an exception and null is returned
+	 *     		 	from the {@link HTSPrecompiledContract}, setting the message frame's revert reason to the
+	 *     			{@code ERROR_DECODING_INPUT_REVERT_REASON} constant
+	 *     		 	</li>
+	 *     		 	<li><b>gas cost</b> - the current value returned from {@code dynamicProperties.htsDefaultGasCost()}
+	 *     		 	<li><b>hbar cost</b> - all sent HBars are refunded to the frame sender
+	 *     		 	</li>
 	 *     		</ul>
 	 *     	</li>
 	 *     <li>The decoding succeeds, we create a valid {@link TokenCreateWrapper}, but we cannot translate it to a
 	 *     valid token create {@link TransactionBody}. This comes from <b>difference in the design of the Solidity
-	 *     function interface and the HAPI API (protobufs)</b>
+	 *     function interface and the HAPI (protobufs)</b>
 	 *     		<ul>
-  	 *     		 	<li><b>result</b> - {@link MessageFrame}'s revertReason is set to the specific error and null is
-	 *     		 	returned from the {@link HTSPrecompiledContract}</li>
-	 * 	    		<li><b>gas cost</b> - TBD</li>
+  	 *     		 	<li><b>result</b> - {@link MessageFrame}'s revertReason is set to the
+	 *     		 	{@code ERROR_DECODING_INPUT_REVERT_REASON} constant and null is returned from the
+	 *     		 	{@link HTSPrecompiledContract}</li>
+	 * 	    		<li><b>gas cost</b> - the current value returned from {@code dynamicProperties.htsDefaultGasCost()}
+	 * 	    		<li><b>hbar cost</b> - all sent HBars are refunded to the frame sender
 	 *     		</ul>
 	 *     	</li>
 	 *     <li>The decoding succeeds, we create a valid {@link TokenCreateWrapper}, we successfully translate it to a
@@ -912,7 +918,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 *     		 	code. (from the point of view of the EVM this is a successful precompile call, however, from a
 	 *     		 	Hedera's perspective there has been a problem during the execution)
 	 *     		 	</li>
-	 * 	    		<li><b>gas cost</b> - TBD</li>
+	 * 	    		<li><b>gas cost</b> - 100 000 gas</li>
+	 * 	    		<li><b>hbar cost</b> - the HBars needed for the token creation are charged from the
+	 * 	    		frame sender address (any excess HBars are refunded)
+	 * 	    		</li>
 	 *     		</ul>
 	 *     	</li>
 	 *     <li>The decoding succeeds, we create a valid {@link TokenCreateWrapper}, we successfully translate it to a
@@ -921,7 +930,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 *     		<ul>
 	 *     		 	<li><b>result</b> - a child {@link ExpirableTxnRecord} is created, containing the successful
 	 *     		 	response code and the ID of the newly created token.</li>
-	 * 	    		<li><b>gas cost</b> - TBD</li>
+	 * 	    		<li><b>gas cost</b> - 100 000 gas</li>
+	 * 	    		<li><b>hbar cost</b> - the HBars needed for the token creation are charged from the
+	 * 	    		frame sender address (any excess HBars are refunded)
 	 *     		</ul>
 	 *     	</li>
 	 * </ol>
