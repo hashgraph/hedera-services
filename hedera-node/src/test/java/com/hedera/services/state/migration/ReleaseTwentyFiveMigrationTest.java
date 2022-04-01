@@ -30,7 +30,7 @@ class ReleaseTwentyFiveMigrationTest {
 
 	@Test
 	void givenEmptyDataSetToMigrate_properlyMigrated() {
-		ReleaseTwentyFiveMigration.migrateFromUniqueTokenMerkleMap(state, StateVersions.RELEASE_0240_VERSION);
+		ReleaseTwentyFiveMigration.migrateFromUniqueTokenMerkleMap(state);
 		VirtualMap<UniqueTokenKey, UniqueTokenValue> result = state.getChild(UNIQUE_TOKENS);
 		assertThat(result.isEmpty()).isTrue();
 	}
@@ -59,7 +59,7 @@ class ReleaseTwentyFiveMigrationTest {
 						"hello 3".getBytes(),
 						RichInstant.fromJava(Instant.ofEpochSecond(5555L, 5L))));
 
-		ReleaseTwentyFiveMigration.migrateFromUniqueTokenMerkleMap(state, StateVersions.RELEASE_0240_VERSION);
+		ReleaseTwentyFiveMigration.migrateFromUniqueTokenMerkleMap(state);
 
 		VirtualMap<UniqueTokenKey, UniqueTokenValue> result = state.getChild(UNIQUE_TOKENS);
 		assertThat(result.size()).isEqualTo(3);

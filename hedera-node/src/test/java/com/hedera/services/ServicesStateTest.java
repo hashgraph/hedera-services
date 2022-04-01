@@ -33,6 +33,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -148,6 +149,8 @@ class ServicesStateTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
 	private Consumer<ServicesState> mockMigrator;
+	@Mock
+	private Consumer<ServicesState> uniqueTokenMigrator;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -160,6 +163,10 @@ class ServicesStateTest {
 		if (APPS.includes(selfId.getId())) {
 			APPS.clear(selfId.getId());
 		}
+
+		// Ensure any stubbed mocks are removed.
+		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
+		ServicesState.setUniqueTokenMigrator(ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap);
 	}
 
 	@Test
@@ -260,7 +267,7 @@ class ServicesStateTest {
 
 		// then:
 		verify(metadata).archive();
-		verify(mockMm, times(6)).archive();
+		verify(mockMm, times(5)).archive();
 	}
 
 	@Test
@@ -410,21 +417,22 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void doesntMigrateWhenInitializingFromRelease0220() {
+	void migratesWhenInitializingFromRelease0220() {
 		given(accounts.keySet()).willReturn(Set.of());
 		ServicesState.setStakeFundingMigrator(mockMigrator);
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
 
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		assertDoesNotThrow(subject::migrate);
-
-		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
+		verify(mockMigrator).accept(subject);
 	}
 
 	@Test
 	void migratesWhenInitializingFromRelease0230() {
 		ServicesState.setStakeFundingMigrator(mockMigrator);
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
 
 		subject = mock(ServicesState.class);
 		doCallRealMethod().when(subject).migrate();
@@ -435,11 +443,11 @@ class ServicesStateTest {
 		subject.migrate();
 
 		verify(mockMigrator).accept(subject);
-		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
 	}
 
 	@Test
 	void migratesWhenInitializingFromStateWithReleaseLessThan0250() {
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
 		var merkleAccount1 = mock(MerkleAccount.class);
 		var merkleAccount2 = mock(MerkleAccount.class);
 		var merkleAccountTokens1 = mock(MerkleAccountTokens.class);
@@ -486,6 +494,7 @@ class ServicesStateTest {
 		assertEquals(associationKey2, tokenAssociations.get(associationKey3).nextKey());
 		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey3).prevKey());
 		assertEquals(associationKey3, tokenAssociations.get(associationKey3).getKey());
+		ServicesState.setUniqueTokenMigrator(ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap);
 	}
 
 	@Test

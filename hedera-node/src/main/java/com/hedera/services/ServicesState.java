@@ -507,4 +507,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	static void setStakeFundingMigrator(final Consumer<ServicesState> stakeFundingMigrator) {
 		ServicesState.stakeFundingMigrator = stakeFundingMigrator;
 	}
+
+	static void setUniqueTokenMigrator(final Consumer<ServicesState> uniqueTokenMigrator) {
+		ServicesState.uniqueTokenMigrator = uniqueTokenMigrator;
+	}
 }
