@@ -54,6 +54,10 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.validateA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+/**
+ * Implements the {@link TransitionLogic} for a HAPI CryptoAdjustAllowance transaction,
+ * and the conditions under which such logic is syntactically correct.
+ */
 public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
@@ -129,8 +133,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		final var op = cryptoAllowanceTxn.getCryptoAdjustAllowance();
 		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 		return adjustAllowanceChecks.allowancesValidation(op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(), op.getNftAllowancesList(), payerAccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction(), workingView);
+				op.getTokenAllowancesList(), op.getNftAllowancesList(), payerAccount, workingView);
 	}
 
 	/**

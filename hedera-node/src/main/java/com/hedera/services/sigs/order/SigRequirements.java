@@ -38,12 +38,14 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
@@ -54,6 +56,7 @@ import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.annotation.Nullable;
@@ -260,6 +263,10 @@ public class SigRequirements {
 			final var adjustTxn = txn.getCryptoAdjustAllowance();
 			return cryptoAllowance(payer, adjustTxn.getCryptoAllowancesList(), adjustTxn.getTokenAllowancesList(),
 					adjustTxn.getNftAllowancesList(), factory, linkedRefs);
+		} else if (txn.hasCryptoDeleteAllowance()) {
+			final var deleteAllowanceTxn = txn.getCryptoDeleteAllowance();
+			return cryptoDeleteAllowance(payer, deleteAllowanceTxn.getCryptoAllowancesList(), deleteAllowanceTxn.getTokenAllowancesList(),
+					deleteAllowanceTxn.getNftAllowancesList(), factory, linkedRefs);
 		} else {
 			return null;
 		}
@@ -557,6 +564,37 @@ public class SigRequirements {
 				else {
 					return factory.forInvalidDelegatingSpender();
 				}
+			}
+		}
+
+		return factory.forValidOrder(requiredKeys);
+	}
+
+	private <T> SigningOrderResult<T> cryptoDeleteAllowance(
+			final AccountID payer,
+			final List<CryptoRemoveAllowance> cryptoAllowancesList,
+			final List<TokenRemoveAllowance> tokenAllowancesList,
+			final List<NftRemoveAllowance> nftAllowancesList,
+			final SigningOrderResultFactory<T> factory,
+			final @Nullable LinkedRefs linkedRefs) {
+		List<JKey> requiredKeys = new ArrayList<>();
+
+		for (final var allowance : cryptoAllowancesList) {
+			final var owner = allowance.getOwner();
+			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+				return factory.forInvalidAllowanceOwner();
+			}
+		}
+		for (final var allowance : tokenAllowancesList) {
+			final var owner = allowance.getOwner();
+			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+				return factory.forInvalidAllowanceOwner();
+			}
+		}
+		for (final var allowance : nftAllowancesList) {
+			final var owner = allowance.getOwner();
+			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {
+				return factory.forInvalidAllowanceOwner();
 			}
 		}
 

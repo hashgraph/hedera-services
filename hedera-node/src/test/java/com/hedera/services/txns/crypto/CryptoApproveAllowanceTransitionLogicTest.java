@@ -216,7 +216,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				op.getTokenAllowancesList(),
 				op.getNftAllowancesList(),
 				payerAcccount,
-				dynamicProperties.maxAllowanceLimitPerTransaction(), view))
+				view))
 				.willReturn(OK);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		assertEquals(OK, subject.semanticCheck().apply(cryptoApproveAllowanceTxn));

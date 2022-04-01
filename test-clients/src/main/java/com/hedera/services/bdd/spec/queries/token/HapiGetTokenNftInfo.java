@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -44,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	private static final Logger log = LogManager.getLogger(HapiGetTokenNftInfo.class);
+	public static final String MISSING_SPENDER = "missing";
 
 	String token;
 	long serialNum;
@@ -57,22 +59,21 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 	Optional<ByteString> expectedMetadata = Optional.empty();
 	Optional<String> expectedTokenID = Optional.empty();
 	Optional<String> expectedAccountID = Optional.empty();
-	Optional<String> expectedSpenderID = Optional.empty();
 	Optional<Boolean> expectedCreationTime = Optional.empty();
-	Optional<Boolean> hasNoSpender = Optional.empty();
+	Optional<String> expectedSpenderID = Optional.empty();
 
 	public HapiGetTokenNftInfo hasAccountID(String name) {
 		expectedAccountID = Optional.of(name);
 		return this;
 	}
 
-	public HapiGetTokenNftInfo hasSpenderId(String name) {
+	public HapiGetTokenNftInfo hasSpenderID(String name) {
 		expectedSpenderID = Optional.of(name);
 		return this;
 	}
 
 	public HapiGetTokenNftInfo hasNoSpender() {
-		hasNoSpender = Optional.of(true);
+		expectedSpenderID = Optional.of(MISSING_SPENDER);
 		return this;
 	}
 
@@ -125,12 +126,21 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 					"Wrong account ID account!");
 		}
 
+
 		if (expectedSpenderID.isPresent()) {
-			var id = TxnUtils.asId(expectedSpenderID.get(), spec);
-			assertEquals(
-					id,
-					actualInfo.getSpenderId(),
-					"Wrong spender ID on the NFT!");
+			if (expectedSpenderID.get().equals(MISSING_SPENDER)) {
+				Assertions.assertEquals(
+						0,
+						actualInfo.getSpenderId().getAccountNum(),
+						"Wrong account ID account!");
+			} else {
+				var id = TxnUtils.asId(expectedSpenderID.get(), spec);
+				Assertions.assertEquals(
+						id,
+						actualInfo.getSpenderId(),
+						"Wrong spender ID account!");
+			}
+
 		}
 
 		expectedMetadata.ifPresent(bytes -> assertEquals(
@@ -138,21 +148,16 @@ public class HapiGetTokenNftInfo extends HapiQueryOp<HapiGetTokenNftInfo> {
 				actualInfo.getMetadata(),
 				"Wrong metadata!"));
 
-		if (hasNoSpender.isPresent()) {
-			if (hasNoSpender.get()) {
-				assertEquals(actualInfo.getSpenderId().getAccountNum(), 0L,
-						"expected no spender on NFT, but has a spender : " + actualInfo.getSpenderId());
-			}
-		}
-
 		assertFor(
 				actualInfo.getCreationTime(),
+
 				expectedCreationTime,
 				(n, r) -> r.getCreationTime(token),
 				"Wrong creation time (seconds)!",
 				spec.registry());
 
 		var registry = spec.registry();
+
 		assertFor(
 				actualInfo.getNftID().getTokenID(),
 				expectedTokenID,

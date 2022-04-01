@@ -140,7 +140,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private record ExpectedChildInfo(String aliasingKey) {}
 	private record ExpectedCryptoAllowance(String owner, String spender, Long allowance) {}
 	private record ExpectedTokenAllowance(String owner, String token, String spender, Long allowance) {}
-	private record ExpectedNftAllowance(String owner, String token, String spender, Boolean isApproveForAll, List<Long> serialNums) {}
 
 	private Map<Integer, ExpectedChildInfo>	childExpectations = new HashMap<>();
 

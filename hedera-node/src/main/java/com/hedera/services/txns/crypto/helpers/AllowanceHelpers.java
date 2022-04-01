@@ -177,6 +177,22 @@ public class AllowanceHelpers {
 		return Collections.emptyList();
 	}
 
+	/**
+	 * Returns owner account to be considered for the allowance changes. If the owner is missing in allowance,
+	 * considers payer of the transaction as the owner. This is same for CryptoApproveAlowance, CryptoAdjustAllowance
+	 * and CryptoDeleteAllowance transaction.Looks at entitiesChanged map before fetching from accountStore for
+	 * performance.
+	 *
+	 * @param owner
+	 * 		given owner
+	 * @param payerAccount
+	 * 		given payer for the transaction
+	 * @param accountStore
+	 * 		account store
+	 * @param entitiesChanged
+	 * 		map of all entities that are changed
+	 * @return owner account
+	 */
 	public static Account fetchOwnerAccount(final AccountID owner,
 			final Account payerAccount,
 			final AccountStore accountStore,
@@ -238,7 +254,19 @@ public class AllowanceHelpers {
 		return nfts;
 	}
 
-	private static boolean validOwner(final UniqueToken nft, final Id ownerId, final Token token) {
+	/**
+	 * Checks the owner of token is treasury or the owner id given in allowance. If not, considers as an invalid owner
+	 * and returns false.
+	 *
+	 * @param nft
+	 * 		given nft
+	 * @param ownerId
+	 * 		owner given in allowance
+	 * @param token
+	 * 		token for which nft belongs to
+	 * @return
+	 */
+	public static boolean validOwner(final UniqueToken nft, final Id ownerId, final Token token) {
 		final var listedOwner = nft.getOwner();
 		return MISSING_ID.equals(listedOwner)
 				? ownerId.equals(token.getTreasury().getId())
@@ -246,7 +274,10 @@ public class AllowanceHelpers {
 	}
 
 	/**
-	 * Checks if the total allowances of an account will exceed the limit after applying this transaction
+	 * Checks if the total allowances of an account will exceed the limit after applying this transaction.
+	 * This limit doesn't include number of serials for nfts, since they are  not stored on account. The limit
+	 * includes number of crypto allowances, number of fungible token allowances and number of approvedForAll Nft
+	 * allowances on owner account
 	 *
 	 * @param owner
 	 * 		The Account to validate the allowances limit on.

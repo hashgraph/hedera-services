@@ -114,6 +114,11 @@ public class UniqueToken {
 		this.metadata = metadata;
 	}
 
+
+	public void clearSpender() {
+		this.spender = Id.DEFAULT;
+	}
+
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
