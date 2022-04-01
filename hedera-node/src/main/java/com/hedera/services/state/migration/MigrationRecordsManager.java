@@ -95,9 +95,11 @@ public class MigrationRecordsManager {
 			return;
 		}
 
-		final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
-		STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
-
+		// After release 0.24.1, we publish creation records for 0.0.800 and 0.0.801 _only_ on a network reset
+		if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
+			final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
+			STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
+		}
 		curNetworkCtx.markMigrationRecordsStreamed();
 	}
 
