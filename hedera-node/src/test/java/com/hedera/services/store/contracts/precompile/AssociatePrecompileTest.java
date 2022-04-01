@@ -82,6 +82,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accoun
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failInvalidResult;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.insufficientGasResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiAssociateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
@@ -191,6 +192,38 @@ class AssociatePrecompileTest {
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
+	}
+
+	@Test
+	void failsFastWithInsufficentGas() {
+		// given:
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+		given(frame.getRemainingGas()).willReturn(Gas.of(-1));
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_ASSOCIATE_TOKEN);
+		given(decoder.decodeAssociation(eq(pretendArguments), any())).willReturn(associateOp);
+		given(syntheticTxnFactory.createAssociate(associateOp)).willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
+				.willReturn(1L);
+		given(mockSynthBodyBuilder.build()).
+				willReturn(TransactionBody.newBuilder().build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(feeCalculator.computeFee(any(), any(), any(), any()))
+				.willReturn(mockFeeObject);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+
+		// when:
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, a -> a);
+		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
+		final var result = subject.computeInternal(frame);
+
+		assertEquals(insufficientGasResult, result);
 	}
 
 	@Test
