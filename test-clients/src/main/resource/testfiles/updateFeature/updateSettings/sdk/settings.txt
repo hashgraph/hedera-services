@@ -23,3 +23,4 @@ state.signedStateKeep,                         100
 throttle7extra,                                0.5
 useLoopbackIp,                                 false
 waitAtStartup,                                 false
+requireStateLoad                               true
