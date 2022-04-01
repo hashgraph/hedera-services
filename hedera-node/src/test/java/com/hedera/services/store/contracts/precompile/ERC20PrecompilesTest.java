@@ -233,7 +233,7 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void invalidNestedFunctionSelector () {
+    void invalidNestedFunctionSelector() {
         givenMinimalFrameContextWithoutParentUpdater();
 
         given(wrappedLedgers.tokens()).willReturn(tokens);
@@ -247,9 +247,24 @@ class ERC20PrecompilesTest {
         assertNull(result);
     }
 
-    @Test
-    void gasCalculationForReadOnlyMethod() {
-        givenMinimalFrameContext();
+	@Test
+	void requiresMutableLedgers() {
+		givenMinimalFrameContextWithoutParentUpdater();
+
+		given(wrappedLedgers.tokens()).willReturn(tokens);
+		given(nestedPretendArguments.getInt(0)).willReturn(0);
+		given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
+		final var result = subject.compute(pretendArguments, frame);
+		assertNull(result);
+		verify(frame).setRevertReason(HTSPrecompiledContract.UNSUPPORTED_REDIRECT_REVERT_REASON);
+	}
+
+	@Test
+	void gasCalculationForReadOnlyMethod() {
+		givenMinimalFrameContext();
 
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(worldUpdater.hasMutableLedgers()).willReturn(true);

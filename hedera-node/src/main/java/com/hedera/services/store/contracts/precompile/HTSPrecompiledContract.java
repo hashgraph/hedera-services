@@ -154,7 +154,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
-	private static final Bytes UNSUPPORTED_REDIRECT_REVERT_REASON =
+	public static final Bytes UNSUPPORTED_REDIRECT_REVERT_REASON =
 			Bytes.of("Redirects not supported in ContractCallLocal query".getBytes());
 	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
