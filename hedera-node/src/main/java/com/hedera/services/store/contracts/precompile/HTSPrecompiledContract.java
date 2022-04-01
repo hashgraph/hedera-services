@@ -1157,7 +1157,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			final var decimals = ledgers.decimalsOf(tokenId);
-			System.out.println("(SINGLETON) Returning: " + decimals);
 			return encoder.encodeDecimals(decimals);
 		}
 	}
