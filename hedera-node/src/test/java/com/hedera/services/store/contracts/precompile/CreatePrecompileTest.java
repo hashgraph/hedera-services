@@ -582,6 +582,25 @@ class CreatePrecompileTest {
 	}
 
 	@Test
+	void createReturnsNullAndSetsRevertReasonWhenKeyWithBitBiggerThan6IsSet() {
+		// test-specific preparations
+		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(
+				List.of(
+						new TokenCreateWrapper.TokenKeyWrapper(
+								BigInteger.valueOf(128),
+								new TokenCreateWrapper.KeyValueWrapper(
+										false,
+										null,
+										new byte[]{},
+										new byte[]{},
+										EntityIdUtils.contractIdFromEvmAddress(contractAddress))
+						))
+		);
+
+		prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
+	}
+
+	@Test
 	void createReturnsNullAndSetsRevertReasonWhenSenderKeyCannotBeDecoded() throws DecoderException {
 		// test-specific preparations
 		final var tokenCreateWrapper = Mockito.mock(TokenCreateWrapper.class);

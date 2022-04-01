@@ -1035,8 +1035,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			 * If it is set to `00000011` the key value will be used for both adminKey and kycKey.
 			 * Since an array of `TokenKey` structs is passed to the precompile, we have to
 			 * check if each one specifies the type of key it applies to (that the bit field
-			 * is not `00000000`) and also that there are not multiple keys values for the
-			 * same key type (e.g. multiple `TokenKey` instances have the adminKey bit set)
+			 * is not `00000000` and no bit bigger than 6 is set) and also that there are not multiple
+			 * keys values for the same key type (e.g. multiple `TokenKey` instances have the adminKey bit set)
 			 */
 			final var tokenKeys = tokenCreateOp.getTokenKeys();
 			if (!tokenKeys.isEmpty()) {
@@ -1044,7 +1044,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					final var tokenKey = tokenKeys.get(i);
 					validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
 					final var tokenKeyBitField = tokenKey.keyType().intValue();
-					validateTrue(tokenKeyBitField != 0, INVALID_TRANSACTION_BODY);
+					validateTrue(tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
 					for (int j = i + 1; j < tokenKeysSize; j++) {
 						validateTrue((tokenKeyBitField & tokenKeys.get(j).keyType().intValue()) == 0,
 								INVALID_TRANSACTION_BODY);
