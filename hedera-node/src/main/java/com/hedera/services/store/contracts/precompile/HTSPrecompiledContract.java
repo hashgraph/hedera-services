@@ -553,13 +553,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			precompile.handleSentHbars(frame);
 			precompile.run(frame);
+
 			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
 			// synthetic record, as the ledger interceptors will populate the sideEffectsTracker
 			ledgers.commit();
 
 			childRecord = creator.createSuccessfulSyntheticRecord(
 					precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
-
 			result = precompile.getSuccessResultFor(childRecord);
 			addContractCallResultToRecord(childRecord, result, Optional.empty(), frame);
 		} catch (InvalidTransactionException e) {
@@ -965,28 +965,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void handleSentHbars(final MessageFrame frame) {
-			final var timestampSeconds = frame.getBlockValues().getTimestamp();
-			final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
-			final var gasPriceInTinybars = feeCalculator.get()
-					.estimatedGasPriceInTinybars(ContractCall, timestamp);
-			final var calculatedFeeInTinybars = gasFeeInTinybars(
-					transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
-							timestamp).build()), Instant.ofEpochSecond(timestampSeconds));
-
-			final var tinybarsRequirement = calculatedFeeInTinybars + (calculatedFeeInTinybars / 5)
-					- precompile.getMinimumFeeInTinybars(timestamp) * gasPriceInTinybars;
-
-			validateTrue(messageFrame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
-
-			updater.getAccount(senderAddress).getMutable()
-					.decrementBalance(Wei.of(tinybarsRequirement));
-			updater.getAccount(Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()).getMutable()
-					.incrementBalance(Wei.of(tinybarsRequirement));
-		}
-
-
-		@Override
 		public void run(final MessageFrame frame)  {
 			Objects.requireNonNull(tokenCreateOp);
 
@@ -1011,6 +989,27 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Execute the transaction and capture its results --- */
 			tokenCreateLogic.create(creationTime.getEpochSecond(), EntityIdUtils.accountIdFromEvmAddress(senderAddress),
 					transactionBody.getTokenCreation());
+		}
+
+		@Override
+		public void handleSentHbars(final MessageFrame frame) {
+			final var timestampSeconds = frame.getBlockValues().getTimestamp();
+			final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
+			final var gasPriceInTinybars = feeCalculator.get()
+					.estimatedGasPriceInTinybars(ContractCall, timestamp);
+			final var calculatedFeeInTinybars = gasFeeInTinybars(
+					transactionBody.setTransactionID(TransactionID.newBuilder().setTransactionValidStart(
+							timestamp).build()), Instant.ofEpochSecond(timestampSeconds));
+
+			final var tinybarsRequirement = calculatedFeeInTinybars + (calculatedFeeInTinybars / 5)
+					- precompile.getMinimumFeeInTinybars(timestamp) * gasPriceInTinybars;
+
+			validateTrue(messageFrame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
+
+			updater.getAccount(senderAddress).getMutable()
+					.decrementBalance(Wei.of(tinybarsRequirement));
+			updater.getAccount(Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress()).getMutable()
+					.incrementBalance(Wei.of(tinybarsRequirement));
 		}
 
 		/* --- Due to differences in Solidity and protobuf interfaces, perform custom checks on the input  --- */

@@ -233,6 +233,7 @@ class CreatePrecompileTest {
 		// given
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -435,10 +436,7 @@ class CreatePrecompileTest {
 		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 
 		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.compute(pretendArguments, frame);
 
 		// then:
 		assertEquals(invalidSigResult, result);
@@ -456,6 +454,7 @@ class CreatePrecompileTest {
 	@Test
 	void createFailsWhenCreateChecksAreNotSuccessful() {
 		givenValidGasCalculation();
+		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
@@ -490,10 +489,7 @@ class CreatePrecompileTest {
 		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 
 		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.compute(pretendArguments, frame);
 
 		// then:
 		assertEquals(invalidSigResult, result);
@@ -693,10 +689,7 @@ class CreatePrecompileTest {
 
 
 		// when:
-		subject.prepareFields(frame);
-		subject.prepareComputation(pretendArguments, а -> а);
-		subject.computeGasRequirement(TEST_CONSENSUS_TIME);
-		final var result = subject.computeInternal(frame);
+		final var result = subject.compute(pretendArguments, frame);
 
 		// then:
 		assertEquals(successResult, result);
@@ -736,6 +729,7 @@ class CreatePrecompileTest {
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
