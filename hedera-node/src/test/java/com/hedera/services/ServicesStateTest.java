@@ -565,7 +565,7 @@ class ServicesStateTest {
 		assertNotNull(subject.contractStorage());
 		assertNull(subject.networkCtx().consensusTimeOfLastHandledTxn());
 		assertEquals(StateVersions.CURRENT_VERSION, subject.networkCtx().getStateVersion());
-		assertEquals(751L, subject.networkCtx().seqNo().current());
+		assertEquals(1001L, subject.networkCtx().seqNo().current());
 		assertNotNull(subject.specialFiles());
 		// and:
 		verify(dualStateAccessor).setDualState(dualState);
