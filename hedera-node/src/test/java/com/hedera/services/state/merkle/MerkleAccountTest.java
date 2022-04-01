@@ -145,6 +145,15 @@ class MerkleAccountTest {
 	}
 
 	@Test
+	void equalsIncorporatesRecords() {
+		final var otherRecords = mock(FCQueue.class);
+
+		final var otherSubject = new MerkleAccount(List.of(state, otherRecords, tokens));
+
+		assertNotEquals(otherSubject, subject);
+	}
+
+	@Test
 	void forgetsTokensChildAsExpected() {
 		assertNotNull(subject.tokens());
 
