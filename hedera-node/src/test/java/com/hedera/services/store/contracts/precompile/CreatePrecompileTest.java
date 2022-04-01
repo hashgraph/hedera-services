@@ -104,6 +104,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contra
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.feeCollector;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.pendingChildConsTime;
@@ -662,6 +663,19 @@ class CreatePrecompileTest {
 		given(fixedFeeMock.getFixedFeePayment())
 				.willReturn(TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT);
 		invalidTokenCreate.setFixedFees(List.of(fixedFeeMock));
+
+		prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
+	}
+
+	@Test
+	void createReturnsNullAndSetsRevertReasonWhenRoyaltyFeeWithInvalidFallbackFeeIsPresent()  {
+		// test-specific preparations
+		final var invalidTokenCreate = createTokenCreateWrapperWithKeys(Collections.emptyList());
+		final var fixedFeeMock = mock(TokenCreateWrapper.FixedFeeWrapper.class);
+		given(fixedFeeMock.getFixedFeePayment())
+				.willReturn(TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT);
+		invalidTokenCreate.setRoyaltyFees(List.of(new TokenCreateWrapper.RoyaltyFeeWrapper(1, 2,
+				fixedFeeMock, feeCollector)));
 
 		prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
 	}

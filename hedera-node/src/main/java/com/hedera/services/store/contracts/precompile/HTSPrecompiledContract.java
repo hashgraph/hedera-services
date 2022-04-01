@@ -1061,6 +1061,16 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					validateTrue(fixedFee.getFixedFeePayment() != INVALID_PAYMENT, INVALID_TRANSACTION_BODY);
 				}
 			}
+
+			/*
+			 * When a royalty fee with fallback fee is specified, we need to check that
+			 * the fallback fixed fee is valid.
+			 */
+			if (!tokenCreateOp.getRoyaltyFees().isEmpty()) {
+				for (final var royaltyFee: tokenCreateOp.getRoyaltyFees()) {
+					validateTrue(royaltyFee.fallbackFixedFee().getFixedFeePayment() != INVALID_PAYMENT, INVALID_TRANSACTION_BODY);
+				}
+			}
 		}
 
 		private void replaceInheritedKeysWithSenderKey() throws DecoderException {
