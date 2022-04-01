@@ -20,9 +20,12 @@ package com.hedera.services.store.contracts.precompile.proxy;
  * ‍
  */
 
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.EncodingFacade;
+import com.hedera.services.store.models.NftId;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.Gas;
@@ -41,6 +44,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 public class RedirectViewExecutor {
 	public static final long MINIMUM_TINYBARS_COST = 100;
@@ -49,6 +53,7 @@ public class RedirectViewExecutor {
 	private final MessageFrame frame;
 	private final WorldLedgers ledgers;
 	private final EncodingFacade encoder;
+	private final DecodingFacade decoder;
 	private final RedirectGasCalculator gasCalculator;
 	private final HederaStackedWorldStateUpdater updater;
 
@@ -56,11 +61,13 @@ public class RedirectViewExecutor {
 			final Bytes input,
 			final MessageFrame frame,
 			final EncodingFacade encoder,
+			final DecodingFacade decoder,
 			final RedirectGasCalculator gasCalculator
 	) {
 		this.input = input;
 		this.frame = frame;
 		this.encoder = encoder;
+		this.decoder = decoder;
 		this.gasCalculator = gasCalculator;
 
 		this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
@@ -75,27 +82,41 @@ public class RedirectViewExecutor {
 
 		final var selector = target.descriptor();
 		final var isFungibleToken = FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
+		final Bytes answer;
 		if (selector == ABI_ID_NAME) {
-			throw new AssertionError("Not implemented");
+			final var name = ledgers.nameOf(tokenId);
+			answer = encoder.encodeName(name);
 		} else if (selector == ABI_ID_SYMBOL) {
-			throw new AssertionError("Not implemented");
+			final var symbol = ledgers.symbolOf(tokenId);
+			answer = encoder.encodeSymbol(symbol);
 		} else if (selector == ABI_ID_DECIMALS) {
 			validateTrue(isFungibleToken, INVALID_TOKEN_ID);
 			final var decimals = ledgers.decimalsOf(tokenId);
-			System.out.println("(PROCESS) Returning: " + decimals);
-			return Pair.of(costInGas, encoder.encodeDecimals(decimals));
+			answer = encoder.encodeDecimals(decimals);
 		} else if (selector == ABI_ID_TOTAL_SUPPLY_TOKEN) {
-			throw new AssertionError("Not implemented");
+			final var totalSupply = ledgers.totalSupplyOf(tokenId);
+			answer = encoder.encodeTotalSupply(totalSupply);
 		} else if (selector == ABI_ID_BALANCE_OF_TOKEN) {
-			throw new AssertionError("Not implemented");
+			final var wrapper = decoder.decodeBalanceOf(input.slice(24), updater::unaliased);
+			final var balance = ledgers.balanceOf(wrapper.accountId(), tokenId);
+			answer = encoder.encodeBalance(balance);
 		} else if (selector == ABI_ID_OWNER_OF_NFT) {
 			validateFalse(isFungibleToken, INVALID_TOKEN_ID);
-			throw new AssertionError("Not implemented");
+			final var wrapper = decoder.decodeOwnerOf(input.slice(24));
+			final var nftId = NftId.fromGrpc(tokenId, wrapper.serialNo());
+			final var owner = ledgers.ownerOf(nftId);
+			final var priorityAddress = ledgers.canonicalAddress(owner);
+			answer = encoder.encodeOwner(priorityAddress);
 		} else if (selector == ABI_ID_TOKEN_URI_NFT) {
 			validateFalse(isFungibleToken, INVALID_TOKEN_ID);
-			throw new AssertionError("Not implemented");
+			final var wrapper = decoder.decodeTokenUriNFT(input.slice(24));
+			final var nftId = NftId.fromGrpc(tokenId, wrapper.serialNo());
+			final var metadata = ledgers.metadataOf(nftId);
+			answer = encoder.encodeTokenUri(metadata);
 		} else {
-			throw new AssertionError("Not implemented");
+			// Only view functions can be used inside a ContractCallLocal
+			throw new InvalidTransactionException(NOT_SUPPORTED);
 		}
+		return Pair.of(costInGas, answer);
 	}
 }

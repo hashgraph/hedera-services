@@ -55,6 +55,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
@@ -308,16 +309,32 @@ public class StaticEntityAccess implements EntityAccess {
 	 * @return the owner address
 	 */
 	public Address ownerOf(final NftId nftId) {
+		return nftPropertyOf(nftId, nft -> {
+			var owner = nft.getOwner();
+			if (MISSING_ENTITY_ID.equals(owner)) {
+				final var token = tokens.get(nft.getKey().getHiOrderAsNum());
+				validateTrue(token != null, INVALID_TOKEN_ID);
+				owner = token.treasury();
+			}
+			return EntityIdUtils.asTypedEvmAddress(owner);
+		});
+	}
+
+	/**
+	 * Returns the metadata of a given NFT as a {@code String}.
+	 *
+	 * @param nftId the NFT of interest
+	 * @return the metadata
+	 */
+	public String metadataOf(final NftId nftId) {
+		return nftPropertyOf(nftId, nft -> new String(nft.getMetadata()));
+	}
+
+	private <T> T nftPropertyOf(final NftId nftId, final Function<MerkleUniqueToken, T> getter) {
 		final var key = EntityNumPair.fromNftId(nftId);
 		var nft = nfts.get(key);
 		validateTrue(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
-		var owner = nft.getOwner();
-		if (MISSING_ENTITY_ID.equals(owner)) {
-			final var token = tokens.get(key.getHiOrderAsNum());
-			validateTrue(token != null, INVALID_TOKEN_ID);
-			owner = token.treasury();
-		}
-		return EntityIdUtils.asTypedEvmAddress(owner);
+		return getter.apply(nft);
 	}
 
 	private MerkleToken lookupToken(final TokenID tokenId) {

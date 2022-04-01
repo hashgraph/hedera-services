@@ -1420,7 +1420,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - 03061-fix-erc-view-redirects
+                  - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

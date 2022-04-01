@@ -53,6 +53,7 @@ import java.util.function.BiFunction;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
 import static com.hedera.services.ledger.properties.TokenProperty.NAME;
@@ -62,6 +63,7 @@ import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
 import static com.hedera.services.ledger.properties.TokenProperty.TREASURY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -150,6 +152,15 @@ public class WorldLedgers {
 			owner = (EntityId) tokensLedger.get(nft.tokenId(), TREASURY);
 		}
 		return owner.toEvmAddress();
+	}
+
+	public String metadataOf(final NftId nftId) {
+		if (!areMutable()) {
+			return staticEntityAccess.metadataOf(nftId);
+		}
+		return nftsLedger.exists(nftId)
+				? new String((byte[]) nftsLedger.get(nftId, METADATA))
+				: URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 	}
 
 	public Address canonicalAddress(final Address addressOrAlias) {
