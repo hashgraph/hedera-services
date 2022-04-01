@@ -69,7 +69,7 @@ public class UniqueToken {
 	}
 
 	// only used in unit tests
-	public void setTokenId(Id tokenId) {
+	void setTokenId(Id tokenId) {
 		this.tokenId = tokenId;
 	}
 
@@ -78,7 +78,7 @@ public class UniqueToken {
 	}
 
 	// only used in unit tests
-	public void setSerialNumber(long serialNumber) {
+	void setSerialNumber(long serialNumber) {
 		this.serialNumber = serialNumber;
 	}
 

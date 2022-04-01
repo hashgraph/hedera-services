@@ -518,6 +518,7 @@ class ServicesStateTest {
 		given(subject.getPlatformForDeferredInit()).willReturn(platform);
 		given(subject.getAddressBookForDeferredInit()).willReturn(addressBook);
 		given(subject.getDualStateForDeferredInit()).willReturn(dualState);
+		given(subject.accounts()).willReturn(accounts);
 
 		subject.migrate();
 

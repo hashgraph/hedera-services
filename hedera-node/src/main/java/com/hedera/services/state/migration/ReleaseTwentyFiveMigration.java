@@ -43,6 +43,7 @@ public class ReleaseTwentyFiveMigration {
 			var newTokenKey = new UniqueTokenKey(numSerialPair.getLeft(), numSerialPair.getRight());
 			var newTokenValue = new UniqueTokenValue(
 					legacyToken.getOwner().num(),
+					legacyToken.getSpender().num(),
 					legacyToken.getCreationTime(),
 					legacyToken.getMetadata());
 			vmUniqueTokens.put(newTokenKey, newTokenValue);

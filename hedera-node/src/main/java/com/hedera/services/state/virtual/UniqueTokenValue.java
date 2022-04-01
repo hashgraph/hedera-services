@@ -51,6 +51,8 @@ public class UniqueTokenValue implements VirtualValue {
 
 	/** The account number field of the owner's account id. */
 	private long ownerAccountNum;
+	/** The account number field of the spender's account id. */
+	private long spenderAccountNum;
 
 	/**
 	 * The compressed creation time of the token:
@@ -69,15 +71,18 @@ public class UniqueTokenValue implements VirtualValue {
 
 	public UniqueTokenValue(
 			long ownerAccountNum,
+			long spenderAccountNum,
 			RichInstant creationTime,
 			byte[] metadata) {
 		this.ownerAccountNum = ownerAccountNum;
+		this.spenderAccountNum = spenderAccountNum;
 		this.packedCreationTime = packedTime(creationTime.getSeconds(), creationTime.getNanos());
 		this.metadata = metadata;
 	}
 
 	private UniqueTokenValue(UniqueTokenValue other) {
 		ownerAccountNum = other.ownerAccountNum;
+		spenderAccountNum = other.spenderAccountNum;
 		packedCreationTime = other.packedCreationTime;
 		metadata = other.metadata;
 		// Do not copy over the isImmutable field.
@@ -107,15 +112,6 @@ public class UniqueTokenValue implements VirtualValue {
 	@Override
 	public void release() { /* no-op */ }
 
-	public EntityId getSpender() {
-		throw new UnsupportedOperationException("TODO: Implement me");
-	}
-
-	public void setSpender(final EntityId asEntityId) {
-		throwIfImmutable();
-		throw new UnsupportedOperationException("TODO: Implement me");
-	}
-
 	interface CheckedConsumer<T> {
 		void accept(T t) throws IOException;
 	}
@@ -129,6 +125,7 @@ public class UniqueTokenValue implements VirtualValue {
 			CheckedConsumer<Long> writeLongFn,
 			CheckedConsumer2<byte[], Integer> writeBytesFn) throws IOException {
 		writeLongFn.accept(ownerAccountNum);
+		writeLongFn.accept(spenderAccountNum);
 		writeLongFn.accept(packedCreationTime);
 
 		// Cap the maximum metadata bytes to avoid malformed inputs with too many metadata bytes.
@@ -152,6 +149,7 @@ public class UniqueTokenValue implements VirtualValue {
 		assert dataVersion == CURRENT_VERSION : "dataVersion=" + dataVersion + " != getVersion()=" + CURRENT_VERSION;
 
 		ownerAccountNum = readLongFn.get();
+		spenderAccountNum = readLongFn.get();
 		packedCreationTime = readLongFn.get();
 		int len =  readByteFn.get();
 
@@ -210,6 +208,7 @@ public class UniqueTokenValue implements VirtualValue {
 	public String toString() {
 		return MoreObjects.toStringHelper(UniqueTokenValue.class)
 				.add("owner", EntityId.fromNum(ownerAccountNum).toAbbrevString())
+				.add("spender", EntityId.fromNum(spenderAccountNum).toAbbrevString())
 				.add("creationTime", Instant.ofEpochSecond(
 						unsignedHighOrder32From(packedCreationTime),
 						signedLowOrder32From(packedCreationTime)))
@@ -222,6 +221,7 @@ public class UniqueTokenValue implements VirtualValue {
 	public boolean equals(final Object obj) {
 		if (obj instanceof UniqueTokenValue other) {
 			return other.ownerAccountNum == this.ownerAccountNum
+					&& other.spenderAccountNum == this.spenderAccountNum
 					&& other.packedCreationTime == this.packedCreationTime
 					&& Arrays.equals(other.metadata, this.metadata);
 		}
@@ -234,6 +234,10 @@ public class UniqueTokenValue implements VirtualValue {
 
 	public EntityId getOwner() {
 		return EntityId.fromNum(ownerAccountNum);
+	}
+
+	public EntityId getSpender() {
+		return EntityId.fromNum(spenderAccountNum);
 	}
 
 	public RichInstant getCreationTime() {
@@ -253,6 +257,11 @@ public class UniqueTokenValue implements VirtualValue {
 	public void setOwner(EntityId entityId) {
 		throwIfImmutable();
 		ownerAccountNum = entityId.num();
+	}
+
+	public void setSpender(final EntityId entityId) {
+		throwIfImmutable();
+		spenderAccountNum = entityId.num();
 	}
 
 	public void setPackedCreationTime(long newPackedCreationTime) {

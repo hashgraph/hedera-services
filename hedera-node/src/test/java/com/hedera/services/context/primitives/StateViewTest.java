@@ -311,7 +311,7 @@ class StateViewTest {
 		bytecode = mock(Map.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 
-		final var uniqueTokens = new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
+		uniqueTokens = new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
@@ -1032,10 +1032,12 @@ class StateViewTest {
 	private final UniqueTokenKey treasuryNftKey = new UniqueTokenKey(3, 5);
 	private final UniqueTokenValue targetNft = new UniqueTokenValue(
 			nftOwnerId.getAccountNum(),
+			MISSING_ENTITY_ID.num(),  // spender
 			fromJava(nftCreation),
 			nftMeta);
 	private final UniqueTokenValue treasuryNft = new UniqueTokenValue(
 			treasuryOwnerId.getAccountNum(),
+			MISSING_ENTITY_ID.num(),  // spender
 			fromJava(nftCreation),
 			nftMeta);
 	private final CustomFeeBuilder builder = new CustomFeeBuilder(payerAccountId);

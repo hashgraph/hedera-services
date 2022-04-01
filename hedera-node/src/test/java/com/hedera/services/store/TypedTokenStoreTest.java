@@ -301,7 +301,8 @@ class TypedTokenStoreTest {
 		// and:
 		final var expectedNewUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo);
 		final var expectedNewUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), mintedSerialNo2);
-		final var expectedNewUniqToken = new UniqueTokenValue(MISSING_ENTITY_ID.num(), creationTime, nftMeta);
+		final var expectedNewUniqToken = new UniqueTokenValue(
+				MISSING_ENTITY_ID.num(), MISSING_ENTITY_ID.num(), creationTime, nftMeta);
 		final var expectedPastUniqTokenId = NftId.withDefaultShardRealm(tokenEntityId.num(), wipedSerialNo);
 		final var expectedPastUniqTokenId2 = NftId.withDefaultShardRealm(tokenEntityId.num(), burnedSerialNo);
 
@@ -398,8 +399,8 @@ class TypedTokenStoreTest {
 		nft2.setCreationTime(MISSING_INSTANT);
 		nft2.setSpender(autoRenewId);
 
-		final var mut1 = new UniqueTokenValue(treasuryId.num(), MISSING_INSTANT, meta1);
-		final var mut2 = new UniqueTokenValue(miscId.num(), MISSING_INSTANT, meta2);
+		final var mut1 = new UniqueTokenValue(treasuryId.num(), MISSING_ENTITY_ID.num(), MISSING_INSTANT, meta1);
+		final var mut2 = new UniqueTokenValue(miscId.num(), MISSING_ENTITY_ID.num(), MISSING_INSTANT, meta2);
 		given(uniqueTokens.getRef(nftId1)).willReturn(mut1);
 		given(uniqueTokens.getRef(nftId2)).willReturn(mut2);
 

@@ -46,6 +46,7 @@ class UniqueTokenValueTest {
 		ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[1024]);
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)),
 				"hello world".getBytes());
 		value1.serialize(byteBuffer);
@@ -54,6 +55,7 @@ class UniqueTokenValueTest {
 		UniqueTokenValue value2 = new UniqueTokenValue();
 		value2.deserialize(byteBuffer, UniqueTokenValue.CURRENT_VERSION);
 		assertThat(value2.getOwnerAccountNum()).isEqualTo(1234L);
+		assertThat(value2.getSpender().num()).isEqualTo(5678L);
 		assertThat(value2.getCreationTime().toJava().toEpochMilli()).isEqualTo(1_000_000L);
 		assertThat(value2.getMetadata()).isEqualTo("hello world".getBytes());
 	}
@@ -63,6 +65,7 @@ class UniqueTokenValueTest {
 		ByteBuffer byteBuffer = ByteBuffer.wrap(new byte[1024]);
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)),
 				new byte[0]);
 		value1.serialize(byteBuffer);
@@ -71,6 +74,7 @@ class UniqueTokenValueTest {
 		UniqueTokenValue value2 = new UniqueTokenValue();
 		value2.deserialize(byteBuffer, UniqueTokenValue.CURRENT_VERSION);
 		assertThat(value2.getOwnerAccountNum()).isEqualTo(1234L);
+		assertThat(value2.getSpender().num()).isEqualTo(5678L);
 		assertThat(value2.getCreationTime().toJava().toEpochMilli()).isEqualTo(1_000_000L);
 		assertThat(value2.getMetadata()).isEmpty();
 	}
@@ -79,6 +83,7 @@ class UniqueTokenValueTest {
 	void deserializeDataStream_withMetadata_returnsCorrespondingData() throws IOException {
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)),
 				"hello world".getBytes());
 		ByteArrayOutputStream stream1 = new ByteArrayOutputStream();
@@ -88,6 +93,7 @@ class UniqueTokenValueTest {
 		UniqueTokenValue value2 = new UniqueTokenValue();
 		value2.deserialize(new SerializableDataInputStream(stream2), UniqueTokenValue.CURRENT_VERSION);
 		assertThat(value2.getOwnerAccountNum()).isEqualTo(1234L);
+		assertThat(value2.getSpender().num()).isEqualTo(5678L);
 		assertThat(value2.getCreationTime().toJava().toEpochMilli()).isEqualTo(1_000_000L);
 		assertThat(value2.getMetadata()).isEqualTo("hello world".getBytes());
 	}
@@ -96,6 +102,7 @@ class UniqueTokenValueTest {
 	void deserializeDataStream_withNoMetadata_returnsCorrespondingData() throws IOException {
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)),
 				new byte[0]);
 		ByteArrayOutputStream stream1 = new ByteArrayOutputStream();
@@ -105,6 +112,7 @@ class UniqueTokenValueTest {
 		UniqueTokenValue value2 = new UniqueTokenValue();
 		value2.deserialize(new SerializableDataInputStream(stream2), UniqueTokenValue.CURRENT_VERSION);
 		assertThat(value2.getOwnerAccountNum()).isEqualTo(1234L);
+		assertThat(value2.getSpender().num()).isEqualTo(5678L);
 		assertThat(value2.getCreationTime().toJava().toEpochMilli()).isEqualTo(1_000_000L);
 		assertThat(value2.getMetadata()).isEmpty();
 	}
@@ -122,11 +130,13 @@ class UniqueTokenValueTest {
 
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)),
 				data1);
 
 		UniqueTokenValue value2 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)),
 				data2);
 
@@ -152,11 +162,13 @@ class UniqueTokenValueTest {
 
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)),
 				data1);
 
 		UniqueTokenValue value2 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				RichInstant.fromJava(Instant.ofEpochMilli(1_000_000L)),
 				data2);
 
@@ -175,6 +187,7 @@ class UniqueTokenValueTest {
 		// Manually crafted bad data (uses version 1). Need to update if encoding changes.
 		byte[] data1 = Bytes.concat(
 				Longs.toByteArray(1234L),
+				Longs.toByteArray(5678L),
 				Longs.toByteArray(7890L),
 				new byte[] {103},
 				"1111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000zzz"
@@ -203,6 +216,7 @@ class UniqueTokenValueTest {
 
 		UniqueTokenValue src = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 		UniqueTokenValue copy = (UniqueTokenValue) src.copy();
@@ -210,11 +224,13 @@ class UniqueTokenValueTest {
 		// Make sure parent is immutable and not modified.
 		assertThat(src.isImmutable()).isTrue();
 		assertThat(src.getOwnerAccountNum()).isEqualTo(1234L);
+		assertThat(src.getSpender().num()).isEqualTo(5678L);
 		assertThat(src.getCreationTime()).isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
 		assertThat(src.getMetadata()).isEqualTo("hello world".getBytes());
 		src.release();
 
 		assertThat(copy.getOwnerAccountNum()).isEqualTo(1234L);
+		assertThat(copy.getSpender().num()).isEqualTo(5678L);
 		assertThat(copy.getCreationTime()).isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
 		assertThat(copy.getMetadata()).isEqualTo("hello world".getBytes());
 	}
@@ -226,6 +242,7 @@ class UniqueTokenValueTest {
 
 		UniqueTokenValue src = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 
@@ -239,6 +256,7 @@ class UniqueTokenValueTest {
 
 		assertThat(readOnlyCopy.isImmutable()).isTrue();
 		assertThat(readOnlyCopy.getOwnerAccountNum()).isEqualTo(1234L);
+		assertThat(readOnlyCopy.getSpender().num()).isEqualTo(5678L);
 		assertThat(readOnlyCopy.getCreationTime()).isEqualTo(RichInstant.fromJava(Instant.ofEpochSecond(456, 789)));
 		assertThat(readOnlyCopy.getMetadata()).isEqualTo("hello world".getBytes());
 	}
@@ -247,6 +265,7 @@ class UniqueTokenValueTest {
 	void asReadOnly_immutableObject_shouldStayImmutable() {
 		UniqueTokenValue src = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 
@@ -261,6 +280,7 @@ class UniqueTokenValueTest {
 
 		UniqueTokenValue src = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 
@@ -293,9 +313,11 @@ class UniqueTokenValueTest {
 	void toString_containsContents() {
 		UniqueTokenValue value = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 		assertThat(value.toString()).contains("1234");
+		assertThat(value.toString()).contains("5678");
 		assertThat(value.toString()).contains(Instant.ofEpochSecond(456, 789).toString());
 		assertThat(value.toString()).contains("104, 101, 108, 108, 111");
 	}
@@ -304,39 +326,51 @@ class UniqueTokenValueTest {
 	void hashCode_mostlyUnique() {
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 
 		UniqueTokenValue value2 = new UniqueTokenValue(
 				1233L,
+				5678L,
 				new RichInstant(455, 789),
 				"hello world".getBytes());
 
 		UniqueTokenValue value3 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 788),
 				"hello world".getBytes());
 
 		UniqueTokenValue value4 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 788),
 				"hell0 world".getBytes());
 
+		UniqueTokenValue value5 = new UniqueTokenValue(
+				1234L,
+				5677L,
+				new RichInstant(456, 789),
+				"hello world".getBytes());
+
 		// Small mutations should lead to different hash codes.
 		assertThat(new HashSet<>(List.of(
-				value1, value2, value3, value4
-		))).hasSize(4);
+				value1, value2, value3, value4, value5
+		))).hasSize(5);
 	}
 
 	@Test
 	void hashCode_forCopies_areTheSame() {
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 
 		UniqueTokenValue value2 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 
@@ -354,11 +388,13 @@ class UniqueTokenValueTest {
 	void equals_whenSameDataOrCopies_matches() {
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 
 		UniqueTokenValue value2 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 
@@ -375,33 +411,45 @@ class UniqueTokenValueTest {
 	void equals_whenDifferentData_doesNotMatch() {
 		UniqueTokenValue value1 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 
 		UniqueTokenValue value2 = new UniqueTokenValue(
 				1233L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello world".getBytes());
 
 		UniqueTokenValue value3 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(457, 789),
 				"hello world".getBytes());
 
 		UniqueTokenValue value4 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 780),
 				"hello world".getBytes());
 
 		UniqueTokenValue value5 = new UniqueTokenValue(
 				1234L,
+				5678L,
 				new RichInstant(456, 789),
 				"hello w0rld".getBytes());
+
+		UniqueTokenValue value6 = new UniqueTokenValue(
+				1234L,
+				5677L,
+				new RichInstant(456, 789),
+				"hello world".getBytes());
 
 		assertThat(value1.equals(value2)).isFalse();
 		assertThat(value1.equals(value3)).isFalse();
 		assertThat(value1.equals(value4)).isFalse();
 		assertThat(value1.equals(value5)).isFalse();
+		assertThat(value1.equals(value6)).isFalse();
 	}
 
 	@Test

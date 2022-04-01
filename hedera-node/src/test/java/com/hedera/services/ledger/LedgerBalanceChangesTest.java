@@ -69,6 +69,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.hbarChange;
@@ -472,13 +473,25 @@ class LedgerBalanceChangesTest {
 
 		backingNfts.put(
 				aaNft,
-				new UniqueTokenValue(EntityId.fromGrpcAccountId(aModel).num(), MISSING_INSTANT, "aa".getBytes()));
+				new UniqueTokenValue(
+						EntityId.fromGrpcAccountId(aModel).num(),
+						MISSING_ENTITY_ID.num(),   // spender
+						MISSING_INSTANT,
+						"aa".getBytes()));
 		backingNfts.put(
 				baNft,
-				new UniqueTokenValue(EntityId.fromGrpcAccountId(bModel).num(), MISSING_INSTANT, "ba".getBytes()));
+				new UniqueTokenValue(
+						EntityId.fromGrpcAccountId(bModel).num(),
+						MISSING_ENTITY_ID.num(),   // spender
+						MISSING_INSTANT,
+						"ba".getBytes()));
 		backingNfts.put(
 				bbNft,
-				new UniqueTokenValue(EntityId.fromGrpcAccountId(cModel).num(), MISSING_INSTANT, "bb".getBytes()));
+				new UniqueTokenValue(
+						EntityId.fromGrpcAccountId(cModel).num(),
+						MISSING_ENTITY_ID.num(),  // spender
+						MISSING_INSTANT,
+						"bb".getBytes()));
 
 		backingRels.rebuildFromSources();
 	}

@@ -51,13 +51,16 @@ class BackingNftsTest {
 	private final UniqueTokenKey bKey = new UniqueTokenKey(4, 5);
 	private final UniqueTokenValue aValue = new UniqueTokenValue(
 			3,
+			MISSING_ENTITY_ID.num(),
 			new RichInstant(1_234_567L, 1),
 			"abcdefgh".getBytes());
 	private final UniqueTokenValue theToken = new UniqueTokenValue(
 			MISSING_ENTITY_ID.num(),
+			MISSING_ENTITY_ID.num(),
 			MISSING_INSTANT,
 			"HI".getBytes(StandardCharsets.UTF_8));
 	private final UniqueTokenValue notTheToken = new UniqueTokenValue(
+			MISSING_ENTITY_ID.num(),
 			MISSING_ENTITY_ID.num(),
 			MISSING_INSTANT,
 			"IH".getBytes(StandardCharsets.UTF_8));

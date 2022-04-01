@@ -224,7 +224,10 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 	private void persistMinted(List<UniqueToken> nfts) {
 		for (final var nft : nfts) {
 			final var uniqueTokenValue = new UniqueTokenValue(
-					MISSING_ENTITY_ID.num(), nft.getCreationTime(), nft.getMetadata());
+					MISSING_ENTITY_ID.num(),  // owner
+					MISSING_ENTITY_ID.num(),  // spender
+					nft.getCreationTime(),
+					nft.getMetadata());
 			uniqueTokens.put(nft.getNftId(), uniqueTokenValue);
 		}
 	}
