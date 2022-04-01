@@ -54,6 +54,7 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -66,9 +67,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
@@ -506,6 +505,7 @@ class ERC721PrecompilesTest {
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        given(frame.getRemainingGas()).willReturn(Gas.of(300));
         given(pretendArguments.getInt(0)).willReturn(ABI_ID_REDIRECT_FOR_TOKEN);
         given(pretendArguments.slice(4, 20)).willReturn(nonFungibleTokenAddr);
         given(pretendArguments.slice(24)).willReturn(nestedPretendArguments);
@@ -521,15 +521,4 @@ class ERC721PrecompilesTest {
     }
 
     public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);
-    public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER = new TokenTransferWrapper(
-            List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
-            new ArrayList<>() {}
-    );
-
-    private void givenLedgers() {
-        given(wrappedLedgers.accounts()).willReturn(accounts);
-        given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
-        given(wrappedLedgers.nfts()).willReturn(nfts);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
-    }
 }

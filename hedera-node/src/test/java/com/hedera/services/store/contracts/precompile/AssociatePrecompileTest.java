@@ -57,6 +57,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -268,6 +269,7 @@ class AssociatePrecompileTest {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(frame.getRemainingGas()).willReturn(Gas.of(300));
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(frame.getRecipientAddress()).willReturn(recipientAddress);
 		givenLedgers();
@@ -516,6 +518,7 @@ class AssociatePrecompileTest {
 		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(worldUpdater.aliases()).willReturn(aliases);
+		given(frame.getRemainingGas()).willReturn(Gas.of(300));
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);

@@ -125,6 +125,10 @@ class HTSPrecompiledContractTest {
 	private UsagePricesProvider resourceCosts;
 	@Mock
 	private HederaWorldState.WorldStateAccount worldStateAccount;
+	@Mock
+	private TransactionBody.Builder mockSynthBodyBuilder;
+	@Mock
+	private FeeObject mockFeeObject;
 
 	private HTSPrecompiledContract subject;
 
