@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -45,12 +46,14 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
+import static com.swirlds.common.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -268,7 +271,6 @@ public class TxnUtils {
 		final var baos = new ByteArrayOutputStream();
 		final var out = new SerializableDataOutputStream(baos);
 		original.serialize(out);
-		;
 
 		final var reconstruction = factory.get();
 
@@ -277,5 +279,31 @@ public class TxnUtils {
 		reconstruction.deserialize(in, version);
 
 		assertEquals(original, reconstruction);
+	}
+
+	public static <T extends SelfSerializable> T deserializeFromHex(
+			final Supplier<T> factory,
+			final int version,
+			final String hexedForm
+	) throws IOException {
+		final var reconstruction = factory.get();
+
+		final var bais = new ByteArrayInputStream(CommonUtils.unhex(hexedForm));
+		final var in = new SerializableDataInputStream(bais);
+		reconstruction.deserialize(in, version);
+
+		return reconstruction;
+	}
+
+	public static <T extends SelfSerializable> String serializeToHex(final T source) {
+		final var baos = new ByteArrayOutputStream();
+		final var out = new SerializableDataOutputStream(baos);
+		try {
+			source.serialize(out);
+			out.flush();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		return hex(baos.toByteArray());
 	}
 }
