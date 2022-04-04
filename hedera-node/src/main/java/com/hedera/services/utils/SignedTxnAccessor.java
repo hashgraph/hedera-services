@@ -33,6 +33,7 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
@@ -64,6 +65,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
@@ -389,6 +391,8 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setCryptoApproveUsageMeta();
 		} else if (function == CryptoAdjustAllowance) {
 			setCryptoAdjustUsageMeta();
+		} else if (function == CryptoDeleteAllowance) {
+			setCryptoDeleteAllowanceUsageMeta();
 		}
 	}
 
@@ -474,6 +478,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(txn.getCryptoAdjustAllowance(),
 				txn.getTransactionID().getTransactionValidStart().getSeconds());
 		SPAN_MAP_ACCESSOR.setCryptoAdjustMeta(this, cryptoAdjustMeta);
+	}
+
+	private void setCryptoDeleteAllowanceUsageMeta() {
+		final var cryptoDeleteAllowanceMeta = new CryptoDeleteAllowanceMeta(txn.getCryptoDeleteAllowance(),
+				txn.getTransactionID().getTransactionValidStart().getSeconds());
+		SPAN_MAP_ACCESSOR.setCryptoDeleteAllowanceMeta(this, cryptoDeleteAllowanceMeta);
 	}
 
 	private void setBaseUsageMeta() {

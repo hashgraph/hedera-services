@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -113,6 +114,13 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	 */
 	protected abstract A getForMutation(Address address);
 
+	/**
+	 * Returns the {@link ContractCustomizer} to use for the pending creation.
+	 *
+	 * @return the pending creation's customizer
+	 */
+	public abstract ContractCustomizer customizerForPendingCreation();
+
 	@Override
 	public EvmAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
 		final var curAliases = aliases();
@@ -126,6 +134,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 			if (curAliases.isInUse(addressOrAlias)) {
 				curAccounts.set(newAccountId, ALIAS, ByteString.copyFrom(addressOrAlias.toArrayUnsafe()));
 			}
+			customizerForPendingCreation().customize(newAccountId, curAccounts);
 		}
 
 		newMutable.setNonce(nonce);

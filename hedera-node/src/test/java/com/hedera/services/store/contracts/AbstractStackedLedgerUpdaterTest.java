@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
@@ -68,6 +69,8 @@ class AbstractStackedLedgerUpdaterTest {
 	private ContractAliases aliases;
 	@Mock
 	private HederaWorldState worldState;
+	@Mock
+	private ContractCustomizer customizer;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater wrapped;
@@ -79,7 +82,7 @@ class AbstractStackedLedgerUpdaterTest {
 	void setUp() {
 		setupLedgers();
 
-		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped());
+		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped(), customizer);
 
 		subject = (AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount>) wrapped.updater();
 	}

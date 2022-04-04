@@ -42,7 +42,9 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -254,7 +256,6 @@ class SideEffectsTrackerTest {
 	void tracksAndResetsAllowanceAdjusts() {
 		subject.setFungibleTokenAllowances(ownerNum, fungibleAllowance);
 		subject.setCryptoAllowances(ownerNum, cryptoAllowance);
-		subject.setNftAllowances(ownerNum, nftAllowance);
 
 		final var trackedCryptoAllowances = subject.getCryptoAllowances();
 		assertTrue(trackedCryptoAllowances.containsKey(ownerNum));
@@ -264,14 +265,9 @@ class SideEffectsTrackerTest {
 		assertTrue(trackedTokenAllowances.containsKey(ownerNum));
 		assertEquals(fungibleAllowance, trackedTokenAllowances.get(ownerNum));
 
-		final var trackedNftAllowances = subject.getNftAllowances();
-		assertTrue(trackedNftAllowances.containsKey(ownerNum));
-		assertEquals(nftAllowance, trackedNftAllowances.get(ownerNum));
-
 		subject.reset();
 		assertTrue(subject.getCryptoAllowances().isEmpty());
 		assertTrue(subject.getFungibleTokenAllowances().isEmpty());
-		assertTrue(subject.getNftAllowances().isEmpty());
 	}
 
 	@Test
@@ -336,11 +332,9 @@ class SideEffectsTrackerTest {
 
 	@Test
 	void gettersAndSettersWork() {
-		subject.setNftAllowances(nftAllowances);
 		subject.setFungibleTokenAllowances(fungibleAllowances);
 		subject.setCryptoAllowances(cryptoAllowances);
 
-		assertEquals(nftAllowances, subject.getNftAllowances());
 		assertEquals(cryptoAllowances, subject.getCryptoAllowances());
 		assertEquals(fungibleAllowances, subject.getFungibleTokenAllowances());
 	}
@@ -416,8 +410,23 @@ class SideEffectsTrackerTest {
 			put(nftAllowanceId, nftAllowance2);
 		}});
 	}};
-	private static final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowance = new TreeMap<>() {{
-		put(fungibleAllowanceId, nftAllowance1);
-		put(nftAllowanceId, nftAllowance2);
+	private static final Set<FcTokenAllowanceId> nftAllowance = new TreeSet<>() {{
+		add(fungibleAllowanceId);
 	}};
+	private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> expectedNftAllowances =
+			new TreeMap<>() {{
+				put(EntityNum.fromAccountId(owner), new TreeMap<>() {{
+					put(fungibleAllowanceId, nftAllowance1);
+					put(nftAllowanceId, nftAllowance2);
+				}});
+	}};
+	private static final UniqueToken nft1 = new UniqueToken(
+			Id.fromGrpcToken(bToken), 1L, Id.fromGrpcAccount(owner));
+	private static final UniqueToken nft2 = new UniqueToken(
+			Id.fromGrpcToken(bToken), 2L, Id.fromGrpcAccount(owner));
+
+	static {
+		nft1.setSpender(Id.fromGrpcAccount(aAccount));
+		nft2.setSpender(Id.fromGrpcAccount(aAccount));
+	}
 }

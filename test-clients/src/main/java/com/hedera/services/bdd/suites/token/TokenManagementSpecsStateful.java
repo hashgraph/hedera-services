@@ -74,7 +74,7 @@ public class TokenManagementSpecsStateful extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
-										"tokens.maxPerAccount", "" + 1000
+										"tokens.maxRelsPerInfoQuery", "" + 1000
 								)),
 						newKeyNamed("oneFreeze"),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),

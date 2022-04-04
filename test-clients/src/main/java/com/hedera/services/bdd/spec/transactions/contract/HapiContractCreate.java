@@ -290,9 +290,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 								b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
 							} else if (omitAdminKey) {
 								if (makeImmutable) {
-//									b.setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()));
-									b.setAdminKey(Key.newBuilder().setKeyList(KeyList.newBuilder()
-											.addKeys(Key.newBuilder().setKeyList(KeyList.newBuilder()))));
+									b.setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()));
 								}
 							} else {
 								b.setAdminKey(adminKey);

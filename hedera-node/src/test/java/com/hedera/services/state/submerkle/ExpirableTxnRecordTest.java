@@ -134,12 +134,6 @@ class ExpirableTxnRecordTest {
 			put(fungibleAllowanceId, initialAllowance);
 		}});
 	}};
-	private static final Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = new TreeMap<>() {{
-		put(ownerNum, new TreeMap<>() {{
-			put(fungibleAllowanceId, nftAllowance1);
-			put(nftAllowanceId, nftAllowance2);
-		}});
-	}};
 	private static final CryptoAllowance cryptoAllowance = CryptoAllowance.newBuilder()
 			.setOwner(owner)
 			.setAmount(initialAllowance)
@@ -481,7 +475,6 @@ class ExpirableTxnRecordTest {
 		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleAllowances);
-		subject.setNftAllowances(nftAllowances);
 		final var fin = mock(SerializableDataInputStream.class);
 		given(serdes.readNullableSerializable(fin))
 				.willReturn(subject.getReceipt())
@@ -532,7 +525,6 @@ class ExpirableTxnRecordTest {
 				.willReturn(1)
 				.willReturn(fungibleAllowances.size())
 				.willReturn(1)
-				.willReturn(nftAllowances.size())
 				.willReturn(2);
 		given(fin.readSerializable())
 				.willReturn(fungibleAllowanceId)
@@ -553,7 +545,6 @@ class ExpirableTxnRecordTest {
 		final var inOrder = Mockito.inOrder(serdes, fout);
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleAllowances);
-		subject.setNftAllowances(nftAllowances);
 
 		subject.serialize(fout);
 
@@ -587,11 +578,6 @@ class ExpirableTxnRecordTest {
 		inOrder.verify(fout).writeInt(fungibleAllowances.size());
 		inOrder.verify(fout).writeSerializable(fungibleAllowanceId, true);
 		inOrder.verify(fout).writeLong(initialAllowance);
-		inOrder.verify(fout).writeInt(nftAllowances.size());
-		inOrder.verify(fout).writeSerializable(nftAllowanceId, true);
-		inOrder.verify(fout).writeSerializable(nftAllowance2, true);
-		inOrder.verify(fout).writeSerializable(fungibleAllowanceId, true);
-		inOrder.verify(fout).writeSerializable(nftAllowance1, true);
 	}
 
 	@Test
@@ -638,14 +624,12 @@ class ExpirableTxnRecordTest {
 				.toBuilder()
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
 				.addCryptoAdjustments(cryptoAllowance)
-				.addAllNftAdjustments(List.of(nftAllowanceSome, nftAllowanceAll))
 				.addTokenAdjustments(fungibleTokenAllowance)
 				.build();
 
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
-		subject.setNftAllowances(nftAllowances);
 		subject.setFungibleTokenAllowances(fungibleAllowances);
 		subject.setCryptoAllowances(cryptoAllowances);
 
@@ -695,7 +679,7 @@ class ExpirableTxnRecordTest {
 				" " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
 				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=}, " +
+				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
 				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
@@ -721,7 +705,7 @@ class ExpirableTxnRecordTest {
 				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null, " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
 				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=}, " +
+				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, tokenAdjustments=0.0.3" +
 				"(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.4" +
@@ -738,7 +722,6 @@ class ExpirableTxnRecordTest {
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleAllowances);
-		subject.setNftAllowances(nftAllowances);
 		final var expected = "ExpirableTxnRecord{numChildRecords=2, receipt=TxnReceipt{status=INVALID_ACCOUNT_ID, " +
 				"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, fee=555, " +
 				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
@@ -748,7 +731,7 @@ class ExpirableTxnRecordTest {
 				" " +
 				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
 				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=}, " +
+				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521}, " +
 				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
 				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
 				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
@@ -760,11 +743,7 @@ class ExpirableTxnRecordTest {
 				"(FcTokenAssociation{token=10, account=11}), " +
 				"cryptoAllowances=[{owner : EntityNum{value=9}, spender : EntityNum{value=8}, allowance : 100}], " +
 				"fungibleTokenAllowances=[{owner : EntityNum{value=9}, token : EntityNum{value=3}, " +
-				"spender : EntityNum{value=8}, allowance : 100}], " +
-				"nftAllowances=[{owner : EntityNum{value=9}, token : EntityNum{value=2}, " +
-				"spender : EntityNum{value=8}, isApproveForAll : false, SerialNums : 1, 2}, " +
-				"{owner : EntityNum{value=9}, token : EntityNum{value=3}, spender : EntityNum{value=8}, " +
-				"isApproveForAll : true, SerialNums : }]}";
+				"spender : EntityNum{value=8}, allowance : 100}]}";
 
 		assertEquals(expected, subject.toString());
 	}

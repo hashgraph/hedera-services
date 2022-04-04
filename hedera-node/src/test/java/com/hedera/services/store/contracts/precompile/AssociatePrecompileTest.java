@@ -57,6 +57,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -266,6 +267,7 @@ class AssociatePrecompileTest {
 		given(frame.getRecipientAddress()).willReturn(contractAddress);
 		given(frame.getSenderAddress()).willReturn(senderAddress);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(frame.getRemainingGas()).willReturn(Gas.of(300));
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -285,7 +287,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore))
 				.willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -332,7 +334,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore))
 				.willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp)).willReturn(1L);
 		given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
@@ -372,7 +374,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore))
 				.willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -417,7 +419,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore))
 				.willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -462,7 +464,7 @@ class AssociatePrecompileTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels,
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
 				.willReturn(tokenStore);
-		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties))
+		given(associateLogicFactory.newAssociateLogic(tokenStore, accountStore))
 				.willReturn(associateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
@@ -515,6 +517,7 @@ class AssociatePrecompileTest {
 		given(frame.getMessageFrameStack()).willReturn(frameDeque);
 		given(frame.getMessageFrameStack().descendingIterator()).willReturn(dequeIterator);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(frame.getRemainingGas()).willReturn(Gas.of(300));
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 		given(worldUpdater.aliases()).willReturn(aliases);

@@ -21,6 +21,8 @@ package com.hedera.services.txns.file;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.EntityType;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.SimpleUpdateResult;
@@ -42,9 +44,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,6 +59,7 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class FileSysUndelTransitionLogicTest {
 	enum TargetType {VALID, MISSING, DELETED}
@@ -87,6 +92,7 @@ class FileSysUndelTransitionLogicTest {
 	SigImpactHistorian sigImpactHistorian;
 	Map<EntityId, Long> oldExpiries;
 	TransactionContext txnCtx;
+	PropertySource properties;
 
 	FileSysUndelTransitionLogic subject;
 
@@ -100,6 +106,7 @@ class FileSysUndelTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		oldExpiries = mock(Map.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
+		properties = mock(PropertySource.class);
 
 		hfs = mock(HederaFs.class);
 		given(hfs.exists(undeleted)).willReturn(true);
@@ -107,8 +114,20 @@ class FileSysUndelTransitionLogicTest {
 		given(hfs.exists(missing)).willReturn(false);
 		given(hfs.getattr(undeleted)).willReturn(attr);
 		given(hfs.getattr(deleted)).willReturn(deletedAttr);
+		given(properties.getTypesProperty("entities.systemDeletable")).willReturn(EnumSet.allOf(EntityType.class));
 
-		subject = new FileSysUndelTransitionLogic(hfs, sigImpactHistorian, oldExpiries, txnCtx);
+		subject = new FileSysUndelTransitionLogic(hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
+	}
+
+	@Test
+	void abortsIfNotSupported() {
+		given(properties.getTypesProperty("entities.systemDeletable")).willReturn(EnumSet.noneOf(EntityType.class));
+
+		subject = new FileSysUndelTransitionLogic(hfs, sigImpactHistorian, oldExpiries, txnCtx, properties);
+
+		subject.doStateTransition();
+		verify(txnCtx).setStatus(NOT_SUPPORTED);
+		verifyNoInteractions(hfs);
 	}
 
 	@Test
