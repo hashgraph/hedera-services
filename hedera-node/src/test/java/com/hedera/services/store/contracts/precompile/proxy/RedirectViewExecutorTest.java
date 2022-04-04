@@ -41,7 +41,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
-public class RedirectViewExecutorTest {
+class RedirectViewExecutorTest {
 	@Mock
 	private Bytes input;
 	@Mock
