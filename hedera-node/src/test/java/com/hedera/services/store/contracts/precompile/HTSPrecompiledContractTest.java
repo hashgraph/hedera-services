@@ -33,6 +33,7 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -84,7 +85,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungib
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.multiDissociateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
-import static com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutorTest.fungibleTokenAddress;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -157,6 +157,10 @@ class HTSPrecompiledContractTest {
 	private static final long TEST_NETWORK_FEE = 400_000;
 	private static final long TEST_NODE_FEE = 300_000;
 	private static final long viewTimestamp = 10l;
+
+
+	public static final Id fungibleId = Id.fromGrpcToken(fungible);
+	public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
 
 	private static final long EXPECTED_GAS_PRICE =
 			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
