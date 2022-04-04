@@ -22,6 +22,8 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -164,12 +166,12 @@ class TokenCreateWrapperTest {
 		final var key = wrapper.asGrpc();
 
 		// then
-		assertEquals(TokenCreateWrapper.KeyValueWrapper.KeyValueType.ECDS_SECPK256K1, wrapper.getKeyValueType());
+		assertEquals(TokenCreateWrapper.KeyValueWrapper.KeyValueType.ECDSA_SECPK256K1, wrapper.getKeyValueType());
 		assertArrayEquals(ecdsaSecpk256k1, key.getECDSASecp256K1().toByteArray());
 	}
 
 	@Test
-	void invalidKeyValueWrapperHasInvalidKeyType() {
+	void keyValueWrapperWithNoKeyValueSpecifiedHasInvalidKeyType() {
 		final var wrapper = new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[]{}, new byte[]{}, null);
 
 		assertEquals(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
@@ -177,14 +179,14 @@ class TokenCreateWrapperTest {
 	}
 
 	@Test
-	void invalidKeyValueWrapperWithInheritAccountAndOneMoreValueHasInvalidKeyType() {
+	void keyValueWrapperWithInheritAccountAndOneMoreValueHasInvalidKeyType() {
 		final var wrapper = new TokenCreateWrapper.KeyValueWrapper(true, contractID, new byte[]{}, new byte[]{}, null);
 
 		assertEquals(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
 	}
 
 	@Test
-	void invalidKeyValueWrapperWithContractIdAndOneMoreKeyValueHasInvalidKeyType() {
+	void keyValueWrapperWithContractIdAndOneMoreKeyValueHasInvalidKeyType() {
 		final var wrapper =
 				new TokenCreateWrapper.KeyValueWrapper(false, contractID, new byte[]{}, new byte[]{}, contractID);
 
@@ -192,16 +194,34 @@ class TokenCreateWrapperTest {
 	}
 
 	@Test
-	void invalidKeyValueWrapperWithEd25519AndOneMoreKeyValueHasInvalidKeyType() {
+	void keyValueWrapperWithEd25519AndOneMoreKeyValueHasInvalidKeyType() {
 		final var wrapper = new TokenCreateWrapper.KeyValueWrapper(false, null, ed25519, new byte[]{}, contractID);
 
 		assertEquals(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
 	}
 
 	@Test
-	void invalidKeyValueWrapperWithEcdsaSecpk256k1AndOneMoreKeyValueHasInvalidKeyType() {
+	void keyValueWrapperWithEcdsaSecpk256k1AndOneMoreKeyValueHasInvalidKeyType() {
 		final var wrapper =
 				new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[]{}, ecdsaSecpk256k1, contractID);
+
+		assertEquals(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
+	}
+
+	@Test
+	void keyValueWrapperWithEd25519KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
+		final var wrapper =
+				new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[JEd25519Key.ED25519_BYTE_LENGTH - 1],
+						new byte[]{}, null);
+
+		assertEquals(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
+	}
+
+	@Test
+	void keyValueWrapperWithEcdsaSecpk256k1KeyWithByteArrayWithSizeDifferentFromRequiredHasInvalidKeyType() {
+		final var wrapper =
+				new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[]{},
+						new byte[JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH - 1], null);
 
 		assertEquals(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY, wrapper.getKeyValueType());
 	}
@@ -263,10 +283,29 @@ class TokenCreateWrapperTest {
 
 		// then
 		assertTrue(result.hasFixedFee());
-		assertEquals(5, result.getFixedFee().getAmount());
-		assertTrue(result.getFixedFee().hasDenominatingTokenId());
-		assertEquals(EntityIdUtils.tokenIdFromEvmAddress(Address.ZERO), result.getFixedFee().getDenominatingTokenId());
+		final var fixedFee = result.getFixedFee();
+		assertEquals(5, fixedFee.getAmount());
+		assertTrue(fixedFee.hasDenominatingTokenId());
+		assertEquals(EntityIdUtils.tokenIdFromEvmAddress(Address.ZERO), fixedFee.getDenominatingTokenId());
 		assertEquals(receiver, result.getFeeCollectorAccountId());
+	}
+
+	@Test
+	void fixedFeeWithMultipleFormsOfPaymentIsInvalid() {
+		// given
+		final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, null, true, true, receiver);
+
+		// when
+		assertEquals(TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT, feeWrapper.getFixedFeePayment());
+	}
+
+	@Test
+	void fixedFeeWithNoFormOfPaymentIsInvalid() {
+		// given
+		final var feeWrapper = new TokenCreateWrapper.FixedFeeWrapper(5, null, false, false, receiver);
+
+		// when
+		assertEquals(TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT, feeWrapper.getFixedFeePayment());
 	}
 
 	@Test
