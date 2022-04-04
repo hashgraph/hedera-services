@@ -41,6 +41,8 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+
 final class TokenCreateWrapper {
 	private final boolean isFungible;
 	private final String name;
@@ -440,8 +442,12 @@ final class TokenCreateWrapper {
 							.build()
 					);
 			if (fallbackFixedFee != null) {
+				validateTrue(fallbackFixedFee.getFixedFeePayment() != FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT,
+						ResponseCodeEnum.FAIL_INVALID
+				);
 				royaltyFeeBuilder.setFallbackFee(fallbackFixedFee.asBuilder().build());
 			}
+
 			final var customFeeBuilder = CustomFee.newBuilder().setRoyaltyFee(royaltyFeeBuilder.build());
 			if (feeCollector != null) {
 				customFeeBuilder.setFeeCollectorAccountId(feeCollector);

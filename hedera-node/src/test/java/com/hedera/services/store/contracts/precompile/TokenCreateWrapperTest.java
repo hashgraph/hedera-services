@@ -354,4 +354,13 @@ class TokenCreateWrapperTest {
 		assertFalse(result.getRoyaltyFee().hasFallbackFee());
 		assertFalse(result.hasFeeCollectorAccountId());
 	}
+
+	@Test
+	void royaltyFeeWithInvalidFallbackFeeTranslationThrows() {
+		// given
+		final var feeWrapper = new TokenCreateWrapper.RoyaltyFeeWrapper(4, 5, new TokenCreateWrapper.FixedFeeWrapper(
+				5, null, true, true, null), null);
+
+		assertThrows(InvalidTransactionException.class, feeWrapper::asGrpc);
+	}
 }
