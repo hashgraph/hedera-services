@@ -28,14 +28,17 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -45,7 +48,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +67,8 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_MINT_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_NFT;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_NFTS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKEN;
@@ -71,6 +78,7 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_C
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.associateOp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.dissociateToken;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleBurn;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMint;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
@@ -86,6 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -99,6 +108,10 @@ class HTSPrecompiledContractTest {
 	private GasCalculator gasCalculator;
 	@Mock
 	private Bytes input;
+	@Mock
+	private Bytes nestedInput;
+	@Mock
+	private BlockValues blockValues;
 	@Mock
 	private MessageFrame messageFrame;
 	@Mock
@@ -135,12 +148,19 @@ class HTSPrecompiledContractTest {
 	private TransactionBody.Builder mockSynthBodyBuilder;
 	@Mock
 	private FeeObject mockFeeObject;
+	@Mock
+	private Address tokenAddress;
 
 	private HTSPrecompiledContract subject;
 
 	private static final long TEST_SERVICE_FEE = 5_000_000;
 	private static final long TEST_NETWORK_FEE = 400_000;
 	private static final long TEST_NODE_FEE = 300_000;
+	private static final long viewTimestamp = 10l;
+
+
+	public static final Id fungibleId = Id.fromGrpcToken(fungible);
+	public static final Address fungibleTokenAddress = fungibleId.asEvmAddress();
 
 	private static final long EXPECTED_GAS_PRICE =
 			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
@@ -422,13 +442,53 @@ class HTSPrecompiledContractTest {
 	}
 
 	@Test
-	void computeRevertsTheFrameIfTheFrameIsStatic() {
+	void computeCostedRevertsTheFrameIfTheFrameIsStatic() {
 		given(messageFrame.isStatic()).willReturn(true);
 
-		var result = subject.compute(input, messageFrame);
+		final var result = subject.computeCosted(input, messageFrame);
 
 		verify(messageFrame).setRevertReason(Bytes.of("HTS precompiles are not static".getBytes()));
-		assertNull(result);
+		assertNull(result.getValue());
+	}
+
+	@Test
+	void computeCostedWorks() {
+		given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
+		given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(input.getInt(0)).willReturn(ABI_ID_REDIRECT_FOR_TOKEN);
+		prerequisites(ABI_ID_NAME);
+		given(messageFrame.isStatic()).willReturn(true);
+		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+		given(worldUpdater.hasMutableLedgers()).willReturn(false);
+
+		given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall,
+				Timestamp.newBuilder().setSeconds(viewTimestamp).build()))
+				.willReturn(1L);
+		given(mockFeeObject.getNodeFee())
+				.willReturn(1L);
+		given(mockFeeObject.getNetworkFee())
+				.willReturn(1L);
+		given(mockFeeObject.getServiceFee())
+				.willReturn(1L);
+
+		final var name = "name";
+		given(wrappedLedgers.nameOf(fungible)).willReturn(name);
+		given(encoder.encodeName(name)).willReturn(Bytes.of(1));
+
+		final var result = subject.computeCosted(input, messageFrame);
+
+		verify(messageFrame, never()).setRevertReason(any());
+		assertEquals(Bytes.of(1), result.getValue());
+	}
+
+	void prerequisites(int descriptor) {
+		given(input.slice(4, 20)).willReturn(tokenAddress);
+		given(tokenAddress.toArrayUnsafe()).willReturn(fungibleTokenAddress.toArray());
+		given(input.slice(24)).willReturn(nestedInput);
+		given(nestedInput.getInt(0)).willReturn(descriptor);
+		given(messageFrame.getBlockValues()).willReturn(blockValues);
+		given(blockValues.getTimestamp()).willReturn(viewTimestamp);
 	}
 
 	@Test
