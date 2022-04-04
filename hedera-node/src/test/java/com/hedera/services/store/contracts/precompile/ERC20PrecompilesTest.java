@@ -648,7 +648,7 @@ class ERC20PrecompilesTest {
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
 
-        given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), dynamicProperties.maxAllowanceLimitPerTransaction()))
+        given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), stateView))
                 .willReturn(OK);
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(true), any())).willReturn(

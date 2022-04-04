@@ -32,6 +32,7 @@ import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -135,6 +136,8 @@ class HTSPrecompiledContractTest {
 	private TransactionBody.Builder mockSynthBodyBuilder;
 	@Mock
 	private FeeObject mockFeeObject;
+	@Mock
+	private AdjustAllowanceChecks allowanceChecks;
 
 	private HTSPrecompiledContract subject;
 
@@ -151,7 +154,7 @@ class HTSPrecompiledContractTest {
 				validator, dynamicProperties, gasCalculator,
 				recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, allowanceChecks);
 	}
 
 	@Test

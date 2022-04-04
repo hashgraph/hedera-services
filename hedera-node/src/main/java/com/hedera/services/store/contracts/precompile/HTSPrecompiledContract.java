@@ -54,7 +54,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -114,20 +113,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
 import static com.hedera.services.ledger.properties.TokenProperty.NAME;
 import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
@@ -633,9 +633,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	@FunctionalInterface
 	interface AdjustAllowanceLogicFactory {
 		AdjustAllowanceLogic newAdjustAllowanceLogic(
-				AccountStore accountStore,
-				GlobalDynamicProperties dynamicProperties,
-				SideEffectsTracker sideEffectsTracker);
+				final AccountStore accountStore,
+				final TypedTokenStore tokenStore,
+				final GlobalDynamicProperties dynamicProperties,
+				final SideEffectsTracker sideEffectsTracker);
 	}
 
 	@FunctionalInterface
@@ -1440,21 +1441,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			Objects.requireNonNull(approveOp);
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var accountStore = createAccountStore();
+			final var tokenStore = createTokenStore(accountStore, sideEffectsTracker);
 			final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
 
 			final var checkResponseCode = allowanceChecks.allowancesValidation(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
 					transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
 					transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
 					payerAccount,
-					dynamicProperties.maxAllowanceLimitPerTransaction());
+					currentView);
 
 			if (!OK.equals(checkResponseCode)) {
 				throw new InvalidTransactionException(checkResponseCode);
 			}
-
+//			approveOp.spender().getAccountNum() == 0
 			/* --- Execute the transaction and capture its results --- */
 			final var adjustAllowanceLogic = adjustAllowanceLogicFactory.newAdjustAllowanceLogic(
-					accountStore, dynamicProperties, sideEffectsTracker);
+					accountStore, tokenStore, dynamicProperties, sideEffectsTracker);
 			adjustAllowanceLogic.adjustAllowance(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
 					transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
 					transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
@@ -1518,19 +1520,21 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var accountStore = createAccountStore();
+			final var tokenStore = createTokenStore(accountStore, sideEffectsTracker);
 			final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
 
-			final var checkResponseCode = allowanceChecks.allowancesValidation(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
+			final var checkResponseCode = allowanceChecks.allowancesValidation(
+					transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
 					transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
 					transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
 					payerAccount,
-					dynamicProperties.maxAllowanceLimitPerTransaction());
+					currentView);
 
 			validateTrue(OK.equals(checkResponseCode), checkResponseCode);
 
 			/* --- Execute the transaction and capture its results --- */
 			final var adjustAllowanceLogic = adjustAllowanceLogicFactory.newAdjustAllowanceLogic(
-					accountStore, dynamicProperties, sideEffectsTracker);
+					accountStore, tokenStore, dynamicProperties, sideEffectsTracker);
 			adjustAllowanceLogic.adjustAllowance(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
 					transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
 					transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
@@ -1579,21 +1583,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					getApprovedWrapper.tokenId());
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
-			var allowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(owner.toGrpcAccountId(), NFT_ALLOWANCES);
 
-			validateFalse(allowances.size() > 1, FAIL_INVALID);
-
-			Address spender;
-
-			Optional<Map.Entry<FcTokenAllowanceId, FcTokenAllowance>> allowance = allowances.entrySet().stream().findFirst();
-			if (allowance.isPresent()) {
-				spender = allowance.get().getKey().getSpenderNum().toEvmAddress();
-				return encoder.encodeGetApproved(spender);
+			var allowances = (Set<FcTokenAllowanceId>) accountsLedger.get(owner.toGrpcAccountId(), APPROVE_FOR_ALL_NFTS_ALLOWANCES);
+			var spender = (EntityId) nftsLedger.get(nftId, SPENDER);
+			if (!allowances.isEmpty()) {
+				return encoder.encodeGetApproved(allowances.stream().findFirst().get().getSpenderNum().toEvmAddress());
+			} else if (spender != null && !spender.toEvmAddress().equals(Address.fromHexString("0"))) {
+				return encoder.encodeGetApproved(spender.toEvmAddress());
 			}
 
 			return encoder.encodeGetApproved(Address.fromHexString("0"));
 		}
-
 	}
 
 	protected class IsApprovedForAllPrecompile extends ERCReadOnlyAbstractPrecompile {
@@ -1614,14 +1614,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
-			var allowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) accountsLedger.get(isApproveForAllWrapper.owner(), NFT_ALLOWANCES);
-			boolean isApprovedForAll = false;
-
-			for (Map.Entry<FcTokenAllowanceId, FcTokenAllowance> e : allowances.entrySet()) {
-				if (isApproveForAllWrapper.operator().getAccountNum() == e.getKey().getSpenderNum().longValue()) {
-					isApprovedForAll = e.getValue().isApprovedForAll();
-				}
-			}
+			var allowances = (Set<FcTokenAllowanceId>) accountsLedger.get(isApproveForAllWrapper.owner(), APPROVE_FOR_ALL_NFTS_ALLOWANCES);
+			boolean isApprovedForAll = !allowances.isEmpty()
+					&& allowances.stream().findFirst().get().getSpenderNum().longValue() == isApproveForAllWrapper.operator().getAccountNum();
 
 			return encoder.encodeIsApprovedForAll(isApprovedForAll);
 		}

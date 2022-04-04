@@ -22,11 +22,13 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.store.models.NftId;
+import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -35,247 +37,205 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.absolute;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.validateAllowanceLimitsOn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 
 @Singleton
 public class AdjustAllowanceLogic {
-    private final AccountStore accountStore;
-    private final GlobalDynamicProperties dynamicProperties;
-    private final SideEffectsTracker sideEffectsTracker;
-    private final Map<Long, Account> entitiesChanged;
+	private final AccountStore accountStore;
+	private final TypedTokenStore tokenStore;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final SideEffectsTracker sideEffectsTracker;
+	private final Map<Long, Account> entitiesChanged;
+	private final Map<NftId, UniqueToken> nftsTouched;
 
-    @Inject
-    public AdjustAllowanceLogic(
-            final AccountStore accountStore,
-            final GlobalDynamicProperties dynamicProperties,
-            final SideEffectsTracker sideEffectsTracker) {
-        this.accountStore = accountStore;
-        this.dynamicProperties = dynamicProperties;
-        this.sideEffectsTracker = sideEffectsTracker;
-        this.entitiesChanged = new HashMap<>();
-    }
+	@Inject
+	public AdjustAllowanceLogic(
+			final AccountStore accountStore,
+			final TypedTokenStore tokenStore,
+			final GlobalDynamicProperties dynamicProperties,
+			final SideEffectsTracker sideEffectsTracker) {
+		this.accountStore = accountStore;
+		this.tokenStore = tokenStore;
+		this.dynamicProperties = dynamicProperties;
+		this.sideEffectsTracker = sideEffectsTracker;
+		this.entitiesChanged = new HashMap<>();
+		this.nftsTouched = new HashMap<>();
+	}
 
-    public void adjustAllowance(List<CryptoAllowance> cryptoAllowances,
-                                List<TokenAllowance> tokenAllowances,
-                                List<NftAllowance> nftAllowances,
-                                AccountID payer) {
-        entitiesChanged.clear();
+	public void adjustAllowance(List<CryptoAllowance> cryptoAllowances,
+								List<TokenAllowance> tokenAllowances,
+								List<NftAllowance> nftAllowances,
+								AccountID payer) {
+		entitiesChanged.clear();
+		nftsTouched.clear();
 
-        /* --- Use models --- */
-        final Id payerId = Id.fromGrpcAccount(payer);
-        final var payerAccount = accountStore.loadAccount(payerId);
+		/* --- Use models --- */
+		final Id payerId = Id.fromGrpcAccount(payer);
+		final var payerAccount = accountStore.loadAccount(payerId);
 
-        /* --- Do the business logic --- */
-        adjustCryptoAllowances(cryptoAllowances, payerAccount);
-        adjustFungibleTokenAllowances(tokenAllowances, payerAccount);
-        adjustNftAllowances(nftAllowances, payerAccount);
+		/* --- Do the business logic --- */
+		adjustCryptoAllowances(cryptoAllowances, payerAccount);
+		adjustFungibleTokenAllowances(tokenAllowances, payerAccount);
+		adjustNftAllowances(nftAllowances, payerAccount);
 
-        /* --- Persist the owner account --- */
-        for (final var entry : entitiesChanged.entrySet()) {
-            accountStore.commitAccount(entry.getValue());
-        }
+		/* --- Persist the entities --- */
+		for (final var nft : nftsTouched.values()) {
+			tokenStore.persistNft(nft);
+		}
+		for (final var entry : entitiesChanged.entrySet()) {
+			accountStore.commitAccount(entry.getValue());
+		}
 
-    }
+	}
 
-    /**
-     * Adjust allowances based on all changes needed for CryptoAllowances from the transaction.
-     * If the spender doesn't exist in the allowances map, the cryptoAdjustAllowance transaction
-     * acts as approval for the allowance and inserts allowance to the map. If the aggregated allowance becomes zero
-     * after adding the amount to the existing spender's allowance, the spender's entry will be removed from the Map.
-     * reduced.
-     *
-     * @param cryptoAllowances
-     * 		newly given crypto allowances in the operation
-     * @param payerAccount
-     * 		account of the payer for this adjustAllowance txn
-     */
-    private void adjustCryptoAllowances(final List<CryptoAllowance> cryptoAllowances, final Account payerAccount) {
-        if (cryptoAllowances.isEmpty()) {
-            return;
-        }
+	/**
+	 * Adjust allowances based on all changes needed for CryptoAllowances from the transaction.
+	 * If the spender doesn't exist in the allowances map, the cryptoAdjustAllowance transaction
+	 * acts as approval for the allowance and inserts allowance to the map. If the aggregated allowance becomes zero
+	 * after adding the amount to the existing spender's allowance, the spender's entry will be removed from the Map.
+	 * reduced.
+	 *
+	 * @param cryptoAllowances newly given crypto allowances in the operation
+	 * @param payerAccount     account of the payer for this adjustAllowance txn
+	 */
+	private void adjustCryptoAllowances(final List<CryptoAllowance> cryptoAllowances, final Account payerAccount) {
+		if (cryptoAllowances.isEmpty()) {
+			return;
+		}
 
-        for (final var allowance : cryptoAllowances) {
-            final var owner = allowance.getOwner();
+		for (final var allowance : cryptoAllowances) {
+			final var owner = allowance.getOwner();
 
-            final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-            final var cryptoMap = accountToAdjust.getMutableCryptoAllowances();
+			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+			final var cryptoMap = accountToAdjust.getMutableCryptoAllowances();
 
-            final var spender = Id.fromGrpcAccount(allowance.getSpender());
-            accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
 
-            final var amount = allowance.getAmount();
+			final var amount = allowance.getAmount();
 
-            // if there is no key in the map, adjust transaction acts as approve transaction
-            if (!cryptoMap.containsKey(spender.asEntityNum())) {
-                if (amount == 0) {
-                    //no-op transaction
-                    continue;
-                }
-                cryptoMap.put(spender.asEntityNum(), amount);
-            } else {
-                final var existingAmount = cryptoMap.get(spender.asEntityNum());
-                final var aggregatedAmount = existingAmount + amount;
-                if (aggregatedAmount == 0) {
-                    cryptoMap.remove(spender.asEntityNum());
-                } else {
-                    cryptoMap.put(spender.asEntityNum(), aggregatedAmount);
-                }
-            }
-            validateAllowanceLimitsOn(accountToAdjust);
-            entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-            sideEffectsTracker.setCryptoAllowances(accountToAdjust.getId().asEntityNum(), cryptoMap);
-        }
-    }
+			// if there is no key in the map, adjust transaction acts as approve transaction
+			if (!cryptoMap.containsKey(spender.asEntityNum())) {
+				if (amount == 0) {
+					//no-op transaction
+					continue;
+				}
+				cryptoMap.put(spender.asEntityNum(), amount);
+			} else {
+				final var existingAmount = cryptoMap.get(spender.asEntityNum());
+				final var aggregatedAmount = existingAmount + amount;
+				if (aggregatedAmount == 0) {
+					cryptoMap.remove(spender.asEntityNum());
+				} else {
+					cryptoMap.put(spender.asEntityNum(), aggregatedAmount);
+				}
+			}
 
-    /**
-     * Adjusts all changes needed for NFT allowances from the transaction. If the key{tokenNum, spenderNum} doesn't
-     * exist in the map the allowance will be inserted. If the key exists, existing allowance values will be adjusted
-     * based on the new allowances given in operation
-     *
-     * @param nftAllowances
-     * 		newly given list of nft allowances
-     * @param payerAccount
-     * 		account of the payer for this adjustAllowance txn
-     */
-    private void adjustNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
-        if (nftAllowances.isEmpty()) {
-            return;
-        }
+			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
+			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
+			sideEffectsTracker.setCryptoAllowances(accountToAdjust.getId().asEntityNum(), cryptoMap);
+		}
+	}
 
-        for (var allowance : nftAllowances) {
-            final var owner = allowance.getOwner();
+	/**
+	 * Adjusts all changes needed for NFT allowances from the transaction. If the key{tokenNum, spenderNum} doesn't
+	 * exist in the map the allowance will be inserted. If the key exists, existing allowance values will be adjusted
+	 * based on the new allowances given in operation
+	 *
+	 * @param nftAllowances newly given list of nft allowances
+	 * @param payerAccount  account of the payer for this adjustAllowance txn
+	 */
+	private void adjustNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
+		if (nftAllowances.isEmpty()) {
+			return;
+		}
 
-            final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-            final var nftAllowancesMap = accountToAdjust.getMutableNftAllowances();
+		for (var allowance : nftAllowances) {
+			final var owner = allowance.getOwner();
 
-            final var spenderAccount = allowance.getSpender();
-            final var approvedForAll = allowance.getApprovedForAll();
-            final var serialNums = allowance.getSerialNumbersList();
-            final var tokenId = allowance.getTokenId();
-            final var spender = Id.fromGrpcAccount(spenderAccount);
-            accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
+			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+			final var mutableApprovedForAllNftsAllowances = accountToAdjust.getMutableApprovedForAllNftsAllowances();
 
-            final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
-                    spender.asEntityNum());
-            if (!nftAllowancesMap.containsKey(key)) {
-                final var value = approvedForAll.getValue() ? FcTokenAllowance.from(
-                        true) : FcTokenAllowance.from(serialNums);
-                nftAllowancesMap.put(key, value);
-            } else {
-                final var oldValue = nftAllowancesMap.get(key);
-                if (approvedForAll.getValue()) {
-                    nftAllowancesMap.put(key, FcTokenAllowance.from(true));
-                } else {
-                    final var newSerials = adjustSerials(oldValue.getSerialNumbers(), serialNums);
-                    if (newSerials.isEmpty()) {
-                        nftAllowancesMap.remove(key);
-                    } else {
-                        nftAllowancesMap.put(key, FcTokenAllowance.from(newSerials));
-                    }
-                }
-            }
-            validateAllowanceLimitsOn(accountToAdjust);
-            entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-            sideEffectsTracker.setNftAllowances(accountToAdjust.getId().asEntityNum(), nftAllowancesMap);
-        }
-    }
+			final var spenderAccount = allowance.getSpender();
+			final var approvedForAll = allowance.getApprovedForAll();
+			final var serialNums = allowance.getSerialNumbersList();
+			final var tokenID = allowance.getTokenId();
+			final var tokenId = Id.fromGrpcToken(tokenID);
+			final var spender = Id.fromGrpcAccount(spenderAccount);
+			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
+			final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(),
+					spender.asEntityNum());
 
-    /**
-     * Adjusts all changes needed for fungible token allowances from the transaction. If the key{tokenNum, spenderNum}
-     * doesn't exist in the map the allowance will be inserted. If the key exists, existing allowance will be adjusted
-     * based
-     * on the new allowances given in operation
-     *
-     * @param tokenAllowances
-     * 		newly given list of token allowances
-     * @param payerAccount
-     * 		account of the payer for this adjustAllowance txn
-     */
-    private void adjustFungibleTokenAllowances(final List<TokenAllowance> tokenAllowances,
-                                               final Account payerAccount) {
-        if (tokenAllowances.isEmpty()) {
-            return;
-        }
+			if (approvedForAll.getValue()) {
+				mutableApprovedForAllNftsAllowances.add(key);
+			} else {
+				mutableApprovedForAllNftsAllowances.remove(key);
+			}
 
-        for (var allowance : tokenAllowances) {
-            final var owner = allowance.getOwner();
+			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
 
-            final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-            final var tokenAllowancesMap = accountToAdjust.getMutableFungibleTokenAllowances();
+			final var nfts = updateSpender(tokenStore, accountToAdjust.getId(), spender, tokenId, serialNums);
+			for (var nft : nfts) {
+				nftsTouched.put(nft.getNftId(), nft);
+			}
+			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
+		}
+	}
+
+	/**
+	 * Adjusts all changes needed for fungible token allowances from the transaction. If the key{tokenNum, spenderNum}
+	 * doesn't exist in the map the allowance will be inserted. If the key exists, existing allowance will be adjusted
+	 * based
+	 * on the new allowances given in operation
+	 *
+	 * @param tokenAllowances newly given list of token allowances
+	 * @param payerAccount    account of the payer for this adjustAllowance txn
+	 */
+	private void adjustFungibleTokenAllowances(final List<TokenAllowance> tokenAllowances,
+											   final Account payerAccount) {
+		if (tokenAllowances.isEmpty()) {
+			return;
+		}
+
+		for (var allowance : tokenAllowances) {
+			final var owner = allowance.getOwner();
+
+			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+			final var tokenAllowancesMap = accountToAdjust.getMutableFungibleTokenAllowances();
 
 
-            final var amount = allowance.getAmount();
-            final var tokenId = allowance.getTokenId();
-            final var spender = Id.fromGrpcAccount(allowance.getSpender());
-            accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
+			final var amount = allowance.getAmount();
+			final var tokenId = allowance.getTokenId();
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
 
-            final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
-                    spender.asEntityNum());
-            if (!tokenAllowancesMap.containsKey(key)) {
-                if (amount == 0) {
-                    continue;
-                }
-                tokenAllowancesMap.put(key, amount);
-            } else {
-                final var oldAmount = tokenAllowancesMap.get(key);
-                final var aggregatedAmount = oldAmount + amount;
-                if (aggregatedAmount == 0) {
-                    tokenAllowancesMap.remove(key);
-                } else {
-                    tokenAllowancesMap.put(key, aggregatedAmount);
-                }
-            }
-            validateAllowanceLimitsOn(accountToAdjust);
-            entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
-            sideEffectsTracker.setFungibleTokenAllowances(accountToAdjust.getId().asEntityNum(), tokenAllowancesMap);
-        }
-    }
+			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
+					spender.asEntityNum());
+			if (!tokenAllowancesMap.containsKey(key)) {
+				if (amount == 0) {
+					continue;
+				}
+				tokenAllowancesMap.put(key, amount);
+			} else {
+				final var oldAmount = tokenAllowancesMap.get(key);
+				final var aggregatedAmount = oldAmount + amount;
+				if (aggregatedAmount == 0) {
+					tokenAllowancesMap.remove(key);
+				} else {
+					tokenAllowancesMap.put(key, aggregatedAmount);
+				}
+			}
 
-    /**
-     * Checks if the total allowances of an account will exceed the limit after applying this transaction
-     *
-     * @param ownerAccount
-     * @return
-     */
-    private boolean exceedsAccountLimit(final Account ownerAccount) {
-        return ownerAccount.getTotalAllowances() > dynamicProperties.maxAllowanceLimitPerAccount();
-    }
-
-    /**
-     * Adds positive serial numbers, and removes negative serial numbers if they exist in the list.
-     *
-     * @param oldSerials
-     * 		existing allowance serial numbers for the account
-     * @param opSerials
-     * 		serial numbers given in CryptoAdjustAllowance operation
-     * @return adjusted serial numbers to be set for the allowance
-     */
-    private List<Long> adjustSerials(final List<Long> oldSerials, final List<Long> opSerials) {
-        List<Long> newSerials = new ArrayList<>(oldSerials);
-
-        for (final Long serial : opSerials) {
-            if (serial < 0) {
-                newSerials.remove(absolute(serial));
-            } else {
-                newSerials.add(serial);
-            }
-        }
-        return newSerials;
-    }
-
-    private void validateAllowanceLimitsOn(final Account owner) {
-        final var limitExceeded = exceedsAccountLimit(owner);
-        validateFalse(limitExceeded, MAX_ALLOWANCES_EXCEEDED);
-    }
-
-
+			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
+			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
+			sideEffectsTracker.setFungibleTokenAllowances(accountToAdjust.getId().asEntityNum(), tokenAllowancesMap);
+		}
+	}
 }
