@@ -299,22 +299,22 @@ public class Account {
 		final var prevKey = dissociatingRel.getPrevKey();
 		final var prevToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 				STATIC_PROPERTIES.scopedIdWith(prevKey));
-		final var prevRel = unPersistedRelationships.getOrDefault(prevKey,
+		final var prevRelKey = EntityNumPair.fromLongs(id.num(), prevKey);
+		final var prevRel = unPersistedRelationships.getOrDefault(prevRelKey,
 				tokenStore.loadTokenRelationship(prevToken, this));
 		// nextKey can be 0.
 		final var nextKey = dissociatingRel.getNextKey();
 		if (nextKey != 0) {
 			final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 					STATIC_PROPERTIES.scopedIdWith(nextKey));
-			final var nextRel = unPersistedRelationships.getOrDefault(nextKey,
+			final var nextRelKey = EntityNumPair.fromLongs(id.num(), nextKey);
+			final var nextRel = unPersistedRelationships.getOrDefault(nextRelKey,
 					tokenStore.loadTokenRelationship(nextToken, this));
 			nextRel.setPrevKey(prevKey);
-			final var nextEntityNumPair = EntityNumPair.fromLongs(id.num(), nextKey);
-			unPersistedRelationships.put(nextEntityNumPair, nextRel);
+			unPersistedRelationships.put(nextRelKey, nextRel);
 		}
 		prevRel.setNextKey(nextKey);
-		final var prevEntityNumPair = EntityNumPair.fromLongs(id.num(), prevKey);
-		unPersistedRelationships.put(prevEntityNumPair, prevRel);
+		unPersistedRelationships.put(prevRelKey, prevRel);
 	}
 
 	private void updateLastAssociation(
@@ -328,12 +328,12 @@ public class Account {
 		if (nextKey != 0) {
 			final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 					STATIC_PROPERTIES.scopedIdWith(nextKey));
-			final var nextRel = unPersistedRelationships.getOrDefault(nextKey,
+			final var nextRelKey = EntityNumPair.fromLongs(id.num(), nextKey);
+			final var nextRel = unPersistedRelationships.getOrDefault(nextRelKey,
 					tokenStore.loadTokenRelationship(nextToken, this));
 			lastAssociatedToken = nextRel.getKey();
 			nextRel.setPrevKey(latestRel.getPrevKey());
-			final var nextEntityNumPair = EntityNumPair.fromLongs(id.num(), nextKey);
-			unPersistedRelationships.put(nextEntityNumPair, nextRel);
+			unPersistedRelationships.put(nextRelKey, nextRel);
 		} else {
 			lastAssociatedToken = MISSING_NUM_PAIR;
 		}
