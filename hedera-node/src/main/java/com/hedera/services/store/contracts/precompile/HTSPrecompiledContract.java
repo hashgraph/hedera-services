@@ -1068,7 +1068,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			 */
 			if (!tokenCreateOp.getRoyaltyFees().isEmpty()) {
 				for (final var royaltyFee: tokenCreateOp.getRoyaltyFees()) {
-					validateTrue(royaltyFee.fallbackFixedFee().getFixedFeePayment() != INVALID_PAYMENT, INVALID_TRANSACTION_BODY);
+					if (royaltyFee.fallbackFixedFee() != null) {
+						validateTrue(royaltyFee.fallbackFixedFee().getFixedFeePayment() != INVALID_PAYMENT,
+								INVALID_TRANSACTION_BODY);
+					}
 				}
 			}
 		}

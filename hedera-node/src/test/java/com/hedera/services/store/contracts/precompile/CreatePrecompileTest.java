@@ -675,6 +675,7 @@ class CreatePrecompileTest {
 		given(fixedFeeMock.getFixedFeePayment())
 				.willReturn(TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT);
 		invalidTokenCreate.setRoyaltyFees(List.of(new TokenCreateWrapper.RoyaltyFeeWrapper(1, 2,
+				null, feeCollector), new TokenCreateWrapper.RoyaltyFeeWrapper(1, 2,
 				fixedFeeMock, feeCollector)));
 
 		prepareAndAssertRevertReasonIsSetAndNullIsReturned(invalidTokenCreate);
