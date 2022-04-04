@@ -153,6 +153,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -949,8 +950,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decoder.decodeNonFungibleCreate(input, aliasResolver);
 				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES ->
 						decoder.decodeNonFungibleCreateWithFees(input, aliasResolver);
-				default -> throw new InvalidTransactionException(String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE,
-						"Create", functionId, input), FAIL_INVALID);
+				default -> null;
 			};
 
 			/* --- Validate Solidity input and massage it to be able to transform it to tokenCreateTxnBody --- */
@@ -1095,7 +1095,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								sigsVerifier::cryptoKeyIsActive);
 				case ECDSA_SECPK256K1 -> validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsaSecp256k1()),
 								sigsVerifier::cryptoKeyIsActive);
-				default -> throw new InvalidTransactionException(FAIL_INVALID);
+				default -> throw new InvalidTransactionException(NOT_SUPPORTED);
 			};
 		}
 
