@@ -159,14 +159,14 @@ class GetAccountInfoAnswerTest {
 		final var missingRelKey = fromAccountTokenRel(payerId, missingToken);
 		missingRel.setKey(missingRelKey);
 
-		firstRel.setNextKey(secondRelKey);
-		secondRel.setNextKey(thirdRelKey);
-		secondRel.setPrevKey(firstRelKey);
-		thirdRel.setPrevKey(secondRelKey);
-		thirdRel.setNextKey(fourthRelKey);
-		fourthRel.setPrevKey(thirdRelKey);
-		fourthRel.setNextKey(missingRelKey);
-		missingRel.setPrevKey(fourthRelKey);
+		firstRel.setNext(secondToken.getTokenNum());
+		secondRel.setNext(thirdToken.getTokenNum());
+		secondRel.setPrev(firstToken.getTokenNum());
+		thirdRel.setPrev(secondToken.getTokenNum());
+		thirdRel.setNext(fourthToken.getTokenNum());
+		fourthRel.setPrev(thirdToken.getTokenNum());
+		fourthRel.setNext(missingToken.getTokenNum());
+		missingRel.setPrev(fourthToken.getTokenNum());
 
 		tokenRels.put(firstRelKey, firstRel);
 		tokenRels.put(secondRelKey, secondRel);

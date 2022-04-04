@@ -673,11 +673,11 @@ public class StateView {
 	) {
 		var key = firstRel;
 		var counter = 0;
-		while (!key.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRels) {
+		while (key.getLowOrderAsLong() != 0 && counter < maxRels) {
 			final var rel = tokenRels.get(key);
 			final var token = tokens.getOrDefault(key.getLowOrderAsNum(), REMOVED_TOKEN);
 			visitor.accept(token, rel);
-			key = rel.nextKey();
+			key = EntityNumPair.fromLongs(key.getHiOrderAsLong(), rel.nextKey());
 			counter++;
 		}
 	}

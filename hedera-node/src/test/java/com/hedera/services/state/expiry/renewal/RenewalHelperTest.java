@@ -456,8 +456,8 @@ class RenewalHelperTest {
 		final var rel = assoc(account, token);
 		final var asc  = new MerkleTokenRelStatus(balance, false, false, false);
 		asc.setKey(key);
-		asc.setPrevKey(prevKey);
-		asc.setNextKey(nextKey);
+		asc.setPrev(prevKey.getLowOrderAsLong());
+		asc.setNext(nextKey.getLowOrderAsLong());
 		given(tokenRels.get(rel)).willReturn(asc);
 	}
 

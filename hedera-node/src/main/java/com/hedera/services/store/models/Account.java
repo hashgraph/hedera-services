@@ -46,6 +46,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
@@ -233,8 +234,8 @@ public class Account {
 			if (prevRel != null) {
 				final var prevKey = prevRel.getPrevKey();
 				newRel.setPrevKey(prevKey);
-				newRel.setNextKey(currKey);
-				prevRel.setPrevKey(newRel.getKey());
+				newRel.setNextKey(currKey.getLowOrderAsLong());
+				prevRel.setPrevKey(token.getId().num());
 				tokenRelationshipsToPersist.add(prevRel);
 			}
 			numZeroBalances++;
@@ -297,21 +298,23 @@ public class Account {
 				tokenStore.loadTokenRelationship(token, this));
 		final var prevKey = dissociatingRel.getPrevKey();
 		final var prevToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
-				Id.fromGrpcToken(prevKey.asAccountTokenRel().getRight()));
+				STATIC_PROPERTIES.scopedIdWith(prevKey));
 		final var prevRel = unPersistedRelationships.getOrDefault(prevKey,
 				tokenStore.loadTokenRelationship(prevToken, this));
 		// nextKey can be 0.
 		final var nextKey = dissociatingRel.getNextKey();
-		if (!nextKey.equals(MISSING_NUM_PAIR)) {
+		if (nextKey != 0) {
 			final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
-					Id.fromGrpcToken(nextKey.asAccountTokenRel().getRight()));
+					STATIC_PROPERTIES.scopedIdWith(nextKey));
 			final var nextRel = unPersistedRelationships.getOrDefault(nextKey,
 					tokenStore.loadTokenRelationship(nextToken, this));
 			nextRel.setPrevKey(prevKey);
-			unPersistedRelationships.put(nextKey, nextRel);
+			final var nextEntityNumPair = EntityNumPair.fromLongs(id.num(), nextKey);
+			unPersistedRelationships.put(nextEntityNumPair, nextRel);
 		}
 		prevRel.setNextKey(nextKey);
-		unPersistedRelationships.put(prevKey, prevRel);
+		final var prevEntityNumPair = EntityNumPair.fromLongs(id.num(), prevKey);
+		unPersistedRelationships.put(prevEntityNumPair, prevRel);
 	}
 
 	private void updateLastAssociation(
@@ -322,14 +325,15 @@ public class Account {
 				tokenStore.getLatestTokenRelationship(this));
 		final var nextKey = latestRel.getNextKey();
 
-		if (!nextKey.equals(MISSING_NUM_PAIR)) {
+		if (nextKey != 0) {
 			final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
-					Id.fromGrpcToken(nextKey.asAccountTokenRel().getRight()));
+					STATIC_PROPERTIES.scopedIdWith(nextKey));
 			final var nextRel = unPersistedRelationships.getOrDefault(nextKey,
 					tokenStore.loadTokenRelationship(nextToken, this));
 			lastAssociatedToken = nextRel.getKey();
 			nextRel.setPrevKey(latestRel.getPrevKey());
-			unPersistedRelationships.put(nextKey, nextRel);
+			final var nextEntityNumPair = EntityNumPair.fromLongs(id.num(), nextKey);
+			unPersistedRelationships.put(nextEntityNumPair, nextRel);
 		} else {
 			lastAssociatedToken = MISSING_NUM_PAIR;
 		}

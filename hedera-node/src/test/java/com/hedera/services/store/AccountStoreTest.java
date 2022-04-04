@@ -268,8 +268,8 @@ class AccountStoreTest {
 
 		firstRel.setKey(firstRelKey);
 		secondRel.setKey(secondRelKey);
-		secondRel.setPrevKey(firstRelKey);
-		firstRel.setNextKey(secondRelKey);
+		secondRel.setPrev(firstAssocTokenNum);
+		firstRel.setNext(secondAssocTokenNum);
 		miscAccount.setLastAssociatedToken(firstRelKey);
 
 		autoRenewAccount.setExpiry(expiry);

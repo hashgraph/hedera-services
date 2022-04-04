@@ -272,14 +272,15 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 						alreadyUsedAutomaticAssociations + 1);
 
 				if (lastAssociation.equals(MISSING_NUM_PAIR)) {
-					tokenRelsLedger.set(relationship, PREV_KEY, MISSING_NUM_PAIR);
-					tokenRelsLedger.set(relationship, NEXT_KEY, MISSING_NUM_PAIR);
+					tokenRelsLedger.set(relationship, PREV_KEY, 0);
+					tokenRelsLedger.set(relationship, NEXT_KEY, 0);
 				} else {
 					// oldPrevKey should be MISSING_NUM_PAIR
-					final var oldPrevKey = (EntityNumPair) tokenRelsLedger.get(lastAssociation.asAccountTokenRel(), PREV_KEY);
-					tokenRelsLedger.set(lastAssociation.asAccountTokenRel(), PREV_KEY, newAssociationKey);
-					tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey);
-					tokenRelsLedger.set(relationship, NEXT_KEY, lastAssociation);
+					final var oldPrev = (long) tokenRelsLedger.get(lastAssociation.asAccountTokenRel(), PREV_KEY);
+					final var oldPrevKey = EntityNumPair.fromLongs(aId.getAccountNum(), oldPrev);
+					tokenRelsLedger.set(lastAssociation.asAccountTokenRel(), PREV_KEY, tId.getTokenNum());
+					tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey.getLowOrderAsLong());
+					tokenRelsLedger.set(relationship, NEXT_KEY, lastAssociation.getLowOrderAsLong());
 				}
 
 				numAssociations++;

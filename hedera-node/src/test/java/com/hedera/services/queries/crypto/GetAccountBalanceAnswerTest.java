@@ -146,15 +146,15 @@ class GetAccountBalanceAnswerTest {
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(aKey, aRel);
-		aRel.setNextKey(bKey);
+		aRel.setNext(bToken.getTokenNum());
 		tokenRels.put(bKey, bRel);
-		bRel.setPrevKey(aKey);
-		bRel.setNextKey(cKey);
+		bRel.setPrev(aToken.getTokenNum());
+		bRel.setNext(cToken.getTokenNum());
 		tokenRels.put(cKey, cRel);
-		cRel.setPrevKey(bKey);
-		cRel.setNextKey(dKey);
+		cRel.setPrev(bToken.getTokenNum());
+		cRel.setNext(dToken.getTokenNum());
 		tokenRels.put(dKey, dRel);
-		dRel.setPrevKey(cKey);
+		dRel.setPrev(cToken.getTokenNum());
 
 		accounts = mock(MerkleMap.class);
 		given(accounts.get(fromAccountId(asAccount(accountIdLit)))).willReturn(accountV);

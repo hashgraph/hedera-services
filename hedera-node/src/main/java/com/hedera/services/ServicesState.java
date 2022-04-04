@@ -80,7 +80,6 @@ import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTE
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0240_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0250_VERSION;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 
 /**
  * The Merkle tree root of the Hedera Services world state.
@@ -358,15 +357,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			var merkleAccount = accounts.getForModify(accountId);
 			int numAssociations = 0;
 			int numZeroBalances = 0;
-			EntityNumPair prevListRootKey = MISSING_NUM_PAIR;
+			EntityNumPair prevListRootKey =  EntityNumPair.fromLongs(accountId.longValue(), 0);
 			for (var tokenId : merkleAccount.tokens().asTokenIds()) {
 				var newListRootKey = EntityNumPair.fromLongs(accountId.longValue(), tokenId.getTokenNum());
 				var association = tokenRels.getForModify(newListRootKey);
-				association.setNextKey(prevListRootKey);
+				association.setNext(prevListRootKey.getLowOrderAsLong());
 
-				if (prevListRootKey != MISSING_NUM_PAIR) {
-					var prevAssociation = tokenRels.getForModify(prevListRootKey);
-					prevAssociation.setPrevKey(newListRootKey);
+				if (prevListRootKey.getLowOrderAsLong() != 0) {
+					final var prevAssociation = tokenRels.getForModify(prevListRootKey);
+					prevAssociation.setPrev(tokenId.getTokenNum());
 				}
 
 				if (association.getBalance() == 0) {

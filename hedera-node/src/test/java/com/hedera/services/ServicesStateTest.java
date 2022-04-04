@@ -77,7 +77,6 @@ import java.util.function.Consumer;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -477,14 +476,14 @@ class ServicesStateTest {
 				1,0,associationKey1));
 		verify(merkleAccount2).setTokenAssociationMetadata(new TokenAssociationMetadata(
 				2,1,associationKey3));
-		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey1).nextKey());
-		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey1).prevKey());
+		assertEquals(0, tokenAssociations.get(associationKey1).nextKey());
+		assertEquals(0, tokenAssociations.get(associationKey1).prevKey());
 		assertEquals(associationKey1, tokenAssociations.get(associationKey1).getKey());
-		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey2).nextKey());
-		assertEquals(associationKey3, tokenAssociations.get(associationKey2).prevKey());
+		assertEquals(0, tokenAssociations.get(associationKey2).nextKey());
+		assertEquals(token2.longValue(), tokenAssociations.get(associationKey2).prevKey());
 		assertEquals(associationKey2, tokenAssociations.get(associationKey2).getKey());
-		assertEquals(associationKey2, tokenAssociations.get(associationKey3).nextKey());
-		assertEquals(MISSING_NUM_PAIR, tokenAssociations.get(associationKey3).prevKey());
+		assertEquals(token1.longValue(), tokenAssociations.get(associationKey3).nextKey());
+		assertEquals(0, tokenAssociations.get(associationKey3).prevKey());
 		assertEquals(associationKey3, tokenAssociations.get(associationKey3).getKey());
 	}
 

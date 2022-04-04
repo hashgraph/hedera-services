@@ -84,8 +84,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCI
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
+import static com.hedera.services.ledger.properties.TokenRelProperty.PREV_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.submerkle.TokenAssociationMetadata.EMPTY_TOKEN_ASSOCIATION_META;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
@@ -556,7 +558,8 @@ class HederaTokenStoreTest {
 		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, ALREADY_USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
-		given(tokenRelsLedger.get(sponsorNft, NEXT_KEY)).willReturn(MISSING_NUM_PAIR);
+		given(tokenRelsLedger.get(sponsorNft, NEXT_KEY)).willReturn(MISSING_ID.num());
+		given(tokenRelsLedger.get(sponsorNft, PREV_KEY)).willReturn(MISSING_ID.num());
 		given(properties.areTokenAssociationsLimited()).willReturn(true);
 		given(properties.maxTokensPerAccount()).willReturn(associatedTokensCount+1);
 

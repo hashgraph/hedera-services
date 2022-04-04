@@ -48,6 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -116,16 +117,16 @@ class ReadOnlyTokenStoreTest {
 	private void setupTokenRel() {
 		miscTokenMerkleRel = new MerkleTokenRelStatus(balance, frozen, kycGranted, automaticAssociation);
 		miscTokenMerkleRel.setKey(miscTokenRelId);
-		miscTokenMerkleRel.setPrevKey(EntityNumPair.MISSING_NUM_PAIR);
-		miscTokenMerkleRel.setNextKey(EntityNumPair.MISSING_NUM_PAIR);
+		miscTokenMerkleRel.setPrev(0);
+		miscTokenMerkleRel.setNext(0);
 		miscTokenRel.initBalance(balance);
 		miscTokenRel.setFrozen(frozen);
 		miscTokenRel.setKycGranted(kycGranted);
 		miscTokenRel.setAutomaticAssociation(automaticAssociation);
 		miscTokenRel.markAsPersisted();
 		miscTokenRel.setKey(miscTokenRelId);
-		miscTokenRel.setPrevKey(EntityNumPair.MISSING_NUM_PAIR);
-		miscTokenRel.setNextKey(EntityNumPair.MISSING_NUM_PAIR);
+		miscTokenRel.setPrevKey(MISSING_ID.num());
+		miscTokenRel.setNextKey(MISSING_ID.num());
 	}
 
 	/* --- Token loading --- */

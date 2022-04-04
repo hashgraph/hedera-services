@@ -187,8 +187,8 @@ class SignedStateBalancesExporterTest {
 		final var secondNonNodeDelTokenAssociation = new MerkleTokenRelStatus(
 				secondNonNodeDeletedTokenBalance, false, true, false);
 		secondNonNodeDelTokenAssociation.setKey(secondNonNodeDelTokenAssociationKey);
-		secondNonNodeDelTokenAssociation.setPrevKey(secondNonNodeTokenAssociationKey);
-		secondNonNodeTokenAssociation.setNextKey(secondNonNodeDelTokenAssociationKey);
+		secondNonNodeDelTokenAssociation.setPrev(theToken.getTokenNum());
+		secondNonNodeTokenAssociation.setNext(theDeletedToken.getTokenNum());
 
 		tokenRels.put(secondNonNodeTokenAssociationKey, secondNonNodeTokenAssociation);
 		tokenRels.put(secondNonNodeDelTokenAssociationKey, secondNonNodeDelTokenAssociation);

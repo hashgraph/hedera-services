@@ -259,11 +259,11 @@ class StateViewTest {
 
 		tokenAccountRel = new MerkleTokenRelStatus(123L, false, true, true);
 		tokenAccountRel.setKey(tokenAssociationId);
-		tokenAccountRel.setNextKey(nftAssociationId);
+		tokenAccountRel.setNext(nftTokenId.getTokenNum());
 
 		nftAccountRel = new MerkleTokenRelStatus(2L, false, true, false);
 		tokenAccountRel.setKey(nftAssociationId);
-		tokenAccountRel.setPrevKey(tokenAssociationId);
+		tokenAccountRel.setPrev(tokenId.getTokenNum());
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(tokenAssociationId, tokenAccountRel);

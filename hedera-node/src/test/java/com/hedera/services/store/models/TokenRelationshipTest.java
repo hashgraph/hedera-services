@@ -47,8 +47,8 @@ class TokenRelationshipTest {
 	private final JKey kycKey = TxnHandlingScenario.TOKEN_KYC_KT.asJKeyUnchecked();
 	private final JKey freezeKey = TxnHandlingScenario.TOKEN_FREEZE_KT.asJKeyUnchecked();
 	private final EntityNumPair key = new EntityNumPair(1234566);
-	private final EntityNumPair nextKey = new EntityNumPair(1234567);
-	private final EntityNumPair prevKey = new EntityNumPair(1234565);
+	private final long nextKey = 1234567;
+	private final long prevKey = 1234565;
 	private final int associatedTokensCount = 3;
 
 	private Token token;
@@ -116,7 +116,7 @@ class TokenRelationshipTest {
 				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
 				"currentSerialNumber=0, pauseKey=<N/A>, paused=false}, balance=1234, balanceChange=0, frozen=false, " +
 				"kycGranted=false, isAutomaticAssociation=false, " +
-				"key=PermHashLong(0, 1234566), nextKey=PermHashLong(0, 1234567), prevKey=PermHashLong(0, 1234565)}";
+				"key=PermHashLong(0, 1234566), nextKey=1234567, prevKey=1234565}";
 
 		// expect:
 		assertEquals(desired, subject.toString());

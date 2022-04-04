@@ -94,12 +94,12 @@ class AccountTest {
 		subject.setNumZeroBalances(numZeroBalances);
 
 		firstRel.setKey(firstRelKey);
-		firstRel.setNextKey(secondRelKey);
+		firstRel.setNextKey(secondAssocTokenNum);
 		secondRel.setKey(secondRelKey);
-		secondRel.setPrevKey(firstRelKey);
-		secondRel.setNextKey(thirdRelKey);
+		secondRel.setPrevKey(firstAssocTokenNum);
+		secondRel.setNextKey(thirdAssocTokenNum);
 		thirdRel.setKey(thirdRelKey);
-		thirdRel.setPrevKey(secondRelKey);
+		thirdRel.setPrevKey(secondAssocTokenNum);
 
 		firstToken.setTreasury(treasuryAccount);
 		secondToken.setTreasury(treasuryAccount);
