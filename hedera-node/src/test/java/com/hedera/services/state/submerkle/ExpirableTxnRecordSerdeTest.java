@@ -55,7 +55,7 @@ class ExpirableTxnRecordSerdeTest {
 
 		final var subject = builder.build();
 
-		TxnUtils.assertSerdeWorks(subject, ExpirableTxnRecord::new, ExpirableTxnRecord.RELEASE_0230_VERSION);
+		TxnUtils.assertSerdeWorks(subject, ExpirableTxnRecord::new, ExpirableTxnRecord.RELEASE_0250_VERSION);
 	}
 
 	public static EntityId randomEntityId() {

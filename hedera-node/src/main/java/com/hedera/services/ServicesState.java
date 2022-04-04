@@ -181,7 +181,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		// Create the top-level children in the Merkle tree
 		final var bootstrapProps = new BootstrapProperties();
-		final var seqStart = bootstrapProps.getLongProperty("hedera.numReservedSystemEntities") + 1;
+		final var seqStart = bootstrapProps.getLongProperty("hedera.firstUserEntity");
 		createGenesisChildren(addressBook, seqStart);
 
 		internalInit(platform, bootstrapProps, dualState);
