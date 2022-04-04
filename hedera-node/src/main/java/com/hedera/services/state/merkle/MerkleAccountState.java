@@ -153,6 +153,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	@Override
+	public int getMinimumSupportedVersion() {
+		return CURRENT_VERSION - 1;
+	}
+
+	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		key = serdes.readNullable(in, serdes::deserializeKey);
 		expiry = in.readLong();

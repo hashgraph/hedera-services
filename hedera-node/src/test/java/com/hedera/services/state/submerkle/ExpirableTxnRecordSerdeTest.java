@@ -22,7 +22,7 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.test.utils.SerdeUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -34,10 +34,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.SplittableRandom;
-import java.util.TreeMap;
-import java.util.stream.IntStream;
 
 class ExpirableTxnRecordSerdeTest {
 	private static final SplittableRandom r = new SplittableRandom();
@@ -48,10 +45,10 @@ class ExpirableTxnRecordSerdeTest {
 
 		final var builder = ExpirableTxnRecord.newBuilder()
 				.setTxnId(randomTxnId())
-				.setCryptoAllowances(randomCryptoAllowances(
-						10, 2, 3))
-				.setFungibleTokenAllowances(randomFungibleAllowances(
-						10, 10, 2, 3));
+				.setCryptoAllowances(SerdeUtils.randomCryptoAllowances(
+						r, 10, 2, 3))
+				.setFungibleTokenAllowances(SerdeUtils.randomFungibleAllowances(
+						r, 10, 10, 2, 3));
 
 		final var subject = builder.build();
 
@@ -116,56 +113,4 @@ class ExpirableTxnRecordSerdeTest {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(FcTokenAllowanceId.class, FcTokenAllowanceId::new));
 	}
-
-	private Map<EntityNum, Map<EntityNum, Long>> randomCryptoAllowances(
-			final int numUniqueAccounts,
-			final int numSpenders,
-			final int numAllowancesPerSpender
-	) {
-		final EntityNum[] accounts = IntStream.range(0, numUniqueAccounts)
-				.mapToObj(i -> EntityNum.fromLong(r.nextLong(BitPackUtils.MAX_NUM_ALLOWED)))
-				.distinct()
-				.toArray(EntityNum[]::new);
-		final Map<EntityNum, Map<EntityNum, Long>> ans = new TreeMap<>();
-		for (int i = 0; i < numSpenders; i++) {
-			final var aNum = accounts[r.nextInt(accounts.length)];
-			final var allowances = ans.computeIfAbsent(aNum, a -> new TreeMap<>());
-			for (int j = 0; j < numAllowancesPerSpender; j++) {
-				final var bNum = accounts[r.nextInt(accounts.length)];
-				allowances.put(bNum, r.nextLong(Long.MAX_VALUE));
-			}
-		}
-		return ans;
-	}
-
-	private Map<EntityNum, Map<FcTokenAllowanceId, Long>> randomFungibleAllowances(
-			final int numUniqueAccounts,
-			final int numUniqueTokens,
-			final int numSpenders,
-			final int numAllowancesPerSpender
-	) {
-		final EntityNum[] accounts = randomNums(numUniqueAccounts);
-		final EntityNum[] tokens = randomNums(numUniqueTokens);
-
-		final Map<EntityNum, Map<FcTokenAllowanceId, Long>> ans = new TreeMap<>();
-		for (int i = 0; i < numSpenders; i++) {
-			final var aNum = accounts[r.nextInt(accounts.length)];
-			final var allowances = ans.computeIfAbsent(aNum, a -> new TreeMap<>());
-			for (int j = 0; j < numAllowancesPerSpender; j++) {
-				final var bNum = accounts[r.nextInt(accounts.length)];
-				final var tNum = tokens[r.nextInt(tokens.length)];
-				final var key = new FcTokenAllowanceId(tNum, bNum);
-				allowances.put(key, r.nextLong(Long.MAX_VALUE));
-			}
-		}
-		return ans;
-	}
-
-	private EntityNum[] randomNums(final int n) {
-		return IntStream.range(0, n)
-				.mapToObj(i -> EntityNum.fromLong(r.nextLong(BitPackUtils.MAX_NUM_ALLOWED)))
-				.distinct()
-				.toArray(EntityNum[]::new);
-	}
-
 }

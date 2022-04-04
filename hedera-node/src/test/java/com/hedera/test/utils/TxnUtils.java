@@ -46,14 +46,12 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
-import static com.swirlds.common.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -295,15 +293,4 @@ public class TxnUtils {
 		return reconstruction;
 	}
 
-	public static <T extends SelfSerializable> String serializeToHex(final T source) {
-		final var baos = new ByteArrayOutputStream();
-		final var out = new SerializableDataOutputStream(baos);
-		try {
-			source.serialize(out);
-			out.flush();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-		return hex(baos.toByteArray());
-	}
 }
