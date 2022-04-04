@@ -125,6 +125,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
+import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.simpleBytes;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -238,8 +239,6 @@ public class ContractCallSuite extends HapiApiSuite {
 						withOpContext((spec, op) -> allRunFor(spec,
 								contractCall(WHITELISTER, ADD_TO_WHITELIST_ABI, childMirror.get())
 										.payingWith(DEFAULT_PAYER),
-// TODO: This line proves that ADD TO WHITELIST works
-//									contractCall(WHITELISTER, RAW_IS_WHITELISTED_ABI, childMirror.get()).payingWith(DEFAULT_PAYER).via("getTxn"),
 								contractCall(asContractString(
 												contractIdFromHexedMirrorAddress(childMirror.get())), IS_WHITELISTED_ABI,
 										getNestedContractAddress(WHITELISTER, spec))
@@ -251,9 +250,8 @@ public class ContractCallSuite extends HapiApiSuite {
 										.via(evmWhitelistCheckTxn)
 						))
 				).then(
-						getTxnRecord(mirrorWhitelistCheckTxn).andAllChildRecords().logged(),
-						getTxnRecord(evmWhitelistCheckTxn).andAllChildRecords().logged(),
-						getTxnRecord("getTxn").andAllChildRecords().logged()
+						getTxnRecord(mirrorWhitelistCheckTxn).andAllChildRecords().hasChildRecords(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged(),
+						getTxnRecord(evmWhitelistCheckTxn).andAllChildRecords().hasChildRecords(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged()
 				);
 	}
 

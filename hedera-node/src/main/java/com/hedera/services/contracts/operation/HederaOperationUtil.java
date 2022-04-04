@@ -123,6 +123,11 @@ public final class HederaOperationUtil {
 		}
 
 		final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+		if (updater.filterInconsistentMirror(address) == null) {
+			return new Operation.OperationResult(
+					Optional.of(supplierHaltGasCost.get()),
+					Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+		}
 		final var account = updater.get(address);
 		if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
 			return new Operation.OperationResult(

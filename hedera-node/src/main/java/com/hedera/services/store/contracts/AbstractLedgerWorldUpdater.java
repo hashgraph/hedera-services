@@ -134,6 +134,15 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 		return new WrappedEvmAccount(track(newMutable));
 	}
 
+	public Address filterInconsistentMirror(Address addressOrAlias) {
+		final var curAliases = aliases();
+		if (curAliases.isMirror(addressOrAlias) && trackingLedgers().hasAlias(addressOrAlias)) {
+			// Only the CREATE2 form can be used from inside the EVM
+			return null;
+		}
+		return addressOrAlias;
+	}
+
 	@Override
 	public Account get(final Address addressOrAlias) {
 		final var address = aliases().resolveForEvm(addressOrAlias);

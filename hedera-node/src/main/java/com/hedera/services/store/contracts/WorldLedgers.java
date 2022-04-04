@@ -111,25 +111,48 @@ public class WorldLedgers {
 		if (aliases.isInUse(addressOrAlias)) {
 			return addressOrAlias;
 		}
-		final var sourceId = accountIdFromEvmAddress(addressOrAlias);
+
+		return getAddressOrAlias(addressOrAlias);
+	}
+
+	public Address getAddressOrAlias(final Address address) {
+		final var sourceId = accountIdFromEvmAddress(address);
 		final ByteString alias;
 		if (accountsLedger != null) {
 			if (!accountsLedger.exists(sourceId)) {
-				return addressOrAlias;
+				return address;
 			}
 			alias = (ByteString) accountsLedger.get(sourceId, ALIAS);
 		} else {
 			Objects.requireNonNull(staticEntityAccess, "Null ledgers must imply non-null static access");
 			if (!staticEntityAccess.isExtant(sourceId)) {
-				return addressOrAlias;
+				return address;
 			}
 			alias = staticEntityAccess.alias(sourceId);
 		}
 		if (!alias.isEmpty()) {
 			return Address.wrap(Bytes.wrap(alias.toByteArray()));
 		} else {
-			return addressOrAlias;
+			return address;
 		}
+	}
+
+	public boolean hasAlias(final Address address) {
+		final var sourceId = accountIdFromEvmAddress(address);
+		final ByteString alias;
+		if (accountsLedger != null) {
+			if (!accountsLedger.exists(sourceId)) {
+				return false;
+			}
+			alias = (ByteString) accountsLedger.get(sourceId, ALIAS);
+		} else {
+			Objects.requireNonNull(staticEntityAccess, "Null ledgers must imply non-null static access");
+			if (!staticEntityAccess.isExtant(sourceId)) {
+				return false;
+			}
+			alias = staticEntityAccess.alias(sourceId);
+		}
+		return !alias.isEmpty();
 	}
 
 	public void commit() {
