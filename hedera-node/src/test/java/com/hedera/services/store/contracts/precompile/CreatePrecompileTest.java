@@ -311,7 +311,7 @@ class CreatePrecompileTest {
 		// test-specific preparations
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(
-						BigInteger.ONE,
+						1,
 						new TokenCreateWrapper.KeyValueWrapper(
 								false,
 								EntityIdUtils.contractIdFromEvmAddress(contractAddress),
@@ -320,7 +320,7 @@ class CreatePrecompileTest {
 								null)
 				),
 				new TokenCreateWrapper.TokenKeyWrapper(
-						BigInteger.valueOf(8),
+						8,
 						new TokenCreateWrapper.KeyValueWrapper(
 								false,
 								null,
@@ -340,7 +340,7 @@ class CreatePrecompileTest {
 		// test-specific preparations
 		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(
-						BigInteger.ONE,
+						1,
 						new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[]{},
 								new byte[JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH], null)
 				))
@@ -357,7 +357,7 @@ class CreatePrecompileTest {
 		// test-specific preparations
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(
-						BigInteger.ONE,
+						1,
 						new TokenCreateWrapper.KeyValueWrapper(
 								false,
 								null,
@@ -378,7 +378,7 @@ class CreatePrecompileTest {
 		// test-specific preparations
 		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(
-						BigInteger.ONE,
+						1,
 						new TokenCreateWrapper.KeyValueWrapper(
 								true,
 								null,
@@ -407,7 +407,7 @@ class CreatePrecompileTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(
-						BigInteger.ONE,
+						1,
 						new TokenCreateWrapper.KeyValueWrapper(
 								false,
 								null,
@@ -465,7 +465,7 @@ class CreatePrecompileTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
 						new TokenCreateWrapper.TokenKeyWrapper(
-								BigInteger.ONE,
+								1,
 								new TokenCreateWrapper.KeyValueWrapper(
 										false,
 										null,
@@ -511,7 +511,7 @@ class CreatePrecompileTest {
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(
 				List.of(
 						new TokenCreateWrapper.TokenKeyWrapper(
-								BigInteger.ONE,
+								1,
 								new TokenCreateWrapper.KeyValueWrapper(
 										false,
 										EntityIdUtils.contractIdFromEvmAddress(contractAddress),
@@ -532,7 +532,7 @@ class CreatePrecompileTest {
 				createTokenCreateWrapperWithKeys(
 						List.of(
 								new TokenCreateWrapper.TokenKeyWrapper(
-									BigInteger.ZERO,
+									0,
 									new TokenCreateWrapper.KeyValueWrapper(
 										false,
 										EntityIdUtils.contractIdFromEvmAddress(contractAddress),
@@ -541,7 +541,7 @@ class CreatePrecompileTest {
 										null)
 								),
 								new TokenCreateWrapper.TokenKeyWrapper(
-									BigInteger.ONE,
+									1,
 									new TokenCreateWrapper.KeyValueWrapper(
 										false,
 										null,
@@ -560,7 +560,7 @@ class CreatePrecompileTest {
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(
 				List.of(
 						new TokenCreateWrapper.TokenKeyWrapper(
-								BigInteger.ONE,
+								1,
 								new TokenCreateWrapper.KeyValueWrapper(
 										false,
 										EntityIdUtils.contractIdFromEvmAddress(contractAddress),
@@ -569,7 +569,7 @@ class CreatePrecompileTest {
 										null)
 						),
 						new TokenCreateWrapper.TokenKeyWrapper(
-								BigInteger.ONE,
+								1,
 								new TokenCreateWrapper.KeyValueWrapper(
 										false,
 										null,
@@ -588,7 +588,7 @@ class CreatePrecompileTest {
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(
 				List.of(
 						new TokenCreateWrapper.TokenKeyWrapper(
-								BigInteger.valueOf(128),
+								128,
 								new TokenCreateWrapper.KeyValueWrapper(
 										false,
 										null,

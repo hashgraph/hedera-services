@@ -52,7 +52,7 @@ class TokenCreateWrapperTest {
 	private static final byte[] ecdsaSecpk256k1 = "123456789012345678901234567890123".getBytes();
 	private static final byte[] ed25519 = "12345678901234567890123456789012".getBytes();
 	private final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper = new TokenCreateWrapper.TokenKeyWrapper(
-			BigInteger.ONE, new TokenCreateWrapper.KeyValueWrapper(true, null, new byte[]{}, new byte[]{}, null));
+			1, new TokenCreateWrapper.KeyValueWrapper(true, null, new byte[]{}, new byte[]{}, null));
 	private final ContractID contractID = EntityIdUtils.contractIdFromEvmAddress(contractAddress);
 
 	@Test
@@ -61,7 +61,7 @@ class TokenCreateWrapperTest {
 		final var key = new JContractIDKey(contractID);
 		final var wrapper = createTokenCreateWrapperWithKeys(List.of(tokenKeyWrapper,
 				new TokenCreateWrapper.TokenKeyWrapper(
-						BigInteger.valueOf(4),
+						4,
 						new TokenCreateWrapper.KeyValueWrapper(
 								true,
 								null,

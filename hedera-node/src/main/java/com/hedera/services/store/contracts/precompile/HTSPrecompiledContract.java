@@ -1042,10 +1042,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
 					final var tokenKey = tokenKeys.get(i);
 					validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
-					final var tokenKeyBitField = tokenKey.keyType().intValue();
+					final var tokenKeyBitField = tokenKey.keyType();
 					validateTrue(tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
 					for (int j = i + 1; j < tokenKeysSize; j++) {
-						validateTrue((tokenKeyBitField & tokenKeys.get(j).keyType().intValue()) == 0,
+						validateTrue((tokenKeyBitField & tokenKeys.get(j).keyType()) == 0,
 								INVALID_TRANSACTION_BODY);
 					}
 				}

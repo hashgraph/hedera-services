@@ -179,33 +179,33 @@ final class TokenCreateWrapper {
 
 	/* ------------------ */
 
-	record TokenKeyWrapper(BigInteger keyType, KeyValueWrapper key) {
+	record TokenKeyWrapper(int keyType, KeyValueWrapper key) {
 		boolean isUsedForAdminKey() {
-			return (keyType().intValue() & 1) != 0;
+			return (keyType & 1) != 0;
 		}
 
 		boolean isUsedForKycKey() {
-			return (keyType().intValue() & 2) != 0;
+			return (keyType & 2) != 0;
 		}
 
 		boolean isUsedForFreezeKey() {
-			return (keyType().intValue() & 4) != 0;
+			return (keyType & 4) != 0;
 		}
 
 		boolean isUsedForWipeKey() {
-			return (keyType().intValue() & 8) != 0;
+			return (keyType & 8) != 0;
 		}
 
 		boolean isUsedForSupplyKey() {
-			return (keyType().intValue() & 16) != 0;
+			return (keyType & 16) != 0;
 		}
 
 		boolean isUsedForFeeScheduleKey() {
-			return (keyType().intValue() & 32) != 0;
+			return (keyType & 32) != 0;
 		}
 
 		boolean isUsedForPauseKey() {
-			return (keyType().intValue() & 64) != 0;
+			return (keyType & 64) != 0;
 		}
 	}
 

@@ -147,7 +147,7 @@ public class DecodingFacade {
 	private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
 
 	private static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
-	private static final String TOKEN_KEY_DECODER = "(uint256," + KEY_VALUE_DECODER + ")";
+	private static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
 
 	private static final String EXPIRY = "(uint32,address,uint32)";
 	private static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
@@ -504,7 +504,7 @@ public class DecodingFacade {
 	) {
 		final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
 		for (final var tokenKeyTuple: tokenKeysTuples) {
-			final var keyType = (BigInteger) tokenKeyTuple.get(0);
+			final var keyType = (int) tokenKeyTuple.get(0);
 			final Tuple keyValueTuple = tokenKeyTuple.get(1);
 			final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
 			final var contractId = EntityIdUtils.asContract(

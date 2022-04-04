@@ -181,8 +181,8 @@ class SyntheticTxnFactoryTest {
 				false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[]{}, new byte[]{}, null
 		);
 		final var wrapper = createTokenCreateWrapperWithKeys(List.of(
-				new TokenCreateWrapper.TokenKeyWrapper(BigInteger.valueOf(254), multiKey),
-				new TokenCreateWrapper.TokenKeyWrapper(BigInteger.ONE, adminKey))
+				new TokenCreateWrapper.TokenKeyWrapper(254, multiKey),
+				new TokenCreateWrapper.TokenKeyWrapper(1, adminKey))
 		);
 		wrapper.setFixedFees(List.of(fixedFee));
 		wrapper.setFractionalFees(List.of(fractionalFee));
@@ -232,7 +232,7 @@ class SyntheticTxnFactoryTest {
 				false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[]{}, new byte[]{}, null
 		);
 		final var wrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
-				new TokenCreateWrapper.TokenKeyWrapper(BigInteger.valueOf(112), multiKey))
+				new TokenCreateWrapper.TokenKeyWrapper(112, multiKey))
 		);
 		wrapper.setFixedFees(List.of(fixedFee));
 		wrapper.setRoyaltyFees(List.of(royaltyFee));
