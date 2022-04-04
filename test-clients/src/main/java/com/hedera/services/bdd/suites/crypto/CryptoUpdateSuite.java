@@ -100,10 +100,10 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cannotSetThresholdNegative(),
 						updateWithEmptyKeyFails(),
 						updateFailsIfMissingSigs(),
-						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
 						updateFailsWithContractKey(),
 						updateFailsWithOverlyLongLifetime(),
-						usdFeeAsExpected()
+						usdFeeAsExpected(),
+						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
 				}
 		);
 	}
@@ -180,7 +180,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
-		String sysAccount = "0.0.977";
+		String sysAccount = "0.0.99";
 		String randomAccount = "randomAccount";
 		String firstKey = "firstKey";
 		String secondKey = "secondKey";
