@@ -93,15 +93,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public MerkleAccount(final List<MerkleNode> children) {
-		super(ChildIndices.NUM_090_CHILDREN);
+		super(ChildIndices.NUM_0240_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
 	public MerkleAccount() {
-		addDeserializedChildren(List.of(
-				new MerkleAccountState(),
-				new FCQueue<ExpirableTxnRecord>(),
-				new MerkleAccountTokens()), MERKLE_VERSION);
+		addDeserializedChildren(List.of(new MerkleAccountState(), new FCQueue<ExpirableTxnRecord>()), MERKLE_VERSION);
 	}
 
 	/* --- MerkleInternal --- */
@@ -135,10 +132,9 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		}
 
 		setImmutable(true);
-		return new MerkleAccount(List.of(
-				state().copy(),
-				records().copy(),
-				tokens().copy()), this);
+		return getNumberOfChildren() == ChildIndices.NUM_090_CHILDREN ?
+				new MerkleAccount(List.of(state().copy(), records().copy(), tokens().copy()), this) :
+				new MerkleAccount(List.of(state().copy(), records().copy()), this);
 	}
 
 	/* ---- Object ---- */
@@ -151,14 +147,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 			return false;
 		}
 		final var that = (MerkleAccount) o;
-		return this.state().equals(that.state()) &&
-				this.records().equals(that.records()) &&
-				this.tokens().equals(that.tokens());
+		return this.state().equals(that.state()) && this.records().equals(that.records());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(state(), records(), tokens());
+		return Objects.hash(state(), records());
 	}
 
 	@Override
@@ -166,7 +160,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return MoreObjects.toStringHelper(MerkleAccount.class)
 				.add("state", state())
 				.add("# records", records().size())
-				.add("tokens", tokens().readableTokenIds())
 				.toString();
 	}
 
@@ -177,11 +170,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	public FCQueue<ExpirableTxnRecord> records() {
 		return getChild(ChildIndices.RELEASE_090_RECORDS);
-	}
-
-	public void setRecords(final FCQueue<ExpirableTxnRecord> payerRecords) {
-		throwIfImmutable("Cannot change this account's transaction records if it's immutable.");
-		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
 	}
 
 	public MerkleAccountTokens tokens() {
