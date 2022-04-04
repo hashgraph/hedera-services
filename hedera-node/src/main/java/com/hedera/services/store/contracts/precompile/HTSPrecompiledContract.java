@@ -977,8 +977,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var treasuryId = Id.fromGrpcAccount(tokenCreateOp.getTreasury());
 			final var treasuryHasSigned = validateKey(frame, treasuryId.asEvmAddress(), sigsVerifier::hasActiveKey);
 			validateTrue(treasuryHasSigned, INVALID_SIGNATURE);
-			tokenCreateOp.getAdminKey().ifPresent(tokenKeyWrapper ->
-					validateTrue(validateAdminKey(frame, tokenKeyWrapper), INVALID_SIGNATURE));
+			tokenCreateOp.getAdminKey().ifPresent(key -> validateTrue(validateAdminKey(frame, key), INVALID_SIGNATURE));
 
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var scopedAccountStore = createAccountStore();
@@ -1094,7 +1093,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								sigsVerifier::hasActiveKey);
 				case ED25519 -> validateCryptoKey(new JEd25519Key(key.getEd25519Key()),
 								sigsVerifier::cryptoKeyIsActive);
-				case ECDS_SECPK256K1 -> validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsSecp256k1()),
+				case ECDSA_SECPK256K1 -> validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsaSecp256k1()),
 								sigsVerifier::cryptoKeyIsActive);
 				default -> throw new InvalidTransactionException(FAIL_INVALID);
 			};

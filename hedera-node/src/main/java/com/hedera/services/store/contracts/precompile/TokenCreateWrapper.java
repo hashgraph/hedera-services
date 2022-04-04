@@ -214,14 +214,14 @@ final class TokenCreateWrapper {
 			CONTRACT_ID,
 			DELEGATABLE_CONTRACT_ID,
 			ED25519,
-			ECDS_SECPK256K1
+			ECDSA_SECPK256K1
 		}
 
 		/* ---  Only 1 of these values should be set when the input is valid. --- */
 		private final boolean shouldInheritAccountKey;
 		private final ContractID contractID;
 		private final byte[] ed25519;
-		private final byte[] ecdsSecp256k1;
+		private final byte[] ecdsaSecp256k1;
 		private final ContractID delegatableContractID;
 		private final KeyValueType keyValueType;
 
@@ -232,13 +232,13 @@ final class TokenCreateWrapper {
 				final boolean shouldInheritAccountKey,
 				final ContractID contractID,
 				final byte[] ed25519,
-		   		final byte[] ecdsSecp256k1,
+		   		final byte[] ecdsaSecp256k1,
 				final ContractID delegatableContractID
 		) {
 			this.shouldInheritAccountKey = shouldInheritAccountKey;
 			this.contractID = contractID;
 			this.ed25519 = ed25519;
-			this.ecdsSecp256k1 = ecdsSecp256k1;
+			this.ecdsaSecp256k1 = ecdsaSecp256k1;
 			this.delegatableContractID = delegatableContractID;
 			this.keyValueType = this.setKeyValueType();
 		}
@@ -259,8 +259,8 @@ final class TokenCreateWrapper {
 			return ed25519.length == JEd25519Key.ED25519_BYTE_LENGTH;
 		}
 
-		private boolean isEcdsSecp256k1KeySet() {
-			return ecdsSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH;
+		private boolean isEcdsaSecp256k1KeySet() {
+			return ecdsaSecp256k1.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH;
 		}
 
 		private void setInheritedKey(final Key key) {
@@ -269,20 +269,20 @@ final class TokenCreateWrapper {
 
 		private KeyValueType setKeyValueType() {
 			if (isShouldInheritAccountKeySet()) {
-				return (!isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet() && !isContractIDSet() && !isEd25519KeySet())
+				return (!isEcdsaSecp256k1KeySet() && !isDelegatableContractIdSet() && !isContractIDSet() && !isEd25519KeySet())
 						? KeyValueType.INHERIT_ACCOUNT_KEY
 						: KeyValueType.INVALID_KEY;
 			} else if (isContractIDSet()) {
-				return !isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet() && !isEd25519KeySet()
+				return !isEcdsaSecp256k1KeySet() && !isDelegatableContractIdSet() && !isEd25519KeySet()
 						? KeyValueType.CONTRACT_ID
 						: KeyValueType.INVALID_KEY;
 			} else if (isEd25519KeySet()) {
-				return !isEcdsSecp256k1KeySet() && !isDelegatableContractIdSet()
+				return !isEcdsaSecp256k1KeySet() && !isDelegatableContractIdSet()
 						? KeyValueType.ED25519
 						: KeyValueType.INVALID_KEY;
-			} else if (isEcdsSecp256k1KeySet()) {
+			} else if (isEcdsaSecp256k1KeySet()) {
 				return !isDelegatableContractIdSet()
-						? KeyValueType.ECDS_SECPK256K1
+						? KeyValueType.ECDSA_SECPK256K1
 						: KeyValueType.INVALID_KEY;
 			} else {
 				return isDelegatableContractIdSet()
@@ -307,8 +307,8 @@ final class TokenCreateWrapper {
 			return this.ed25519;
 		}
 
-		byte[] getEcdsSecp256k1() {
-			return this.ecdsSecp256k1;
+		byte[] getEcdsaSecp256k1() {
+			return this.ecdsaSecp256k1;
 		}
 
 		Key asGrpc() {
@@ -316,7 +316,7 @@ final class TokenCreateWrapper {
 				case INHERIT_ACCOUNT_KEY -> this.inheritedKey;
 				case CONTRACT_ID -> Key.newBuilder().setContractID(contractID).build();
 				case ED25519 -> Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519)).build();
-				case ECDS_SECPK256K1 -> Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsSecp256k1)).build();
+				case ECDSA_SECPK256K1 -> Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(ecdsaSecp256k1)).build();
 				case DELEGATABLE_CONTRACT_ID -> Key.newBuilder().setDelegatableContractId(delegatableContractID).build();
 				default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
 			};
