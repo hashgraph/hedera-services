@@ -217,6 +217,13 @@ class StaticEntityAccessTest {
 	}
 
 	@Test
+	void metadataOfNFT() {
+		given(nfts.get(nftKey)).willReturn(treasuryOwned);
+		final var actual = subject.metadataOf(nft);
+		assertEquals("There, the eyes are", actual);
+	}
+
+	@Test
 	void nonMutatorsWork() {
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
 		given(accounts.get(EntityNum.fromAccountId(nonExtantId))).willReturn(null);
