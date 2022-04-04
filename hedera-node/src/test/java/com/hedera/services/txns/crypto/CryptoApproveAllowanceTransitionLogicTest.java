@@ -21,6 +21,7 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -91,6 +92,8 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private StateView view;
+	@Mock
+	private SideEffectsTracker sideEffectsTracker;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
 	private CryptoApproveAllowanceTransactionBody op;
@@ -100,7 +103,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, accountStore, tokenStore, allowanceChecks,
-				dynamicProperties, view);
+				dynamicProperties, view, sideEffectsTracker);
 		nft1.setOwner(Id.fromGrpcAccount(ownerId));
 		nft2.setOwner(Id.fromGrpcAccount(ownerId));
 	}
