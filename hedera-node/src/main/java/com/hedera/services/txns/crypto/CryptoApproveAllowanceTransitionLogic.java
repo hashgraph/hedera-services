@@ -20,6 +20,7 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -66,6 +67,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final Map<Long, Account> entitiesChanged;
 	private final StateView workingView;
 	private final Map<NftId, UniqueToken> nftsTouched;
+	private final SideEffectsTracker sideEffectsTracker;
 
 	@Inject
 	public CryptoApproveAllowanceTransitionLogic(
@@ -74,7 +76,8 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			final TypedTokenStore tokenStore,
 			final ApproveAllowanceChecks allowanceChecks,
 			final GlobalDynamicProperties dynamicProperties,
-			final StateView workingView) {
+			final StateView workingView,
+			final SideEffectsTracker sideEffectsTracker) {
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
@@ -83,6 +86,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		this.entitiesChanged = new HashMap<>();
 		this.workingView = workingView;
 		this.nftsTouched = new HashMap<>();
+		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
@@ -167,6 +171,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
+			sideEffectsTracker.setCryptoAllowances(accountToApprove.getId().asEntityNum(), cryptoMap);
 		}
 	}
 
@@ -249,6 +254,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
 			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
+			sideEffectsTracker.setFungibleTokenAllowances(accountToApprove.getId().asEntityNum(), tokensMap);
 		}
 	}
 
