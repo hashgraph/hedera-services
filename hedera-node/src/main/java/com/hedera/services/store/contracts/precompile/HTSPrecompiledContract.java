@@ -1406,10 +1406,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.associateLogicFactory = associateLogicFactory;
 	}
 
-	void setRedirectExecutorFactory(final HTSPrecompiledContract.RedirectExecutorFactory redirectExecutorFactory) {
-		this.redirectExecutorFactory = redirectExecutorFactory;
-	}
-
 	public Precompile getPrecompile() {
 		return precompile;
 	}
