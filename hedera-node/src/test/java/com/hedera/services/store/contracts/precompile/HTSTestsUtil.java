@@ -69,6 +69,7 @@ public class HTSTestsUtil {
 	public static final Timestamp timestamp = Timestamp.newBuilder().setSeconds(TEST_CONSENSUS_TIME).build();
 	public static final Bytes successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 	public static final Bytes invalidSigResult = UInt256.valueOf(ResponseCodeEnum.INVALID_SIGNATURE_VALUE);
+	public static final Bytes insufficientGasResult = UInt256.valueOf(ResponseCodeEnum.INSUFFICIENT_GAS_VALUE);
 	public static final Association associateOp =
 			Association.singleAssociation(accountMerkleId, tokenMerkleId);
 	public static final TokenID fungible = IdUtils.asToken("0.0.888");

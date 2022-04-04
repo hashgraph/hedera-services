@@ -52,6 +52,10 @@ public class HederaStackedWorldStateUpdater
 		this.worldState = worldState;
 	}
 
+	public boolean hasMutableLedgers() {
+		return trackingLedgers().areMutable();
+	}
+
 	public byte[] unaliased(final byte[] evmAddress) {
 		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
 	}

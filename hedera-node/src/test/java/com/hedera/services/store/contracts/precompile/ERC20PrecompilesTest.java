@@ -62,6 +62,7 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -232,12 +233,12 @@ class ERC20PrecompilesTest {
     }
 
     @Test
-    void invalidNestedFunctionSelector () {
+    void invalidNestedFunctionSelector() {
         givenMinimalFrameContextWithoutParentUpdater();
 
-        given(frame.isStatic()).willReturn(true);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         given(nestedPretendArguments.getInt(0)).willReturn(0);
+        given(worldUpdater.hasMutableLedgers()).willReturn(true);
         given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         subject.prepareFields(frame);
@@ -246,11 +247,27 @@ class ERC20PrecompilesTest {
         assertNull(result);
     }
 
-    @Test
-    void gasCalculationForReadOnlyMethod() {
-        givenMinimalFrameContext();
+	@Test
+	void requiresMutableLedgers() {
+		givenMinimalFrameContextWithoutParentUpdater();
+
+		given(wrappedLedgers.tokens()).willReturn(tokens);
+		given(nestedPretendArguments.getInt(0)).willReturn(0);
+		given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+
+		subject.prepareFields(frame);
+		subject.prepareComputation(pretendArguments, а -> а);
+		final var result = subject.compute(pretendArguments, frame);
+		assertNull(result);
+		verify(frame).setRevertReason(HTSPrecompiledContract.UNSUPPORTED_REDIRECT_REVERT_REASON);
+	}
+
+	@Test
+	void gasCalculationForReadOnlyMethod() {
+		givenMinimalFrameContext();
 
         given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(worldUpdater.hasMutableLedgers()).willReturn(true);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_NAME);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -298,6 +315,7 @@ class ERC20PrecompilesTest {
         given(hederaTokenStoreFactory.newHederaTokenStore(
                 ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
         )).willReturn(hederaTokenStore);
+        given(worldUpdater.hasMutableLedgers()).willReturn(true);
 
         given(transferLogicFactory.newLogic(
                 accounts, nfts, tokenRels, hederaTokenStore,
@@ -684,6 +702,7 @@ class ERC20PrecompilesTest {
     private void givenMinimalFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(Gas.of(300));
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);

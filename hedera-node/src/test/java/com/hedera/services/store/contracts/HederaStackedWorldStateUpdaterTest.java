@@ -80,6 +80,13 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
+	void detectsMutableLedgers() {
+		given(trackingLedgers.areMutable()).willReturn(true);
+
+		assertTrue(subject.hasMutableLedgers());
+	}
+
+	@Test
 	void usesAliasesForDecodingHelp() {
 		given(aliases.resolveForEvm(alias)).willReturn(sponsor);
 		given(trackingLedgers.aliases()).willReturn(aliases);
