@@ -78,17 +78,15 @@ public class BaseAllowancesTransitionLogic {
 			accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
 
 			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
-
 			if (allowance.hasApprovedForAll()) {
 				final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
-				if (allowance.hasApprovedForAll()) {
-					if (allowance.getApprovedForAll().getValue()) {
-						approveForAllNfts.add(key);
-					} else {
-						approveForAllNfts.remove(key);
-					}
+				if (allowance.getApprovedForAll().getValue()) {
+					approveForAllNfts.add(key);
+				} else {
+					approveForAllNfts.remove(key);
 				}
 			}
+
 			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
 
 			final var nfts = updateSpender(tokenStore, accountToApprove.getId(), spenderId, tokenId,
