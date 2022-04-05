@@ -37,6 +37,7 @@ import com.swirlds.platform.state.DualStateImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Hash;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -101,7 +102,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long blockNo = 0;
 	private Instant firstConsTimeOfCurrentBlock = NULL_CONSENSUS_TIME;
 	private Bytes32 currentBlockHash = Bytes32.ZERO;
-	private Map<Long, Bytes32> blockNumberToHash = new LinkedHashMap<>(256);
+	private Map<Long, Hash> blockNumberToHash = new LinkedHashMap<>(256);
 
 	public MerkleNetworkContext() {
 		/* No-op for RuntimeConstructable facility; will be followed by a call to deserialize. */
@@ -396,19 +397,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return blockNo;
 	}
 
-	public void cacheBlockHash(final Bytes32 blockHash) {
+	public void cacheBlockHash(final Hash blockHash) {
 		if(blockNumberToHash.size() <= 256) {
 			blockNumberToHash.put(blockNo, blockHash);
 		} else {
-			final long multiplier = blockNo / 256;
-			final int indexToReplace = (int) (blockNo - 256 * multiplier);
+			final var multiplier = blockNo / 256;
+			final var indexToReplace = (int) (blockNo - 256 * multiplier);
 			final var indexKey = (Long) blockNumberToHash.entrySet().toArray()[indexToReplace];
 			blockNumberToHash.put(indexKey, blockHash);
 		}
 	}
 
 	public Bytes32 getBlockHash(final long blockNumber) {
-		return blockNumberToHash.getOrDefault(blockNumber, Bytes32.ZERO);
+		return blockNumberToHash.getOrDefault(blockNumber, Hash.EMPTY);
 	}
 
 	public Instant getFirstConsTimeOfCurrentBlock() {

@@ -31,7 +31,7 @@ import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.stream.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 
 import java.io.File;
@@ -208,7 +208,7 @@ public class RecordStreamManager {
 		if (!inFreeze) {
 			try {
 				multiStream.addObject(recordStreamObject);
-				curNetworkCtx.cacheBlockHash(Bytes32.wrap(digest256.digest(recordStreamObject.getRunningHash().getHash().getValue())));
+				curNetworkCtx.cacheBlockHash(org.hyperledger.besu.datatypes.Hash.hash(Bytes.wrap(recordStreamObject.getRunningHash().getHash().getValue())));
 			} catch (Exception e) {
 				log.warn("Unhandled exception while streaming {}", recordStreamObject, e);
 			}
