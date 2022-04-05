@@ -39,7 +39,6 @@ import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -70,10 +69,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
 
-	static final int RELEASE_0120_VERSION = 3;
-	static final int RELEASE_0160_VERSION = 4;
-	static final int RELEASE_0180_VERSION = 5;
-	static final int RELEASE_0210_VERSION = 6;
 	static final int RELEASE_0230_VERSION = 7;
 	static final int RELEASE_0250_VERSION = 8;
 	static final int MERKLE_VERSION = RELEASE_0250_VERSION;
@@ -98,16 +93,16 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private byte[] txnHash = MISSING_TXN_HASH;
 	private String memo;
 	private TxnReceipt receipt;
-	private RichInstant consensusTimestamp;
+	private RichInstant consensusTime;
 	private CurrencyAdjustments hbarAdjustments;
 	private EvmFnResult contractCallResult;
 	private EvmFnResult contractCreateResult;
-	/* IMPORTANT: This class depends on the invariant that if any of the
-	three token-related lists below (tokens, tokenAdjustments, and
-	nftTokenAdjustments) is non-null, then it has the same length as any
-	other non-null list. This would not be necessary if we provided the
-	class with information on the fungibility of the token types---and
-	this information is always available when the Builder is constructed. */
+	// IMPORTANT: This class depends on the invariant that if any of the
+	// three token-related lists below (tokens, tokenAdjustments, and
+	// nftTokenAdjustments) is non-null, then it has the same length as any
+	// other non-null list. This would not be necessary if we provided the
+	// class with information on the fungibility of the token types---and
+	// this information is always available when the Builder is constructed.
 	private List<EntityId> tokens = NO_TOKENS;
 	private List<CurrencyAdjustments> tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
 	private List<NftAdjustments> nftTokenAdjustments = NO_NFT_TOKEN_ADJUSTMENTS;
@@ -131,10 +126,10 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		this.receipt = (builder.receiptBuilder != null) ? builder.receiptBuilder.build() : builder.receipt;
 		this.txnHash = builder.txnHash;
 		this.txnId = builder.txnId;
-		this.consensusTimestamp = builder.consensusTime;
+		this.consensusTime = builder.consensusTime;
 		this.memo = builder.memo;
 		this.fee = builder.fee;
-		this.hbarAdjustments = builder.transferList;
+		this.hbarAdjustments = builder.hbarAdjustments;
 		this.contractCallResult = builder.contractCallResult;
 		this.contractCreateResult = builder.contractCreateResult;
 		this.tokens = builder.tokens;
@@ -160,7 +155,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("fee", fee)
 				.add("txnHash", CommonUtils.hex(txnHash))
 				.add("txnId", txnId)
-				.add("consensusTimestamp", consensusTimestamp)
+				.add("consensusTimestamp", consensusTime)
 				.add("expiry", expiry)
 				.add("submittingMember", submittingMember)
 				.add("memo", memo)
@@ -253,7 +248,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.receipt, that.receipt) &&
 				Arrays.equals(this.txnHash, that.txnHash) &&
 				this.txnId.equals(that.txnId) &&
-				Objects.equals(this.consensusTimestamp, that.consensusTimestamp) &&
+				Objects.equals(this.consensusTime, that.consensusTime) &&
 				Objects.equals(this.memo, that.memo) &&
 				Objects.equals(this.contractCallResult, that.contractCallResult) &&
 				Objects.equals(this.contractCreateResult, that.contractCreateResult) &&
@@ -273,7 +268,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		var result = Objects.hash(
 				receipt,
 				txnId,
-				consensusTimestamp,
+				consensusTime,
 				memo,
 				fee,
 				contractCallResult,
@@ -307,13 +302,18 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	}
 
 	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0230_VERSION;
+	}
+
+	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		serdes.writeNullableSerializable(receipt, out);
 
 		out.writeByteArray(txnHash);
 
 		serdes.writeNullableSerializable(txnId, out);
-		serdes.writeNullableInstant(consensusTimestamp, out);
+		serdes.writeNullableInstant(consensusTime, out);
 		serdes.writeNullableString(memo, out);
 
 		out.writeLong(this.fee);
@@ -356,7 +356,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		receipt = serdes.readNullableSerializable(in);
 		txnHash = in.readByteArray(MAX_TXN_HASH_BYTES);
 		txnId = serdes.readNullableSerializable(in);
-		consensusTimestamp = serdes.readNullableInstant(in);
+		consensusTime = serdes.readNullableInstant(in);
 		memo = serdes.readNullableString(in, MAX_MEMO_BYTES);
 		fee = in.readLong();
 		hbarAdjustments = serdes.readNullableSerializable(in);
@@ -364,48 +364,30 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		contractCreateResult = serdes.readNullableSerializable(in);
 		expiry = in.readLong();
 		submittingMember = in.readLong();
-		/* Tokens present since v0.7.0 */
+		// Added in 0.7
 		tokens = in.readSerializableList(MAX_INVOLVED_TOKENS);
 		tokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
-		/* Schedule references present since v0.8.0 */
+		// Added in 0.8
 		scheduleRef = serdes.readNullableSerializable(in);
-		if (version >= RELEASE_0160_VERSION) {
-			nftTokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
-			assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
-		} else {
-			/* Can be removed once we triple-check no tests depend on a 0.16.x state */
-			nftTokenAdjustments = makeupNftAdjustsMatching(tokenAdjustments);
-			assessedCustomFees = NO_CUSTOM_FEES;
+		// Added in 0.16
+		nftTokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
+		assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
+		// Added in 0.18
+		newTokenAssociations = in.readSerializableList(Integer.MAX_VALUE);
+		// Added in 0.21
+		final var hasChildRecords = in.readBoolean();
+		if (hasChildRecords) {
+			numChildRecords = in.readShort();
 		}
-		if (version >= RELEASE_0180_VERSION) {
-			newTokenAssociations = in.readSerializableList(Integer.MAX_VALUE);
+		// Added in 0.21
+		final var hasParentConsensusTime = in.readBoolean();
+		if (hasParentConsensusTime) {
+			packedParentConsensusTime = in.readLong();
 		}
-		if (version >= RELEASE_0210_VERSION) {
-			final var hasChildRecords = in.readBoolean();
-			if (hasChildRecords) {
-				numChildRecords = in.readShort();
-			}
-			final var hasParentConsensusTime = in.readBoolean();
-			if (hasParentConsensusTime) {
-				packedParentConsensusTime = in.readLong();
-			}
-			alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
-		}
-		if (version >= RELEASE_0230_VERSION) {
-			deserializeAllowanceMaps(in, version);
-		}
-	}
-
-	List<NftAdjustments> makeupNftAdjustsMatching(final List<CurrencyAdjustments> fungibleAdjusts) {
-		if (fungibleAdjusts == null) {
-			return null;
-		} else {
-			final List<NftAdjustments> ans = new ArrayList<>();
-			for (int i = 0, n = fungibleAdjusts.size(); i < n; i++) {
-				ans.add(new NftAdjustments());
-			}
-			return ans;
-		}
+		// Added in 0.21
+		alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
+		// Added in 0.23
+		deserializeAllowanceMaps(in, version);
 	}
 
 	private void deserializeAllowanceMaps(SerializableDataInputStream in, final int version) throws IOException {
@@ -494,12 +476,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return txnId;
 	}
 
-	public RichInstant getConsensusTimestamp() {
-		return consensusTimestamp;
+	public RichInstant getConsensusTime() {
+		return consensusTime;
 	}
 
 	public long getConsensusSecond() {
-		return consensusTimestamp.getSeconds();
+		return consensusTime.getSeconds();
 	}
 
 	public String getMemo() {
@@ -566,10 +548,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return alias;
 	}
 
-	public void setAlias(final ByteString alias) {
-		this.alias = alias;
-	}
-
 	/* --- FastCopyable --- */
 	@Override
 	public boolean isImmutable() {
@@ -597,8 +575,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		if (txnId != null) {
 			grpc.setTransactionID(txnId.toGrpc());
 		}
-		if (consensusTimestamp != null) {
-			grpc.setConsensusTimestamp(consensusTimestamp.toGrpc());
+		if (consensusTime != null) {
+			grpc.setConsensusTimestamp(consensusTime.toGrpc());
 		}
 		if (memo != null) {
 			grpc.setMemo(memo);
@@ -703,7 +681,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private long fee;
 		private long packedParentConsensusTime = MISSING_PARENT_CONSENSUS_TIMESTAMP;
 		private short numChildRecords = NO_CHILD_TRANSACTIONS;
-		private CurrencyAdjustments transferList;
+		private CurrencyAdjustments hbarAdjustments;
 		private EvmFnResult contractCallResult;
 		private EvmFnResult contractCreateResult;
 		private List<EntityId> tokens;
@@ -753,8 +731,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 
-		public Builder setTransferList(CurrencyAdjustments hbarAdjustments) {
-			this.transferList = hbarAdjustments;
+		public Builder setHbarAdjustments(CurrencyAdjustments hbarAdjustments) {
+			this.hbarAdjustments = hbarAdjustments;
 			return this;
 		}
 
@@ -850,15 +828,15 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 
 		public void excludeHbarChangesFrom(final ExpirableTxnRecord.Builder that) {
-			if (that.transferList == null) {
+			if (that.hbarAdjustments == null) {
 				return;
 			}
 
-			final var adjustsHere = this.transferList.hbars.length;
-			final var adjustsThere = that.transferList.hbars.length;
+			final var adjustsHere = this.hbarAdjustments.hbars.length;
+			final var adjustsThere = that.hbarAdjustments.hbars.length;
 			final var maxAdjusts = adjustsHere + adjustsThere;
-			final var changedHere = this.transferList.accountNums;
-			final var changedThere = that.transferList.accountNums;
+			final var changedHere = this.hbarAdjustments.accountNums;
+			final var changedThere = that.hbarAdjustments.accountNums;
 			final var maxAccountCodes = changedHere.length + changedThere.length;
 
 
@@ -873,16 +851,16 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				final var jId = changedThere[j];
 				final var cmp = Long.compare(iId, jId);
 				if (cmp == 0) {
-					final var net = this.transferList.hbars[i++] - that.transferList.hbars[j++];
+					final var net = this.hbarAdjustments.hbars[i++] - that.hbarAdjustments.hbars[j++];
 					if (net != 0) {
 						netAdjustsHere[k] = net;
 						netChanged[k++] = iId;
 					}
 				} else if (cmp < 0) {
-					netAdjustsHere[k] = this.transferList.hbars[i++];
+					netAdjustsHere[k] = this.hbarAdjustments.hbars[i++];
 					netChanged[k++] = iId;
 				} else {
-					netAdjustsHere[k] = -that.transferList.hbars[j++];
+					netAdjustsHere[k] = -that.hbarAdjustments.hbars[j++];
 					netChanged[k++] = jId;
 				}
 			}
@@ -890,21 +868,21 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			 * since if both did we could not have exited the prior loop. */
 			while (i < adjustsHere) {
 				final var iId = changedHere[i];
-				netAdjustsHere[k] = this.transferList.hbars[i++];
+				netAdjustsHere[k] = this.hbarAdjustments.hbars[i++];
 				netChanged[k++] = iId;
 			}
 			while (j < adjustsThere) {
 				final var jId = changedThere[j];
-				netAdjustsHere[k] = -that.transferList.hbars[j++];
+				netAdjustsHere[k] = -that.hbarAdjustments.hbars[j++];
 				netChanged[k++] = jId;
 			}
 
-			this.transferList.hbars = Arrays.copyOfRange(netAdjustsHere, 0, k);
-			this.transferList.accountNums = Arrays.copyOfRange(netChanged, 0, k);
+			this.hbarAdjustments.hbars = Arrays.copyOfRange(netAdjustsHere, 0, k);
+			this.hbarAdjustments.accountNums = Arrays.copyOfRange(netChanged, 0, k);
 		}
 
 		private void nullOutSideEffectFields(boolean removeCallResult) {
-			transferList = null;
+			hbarAdjustments = null;
 			contractCreateResult = null;
 			tokens = NO_TOKENS;
 			tokenAdjustments = NO_TOKEN_ADJUSTMENTS;
@@ -921,8 +899,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			fungibleTokenAllowances = Collections.emptyMap();
 		}
 
-		public CurrencyAdjustments getTransferList() {
-			return transferList;
+		public CurrencyAdjustments getHbarAdjustments() {
+			return hbarAdjustments;
 		}
 
 		public EvmFnResult getContractCallResult() {
@@ -984,16 +962,11 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	}
 
 	/* --- Only used by unit tests --- */
-	void setNewTokenAssociations(final List<FcTokenAssociation> newTokenAssociations) {
-		this.newTokenAssociations = newTokenAssociations;
-	}
-
 	public void setCryptoAllowances(final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances) {
 		this.cryptoAllowances = cryptoAllowances;
 	}
 
-	public void setFungibleTokenAllowances(
-			final Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances) {
+	public void setFungibleTokenAllowances(final Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances) {
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 	}
 }

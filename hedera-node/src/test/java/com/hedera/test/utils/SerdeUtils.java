@@ -9,9 +9,9 @@ package com.hedera.test.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,6 +29,7 @@ import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.tuple.Pair;
@@ -41,10 +42,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.swirlds.common.CommonUtils.hex;
 
 public class SerdeUtils {
 	public static byte[] serOutcome(ThrowingConsumer<DataOutputStream> serializer) throws Exception {
@@ -116,6 +120,36 @@ public class SerdeUtils {
 				grpc.getBloom().isEmpty() ? EvmLog.MISSING_BYTES : grpc.getBloom().toByteArray(),
 				grpc.getTopicList().stream().map(ByteString::toByteArray).toList(),
 				grpc.getData().isEmpty() ? EvmLog.MISSING_BYTES : grpc.getData().toByteArray());
+	}
+
+	public static <T extends SelfSerializable> T deserializeFromBytes(
+			final Supplier<T> factory,
+			final int version,
+			final byte[] serializedForm
+	) {
+		final var reconstruction = factory.get();
+
+		final var bais = new ByteArrayInputStream(serializedForm);
+		final var in = new SerializableDataInputStream(bais);
+		try {
+			reconstruction.deserialize(in, version);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
+		return reconstruction;
+	}
+
+	public static <T extends SelfSerializable> String serializeToHex(final T source) {
+		final var baos = new ByteArrayOutputStream();
+		final var out = new SerializableDataOutputStream(baos);
+		try {
+			source.serialize(out);
+			out.flush();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		return hex(baos.toByteArray());
 	}
 
 	@FunctionalInterface

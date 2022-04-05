@@ -91,7 +91,7 @@ class TxnAwareRecordsHistorianTest {
 			new long[] { a.getAccountNum(), b.getAccountNum(), c.getAccountNum(), d.getAccountNum() });
 	final private ExpirableTxnRecord.Builder finalRecord = ExpirableTxnRecord.newBuilder()
 			.setTxnId(TxnId.fromGrpc(txnIdA))
-			.setTransferList(initialTransfers)
+			.setHbarAdjustments(initialTransfers)
 			.setMemo("This is different!")
 			.setReceipt(TxnReceipt.newBuilder().setStatus(SUCCESS.name()).build());
 	final private ExpirableTxnRecord.Builder jFinalRecord = finalRecord;
