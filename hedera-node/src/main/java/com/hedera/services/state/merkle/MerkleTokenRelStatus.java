@@ -36,8 +36,8 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	static final int RELEASE_090_VERSION = 1;
 	static final int RELEASE_0180_PRE_SDK_VERSION = 2;
 	static final int RELEASE_0180_VERSION = 3;
-	static final int RELEASE_0240_VERSION = 4;
-	static final int CURRENT_VERSION = RELEASE_0240_VERSION;
+	static final int RELEASE_0250_VERSION = 4;
+	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
 
@@ -113,7 +113,7 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		if (version >= RELEASE_0180_VERSION) {
 			numbers = in.readLong();
 		}
-		if (version >= RELEASE_0240_VERSION) {
+		if (version >= RELEASE_0250_VERSION) {
 			next = in.readLong();
 			prev = in.readLong();
 		}

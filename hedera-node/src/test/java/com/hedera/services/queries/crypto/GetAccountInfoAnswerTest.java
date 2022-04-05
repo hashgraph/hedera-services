@@ -274,8 +274,8 @@ class GetAccountInfoAnswerTest {
 		given(tokens.getOrDefault(EntityNum.fromTokenId(thirdToken), REMOVED_TOKEN)).willReturn(token);
 		given(tokens.getOrDefault(EntityNum.fromTokenId(fourthToken), REMOVED_TOKEN)).willReturn(deletedToken);
 		given(tokens.getOrDefault(EntityNum.fromTokenId(missingToken), REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
-		payerAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.latestAssociation()).willReturn(firstRelKey);
+		payerAccount.setKey(EntityNum.fromAccountId(payerId));
+		payerAccount.setHeadTokenId(firstToken.getTokenNum());
 
 		given(token.symbol()).willReturn("HEYMA");
 		given(deletedToken.symbol()).willReturn("THEWAY");

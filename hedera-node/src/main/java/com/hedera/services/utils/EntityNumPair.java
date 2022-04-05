@@ -75,6 +75,7 @@ public record EntityNumPair(long value) {
 	public long getLowOrderAsLong() {
 		return unsignedLowOrder32From(value);
 	}
+
 	public long getHiOrderAsLong() {
 		return unsignedHighOrder32From(value);
 	}

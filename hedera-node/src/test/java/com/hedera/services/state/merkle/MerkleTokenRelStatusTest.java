@@ -174,7 +174,7 @@ class MerkleTokenRelStatusTest {
 				.willReturn(prevTokenNum);
 		given(in.readBoolean()).willReturn(frozen).willReturn(kycGranted).willReturn(automaticAssociation);
 
-		defaultSubject.deserialize(in, MerkleTokenRelStatus.RELEASE_0240_VERSION);
+		defaultSubject.deserialize(in, MerkleTokenRelStatus.RELEASE_0250_VERSION);
 
 		// then:
 		assertEquals(subject, defaultSubject);

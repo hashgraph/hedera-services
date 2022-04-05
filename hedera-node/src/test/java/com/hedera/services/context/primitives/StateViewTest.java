@@ -234,10 +234,13 @@ class StateViewTest {
 				.isSmartContract(false)
 				.tokens(tokenId)
 				.get();
+		tokenAccount.setKey(EntityNum.fromAccountId(tokenAccountId));
 		tokenAccount.setNftsOwned(10);
 		tokenAccount.setMaxAutomaticAssociations(123);
 		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
-		tokenAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
+		tokenAccount.setHeadTokenId(tokenId.getTokenNum());
+		tokenAccount.setNumAssociations(1);
+		tokenAccount.setNumPositiveBalances(0);
 		contract = MerkleAccountFactory.newAccount()
 				.alias(create2Address)
 				.memo("Stay cold...")

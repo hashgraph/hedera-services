@@ -256,11 +256,11 @@ class RenewalHelperTest {
 	void shortCircuitsToJustRemovingRelIfZeroBalance() {
 		// setup:
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
-		final var expiredMeta = new TokenAssociationMetadata(
-				3, 0, EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
-
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
-		expiredAccountZeroBalance.setTokenAssociationMetadata(expiredMeta);
+		expiredAccountZeroBalance.setKey(expiredKey);
+		expiredAccountZeroBalance.setHeadTokenId(deletedTokenNum);
+		expiredAccountZeroBalance.setNumPositiveBalances(0);
+		expiredAccountZeroBalance.setNumAssociations(3);
 		givenTokenPresent(deletedTokenId, deletedToken);
 		givenTokenPresent(survivedTokenId, longLivedToken);
 		final var missingTokenNum = EntityNum.fromTokenId(missingTokenGrpcId);
@@ -298,9 +298,10 @@ class RenewalHelperTest {
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
 
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
-		final var expiredMeta = new TokenAssociationMetadata(
-				3, 0, EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
-		expiredAccountZeroBalance.setTokenAssociationMetadata(expiredMeta);
+		expiredAccountZeroBalance.setKey(expiredKey);
+		expiredAccountZeroBalance.setHeadTokenId(deletedTokenNum);
+		expiredAccountZeroBalance.setNumPositiveBalances(0);
+		expiredAccountZeroBalance.setNumAssociations(3);
 		givenTokenPresent(deletedTokenId, deletedToken);
 		givenTokenPresent(survivedTokenId, longLivedToken);
 		final var missingTokenNum = EntityNum.fromTokenId(missingTokenGrpcId);
@@ -345,9 +346,9 @@ class RenewalHelperTest {
 		MerkleMap<EntityNum, MerkleAccount> accountsMap = new MerkleMap<>();
 		accountsMap.put(EntityNum.fromLong(nonExpiredAccountNum), nonExpiredAccount);
 		accountsMap.put(EntityNum.fromLong(brokeExpiredAccountNum), expiredAccountZeroBalance);
-		final var expiredMeta = new TokenAssociationMetadata(
-				3, 0, EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
-		expiredAccountZeroBalance.setTokenAssociationMetadata(expiredMeta);
+		expiredAccountZeroBalance.setHeadTokenId(deletedTokenNum);
+		expiredAccountZeroBalance.setNumPositiveBalances(0);
+		expiredAccountZeroBalance.setNumAssociations(3);
 
 		final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
 		AliasManager liveAliasManager = new AliasManager(() -> aliases);

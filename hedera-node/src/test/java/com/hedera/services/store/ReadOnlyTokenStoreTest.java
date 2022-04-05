@@ -264,7 +264,7 @@ class ReadOnlyTokenStoreTest {
 		givenToken(merkleTokenId, merkleToken);
 		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
 		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
-		miscAccount.setLastAssociatedToken(miscTokenRelId);
+		miscAccount.setHeadTokenNum(tokenNum);
 
 		final var actualTokenRel = subject.getLatestTokenRelationship(miscAccount);
 

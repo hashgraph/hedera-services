@@ -26,7 +26,6 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -66,8 +65,6 @@ class AccountStoreTest {
 	private BackingStore<AccountID, MerkleAccount> accounts;
 	@Mock
 	private TypedTokenStore tokenStore;
-	@Mock
-	private TokenAssociationMetadata tokenAssociationMetadata;
 
 	private AccountStore subject;
 
@@ -127,10 +124,9 @@ class AccountStoreTest {
 	@Test
 	void canAlwaysLoadWithNonzeroBalance() {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
-		miscMerkleAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.latestAssociation()).willReturn(firstRelKey);
-		given(tokenAssociationMetadata.numZeroBalances()).willReturn(numZeroBalances);
-		given(tokenAssociationMetadata.numAssociations()).willReturn(associatedTokensCount);
+		miscMerkleAccount.setHeadTokenId(firstAssocTokenNum);
+		miscMerkleAccount.setNumAssociations(associatedTokensCount);
+		miscMerkleAccount.setNumPositiveBalances(numPositiveBalances);
 		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
 		miscAccount.setCryptoAllowances(Collections.emptyMap());
 		miscAccount.setFungibleTokenAllowances(Collections.emptyMap());
@@ -150,8 +146,10 @@ class AccountStoreTest {
 	void persistenceUpdatesTokens() {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		setupWithMutableAccount(miscMerkleId, miscMerkleAccount);
-		tokenAssociationMetadata = new TokenAssociationMetadata(associatedTokensCount, numZeroBalances, firstRelKey);
-		miscMerkleAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
+		miscMerkleAccount.setKey(miscMerkleId);
+		miscMerkleAccount.setHeadTokenId(firstAssocTokenNum);
+		miscMerkleAccount.setNumAssociations(associatedTokensCount);
+		miscMerkleAccount.setNumPositiveBalances(numPositiveBalances);
 		// and:
 		final var aThirdToken = new Token(new Id(0, 0, 888));
 		final var thirdRelKey = EntityNumPair.fromLongs(miscAccountNum, aThirdToken.getId().num());
@@ -163,9 +161,10 @@ class AccountStoreTest {
 				.alreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations)
 				.proxy(proxy.asGrpcAccount())
 				.get();
-		TokenAssociationMetadata expected = new TokenAssociationMetadata(
-				associatedTokensCount + 1, numZeroBalances + 1, thirdRelKey);
-		expectedReplacement.setTokenAssociationMetadata(expected);
+		expectedReplacement.setKey(miscMerkleId);
+		expectedReplacement.setNumPositiveBalances(numPositiveBalances);
+		expectedReplacement.setNumAssociations(associatedTokensCount+1);
+		expectedReplacement.setHeadTokenId(aThirdToken.getId().num());
 
 		// given:
 		final var model = subject.loadAccount(miscId);
@@ -204,8 +203,9 @@ class AccountStoreTest {
 	void persistanceUpdatesAutoAssociations() {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		setupWithMutableAccount(miscMerkleId, miscMerkleAccount);
-		tokenAssociationMetadata = new TokenAssociationMetadata(associatedTokensCount, numZeroBalances, firstRelKey);
-		miscMerkleAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
+		miscMerkleAccount.setHeadTokenId(firstAssocTokenNum);
+		miscMerkleAccount.setNumAssociations(associatedTokensCount);
+		miscMerkleAccount.setNumPositiveBalances(numPositiveBalances);
 		var newMax = maxAutoAssociations + 5;
 		var newUsedCount = alreadyUsedAutoAssociations - 10;
 		// and:
@@ -216,7 +216,9 @@ class AccountStoreTest {
 				.alreadyUsedAutomaticAssociations(newUsedCount)
 				.proxy(proxy.asGrpcAccount())
 				.get();
-		expectedReplacement.setTokenAssociationMetadata(tokenAssociationMetadata);
+		expectedReplacement.setNumPositiveBalances(numPositiveBalances);
+		expectedReplacement.setNumAssociations(associatedTokensCount);
+		expectedReplacement.setHeadTokenId(firstAssocTokenNum);
 
 		// given:
 		final var model = subject.loadAccount(miscId);
@@ -261,7 +263,7 @@ class AccountStoreTest {
 		miscAccount.setExpiry(expiry);
 		miscAccount.initBalance(balance);
 		miscAccount.setNumAssociations(associatedTokensCount);
-		miscAccount.setNumZeroBalances(numZeroBalances);
+		miscAccount.setNumPositiveBalances(numPositiveBalances);
 		miscAccount.setMaxAutomaticAssociations(maxAutoAssociations);
 		miscAccount.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
 		miscAccount.setProxy(proxy);
@@ -270,7 +272,7 @@ class AccountStoreTest {
 		secondRel.setKey(secondRelKey);
 		secondRel.setPrev(firstAssocTokenNum);
 		firstRel.setNext(secondAssocTokenNum);
-		miscAccount.setLastAssociatedToken(firstRelKey);
+		miscAccount.setHeadTokenNum(firstAssocTokenNum);
 
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.initBalance(balance);
@@ -286,11 +288,9 @@ class AccountStoreTest {
 	private final int alreadyUsedAutoAssociations = 12;
 	private final int maxAutoAssociations = 123;
 	private final int associatedTokensCount = 2;
-	private final int numZeroBalances = 1;
+	private final int numPositiveBalances = 1;
 	private final Id miscId = new Id(0, 0, miscAccountNum);
 	private final Id autoRenewId = new Id(0, 0, autoRenewAccountNum);
-	private final Id firstAssocTokenId = new Id(0, 0, firstAssocTokenNum);
-	private final Id secondAssocTokenId = new Id(0, 0, secondAssocTokenNum);
 	private final Id proxy = new Id(0, 0, miscProxyAccount);
 	private final EntityNum miscMerkleId = EntityNum.fromLong(miscAccountNum);
 	private final Account miscAccount = new Account(miscId);

@@ -28,7 +28,6 @@ import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -224,21 +223,35 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setAlias(alias);
 	}
 
-	public TokenAssociationMetadata getTokenAssociationMetadata() {
-		return state().getTokenAssociationMetadata();
-	}
-
-	public void setTokenAssociationMetadata(final TokenAssociationMetadata tokenAssociationMetaData) {
-		throwIfImmutable("Cannot change this account's tokenAssociationMetaData if it is immutable");
-		state().setTokenAssociationMetadata(tokenAssociationMetaData);
-	}
-
 	public int getNumAssociations() {
-		return getTokenAssociationMetadata().numAssociations();
+		return state().getNumAssociations();
+	}
+
+	public void setNumAssociations(final int numAssociations) {
+		throwIfImmutable("Cannot change this account's numAssociations if it;s immutable");
+		state().setNumAssociations(numAssociations);
+	}
+
+	public int getNumPositiveBalances() {
+		return state().getNumPositiveBalances();
+	}
+
+	public void setNumPositiveBalances(final int numPositiveBalances) {
+		throwIfImmutable("Cannot change this account's numPositiveBalances if it;s immutable");
+		state().setNumPositiveBalances(numPositiveBalances);
+	}
+
+	public long getHeadTokenId() {
+		return state().getHeadTokenId();
+	}
+
+	public void setHeadTokenId(final long headTokenId) {
+		throwIfImmutable("Cannot change this account's headTokenId if it;s immutable");
+		state().setHeadTokenId(headTokenId);
 	}
 
 	public EntityNumPair getLatestAssociation() {
-		return getTokenAssociationMetadata().latestAssociation();
+		return EntityNumPair.fromLongs(state().number(), getHeadTokenId());
 	}
 
 	public long getBalance() {
@@ -323,16 +336,16 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setMaxAutomaticAssociations(maxAutomaticAssociations);
 	}
 
-	public int getAlreadyUsedAutoAssociations() {
-		return state().getAlreadyUsedAutomaticAssociations();
+	public int getUsedAutoAssociations() {
+		return state().getUsedAutomaticAssociations();
 	}
 
-	public void setAlreadyUsedAutomaticAssociations(final int alreadyUsedAutoAssociations) {
-		if (alreadyUsedAutoAssociations < 0 || alreadyUsedAutoAssociations > getMaxAutomaticAssociations()) {
+	public void setUsedAutomaticAssociations(final int usedAutoAssociations) {
+		if (usedAutoAssociations < 0 || usedAutoAssociations > getMaxAutomaticAssociations()) {
 			throw new IllegalArgumentException(
-					"Cannot set alreadyUsedAutoAssociations to " + alreadyUsedAutoAssociations);
+					"Cannot set usedAutoAssociations to " + usedAutoAssociations);
 		}
-		state().setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		state().setUsedAutomaticAssociations(usedAutoAssociations);
 	}
 
 	public int getNumContractKvPairs() {

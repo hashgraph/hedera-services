@@ -49,7 +49,6 @@ class TokenRelationshipTest {
 	private final EntityNumPair key = new EntityNumPair(1234566);
 	private final long nextKey = 1234567;
 	private final long prevKey = 1234565;
-	private final int associatedTokensCount = 3;
 
 	private Token token;
 	private Account account;
@@ -60,7 +59,8 @@ class TokenRelationshipTest {
 	void setUp() {
 		token = new Token(tokenId);
 		account = new Account(accountId);
-		account.setLastAssociatedToken(key);
+		account.setHeadTokenNum(key.getLowOrderAsLong());
+		int associatedTokensCount = 3;
 		account.setNumAssociations(associatedTokensCount);
 
 		subject = new TokenRelationship(token, account);
@@ -111,7 +111,7 @@ class TokenRelationshipTest {
 		final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=1.0.4321, " +
 				"expiry=0, balance=0, deleted=false, ownedNfts=0, alreadyUsedAutoAssociations=0, " +
 				"maxAutoAssociations=0, alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null, " +
-				"numAssociations=3, numZeroBalances=0, lastAssociatedToken=PermHashLong(0, 1234566)}, " +
+				"numAssociations=3, numPositiveBalances=0, headTokenNum=1234566}, " +
 				"token=Token{id=0.0.1234, type=null, deleted=false, autoRemoved=false, treasury=null, " +
 				"autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, " +
 				"currentSerialNumber=0, pauseKey=<N/A>, paused=false}, balance=1234, balanceChange=0, frozen=false, " +

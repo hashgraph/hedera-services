@@ -30,7 +30,6 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -53,9 +52,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromContractId;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
@@ -298,8 +297,10 @@ class GetAccountBalanceAnswerTest {
 				.build();
 		final var wellKnownId = EntityNum.fromLong(12345L);
 		given(aliasManager.lookupIdBy(aliasId.getAlias())).willReturn(wellKnownId);
-		accountV.setTokenAssociationMetadata(
-				new TokenAssociationMetadata(4, 0, aKey));
+		accountV.setKey(EntityNum.fromAccountId(asAccount(accountIdLit)));
+		accountV.setHeadTokenId(aToken.getTokenNum());
+		accountV.setNumAssociations(4);
+		accountV.setNumPositiveBalances(0);
 
 		CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder()
 				.setAccountID(aliasId)
@@ -333,8 +334,10 @@ class GetAccountBalanceAnswerTest {
 				.setAccountID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
-		accountV.setTokenAssociationMetadata(
-				new TokenAssociationMetadata(4, 0, aKey));
+		accountV.setKey(EntityNum.fromAccountId(asAccount(accountIdLit)));
+		accountV.setHeadTokenId(aToken.getTokenNum());
+		accountV.setNumAssociations(4);
+		accountV.setNumPositiveBalances(0);
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK);
@@ -365,8 +368,10 @@ class GetAccountBalanceAnswerTest {
 				.setContractID(id)
 				.build();
 		Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
-		accountV.setTokenAssociationMetadata(
-				new TokenAssociationMetadata(4, 0, aKey));
+		accountV.setKey(EntityNum.fromAccountId(asAccount(accountIdLit)));
+		accountV.setHeadTokenId(aToken.getTokenNum());
+		accountV.setNumAssociations(4);
+		accountV.setNumPositiveBalances(0);
 
 		// when:
 		Response response = subject.responseGiven(query, view, OK);
