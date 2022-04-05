@@ -175,7 +175,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
 	private static final String UNKNOWN_FUNCTION_ID_ERROR_MESSAGE =
-			"%s precompile received unknown functionId=%d (via %s)";
+			"%s precompile received unknown functionId=%x (via %s)";
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
