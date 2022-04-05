@@ -64,6 +64,7 @@ import java.util.TreeSet;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -293,6 +294,53 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 
 		verify(accountStore).commitAccount(ownerAcccount);
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
+	}
+
+	@Test
+	void checkIfApproveForAllIsSetBeforeDeleting(){
+		var ownerAcccount = new Account(ownerId);
+		setUpOwnerWithSomeKeys(ownerAcccount);
+		nftAllowances.clear();
+		var spenderAccount = new Account(Id.fromGrpcAccount(spender1));
+
+		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(spender1), INVALID_ALLOWANCE_SPENDER_ID)).willReturn(spenderAccount);
+		ownerAcccount.setCryptoAllowances(new TreeMap<>());
+		ownerAcccount.setFungibleTokenAllowances(new TreeMap<>());
+		ownerAcccount.setApproveForAllNfts(new TreeSet<>());
+		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
+		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
+		given(tokenStore.loadUniqueToken(tokenId1, serial1)).willReturn(nft1);
+		given(tokenStore.loadUniqueToken(tokenId1, serial2)).willReturn(nft2);
+		given(tokenStore.loadUniqueToken(tokenId1, serial3)).willReturn(nft3);
+		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft4);
+		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft5);
+
+		givenValidTxnCtx();
+
+		// ApproveForALl is not set. It should not be considered as false
+		final NftAllowance nftAllowance = NftAllowance.newBuilder()
+				.setSpender(spender1)
+				.setOwner(owner)
+				.setTokenId(token2)
+				.addAllSerialNumbers(List.of(serial1)).build();
+		nftAllowances.add(nftAllowance);
+
+		subject.adjustNftAllowances(nftAllowances, ownerAcccount);
+
+		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
+
+		final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
+				.setSpender(spender1)
+				.setOwner(owner)
+				.setTokenId(token2)
+				.setApprovedForAll(BoolValue.of(false))
+				.addAllSerialNumbers(List.of(serial1)).build();
+		nftAllowances.add(nftAllowance1);
+
+		subject.adjustNftAllowances(nftAllowances, ownerAcccount);
+
+		assertEquals(0, ownerAcccount.getApprovedForAllNftsAllowances().size());
 	}
 
 	private void setUpOwnerWithSomeKeys(final Account ownerAcccount) {

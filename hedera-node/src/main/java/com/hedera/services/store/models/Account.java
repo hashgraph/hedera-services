@@ -489,7 +489,7 @@ public class Account {
 		return approveForAllNfts == null ? Collections.emptySet() : approveForAllNfts;
 	}
 
-	public SortedSet<FcTokenAllowanceId> getMutableApprovedForAllNftsAllowances() {
+	public SortedSet<FcTokenAllowanceId> getMutableApprovedForAllNfts() {
 		if (approveForAllNfts == null) {
 			approveForAllNfts = new TreeSet<>();
 		}
