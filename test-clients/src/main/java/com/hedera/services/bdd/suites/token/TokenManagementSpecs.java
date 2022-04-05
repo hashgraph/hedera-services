@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -229,6 +230,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
 				).then(
 						getAccountBalance("misc")
 								.hasTokenBalance(wipeableToken, 0),
+						cryptoDelete("misc"),
 						getTokenInfo(wipeableToken)
 								.hasTotalSupply(500),
 						getAccountBalance(TOKEN_TREASURY)

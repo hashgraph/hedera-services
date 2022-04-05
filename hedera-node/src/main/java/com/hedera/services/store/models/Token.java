@@ -279,8 +279,8 @@ public class Token {
 		final var newAccBalance = accountRel.getBalance() - amount;
 
 		if (newAccBalance == 0) {
-			final var currentNumZeroBalances = accountRel.getAccount().getNumPositiveBalances();
-			accountRel.getAccount().setNumPositiveBalances(currentNumZeroBalances + 1);
+			final var currentNumPositiveBalances = accountRel.getAccount().getNumPositiveBalances();
+			accountRel.getAccount().setNumPositiveBalances(currentNumPositiveBalances - 1);
 		}
 
 		accountRel.setBalance(newAccBalance);
@@ -319,8 +319,8 @@ public class Token {
 		}
 
 		if (newAccountBalance == 0) {
-			final var currentNumZeroBalances = account.getNumPositiveBalances();
-			account.setNumPositiveBalances(currentNumZeroBalances + 1);
+			final var currentNumPositiveBalances = account.getNumPositiveBalances();
+			account.setNumPositiveBalances(currentNumPositiveBalances - 1);
 		}
 
 		account.setOwnedNfts(account.getOwnedNfts() - serialNumbers.size());
@@ -394,10 +394,10 @@ public class Token {
 		validateTrue(newTreasuryBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
 		if (treasuryRel.getBalance() == 0 && amount > 0) {
 			// for mint op
-			treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() - 1);
+			treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() + 1);
 		} else if (newTreasuryBalance == 0 && amount < 0) {
 			// for burn op
-			treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() + 1);
+			treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() - 1);
 		}
 		setTotalSupply(newTotalSupply);
 		treasuryRel.setBalance(newTreasuryBalance);

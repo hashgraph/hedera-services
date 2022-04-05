@@ -510,8 +510,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		tokenRelsLedger.set(relationship, TOKEN_BALANCE, newBalance);
 		int numPositiveBalances = (int) accountsLedger.get(aId, NUM_POSITIVE_BALANCES);
 
-		// If the original balance is zero, then the receiving account's numZeroBalances has to be decreased
-		// and if the newBalance is zero, then the sending account's numZeroBalances has to be increased
+		// If the original balance is zero, then the receiving account's numPositiveBalances has to be increased
+		// and if the newBalance is zero, then the sending account's numPositiveBalances has to be decreased
 		if (newBalance == 0 && adjustment < 0) {
 			numPositiveBalances--;
 		} else if (balance == 0 && adjustment > 0) {

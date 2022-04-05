@@ -367,7 +367,7 @@ class TokenTest {
 		assertEquals(2, removedUniqueTokens.size());
 		assertEquals(serialNumber0, removedUniqueTokens.get(0).getSerialNumber());
 		assertEquals(serialNumber1, removedUniqueTokens.get(1).getSerialNumber());
-		assertEquals(numPositiveBalances + 1, treasuryAccount.getNumPositiveBalances());
+		assertEquals(numPositiveBalances - 1, treasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
@@ -387,7 +387,7 @@ class TokenTest {
 		assertEquals(1, subject.mintedUniqueTokens().get(0).getSerialNumber());
 		assertEquals(1, subject.getLastUsedSerialNumber());
 		assertEquals(TokenType.NON_FUNGIBLE_UNIQUE, subject.getType());
-		assertEquals(numPositiveBalances - 1, treasuryAccount.getNumPositiveBalances());
+		assertEquals(numPositiveBalances + 1, treasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
@@ -425,7 +425,7 @@ class TokenTest {
 		subject.wipe(nonTreasuryRel, 30);
 		assertEquals(initialSupply - 40, subject.getTotalSupply());
 		assertEquals(0, nonTreasuryRel.getBalance());
-		assertEquals(numPositiveBalances + 1, nonTreasuryAccount.getNumPositiveBalances());
+		assertEquals(numPositiveBalances - 1, nonTreasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
@@ -494,7 +494,7 @@ class TokenTest {
 		assertTrue(subject.hasRemovedUniqueTokens());
 		assertTrue(subject.hasChangedSupply());
 		assertEquals(100000, subject.getMaxSupply());
-		assertEquals(numPositiveBalances + 1, nonTreasuryAccount.getNumPositiveBalances());
+		assertEquals(numPositiveBalances - 1, nonTreasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test

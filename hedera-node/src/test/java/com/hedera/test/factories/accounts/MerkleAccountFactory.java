@@ -225,9 +225,4 @@ public class MerkleAccountFactory {
 		this.associatedTokensCount = Optional.of(associatedTokensCount);
 		return this;
 	}
-
-	public MerkleAccountFactory numZeroBalances(final int numZeroBalances) {
-		this.numPositiveBalances = Optional.of(numZeroBalances);
-		return this;
-	}
 }
