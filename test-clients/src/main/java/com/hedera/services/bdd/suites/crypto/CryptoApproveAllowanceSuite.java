@@ -112,7 +112,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				canGrantNftAllowancesWithTreasuryOwner(),
 				canGrantFungibleAllowancesWithTreasuryOwner(),
 				approveForAllSpenderCanDelegateOnNFT(),
-				duplicateEntriesHaveNoEffect()
+				duplicateEntriesGetsReplaced()
 		});
 	}
 
@@ -1462,9 +1462,6 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.via("baseApproveTxn")
 								.blankMemo()
 								.logged(),
-						getTxnRecord("baseApproveTxn")
-								.hasCryptoAllowance(owner, spender, 100L)
-								.hasTokenAllowanceCount(0),
 						validateChargedUsdWithin("baseApproveTxn", 0.05, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
@@ -1473,10 +1470,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addNftAllowance(owner, nft, spender, false, List.of(1L))
 								.via("approveTxn")
 								.blankMemo()
-								.logged(),
-						getTxnRecord("approveTxn")
-								.hasCryptoAllowance(owner, spender1, 100L)
-								.hasTokenAllowance(owner, token, spender, 100L)
+								.logged()
 				)
 				.then(
 						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
@@ -1487,16 +1481,18 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 										.tokenAllowancesCount(1)
 										.cryptoAllowancesContaining(spender, 100L)
 										.tokenAllowancesContaining(token, spender, 100L)
-								));
+								),
+						getTokenNftInfo(nft, 1L).hasSpenderID(spender)
+				);
 
 	}
 
-	private HapiApiSpec duplicateEntriesHaveNoEffect() {
+	private HapiApiSpec duplicateEntriesGetsReplaced() {
 		final String owner = "owner";
 		final String spender = "spender";
 		final String token = "token";
 		final String nft = "nft";
-		return defaultHapiSpec("duplicateEntriesHaveNoEffect")
+		return defaultHapiSpec("duplicateEntriesGetsReplaced")
 				.given(
 						newKeyNamed("supplyKey"),
 						cryptoCreate(owner)
@@ -1535,47 +1531,60 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender, 100L)
+								.addTokenAllowance(owner, token, spender, 100L)
+								.addNftAllowance(owner, nft, spender, true, List.of(1L, 2L))
 								.via("baseApproveTxn")
 								.blankMemo()
 								.logged(),
+						getAccountInfo(owner)
+								.has(accountWith()
+										.cryptoAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
+										.tokenAllowancesCount(1)
+										.cryptoAllowancesContaining(spender, 100L)
+										.tokenAllowancesContaining(token, spender, 100L)
+										.nftApprovedAllowancesContaining(nft, spender)
+								),
+						getTokenNftInfo(nft, 1L).hasSpenderID(spender),
+						getTokenNftInfo(nft, 2L).hasSpenderID(spender),
 						getTxnRecord("baseApproveTxn")
-								.hasCryptoAllowance(owner, spender, 100L)
+								.hasCryptoAllowanceCount(0)
 								.hasTokenAllowanceCount(0),
 						cryptoApproveAllowance()
 								.payingWith(owner)
-								.addCryptoAllowance(owner, spender, 100L)
-								.via("duplicateCrypto"),
-						getTxnRecord("duplicateCrypto")
-								.hasCryptoAllowanceCount(0)
-								.hasTokenAllowanceCount(0),
+								.addCryptoAllowance(owner, spender, 200L)
+								.addTokenAllowance(owner, token, spender, 300L)
+								.addNftAllowance(owner, nft, spender, false, List.of(3L))
+								.via("duplicateAllowances"),
+						getTokenNftInfo(nft, 1L).hasSpenderID(spender),
+						getTokenNftInfo(nft, 2L).hasSpenderID(spender),
+						getTokenNftInfo(nft, 3L).hasSpenderID(spender),
 						getAccountInfo(owner)
 								.has(accountWith()
 										.cryptoAllowancesCount(1)
 										.nftApprovedForAllAllowancesCount(0)
-										.tokenAllowancesCount(0)
-										.cryptoAllowancesContaining(spender, 100L)
+										.tokenAllowancesCount(1)
+										.cryptoAllowancesContaining(spender, 200L)
+										.tokenAllowancesContaining(token, spender, 300L)
 								)
 				)
 				.then(
 						cryptoApproveAllowance()
 								.payingWith(owner)
-								.addCryptoAllowance(owner, spender, 300L)
-								.addTokenAllowance(owner, token, spender, 100L)
-								.via("baseTokenApproveTxn")
-								.blankMemo()
-								.logged(),
-						getTxnRecord("baseTokenApproveTxn")
-								.hasCryptoAllowanceCount(0)
-								.hasTokenAllowanceCount(1)
-								.hasTokenAllowance(owner, token, spender, 100L),
-						cryptoApproveAllowance()
-								.payingWith(owner)
-								.addCryptoAllowance(owner, spender, 200L)
-								.addTokenAllowance(owner, token, spender, 200L)
-								.via("duplicateBoth"),
-						getTxnRecord("duplicateBoth")
-								.hasCryptoAllowanceCount(0)
-								.hasTokenAllowanceCount(0)
+								.addCryptoAllowance(owner, spender, 0L)
+								.addTokenAllowance(owner, token, spender, 0L)
+								.addNftAllowance(owner, nft, spender, true, List.of())
+								.via("removeAllowances"),
+						getAccountInfo(owner)
+								.has(accountWith()
+										.cryptoAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(1)
+										.tokenAllowancesCount(0)
+										.nftApprovedAllowancesContaining(nft, spender)
+								),
+						getTokenNftInfo(nft, 1L).hasSpenderID(spender),
+						getTokenNftInfo(nft, 2L).hasSpenderID(spender),
+						getTokenNftInfo(nft, 3L).hasSpenderID(spender)
 				);
 
 	}

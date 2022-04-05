@@ -58,7 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
  * Implements the {@link TransitionLogic} for a HAPI CryptoApproveAllowance transaction,
  * and the conditions under which such logic is syntactically correct.
  */
-public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
+public class CryptoApproveAllowanceTransitionLogic extends BaseAllowancesTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
@@ -67,7 +67,6 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final Map<Long, Account> entitiesChanged;
 	private final StateView workingView;
 	private final Map<NftId, UniqueToken> nftsTouched;
-	private final SideEffectsTracker sideEffectsTracker;
 
 	@Inject
 	public CryptoApproveAllowanceTransitionLogic(
@@ -76,8 +75,8 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			final TypedTokenStore tokenStore,
 			final ApproveAllowanceChecks allowanceChecks,
 			final GlobalDynamicProperties dynamicProperties,
-			final StateView workingView,
-			final SideEffectsTracker sideEffectsTracker) {
+			final StateView workingView) {
+		super(accountStore, tokenStore, dynamicProperties);
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
@@ -86,7 +85,6 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		this.entitiesChanged = new HashMap<>();
 		this.workingView = workingView;
 		this.nftsTouched = new HashMap<>();
-		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
 	@Override
@@ -105,7 +103,7 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		/* --- Do the business logic --- */
 		applyCryptoAllowances(op.getCryptoAllowancesList(), payerAccount);
 		applyFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
-		applyNftAllowances(op.getNftAllowancesList(), payerAccount);
+		applyNftAllowances(op.getNftAllowancesList(), payerAccount, entitiesChanged, nftsTouched);
 
 		/* --- Persist the entities --- */
 		for (final var nft : nftsTouched.values()) {
@@ -142,7 +140,8 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	}
 
 	/**
-	 * Applies all changes needed for Crypto allowances from the transaction
+	 * Applies all changes needed for Crypto allowances from the transaction. If the spender already has an allowance, the
+	 * allowance value will be replaced with values from transaction
 	 *
 	 * @param cryptoAllowances
 	 * @param payerAccount
@@ -181,49 +180,8 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	}
 
 	/**
-	 * Applies all changes needed for NFT allowances from the transaction
-	 *
-	 * @param nftAllowances
-	 * @param payerAccount
-	 */
-	void applyNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
-		if (nftAllowances.isEmpty()) {
-			return;
-		}
-		for (var allowance : nftAllowances) {
-			final var owner = allowance.getOwner();
-			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var approveForAllNfts = accountToApprove.getMutableApprovedForAllNfts();
-
-			final var spenderId = Id.fromGrpcAccount(allowance.getSpender());
-			accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
-
-			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
-
-			if (allowance.hasApprovedForAll()) {
-				final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
-				if (allowance.hasApprovedForAll()) {
-					if (allowance.getApprovedForAll().getValue()) {
-						approveForAllNfts.add(key);
-					} else {
-						approveForAllNfts.remove(key);
-					}
-				}
-			}
-
-			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
-
-			final var nfts = updateSpender(tokenStore, accountToApprove.getId(), spenderId, tokenId,
-					allowance.getSerialNumbersList());
-			for (var nft : nfts) {
-				nftsTouched.put(nft.getNftId(), nft);
-			}
-			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
-		}
-	}
-
-	/**
-	 * Applies all changes needed for fungible token allowances from the transaction
+	 * Applies all changes needed for fungible token allowances from the transaction.If the key {token, spender} already has
+	 * an allowance, the allowance value will be replaced with values from transaction
 	 *
 	 * @param tokenAllowances
 	 * @param payerAccount

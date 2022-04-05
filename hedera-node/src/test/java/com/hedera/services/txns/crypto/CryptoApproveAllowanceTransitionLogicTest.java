@@ -93,8 +93,6 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private StateView view;
-	@Mock
-	private SideEffectsTracker sideEffectsTracker;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
 	private CryptoApproveAllowanceTransactionBody op;
@@ -104,7 +102,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		subject = new CryptoApproveAllowanceTransitionLogic(txnCtx, accountStore, tokenStore, allowanceChecks,
-				dynamicProperties, view, sideEffectsTracker);
+				dynamicProperties, view);
 		nft1.setOwner(Id.fromGrpcAccount(ownerId));
 		nft2.setOwner(Id.fromGrpcAccount(ownerId));
 	}
@@ -309,7 +307,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 
 	@Test
-	void removesAllowancesWhenAmountIsZero() {
+	void doesntAddAllowancesWhenAmountIsZero() {
 		givenTxnCtxWithZeroAmount();
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -325,7 +323,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 
 		assertEquals(0, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
-		assertEquals(1, ownerAccount.getApprovedForAllNftsAllowances().size());
+		assertEquals(0, ownerAccount.getApprovedForAllNftsAllowances().size());
 		assertEquals(spenderId1, nft1.getSpender());
 		assertEquals(spenderId1, nft2.getSpender());
 
@@ -391,7 +389,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
-		subject.applyNftAllowances(nftAllowances, ownerAcccount);
+		subject.applyNftAllowances(nftAllowances, ownerAcccount, new HashMap<>(), new HashMap<>());
 
 		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 	}
