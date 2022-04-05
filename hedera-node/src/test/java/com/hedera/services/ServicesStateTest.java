@@ -32,7 +32,6 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
@@ -57,7 +56,6 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
@@ -69,7 +67,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
@@ -721,30 +718,6 @@ class ServicesStateTest {
 		assertSame(addressBook, copy.addressBook());
 		assertSame(networkContext, copy.networkCtx());
 		assertSame(specialFiles, copy.specialFiles());
-	}
-
-	private List<MerkleNode> legacyChildrenWith(
-			AddressBook addressBook,
-			MerkleNetworkContext networkContext,
-			MerkleMap<EntityNumPair, MerkleUniqueToken> nfts,
-			MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels,
-			boolean withNfts
-	) {
-		final List<MerkleNode> legacyChildren = new ArrayList<>();
-		legacyChildren.add(addressBook);
-		legacyChildren.add(networkContext);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(tokenRels);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		legacyChildren.add(null);
-		if (withNfts) {
-			legacyChildren.add(nfts);
-		}
-		return legacyChildren;
 	}
 
 	private void setAllMmsTo(final MerkleMap<?, ?> mockMm) {

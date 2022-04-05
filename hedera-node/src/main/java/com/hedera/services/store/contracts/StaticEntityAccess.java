@@ -34,10 +34,11 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
@@ -73,7 +74,7 @@ public class StaticEntityAccess implements EntityAccess {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final MerkleMap<EntityNum, MerkleToken> tokens;
 	private final MerkleMap<EntityNum, MerkleAccount> accounts;
-	private final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
+	private final VirtualMap<UniqueTokenKey, UniqueTokenValue> nfts;
 	private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	private final VirtualMap<ContractKey, ContractValue> storage;
 	private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
@@ -312,7 +313,7 @@ public class StaticEntityAccess implements EntityAccess {
 		return nftPropertyOf(nftId, nft -> {
 			var owner = nft.getOwner();
 			if (MISSING_ENTITY_ID.equals(owner)) {
-				final var token = tokens.get(nft.getKey().getHiOrderAsNum());
+				final var token = tokens.get(nftId.tokenId().getTokenNum());
 				validateTrue(token != null, INVALID_TOKEN_ID);
 				owner = token.treasury();
 			}
@@ -330,8 +331,8 @@ public class StaticEntityAccess implements EntityAccess {
 		return nftPropertyOf(nftId, nft -> new String(nft.getMetadata()));
 	}
 
-	private <T> T nftPropertyOf(final NftId nftId, final Function<MerkleUniqueToken, T> getter) {
-		final var key = EntityNumPair.fromNftId(nftId);
+	private <T> T nftPropertyOf(final NftId nftId, final Function<UniqueTokenValue, T> getter) {
+		final var key = UniqueTokenKey.fromNftId(nftId);
 		var nft = nfts.get(key);
 		validateTrue(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
 		return getter.apply(nft);
