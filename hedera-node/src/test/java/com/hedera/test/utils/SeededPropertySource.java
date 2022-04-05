@@ -2,24 +2,37 @@ package com.hedera.test.utils;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.EntityType;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.CommonUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +60,61 @@ public class SeededPropertySource {
 		return SEEDED_RANDOM.nextBoolean();
 	}
 
+	public List<FcAssessedCustomFee> nextAssessedFeesList() {
+		final var numFees = nextNonZeroInt(10);
+		final List<FcAssessedCustomFee> ans = new ArrayList<>();
+		for (int i = 0; i < numFees; i++) {
+			ans.add(nextAssessedFee());
+		}
+		return ans;
+	}
+
+	public List<FcTokenAssociation> nextTokenAssociationsList() {
+		final var numAssociations = nextNonZeroInt(10);
+		final List<FcTokenAssociation> ans = new ArrayList<>();
+		for (int i = 0; i < numAssociations; i++) {
+			ans.add(nextTokenAssociation());
+		}
+		return ans;
+	}
+
+	public FcTokenAssociation nextTokenAssociation() {
+		return new FcTokenAssociation(nextInRangeLong(), nextInRangeLong());
+	}
+
+	public FcAssessedCustomFee nextAssessedFee() {
+		if (nextBoolean()) {
+			return new FcAssessedCustomFee(
+					nextEntityId(), nextUnsignedLong(), nextInRangeLongs(nextNonZeroInt(3)));
+		} else {
+			return new FcAssessedCustomFee(
+					nextEntityId(), nextEntityId(), nextUnsignedLong(), nextInRangeLongs(nextNonZeroInt(3)));
+		}
+	}
+
+	public void nextTokenAdjustmentsIn(final ExpirableTxnRecord.Builder builder) {
+		final var numAdjustments = nextNonZeroInt(10);
+		final List<EntityId> tokenTypes = new ArrayList<>(numAdjustments);
+		final List<NftAdjustments> ownershipChanges = new ArrayList<>(numAdjustments);
+		final List<CurrencyAdjustments> fungibleAdjustments = new ArrayList<>(numAdjustments);
+		for (int i = 0; i < numAdjustments; i++) {
+			tokenTypes.add(nextEntityId());
+			ownershipChanges.add(nextOwnershipChanges());
+			fungibleAdjustments.add(nextCurrencyAdjustments());
+		}
+		builder.setTokens(tokenTypes);
+		builder.setNftTokenAdjustments(ownershipChanges);
+		builder.setTokenAdjustments(fungibleAdjustments);
+	}
+
+	public NftAdjustments nextOwnershipChanges() {
+		final var numOwnershipChanges = nextNonZeroInt(10);
+		final List<EntityId> senders = new ArrayList<>(numOwnershipChanges);
+		final List<EntityId> receivers = new ArrayList<>(numOwnershipChanges);
+		final long[] serialNos = nextUnsignedLongs(numOwnershipChanges);
+		return new NftAdjustments(serialNos, senders, receivers);
+	}
+
 	public int nextNonce() {
 		return SEEDED_RANDOM.nextInt(1000);
 	}
@@ -57,6 +125,113 @@ public class SeededPropertySource {
 
 	public TxnId nextTxnId() {
 		return new TxnId(nextEntityId(), nextRichInstant(), nextBoolean(), nextNonce());
+	}
+
+	public Instant nextInstant() {
+		return Instant.ofEpochSecond(nextInRangeLong(), SEEDED_RANDOM.nextInt(1_000_000));
+	}
+
+	public TxnId nextScheduledTxnId() {
+		return new TxnId(nextEntityId(), nextRichInstant(), true, 0);
+	}
+
+	public CurrencyAdjustments nextCurrencyAdjustments() {
+		final var numAdjustments = nextNonZeroInt(10);
+		final var ids = nextInRangeLongs(numAdjustments);
+		final var amounts = nextLongs(numAdjustments);
+		return new CurrencyAdjustments(amounts, ids);
+	}
+
+	public EvmFnResult nextEvmFnResult() {
+		return new EvmFnResult(
+				nextEntityId(),
+				nextBytes(128),
+				nextString(32),
+				nextBytes(32),
+				nextUnsignedLong(),
+				List.of(),
+				List.of(),
+				nextBytes(20),
+				nextStateChanges(5, 10),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextBytes(64));
+	}
+
+	public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> nextStateChanges(int n, final int changesPerAddress) {
+		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> ans = new TreeMap<>();
+		while (n-- > 0) {
+			final var address = nextAddress();
+			final Map<Bytes, Pair<Bytes, Bytes>> changes = new TreeMap<>();
+			for (int i = 0; i < changesPerAddress; i++)	{
+				changes.put(nextEvmWord(), nextStateChangePair());
+			}
+			ans.put(address, changes);
+		}
+		return ans;
+	}
+
+	public Pair<Bytes, Bytes> nextStateChangePair() {
+		if (nextBoolean()) {
+			return Pair.of(nextEvmWord(), null);
+		} else {
+			return Pair.of(nextEvmWord(), nextEvmWord());
+		}
+	}
+
+	public TxnReceipt.Builder nextReceiptBuilder() {
+		final var builder = TxnReceipt.newBuilder();
+		if (nextBoolean()) {
+			final var creationType = nextEntityType();
+			switch (creationType) {
+				case ACCOUNT -> builder.setAccountId(nextEntityId());
+				case CONTRACT -> builder.setContractId(nextEntityId());
+				case FILE -> builder.setFileId(nextEntityId());
+				case SCHEDULE -> {
+					builder.setScheduleId(nextEntityId());
+					builder.setScheduledTxnId(nextScheduledTxnId());
+				}
+				case TOKEN -> {
+					builder.setTokenId(nextEntityId());
+					if (nextBoolean()) {
+						builder.setNewTotalSupply(nextUnsignedLong());
+					} else if (nextBoolean()) {
+						builder.setSerialNumbers(nextInRangeLongs(nextNonZeroInt(10)));
+					}
+				}
+				case TOPIC ->  {
+					builder.setTopicId(nextEntityId());
+					if (nextBoolean()) {
+						builder.setRunningHashVersion(nextUnsignedLong());
+						builder.setTopicRunningHash(nextBytes(48));
+						builder.setTopicSequenceNumber(nextUnsignedLong());
+					}
+				}
+			}
+		}
+		return builder
+				.setExchangeRates(nextExchangeRates())
+				.setStatus(nextStatus().toString());
+	}
+
+	public int nextNonZeroInt(final int inclusiveUpperBound) {
+		return 1 + SEEDED_RANDOM.nextInt(inclusiveUpperBound);
+	}
+
+	public ResponseCodeEnum nextStatus() {
+		final var choices = ResponseCodeEnum.class.getEnumConstants();
+		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+	}
+
+	public ExchangeRates nextExchangeRates() {
+		return new ExchangeRates(
+				nextUnsignedInt(), nextUnsignedInt(), nextUnsignedLong(),
+				nextUnsignedInt(), nextUnsignedInt(), nextUnsignedLong());
+	}
+
+	public EntityType nextEntityType() {
+		final var choices = EntityType.class.getEnumConstants();
+		return choices[SEEDED_RANDOM.nextInt(choices.length)];
 	}
 
 	public Map<EntityNum, Map<FcTokenAllowanceId, Long>> nextFungibleAllowances(
@@ -138,6 +313,24 @@ public class SeededPropertySource {
 				.toArray(EntityNum[]::new);
 	}
 
+	public long[] nextInRangeLongs(final int n) {
+		return IntStream.range(0, n)
+				.mapToLong(i -> nextInRangeLong())
+				.toArray();
+	}
+
+	public long[] nextLongs(final int n) {
+		return IntStream.range(0, n)
+				.mapToLong(i -> nextLong())
+				.toArray();
+	}
+
+	public long[] nextUnsignedLongs(final int n) {
+		return IntStream.range(0, n)
+				.mapToLong(i -> nextUnsignedLong())
+				.toArray();
+	}
+
 	public EntityNum nextNum() {
 		return EntityNum.fromLong(SEEDED_RANDOM.nextLong(BitPackUtils.MAX_NUM_ALLOWED));
 	}
@@ -178,6 +371,10 @@ public class SeededPropertySource {
 
 	public int nextUnsignedInt() {
 		return SEEDED_RANDOM.nextInt(Integer.MAX_VALUE);
+	}
+
+	public short nextUnsignedShort() {
+		return (short) SEEDED_RANDOM.nextInt(Short.MAX_VALUE);
 	}
 
 	public String nextString(final int len) {

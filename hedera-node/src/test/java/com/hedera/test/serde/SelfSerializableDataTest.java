@@ -1,5 +1,6 @@
 package com.hedera.test.serde;
 
+import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -44,6 +45,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	private static final int MIN_TEST_CASES_PER_VERSION = 5;
+
+	protected static final SeededPropertySource propertySource = new SeededPropertySource();
 
 	/**
 	 * A hook for the test class to register any {@link com.swirlds.common.constructable.RuntimeConstructable}
