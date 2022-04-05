@@ -76,6 +76,10 @@ public class SeededPropertySource {
 		this.SEEDED_RANDOM = SEEDED_RANDOM;
 	}
 
+	public static SeededPropertySource forSerdeTest(final int version, final int testCaseNo) {
+		return new SeededPropertySource(new SplittableRandom(version * DEFAULT_SEED + testCaseNo));
+	}
+
 	public boolean nextBoolean() {
 		return SEEDED_RANDOM.nextBoolean();
 	}

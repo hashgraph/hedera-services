@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.services.utils.EntityNum;
@@ -43,6 +44,8 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -324,23 +327,182 @@ class ExpirableTxnRecordTest {
 
 	@Test
 	void nullEqualsWorks() {
-		assertNotEquals(null, subject);
-		assertEquals(subject, subject);
+		final var sameButDifferent = subject;
+		assertNotEquals(subject, null);
+		assertNotEquals(subject, new Object());
+		assertEquals(subject, sameButDifferent);
+	}
+
+	@Test
+	void equalsDetectsFeeDiff() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setFee(123).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsChildRecordsDif() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setNumChildRecords((short) 123).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsPackedConsTimeDif() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setParentConsensusTime(Instant.ofEpochSecond(1_234_567))
+				.build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffExpiry() {
+		final var a = new ExpirableTxnRecord();
+		final var b = new ExpirableTxnRecord();
+		b.setExpiry(1_234_567L);
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffSubmitter() {
+		final var a = new ExpirableTxnRecord();
+		final var b = new ExpirableTxnRecord();
+		b.setSubmittingMember(1_234_567L);
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffReceipt() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setReceipt(new TxnReceipt()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffHash() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setTxnHash(new byte[] { (byte) 0xFF }).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffTxnId() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setTxnId(new TxnId()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffConsTime() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setConsensusTime(new RichInstant(1_234_567, 890)).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffMemo() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setMemo("HI").build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffCallResult() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setContractCallResult(new EvmFnResult()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffCreateResult() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setContractCreateResult(new EvmFnResult()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffHbarAdjusts() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setHbarAdjustments(new CurrencyAdjustments()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffTokens() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setTokens(new ArrayList<>()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffTokenAdjusts() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setTokenAdjustments(new ArrayList<>()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffNftAdjusts() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setNftTokenAdjustments(new ArrayList<>()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffAssessedFees() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setAssessedCustomFees(new ArrayList<>()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffTokenAssociations() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setNewTokenAssociations(new ArrayList<>()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffAlias() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setAlias(ByteString.copyFromUtf8("asdf")).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffCryptoAllowances() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setCryptoAllowances(Map.of()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffFungibleAllowances() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setFungibleTokenAllowances(Map.of()).build();
+		assertNotEquals(a, b);
 	}
 
 	@Test
 	void objectContractWorks() {
-		final var one = subject;
 		final var two = DomainSerdesTest.recordOne();
 		final var three = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
 
-		assertNotEquals(null, one);
-		assertNotEquals(new Object(), one);
-		assertEquals(one, three);
-		assertNotEquals(one, two);
-
-		assertNotEquals(one.hashCode(), two.hashCode());
-		assertEquals(one.hashCode(), three.hashCode());
+		assertNotEquals(two, three);
+		assertNotEquals(two.hashCode(), three.hashCode());
 	}
 
 	@Test
