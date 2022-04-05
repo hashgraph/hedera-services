@@ -36,7 +36,6 @@ import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -49,7 +48,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.validateAllowanceLimitsOn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
