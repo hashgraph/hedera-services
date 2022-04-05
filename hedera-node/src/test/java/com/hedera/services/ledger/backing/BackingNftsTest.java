@@ -20,6 +20,7 @@ package com.hedera.services.ledger.backing;
  * ‍
  */
 
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
@@ -29,37 +30,39 @@ import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.charset.StandardCharsets;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(MockitoExtension.class)
 class BackingNftsTest {
 	private final NftId aNftId = new NftId(0, 0, 3, 4);
 	private final NftId bNftId = new NftId(0, 0, 4, 5);
 	private final NftId cNftId = new NftId(0, 0, 5, 6);
 	private final UniqueTokenKey aKey = new UniqueTokenKey(3, 4);
 	private final UniqueTokenKey bKey = new UniqueTokenKey(4, 5);
-	private final UniqueTokenValue aValue = new UniqueTokenValue(
+	private final UniqueTokenValue updatedTokenA = new UniqueTokenValue(
 			3,
 			MISSING_ENTITY_ID.num(),
 			new RichInstant(1_234_567L, 1),
 			"abcdefgh".getBytes());
-	private final UniqueTokenValue theToken = new UniqueTokenValue(
+	private final UniqueTokenValue updatedTokenB = new UniqueTokenValue(
+			4,
+			MISSING_ENTITY_ID.num(),
+			new RichInstant(1_234_567L, 1),
+			"eeeeee".getBytes());
+	private final UniqueTokenValue tokenA = new UniqueTokenValue(
 			MISSING_ENTITY_ID.num(),
 			MISSING_ENTITY_ID.num(),
 			MISSING_INSTANT,
 			"HI".getBytes(StandardCharsets.UTF_8));
-	private final UniqueTokenValue notTheToken = new UniqueTokenValue(
+	private final UniqueTokenValue tokenB = new UniqueTokenValue(
 			MISSING_ENTITY_ID.num(),
 			MISSING_ENTITY_ID.num(),
 			MISSING_INSTANT,
@@ -73,8 +76,8 @@ class BackingNftsTest {
 	void setUp() {
 		delegate = new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
 
-		delegate.put(aKey, theToken);
-		delegate.put(bKey, notTheToken);
+		delegate.put(aKey, tokenA);
+		delegate.put(bKey, tokenB);
 
 		subject = new BackingNfts(() -> delegate);
 	}
@@ -102,27 +105,47 @@ class BackingNftsTest {
 		final var mutable = subject.getRef(aNftId);
 
 		// then:
-		assertEquals(theToken, mutable);
+		assertEquals(tokenA, mutable);
 		assertFalse(mutable.isImmutable());
+	}
+
+	@Test
+	void mutationsAreStored() {
+		var mutable = subject.getRef(aNftId);
+		mutable.setOwner(EntityId.fromNum(1234L));
+		mutable.setSpender(EntityId.fromNum(5678L));
+		mutable.setMetadata("changed!".getBytes());
+		mutable.setPackedCreationTime(12345L);
+
+		var immutable = subject.getImmutableRef(aNftId);
+		assertThat(immutable.getOwnerAccountNum()).isEqualTo(1234L);
+		assertThat(immutable.getSpender().num()).isEqualTo(5678L);
+		assertThat(immutable.getMetadata()).isEqualTo("changed!".getBytes());
+		assertThat(immutable.getPackedCreationTime()).isEqualTo(12345L);
 	}
 
 	@Test
 	void getImmutableRefDelegatesToGet() {
 		// when:
-		final var immutable = subject.getImmutableRef(aNftId);
+		final var immutableA = subject.getImmutableRef(aNftId);
+		final var immutableB = subject.getImmutableRef(bNftId);
 
 		// then:
-		assertEquals(theToken, immutable);
+		assertEquals(tokenA, immutableA);
+		assertEquals(tokenB, immutableB);
 	}
 
 	@Test
 	void putWorks() {
 		// when:
-		subject.put(aNftId, aValue);
-		subject.put(cNftId, aValue);
+		subject.put(aNftId, updatedTokenA);
+		subject.put(cNftId, updatedTokenA);
 
 		// then:
-		assertEquals(aValue, subject.getImmutableRef(cNftId));
+		assertEquals(updatedTokenA, subject.getImmutableRef(cNftId));
+
+		// Overwrites should not replace the existing token value.
+		assertEquals(tokenA, subject.getImmutableRef(aNftId));
 	}
 
 	@Test
