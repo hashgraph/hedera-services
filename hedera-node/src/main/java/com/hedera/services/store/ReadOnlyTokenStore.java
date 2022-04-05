@@ -25,7 +25,6 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;

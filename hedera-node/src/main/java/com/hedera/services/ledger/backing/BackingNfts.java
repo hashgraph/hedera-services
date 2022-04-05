@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 @Singleton
+@SuppressWarnings("java:S6206")   // Unable to convert to record due to https://github.com/google/dagger/issues/2106
 public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
 	private final Supplier<VirtualMap<UniqueTokenKey, UniqueTokenValue>> delegate;
 

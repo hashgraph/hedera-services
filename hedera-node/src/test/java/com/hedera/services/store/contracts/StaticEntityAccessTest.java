@@ -326,7 +326,7 @@ class StaticEntityAccessTest {
 	@Test
 	void ownerOfTranslatesWildcardOwner() {
 		given(nfts.get(nftKey)).willReturn(treasuryOwned);
-		given(tokens.get(EntityId.fromNum(nftKey.getNum()))).willReturn(token);
+		given(tokens.get(EntityNum.fromLong(nftKey.getNum()))).willReturn(token);
 		final var actual = subject.ownerOf(nft);
 		assertEquals(treasuryAddress, actual);
 	}

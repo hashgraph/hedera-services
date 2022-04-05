@@ -313,8 +313,7 @@ public class StaticEntityAccess implements EntityAccess {
 		return nftPropertyOf(nftId, nft -> {
 			var owner = nft.getOwner();
 			if (MISSING_ENTITY_ID.equals(owner)) {
-				final var token = tokens.get(
-						EntityId.fromGrpcTokenId(nftId.tokenId()));
+				final var token = tokens.get(EntityNum.fromLong(nftId.num()));
 				validateTrue(token != null, INVALID_TOKEN_ID);
 				owner = token.treasury();
 			}
