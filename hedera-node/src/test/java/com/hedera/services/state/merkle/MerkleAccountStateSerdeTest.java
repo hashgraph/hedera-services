@@ -4,29 +4,18 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.test.serde.SelfSerializableDataTest;
-import com.hedera.test.utils.SerdeUtils;
+import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 
 import java.util.Collections;
-import java.util.SplittableRandom;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
-import static com.hedera.test.utils.SerdeUtils.approvedForAllAllowancesFrom;
-import static com.hedera.test.utils.SerdeUtils.byteStringFrom;
-import static com.hedera.test.utils.SerdeUtils.entityIdFrom;
-import static com.hedera.test.utils.SerdeUtils.entityNumPairFrom;
-import static com.hedera.test.utils.SerdeUtils.grantedCryptoAllowancesFrom;
-import static com.hedera.test.utils.SerdeUtils.grantedFungibleAllowancesFrom;
-import static com.hedera.test.utils.SerdeUtils.keyFrom;
-import static com.hedera.test.utils.SerdeUtils.stringFrom;
-import static com.hedera.test.utils.SerdeUtils.unsignedIntFrom;
-import static com.hedera.test.utils.SerdeUtils.unsignedLongFrom;
 import static com.swirlds.common.CommonUtils.unhex;
 
 public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<MerkleAccountState> {
-	private static SplittableRandom r = new SplittableRandom(4_242_424);
+	private static final SeededPropertySource propertySource = new SeededPropertySource();
 
 	@Override
 	protected Class<MerkleAccountState> getType() {
@@ -60,45 +49,44 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 	protected MerkleAccountState getExpectedObject(final int version, final int testCaseNo) {
 		if (version == RELEASE_0230_VERSION) {
 			return new MerkleAccountState(
-					keyFrom(r),
-					unsignedLongFrom(r),
-					unsignedLongFrom(r),
-					unsignedLongFrom(r),
-					stringFrom(r, 100),
-					r.nextBoolean(),
-					r.nextBoolean(),
-					r.nextBoolean(),
-					entityIdFrom(r),
-					r.nextInt(),
-					unsignedIntFrom(r),
-					byteStringFrom(r, 36),
-					unsignedIntFrom(r),
+					propertySource.nextKey(),
+					propertySource.nextUnsignedLong(),
+					propertySource.nextUnsignedLong(),
+					propertySource.nextUnsignedLong(),
+					propertySource.nextString(100),
+					propertySource.nextBoolean(),
+					propertySource.nextBoolean(),
+					propertySource.nextBoolean(),
+					propertySource.nextEntityId(),
+					propertySource.nextInt(),
+					propertySource.nextUnsignedInt(),
+					propertySource.nextByteString(36),
+					propertySource.nextUnsignedInt(),
 					// This migration relied on the fact that no 0.24.x production state ever included allowances
 					Collections.emptyMap(),
 					Collections.emptyMap(),
 					Collections.emptySet());
 		} else {
 			final var seeded = new MerkleAccountState(
-					keyFrom(r),
-					unsignedLongFrom(r),
-					unsignedLongFrom(r),
-					unsignedLongFrom(r),
-					stringFrom(r, 100),
-					r.nextBoolean(),
-					r.nextBoolean(),
-					r.nextBoolean(),
-					entityIdFrom(r),
-					r.nextInt(),
-					unsignedIntFrom(r),
-					byteStringFrom(r, 36),
-					unsignedIntFrom(r),
+					propertySource.nextKey(),
+					propertySource.nextUnsignedLong(),
+					propertySource.nextUnsignedLong(),
+					propertySource.nextUnsignedLong(),
+					propertySource.nextString(100),
+					propertySource.nextBoolean(),
+					propertySource.nextBoolean(),
+					propertySource.nextBoolean(),
+					propertySource.nextEntityId(),
+					propertySource.nextInt(),
+					propertySource.nextUnsignedInt(),
+					propertySource.nextByteString(36),
+					propertySource.nextUnsignedInt(),
 					// This migration relied on the fact that no 0.24.x production state ever included allowances
-					grantedCryptoAllowancesFrom(r, 10),
-					grantedFungibleAllowancesFrom(r, 10),
-					approvedForAllAllowancesFrom(r, 10));
+					propertySource.nextGrantedCryptoAllowances(10),
+					propertySource.nextGrantedFungibleAllowances(10),
+					propertySource.nextApprovedForAllAllowances(10));
 			seeded.setTokenAssociationMetadata(new TokenAssociationMetadata(
-					unsignedIntFrom(r), unsignedIntFrom(r), entityNumPairFrom(r)));
-			final var hexed = SerdeUtils.serializeToHex(seeded);
+					propertySource.nextUnsignedInt(), propertySource.nextUnsignedInt(), propertySource.nextPair()));
 			return seeded;
 		}
 	}

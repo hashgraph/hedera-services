@@ -28,9 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * <p>
  * A typical subclass (c.f., {@link com.hedera.services.state.merkle.MerkleAccountStateSerdeTest}) will use
- * a seeded random number generator to create a collection of expected objects for each supported version; likely
- * via the {@code SelfSerializable}'s "many argument" constructor. It will then keep hard-coded serialized forms
- * that were created with each supported version, so this test runner can verify that calling
+ * a {@link com.hedera.test.utils.SeededPropertySource} to create a collection of expected objects for each supported
+ * version; likely via the {@code SelfSerializable}'s "many argument" constructor. It will then keep hard-coded
+ * serialized forms that were created with each supported version, so this test runner can verify that calling
  * {@link SelfSerializable#deserialize(SerializableDataInputStream, int)} on the serialized form with the parent
  * version, <i>using the current code</i> still returns the expected object.
  *

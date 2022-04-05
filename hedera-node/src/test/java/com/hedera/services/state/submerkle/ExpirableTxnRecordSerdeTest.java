@@ -20,11 +20,8 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.google.common.primitives.Longs;
-import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.test.utils.SerdeUtils;
+import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.TxnUtils;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -37,18 +34,18 @@ import java.io.IOException;
 import java.util.SplittableRandom;
 
 class ExpirableTxnRecordSerdeTest {
-	private static final SplittableRandom r = new SplittableRandom();
+	private static final SeededPropertySource propertySource = new SeededPropertySource(new SplittableRandom());
 
 	@Test
 	void serdeWorksWithMiscAllowances() throws IOException, ConstructableRegistryException {
 		registerRecordConstructables();
 
 		final var builder = ExpirableTxnRecord.newBuilder()
-				.setTxnId(randomTxnId())
-				.setCryptoAllowances(SerdeUtils.randomCryptoAllowances(
-						r, 10, 2, 3))
-				.setFungibleTokenAllowances(SerdeUtils.randomFungibleAllowances(
-						r, 10, 10, 2, 3));
+				.setTxnId(propertySource.nextTxnId())
+				.setCryptoAllowances(propertySource.nextCryptoAllowances(
+						10, 2, 3))
+				.setFungibleTokenAllowances(propertySource.nextFungibleAllowances(
+						10, 10, 2, 3));
 
 		final var subject = builder.build();
 
@@ -56,51 +53,35 @@ class ExpirableTxnRecordSerdeTest {
 	}
 
 	public static EntityId randomEntityId() {
-		return new EntityId(0, 0, r.nextLong(Long.MAX_VALUE));
+		return propertySource.nextEntityId();
 	}
 
 	public static byte[] randomBytes(int n) {
-		final var ans = new byte[n];
-		r.nextBytes(ans);
-		return ans;
+		return propertySource.nextBytes(n);
 	}
 
 	public static Address randomAddress() {
-		byte[] ans = new byte[20];
-		if (r.nextBoolean()) {
-			r.nextBytes(ans);
-		} else {
-			System.arraycopy(Longs.toByteArray(randomNumInScope()), 0, ans, 12, 8);
-		}
-		return Address.fromHexString(CommonUtils.hex(ans));
+		return propertySource.nextAddress();
 	}
 
 	public static Pair<Bytes, Bytes> randomStateChangePair() {
-		if (r.nextBoolean()) {
-			return Pair.of(randomEvmWord(), null);
+		if (propertySource.nextBoolean()) {
+			return Pair.of(propertySource.nextEvmWord(), null);
 		} else {
-			return Pair.of(randomEvmWord(), randomEvmWord());
+			return Pair.of(propertySource.nextEvmWord(), propertySource.nextEvmWord());
 		}
 	}
 
 	public static Bytes randomEvmWord() {
-		if (r.nextBoolean()) {
-			return Bytes.ofUnsignedLong(r.nextLong()).trimLeadingZeros();
+		if (propertySource.nextBoolean()) {
+			return Bytes.ofUnsignedLong(propertySource.nextLong()).trimLeadingZeros();
 		} else {
 			return Bytes.wrap(randomBytes(32)).trimLeadingZeros();
 		}
 	}
 
 	public static long randomNumInScope() {
-		return r.nextLong(BitPackUtils.MAX_NUM_ALLOWED);
-	}
-
-	public static TxnId randomTxnId() {
-		return new TxnId(
-				randomEntityId(),
-				new RichInstant(r.nextLong(Long.MAX_VALUE), r.nextInt(1_000_000)),
-				r.nextBoolean(),
-				r.nextInt(1000));
+		return propertySource.nextInRangeLong();
 	}
 
 	public static void registerRecordConstructables() throws ConstructableRegistryException {
