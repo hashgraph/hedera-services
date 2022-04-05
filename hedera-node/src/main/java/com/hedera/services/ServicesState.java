@@ -66,8 +66,10 @@ import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.units.qual.A;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -97,6 +99,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private int deserializedVersion = CURRENT_VERSION;
 	/* All of the state that is not itself hashed or serialized, but only derived from such state */
 	private StateMetadata metadata;
+	/* Any post-migration tasks that needs to be done. */
+	private final List<Runnable> postMigrationTasks = new ArrayList<>();
 
 	public ServicesState() {
 		/* RuntimeConstructable */
@@ -165,6 +169,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			updateLinks();
 			uniqueTokenMigrator.accept(this);
 		}
+		runPostMigrationTasks();
 	}
 
 	/* --- SwirldState --- */
@@ -174,8 +179,15 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 		/* Immediately override the address book from the saved state */
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
+		Runnable initTask = () -> internalInit(platform, new BootstrapProperties(), dualState);
 
-		internalInit(platform, new BootstrapProperties(), dualState);
+		if (deserializedVersion < RELEASE_0250_VERSION) {
+			// Because state saved with MerkleMap cannot be properly loaded, need to defer remaining initialization
+			// until post migration.
+			addPostMigrationTask(initTask);
+		} else {
+			initTask.run();
+		}
 	}
 
 	@Override
@@ -350,6 +362,17 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public VirtualMap<ContractKey, ContractValue> contractStorage() {
 		return getChild(StateChildIndices.CONTRACT_STORAGE);
+	}
+
+	private void addPostMigrationTask(Runnable runnable) {
+		postMigrationTasks.add(runnable);
+	}
+
+	private void runPostMigrationTasks() {
+		for (Runnable task : postMigrationTasks) {
+			task.run();
+		}
+		postMigrationTasks.clear();
 	}
 
 	private void updateLinks() {
