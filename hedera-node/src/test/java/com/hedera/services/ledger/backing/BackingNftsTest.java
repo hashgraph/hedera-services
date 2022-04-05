@@ -32,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -165,5 +166,15 @@ class BackingNftsTest {
 	@Test
 	void idSetShouldThrowUnsupportedOperationException() {
 		assertThrows(UnsupportedOperationException.class, subject::idSet);
+	}
+
+	@Test
+	void stressOwnerMutations() {
+		for (int i = 0; i <= 10000; i++) {
+			subject.getRef(aNftId).setOwner(EntityId.fromNum(i));
+			if (i % 10 == 0) {
+				assertThat(subject.getImmutableRef(aNftId).getOwnerAccountNum()).isEqualTo(i);
+			}
+		}
 	}
 }
