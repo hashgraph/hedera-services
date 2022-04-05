@@ -32,6 +32,7 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
@@ -325,7 +326,7 @@ class StaticEntityAccessTest {
 	@Test
 	void ownerOfTranslatesWildcardOwner() {
 		given(nfts.get(nftKey)).willReturn(treasuryOwned);
-		given(tokens.get(nftKey.getNum())).willReturn(token);
+		given(tokens.get(EntityId.fromNum(nftKey.getNum()))).willReturn(token);
 		final var actual = subject.ownerOf(nft);
 		assertEquals(treasuryAddress, actual);
 	}
