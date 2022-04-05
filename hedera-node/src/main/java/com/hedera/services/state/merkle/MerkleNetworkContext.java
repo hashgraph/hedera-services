@@ -36,11 +36,14 @@ import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.platform.state.DualStateImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes32;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -97,6 +100,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
 	private long blockNo = 0;
 	private Instant firstConsTimeOfCurrentBlock = NULL_CONSENSUS_TIME;
+	private Bytes32 currentBlockHash = Bytes32.ZERO;
+	private Map<Long, Bytes32> blockNumberToHash = new LinkedHashMap<>(256);
 
 	public MerkleNetworkContext() {
 		/* No-op for RuntimeConstructable facility; will be followed by a call to deserialize. */
@@ -132,6 +137,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.migrationRecordsStreamed = that.migrationRecordsStreamed;
 		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
 		this.blockNo = that.blockNo;
+		this.blockNumberToHash = that.blockNumberToHash;
 	}
 
 	/* --- Helpers that reset the received argument based on the network context */
@@ -388,6 +394,21 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public long getBlockNo() {
 		return blockNo;
+	}
+
+	public void cacheBlockHash(final Bytes32 blockHash) {
+		if(blockNumberToHash.size() <= 256) {
+			blockNumberToHash.put(blockNo, blockHash);
+		} else {
+			final long multiplier = blockNo / 256;
+			final int indexToReplace = (int) (blockNo - 256 * multiplier);
+			final var indexKey = (Long) blockNumberToHash.entrySet().toArray()[indexToReplace];
+			blockNumberToHash.put(indexKey, blockHash);
+		}
+	}
+
+	public Bytes32 getBlockHash(final long blockNumber) {
+		return blockNumberToHash.getOrDefault(blockNumber, Bytes32.ZERO);
 	}
 
 	public Instant getFirstConsTimeOfCurrentBlock() {

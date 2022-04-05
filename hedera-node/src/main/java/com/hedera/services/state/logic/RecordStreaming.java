@@ -28,9 +28,12 @@ import com.hedera.services.stream.RecordStreamObject;
 import com.swirlds.common.crypto.RunningHash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -45,8 +48,9 @@ public class RecordStreaming implements Runnable {
 	private final Consumer<RunningHash> runningHashUpdate;
 	private final AccountRecordsHistorian recordsHistorian;
 	private final Supplier<MerkleNetworkContext> networkCtx;
-
 	private MerkleNetworkContext curNetworkCtx;
+	private Instant lastConsensusTimestamp = null;
+	private final Keccak.Digest256 digest256 = new Keccak.Digest256();
 
 	@Inject
 	public RecordStreaming(
@@ -96,22 +100,26 @@ public class RecordStreaming implements Runnable {
 			curNetworkCtx.setFirstConsTimeOfCurrentBlock(rso.getTimestamp());
 			log.info("Beginning block #{} @ {}", curNetworkCtx.getBlockNo(), rso.getTimestamp());
 		}
+
+		lastConsensusTimestamp = rso.getTimestamp();
 		while (!nonBlockingHandoff.offer(rso)) {
 			/* Cannot proceed until we have handed off the record. */
 		}
 	}
 
-	public boolean isInNewBlock(RecordStreamObject rso) {
+	public boolean isInNewBlock(final RecordStreamObject rso) {
 		final var firstBlockTime = curNetworkCtx.getFirstConsTimeOfCurrentBlock();
 		final var consTime = rso.getTimestamp();
 		boolean result;
-		if (firstBlockTime == null) {
+		if (firstBlockTime == null || lastConsensusTimestamp == null) {
 			result = true;
 		} else {
-			result = getPeriod(consTime, PERIOD) != getPeriod(firstBlockTime, PERIOD);
+			final Duration duration = Duration.between(lastConsensusTimestamp, consTime);
+			result = getPeriod(consTime, BLOCK_PERIOD_MS) != getPeriod(firstBlockTime, BLOCK_PERIOD_MS) && duration.toNanos() >= MIN_TRANS_TIMESTAMP_INCR_NANOS;
 		}
 		return result;
 	}
 
-	private static final long PERIOD = 2_000L;
+	private static final long BLOCK_PERIOD_MS = 2_000L;
+	private static final long MIN_TRANS_TIMESTAMP_INCR_NANOS = 1_000L;
 }

@@ -21,6 +21,7 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -39,23 +40,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
 
 import java.util.Queue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(LogCaptureExtension.class)
 public class RecordStreamManagerTest {
@@ -87,6 +82,8 @@ public class RecordStreamManagerTest {
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private RecordStreamManager recordStreamManager;
+	@Mock
+	private MerkleNetworkContext merkleNetworkContext;
 
 	@BeforeAll
 	public static void init() throws Exception {
@@ -156,7 +153,7 @@ public class RecordStreamManagerTest {
 		willThrow(RuntimeException.class).given(multiStreamMock).addObject(any());
 
 		// when:
-		recordStreamManager.addRecordStreamObject(new RecordStreamObject());
+		recordStreamManager.addRecordStreamObject(new RecordStreamObject(), merkleNetworkContext);
 
 		// then:
 		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Unhandled exception while streaming")));
@@ -175,7 +172,7 @@ public class RecordStreamManagerTest {
 			RecordStreamObject recordStreamObject = mock(RecordStreamObject.class);
 			when(writeQueueThreadMock.getQueue()).thenReturn(mockQueue);
 			given(mockQueue.size()).willReturn(i);
-			recordStreamManager.addRecordStreamObject(recordStreamObject);
+			recordStreamManager.addRecordStreamObject(recordStreamObject, merkleNetworkContext);
 			verify(multiStreamMock).addObject(recordStreamObject);
 			verify(runningAvgsMock).writeQueueSizeRecordStream(i);
 			// multiStream should not be closed after adding it
@@ -193,7 +190,7 @@ public class RecordStreamManagerTest {
 		given(mockQueue.size()).willReturn(recordsNum);
 		when(writeQueueThreadMock.getQueue()).thenReturn(mockQueue);
 
-		recordStreamManager.addRecordStreamObject(objectAfterFreeze);
+		recordStreamManager.addRecordStreamObject(objectAfterFreeze, merkleNetworkContext);
 		// after frozen, when adding object to the RecordStreamManager, multiStream.add(object) should not be called
 		verify(multiStreamMock, never()).addObject(objectAfterFreeze);
 		// multiStreamMock should be closed when inFreeze is set to be true

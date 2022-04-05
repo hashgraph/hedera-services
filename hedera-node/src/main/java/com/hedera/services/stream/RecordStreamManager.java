@@ -22,19 +22,17 @@ package com.hedera.services.stream;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.logic.StandardProcessLogic;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
-import com.swirlds.common.stream.HashCalculatorForStream;
-import com.swirlds.common.stream.MultiStream;
-import com.swirlds.common.stream.QueueThreadObjectStream;
-import com.swirlds.common.stream.QueueThreadObjectStreamConfiguration;
-import com.swirlds.common.stream.RunningHashCalculatorForStream;
-import com.swirlds.common.stream.TimestampStreamFileWriter;
+import com.swirlds.common.stream.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,6 +50,7 @@ import static com.swirlds.common.Units.SECONDS_TO_MILLISECONDS;
 public class RecordStreamManager {
 	/** use this for all logging, as controlled by the optional data/log4j2.xml file */
 	private static final Logger log = LogManager.getLogger(RecordStreamManager.class);
+	private final Keccak.Digest256 digest256 = new Keccak.Digest256();
 
 	/**
 	 * receives {@link RecordStreamObject}s from {@link StandardProcessLogic}
@@ -205,10 +204,11 @@ public class RecordStreamManager {
 	 * @param recordStreamObject
 	 * 		the {@link RecordStreamObject} object to be added
 	 */
-	public void addRecordStreamObject(final RecordStreamObject recordStreamObject) {
+	public void addRecordStreamObject(final RecordStreamObject recordStreamObject, final MerkleNetworkContext curNetworkCtx) {
 		if (!inFreeze) {
 			try {
 				multiStream.addObject(recordStreamObject);
+				curNetworkCtx.cacheBlockHash(Bytes32.wrap(digest256.digest(recordStreamObject.getRunningHash().getHash().getValue())));
 			} catch (Exception e) {
 				log.warn("Unhandled exception while streaming {}", recordStreamObject, e);
 			}
