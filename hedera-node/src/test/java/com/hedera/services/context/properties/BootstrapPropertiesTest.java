@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -111,6 +112,7 @@ class BootstrapPropertiesTest {
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),
+			entry("entities.systemDeletable", EnumSet.of(EntityType.FILE)),
 			entry("fees.percentCongestionMultipliers", CongestionMultipliers.from("90,10x,95,25x,99,100x")),
 			entry("fees.minCongestionPeriod", 60),
 			entry("files.addressBook", 101L),
@@ -125,7 +127,8 @@ class BootstrapPropertiesTest {
 			entry("grpc.tlsPort", 50212),
 			entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
 			entry("hedera.exportAccountsOnStartup", false),
-			entry("hedera.numReservedSystemEntities", 1_000L),
+			entry("hedera.firstUserEntity", 1001L),
+			entry("hedera.numReservedSystemEntities", 750L),
 			entry("hedera.prefetch.queueCapacity", 10000),
 			entry("hedera.prefetch.threadPoolSize", 2),
 			entry("hedera.prefetch.codeCacheTtlSecs", 120),

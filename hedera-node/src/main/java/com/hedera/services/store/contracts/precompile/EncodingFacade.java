@@ -24,6 +24,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
@@ -38,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
 public class EncodingFacade {
+	public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 	private static final String STRING_RETURN_TYPE = "(string)";
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
@@ -55,6 +57,10 @@ public class EncodingFacade {
 	@Inject
 	public EncodingFacade() {
 		/* For Dagger2 */
+	}
+
+	public static Bytes resultFrom(final ResponseCodeEnum status) {
+		return UInt256.valueOf(status.getNumber());
 	}
 
 	public Bytes encodeTokenUri(final String tokenUri) {

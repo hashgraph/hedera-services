@@ -20,6 +20,7 @@ package com.hedera.services.contracts.execution;
  * ‍
  */
 
+import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -47,9 +48,13 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 	private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
 	public static final Bytes INVALID_TRANSFER = Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
-	Map<Address, PrecompiledContract> hederaPrecompiles;
+	private final Map<Address, PrecompiledContract> hederaPrecompiles;
 
-	public HederaMessageCallProcessor(final EVM evm, final PrecompileContractRegistry precompiles, Map<String, PrecompiledContract> hederaPrecompileList) {
+	public HederaMessageCallProcessor(
+			final EVM evm,
+			final PrecompileContractRegistry precompiles,
+			final Map<String, PrecompiledContract> hederaPrecompileList
+	) {
 		super(evm, precompiles);
 		hederaPrecompiles = new HashMap<>();
 		hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
@@ -57,9 +62,8 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 
 	@Override
 	public void start(final MessageFrame frame, final OperationTracer operationTracer) {
-		var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
+		final var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
 		if (hederaPrecompile != null) {
-			// hedera precompile logic
 			executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
 		} else {
 			super.start(frame, operationTracer);
@@ -69,12 +73,20 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 	void executeHederaPrecompile(
 			final PrecompiledContract contract,
 			final MessageFrame frame,
-			final OperationTracer operationTracer) {
-
-		final Bytes output = contract.compute(frame.getInputData(), frame);
-		if (frame.getState() == REVERT)
-			return;
-		final Gas gasRequirement = contract.gasRequirement(frame.getInputData());
+			final OperationTracer operationTracer
+	) {
+		final Gas gasRequirement;
+		final Bytes output;
+		if (contract instanceof HTSPrecompiledContract htsPrecompile) {
+			final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
+			if (frame.getState() == REVERT)
+				return;
+			output = costedResult.getValue();
+			gasRequirement = costedResult.getKey();
+		} else {
+			output = contract.compute(frame.getInputData(), frame);
+			gasRequirement = contract.gasRequirement(frame.getInputData());
+		}
 		operationTracer.tracePrecompileCall(frame, gasRequirement, output);
 		if (frame.getRemainingGas().compareTo(gasRequirement) < 0) {
 			frame.decrementRemainingGas(frame.getRemainingGas());

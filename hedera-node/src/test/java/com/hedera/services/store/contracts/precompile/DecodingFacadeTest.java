@@ -159,14 +159,14 @@ class DecodingFacadeTest {
 	void decodeOwnerOfInput() {
 		final var decodedInput = subject.decodeOwnerOf(OWNER_OF_INPUT);
 
-		assertEquals(1, decodedInput.tokenId());
+		assertEquals(1, decodedInput.serialNo());
 	}
 
 	@Test
 	void decodeTokenUriInput() {
 		final var decodedInput = subject.decodeTokenUriNFT(TOKEN_URI_INPUT);
 
-		assertEquals(1, decodedInput.tokenId());
+		assertEquals(1, decodedInput.serialNo());
 	}
 
 	@Test

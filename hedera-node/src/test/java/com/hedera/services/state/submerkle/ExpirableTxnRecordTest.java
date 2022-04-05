@@ -473,8 +473,6 @@ class ExpirableTxnRecordTest {
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
 		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
-		subject.setCryptoAllowances(cryptoAllowances);
-		subject.setFungibleTokenAllowances(fungibleAllowances);
 		final var fin = mock(SerializableDataInputStream.class);
 		given(serdes.readNullableSerializable(fin))
 				.willReturn(subject.getReceipt())
@@ -504,13 +502,7 @@ class ExpirableTxnRecordTest {
 		given(fin.readLong())
 				.willReturn(subject.getFee())
 				.willReturn(subject.getExpiry())
-				.willReturn(subject.getSubmittingMember())
-				.willReturn(ownerNum.longValue())
-				.willReturn(spenderNum.longValue())
-				.willReturn(initialAllowance)
-				.willReturn(ownerNum.longValue())
-				.willReturn(initialAllowance)
-				.willReturn(ownerNum.longValue());
+				.willReturn(subject.getSubmittingMember());
 		given(fin.readShort()).willReturn(subject.getNumChildRecords());
 		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
 				.willReturn(subject.getMemo());
@@ -521,17 +513,9 @@ class ExpirableTxnRecordTest {
 		given(fin.readByteArray(Integer.MAX_VALUE))
 				.willReturn(subject.getAlias().toByteArray());
 		given(fin.readInt())
-				.willReturn(cryptoAllowances.size())
-				.willReturn(1)
-				.willReturn(fungibleAllowances.size())
-				.willReturn(1)
-				.willReturn(2);
-		given(fin.readSerializable())
-				.willReturn(fungibleAllowanceId)
-				.willReturn(fungibleAllowanceId)
-				.willReturn(nftAllowance1)
-				.willReturn(nftAllowanceId)
-				.willReturn(nftAllowance2);
+				.willReturn(0)
+				.willReturn(0)
+				.willReturn(0);
 		final var deserializedRecord = new ExpirableTxnRecord();
 
 		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0230_VERSION);

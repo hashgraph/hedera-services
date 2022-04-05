@@ -9,9 +9,9 @@ package com.hedera.services.contracts.execution;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,8 @@ package com.hedera.services.contracts.execution;
  * ‍
  */
 
+import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -40,6 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
@@ -53,7 +56,9 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 class HederaMessageCallProcessorTest {
 
 	private static final String HEDERA_PRECOMPILE_ADDRESS_STRING = "0x1337";
+	private static final String HTS_PRECOMPILE_ADDRESS_STRING = "0x167";
 	private static final Address HEDERA_PRECOMPILE_ADDRESS = Address.fromHexString(HEDERA_PRECOMPILE_ADDRESS_STRING);
+	private static final Address HTS_PRECOMPILE_ADDRESS = Address.fromHexString(HTS_PRECOMPILE_ADDRESS_STRING);
 	private static final Address RECIPIENT_ADDRESS = Address.fromHexString("0xcafecafe01");
 	private static final Address SENDER_ADDRESS = Address.fromHexString("0xcafecafe02");
 	private static final Gas GAS_ONE = Gas.of(1);
@@ -61,24 +66,28 @@ class HederaMessageCallProcessorTest {
 	private static final Gas GAS_ONE_M = Gas.of(1_000_000);
 
 	@Mock
-	EVM evm;
+	private EVM evm;
 	@Mock
-	PrecompileContractRegistry precompiles;
+	private PrecompileContractRegistry precompiles;
 	@Mock
-	PrecompiledContract hederaPrecompile;
+	private MessageFrame frame;
 	@Mock
-	MessageFrame frame;
+	private OperationTracer operationTrace;
 	@Mock
-	OperationTracer operationTrace;
-
+	private WorldUpdater worldUpdater;
 	@Mock
-	WorldUpdater worldUpdater;
+	private PrecompiledContract nonHtsPrecompile;
+	@Mock
+	private HTSPrecompiledContract htsPrecompile;
 
 	HederaMessageCallProcessor subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new HederaMessageCallProcessor(evm, precompiles, Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, hederaPrecompile));
+		subject = new HederaMessageCallProcessor(evm, precompiles,
+				Map.of(
+						HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile,
+						HTS_PRECOMPILE_ADDRESS_STRING, htsPrecompile));
 	}
 
 	@Test
@@ -86,18 +95,35 @@ class HederaMessageCallProcessorTest {
 		given(frame.getRemainingGas()).willReturn(Gas.of(1337));
 		given(frame.getInputData()).willReturn(Bytes.EMPTY);
 		given(frame.getContractAddress()).willReturn(HEDERA_PRECOMPILE_ADDRESS);
-		given(hederaPrecompile.gasRequirement(any())).willReturn(GAS_ONE);
-		given(hederaPrecompile.compute(any(), eq(frame))).willReturn(Bytes.EMPTY);
+		given(nonHtsPrecompile.gasRequirement(any())).willReturn(GAS_ONE);
+		given(nonHtsPrecompile.compute(any(), eq(frame))).willReturn(Bytes.EMPTY);
 
 		subject.start(frame, operationTrace);
 
-		verify(hederaPrecompile).compute(Bytes.EMPTY, frame);
+		verify(nonHtsPrecompile).compute(Bytes.EMPTY, frame);
+		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, Bytes.EMPTY);
+		verify(frame).decrementRemainingGas(GAS_ONE);
+		verify(frame).setOutputData(Bytes.EMPTY);
+		verify(frame).setState(COMPLETED_SUCCESS);
+		verifyNoMoreInteractions(nonHtsPrecompile, frame, operationTrace);
+	}
+
+	@Test
+	void treatsHtsPrecompileSpecial() {
+		given(frame.getRemainingGas()).willReturn(Gas.of(1337));
+		given(frame.getInputData()).willReturn(Bytes.EMPTY);
+		given(frame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
+		given(frame.getState()).willReturn(CODE_SUCCESS);
+		given(htsPrecompile.computeCosted(any(), eq(frame))).willReturn(Pair.of(GAS_ONE, Bytes.EMPTY));
+
+		subject.start(frame, operationTrace);
+
 		verify(frame).getState();
 		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, Bytes.EMPTY);
 		verify(frame).decrementRemainingGas(GAS_ONE);
 		verify(frame).setOutputData(Bytes.EMPTY);
 		verify(frame).setState(COMPLETED_SUCCESS);
-		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
+		verifyNoMoreInteractions(htsPrecompile, frame, operationTrace);
 	}
 
 	@Test
@@ -111,51 +137,49 @@ class HederaMessageCallProcessorTest {
 		subject.start(frame, operationTrace);
 
 		verify(frame).setState(MessageFrame.State.CODE_EXECUTING);
-		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
+		verifyNoMoreInteractions(nonHtsPrecompile, frame, operationTrace);
 	}
 
 	@Test
 	void insufficientGasReverts() {
 		given(frame.getRemainingGas()).willReturn(GAS_ONE_K);
 		given(frame.getInputData()).willReturn(Bytes.EMPTY);
-		given(hederaPrecompile.gasRequirement(any())).willReturn(GAS_ONE_M);
+		given(nonHtsPrecompile.gasRequirement(any())).willReturn(GAS_ONE_M);
 
-		subject.executeHederaPrecompile(hederaPrecompile, frame, operationTrace);
+		subject.executeHederaPrecompile(nonHtsPrecompile, frame, operationTrace);
 
 		verify(frame).setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
 		verify(frame).setState(EXCEPTIONAL_HALT);
 		verify(frame).decrementRemainingGas(GAS_ONE_K);
-		verify(hederaPrecompile).compute(Bytes.EMPTY, frame);
-		verify(frame).getState();
+		verify(nonHtsPrecompile).compute(Bytes.EMPTY, frame);
 		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE_M, null);
-		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
+		verifyNoMoreInteractions(nonHtsPrecompile, frame, operationTrace);
 	}
 
 	@Test
 	void precompileError() {
 		given(frame.getRemainingGas()).willReturn(GAS_ONE_K);
 		given(frame.getInputData()).willReturn(Bytes.EMPTY);
-		given(hederaPrecompile.gasRequirement(any())).willReturn(GAS_ONE);
-		given(hederaPrecompile.compute(any(), any())).willReturn(null);
+		given(nonHtsPrecompile.gasRequirement(any())).willReturn(GAS_ONE);
+		given(nonHtsPrecompile.compute(any(), any())).willReturn(null);
 
-		subject.executeHederaPrecompile(hederaPrecompile, frame, operationTrace);
+		subject.executeHederaPrecompile(nonHtsPrecompile, frame, operationTrace);
 
-		verify(frame).getState();
 		verify(frame).setState(EXCEPTIONAL_HALT);
 		verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, null);
-		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
+		verifyNoMoreInteractions(nonHtsPrecompile, frame, operationTrace);
 	}
 
 	@Test
 	void revertedPrecompileReturns() {
 		given(frame.getInputData()).willReturn(Bytes.EMPTY);
-		given(hederaPrecompile.compute(any(), any())).willReturn(null);
+		given(htsPrecompile.computeCosted(any(), any())).willReturn(null);
 		given(frame.getState()).willReturn(REVERT);
 
-		subject.executeHederaPrecompile(hederaPrecompile, frame, operationTrace);
+		subject.executeHederaPrecompile(htsPrecompile, frame, operationTrace);
 
 		verify(frame).getState();
-		verify(hederaPrecompile).compute(Bytes.EMPTY, frame);
-		verifyNoMoreInteractions(hederaPrecompile, frame, operationTrace);
+		verify(htsPrecompile).computeCosted(Bytes.EMPTY, frame);
+		verifyNoMoreInteractions(htsPrecompile, frame, operationTrace);
 	}
 }
