@@ -20,7 +20,6 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.DomainSerdesTest;
@@ -29,7 +28,6 @@ import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -60,7 +58,6 @@ import static com.hedera.test.utils.TxnUtils.withNftAdjustments;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;
@@ -112,12 +109,8 @@ class ExpirableTxnRecordTest {
 	private static final ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
 	private static final FcAssessedCustomFee balanceChange =
 			new FcAssessedCustomFee(feeCollector, token, units, new long[] { 234L });
-	private static final FcTokenAllowance nftAllowance1 = FcTokenAllowance.from(true);
-	private static final FcTokenAllowance nftAllowance2 = FcTokenAllowance.from(List.of(1L, 2L));
 	private static final FcTokenAllowanceId fungibleAllowanceId =
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenA), spenderNum);
-	private static final FcTokenAllowanceId nftAllowanceId =
-			FcTokenAllowanceId.from(EntityNum.fromTokenId(nft), spenderNum);
 	private static final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = new TreeMap<>() {{
 		put(ownerNum, new TreeMap<>() {{
 			put(spenderNum, initialAllowance);
@@ -138,19 +131,6 @@ class ExpirableTxnRecordTest {
 			.setAmount(initialAllowance)
 			.setSpender(spender)
 			.setTokenId(tokenA)
-			.build();
-	private static final NftAllowance nftAllowanceAll = NftAllowance.newBuilder()
-			.setOwner(owner)
-			.setApprovedForAll(BoolValue.of(true))
-			.setTokenId(tokenA)
-			.setSpender(spender)
-			.build();
-	private static final NftAllowance nftAllowanceSome = NftAllowance.newBuilder()
-			.setOwner(owner)
-			.setApprovedForAll(BoolValue.of(false))
-			.setTokenId(nft)
-			.addAllSerialNumbers(List.of(1L, 2L))
-			.setSpender(spender)
 			.build();
 
 	private DomainSerdes serdes;
@@ -214,6 +194,14 @@ class ExpirableTxnRecordTest {
 		subject.setSubmittingMember(submittingMember);
 		subject.setNumChildRecords(numChildRecords);
 		subject.setPackedParentConsensusTime(packedParentConsTime);
+	}
+
+	@Test
+	void consensusSecondGetterWorks() {
+		final var tinySubject = ExpirableTxnRecord.newBuilder()
+				.setConsensusTime(new RichInstant(1_234_567, 890))
+				.build();
+		assertEquals(1_234_567, tinySubject.getConsensusSecond());
 	}
 
 	@Test
@@ -332,11 +320,6 @@ class ExpirableTxnRecordTest {
 
 		assertEquals(expected, grpcSubject);
 		assertEquals(List.of(expected, expected), multiple);
-	}
-
-	@Test
-	void makeupNftAdjustmentsUsesNullForNullFungibleAdjusts() {
-		assertNull(subject.makeupNftAdjustsMatching(null));
 	}
 
 	@Test

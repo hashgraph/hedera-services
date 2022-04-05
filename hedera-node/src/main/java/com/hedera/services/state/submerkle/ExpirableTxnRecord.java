@@ -39,7 +39,6 @@ import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -387,21 +386,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 		// Added in 0.21
 		alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
-		if (version >= RELEASE_0230_VERSION) {
-			deserializeAllowanceMaps(in, version);
-		}
-	}
-
-	List<NftAdjustments> makeupNftAdjustsMatching(final List<CurrencyAdjustments> fungibleAdjusts) {
-		if (fungibleAdjusts == null) {
-			return null;
-		} else {
-			final List<NftAdjustments> ans = new ArrayList<>();
-			for (int i = 0, n = fungibleAdjusts.size(); i < n; i++) {
-				ans.add(new NftAdjustments());
-			}
-			return ans;
-		}
+		// Added in 0.23
+		deserializeAllowanceMaps(in, version);
 	}
 
 	private void deserializeAllowanceMaps(SerializableDataInputStream in, final int version) throws IOException {
@@ -560,10 +546,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	public ByteString getAlias() {
 		return alias;
-	}
-
-	public void setAlias(final ByteString alias) {
-		this.alias = alias;
 	}
 
 	/* --- FastCopyable --- */
