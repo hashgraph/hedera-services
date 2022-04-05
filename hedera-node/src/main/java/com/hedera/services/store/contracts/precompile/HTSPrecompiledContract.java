@@ -279,7 +279,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private int functionId;
 	private Precompile precompile;
 	private TransactionBody.Builder transactionBody;
-	private MessageFrame messageFrame;
 	private final Provider<FeeCalculator> feeCalculator;
 	private Gas gasRequirement = Gas.ZERO;
 	private final StateView currentView;
@@ -370,7 +369,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	void prepareFields(final MessageFrame messageFrame) {
-		this.messageFrame = messageFrame;
 		this.updater = (HederaStackedWorldStateUpdater) messageFrame.getWorldUpdater();
 		this.sideEffectsTracker = sideEffectsFactory.get();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
@@ -1003,7 +1001,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tinybarsRequirement = calculatedFeeInTinybars + (calculatedFeeInTinybars / 5)
 					- precompile.getMinimumFeeInTinybars(timestamp) * gasPriceInTinybars;
 
-			validateTrue(messageFrame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
+			validateTrue(frame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
 
 			updater.getAccount(senderAddress).getMutable()
 					.decrementBalance(Wei.of(tinybarsRequirement));
