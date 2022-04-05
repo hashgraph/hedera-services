@@ -75,7 +75,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int RELEASE_0180_VERSION = 5;
 	static final int RELEASE_0210_VERSION = 6;
 	static final int RELEASE_0230_VERSION = 7;
-	static final int MERKLE_VERSION = RELEASE_0230_VERSION;
+	static final int RELEASE_0250_VERSION = 8;
+	static final int MERKLE_VERSION = RELEASE_0250_VERSION;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
@@ -390,9 +391,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			}
 			alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
 		}
-
 		if (version >= RELEASE_0230_VERSION) {
-			deserializeAllowanceMaps(in);
+			deserializeAllowanceMaps(in, version);
 		}
 	}
 
@@ -408,23 +408,30 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 	}
 
-	private void deserializeAllowanceMaps(SerializableDataInputStream in) throws IOException {
-		var numCryptoAllowances = in.readInt();
-		if (numCryptoAllowances > 0) {
-			cryptoAllowances = new TreeMap<>();
-		}
-		while (numCryptoAllowances-- > 0) {
-			final EntityNum owner = EntityNum.fromLong(in.readLong());
-			cryptoAllowances.put(owner, deserializeCryptoAllowances(in));
-		}
+	private void deserializeAllowanceMaps(SerializableDataInputStream in, final int version) throws IOException {
+		if (version < RELEASE_0250_VERSION) {
+			// In release 0.24.x three _always-empty_ map sizes were serialized here
+			in.readInt();
+			in.readInt();
+			in.readInt();
+		} else {
+			var numCryptoAllowances = in.readInt();
+			if (numCryptoAllowances > 0) {
+				cryptoAllowances = new TreeMap<>();
+			}
+			while (numCryptoAllowances-- > 0) {
+				final EntityNum owner = EntityNum.fromLong(in.readLong());
+				cryptoAllowances.put(owner, deserializeCryptoAllowances(in));
+			}
 
-		var numTokenAllowances = in.readInt();
-		if (numTokenAllowances > 0) {
-			fungibleTokenAllowances = new TreeMap<>();
-		}
-		while (numTokenAllowances-- > 0) {
-			final EntityNum owner = EntityNum.fromLong(in.readLong());
-			fungibleTokenAllowances.put(owner, deserializeFungibleTokenAllowances(in));
+			var numTokenAllowances = in.readInt();
+			if (numTokenAllowances > 0) {
+				fungibleTokenAllowances = new TreeMap<>();
+			}
+			while (numTokenAllowances-- > 0) {
+				final EntityNum owner = EntityNum.fromLong(in.readLong());
+				fungibleTokenAllowances.put(owner, deserializeFungibleTokenAllowances(in));
+			}
 		}
 	}
 

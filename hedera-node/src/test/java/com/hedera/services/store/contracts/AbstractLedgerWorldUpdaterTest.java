@@ -115,6 +115,8 @@ class AbstractLedgerWorldUpdaterTest {
 	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
 	@Mock
 	private ContractCustomizer customizer;
+	@Mock
+	private StaticEntityAccess staticEntityAccess;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -124,6 +126,13 @@ class AbstractLedgerWorldUpdaterTest {
 		setupLedgers();
 
 		subject = new MockLedgerWorldUpdater(worldState, ledgers, customizer);
+	}
+
+	@Test
+	void isPossibleToWrapStaticLedgers() {
+		final var staticLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		subject = new MockLedgerWorldUpdater(worldState, staticLedgers, customizer);
+		assertDoesNotThrow(()-> subject.wrappedTrackingLedgers(sideEffectsTracker));
 	}
 
 	@Test
