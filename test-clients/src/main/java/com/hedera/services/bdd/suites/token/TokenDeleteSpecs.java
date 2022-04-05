@@ -49,7 +49,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class TokenDeleteSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenDeleteSpecs.class);
@@ -69,24 +68,22 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 						deletionValidatesMissingAdminKey(),
 						deletionWorksAsExpected(),
 						deletionValidatesAlreadyDeletedToken(),
-						treasuryBecomesDeletableAfterDissociatingFromDeletedToken(),
+						treasuryBecomesDeletableAfterTokenDelete(),
 						deletionValidatesRef(),
 				}
 		);
 	}
 
-	private HapiApiSpec treasuryBecomesDeletableAfterDissociatingFromDeletedToken() {
-		return defaultHapiSpec("TreasuryBecomesDeletableAfterDissociatingFromDeletedToken")
+	private HapiApiSpec treasuryBecomesDeletableAfterTokenDelete() {
+		return defaultHapiSpec("TreasuryBecomesDeletableAfterTokenDelete")
 				.given(
 						newKeyNamed("tokenAdmin"),
 						cryptoCreate(TOKEN_TREASURY).balance(0L),
 						tokenCreate("firstTbd")
 								.adminKey("tokenAdmin")
-								.supplyKey("tokenAdmin")
 								.treasury(TOKEN_TREASURY),
 						tokenCreate("secondTbd")
 								.adminKey("tokenAdmin")
-								.supplyKey("tokenAdmin")
 								.treasury(TOKEN_TREASURY),
 						cryptoDelete(TOKEN_TREASURY)
 								.hasKnownStatus(ACCOUNT_IS_TREASURY),
@@ -99,9 +96,6 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.hasKnownStatus(ACCOUNT_IS_TREASURY),
 						tokenDelete("secondTbd")
 				).then(
-						cryptoDelete(TOKEN_TREASURY)
-								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
-						tokenDissociate(TOKEN_TREASURY, "secondTbd"),
 						cryptoDelete(TOKEN_TREASURY)
 				);
 	}

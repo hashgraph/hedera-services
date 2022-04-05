@@ -29,7 +29,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -143,8 +142,6 @@ class RenewalHelperTest {
 	private AliasManager aliasManager;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
-	@Mock
-	private TokenAssociationMetadata tokenAssociationMetadata;
 
 	private RenewalHelper subject;
 

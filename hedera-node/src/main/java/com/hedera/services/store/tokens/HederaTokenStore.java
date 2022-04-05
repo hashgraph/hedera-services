@@ -271,8 +271,8 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 						alreadyUsedAutomaticAssociations + 1);
 
 				if (headTokenNum == MISSING_ID.num()) {
-					tokenRelsLedger.set(relationship, PREV_KEY, 0);
-					tokenRelsLedger.set(relationship, NEXT_KEY, 0);
+					tokenRelsLedger.set(relationship, PREV_KEY, 0L);
+					tokenRelsLedger.set(relationship, NEXT_KEY, 0L);
 				} else {
 					// oldPrevKey should be MISSING_NUM_PAIR
 					final var oldPrev = (long) tokenRelsLedger.get(headTokenAssociationKey, PREV_KEY);
