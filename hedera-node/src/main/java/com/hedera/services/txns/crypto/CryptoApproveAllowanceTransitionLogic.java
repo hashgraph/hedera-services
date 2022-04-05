@@ -160,18 +160,15 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
 
 			final var amount = allowance.getAmount();
-			if (cryptoMap.containsKey(spender.asEntityNum())) {
-				if (amount == 0) {
-					removeEntity(cryptoMap, spender, accountToApprove);
-				}
-				// No-Op need to submit adjustAllowance to adjust any allowances
-				continue;
-			}
-			cryptoMap.put(spender.asEntityNum(), amount);
 
-			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
-			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
-			sideEffectsTracker.setCryptoAllowances(accountToApprove.getId().asEntityNum(), cryptoMap);
+			if (cryptoMap.containsKey(spender.asEntityNum()) && amount == 0) {
+				removeEntity(cryptoMap, spender, accountToApprove);
+			}
+			if (amount > 0) {
+				cryptoMap.put(spender.asEntityNum(), amount);
+				validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
+				entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
+			}
 		}
 	}
 
@@ -196,21 +193,28 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 		for (var allowance : nftAllowances) {
 			final var owner = allowance.getOwner();
 			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var approveForAllNftsSet = accountToApprove.getMutableApprovedForAllNfts();
+			final var approveForAllNfts = accountToApprove.getMutableApprovedForAllNfts();
 
 			final var spenderId = Id.fromGrpcAccount(allowance.getSpender());
 			accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
 
 			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
 
-			if (allowance.hasApprovedForAll() && allowance.getApprovedForAll().getValue()) {
+			if (allowance.hasApprovedForAll()) {
 				final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
-				approveForAllNftsSet.add(key);
+				if (allowance.hasApprovedForAll()) {
+					if (allowance.getApprovedForAll().getValue()) {
+						approveForAllNfts.add(key);
+					} else {
+						approveForAllNfts.remove(key);
+					}
+				}
 			}
 
 			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
 
-			final var nfts = updateSpender(tokenStore, accountToApprove.getId(), spenderId, tokenId, allowance.getSerialNumbersList());
+			final var nfts = updateSpender(tokenStore, accountToApprove.getId(), spenderId, tokenId,
+					allowance.getSerialNumbersList());
 			for (var nft : nfts) {
 				nftsTouched.put(nft.getNftId(), nft);
 			}
@@ -241,18 +245,14 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
-			if (tokensMap.containsKey(key)) {
-				if (amount == 0) {
-					removeTokenEntity(key, tokensMap, accountToApprove);
-				}
-				// No-Op need to submit adjustAllowance to adjust any allowances
-				continue;
+			if (tokensMap.containsKey(key) && amount == 0) {
+				removeTokenEntity(key, tokensMap, accountToApprove);
 			}
-			tokensMap.put(key, amount);
-
-			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
-			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
-			sideEffectsTracker.setFungibleTokenAllowances(accountToApprove.getId().asEntityNum(), tokensMap);
+			if (amount > 0) {
+				tokensMap.put(key, amount);
+				validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
+				entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
+			}
 		}
 	}
 
