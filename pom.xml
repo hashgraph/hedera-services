@@ -202,7 +202,7 @@
 		<sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
 		<sonar.issue.ignore.multicriteria.e2.ruleKey>java:S1874</sonar.issue.ignore.multicriteria.e2.ruleKey>
 
-		<project.build.outputTimestamp>2022-03-21T17:48:41Z</project.build.outputTimestamp>
+		<project.build.outputTimestamp>2022-04-02T00:14:21Z</project.build.outputTimestamp>
 	</properties>
 
 	<modules>

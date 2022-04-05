@@ -196,7 +196,7 @@ public class AccountStore {
 		mutableAccount.setSmartContract(model.isSmartContract());
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
-		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNftsAllowances());
+		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNfts());
 		mutableAccount.setHeadTokenId(model.getHeadTokenNum());
 		mutableAccount.setNumPositiveBalances(model.getNumPositiveBalances());
 		mutableAccount.setNumAssociations(model.getNumAssociations());

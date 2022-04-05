@@ -64,6 +64,7 @@ import java.util.TreeSet;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -295,6 +296,40 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 
 		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
+	}
+
+	@Test
+	void checkIfApproveForAllIsSet(){
+		final NftAllowance nftAllowance = NftAllowance.newBuilder()
+				.setSpender(spender1)
+				.setOwner(ownerId)
+				.setTokenId(token2)
+				.addAllSerialNumbers(List.of(serial1)).build();
+		final NftAllowance nftAllowance1 = NftAllowance.newBuilder()
+				.setSpender(spender1)
+				.setOwner(ownerId)
+				.setTokenId(token2)
+				.setApprovedForAll(BoolValue.of(false))
+				.addAllSerialNumbers(List.of(serial1)).build();
+		nftAllowances.add(nftAllowance);
+		nftAllowances.add(nftAllowance1);
+
+		var ownerAcccount = new Account(Id.fromGrpcAccount(ownerId));
+
+		givenValidTxnCtx();
+
+		given(accountStore.loadAccountOrFailWith(spenderId1, INVALID_ALLOWANCE_SPENDER_ID))
+				.willReturn(payerAcccount);
+		ownerAcccount.setCryptoAllowances(new TreeMap<>());
+		ownerAcccount.setFungibleTokenAllowances(new TreeMap<>());
+		ownerAcccount.setApproveForAllNfts(new TreeSet<>());
+		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
+		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
+		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
+
+		subject.applyNftAllowances(nftAllowances, ownerAcccount);
+
+		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 	}
 
 	private void setUpOwnerWithExistingKeys(final Account ownerAcccount) {

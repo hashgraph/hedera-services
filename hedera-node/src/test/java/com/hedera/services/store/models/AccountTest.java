@@ -166,7 +166,7 @@ class AccountTest {
 
 		assertTrue(subject.getMutableCryptoAllowances().isEmpty());
 		assertTrue(subject.getMutableFungibleTokenAllowances().isEmpty());
-		assertTrue(subject.getMutableApprovedForAllNftsAllowances().isEmpty());
+		assertTrue(subject.getMutableApprovedForAllNfts().isEmpty());
 	}
 
 	@Test

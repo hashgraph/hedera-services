@@ -236,7 +236,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {
 		final var wrappedLedgers = trackingLedgers.wrapped(sideEffectsTracker);
-		wrappedLedgers.accounts().setPropertyChangeObserver(this::onAccountPropertyChange);
+		final var wrappedAccounts = wrappedLedgers.accounts();
+		if (wrappedAccounts != null) {
+			wrappedAccounts.setPropertyChangeObserver(this::onAccountPropertyChange);
+		}
 		return wrappedLedgers;
 	}
 
