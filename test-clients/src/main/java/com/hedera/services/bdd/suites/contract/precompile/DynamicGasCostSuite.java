@@ -216,7 +216,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						inlineCreate2CanFailSafely(),
 						allLogOpcodesResolveExpectedContractId(),
 						eip1014AliasIsPriorityInErcOwnerPrecompile(),
-//						canAssociateInConstructor(),
+						canAssociateInConstructor(),
 						childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
 				}
 		);
