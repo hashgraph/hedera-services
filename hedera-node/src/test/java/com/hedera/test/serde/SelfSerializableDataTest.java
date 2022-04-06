@@ -63,7 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * 		the SelfSerializable type being tested
  */
 public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
-	private static final int MIN_TEST_CASES_PER_VERSION = 5;
+	public static final int MIN_TEST_CASES_PER_VERSION = 5;
 
 	/**
 	 * A hook for the test class to register any {@link com.swirlds.common.constructable.RuntimeConstructable}
@@ -154,7 +154,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 		return argumentsList;
 	}
 
-	private static <R> R instantiate(final Class<R> type) {
+	static <R> R instantiate(final Class<R> type) {
 		try {
 			final var cons = noArgConstructorFor(type);
 			return cons.newInstance();

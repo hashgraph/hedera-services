@@ -203,6 +203,10 @@ public class SeededPropertySource {
 		}
 	}
 
+	public TxnReceipt nextReceipt() {
+		return nextReceiptBuilder().build();
+	}
+
 	public TxnReceipt.Builder nextReceiptBuilder() {
 		final var builder = TxnReceipt.newBuilder();
 		if (nextBoolean()) {

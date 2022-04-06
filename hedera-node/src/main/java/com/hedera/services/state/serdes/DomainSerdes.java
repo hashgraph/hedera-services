@@ -105,8 +105,15 @@ public class DomainSerdes {
 	}
 
 	public <T extends SelfSerializable> void writeNullableSerializable(
-			T data,
-			SerializableDataOutputStream out
+			final T data,
+			final SerializableDataOutputStream out
+	) throws IOException {
+		staticWriteNullableSerializable(data, out);
+	}
+
+	public static <T extends SelfSerializable> void staticWriteNullableSerializable(
+			final T data,
+			final SerializableDataOutputStream out
 	) throws IOException {
 		if (data == null) {
 			out.writeBoolean(false);
@@ -117,7 +124,13 @@ public class DomainSerdes {
 	}
 
 	public <T extends SelfSerializable> T readNullableSerializable(
-			SerializableDataInputStream in
+			final SerializableDataInputStream in
+	) throws IOException {
+		return in.readBoolean() ? in.readSerializable() : null;
+	}
+
+	public static <T extends SelfSerializable> T staticReadNullableSerializable(
+			final SerializableDataInputStream in
 	) throws IOException {
 		return in.readBoolean() ? in.readSerializable() : null;
 	}
