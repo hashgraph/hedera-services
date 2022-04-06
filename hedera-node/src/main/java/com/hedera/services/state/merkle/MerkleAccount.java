@@ -224,6 +224,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setAlias(alias);
 	}
 
+	public long getTransactionCounter() {
+		return state().transactionCounter();
+	}
+
+	public void setTransactionCounter(final long transactionCounter) {
+		throwIfImmutable("Cannot change this account's transactionCounter if it's immutable.");
+		state().setTransactionCounter(transactionCounter);
+	}
+
 	public TokenAssociationMetadata getTokenAssociationMetadata() {
 		return state().getTokenAssociationMetadata();
 	}

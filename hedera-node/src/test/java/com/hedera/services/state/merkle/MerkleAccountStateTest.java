@@ -64,6 +64,7 @@ class MerkleAccountStateTest {
 	private static final JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
 	private static final long expiry = 1_234_567L;
 	private static final long balance = 555_555L;
+	private static final long transactionCounter = 0L;
 	private static final long autoRenewSecs = 234_567L;
 	private static final long nftsOwned = 150L;
 	private static final String memo = "A memo";
@@ -138,6 +139,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -168,6 +170,7 @@ class MerkleAccountStateTest {
 						"alreadyUsedAutoAssociations=" + alreadyUsedAutoAssociations + ", " +
 						"maxAutoAssociations=" + maxAutoAssociations + ", " +
 						"alias=" + alias.toStringUtf8() + ", " +
+						"transactionCounter=" + transactionCounter + ", " +
 						"cryptoAllowances=" + cryptoAllowances + ", " +
 						"fungibleTokenAllowances=" + fungibleTokenAllowances + ", " +
 						"approveForAllNfts=" + approveForAllNfts + ", " +
@@ -264,6 +267,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -283,6 +287,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -302,6 +307,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -321,6 +327,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -340,6 +347,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -359,6 +367,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -378,6 +387,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -397,6 +407,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -416,6 +427,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -434,6 +446,7 @@ class MerkleAccountStateTest {
 				number, autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -452,6 +465,7 @@ class MerkleAccountStateTest {
 				number, autoAssociationMetadata,
 				otherAlias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -470,6 +484,7 @@ class MerkleAccountStateTest {
 				number, autoAssociationMetadata,
 				alias,
 				otherKvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -494,6 +509,7 @@ class MerkleAccountStateTest {
 				number, autoAssociationMetadata,
 				alias,
 				otherKvPairs,
+				transactionCounter,
 				otherCryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -520,6 +536,7 @@ class MerkleAccountStateTest {
 				number, autoAssociationMetadata,
 				alias,
 				otherKvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				otherFungibleTokenAllowances,
 				approveForAllNfts);
@@ -546,6 +563,7 @@ class MerkleAccountStateTest {
 				number, autoAssociationMetadata,
 				alias,
 				otherKvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				otherApproveForAllNfts);
@@ -564,6 +582,7 @@ class MerkleAccountStateTest {
 				number, autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -595,6 +614,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				kvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -611,6 +631,7 @@ class MerkleAccountStateTest {
 				autoAssociationMetadata,
 				alias,
 				otherKvPairs,
+				transactionCounter,
 				otherCryptoAllowances,
 				otherFungibleTokenAllowances,
 				otherApproveForAllNfts);

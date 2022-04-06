@@ -63,7 +63,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	static final int RELEASE_0230_VERSION = 10;
 	static final int RELEASE_0250_VERSION = 11;
-	private static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	static final int RELEASE_0260_VERSION = 12;
+	private static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	static DomainSerdes serdes = new DomainSerdes();
@@ -86,6 +87,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int autoAssociationMetadata;
 	private int numContractKvPairs;
 	private TokenAssociationMetadata tokenAssociationMetaData = EMPTY_TOKEN_ASSOCIATION_META;
+	private long transactionCounter;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
 	// these per-account maps to top-level maps using the "linked-list" values idiom
@@ -111,6 +113,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final int autoAssociationMetadata,
 			final ByteString alias,
 			final int numContractKvPairs,
+			final long transactionCounter,
 			final Map<EntityNum, Long> cryptoAllowances,
 			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances,
 			final Set<FcTokenAllowanceId> approveForAllNfts
@@ -128,6 +131,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.autoAssociationMetadata = autoAssociationMetadata;
 		this.alias = Optional.ofNullable(alias).orElse(DEFAULT_ALIAS);
 		this.numContractKvPairs = numContractKvPairs;
+		this.transactionCounter = transactionCounter;
 		this.cryptoAllowances = cryptoAllowances;
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 		this.approveForAllNfts = approveForAllNfts;
@@ -178,6 +182,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 						new TokenAssociationMetadata(in.readInt(), in.readInt(), new EntityNumPair(in.readLong()));
 			}
 		}
+		if (version >= RELEASE_0260_VERSION) {
+			transactionCounter = in.readLong();
+		}
 	}
 
 	@Override
@@ -199,6 +206,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		serializeCryptoAllowances(out, cryptoAllowances);
 		serializeTokenAllowances(out, fungibleTokenAllowances);
 		serializeApproveForAllNftsAllowances(out, approveForAllNfts);
+		out.writeLong(transactionCounter);
 		out.writeInt(tokenAssociationMetaData.numAssociations());
 		out.writeInt(tokenAssociationMetaData.numZeroBalances());
 		out.writeLong(tokenAssociationMetaData.latestAssociation().value());
@@ -221,6 +229,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				autoAssociationMetadata,
 				alias,
 				numContractKvPairs,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts);
@@ -251,6 +260,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Objects.equals(this.proxy, that.proxy) &&
 				this.nftsOwned == that.nftsOwned &&
 				this.numContractKvPairs == that.numContractKvPairs &&
+				this.transactionCounter == that.transactionCounter &&
 				this.autoAssociationMetadata == that.autoAssociationMetadata &&
 				equalUpToDecodability(this.key, that.key) &&
 				Objects.equals(this.alias, that.alias) &&
@@ -276,6 +286,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				number,
 				autoAssociationMetadata,
 				alias,
+				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
@@ -301,6 +312,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.add("alias", alias.toStringUtf8())
+				.add("transactionCounter", transactionCounter)
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("approveForAllNfts", approveForAllNfts)
@@ -359,6 +371,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return proxy;
 	}
 
+	public long transactionCounter() {
+		return transactionCounter;
+	}
+
 	public long nftsOwned() {
 		return nftsOwned;
 	}
@@ -390,6 +406,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setMemo(String memo) {
 		assertMutable("memo");
 		this.memo = memo;
+	}
+
+	public void setTransactionCounter(long transactionCounter) {
+		assertMutable("transactionCounter");
+		this.transactionCounter = transactionCounter;
 	}
 
 	public void setDeleted(boolean deleted) {

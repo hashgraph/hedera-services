@@ -67,6 +67,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
+import static com.hedera.services.ledger.properties.AccountProperty.TRANSACTION_COUNTER;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -100,6 +101,7 @@ class MerkleAccountPropertyTest {
 		final boolean origIsReceiverSigReq = false;
 		final boolean origIsContract = false;
 		final long origBalance = 1L;
+		final long origTransactionCounter = 1L;
 		final long origAutoRenew = 1L;
 		final long origNumNfts = 123L;
 		final long origExpiry = 1L;
@@ -118,6 +120,7 @@ class MerkleAccountPropertyTest {
 		final boolean newIsReceiverSigReq = true;
 		final boolean newIsContract = true;
 		final long newBalance = 2L;
+		final long newTransactionCounter = 2L;
 		final long newAutoRenew = 2L;
 		final long newExpiry = 2L;
 		final long newNumNfts = 321L;
@@ -175,6 +178,7 @@ class MerkleAccountPropertyTest {
 		account.setNftsOwned(origNumNfts);
 		account.setTokenAssociationMetadata(origTokenAssociationMetaData);
 		account.setBalance(origBalance);
+		account.setTransactionCounter(origTransactionCounter);
 		account.records().offer(origPayerRecords.get(0));
 		account.records().offer(origPayerRecords.get(1));
 		account.setMaxAutomaticAssociations(origMaxAutoAssociations);
@@ -212,6 +216,7 @@ class MerkleAccountPropertyTest {
 		FUNGIBLE_TOKEN_ALLOWANCES.setter().accept(account, fungibleAllowances);
 		APPROVE_FOR_ALL_NFTS_ALLOWANCES.setter().accept(account, nftAllowances);
 		TOKEN_ASSOCIATION_METADATA.setter().accept(account, newTokenAssociationMetadata);
+		TRANSACTION_COUNTER.setter().accept(account, newTransactionCounter);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -231,6 +236,7 @@ class MerkleAccountPropertyTest {
 		assertEquals(fungibleAllowances, FUNGIBLE_TOKEN_ALLOWANCES.getter().apply(account));
 		assertEquals(nftAllowances, APPROVE_FOR_ALL_NFTS_ALLOWANCES.getter().apply(account));
 		assertEquals(newTokenAssociationMetadata, TOKEN_ASSOCIATION_METADATA.getter().apply(account));
+		assertEquals(newTransactionCounter, TRANSACTION_COUNTER.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {
