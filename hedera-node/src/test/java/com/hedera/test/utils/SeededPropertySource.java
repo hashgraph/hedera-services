@@ -9,9 +9,9 @@ package com.hedera.test.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -187,7 +187,7 @@ public class SeededPropertySource {
 		while (n-- > 0) {
 			final var address = nextAddress();
 			final Map<Bytes, Pair<Bytes, Bytes>> changes = new TreeMap<>();
-			for (int i = 0; i < changesPerAddress; i++)	{
+			for (int i = 0; i < changesPerAddress; i++) {
 				changes.put(nextEvmWord(), nextStateChangePair());
 			}
 			ans.put(address, changes);
@@ -223,7 +223,7 @@ public class SeededPropertySource {
 						builder.setSerialNumbers(nextInRangeLongs(nextNonZeroInt(10)));
 					}
 				}
-				case TOPIC ->  {
+				case TOPIC -> {
 					builder.setTopicId(nextEntityId());
 					if (nextBoolean()) {
 						builder.setRunningHashVersion(nextUnsignedLong());
@@ -425,6 +425,10 @@ public class SeededPropertySource {
 		} else {
 			return new JKeyList(List.of(nextKey(), nextKey()));
 		}
+	}
+
+	public JKeyList nextKeyList(final int n) {
+		return new JKeyList(IntStream.range(0, n).mapToObj(i -> nextKey()).toList());
 	}
 
 	public JKey nextEd25519Key() {

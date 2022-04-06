@@ -28,11 +28,23 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class DomainSerdes {
+	public static byte[] byteStream(JKeySerializer.StreamConsumer<DataOutputStream> consumer) throws IOException {
+		try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+			try (DataOutputStream dos = new DataOutputStream(bos)) {
+				consumer.accept(dos);
+				dos.flush();
+				bos.flush();
+				return bos.toByteArray();
+			}
+		}
+	}
+
 	public JKey deserializeKey(DataInputStream in) throws IOException {
 		return JKeySerializer.deserialize(in);
 	}
@@ -62,6 +74,14 @@ public class DomainSerdes {
 			SerializableDataOutputStream out,
 			IoWritingConsumer<T> writer
 	) throws IOException {
+		subWriteNullable(data, out, writer);
+	}
+
+	public static <T> void subWriteNullable(
+			final T data,
+			final SerializableDataOutputStream out,
+			final IoWritingConsumer<T> writer
+	) throws IOException {
 		if (data == null) {
 			out.writeBoolean(false);
 		} else {
@@ -73,6 +93,13 @@ public class DomainSerdes {
 	public <T> T readNullable(
 			SerializableDataInputStream in,
 			IoReadingFunction<T> reader
+	) throws IOException {
+		return subReadNullable(in, reader);
+	}
+
+	public static <T> T subReadNullable(
+			final SerializableDataInputStream in,
+			final IoReadingFunction<T> reader
 	) throws IOException {
 		return in.readBoolean() ? reader.read(in) : null;
 	}
