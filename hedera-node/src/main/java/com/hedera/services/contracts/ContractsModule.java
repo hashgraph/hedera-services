@@ -49,6 +49,7 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.StoresModule;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
@@ -240,6 +241,11 @@ public interface ContractsModule {
 				precompiledContractMap.keySet().stream()
 						.map(Address::fromHexString)
 						.collect(Collectors.toSet());
-		return (address, frame) -> precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
+		return (address, frame) -> {
+			final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+			return precompiles.contains(address) ||
+					(!updater.isInconsistentMirrorAddress(address) &&
+					updater.get(address) != null);
+		};
 	}
 }

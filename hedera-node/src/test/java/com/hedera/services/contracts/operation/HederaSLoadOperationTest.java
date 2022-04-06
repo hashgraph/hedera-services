@@ -21,7 +21,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -63,7 +63,7 @@ class HederaSLoadOperationTest {
 	EVM evm;
 
 	@Mock
-	HederaWorldState.Updater worldUpdater;
+	HederaStackedWorldStateUpdater worldUpdater;
 
 	@Mock
 	EvmAccount evmAccount;

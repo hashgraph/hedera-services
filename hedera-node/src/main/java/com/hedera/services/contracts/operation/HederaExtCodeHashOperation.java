@@ -66,15 +66,9 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 				return new OperationResult(
 						Optional.of(cost(true)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 			}
-			final var worldUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 			final var account = frame.getWorldUpdater().get(address);
 			boolean accountIsWarm = frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
 			Optional<Gas> optionalCost = Optional.of(this.cost(accountIsWarm));
-			if (worldUpdater.isInconsistentMirrorAddress(address)) {
-				return new Operation.OperationResult(
-						optionalCost,
-						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-			}
 			if (frame.getRemainingGas().compareTo(optionalCost.get()) < 0) {
 				return new OperationResult(optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 			} else {
