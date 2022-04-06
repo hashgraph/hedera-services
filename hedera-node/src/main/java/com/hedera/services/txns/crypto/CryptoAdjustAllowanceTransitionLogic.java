@@ -197,7 +197,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 	 * @param payerAccount
 	 * 		account of the payer for this adjustAllowance txn
 	 */
-	private void adjustNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
+	void adjustNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
@@ -206,27 +206,25 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final var owner = allowance.getOwner();
 
 			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var mutableApprovedForAllNftsAllowances = accountToAdjust.getMutableApprovedForAllNftsAllowances();
+			final var mutableApprovedForAllNfts = accountToAdjust.getMutableApprovedForAllNfts();
 
-			final var spenderAccount = allowance.getSpender();
-			final var approvedForAll = allowance.getApprovedForAll();
-			final var serialNums = allowance.getSerialNumbersList();
-			final var tokenID = allowance.getTokenId();
-			final var tokenId = Id.fromGrpcToken(tokenID);
-			final var spender = Id.fromGrpcAccount(spenderAccount);
+			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
+			final var spender = Id.fromGrpcAccount(allowance.getSpender());
+
 			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
-			final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(),
-					spender.asEntityNum());
+			final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spender.asEntityNum());
 
-			if (approvedForAll.getValue()) {
-				mutableApprovedForAllNftsAllowances.add(key);
-			} else {
-				mutableApprovedForAllNftsAllowances.remove(key);
+			if (allowance.hasApprovedForAll()) {
+				if (allowance.getApprovedForAll().getValue()) {
+					mutableApprovedForAllNfts.add(key);
+				} else {
+					mutableApprovedForAllNfts.remove(key);
+				}
 			}
 
 			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
 
-			final var nfts = updateSpender(tokenStore, accountToAdjust.getId(), spender, tokenId, serialNums);
+			final var nfts = updateSpender(tokenStore, accountToAdjust.getId(), spender, tokenId, allowance.getSerialNumbersList());
 			for (var nft : nfts) {
 				nftsTouched.put(nft.getNftId(), nft);
 			}

@@ -203,7 +203,15 @@ public final class EntityIdUtils {
 		return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getTokenNum());
 	}
 
+	public static byte[] asEvmAddress(final EntityId id) {
+		return asEvmAddress((int) id.shard(), id.realm(), id.num());
+	}
+
 	public static Address asTypedEvmAddress(final AccountID id) {
+		return Address.wrap(Bytes.wrap(asEvmAddress(id)));
+	}
+
+	public static Address asTypedEvmAddress(final EntityId id) {
 		return Address.wrap(Bytes.wrap(asEvmAddress(id)));
 	}
 

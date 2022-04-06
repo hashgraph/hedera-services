@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -88,6 +89,13 @@ class HederaStackedWorldStateUpdaterTest {
 
 		final var resolved = subject.unaliased(alias.toArrayUnsafe());
 		assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
+	}
+
+	@Test
+	void detectsMutableLedgers() {
+		given(trackingLedgers.areMutable()).willReturn(true);
+
+		assertTrue(subject.hasMutableLedgers());
 	}
 
 	@Test
