@@ -87,4 +87,9 @@ public class BackingNfts implements BackingStore<NftId, MerkleUniqueToken> {
 	public long size() {
 		return delegate.get().size();
 	}
+
+	/* -- only for unit tests --*/
+	public Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> getDelegate() {
+		return delegate;
+	}
 }

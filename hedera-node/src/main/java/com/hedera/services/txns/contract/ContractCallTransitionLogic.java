@@ -91,21 +91,21 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public void doStateTransition() {
-		/* --- Translate from gRPC types --- */
+		// --- Translate from gRPC types ---
 		var contractCallTxn = txnCtx.accessor().getTxn();
 		var op = contractCallTxn.getContractCall();
 		final var target = targetOf(op);
 		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
 		final var contractId = target.toId();
 
-		/* --- Load the model objects --- */
+		// --- Load the model objects ---
 		final var sender = accountStore.loadAccount(senderId);
 		final var receiver = accountStore.loadContract(contractId);
 		final var callData = !op.getFunctionParameters().isEmpty()
 				? Bytes.wrap(op.getFunctionParameters().toByteArray())
 				: Bytes.EMPTY;
 
-		/* --- Do the business logic --- */
+		// --- Do the business logic ---
 		final var result = evmTxProcessor.execute(
 				sender,
 				receiver.canonicalAddress(),
@@ -114,9 +114,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 				callData,
 				txnCtx.consensusTime());
 
-		/* --- Persist changes into state --- */
-		final var createdContracts = worldState.persistProvisionalContractCreations();
-		worldState.customizeSponsoredAccounts();
+		// --- Persist changes into state ---
+		final var createdContracts = worldState.getCreatedContractIds();
 		result.setCreatedContracts(createdContracts);
 
 		/* --- Externalise result --- */

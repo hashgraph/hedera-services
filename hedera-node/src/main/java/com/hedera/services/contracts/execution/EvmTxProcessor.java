@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
@@ -230,7 +229,7 @@ abstract class EvmTxProcessor {
 								"HederaFunctionality", getFunctionType(),
 								EXPIRY_ORACLE_CONTEXT_KEY, expiryOracle));
 
-		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, updater, receiver, payload);
+		final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload);
 		messageFrameStack.addFirst(initialFrame);
 
 		while (!messageFrameStack.isEmpty()) {
@@ -252,7 +251,7 @@ abstract class EvmTxProcessor {
 
 			mutableSender.incrementBalance(refundedWei);
 
-			/* Send TX fees to coinbase */
+			// Send fees to coinbase
 			final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
 			final Gas coinbaseFee = Gas.of(gasLimit).minus(refunded);
 
@@ -265,11 +264,11 @@ abstract class EvmTxProcessor {
 				stateChanges = Map.of();
 			}
 
-			/* Commit top level Updater */
+			// Commit top level updater
 			updater.commit();
 		}
 
-		/* Externalise Result */
+		// Externalise result
 		if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
 			return TransactionProcessingResult.successful(
 					initialFrame.getLogs(),
@@ -316,11 +315,7 @@ abstract class EvmTxProcessor {
 
 	protected abstract HederaFunctionality getFunctionType();
 
-	protected abstract MessageFrame buildInitialFrame(
-			MessageFrame.Builder baseInitialFrame,
-			HederaWorldUpdater updater,
-			Address to,
-			Bytes payload);
+	protected abstract MessageFrame buildInitialFrame(MessageFrame.Builder baseInitialFrame, Address to, Bytes payload);
 
 	protected void process(final MessageFrame frame, final OperationTracer operationTracer) {
 		final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());

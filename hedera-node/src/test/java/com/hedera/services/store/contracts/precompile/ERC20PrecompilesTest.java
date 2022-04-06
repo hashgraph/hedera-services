@@ -44,6 +44,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -62,6 +63,7 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -70,6 +72,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -81,7 +84,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
@@ -235,10 +237,8 @@ class ERC20PrecompilesTest {
     void invalidNestedFunctionSelector () {
         givenMinimalFrameContextWithoutParentUpdater();
 
-        given(frame.isStatic()).willReturn(true);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(nestedPretendArguments.getInt(0)).willReturn(0);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -250,7 +250,6 @@ class ERC20PrecompilesTest {
     void gasCalculationForReadOnlyMethod() {
         givenMinimalFrameContext();
 
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_NAME);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -265,7 +264,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(encoder.encodeName(any())).willReturn(successResult);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
         // when:
@@ -329,7 +328,7 @@ class ERC20PrecompilesTest {
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
@@ -351,7 +350,6 @@ class ERC20PrecompilesTest {
     void name() {
         givenMinimalFrameContext();
 
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_NAME);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -366,7 +364,9 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(encoder.encodeName(any())).willReturn(successResult);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
+
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -378,13 +378,17 @@ class ERC20PrecompilesTest {
         // and:
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+        ArgumentCaptor<EvmFnResult> captor = ArgumentCaptor.forClass(EvmFnResult.class);
+        verify(mockRecordBuilder).setContractCallResult(captor.capture());
+        assertEquals(0L, captor.getValue().getGas());
+        assertEquals(0L, captor.getValue().getAmount());
+        assertEquals(EvmFnResult.EMPTY, captor.getValue().getFunctionParameters());
     }
 
     @Test
     void symbol() {
         givenMinimalFrameContext();
 
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_SYMBOL);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -400,7 +404,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(encoder.encodeSymbol(any())).willReturn(successResult);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
         subject.prepareFields(frame);
@@ -419,7 +423,6 @@ class ERC20PrecompilesTest {
     void decimals() {
         givenMinimalFrameContext();
 
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_DECIMALS);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -435,9 +438,9 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
 
-        given(tokens.get(any(), any())).willReturn(10);
+        given(wrappedLedgers.decimalsOf(token)).willReturn(10);
         given(encoder.encodeDecimals(10)).willReturn(successResult);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
         subject.prepareFields(frame);
@@ -455,7 +458,6 @@ class ERC20PrecompilesTest {
     @Test
     void totalSupply() {
         givenMinimalFrameContext();
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_TOTAL_SUPPLY_TOKEN);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -471,9 +473,9 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
 
-        given(tokens.get(any(), any())).willReturn(10L);
+        given(wrappedLedgers.totalSupplyOf(token)).willReturn(10L);
         given(encoder.encodeTotalSupply(10L)).willReturn(successResult);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
         subject.prepareFields(frame);
@@ -492,8 +494,6 @@ class ERC20PrecompilesTest {
     void balanceOf() {
         givenMinimalFrameContext();
 
-        given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_BALANCE_OF_TOKEN);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -509,17 +509,14 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
 
-        given(decoder.decodeBalanceOf(eq(nestedPretendArguments), any())).willReturn(
-                BALANCE_OF_WRAPPER);
-        given(tokenRels.get(any(), any())).willReturn(10L);
+        given(decoder.decodeBalanceOf(eq(nestedPretendArguments), any())).willReturn(BALANCE_OF_WRAPPER);
+        given(wrappedLedgers.balanceOf(any(), any())).willReturn(10L);
         given(encoder.encodeBalance(10L)).willReturn(successResult);
-        given(tokenRels.exists(any())).willReturn(true);
 
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
                 .thenReturn(precompiledContract);
 
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -531,14 +528,6 @@ class ERC20PrecompilesTest {
         // and:
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-
-        // when:
-        given(tokenRels.exists(any())).willReturn(false);
-        given(encoder.encodeBalance(0L)).willReturn(successResult);
-
-        // then:
-        assertEquals(successResult, subject.computeInternal(frame));
-        verify(encoder).encodeBalance(0L);
     }
 
     @Test
@@ -589,7 +578,7 @@ class ERC20PrecompilesTest {
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
         // when:
         subject.prepareFields(frame);
@@ -642,7 +631,7 @@ class ERC20PrecompilesTest {
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
@@ -656,10 +645,9 @@ class ERC20PrecompilesTest {
     @Test
     void ownerOfNotSupported() {
         givenMinimalFrameContextWithoutParentUpdater();
-        given(wrappedLedgers.tokens()).willReturn(tokens);
 
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
@@ -670,10 +658,9 @@ class ERC20PrecompilesTest {
     @Test
     void tokenURINotSupported() {
         givenMinimalFrameContextWithoutParentUpdater();
-        given(wrappedLedgers.tokens()).willReturn(tokens);
 
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_TOKEN_URI_NFT);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
         subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
@@ -684,6 +671,7 @@ class ERC20PrecompilesTest {
     private void givenMinimalFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(Gas.of(300));
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);

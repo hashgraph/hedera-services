@@ -56,6 +56,7 @@ public interface PropertySource {
 	Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
 	Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
 	Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
+	Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
 
 	boolean containsProperty(String name);
 
@@ -77,6 +78,11 @@ public interface PropertySource {
 
 	@SuppressWarnings("unchecked")
 	default Set<HederaFunctionality> getFunctionsProperty(String name) {
+		return getTypedProperty(Set.class, name);
+	}
+
+	@SuppressWarnings("unchecked")
+	default Set<EntityType> getTypesProperty(String name) {
 		return getTypedProperty(Set.class, name);
 	}
 

@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.hedera.services.keys.Ed25519Utils;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.legacy.proto.utils.ProtoCommonUtils;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;
@@ -39,6 +40,7 @@ import java.util.Set;
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
 			CommonUtils.class,
+			Ed25519Utils.class,
 			ProtoCommonUtils.class,
 			SignatureGenerator.class,
 			ThrottlesJsonToProtoSerde.class,

@@ -75,12 +75,14 @@ class MigrationRecordsManagerTest {
 	@Mock
 	private EntityCreator creator;
 
-	private AtomicLong nextTracker = new AtomicLong();
+	private final AtomicLong nextTracker = new AtomicLong();
+
 	private MigrationRecordsManager subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new MigrationRecordsManager(creator, sigImpactHistorian, recordsHistorian, () -> networkCtx);
+
 		subject.setSideEffectsFactory(() -> nextTracker.getAndIncrement() == 0 ? tracker800 : tracker801);
 	}
 
@@ -109,6 +111,16 @@ class MigrationRecordsManagerTest {
 	@Test
 	void doesNothingIfRecordsAlreadyStreamed() {
 		given(networkCtx.areMigrationRecordsStreamed()).willReturn(true);
+
+		subject.publishMigrationRecords(now);
+
+		verifyNoInteractions(sigImpactHistorian);
+		verifyNoInteractions(recordsHistorian);
+	}
+
+	@Test
+	void doesntStreamRewardAccountCreationIfNotGenesis() {
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(Instant.MAX);
 
 		subject.publishMigrationRecords(now);
 

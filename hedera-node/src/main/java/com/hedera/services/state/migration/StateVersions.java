@@ -24,28 +24,27 @@ package com.hedera.services.state.migration;
  * Gives the versions of the current and previous world states.
  */
 public final class StateVersions {
-	/* For the record,
-	     - Release 0.7.0 was state version 1
-	     - Release 0.8.0 was state version 2
-	     - Release 0.9.0 was state version 3
-	     - Release 0.10.0 was state version 4
-	     - Release 0.11.0 was state version 5
-	     - Release 0.12.0 was state version 6
-	     - Release 0.13.0 was state version 7
-	     - Release 0.14.0 was state version 8
-	     - Release 0.15.0 was state version 9 */
-
-	public static final int RELEASE_0160_VERSION = 10;
-	public static final int RELEASE_0170_VERSION = 11;
-	public static final int RELEASE_0180_VERSION = 12;
-	public static final int RELEASE_0190_AND_020_VERSION = 13;
-	public static final int RELEASE_0210_VERSION = 14;
+	// For the record,
+	//   - Release 0.7.x was state version 1
+	//   - Release 0.8.x was state version 2
+	//   - Release 0.9.x was state version 3
+	//   - Release 0.10.x was state version 4
+	//   - Release 0.11.x was state version 5
+	//   - Release 0.12.x was state version 6
+	//   - Release 0.13.x was state version 7
+	//   - Release 0.14.x was state version 8
+	//   - Release 0.15.x was state version 9
+	//   - Release 0.16.x was state version 10
+	//   - Release 0.17.x was state version 11
+	//   - Release 0.18.x was state version 12
+	//   - Release 0.19.x and 0.20.x were state version 13
+	//   - Release 0.21.x was state version 14
 	public static final int RELEASE_0220_VERSION = 15;
 	public static final int RELEASE_0230_VERSION = 16;
 	public static final int RELEASE_0240_VERSION = 17;
 	public static final int RELEASE_0250_VERSION = 18;
 
-	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_0190_AND_020_VERSION;
+	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_0220_VERSION;
 	public static final int CURRENT_VERSION = RELEASE_0250_VERSION;
 
 	private StateVersions() {

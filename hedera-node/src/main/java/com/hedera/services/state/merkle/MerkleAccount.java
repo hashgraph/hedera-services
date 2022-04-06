@@ -27,9 +27,10 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.AbstractNaryMerkleInternal;
@@ -42,6 +43,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedMap;
 
 public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleInternal, Keyed<EntityNum> {
@@ -55,8 +57,8 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		IMMUTABLE_EMPTY_FCQ.copy();
 	}
 
-	private static final int RELEASE_090_VERSION = 3;
-	static final int MERKLE_VERSION = RELEASE_090_VERSION;
+	private static final int RELEASE_0240_VERSION = 4;
+	static final int MERKLE_VERSION = RELEASE_0240_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
 
@@ -78,6 +80,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		private static final int RELEASE_090_RECORDS = 1;
 		private static final int RELEASE_090_ASSOCIATED_TOKENS = 2;
 		static final int NUM_090_CHILDREN = 3;
+		static final int NUM_0240_CHILDREN = 2;
 
 		private ChildIndices() {
 			throw new UnsupportedOperationException("Utility Class");
@@ -90,15 +93,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public MerkleAccount(final List<MerkleNode> children) {
-		super(ChildIndices.NUM_090_CHILDREN);
+		super(ChildIndices.NUM_0240_CHILDREN);
 		addDeserializedChildren(children, MERKLE_VERSION);
 	}
 
 	public MerkleAccount() {
-		addDeserializedChildren(List.of(
-				new MerkleAccountState(),
-				new FCQueue<ExpirableTxnRecord>(),
-				new MerkleAccountTokens()), MERKLE_VERSION);
+		addDeserializedChildren(List.of(new MerkleAccountState(), new FCQueue<ExpirableTxnRecord>()), MERKLE_VERSION);
 	}
 
 	/* --- MerkleInternal --- */
@@ -114,7 +114,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	@Override
 	public int getMinimumChildCount(final int version) {
-		return ChildIndices.NUM_090_CHILDREN;
+		return ChildIndices.NUM_0240_CHILDREN;
 	}
 
 	/* --- FastCopyable --- */
@@ -132,10 +132,9 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		}
 
 		setImmutable(true);
-		return new MerkleAccount(List.of(
-				state().copy(),
-				records().copy(),
-				tokens().copy()), this);
+		return getNumberOfChildren() == ChildIndices.NUM_090_CHILDREN ?
+				new MerkleAccount(List.of(state().copy(), records().copy(), tokens().copy()), this) :
+				new MerkleAccount(List.of(state().copy(), records().copy()), this);
 	}
 
 	/* ---- Object ---- */
@@ -148,14 +147,12 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 			return false;
 		}
 		final var that = (MerkleAccount) o;
-		return this.state().equals(that.state()) &&
-				this.records().equals(that.records()) &&
-				this.tokens().equals(that.tokens());
+		return this.state().equals(that.state()) && this.records().equals(that.records());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(state(), records(), tokens());
+		return Objects.hash(state(), records());
 	}
 
 	@Override
@@ -163,7 +160,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return MoreObjects.toStringHelper(MerkleAccount.class)
 				.add("state", state())
 				.add("# records", records().size())
-				.add("tokens", tokens().readableTokenIds())
 				.toString();
 	}
 
@@ -176,11 +172,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return getChild(ChildIndices.RELEASE_090_RECORDS);
 	}
 
-	public void setRecords(final FCQueue<ExpirableTxnRecord> payerRecords) {
-		throwIfImmutable("Cannot change this account's transaction records if it's immutable.");
-		setChild(ChildIndices.RELEASE_090_RECORDS, payerRecords);
-	}
-
 	public MerkleAccountTokens tokens() {
 		return getChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS);
 	}
@@ -188,6 +179,10 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public void setTokens(final MerkleAccountTokens tokens) {
 		throwIfImmutable("Cannot change this account's tokens if it's immutable.");
 		setChild(ChildIndices.RELEASE_090_ASSOCIATED_TOKENS, tokens);
+	}
+
+	public void forgetAssociatedTokens() {
+		addDeserializedChildren(List.of(state(), records()), RELEASE_0240_VERSION);
 	}
 
 	/* ----  Bean  ---- */
@@ -227,6 +222,23 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		throwIfImmutable("Cannot change this account's alias if it's immutable.");
 		Objects.requireNonNull(alias);
 		state().setAlias(alias);
+	}
+
+	public TokenAssociationMetadata getTokenAssociationMetadata() {
+		return state().getTokenAssociationMetadata();
+	}
+
+	public void setTokenAssociationMetadata(final TokenAssociationMetadata tokenAssociationMetaData) {
+		throwIfImmutable("Cannot change this account's tokenAssociationMetaData if it is immutable");
+		state().setTokenAssociationMetadata(tokenAssociationMetaData);
+	}
+
+	public int getNumAssociations() {
+		return getTokenAssociationMetadata().numAssociations();
+	}
+
+	public EntityNumPair getLatestAssociation() {
+		return getTokenAssociationMetadata().latestAssociation();
 	}
 
 	public long getBalance() {
@@ -350,22 +362,17 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setCryptoAllowancesUnsafe(cryptoAllowances);
 	}
 
-	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
-		return state().getNftAllowances();
+	public Set<FcTokenAllowanceId> getApproveForAllNfts() {
+		return state().getApproveForAllNfts();
 	}
 
-	public void setNftAllowances(final SortedMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		throwIfImmutable("Cannot change this account's Nft allowances if it's immutable.");
-		state().setNftAllowances(nftAllowances);
+	public void setApproveForAllNfts(final Set<FcTokenAllowanceId> approveForAllNfts) {
+		throwIfImmutable("Cannot change this account's approved for all NFTs allowances if it's immutable.");
+		state().setApproveForAllNfts(approveForAllNfts);
 	}
 
-	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowancesUnsafe() {
-		return state().getNftAllowancesUnsafe();
-	}
-
-	public void setNftAllowancesUnsafe(final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		throwIfImmutable("Cannot change this account's nft allowances if it's immutable.");
-		state().setNftAllowancesUnsafe(nftAllowances);
+	public Set<FcTokenAllowanceId> getApproveForAllNftsUnsafe() {
+		return state().getApproveForAllNftsUnsafe();
 	}
 
 	public Map<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {

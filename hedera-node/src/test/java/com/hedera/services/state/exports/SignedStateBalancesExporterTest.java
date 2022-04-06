@@ -27,6 +27,7 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -67,7 +68,7 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -87,9 +88,9 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(LogCaptureExtension.class)
 class SignedStateBalancesExporterTest {
 	private static final NodeId nodeId = new NodeId(false, 1);
-	private MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
-	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+	private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
 
 	private MerkleToken token;
 	private MerkleToken deletedToken;
@@ -108,18 +109,20 @@ class SignedStateBalancesExporterTest {
 	private static final TokenID theToken = asToken("0.0.1004");
 	private static final long secondNonNodeTokenBalance = 100;
 	private static final TokenID theDeletedToken = asToken("0.0.1005");
-	private static final long secondNonNodeDeletedTokenBalance = 100;
+	private static final long secondNonNodeDeletedTokenBalance = 101;
 	private static final TokenID theMissingToken = asToken("0.0.1006");
 
 	private static final byte[] sig = "not-really-a-sig".getBytes();
 	private static final byte[] fileHash = "not-really-a-hash".getBytes();
 
-	private MerkleAccount thisNodeAccount, anotherNodeAccount, firstNonNodeAccount, secondNonNodeAccount,
-			deletedAccount;
+	private MerkleAccount thisNodeAccount;
+	private MerkleAccount anotherNodeAccount;
+	private MerkleAccount firstNonNodeAccount;
+	private MerkleAccount secondNonNodeAccount;
+	private MerkleAccount deletedAccount;
 
-	private MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
-
-	private Instant now = Instant.now();
+	private final MockGlobalDynamicProps dynamicProperties = new MockGlobalDynamicProps();
+	private final Instant now = Instant.now();
 
 	private ServicesState state;
 	private PropertySource properties;
@@ -138,6 +141,8 @@ class SignedStateBalancesExporterTest {
 	void setUp() throws ConstructableRegistryException {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+		final var secondNonNodeDelTokenAssociationKey = fromAccountTokenRel(secondNonNode, theDeletedToken);
+		final var secondNonNodeTokenAssociationKey = fromAccountTokenRel(secondNonNode, theToken);
 
 		thisNodeAccount = MerkleAccountFactory.newAccount().balance(thisNodeBalance).get();
 		anotherNodeAccount = MerkleAccountFactory.newAccount().balance(anotherNodeBalance).get();
@@ -146,27 +151,47 @@ class SignedStateBalancesExporterTest {
 				.balance(secondNonNodeAccountBalance)
 				.tokens(theToken, theDeletedToken, theMissingToken)
 				.get();
+		secondNonNodeAccount.setTokenAssociationMetadata(new TokenAssociationMetadata(
+				0, 0, secondNonNodeTokenAssociationKey));
 		deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
 
 		accounts.put(fromAccountId(thisNode), thisNodeAccount);
 		accounts.put(fromAccountId(anotherNode), anotherNodeAccount);
 		accounts.put(fromAccountId(firstNonNode), firstNonNodeAccount);
 		accounts.put(fromAccountId(secondNonNode), secondNonNodeAccount);
+		secondNonNodeAccount.setTokenAssociationMetadata(
+				new TokenAssociationMetadata(2, 0, secondNonNodeTokenAssociationKey));
 		accounts.put(fromAccountId(deleted), deletedAccount);
 
 		token = mock(MerkleToken.class);
 		given(token.isDeleted()).willReturn(false);
+		given(token.decimals()).willReturn(1);
+		given(token.symbol()).willReturn("existingToken");
+		given(token.hasFreezeKey()).willReturn(true);
+		given(token.hasKycKey()).willReturn(true);
+		given(token.grpcId()).willReturn(theToken);
 		deletedToken = mock(MerkleToken.class);
 		given(deletedToken.isDeleted()).willReturn(true);
+		given(deletedToken.decimals()).willReturn(3);
+		given(deletedToken.symbol()).willReturn("deletedToken");
+		given(deletedToken.hasFreezeKey()).willReturn(true);
+		given(deletedToken.hasKycKey()).willReturn(true);
+		given(deletedToken.grpcId()).willReturn(theDeletedToken);
 		tokens.put(fromTokenId(theToken), token);
 		tokens.put(fromTokenId(theDeletedToken), deletedToken);
 
-		tokenRels.put(
-				fromAccountTokenRel(secondNonNode, theToken),
-				new MerkleTokenRelStatus(secondNonNodeTokenBalance, false, true, false));
-		tokenRels.put(
-				fromAccountTokenRel(secondNonNode, theDeletedToken),
-				new MerkleTokenRelStatus(secondNonNodeDeletedTokenBalance, false, true, false));
+		final var secondNonNodeTokenAssociation = new MerkleTokenRelStatus(
+				secondNonNodeTokenBalance, false, true, false);
+		secondNonNodeTokenAssociation.setKey(secondNonNodeTokenAssociationKey);
+
+		final var secondNonNodeDelTokenAssociation = new MerkleTokenRelStatus(
+				secondNonNodeDeletedTokenBalance, false, true, false);
+		secondNonNodeDelTokenAssociation.setKey(secondNonNodeDelTokenAssociationKey);
+		secondNonNodeDelTokenAssociation.setPrevKey(secondNonNodeTokenAssociationKey);
+		secondNonNodeTokenAssociation.setNextKey(secondNonNodeDelTokenAssociationKey);
+
+		tokenRels.put(secondNonNodeTokenAssociationKey, secondNonNodeTokenAssociation);
+		tokenRels.put(secondNonNodeDelTokenAssociationKey, secondNonNodeDelTokenAssociation);
 
 		assurance = mock(DirectoryAssurance.class);
 
@@ -246,12 +271,20 @@ class SignedStateBalancesExporterTest {
 		assertEquals(4, accounts.size());
 
 		for (var account : accounts) {
-			if (account.getAccountID().getAccountNum() == 1001) {
+			if (account.getAccountID().getAccountNum() == firstNonNode.getAccountNum()) {
 				assertEquals(250, account.getHbarBalance());
-			} else if (account.getAccountID().getAccountNum() == 1002) {
+			} else if (account.getAccountID().getAccountNum() == secondNonNode.getAccountNum()) {
 				assertEquals(250, account.getHbarBalance());
-				assertEquals(1004, account.getTokenUnitBalances(0).getTokenId().getTokenNum());
-				assertEquals(100, account.getTokenUnitBalances(0).getBalance());
+				final var firstUnitBalances = account.getTokenUnitBalances(0);
+				assertEquals(
+						theToken.getTokenNum(),
+						firstUnitBalances.getTokenId().getTokenNum());
+				assertEquals(secondNonNodeTokenBalance, firstUnitBalances.getBalance());
+				final var secondUnitBalances = account.getTokenUnitBalances(1);
+				assertEquals(
+						theDeletedToken.getTokenNum(),
+						secondUnitBalances.getTokenId().getTokenNum());
+				assertEquals(secondNonNodeDeletedTokenBalance, secondUnitBalances.getBalance());
 			}
 		}
 

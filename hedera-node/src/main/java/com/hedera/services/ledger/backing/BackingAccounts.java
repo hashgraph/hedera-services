@@ -94,4 +94,8 @@ public class BackingAccounts implements BackingStore<AccountID, MerkleAccount> {
 	Set<AccountID> getExistingAccounts() {
 		return existingAccounts;
 	}
+
+	public Supplier<MerkleMap<EntityNum, MerkleAccount>> getDelegate() {
+		return delegate;
+	}
 }
