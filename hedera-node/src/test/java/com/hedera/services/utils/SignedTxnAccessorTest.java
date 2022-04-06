@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -62,7 +61,6 @@ import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
-import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
@@ -113,8 +111,6 @@ class SignedTxnAccessorTest {
 	private static final NftAllowance nftAllowance1 = NftAllowance.newBuilder().setSpender(spender1)
 			.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
 
-	private static final CryptoRemoveAllowance cryptoRemoveAllowance = CryptoRemoveAllowance.newBuilder().setOwner(owner).build();
-	private static final TokenRemoveAllowance tokenRemoveAllowance = TokenRemoveAllowance.newBuilder().setOwner(owner).setTokenId(token1).build();
 	private static final NftRemoveAllowance nftRemoveAllowance = NftRemoveAllowance.newBuilder().setOwner(owner)
 			.setTokenId(token2).addAllSerialNumbers(List.of(1L, 10L)).build();
 
@@ -602,7 +598,6 @@ class SignedTxnAccessorTest {
 
 		assertEquals(128, expandedMeta.getMsgBytesUsed());
 		assertEquals(now, expandedMeta.getEffectiveNow());
-		assertEquals(2, expandedMeta.getAggregatedNftAllowancesWithSerials());
 	}
 
 	@Test
@@ -707,8 +702,6 @@ class SignedTxnAccessorTest {
 
 	private TransactionBody cryptoDeleteAllowanceOp() {
 		final var op = CryptoDeleteAllowanceTransactionBody.newBuilder()
-				.addAllCryptoAllowances(List.of(cryptoRemoveAllowance))
-				.addAllTokenAllowances(List.of(tokenRemoveAllowance))
 				.addAllNftAllowances(List.of(nftRemoveAllowance))
 				.build();
 		return TransactionBody.newBuilder()

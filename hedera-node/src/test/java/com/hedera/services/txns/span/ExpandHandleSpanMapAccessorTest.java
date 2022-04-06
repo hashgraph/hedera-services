@@ -148,13 +148,11 @@ class ExpandHandleSpanMapAccessorTest {
 		final var secs = Instant.now().getEpochSecond();
 		final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
 				.msgBytesUsed(112)
-				.aggregatedNftAllowancesWithSerials(10)
 				.effectiveNow(secs)
 				.build();
 
 		subject.setCryptoApproveMeta(accessor, opMeta);
-
-		assertEquals(10, subject.getCryptoApproveMeta(accessor).getAggregatedNftAllowancesWithSerials());
+		
 		assertEquals(112, subject.getCryptoApproveMeta(accessor).getMsgBytesUsed());
 		assertEquals(secs, subject.getCryptoApproveMeta(accessor).getEffectiveNow());
 	}

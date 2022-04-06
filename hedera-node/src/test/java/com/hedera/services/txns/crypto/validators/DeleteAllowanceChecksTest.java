@@ -50,11 +50,9 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.tuple.Pair;
@@ -78,7 +76,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_ALLOWANCES_TO_DELETE;
@@ -128,14 +125,6 @@ class DeleteAllowanceChecksTest {
 	private final Token token1Model = new Token(Id.fromGrpcToken(token1));
 	private final Token token2Model = new Token(Id.fromGrpcToken(token2));
 
-	private final CryptoRemoveAllowance cryptoAllowance1 = CryptoRemoveAllowance.newBuilder().setOwner(ownerId).build();
-	private final CryptoRemoveAllowance cryptoAllowance2 = CryptoRemoveAllowance.newBuilder().setOwner(payerId).build();
-
-	private final TokenRemoveAllowance tokenAllowance1 = TokenRemoveAllowance.newBuilder().setTokenId(token1).setOwner(
-			ownerId).build();
-	private final TokenRemoveAllowance tokenAllowance2 = TokenRemoveAllowance.newBuilder().setTokenId(token1).setOwner(
-			payerId).build();
-
 	private final NftRemoveAllowance nftAllowance1 = NftRemoveAllowance.newBuilder().setOwner(ownerId)
 			.setTokenId(token2).addAllSerialNumbers(List.of(1L, 10L)).build();
 	private final NftRemoveAllowance nftAllowance2 = NftRemoveAllowance.newBuilder().setOwner(ownerId)
@@ -143,8 +132,6 @@ class DeleteAllowanceChecksTest {
 	private final NftRemoveAllowance nftAllowance3 = NftRemoveAllowance.newBuilder().setOwner(payerId)
 			.setTokenId(token2).addAllSerialNumbers(List.of(30L)).build();
 
-	private List<CryptoRemoveAllowance> cryptoAllowances = new ArrayList<>();
-	private List<TokenRemoveAllowance> tokenAllowances = new ArrayList<>();
 	private List<NftRemoveAllowance> nftAllowances = new ArrayList<>();
 
 	private final Map<EntityNum, Long> existingCryptoAllowances = new TreeMap<>();
@@ -165,8 +152,6 @@ class DeleteAllowanceChecksTest {
 		token2Model.initSupplyConstraints(TokenSupplyType.FINITE, 5000L);
 		token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
-		cryptoAllowances.add(cryptoAllowance1);
-		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
 		addExistingAllowancesAndSerials();
@@ -185,12 +170,7 @@ class DeleteAllowanceChecksTest {
 
 	@Test
 	void validatesDuplicateAllowances() {
-		cryptoAllowances.add(cryptoAllowance2);
-		tokenAllowances.add(tokenAllowance2);
 		nftAllowances.add(nftAllowance3);
-
-		cryptoAllowances.add(cryptoAllowance1);
-		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
@@ -226,28 +206,6 @@ class DeleteAllowanceChecksTest {
 	}
 
 	@Test
-	void validatesCryptoAllowancesRepeated() {
-		cryptoAllowances.add(cryptoAllowance2);
-		cryptoAllowances.add(CryptoRemoveAllowance.newBuilder().setOwner(ownerId).build());
-
-		assertEquals(3, cryptoAllowances.size());
-		assertEquals(REPEATED_ALLOWANCES_TO_DELETE, subject.validateCryptoDeleteAllowances(cryptoAllowances, payer,
-				accountStore));
-	}
-
-	@Test
-	void validatesFungibleAllowancesRepeated() {
-		tokenAllowances.add(tokenAllowance2);
-		tokenAllowances.add(TokenRemoveAllowance.newBuilder().setTokenId(token1).setOwner(ownerId).build());
-		tokenAllowances.add(TokenRemoveAllowance.newBuilder().setTokenId(token1).setOwner(payerId).build());
-		tokenAllowances.add(TokenRemoveAllowance.newBuilder().setTokenId(token2).setOwner(payerId).build());
-
-		assertEquals(5, tokenAllowances.size());
-		assertEquals(REPEATED_ALLOWANCES_TO_DELETE,
-				subject.validateTokenDeleteAllowances(tokenAllowances, payer, tokenStore, accountStore));
-	}
-
-	@Test
 	void validatesNftAllowancesRepeated() {
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
@@ -273,22 +231,16 @@ class DeleteAllowanceChecksTest {
 	void validatesIfOwnerExists() {
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
-		cryptoAllowances.add(cryptoAllowance2);
-		tokenAllowances.add(tokenAllowance2);
 		nftAllowances.add(nftAllowance2);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willThrow(InvalidTransactionException.class);
-		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateCryptoDeleteAllowances(cryptoAllowances, payer,
-				accountStore));
-		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
-				subject.validateTokenDeleteAllowances(tokenAllowances, payer, tokenStore, accountStore));
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.validateNftDeleteAllowances(nftAllowances, payer, tokenStore, accountStore));
 	}
 
 	@Test
 	void considersPayerIfOwnerMissing() {
-		final var allowance = CryptoRemoveAllowance.newBuilder().build();
-		cryptoAllowances.add(allowance);
+		final var allowance = NftRemoveAllowance.newBuilder().build();
+		nftAllowances.add(allowance);
 		assertEquals(Pair.of(payer, OK),
 				subject.fetchOwnerAccount(Id.fromGrpcAccount(allowance.getOwner()), payer, accountStore));
 	}
@@ -297,30 +249,22 @@ class DeleteAllowanceChecksTest {
 	void failsIfTokenNotAssociatedToAccount() {
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
-		tokenAllowances.add(tokenAllowance2);
 		nftAllowances.add(nftAllowance2);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(ownerAccount);
 		given(tokenStore.hasAssociation(token2Model, ownerAccount)).willReturn(false);
 		given(tokenStore.hasAssociation(token1Model, ownerAccount)).willReturn(false);
-		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
-				subject.validateTokenDeleteAllowances(tokenAllowances, payer, tokenStore, accountStore));
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
 				subject.validateNftDeleteAllowances(nftAllowances, payer, tokenStore, accountStore));
 	}
 
 	@Test
 	void failsIfInvalidTypes() {
-		tokenAllowances.clear();
 		nftAllowances.clear();
 
 		token1Model.setType(TokenType.FUNGIBLE_COMMON);
 		token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
-		tokenAllowances.add(TokenRemoveAllowance.newBuilder().setTokenId(token2).build());
-		nftAllowances.add(NftRemoveAllowance.newBuilder().setTokenId(token1).build());
-		assertEquals(NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES,
-				subject.validateTokenDeleteAllowances(tokenAllowances, payer, tokenStore, accountStore));
 		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES,
 				subject.validateNftDeleteAllowances(nftAllowances, payer, tokenStore, accountStore));
 	}
@@ -328,8 +272,6 @@ class DeleteAllowanceChecksTest {
 
 	@Test
 	void returnsValidationOnceFailed() {
-		cryptoAllowances.add(cryptoAllowance1);
-		tokenAllowances.add(tokenAllowance1);
 		nftAllowances.add(nftAllowance1);
 
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -345,32 +287,6 @@ class DeleteAllowanceChecksTest {
 		given(view.asReadOnlyAssociationStore()).willReturn(rels);
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-
-		cryptoDeleteAllowanceTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
-				.setCryptoDeleteAllowance(
-						CryptoDeleteAllowanceTransactionBody.newBuilder()
-								.addAllCryptoAllowances(cryptoAllowances)
-								.build()
-				)
-				.build();
-		op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
-
-		assertEquals(REPEATED_ALLOWANCES_TO_DELETE,
-				subject.deleteAllowancesValidation(op.getNftAllowancesList(), payer, view));
-
-		cryptoDeleteAllowanceTxn = TransactionBody.newBuilder()
-				.setTransactionID(ourTxnId())
-				.setCryptoDeleteAllowance(
-						CryptoDeleteAllowanceTransactionBody.newBuilder()
-								.addAllTokenAllowances(tokenAllowances)
-								.build()
-				)
-				.build();
-		op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
-
-		assertEquals(REPEATED_ALLOWANCES_TO_DELETE,
-				subject.deleteAllowancesValidation(op.getNftAllowancesList(), payer, view));
 
 		cryptoDeleteAllowanceTxn = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
@@ -396,11 +312,6 @@ class DeleteAllowanceChecksTest {
 								.build()
 				)
 				.build();
-		assertEquals(OK, subject.validateCryptoDeleteAllowances(
-				cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance().getCryptoAllowancesList(), payer, accountStore));
-		assertEquals(OK, subject.validateTokenDeleteAllowances(
-				cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance().getTokenAllowancesList(), payer, tokenStore,
-				accountStore));
 		assertEquals(OK, subject.validateNftDeleteAllowances(
 				cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance().getNftAllowancesList(), payer, tokenStore,
 				accountStore));
@@ -491,8 +402,6 @@ class DeleteAllowanceChecksTest {
 				.setTransactionID(ourTxnId())
 				.setCryptoDeleteAllowance(
 						CryptoDeleteAllowanceTransactionBody.newBuilder()
-								.addAllCryptoAllowances(cryptoAllowances)
-								.addAllTokenAllowances(tokenAllowances)
 								.addAllNftAllowances(nftAllowances)
 								.build()
 				)
@@ -509,8 +418,6 @@ class DeleteAllowanceChecksTest {
 	}
 
 	private void resetAllowances() {
-		tokenAllowances.clear();
-		cryptoAllowances.clear();
 		nftAllowances.clear();
 	}
 

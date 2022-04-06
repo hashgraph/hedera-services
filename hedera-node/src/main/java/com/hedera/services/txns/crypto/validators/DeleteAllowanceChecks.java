@@ -29,25 +29,20 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_ALLOWANCES_TO_DELETE;
@@ -107,90 +102,6 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 			return validity;
 		}
 
-		return OK;
-	}
-
-	/**
-	 * Validates all the {@link CryptoRemoveAllowance}s in the
-	 * {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowance}
-	 * transaction
-	 *
-	 * @param cryptoAllowances
-	 * 		crypto remove allowances list
-	 * @param payerAccount
-	 * 		payer for the transaction
-	 * @param accountStore
-	 * @return validation response
-	 */
-	ResponseCodeEnum validateCryptoDeleteAllowances(
-			final List<CryptoRemoveAllowance> cryptoAllowances,
-			final Account payerAccount,
-			final AccountStore accountStore) {
-		final Set<AccountID> distinctOwners = new HashSet<>();
-		for (var allowance : cryptoAllowances) {
-			if (!distinctOwners.contains(allowance.getOwner())) {
-				distinctOwners.add(allowance.getOwner());
-			}
-		}
-
-		if (cryptoAllowances.size() != distinctOwners.size()) {
-			return REPEATED_ALLOWANCES_TO_DELETE;
-		}
-
-		for (var allowance : cryptoAllowances) {
-			final var owner = Id.fromGrpcAccount(allowance.getOwner());
-			final var result = fetchOwnerAccount(owner, payerAccount, accountStore);
-			if (result.getRight() != OK) {
-				return result.getRight();
-			}
-		}
-		return OK;
-	}
-
-	/**
-	 * Validates all the {@link TokenRemoveAllowance}s in the
-	 * {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowance}
-	 * transaction
-	 *
-	 * @param tokenAllowances
-	 * 		token remove allowances list
-	 * @param payerAccount
-	 * 		payer for the transaction
-	 * @return validation response
-	 */
-	public ResponseCodeEnum validateTokenDeleteAllowances(
-			final List<TokenRemoveAllowance> tokenAllowances,
-			final Account payerAccount,
-			final ReadOnlyTokenStore tokenStore,
-			final AccountStore accountStore) {
-		if (tokenAllowances.isEmpty()) {
-			return OK;
-		}
-
-		final Set<TokenRemoveAllowance> distinctIds = new HashSet<>(tokenAllowances);
-		if (distinctIds.size() != tokenAllowances.size()) {
-			return REPEATED_ALLOWANCES_TO_DELETE;
-		}
-
-		for (final var allowance : tokenAllowances) {
-			final var tokenId = allowance.getTokenId();
-			var owner = Id.fromGrpcAccount(allowance.getOwner());
-
-			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
-			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
-			if (fetchResult.getRight() != OK) {
-				return fetchResult.getRight();
-			}
-
-			final var ownerAccount = fetchResult.getLeft();
-			if (!token.isFungibleCommon()) {
-				return NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
-			}
-
-			if (!tokenStore.hasAssociation(token, ownerAccount)) {
-				return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-			}
-		}
 		return OK;
 	}
 

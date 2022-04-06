@@ -31,9 +31,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
-import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
-import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -48,7 +45,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -92,12 +88,6 @@ class GetAccountInfoResourceUsageTest {
 
 	private GetAccountInfoResourceUsage subject;
 
-	private GrantedCryptoAllowance cryptoAllowances = GrantedCryptoAllowance.newBuilder().setSpender(proxy).setAmount(10L).build();
-	private GrantedTokenAllowance tokenAllowances = GrantedTokenAllowance.newBuilder()
-			.setSpender(proxy).setAmount(10L).setTokenId(IdUtils.asToken("0.0.1000")).build();
-	private GrantedNftAllowance nftAllowances = GrantedNftAllowance.newBuilder().setSpender(proxy)
-			.setTokenId(IdUtils.asToken("0.0.1000")).build();
-
 	@BeforeEach
 	private void setup() {
 		subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties);
@@ -117,9 +107,6 @@ class GetAccountInfoResourceUsageTest {
 				.addTokenRelationships(1, TokenRelationship.newBuilder().setTokenId(bToken))
 				.addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
 				.setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
-				.addAllGrantedCryptoAllowances(List.of(cryptoAllowances))
-				.addAllGrantedNftAllowances(List.of(nftAllowances))
-				.addAllGrantedTokenAllowances(List.of(tokenAllowances))
 				.build();
 		final var query = accountInfoQuery(a, ANSWER_ONLY);
 		given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo)).willReturn(Optional.of(info));

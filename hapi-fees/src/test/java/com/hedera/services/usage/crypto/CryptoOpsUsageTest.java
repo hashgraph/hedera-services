@@ -38,7 +38,6 @@ import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
-import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -51,7 +50,6 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeBuilder;
@@ -74,13 +72,11 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_DELETE_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.TOKEN_DELETE_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -107,9 +103,6 @@ class CryptoOpsUsageTest {
 			.setTokenId(IdUtils.asToken("0.0.1000"))
 			.addAllSerialNumbers(List.of(1L)).build();
 
-	private CryptoRemoveAllowance cryptoDeleteAllowances = CryptoRemoveAllowance.newBuilder().setOwner(proxy).build();
-	private TokenRemoveAllowance tokenDeleteAllowances = TokenRemoveAllowance.newBuilder()
-			.setOwner(proxy).setTokenId(IdUtils.asToken("0.0.1000")).build();
 	private NftRemoveAllowance nftDeleteAllowances = NftRemoveAllowance.newBuilder().setOwner(proxy)
 			.setTokenId(IdUtils.asToken("0.0.1000"))
 			.addAllSerialNumbers(List.of(1L))
@@ -165,9 +158,9 @@ class CryptoOpsUsageTest {
 				.setCurrentlyHasProxy(true)
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
+				.setCurrentTokenAllowances(Collections.emptyMap())
 				.build();
 		// and:
 		given(queryBase.get()).willReturn(A_USAGES_MATRIX);
@@ -258,9 +251,9 @@ class CryptoOpsUsageTest {
 				.setCurrentlyHasProxy(true)
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
+				.setCurrentTokenAllowances(Collections.emptyMap())
 				.build();
 
 		var estimate = subject.cryptoAutoRenewRb(ctx);
@@ -290,9 +283,9 @@ class CryptoOpsUsageTest {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(oldMaxAutoAssociations)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
+				.setCurrentTokenAllowances(Collections.emptyMap())
 				.build();
 
 		long keyBytesUsed = getAccountKeyStorageSize(key);
@@ -352,9 +345,9 @@ class CryptoOpsUsageTest {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
+				.setCurrentTokenAllowances(Collections.emptyMap())
 				.build();
 
 		long keyBytesUsed = getAccountKeyStorageSize(key);
@@ -413,9 +406,9 @@ class CryptoOpsUsageTest {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(numTokenRels)
 				.setCurrentMaxAutomaticAssociations(maxAutoAssociations)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
+				.setCurrentTokenAllowances(Collections.emptyMap())
 				.build();
 
 		long msgBytesUsed = (approveOp.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE)
@@ -445,9 +438,7 @@ class CryptoOpsUsageTest {
 		SigUsage sigUsage = new SigUsage(1, sigSize, 1);
 		expected.resetForTransaction(baseMeta, sigUsage);
 
-		long msgBytesUsed = (deleteAllowanceOp.getCryptoAllowancesCount() * CRYPTO_DELETE_ALLOWANCE_SIZE)
-				+ (deleteAllowanceOp.getTokenAllowancesCount() * TOKEN_DELETE_ALLOWANCE_SIZE)
-				+ (deleteAllowanceOp.getNftAllowancesCount() * NFT_DELETE_ALLOWANCE_SIZE) +
+		long msgBytesUsed = (deleteAllowanceOp.getNftAllowancesCount() * NFT_DELETE_ALLOWANCE_SIZE) +
 				countNftDeleteSerials(deleteAllowanceOp.getNftAllowancesList()) * LONG_SIZE;
 
 		expected.addBpt(msgBytesUsed);
@@ -480,8 +471,6 @@ class CryptoOpsUsageTest {
 
 	private void givenDeleteOp() {
 		deleteAllowanceOp = CryptoDeleteAllowanceTransactionBody.newBuilder()
-				.addAllCryptoAllowances(List.of(cryptoDeleteAllowances))
-				.addAllTokenAllowances(List.of(tokenDeleteAllowances))
 				.addAllNftAllowances(List.of(nftDeleteAllowances))
 				.build();
 		setDeleteAllowanceTxn();

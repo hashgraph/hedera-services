@@ -624,17 +624,12 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.hasToken(relationshipWith(fungibleToken).balance(925))
 								.hasToken(relationshipWith(nonFungibleToken).balance(0))
 								.has(accountWith()
-										.balanceLessThan(98 * ONE_HBAR)
-										.cryptoAllowancesContaining(spender, 9 * ONE_HBAR)
-										.tokenAllowancesContaining(fungibleToken, spender, 475)),
+										.balanceLessThan(98 * ONE_HBAR)),
 						getAccountInfo(otherOwner)
 								.hasToken(relationshipWith(fungibleToken).balance(970))
 								.hasToken(relationshipWith(nonFungibleToken).balance(0))
 								.has(accountWith()
-										.balanceLessThan(98 * ONE_HBAR)
-										.cryptoAllowancesContaining(spender, 4 * ONE_HBAR)
-										.tokenAllowancesContaining(fungibleToken, spender, 85)
-										.nftApprovedAllowancesContaining(nonFungibleToken, spender)),
+										.balanceLessThan(98 * ONE_HBAR)),
 						getAccountInfo(receiver)
 								.hasToken(relationshipWith(fungibleToken).balance(105))
 								.hasToken(relationshipWith(nonFungibleToken).balance(4))
@@ -807,7 +802,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
 						getAccountInfo(owner)
-								.has(accountWith().tokenAllowancesContaining(fungibleToken, spender, 1450))
 								.hasToken(relationshipWith(fungibleToken).balance(950L)),
 						cryptoTransfer(moving(1000, fungibleToken).between(TOKEN_TREASURY, owner)),
 						cryptoTransfer(
@@ -833,11 +827,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver))
 								.payingWith(spender)
 								.signedBy(spender)
-								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
-						getAccountInfo(owner)
-								.has(accountWith()
-										.cryptoAllowancesCount(0)
-										.tokenAllowancesContaining(fungibleToken, spender, 1400))
+								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
 				);
 	}
 
@@ -1666,7 +1656,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.has(accountWith().balance(initialBalance - 3_000L)),
 						getAccountInfo("payeeSigReq").has(accountWith().balance(initialBalance + 1_000L)),
 						getAccountInfo("payeeNoSigReq").has(
-								accountWith().balance(initialBalance + 2_000L).noAllowances())
+								accountWith().balance(initialBalance + 2_000L))
 				);
 	}
 

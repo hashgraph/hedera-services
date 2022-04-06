@@ -37,12 +37,17 @@ import java.util.function.Function;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.getChangedCryptoKeys;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.getChangedTokenKeys;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hedera.services.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BOOL_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.NFT_ALLOWANCE_SIZE;
+import static com.hederahashgraph.fee.FeeBuilder.TOKEN_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
 
 @Singleton
@@ -189,7 +194,11 @@ public class CryptoOpsUsage {
 
 		final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(cryptoApproveMeta.getEffectiveNow(),
 				ctx.currentExpiry());
-		accumulator.addRbs(cryptoApproveMeta.getMsgBytesUsed() * lifeTime);
+
+		// This is to keep the fee same for new allowance insertion or modifying existing allowance using
+		// CryptoApproveAllowance transaction
+		final var adjustedBytes = Math.max(getNewBytes(cryptoApproveMeta, ctx), CRYPTO_ALLOWANCE_SIZE);
+		accumulator.addRbs(adjustedBytes * lifeTime);
 	}
 
 	public void cryptoDeleteAllowanceUsage(final SigUsage sigUsage,
@@ -199,5 +208,23 @@ public class CryptoOpsUsage {
 
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 		accumulator.addBpt(cryptoDeleteAllowanceMeta.getMsgBytesUsed());
+	}
+
+	private long getNewBytes(final CryptoApproveAllowanceMeta cryptoApproveMeta, final ExtantCryptoContext ctx) {
+		long newTotalBytes = 0;
+		final var newCryptoKeys = getChangedCryptoKeys(cryptoApproveMeta.getCryptoAllowances().keySet(),
+				ctx.currentCryptoAllowances().keySet());
+
+		newTotalBytes += newCryptoKeys * CRYPTO_ALLOWANCE_SIZE;
+
+		final var newTokenKeys = getChangedTokenKeys(cryptoApproveMeta.getTokenAllowances().keySet(),
+				ctx.currentTokenAllowances().keySet());
+		newTotalBytes += newTokenKeys * TOKEN_ALLOWANCE_SIZE;
+
+		final var newApproveForAllNfts = getChangedTokenKeys(cryptoApproveMeta.getNftAllowances(),
+				ctx.currentNftAllowances());
+		newTotalBytes += newApproveForAllNfts * NFT_ALLOWANCE_SIZE;
+
+		return newTotalBytes;
 	}
 }

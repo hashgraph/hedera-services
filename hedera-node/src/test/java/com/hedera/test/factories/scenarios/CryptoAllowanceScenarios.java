@@ -111,32 +111,8 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedDeleteAllowance()
-							.withCryptoAllowances(cryptoDeleteAllowanceList)
 							.withNftAllowances(nftDeleteAllowanceList)
-							.withTokenAllowances(tokenDeleteAllowanceList)
 							.nonPayerKts(OWNER_ACCOUNT_KT)
-							.get()
-			));
-		}
-	},
-	CRYPTO_DELETE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedDeleteAllowance()
-							.withCryptoAllowances(cryptoDeleteAllowanceList)
-							.withNftAllowances(nftDeleteAllowanceList)
-							.withTokenAllowances(tokenDeleteAllowanceMissingOwnerList)
-							.get()
-			));
-		}
-	},
-	CRYPTO_DELETE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedDeleteAllowance()
-							.withCryptoAllowances(cryptoDeleteAllowanceMissingOwnerList)
-							.withNftAllowances(nftDeleteAllowanceList)
-							.withTokenAllowances(tokenDeleteAllowanceList)
 							.get()
 			));
 		}
@@ -145,21 +121,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
 			return new PlatformTxnAccessor(from(
 					newSignedDeleteAllowance()
-							.withCryptoAllowances(cryptoDeleteAllowanceList)
 							.withNftAllowances(nftDeleteAllowanceMissingOwnerList)
-							.withTokenAllowances(tokenDeleteAllowanceList)
-							.get()
-			));
-		}
-	},
-	CRYPTO_DELETE_ALLOWANCE_NO_OWNER_SCENARIO {
-		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
-					newSignedDeleteAllowance()
-							.withCryptoAllowances(cryptoDeleteAllowanceNoOwnerList)
-							.withNftAllowances(nftDeleteAllowanceList)
-							.withTokenAllowances(tokenDeleteAllowanceList)
-							.nonPayerKts(OWNER_ACCOUNT_KT)
 							.get()
 			));
 		}

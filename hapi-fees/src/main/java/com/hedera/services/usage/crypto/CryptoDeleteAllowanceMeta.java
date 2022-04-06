@@ -28,10 +28,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.List;
 
-import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_DELETE_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.TOKEN_DELETE_ALLOWANCE_SIZE;
 
 /**
  * Metadata for CryptoDeleteAllowance
@@ -52,9 +50,7 @@ public class CryptoDeleteAllowanceMeta {
 	}
 
 	private int bytesUsedInTxn(CryptoDeleteAllowanceTransactionBody op) {
-		return op.getCryptoAllowancesCount() * CRYPTO_DELETE_ALLOWANCE_SIZE
-				+ op.getTokenAllowancesCount() * TOKEN_DELETE_ALLOWANCE_SIZE
-				+ op.getNftAllowancesCount() * NFT_DELETE_ALLOWANCE_SIZE
+		return op.getNftAllowancesCount() * NFT_DELETE_ALLOWANCE_SIZE
 				+ countNftDeleteSerials(op.getNftAllowancesList()) * LONG_SIZE;
 	}
 
@@ -64,6 +60,7 @@ public class CryptoDeleteAllowanceMeta {
 			totalSerials += allowance.getSerialNumbersCount();
 		}
 		return totalSerials;
+
 	}
 
 	public static Builder newBuilder() {
@@ -77,7 +74,7 @@ public class CryptoDeleteAllowanceMeta {
 	public long getMsgBytesUsed() {
 		// This is to make sure the fees is the same for base case even if owner field is not specified in the
 		// transaction
-		return msgBytesUsed < CRYPTO_DELETE_ALLOWANCE_SIZE ? CRYPTO_DELETE_ALLOWANCE_SIZE : msgBytesUsed;
+		return Math.max(msgBytesUsed, NFT_DELETE_ALLOWANCE_SIZE);
 	}
 
 	public static class Builder {

@@ -28,20 +28,21 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.usage.crypto.AllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
-import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
-import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -134,47 +135,39 @@ public class AllowanceHelpers {
 		return val < 0 ? val * -1 : val;
 	}
 
-	public static List<GrantedNftAllowance> getNftAllowancesList(final MerkleAccount account) {
+	public static Set<AllowanceId> getNftAllowancesList(final MerkleAccount account) {
 		if (!account.getApproveForAllNfts().isEmpty()) {
-			List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
+			Set<AllowanceId> nftAllowances = new HashSet<>();
 			for (var a : account.getApproveForAllNfts()) {
-				final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
-				approveForAllNftsAllowance.setTokenId(a.getTokenNum().toGrpcTokenId());
-				approveForAllNftsAllowance.setSpender(a.getSpenderNum().toGrpcAccountId());
-				nftAllowances.add(approveForAllNftsAllowance.build());
+				nftAllowances.add(new AllowanceId(a.getTokenNum().longValue(), a.getSpenderNum().longValue()));
 			}
 			return nftAllowances;
 		}
-		return Collections.emptyList();
+		return Collections.emptySet();
 	}
 
-	public static List<GrantedTokenAllowance> getFungibleTokenAllowancesList(final MerkleAccount account) {
+	public static Map<AllowanceId, Long> getFungibleTokenAllowancesList(final MerkleAccount account) {
 		if (!account.getFungibleTokenAllowances().isEmpty()) {
-			List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
-			final var tokenAllowance = GrantedTokenAllowance.newBuilder();
+			Map<AllowanceId, Long> tokenAllowances = new HashMap<>();
 			for (var a : account.getFungibleTokenAllowances().entrySet()) {
-				tokenAllowance.setTokenId(a.getKey().getTokenNum().toGrpcTokenId());
-				tokenAllowance.setSpender(a.getKey().getSpenderNum().toGrpcAccountId());
-				tokenAllowance.setAmount(a.getValue());
-				tokenAllowances.add(tokenAllowance.build());
+				tokenAllowances.put(new AllowanceId(a.getKey().getTokenNum().longValue(),
+						a.getKey().getSpenderNum().longValue()), a.getValue());
 			}
 			return tokenAllowances;
 		}
-		return Collections.emptyList();
+		return Collections.emptyMap();
 	}
 
-	public static List<GrantedCryptoAllowance> getCryptoAllowancesList(final MerkleAccount account) {
+	public static Map<Long, Long> getCryptoAllowancesList(final MerkleAccount account) {
 		if (!account.getCryptoAllowances().isEmpty()) {
-			List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
-			final var cryptoAllowance = GrantedCryptoAllowance.newBuilder();
+			Map<Long, Long> cryptoAllowances = new HashMap<>();
+
 			for (var a : account.getCryptoAllowances().entrySet()) {
-				cryptoAllowance.setSpender(a.getKey().toGrpcAccountId());
-				cryptoAllowance.setAmount(a.getValue());
-				cryptoAllowances.add(cryptoAllowance.build());
+				cryptoAllowances.put(a.getKey().longValue(), a.getValue());
 			}
 			return cryptoAllowances;
 		}
-		return Collections.emptyList();
+		return Collections.emptyMap();
 	}
 
 	/**

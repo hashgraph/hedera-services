@@ -212,14 +212,12 @@ public class RecordCreationSuite extends HapiApiSuite {
 									.expiry(33197904000L, 0)
 									.key(EMPTY_KEY)
 									.memo("")
-									.noAlias()
-									.noAllowances()),
+									.noAlias()),
 							getAccountInfo("0.0.801").has(accountWith()
 									.expiry(33197904000L, 0)
 									.key(EMPTY_KEY)
 									.memo("")
-									.noAlias()
-									.noAllowances())
+									.noAlias())
 					);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);

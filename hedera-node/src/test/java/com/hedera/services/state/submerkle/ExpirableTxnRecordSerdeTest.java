@@ -27,8 +27,6 @@ import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 
-import java.util.Collections;
-
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0230_VERSION;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0250_VERSION;
 import static com.swirlds.common.CommonUtils.unhex;
@@ -78,8 +76,6 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 		if (version == RELEASE_0230_VERSION) {
 			final var seeded = nextSeededRecord(version, testCaseNo);
 			// Always empty before release 0.25
-			seeded.setCryptoAllowances(Collections.emptyMap());
-			seeded.setFungibleTokenAllowances(Collections.emptyMap());
 			return seeded;
 		} else if (version == RELEASE_0250_VERSION) {
 			return nextSeededRecord(version, testCaseNo);
@@ -114,12 +110,6 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 		if (propertySource.nextBoolean()) {
 			builder.setScheduleRef(propertySource.nextEntityId());
 			builder.setParentConsensusTime(propertySource.nextInstant());
-		}
-		if (propertySource.nextBoolean()) {
-			builder.setCryptoAllowances(propertySource.nextCryptoAllowances(1, 2, 4));
-		}
-		if (propertySource.nextBoolean()) {
-			builder.setFungibleTokenAllowances(propertySource.nextFungibleAllowances(1, 2, 4, 8));
 		}
 		if (propertySource.nextBoolean()) {
 			propertySource.nextTokenAdjustmentsIn(builder);

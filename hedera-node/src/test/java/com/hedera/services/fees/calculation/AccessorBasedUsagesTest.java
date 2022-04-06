@@ -370,9 +370,9 @@ class AccessorBasedUsagesTest {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentTokenAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 				.build();
 		final var accumulator = new UsageAccumulator();
 
@@ -391,7 +391,6 @@ class AccessorBasedUsagesTest {
 	void worksAsExpectedForCryptoApprove() {
 		final var baseMeta = new BaseTransactionMeta(100, 0);
 		final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
-				.aggregatedNftAllowancesWithSerials(10)
 				.effectiveNow(Instant.now().getEpochSecond())
 				.build();
 		final var cryptoContext = ExtantCryptoContext.newBuilder()
@@ -401,9 +400,9 @@ class AccessorBasedUsagesTest {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentTokenAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 				.build();
 		final var accumulator = new UsageAccumulator();
 
