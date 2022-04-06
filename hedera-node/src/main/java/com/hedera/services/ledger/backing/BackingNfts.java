@@ -58,9 +58,10 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
 	@Override
 	public void put(NftId id, UniqueTokenValue nft) {
 		UniqueTokenKey key = UniqueTokenKey.fromNftId(id);
-		if (!delegate.get().containsKey(key)) {
-			delegate.get().put(key, nft);
-		}
+		// TODO: remove comments below if works
+        //		if (!delegate.get().containsKey(key) || delegate.get().get(key)) {
+		delegate.get().put(key, nft);
+        //		}
 	}
 
 	@Override

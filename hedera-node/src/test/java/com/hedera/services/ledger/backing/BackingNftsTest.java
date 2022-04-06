@@ -144,9 +144,6 @@ class BackingNftsTest {
 
 		// then:
 		assertEquals(updatedTokenA, subject.getImmutableRef(cNftId));
-
-		// Overwrites should not replace the existing token value.
-		assertEquals(tokenA, subject.getImmutableRef(aNftId));
 	}
 
 	@Test
