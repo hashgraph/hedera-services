@@ -1048,7 +1048,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 								sigsVerifier::cryptoKeyIsActive);
 				case ECDSA_SECPK256K1 -> validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsaSecp256k1()),
 								sigsVerifier::cryptoKeyIsActive);
-				default -> throw new InvalidTransactionException(NOT_SUPPORTED);
+				default -> false;
 			};
 		}
 

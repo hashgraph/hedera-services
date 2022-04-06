@@ -98,7 +98,6 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -118,12 +117,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CreatePrecompileTest {
@@ -487,6 +486,60 @@ class CreatePrecompileTest {
 		given(tokenCreateValidator.apply(any())).willReturn(INVALID_SIGNATURE);
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
 			.willReturn(mockRecordBuilder);
+		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
+
+		// when:
+		final var result = subject.compute(pretendArguments, frame);
+
+		// then:
+		assertEquals(invalidSigResult, result);
+
+		verify(creator).createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE);
+		verify(createLogic, never()).create(
+				pendingChildConsTime.getEpochSecond(),
+				EntityIdUtils.accountIdFromEvmAddress(senderAddress),
+				tokenCreateTransactionBody
+		);
+		verify(wrappedLedgers, never()).commit();
+		verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+	}
+
+
+	@Test
+	void validateAdminKeySignatureFailsIfKeyIsInvalid() {
+		givenMinimalFrameContext();
+		givenValidGasCalculation();
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(frame.getRemainingGas()).willReturn(Gas.of(100_000));
+		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
+		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+		given(worldUpdater.parentUpdater()).willReturn(parent);
+		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+		given(wrappedLedgers.accounts()).willReturn(accounts);
+		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
+		final var keyValueMock = Mockito.mock(TokenCreateWrapper.KeyValueWrapper.class);
+		when(keyValueMock.getKeyValueType())
+				.thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.CONTRACT_ID)
+				.thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY);
+		final var tokenCreateWrapper =
+				createTokenCreateWrapperWithKeys(List.of(new TokenCreateWrapper.TokenKeyWrapper(1, keyValueMock))
+		);
+		given(decoder.decodeFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
+		given(mockSynthBodyBuilder.build())
+				.willReturn(TransactionBody.newBuilder().setTokenCreation(tokenCreateTransactionBody).build());
+		given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+				.willReturn(mockSynthBodyBuilder);
+		given(syntheticTxnFactory.createTokenCreate(tokenCreateWrapper)).willReturn(mockSynthBodyBuilder);
+		given(frame.getSenderAddress()).willReturn(senderAddress);
+		given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
+		final var tokenCreateValidator = Mockito.mock(Function.class);
+		given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
+		given(tokenCreateValidator.apply(any())).willReturn(ResponseCodeEnum.OK);
+		given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.aliases()).willReturn(aliases);
+		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
+				.willReturn(mockRecordBuilder);
 		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 
 		// when:
