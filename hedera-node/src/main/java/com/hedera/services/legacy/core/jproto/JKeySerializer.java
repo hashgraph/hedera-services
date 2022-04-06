@@ -20,7 +20,7 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.serdes.IoUtils;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -39,7 +39,7 @@ public class JKeySerializer {
 	}
 
 	public static byte[] serialize(Object rootObject) throws IOException {
-		return DomainSerdes.byteStream(buffer -> {
+		return IoUtils.byteStream(buffer -> {
 			buffer.writeLong(BPACK_VERSION);
 
 			JObjectType objectType = JObjectType.FC_KEY;
@@ -69,7 +69,7 @@ public class JKeySerializer {
 			final JObjectType finalObjectType = objectType;
 			buffer.writeLong(objectType.longValue());
 
-			byte[] content = DomainSerdes.byteStream(os -> pack(os, finalObjectType, rootObject));
+			byte[] content = IoUtils.byteStream(os -> pack(os, finalObjectType, rootObject));
 			int length = content.length;
 
 			buffer.writeLong(length);

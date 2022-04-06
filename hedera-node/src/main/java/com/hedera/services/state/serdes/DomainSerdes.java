@@ -28,23 +28,11 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class DomainSerdes {
-	public static byte[] byteStream(JKeySerializer.StreamConsumer<DataOutputStream> consumer) throws IOException {
-		try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-			try (DataOutputStream dos = new DataOutputStream(bos)) {
-				consumer.accept(dos);
-				dos.flush();
-				bos.flush();
-				return bos.toByteArray();
-			}
-		}
-	}
-
 	public JKey deserializeKey(DataInputStream in) throws IOException {
 		return JKeySerializer.deserialize(in);
 	}
@@ -70,66 +58,28 @@ public class DomainSerdes {
 	}
 
 	public <T> void writeNullable(
-			T data,
-			SerializableDataOutputStream out,
-			IoWritingConsumer<T> writer
-	) throws IOException {
-		subWriteNullable(data, out, writer);
-	}
-
-	public static <T> void subWriteNullable(
 			final T data,
 			final SerializableDataOutputStream out,
 			final IoWritingConsumer<T> writer
 	) throws IOException {
-		if (data == null) {
-			out.writeBoolean(false);
-		} else {
-			out.writeBoolean(true);
-			writer.write(data, out);
-		}
+		IoUtils.staticWriteNullable(data, out, writer);
 	}
 
 	public <T> T readNullable(
 			SerializableDataInputStream in,
 			IoReadingFunction<T> reader
 	) throws IOException {
-		return subReadNullable(in, reader);
-	}
-
-	public static <T> T subReadNullable(
-			final SerializableDataInputStream in,
-			final IoReadingFunction<T> reader
-	) throws IOException {
-		return in.readBoolean() ? reader.read(in) : null;
+		return IoUtils.staticReadNullable(in, reader);
 	}
 
 	public <T extends SelfSerializable> void writeNullableSerializable(
 			final T data,
 			final SerializableDataOutputStream out
 	) throws IOException {
-		staticWriteNullableSerializable(data, out);
-	}
-
-	public static <T extends SelfSerializable> void staticWriteNullableSerializable(
-			final T data,
-			final SerializableDataOutputStream out
-	) throws IOException {
-		if (data == null) {
-			out.writeBoolean(false);
-		} else {
-			out.writeBoolean(true);
-			out.writeSerializable(data, true);
-		}
+		IoUtils.staticWriteNullableSerializable(data, out);
 	}
 
 	public <T extends SelfSerializable> T readNullableSerializable(
-			final SerializableDataInputStream in
-	) throws IOException {
-		return in.readBoolean() ? in.readSerializable() : null;
-	}
-
-	public static <T extends SelfSerializable> T staticReadNullableSerializable(
 			final SerializableDataInputStream in
 	) throws IOException {
 		return in.readBoolean() ? in.readSerializable() : null;

@@ -38,8 +38,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.hedera.services.state.serdes.DomainSerdes.staticReadNullableSerializable;
-import static com.hedera.services.state.serdes.DomainSerdes.staticWriteNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableSerializable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.CommonUtils.getNormalisedStringFromBytes;
