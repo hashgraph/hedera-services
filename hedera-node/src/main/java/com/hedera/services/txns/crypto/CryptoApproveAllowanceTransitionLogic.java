@@ -184,30 +184,28 @@ public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	 * @param nftAllowances
 	 * @param payerAccount
 	 */
-	private void applyNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
+	void applyNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
 		if (nftAllowances.isEmpty()) {
 			return;
 		}
 		for (var allowance : nftAllowances) {
 			final var owner = allowance.getOwner();
 			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var approveForAllNftsSet = accountToApprove.getMutableApprovedForAllNftsAllowances();
+			final var approveForAllNftsSet = accountToApprove.getMutableApprovedForAllNfts();
 
 			final var spenderId = Id.fromGrpcAccount(allowance.getSpender());
 			accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
 
-			final var approvedForAll = allowance.getApprovedForAll();
-			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
 
-			if (approvedForAll.getValue()) {
+			if (allowance.hasApprovedForAll() && allowance.getApprovedForAll().getValue()) {
 				final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
 				approveForAllNftsSet.add(key);
 			}
 
 			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
 
-			final var nfts = updateSpender(tokenStore, accountToApprove.getId(), spenderId, tokenId, serialNums);
+			final var nfts = updateSpender(tokenStore, accountToApprove.getId(), spenderId, tokenId, allowance.getSerialNumbersList());
 			for (var nft : nfts) {
 				nftsTouched.put(nft.getNftId(), nft);
 			}

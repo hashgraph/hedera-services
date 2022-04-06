@@ -104,7 +104,7 @@ public class RenewalRecordsHelper {
 
 		final var expirableTxnRecord = forCrypto(grpcId, eventTime)
 				.setMemo(memo)
-				.setTransferList(feeXfers(fee, grpcId))
+				.setHbarAdjustments(feeXfers(fee, grpcId))
 				.setFee(fee)
 				.build();
 		stream(expirableTxnRecord, eventTime);

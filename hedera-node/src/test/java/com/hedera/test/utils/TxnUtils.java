@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -268,7 +269,6 @@ public class TxnUtils {
 		final var baos = new ByteArrayOutputStream();
 		final var out = new SerializableDataOutputStream(baos);
 		original.serialize(out);
-		;
 
 		final var reconstruction = factory.get();
 
@@ -278,4 +278,19 @@ public class TxnUtils {
 
 		assertEquals(original, reconstruction);
 	}
+
+	public static <T extends SelfSerializable> T deserializeFromHex(
+			final Supplier<T> factory,
+			final int version,
+			final String hexedForm
+	) throws IOException {
+		final var reconstruction = factory.get();
+
+		final var bais = new ByteArrayInputStream(CommonUtils.unhex(hexedForm));
+		final var in = new SerializableDataInputStream(bais);
+		reconstruction.deserialize(in, version);
+
+		return reconstruction;
+	}
+
 }
