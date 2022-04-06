@@ -28,7 +28,6 @@ import com.hedera.services.stream.RecordStreamObject;
 import com.swirlds.common.crypto.RunningHash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,7 +49,6 @@ public class RecordStreaming implements Runnable {
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private MerkleNetworkContext curNetworkCtx;
 	private Instant lastConsensusTimestamp = null;
-	private final Keccak.Digest256 digest256 = new Keccak.Digest256();
 
 	@Inject
 	public RecordStreaming(

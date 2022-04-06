@@ -220,9 +220,9 @@ public class RecordStreamManagerTest {
 		for (int i = 1; i <= recordsNum; i++) {
 			addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, i, INITIAL_RANDOM_HASH);
 		}
-		assertEquals(new Hash(), merkleNetworkContext.getBlockHash(1));
-		assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHash(256));
-		assertEquals(256, merkleNetworkContext.getBlockHash().size());
+		assertEquals(new Hash(), merkleNetworkContext.getBlockHashCache(1));
+		assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHashCache(256));
+		assertEquals(256, merkleNetworkContext.getBlockHashCache().size());
 		assertEquals(recordsNum, merkleNetworkContext.getBlockNo());
 	}
 
@@ -248,14 +248,14 @@ public class RecordStreamManagerTest {
 		addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, 256, OVERWRITING_HASH);
 		addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, 257, OVERWRITING_HASH);
 
-		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getBlockHash(257));
+		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getBlockHashCache(257));
 		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getCurrentBlockHash());
-		assertEquals(256, merkleNetworkContext.getBlockHash().size());
+		assertEquals(256, merkleNetworkContext.getBlockHashCache().size());
 		assertEquals(257, merkleNetworkContext.getBlockNo());
 
 		//Check blockNo and block hash of all block hash entries without the last one
 		int i = 2;
-		for (final Map.Entry<Long, Hash> blockHashEntry : merkleNetworkContext.getBlockHash().entrySet()) {
+		for (final Map.Entry<Long, Hash> blockHashEntry : merkleNetworkContext.getBlockHashCache().entrySet()) {
 			if (i != 257) {
 				assertEquals(i, blockHashEntry.getKey());
 				assertEquals(INITIAL_RANDOM_HASH, blockHashEntry.getValue());
@@ -283,9 +283,9 @@ public class RecordStreamManagerTest {
 			addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, i, INITIAL_RANDOM_HASH);
 		}
 
-		assertEquals(new Hash(), merkleNetworkContext.getBlockHash(1));
-		assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHash(1234));
-		assertEquals(256, merkleNetworkContext.getBlockHash().size());
+		assertEquals(new Hash(), merkleNetworkContext.getBlockHashCache(1));
+		assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHashCache(1234));
+		assertEquals(256, merkleNetworkContext.getBlockHashCache().size());
 		assertEquals(recordsNum, merkleNetworkContext.getBlockNo());
 	}
 

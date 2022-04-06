@@ -141,6 +141,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.currentBlockHash = that.currentBlockHash;
 		this.blockNo = that.blockNo;
 		this.blockNumberToHash = that.blockNumberToHash;
+		this.isNewBlock = that.isNewBlock;
 	}
 
 	/* --- Helpers that reset the received argument based on the network context */
@@ -278,6 +279,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			final var firstBlockTime = serdes.readNullableInstant(in);
 			firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
 			blockNo = in.readLong();
+			currentBlockHash = serdes.readNullableSerializable(in);
+			isNewBlock = in.readBoolean();
+			final var cacheLength = in.readInt();
+			for(int i = 0; i < cacheLength; i++) {
+				final var blockNumber = in.readLong();
+				final var blockHash = (Hash) serdes.readNullableSerializable(in);
+				blockNumberToHash.put(blockNumber, blockHash);
+			}
 		}
 	}
 
@@ -342,6 +351,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeBoolean(migrationRecordsStreamed);
 		serdes.writeNullableInstant(fromJava(firstConsTimeOfCurrentBlock), out);
 		out.writeLong(blockNo);
+		serdes.writeNullableSerializable(currentBlockHash, out);
+		out.writeBoolean(isNewBlock);
+
+		out.writeInt(blockNumberToHash.size());
+		for(final var blockNumberToHashEntry: blockNumberToHash.entrySet()) {
+			out.writeLong(blockNumberToHashEntry.getKey());
+			serdes.writeNullableSerializable(blockNumberToHashEntry.getValue(), out);
+		}
 	}
 
 	@Override
@@ -407,14 +424,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			blockNumberToHash.remove(firstKey);
 		}
 
-		blockNumberToHash.putIfAbsent(blockNo, currentBlockHash);
+		if(blockNumberToHash.putIfAbsent(blockNo, currentBlockHash)!=null) {
+			isNewBlock = false;
+		}
 
 		if(isNewBlock) {
 			currentBlockHash = blockHash;
 		}
 	}
 
-	public Hash getBlockHash(final long blockNumber) {
+	public Hash getBlockHashCache(final long blockNumber) {
 		return blockNumberToHash.getOrDefault(blockNumber, new Hash());
 	}
 
@@ -667,7 +686,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	/* --- Used for tests --- */
-	public Map<Long, Hash> getBlockHash() {
+	public Map<Long, Hash> getBlockHashCache() {
 		return blockNumberToHash;
 	}
 }
