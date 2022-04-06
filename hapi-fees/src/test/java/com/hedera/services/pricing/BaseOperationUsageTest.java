@@ -80,9 +80,6 @@ class BaseOperationUsageTest {
 		mock.baseUsageFor(HederaFunctionality.CryptoApproveAllowance, DEFAULT);
 		verify(mock).cryptoApproveAllowance();
 
-		mock.baseUsageFor(HederaFunctionality.CryptoAdjustAllowance, DEFAULT);
-		verify(mock).cryptoAdjustAllowance();
-
 		mock.baseUsageFor(HederaFunctionality.CryptoDeleteAllowance, DEFAULT);
 		verify(mock).cryptoDeleteAllowance();
 	}

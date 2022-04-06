@@ -21,7 +21,6 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -389,7 +388,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
-		subject.applyNftAllowances(nftAllowances, ownerAcccount, new HashMap<>(), new HashMap<>());
+		subject.applyNftAllowances(nftAllowances, ownerAcccount);
 
 		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 	}

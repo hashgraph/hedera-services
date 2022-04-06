@@ -37,10 +37,10 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.account
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoAdjustAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
@@ -51,7 +51,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoAdjustAllowance.asList;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance.MISSING_OWNER;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -207,8 +206,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						cryptoApproveAllowance()
 								.addTokenAllowance(TOKEN_TREASURY, fungibleToken, spender, 10)
 								.signedBy(TOKEN_TREASURY, DEFAULT_PAYER),
-						cryptoAdjustAllowance()
-								.addTokenAllowance(TOKEN_TREASURY, fungibleToken, spender, 100)
+						cryptoApproveAllowance()
+								.addTokenAllowance(TOKEN_TREASURY, fungibleToken, spender, 110)
 								.signedBy(TOKEN_TREASURY, DEFAULT_PAYER)
 				).then(
 						getAccountInfo(TOKEN_TREASURY).has(accountWith()
@@ -260,8 +259,8 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						cryptoApproveAllowance()
 								.addNftAllowance(TOKEN_TREASURY, nonFungibleToken, spender, false, List.of(1L, 3L))
 								.signedBy(TOKEN_TREASURY, DEFAULT_PAYER),
-						cryptoAdjustAllowance()
-								.addNftAllowance(TOKEN_TREASURY, nonFungibleToken, spender, false, List.of(-3L))
+						cryptoDeleteAllowance()
+								.addNftDeleteAllowance(TOKEN_TREASURY, nonFungibleToken, List.of(3L))
 								.signedBy(TOKEN_TREASURY, DEFAULT_PAYER)
 								.hasPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER)
 				).then(
@@ -711,11 +710,11 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				.when(
 						cryptoApproveAllowance()
 								.payingWith(owner)
-								.addNftAllowance(owner, nft, spender, true, asList(1L))
+								.addNftAllowance(owner, nft, spender, true, List.of(1L))
 								.fee(ONE_HBAR),
 						cryptoApproveAllowance()
 								.payingWith(owner)
-								.addNftAllowance(owner, nft, spender1, false, asList(4L, 2L, 3L))
+								.addNftAllowance(owner, nft, spender1, false, List.of(4L, 2L, 3L))
 								.fee(ONE_HBAR)
 				)
 				.then(
@@ -1647,7 +1646,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						cryptoTransfer(movingUniqueWithAllowance(nft, 1).between(owner1, receiver))
 								.payingWith(spender2)
 								.signedBy(spender2),
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(DEFAULT_PAYER)
 								.addNftAllowance(owner1, nft, spender2, false, List.of())
 								.signedBy(DEFAULT_PAYER, owner1),
@@ -1657,7 +1656,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.payingWith(spender2)
 								.signedBy(spender2)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(DEFAULT_PAYER)
 								.addNftAllowance(owner1, nft, spender2, false, List.of(1L))
 								.signedBy(DEFAULT_PAYER, owner1),

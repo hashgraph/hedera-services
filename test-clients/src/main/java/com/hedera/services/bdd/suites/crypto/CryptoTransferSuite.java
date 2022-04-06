@@ -74,7 +74,6 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoAdjustAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -522,10 +521,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoApproveAllowance()
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.addCryptoAllowance(secondStakingFund, FUNDING, 100L)
-								.hasKnownStatus(INVALID_ALLOWANCE_OWNER_ID),
-						cryptoAdjustAllowance()
-								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
-								.addCryptoAllowance(firstStakingFund, FUNDING, 100L)
 								.hasKnownStatus(INVALID_ALLOWANCE_OWNER_ID)
 				);
 	}

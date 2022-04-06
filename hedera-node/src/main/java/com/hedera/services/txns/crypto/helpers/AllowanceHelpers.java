@@ -178,10 +178,9 @@ public class AllowanceHelpers {
 	}
 
 	/**
-	 * Returns owner account to be considered for the allowance changes. If the owner is missing in allowance,
-	 * considers payer of the transaction as the owner. This is same for CryptoApproveAlowance, CryptoAdjustAllowance
-	 * and CryptoDeleteAllowance transaction.Looks at entitiesChanged map before fetching from accountStore for
-	 * performance.
+	 * Returns owner account to be considered for the allowance changes. If the owner is missing in allowance, considers
+	 * payer of the transaction as the owner. This is same for CryptoApproveAllowance and CryptoDeleteAllowance
+	 * transaction. Looks at entitiesChanged map before fetching from accountStore for performance.
 	 *
 	 * @param owner
 	 * 		given owner

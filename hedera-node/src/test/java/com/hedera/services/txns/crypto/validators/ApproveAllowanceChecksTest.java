@@ -344,13 +344,13 @@ class ApproveAllowanceChecksTest {
 				)
 				.build();
 		assertEquals(OK, subject.validateCryptoAllowances(
-				cryptoApproveAllowanceTxn.getCryptoAdjustAllowance().getCryptoAllowancesList(), owner,
+				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getCryptoAllowancesList(), owner,
 				accountStore));
 		assertEquals(OK, subject.validateFungibleTokenAllowances(
-				cryptoApproveAllowanceTxn.getCryptoAdjustAllowance().getTokenAllowancesList(), owner, tokenStore,
+				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getTokenAllowancesList(), owner, tokenStore,
 				accountStore));
 		assertEquals(OK, subject.validateNftAllowances(tokenStore, accountStore,
-				cryptoApproveAllowanceTxn.getCryptoAdjustAllowance().getNftAllowancesList(), owner));
+				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getNftAllowancesList(), owner));
 	}
 
 	@Test

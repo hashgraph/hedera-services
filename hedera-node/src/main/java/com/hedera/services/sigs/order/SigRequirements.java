@@ -257,12 +257,8 @@ public class SigRequirements {
 			return cryptoDelete(payer, txn.getCryptoDelete(), factory, linkedRefs);
 		} else if (txn.hasCryptoApproveAllowance()) {
 			final var approveTxn = txn.getCryptoApproveAllowance();
-			return cryptoAllowance(payer, approveTxn.getCryptoAllowancesList(), approveTxn.getTokenAllowancesList(),
+			return cryptoApproveAllowance(payer, approveTxn.getCryptoAllowancesList(), approveTxn.getTokenAllowancesList(),
 					approveTxn.getNftAllowancesList(), factory, linkedRefs);
-		} else if (txn.hasCryptoAdjustAllowance()) {
-			final var adjustTxn = txn.getCryptoAdjustAllowance();
-			return cryptoAllowance(payer, adjustTxn.getCryptoAllowancesList(), adjustTxn.getTokenAllowancesList(),
-					adjustTxn.getNftAllowancesList(), factory, linkedRefs);
 		} else if (txn.hasCryptoDeleteAllowance()) {
 			final var deleteAllowanceTxn = txn.getCryptoDeleteAllowance();
 			return cryptoDeleteAllowance(payer, deleteAllowanceTxn.getCryptoAllowancesList(), deleteAllowanceTxn.getTokenAllowancesList(),
@@ -529,7 +525,7 @@ public class SigRequirements {
 				: SigningOrderResult.noKnownKeys();
 	}
 
-	private <T> SigningOrderResult<T> cryptoAllowance(
+	private <T> SigningOrderResult<T> cryptoApproveAllowance(
 			final AccountID payer,
 			final List<CryptoAllowance> cryptoAllowancesList,
 			final List<TokenAllowance> tokenAllowancesList,

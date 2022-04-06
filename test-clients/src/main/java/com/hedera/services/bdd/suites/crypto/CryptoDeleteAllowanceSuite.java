@@ -36,7 +36,6 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.account
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoAdjustAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -231,7 +230,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 						mintToken(token, 500L).via("tokenMint")
 				)
 				.when(
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith("payer")
 								.addCryptoAllowance(owner, spender, 100L)
 								.signedBy("payer", owner)
@@ -312,7 +311,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.between(TOKEN_TREASURY, owner))
 				)
 				.when(
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 100L)
 								.addTokenAllowance(owner, token, "spender2", 100L)
@@ -338,7 +337,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 						validateChargedUsdWithin("baseDeleteNft", 0.050411052000000005, 0.01)
 				)
 				.then(
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 100L)
 								.addTokenAllowance(owner, token, "spender2", 100L)
@@ -363,7 +362,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.via("baseDeleteNft"),
 						validateChargedUsdWithin("baseDeleteNft", 0.050411052000000005, 0.01),
 
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.blankMemo()
 								.addCryptoAllowance(owner, "spender2", 100L)
@@ -399,7 +398,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 						validateChargedUsdWithin("baseDeleteNft1", 0.0819, 0.01),
 
 						/*-- combination with owner */
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 100L)
 								.addTokenAllowance(owner, token, "spender2", 100L)
@@ -413,7 +412,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.via("baseDeleteTokenNft"),
 						validateChargedUsdWithin("baseDeleteTokenNft", 0.0825240972, 0.01),
 
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 100L)
 								.addTokenAllowance(owner, token, "spender2", 100L)
@@ -428,7 +427,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.via("baseDeleteCryptoToken"),
 						validateChargedUsdWithin("baseDeleteCryptoToken", 0.0821130, 0.01),
 
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 100L)
 								.addTokenAllowance(owner, token, "spender2", 100L)
@@ -442,7 +441,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.via("baseDeleteCryptoNft"),
 						validateChargedUsdWithin("baseDeleteCryptoNft", 0.082216, 0.01),
 
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 100L)
 								.addTokenAllowance(owner, token, "spender2", 100L)
@@ -527,7 +526,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.between(TOKEN_TREASURY, owner))
 				)
 				.when(
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(1L)),
@@ -541,7 +540,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 						getAccountInfo(owner).has(accountWith().noAllowances())
 				)
 				.then(
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(3L)),
@@ -558,7 +557,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 						tokenUnpause(nft),
 						tokenFreeze(token, owner),
 						tokenFreeze(nft, owner),
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addTokenAllowance(owner, token, spender, 50L)
 								.addNftAllowance(owner, nft, spender, false, List.of(2L)),
@@ -649,106 +648,6 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.overridingProps(Map.of(
 										"hedera.allowances.maxTransactionLimit", "20")
-								)
-				);
-	}
-
-	private HapiApiSpec exceedsAccountLimit() {
-		final String owner = "owner";
-		final String spender = "spender";
-		final String spender1 = "spender1";
-		final String spender2 = "spender2";
-		final String token = "token";
-		final String nft = "nft";
-		return defaultHapiSpec("exceedsAccountLimit")
-				.given(
-						fileUpdate(APP_PROPERTIES)
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.overridingProps(Map.of(
-										"hedera.allowances.maxAccountLimit", "4",
-										"hedera.allowances.maxTransactionLimit", "5")
-								),
-
-						newKeyNamed("supplyKey"),
-						cryptoCreate(owner)
-								.balance(ONE_HUNDRED_HBARS)
-								.maxAutomaticTokenAssociations(10),
-						cryptoCreate(spender)
-								.balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(spender1)
-								.balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(spender2)
-								.balance(ONE_HUNDRED_HBARS),
-						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
-								.maxAutomaticTokenAssociations(10),
-						tokenCreate(token)
-								.tokenType(TokenType.FUNGIBLE_COMMON)
-								.supplyType(TokenSupplyType.FINITE)
-								.supplyKey("supplyKey")
-								.maxSupply(1000L)
-								.initialSupply(10L)
-								.treasury(TOKEN_TREASURY),
-						tokenCreate(nft)
-								.maxSupply(10L)
-								.initialSupply(0)
-								.supplyType(TokenSupplyType.FINITE)
-								.tokenType(NON_FUNGIBLE_UNIQUE)
-								.supplyKey("supplyKey")
-								.treasury(TOKEN_TREASURY),
-						tokenAssociate(owner, token),
-						tokenAssociate(owner, nft),
-						mintToken(nft, List.of(
-								ByteString.copyFromUtf8("a"),
-								ByteString.copyFromUtf8("b"),
-								ByteString.copyFromUtf8("c")
-						)).via("nftTokenMint"),
-						mintToken(token, 500L).via("tokenMint"),
-						cryptoTransfer(movingUnique(nft, 1L, 2L, 3L)
-								.between(TOKEN_TREASURY, owner))
-				)
-				.when(
-						cryptoAdjustAllowance()
-								.payingWith(owner)
-								.addCryptoAllowance(owner, spender, 100L)
-								.addCryptoAllowance(owner, spender2, 100L)
-								.addTokenAllowance(owner, token, spender, 100L)
-								.addNftAllowance(owner, nft, spender, false, List.of(1L)),
-						getAccountInfo(owner)
-								.has(accountWith()
-										.cryptoAllowancesCount(2)
-										.tokenAllowancesCount(1)
-										.nftApprovedForAllAllowancesCount(1)
-								)
-				)
-				.then(
-						cryptoAdjustAllowance()
-								.payingWith(owner)
-								.addCryptoAllowance(owner, spender, -100L),
-						getAccountInfo(owner)
-								.has(accountWith()
-										.cryptoAllowancesCount(1)
-										.tokenAllowancesCount(1)
-										.nftApprovedForAllAllowancesCount(1)
-								),
-						cryptoAdjustAllowance()
-								.payingWith(owner)
-								.addCryptoAllowance(owner, spender, 100L),
-						cryptoAdjustAllowance()
-								.payingWith(owner)
-								.addCryptoAllowance(owner, spender1, 100L)
-								.via("maxExceeded")
-								.hasKnownStatus(MAX_ALLOWANCES_EXCEEDED),
-						getTxnRecord("maxExceeded")
-								.hasCryptoAllowanceCount(0)
-								.hasTokenAllowanceCount(0),
-						// reset
-						fileUpdate(APP_PROPERTIES)
-								.fee(ONE_HUNDRED_HBARS)
-								.payingWith(EXCHANGE_RATE_CONTROL)
-								.overridingProps(Map.of(
-										"hedera.allowances.maxTransactionLimit", "20",
-										"hedera.allowances.maxAccountLimit", "100")
 								)
 				);
 	}
@@ -988,7 +887,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								movingUnique(nft, 4L, 5L, 6L).between(TOKEN_TREASURY, owner2))
 				)
 				.when(
-						cryptoAdjustAllowance()
+						cryptoApproveAllowance()
 								.payingWith(DEFAULT_PAYER)
 								.addCryptoAllowance(owner1, spender, ONE_HBAR)
 								.addTokenAllowance(owner1, token, spender, 100L)

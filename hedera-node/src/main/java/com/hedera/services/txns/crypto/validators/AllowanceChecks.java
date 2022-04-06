@@ -63,8 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 /**
- * Validations for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} and
- * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transaction allowances
+ * Validations for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} transaction allowances
  */
 public abstract class AllowanceChecks {
 	private final GlobalDynamicProperties dynamicProperties;
@@ -77,8 +76,7 @@ public abstract class AllowanceChecks {
 	}
 
 	/**
-	 * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
-	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
+	 * Validate all allowances in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} transactions
 	 *
 	 * @param cryptoAllowances
 	 * 		crypto allowances list
@@ -132,8 +130,8 @@ public abstract class AllowanceChecks {
 
 
 	/**
-	 * Validates the CryptoAllowances given in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
-	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
+	 * Validates the CryptoAllowances given in {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance}
+	 * transaction
 	 *
 	 * @param cryptoAllowances
 	 * 		crypto allowances list
@@ -182,8 +180,8 @@ public abstract class AllowanceChecks {
 	}
 
 	/**
-	 * Validate fungible token allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
-	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
+	 * Validate fungible token allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance}
+	 * transaction
 	 *
 	 * @param tokenAllowances
 	 * 		token allowances list
@@ -238,8 +236,7 @@ public abstract class AllowanceChecks {
 	}
 
 	/**
-	 * Validate nft allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} or
-	 * {@link com.hederahashgraph.api.proto.java.CryptoAdjustAllowance} transactions
+	 * Validate nft allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} transaction
 	 *
 	 * @param tokenStore
 	 * @param accountStore
@@ -410,7 +407,7 @@ public abstract class AllowanceChecks {
 		}
 	}
 
-	/* --- Abstract methods to be implemented by ApproveAllowanceChecks, AdjustAllowanceChecks. They will not be needed
+	/* --- Abstract methods to be implemented by ApproveAllowanceChecks. They will not be needed
 	 for DeleteAllowanceChecks since deleteAllowance doesn't validate amounts */
 	public abstract ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender);
 

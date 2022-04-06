@@ -31,7 +31,6 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractDelete;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractUpdate;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoAdjustAllowance;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoDelete;
@@ -117,10 +116,6 @@ public class TxnVerbs {
 
 	public static HapiCryptoApproveAllowance cryptoApproveAllowance() {
 		return new HapiCryptoApproveAllowance();
-	}
-
-	public static HapiCryptoAdjustAllowance cryptoAdjustAllowance() {
-		return new HapiCryptoAdjustAllowance();
 	}
 
 	public static HapiCryptoDeleteAllowance cryptoDeleteAllowance() {
