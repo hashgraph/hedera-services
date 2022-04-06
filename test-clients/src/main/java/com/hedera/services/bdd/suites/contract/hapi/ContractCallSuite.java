@@ -160,47 +160,47 @@ public class ContractCallSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				resultSizeAffectsFees(),
-//				payableSuccess(),
-//				depositSuccess(),
-//				depositDeleteSuccess(),
-//				multipleDepositSuccess(),
-//				payTestSelfDestructCall(),
-//				multipleSelfDestructsAreSafe(),
-//				smartContractInlineAssemblyCheck(),
-//				ocToken(),
-//				contractTransferToSigReqAccountWithKeySucceeds(),
-//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-//				minChargeIsTXGasUsedByContractCall(),
-//				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
-//				HSCS_EVM_006_ContractHBarTransferToAccount(),
-//				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
-//				HSCS_EVM_010_MultiSignatureAccounts(),
-//				HSCS_EVM_010_ReceiverMustSignContractTx(),
-//				insufficientGas(),
-//				insufficientFee(),
-//				nonPayable(),
-//				invalidContract(),
-//				smartContractFailFirst(),
-//				contractTransferToSigReqAccountWithoutKeyFails(),
-//				callingDestructedContractReturnsStatusDeleted(),
-//				gasLimitOverMaxGasLimitFailsPrecheck(),
-//				imapUserExercise(),
-//				workingHoursDemo(),
-//				deletedContractsCannotBeUpdated(),
-//				sendHbarsToAddressesMultipleTimes(),
-//				sendHbarsToDifferentAddresses(),
-//				sendHbarsFromDifferentAddressessToAddress(),
-//				sendHbarsFromAndToDifferentAddressess(),
-//				transferNegativeAmountOfHbars(),
-//				transferToCaller(),
-//				transferZeroHbarsToCaller(),
-//				transferZeroHbars(),
-//				sendHbarsToOuterContractFromDifferentAddresses(),
-//				sendHbarsToCallerFromDifferentAddresses(),
-//				bitcarbonTestStillPasses(),
-//				contractCreationStoragePriceMatchesFinalExpiry(),
-				whitelistingAliasedContract()
+				resultSizeAffectsFees(),
+				payableSuccess(),
+				depositSuccess(),
+				depositDeleteSuccess(),
+				multipleDepositSuccess(),
+				payTestSelfDestructCall(),
+				multipleSelfDestructsAreSafe(),
+				smartContractInlineAssemblyCheck(),
+				ocToken(),
+				contractTransferToSigReqAccountWithKeySucceeds(),
+				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+				minChargeIsTXGasUsedByContractCall(),
+				HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts(),
+				HSCS_EVM_006_ContractHBarTransferToAccount(),
+				HSCS_EVM_005_TransfersWithSubLevelCallsBetweenContracts(),
+				HSCS_EVM_010_MultiSignatureAccounts(),
+				HSCS_EVM_010_ReceiverMustSignContractTx(),
+				insufficientGas(),
+				insufficientFee(),
+				nonPayable(),
+				invalidContract(),
+				smartContractFailFirst(),
+				contractTransferToSigReqAccountWithoutKeyFails(),
+				callingDestructedContractReturnsStatusDeleted(),
+				gasLimitOverMaxGasLimitFailsPrecheck(),
+				imapUserExercise(),
+				workingHoursDemo(),
+				deletedContractsCannotBeUpdated(),
+				sendHbarsToAddressesMultipleTimes(),
+				sendHbarsToDifferentAddresses(),
+				sendHbarsFromDifferentAddressessToAddress(),
+				sendHbarsFromAndToDifferentAddressess(),
+				transferNegativeAmountOfHbars(),
+				transferToCaller(),
+				transferZeroHbarsToCaller(),
+				transferZeroHbars(),
+				sendHbarsToOuterContractFromDifferentAddresses(),
+				sendHbarsToCallerFromDifferentAddresses(),
+				bitcarbonTestStillPasses(),
+				contractCreationStoragePriceMatchesFinalExpiry()
+//				whitelistingAliasedContract()
 		});
 	}
 
@@ -237,7 +237,7 @@ public class ContractCallSuite extends HapiApiSuite {
 								1, 0,
 								"setup", creationTxn, childMirror, childEip1014),
 						withOpContext((spec, op) -> allRunFor(spec,
-								contractCall(WHITELISTER, ADD_TO_WHITELIST_ABI, childMirror.get())
+								contractCall(WHITELISTER, ADD_TO_WHITELIST_ABI, childEip1014.get())
 										.payingWith(DEFAULT_PAYER),
 								contractCall(asContractString(
 												contractIdFromHexedMirrorAddress(childMirror.get())), IS_WHITELISTED_ABI,
@@ -250,8 +250,8 @@ public class ContractCallSuite extends HapiApiSuite {
 										.via(evmWhitelistCheckTxn)
 						))
 				).then(
-						getTxnRecord(mirrorWhitelistCheckTxn).andAllChildRecords().hasChildRecords(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged(),
-						getTxnRecord(evmWhitelistCheckTxn).andAllChildRecords().hasChildRecords(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged()
+						getTxnRecord(mirrorWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged(),
+						getTxnRecord(evmWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged()
 				);
 	}
 

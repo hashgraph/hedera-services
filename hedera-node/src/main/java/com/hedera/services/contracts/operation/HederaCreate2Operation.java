@@ -94,8 +94,6 @@ public class HederaCreate2Operation extends AbstractRecordingCreateOperation {
 		final var hash = keccak256(Bytes.concatenate(PREFIX, source, salt, keccak256(initCode)));
 		final var alias = Address.wrap(hash.slice(12, 20));
 
-		// mirrorAddress(0x00000000001 - 0xhaisfhjaklsjdas) -> mirrorNode .... seq account
-		// 0xhaisfhjaklsjdas TransactionRecord
 		final Address address = updater.newAliasedContractAddress(sourceAddressOrAlias, alias);
 		frame.warmUpAddress(address);
 		frame.warmUpAddress(alias);

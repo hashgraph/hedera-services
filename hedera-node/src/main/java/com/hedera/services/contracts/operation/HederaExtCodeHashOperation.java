@@ -22,6 +22,7 @@ package com.hedera.services.contracts.operation;
  *
  */
 
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -32,6 +33,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
+import org.hyperledger.besu.evm.operation.Operation;
 
 import javax.inject.Inject;
 import java.util.Optional;
@@ -64,9 +66,15 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 				return new OperationResult(
 						Optional.of(cost(true)), Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 			}
+			final var worldUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 			final var account = frame.getWorldUpdater().get(address);
 			boolean accountIsWarm = frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
 			Optional<Gas> optionalCost = Optional.of(this.cost(accountIsWarm));
+			if (worldUpdater.isInconsistentMirrorAddress(address)) {
+				return new Operation.OperationResult(
+						optionalCost,
+						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+			}
 			if (frame.getRemainingGas().compareTo(optionalCost.get()) < 0) {
 				return new OperationResult(optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 			} else {

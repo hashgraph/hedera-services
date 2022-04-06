@@ -23,6 +23,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -35,6 +36,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack.OverflowException;
 import org.hyperledger.besu.evm.internal.FixedStack.UnderflowException;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
+import org.hyperledger.besu.evm.operation.Operation;
 
 import javax.inject.Inject;
 import java.util.Optional;
@@ -68,11 +70,17 @@ public class HederaSLoadOperation extends AbstractOperation {
 	@Override
 	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		try {
-			final Account account = frame.getWorldUpdater().get(frame.getRecipientAddress());
+			final var worldUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+			final Account account = worldUpdater.get(frame.getRecipientAddress());
 			final Address address = account.getAddress();
 			final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
 			final boolean slotIsWarm = frame.warmUpStorage(address, key);
 			final Optional<Gas> optionalCost = slotIsWarm ? warmCost : coldCost;
+			if (worldUpdater.isInconsistentMirrorAddress(address)) {
+				return new Operation.OperationResult(
+						optionalCost,
+						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+			}
 			if (frame.getRemainingGas().compareTo(optionalCost.orElse(Gas.ZERO)) < 0) {
 				return new OperationResult(
 						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));

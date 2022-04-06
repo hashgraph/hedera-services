@@ -187,7 +187,6 @@ abstract class EvmTxProcessor {
 		final Gas intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
 		final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
-		// TODO: Check if address is aliased, if yes -> convert to hedera native
 		final var senderEvmAddress = sender.getId().asEvmAddress();
 		final var senderAccount = updater.getOrCreateSenderAccount(senderEvmAddress);
 		final MutableAccount mutableSender = senderAccount.getMutable();

@@ -73,6 +73,12 @@ public final class HederaOperationUtil {
 			BiPredicate<Address, MessageFrame> addressValidator) {
 		try {
 			final var address = Words.toAddress(supplierAddressBytes.get());
+			final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+			if (updater.isInconsistentMirrorAddress(address)) {
+				return new Operation.OperationResult(
+						Optional.of(supplierHaltGasCost.get()),
+						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+			}
 			if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
 				return new Operation.OperationResult(
 						Optional.of(supplierHaltGasCost.get()),
