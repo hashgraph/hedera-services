@@ -208,7 +208,7 @@ public class RecordStreamManager {
 		if (!inFreeze) {
 			try {
 				multiStream.addObject(recordStreamObject);
-				curNetworkCtx.cacheBlockHash(org.hyperledger.besu.datatypes.Hash.hash(Bytes.wrap(recordStreamObject.getRunningHash().getHash().getValue())));
+				curNetworkCtx.cacheBlockHash(recordStreamObject.getRunningHash().getHash());
 			} catch (Exception e) {
 				log.warn("Unhandled exception while streaming {}", recordStreamObject, e);
 			}

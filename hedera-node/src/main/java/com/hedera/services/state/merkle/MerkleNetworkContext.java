@@ -30,14 +30,13 @@ import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.common.CommonUtils;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.platform.state.DualStateImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.datatypes.Hash;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -100,9 +99,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 	private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
 	private long blockNo = 0;
+	private boolean isNewBlock = false;
 	private Instant firstConsTimeOfCurrentBlock = NULL_CONSENSUS_TIME;
-	private Bytes32 currentBlockHash = Bytes32.ZERO;
-	private Map<Long, Hash> blockNumberToHash = new LinkedHashMap<>(256);
+	private Hash currentBlockHash = new Hash();
+	//This initial capacity should prevent the map from rehashing since we will store only 256 pairs and this is less than 0.75*344
+	private Map<Long, Hash> blockNumberToHash = new LinkedHashMap<>(344);
 
 	public MerkleNetworkContext() {
 		/* No-op for RuntimeConstructable facility; will be followed by a call to deserialize. */
@@ -137,6 +138,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.preparedUpdateFileHash = that.preparedUpdateFileHash;
 		this.migrationRecordsStreamed = that.migrationRecordsStreamed;
 		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
+		this.currentBlockHash = that.currentBlockHash;
 		this.blockNo = that.blockNo;
 		this.blockNumberToHash = that.blockNumberToHash;
 	}
@@ -391,6 +393,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public void incrementBlockNo() {
 		blockNo++;
+		isNewBlock = true;
 	}
 
 	public long getBlockNo() {
@@ -398,26 +401,37 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public void cacheBlockHash(final Hash blockHash) {
-		if(blockNumberToHash.size() <= 256) {
-			blockNumberToHash.put(blockNo, blockHash);
-		} else {
-			final var multiplier = blockNo / 256;
-			final var indexToReplace = (int) (blockNo - 256 * multiplier);
-			final var indexKey = (Long) blockNumberToHash.entrySet().toArray()[indexToReplace];
-			blockNumberToHash.put(indexKey, blockHash);
+		//When the cache exceeds 256 entries we need to remove the first entry to free one slot for the new block
+		if(blockNumberToHash.size() > 255 && !blockNumberToHash.containsKey(blockNo)) {
+			final var firstKey = (Long) blockNumberToHash.keySet().toArray()[0];
+			blockNumberToHash.remove(firstKey);
+		}
+
+		blockNumberToHash.putIfAbsent(blockNo, currentBlockHash);
+
+		if(isNewBlock) {
+			currentBlockHash = blockHash;
 		}
 	}
 
-	public Bytes32 getBlockHash(final long blockNumber) {
-		return blockNumberToHash.getOrDefault(blockNumber, Hash.EMPTY);
+	public Hash getBlockHash(final long blockNumber) {
+		return blockNumberToHash.getOrDefault(blockNumber, new Hash());
 	}
 
 	public Instant getFirstConsTimeOfCurrentBlock() {
 		return firstConsTimeOfCurrentBlock;
 	}
 
-	public void setFirstConsTimeOfCurrentBlock(Instant firstConsTimeOfCurrentBlock) {
+	public void setFirstConsTimeOfCurrentBlock(final Instant firstConsTimeOfCurrentBlock) {
 		this.firstConsTimeOfCurrentBlock = firstConsTimeOfCurrentBlock;
+	}
+
+	public Hash getCurrentBlockHash() {
+		return currentBlockHash;
+	}
+
+	public void setCurrentBlockHash(final Hash currentBlockHash) {
+		this.currentBlockHash = currentBlockHash;
 	}
 
 	private String usageSnapshotsDesc() {
@@ -650,5 +664,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
 		this.gasThrottleUsageSnapshot = gasThrottleUsageSnapshot;
+	}
+
+	/* --- Used for tests --- */
+	public Map<Long, Hash> getBlockHash() {
+		return blockNumberToHash;
 	}
 }

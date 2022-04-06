@@ -22,6 +22,8 @@ package com.hedera.services.stream;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -31,6 +33,7 @@ import com.swirlds.common.NodeId;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
 import org.apache.commons.lang3.RandomUtils;
@@ -42,8 +45,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 
+import java.util.Map;
 import java.util.Queue;
 
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.*;
@@ -162,23 +167,20 @@ public class RecordStreamManagerTest {
 	@Test
 	void addRecordStreamObjectTest() {
 		// setup:
+		final MiscRunningAvgs runningAvgsMock = mock(MiscRunningAvgs.class);
+		final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext(
+				NULL_CONSENSUS_TIME,
+				new SequenceNumber(2),
+				1,
+				new ExchangeRates());
 		final var mockQueue = mock(Queue.class);
 		recordStreamManager = new RecordStreamManager(
 				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 		assertFalse(recordStreamManager.getInFreeze(),
 				"inFreeze should be false after initialization");
 		final int recordsNum = 10;
-		for (int i = 0; i < recordsNum; i++) {
-			RecordStreamObject recordStreamObject = mock(RecordStreamObject.class);
-			when(writeQueueThreadMock.getQueue()).thenReturn(mockQueue);
-			given(mockQueue.size()).willReturn(i);
-			recordStreamManager.addRecordStreamObject(recordStreamObject, merkleNetworkContext);
-			verify(multiStreamMock).addObject(recordStreamObject);
-			verify(runningAvgsMock).writeQueueSizeRecordStream(i);
-			// multiStream should not be closed after adding it
-			verify(multiStreamMock, never()).close();
-			assertFalse(recordStreamManager.getInFreeze(),
-					"inFreeze should be false after adding the records");
+		for (int i = 1; i <= recordsNum; i++) {
+			addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, i, INITIAL_RANDOM_HASH);
 		}
 		// set inFreeze to be true
 		recordStreamManager.setInFreeze(true);
@@ -196,7 +198,95 @@ public class RecordStreamManagerTest {
 		// multiStreamMock should be closed when inFreeze is set to be true
 		verify(multiStreamMock).close();
 		// should get recordStream queue size and set to runningAvgs
-		verify(runningAvgsMock).writeQueueSizeRecordStream(recordsNum);
+		verify(runningAvgsMock, times(2)).writeQueueSizeRecordStream(recordsNum);
+	}
+
+	@Test
+	void testMaxBlockHashCache() {
+		// setup:
+		final MiscRunningAvgs runningAvgsMock = mock(MiscRunningAvgs.class);
+		final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext(
+				NULL_CONSENSUS_TIME,
+				new SequenceNumber(2),
+				1,
+				new ExchangeRates());
+		final var mockQueue = mock(Queue.class);
+		recordStreamManager = new RecordStreamManager(
+				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+		assertFalse(recordStreamManager.getInFreeze(),
+				"inFreeze should be false after initialization");
+		final int recordsNum = 256;
+
+		for (int i = 1; i <= recordsNum; i++) {
+			addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, i, INITIAL_RANDOM_HASH);
+		}
+		assertEquals(new Hash(), merkleNetworkContext.getBlockHash(1));
+		assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHash(256));
+		assertEquals(256, merkleNetworkContext.getBlockHash().size());
+		assertEquals(recordsNum, merkleNetworkContext.getBlockNo());
+	}
+
+	@Test
+	void testBlockHashCacheIsBeingOverwrittenAfterMaxLimit() {
+		// setup:
+		final MiscRunningAvgs runningAvgsMock = mock(MiscRunningAvgs.class);
+		final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext(
+				NULL_CONSENSUS_TIME,
+				new SequenceNumber(2),
+				1,
+				new ExchangeRates());
+		final var mockQueue = mock(Queue.class);
+		recordStreamManager = new RecordStreamManager(
+				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+		assertFalse(recordStreamManager.getInFreeze(),
+				"inFreeze should be false after initialization");
+
+		final Hash OVERWRITING_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
+		for (int i = 1; i <= 255; i++) {
+			addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, i, INITIAL_RANDOM_HASH);
+		}
+		addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, 256, OVERWRITING_HASH);
+		addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, 257, OVERWRITING_HASH);
+
+		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getBlockHash(257));
+		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getCurrentBlockHash());
+		assertEquals(256, merkleNetworkContext.getBlockHash().size());
+		assertEquals(257, merkleNetworkContext.getBlockNo());
+
+		//Check blockNo and block hash of all block hash entries without the last one
+		int i = 2;
+		for (final Map.Entry<Long, Hash> blockHashEntry : merkleNetworkContext.getBlockHash().entrySet()) {
+			if (i != 257) {
+				assertEquals(i, blockHashEntry.getKey());
+				assertEquals(INITIAL_RANDOM_HASH, blockHashEntry.getValue());
+			}
+			i++;
+		}
+	}
+
+	@Test
+	void testExceedingMaxBlockHashCache() {
+		// setup:
+		final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext(
+				NULL_CONSENSUS_TIME,
+				new SequenceNumber(2),
+				1,
+				new ExchangeRates());
+		final var mockQueue = mock(Queue.class);
+		recordStreamManager = new RecordStreamManager(
+				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
+		assertFalse(recordStreamManager.getInFreeze(),
+				"inFreeze should be false after initialization");
+		final int recordsNum = 1234;
+
+		for (int i = 1; i <= recordsNum; i++) {
+			addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, i, INITIAL_RANDOM_HASH);
+		}
+
+		assertEquals(new Hash(), merkleNetworkContext.getBlockHash(1));
+		assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHash(1234));
+		assertEquals(256, merkleNetworkContext.getBlockHash().size());
+		assertEquals(recordsNum, merkleNetworkContext.getBlockNo());
 	}
 
 	@ParameterizedTest
@@ -235,5 +325,23 @@ public class RecordStreamManagerTest {
 
 		assertEquals(expected, RecordStreamManager.effLogDir(withSeparatorSuffix, memo));
 		assertEquals(expected, RecordStreamManager.effLogDir(withoutSeparatorSuffix, memo));
+	}
+
+	// For ease of testing, we will assume that a new block contains a single RecordStreamObject.
+	// In the real world scenario, a block/record file will contain >=1 RecordStreamObjects.
+	private void addRecordStreamObject(final MiscRunningAvgs runningAvgsMock, final MerkleNetworkContext merkleNetworkContext,
+													 final Queue mockQueue, final int queueSize, final Hash hash) {
+		final RecordStreamObject recordStreamObject = mock(RecordStreamObject.class);
+		when(writeQueueThreadMock.getQueue()).thenReturn(mockQueue);
+		given(mockQueue.size()).willReturn(queueSize);
+		when(recordStreamObject.getRunningHash()).thenReturn(new RunningHash(hash));
+		merkleNetworkContext.incrementBlockNo();
+		recordStreamManager.addRecordStreamObject(recordStreamObject, merkleNetworkContext);
+		verify(multiStreamMock).addObject(recordStreamObject);
+		verify(runningAvgsMock).writeQueueSizeRecordStream(queueSize);
+		// multiStream should not be closed after adding it
+		verify(multiStreamMock, never()).close();
+		assertFalse(recordStreamManager.getInFreeze(),
+				"inFreeze should be false after adding the records");
 	}
 }
