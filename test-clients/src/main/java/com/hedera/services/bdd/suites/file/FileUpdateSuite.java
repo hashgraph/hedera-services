@@ -58,7 +58,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
@@ -82,7 +81,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
@@ -118,7 +116,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 	private static final String defaultMaxCustomFees =
 			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxCustomFeesAllowed");
 	private static final String defaultMaxTokenPerAccount =
-			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxPerAccount");
+			HapiSpecSetup.getDefaultNodeProps().get("tokens.maxRelsPerInfoQuery");
 	private static final String defaultMaxIndividualKvPairs =
 			HapiSpecSetup.getDefaultNodeProps().get(INDIVIDUAL_KV_LIMIT_PROP);
 	private static final String defaultMaxAggregateKvPairs =
@@ -140,7 +138,6 @@ public class FileUpdateSuite extends HapiApiSuite {
 				optimisticSpecialFileUpdate(),
 				associateHasExpectedSemantics(),
 				notTooManyFeeScheduleCanBeCreated(),
-				numAccountsAllowedIsDynamic(),
 				allUnusedGasIsRefundedIfSoConfigured(),
 				maxRefundIsEnforced(),
 				gasLimitOverMaxGasLimitFailsPrecheck(),
@@ -167,11 +164,9 @@ public class FileUpdateSuite extends HapiApiSuite {
 								.hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + 1)),
-						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT)
-								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
+								.overridingProps(Map.of("tokens.maxRelsPerInfoQuery", "" + 1)),
 						fileUpdate(APP_PROPERTIES).overridingProps(Map.of(
-								"tokens.maxPerAccount", "" + 1000
+								"tokens.maxRelsPerInfoQuery", "" + 1000
 						)).payingWith(ADDRESS_BOOK_CONTROL),
 						TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT),
 						tokenAssociate("misc", TokenAssociationSpecs.KNOWABLE_TOKEN,
@@ -215,38 +210,6 @@ public class FileUpdateSuite extends HapiApiSuite {
 								tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR)
 						),
 						getAliasedAccountInfo(aliasKey)
-				);
-	}
-
-	public HapiApiSpec numAccountsAllowedIsDynamic() {
-		final int MONOGAMOUS_NETWORK = 1;
-
-		return defaultHapiSpec("NumAccountsAllowedIsDynamic")
-				.given(
-						newKeyNamed("admin"),
-						cryptoCreate(TOKEN_TREASURY).balance(0L)
-				).when(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK)),
-						tokenCreate("primary")
-								.adminKey("admin")
-								.treasury(TOKEN_TREASURY),
-						tokenCreate("secondaryFails")
-								.treasury(TOKEN_TREASURY)
-								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED),
-						tokenDelete("primary"),
-						/* Deleted tokens still count against your max allowed associations. */
-						tokenCreate("secondaryFailsAgain")
-								.treasury(TOKEN_TREASURY)
-								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
-				).then(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of(
-										"tokens.maxPerAccount", defaultMaxTokenPerAccount
-								)),
-						tokenCreate("secondary").treasury(TOKEN_TREASURY)
 				);
 	}
 
@@ -545,7 +508,7 @@ public class FileUpdateSuite extends HapiApiSuite {
 						)
 								.payingWith(GENESIS)
 				).then(
-						sleepFor(1_000L),
+						sleepFor(2_000L),
 						withOpContext((spec, opLog) -> {
 							final var unrefundedOp = getTxnRecord(unrefundedTxn);
 							final var refundedOp = getTxnRecord(refundedTxn)

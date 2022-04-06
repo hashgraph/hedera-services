@@ -69,6 +69,10 @@ public class FeeBuilder {
 	public static final int NFT_ALLOWANCE_SIZE = BASIC_ENTITY_ID_SIZE + 2 * INT_SIZE + BOOL_SIZE; // owner, tokenNum,
 	// spender num, approvedForAll
 
+	public static final int CRYPTO_DELETE_ALLOWANCE_SIZE = BASIC_ENTITY_ID_SIZE; // owner
+	public static final int TOKEN_DELETE_ALLOWANCE_SIZE = 2 * BASIC_ENTITY_ID_SIZE; // owner, tokenID
+	public static final int NFT_DELETE_ALLOWANCE_SIZE = 2 * BASIC_ENTITY_ID_SIZE; // owner, tokenID
+
 	/**
 	 * Fields included: status, exchangeRate.
 	 */

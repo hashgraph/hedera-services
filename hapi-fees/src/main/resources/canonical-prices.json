@@ -24,6 +24,9 @@
   "CryptoAdjustAllowance": {
 	"DEFAULT": 0.05
   },
+  "CryptoDeleteAllowance": {
+	"DEFAULT": 0.05
+  },
   "CryptoAddLiveHash": {
 	"DEFAULT": 0.1
   },

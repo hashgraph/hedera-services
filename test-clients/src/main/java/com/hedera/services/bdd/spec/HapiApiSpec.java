@@ -43,7 +43,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -98,8 +98,6 @@ public class HapiApiSpec implements Runnable {
 
 	List<Payment> costs = new ArrayList<>();
 	List<Payment> costSnapshot = Collections.EMPTY_LIST;
-	boolean saveContextFlag = false;
-	static boolean restoreContextFlag = false;
 	String name;
 	String suitePrefix = "";
 	SpecStatus status;
@@ -342,10 +340,6 @@ public class HapiApiSpec implements Runnable {
 		if (hapiSetup.requiresPersistentEntities() && hapiSetup.updateManifestsForCreatedPersistentEntities()) {
 			entities.updateCreatedEntityManifests();
 		}
-
-		if (saveContextFlag) {
-			persistContext();
-		}
 	}
 
 	private void startFinalizingOps() {
@@ -549,10 +543,6 @@ public class HapiApiSpec implements Runnable {
 					txnFactory, keyFactory, hapiSetup, hapiClients, hapiRegistry);
 			feeCalculator = new FeeCalculator(hapiSetup, scheduleProvider);
 			this.ratesProvider = scheduleProvider;
-			if (restoreContextFlag) {
-				restoreContext();
-				restoreContextFlag = false;
-			}
 		} catch (Throwable t) {
 			log.error("Initialization failed for spec '" + name + "'!", t);
 			status = ERROR;
@@ -632,7 +622,7 @@ public class HapiApiSpec implements Runnable {
 				deserializedCosts.put(String.format("%d.%s", i, cost.entryName()), "" + cost.tinyBars);
 			}
 			File file = new File(costSnapshotFilePath());
-			CharSink sink = Files.asCharSink(file, Charset.forName("UTF-8"));
+			CharSink sink = Files.asCharSink(file, StandardCharsets.UTF_8);
 			deserializedCosts.store(sink.openBufferedStream(), "Cost snapshot");
 		} catch (Exception e) {
 			log.warn("Couldn't take cost snapshot to file '" + costSnapshotFile() + "!", e);
@@ -655,7 +645,7 @@ public class HapiApiSpec implements Runnable {
 		Map<Integer, Payment> costsByOrder = new HashMap<>();
 		serializedCosts.forEach((a, b) -> {
 			String meta = (String) a;
-			long amount = Long.valueOf((String) b);
+			long amount = Long.parseLong((String) b);
 			int i = meta.indexOf(".");
 			costsByOrder.put(
 					Integer.valueOf(meta.substring(0, i)),
@@ -693,12 +683,6 @@ public class HapiApiSpec implements Runnable {
 		}
 	}
 
-	private String contextFilePath() {
-		String defaultPath = "saved_context";
-		ensureDir(defaultPath);
-		return defaultPath;
-	}
-
 	private void nullOutInfrastructure() {
 		txnFactory = null;
 		keyFactory = null;
@@ -707,22 +691,5 @@ public class HapiApiSpec implements Runnable {
 		ratesProvider = null;
 		hapiClients = null;
 		hapiRegistry = null;
-	}
-
-	public HapiApiSpec saveContext(boolean saveIt) {
-		saveContextFlag = saveIt;
-		return this;
-	}
-
-	public void persistContext() {
-		registry().save(contextFilePath() + "/registry.ser");
-		keyFactory.saveKeyFactory(contextFilePath());
-
-	}
-
-	public void restoreContext() {
-		registry().load(contextFilePath() + "/registry.ser");
-		keyFactory.loadKeyFactory(contextFilePath());
-
 	}
 }

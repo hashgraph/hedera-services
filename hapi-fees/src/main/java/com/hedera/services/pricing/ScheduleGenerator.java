@@ -39,6 +39,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
@@ -144,6 +145,7 @@ public class ScheduleGenerator {
 			Pair.of(CryptoUpdate, List.of(DEFAULT)),
 			Pair.of(CryptoApproveAllowance, List.of(DEFAULT)),
 			Pair.of(CryptoAdjustAllowance, List.of(DEFAULT)),
+			Pair.of(CryptoDeleteAllowance, List.of(DEFAULT)),
 			/* File */
 			Pair.of(FileAppend, List.of(DEFAULT)),
 			/* Token */

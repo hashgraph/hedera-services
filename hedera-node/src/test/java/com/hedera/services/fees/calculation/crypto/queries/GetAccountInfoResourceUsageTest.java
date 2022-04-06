@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
@@ -75,6 +76,7 @@ class GetAccountInfoResourceUsageTest {
 	private static final TokenID cToken = asToken("0.0.1003");
 	private static final String memo = "Hi there!";
 	private static final int maxAutomaticAssociations = 123;
+	private static final int maxTokensPerAccountInfo = 10;
 	private static final AccountID queryTarget = IdUtils.asAccount(a);
 
 	@Mock
@@ -85,6 +87,8 @@ class GetAccountInfoResourceUsageTest {
 	private StateView view;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	private GetAccountInfoResourceUsage subject;
 
@@ -92,16 +96,16 @@ class GetAccountInfoResourceUsageTest {
 	private GrantedTokenAllowance tokenAllowances = GrantedTokenAllowance.newBuilder()
 			.setSpender(proxy).setAmount(10L).setTokenId(IdUtils.asToken("0.0.1000")).build();
 	private GrantedNftAllowance nftAllowances = GrantedNftAllowance.newBuilder().setSpender(proxy)
-			.setTokenId(IdUtils.asToken("0.0.1000"))
-			.addAllSerialNumbers(List.of(1L, 2L, 3L)).build();
+			.setTokenId(IdUtils.asToken("0.0.1000")).build();
 
 	@BeforeEach
 	private void setup() {
-		subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager);
+		subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties);
 	}
 
 	@Test
 	void usesEstimator() {
+		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		final var captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
 		final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
 				.setLedgerId(ledgerId)
@@ -118,7 +122,7 @@ class GetAccountInfoResourceUsageTest {
 				.addAllGrantedTokenAllowances(List.of(tokenAllowances))
 				.build();
 		final var query = accountInfoQuery(a, ANSWER_ONLY);
-		given(view.infoForAccount(queryTarget, aliasManager)).willReturn(Optional.of(info));
+		given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo)).willReturn(Optional.of(info));
 		given(cryptoOpsUsage.cryptoInfoUsage(any(), any())).willReturn(expected);
 
 		final var usage = subject.usageGiven(query, view);
@@ -139,7 +143,8 @@ class GetAccountInfoResourceUsageTest {
 
 	@Test
 	void returnsDefaultIfNoSuchAccount() {
-		given(view.infoForAccount(queryTarget, aliasManager)).willReturn(Optional.empty());
+		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
+		given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo)).willReturn(Optional.empty());
 
 		final var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
 

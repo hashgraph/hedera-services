@@ -43,6 +43,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -51,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+@Singleton
 public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private static final Logger log = LogManager.getLogger(ContractCallTransitionLogic.class);
 
@@ -89,7 +91,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public void doStateTransition() {
-		/* --- Translate from gRPC types --- */
+		// --- Translate from gRPC types ---
 		var contractCallTxn = txnCtx.accessor().getTxn();
 		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
 		doStateTransitionOperation(contractCallTxn, senderId);
@@ -100,14 +102,14 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		final var target = targetOf(op);
 		final var contractId = target.toId();
 
-		/* --- Load the model objects --- */
+		// --- Load the model objects ---
 		final var sender = accountStore.loadAccount(senderId);
 		final var receiver = accountStore.loadContract(contractId);
 		final var callData = !op.getFunctionParameters().isEmpty()
 				? Bytes.wrap(op.getFunctionParameters().toByteArray())
 				: Bytes.EMPTY;
 
-		/* --- Do the business logic --- */
+		// --- Do the business logic ---
 		final var result = evmTxProcessor.execute(
 				sender,
 				receiver.canonicalAddress(),
@@ -116,9 +118,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 				callData,
 				txnCtx.consensusTime());
 
-		/* --- Persist changes into state --- */
-		final var createdContracts = worldState.persistProvisionalContractCreations();
-		worldState.customizeSponsoredAccounts();
+		// --- Persist changes into state ---
+		final var createdContracts = worldState.getCreatedContractIds();
 		result.setCreatedContracts(createdContracts);
 
 		/* --- Externalise result --- */

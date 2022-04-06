@@ -26,6 +26,7 @@ import com.hedera.services.ledger.TokenRelsCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
@@ -65,6 +66,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.services.store.contracts.WorldLedgers.staticLedgersWith;
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -111,6 +113,10 @@ class AbstractLedgerWorldUpdaterTest {
 	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
 	@Mock
 	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
+	@Mock
+	private ContractCustomizer customizer;
+	@Mock
+	private StaticEntityAccess staticEntityAccess;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -119,7 +125,14 @@ class AbstractLedgerWorldUpdaterTest {
 	void setUp() {
 		setupLedgers();
 
-		subject = new MockLedgerWorldUpdater(worldState, ledgers);
+		subject = new MockLedgerWorldUpdater(worldState, ledgers, customizer);
+	}
+
+	@Test
+	void isPossibleToWrapStaticLedgers() {
+		final var staticLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		subject = new MockLedgerWorldUpdater(worldState, staticLedgers, customizer);
+		assertDoesNotThrow(()-> subject.wrappedTrackingLedgers(sideEffectsTracker));
 	}
 
 	@Test
@@ -338,6 +351,27 @@ class AbstractLedgerWorldUpdaterTest {
 	}
 
 	@Test
+	void commitsToWrappedTrackingLedgersWithoutInterceptorsAreRespected() {
+		final var aEntityId = EntityId.fromGrpcAccountId(aAccount);
+		setupWellKnownNfts();
+
+		/* Get the wrapped nfts for the updater */
+		final var trackingLedgers = subject.trackingLedgers();
+		final var nfts = trackingLedgers.nfts();
+
+		/* Make some changes to them (e.g. as part of an HTS precompile) */
+		nfts.destroy(aNft);
+		nfts.set(bNft, OWNER, aEntityId);
+
+		/* Commit the changes */
+		trackingLedgers.commit();
+
+		/* And they should be present in the underlying ledgers */
+		assertFalse(ledgers.nfts().contains(aNft));
+		assertEquals(aEntityId, ledgers.nfts().get(bNft, OWNER));
+	}
+
+	@Test
 	void commitsToWrappedTrackingLedgersWithSetSideEffectsTrackerAreRespected() {
 		final var aEntityId = EntityId.fromGrpcAccountId(aAccount);
 		setupWellKnownNfts();
@@ -392,6 +426,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 		final var trackingAccounts = subject.trackingLedgers().accounts();
 		assertTrue(trackingAccounts.contains(aAccount));
+		verify(customizer).customize(aAccount, ledgers.accounts());
 		assertEquals(aHbarBalance, trackingAccounts.get(aAccount, AccountProperty.BALANCE));
 	}
 
@@ -424,7 +459,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void noopsOnCreateWithUnusableTrackingErrorToPreserveExistingErrorHandling() {
 		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
-		subject = new MockLedgerWorldUpdater(worldState, WorldLedgers.staticLedgersWith(aliases, null));
+		subject = new MockLedgerWorldUpdater(worldState, staticLedgersWith(aliases, null), customizer);
 
 		assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
 	}

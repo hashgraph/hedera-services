@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -71,6 +72,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 
 	private Key adminKey;
 	private boolean omitAdminKey = false;
+	private boolean makeImmutable = false;
 	private boolean advertiseCreation = false;
 	private boolean shouldAlsoRegisterAsAccount = true;
 	private boolean useDeprecatedAdminKey = false;
@@ -197,6 +199,12 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		return this;
 	}
 
+	public HapiContractCreate immutable() {
+		omitAdminKey = true;
+		makeImmutable = true;
+		return this;
+	}
+
 	public HapiContractCreate useDeprecatedAdminKey() {
 		useDeprecatedAdminKey = true;
 		return this;
@@ -280,7 +288,11 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 						ContractCreateTransactionBody.class, b -> {
 							if (useDeprecatedAdminKey) {
 								b.setAdminKey(DEPRECATED_CID_ADMIN_KEY);
-							} else if (!omitAdminKey) {
+							} else if (omitAdminKey) {
+								if (makeImmutable) {
+									b.setAdminKey(Key.newBuilder().setKeyList(KeyList.getDefaultInstance()));
+								}
+							} else {
 								b.setAdminKey(adminKey);
 							}
 							b.setFileID(bytecodeFileId);

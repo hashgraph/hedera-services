@@ -98,8 +98,7 @@ class EthereumTransactionTransitionLogicTest {
 				txnCtx, accountStore, worldState, recordService,
 				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager);
 		contractCreateTransitionLogic = new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator,
-				worldState, recordService, createEvmTxProcessor, hederaLedger, globalDynamicProperties,
-				sigImpactHistorian);
+				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian);
 		subject = new EthereumTransitionLogic(txnCtx, null, contractCallTransitionLogic, contractCreateTransitionLogic,
 				hfs, globalDynamicProperties, aliasManager);
 	}

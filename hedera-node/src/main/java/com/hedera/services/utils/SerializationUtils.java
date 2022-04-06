@@ -28,7 +28,9 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 public final class SerializationUtils {
 	private SerializationUtils() {
@@ -72,6 +74,13 @@ public final class SerializationUtils {
 		return fungibleTokenAllowances;
 	}
 
+	public static void serializeApproveForAllNftsAllowances(
+			SerializableDataOutputStream out, final Set<FcTokenAllowanceId> approveForAllNfts) throws IOException {
+		out.writeInt(approveForAllNfts.size());
+		for (final var allowanceId : approveForAllNfts) {
+			out.writeSerializable(allowanceId, true);
+		}
+	}
 
 	public static void serializeNftAllowance(
 			SerializableDataOutputStream out,
@@ -84,8 +93,7 @@ public final class SerializationUtils {
 	}
 
 	public static Map<EntityNum, Long> deserializeCryptoAllowances(
-			final SerializableDataInputStream in
-	) throws IOException {
+			final SerializableDataInputStream in) throws IOException {
 		var numCryptoAllowances = in.readInt();
 		if (numCryptoAllowances == 0) {
 			return Collections.emptyMap();
@@ -113,5 +121,19 @@ public final class SerializationUtils {
 			nftAllowances.put(nftAllowanceId, value);
 		}
 		return nftAllowances;
+	}
+
+	public static Set<FcTokenAllowanceId> deserializeApproveForAllNftsAllowances(
+			final SerializableDataInputStream in) throws IOException {
+		var numApproveForAllNftsAllowances = in.readInt();
+		if (numApproveForAllNftsAllowances == 0) {
+			return Collections.emptySet();
+		}
+		final Set<FcTokenAllowanceId> approveForAllNftsAllowances = new TreeSet<>();
+		while (numApproveForAllNftsAllowances-- > 0) {
+			final FcTokenAllowanceId allowanceId = in.readSerializable();
+			approveForAllNftsAllowances.add(allowanceId);
+		}
+		return approveForAllNftsAllowances;
 	}
 }

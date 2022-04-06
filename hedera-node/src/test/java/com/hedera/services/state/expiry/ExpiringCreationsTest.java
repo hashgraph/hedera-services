@@ -43,7 +43,6 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -103,7 +102,8 @@ class ExpiringCreationsTest {
 	private static final AccountID payer = asAccount("0.0.2");
 	private static final AccountID created = asAccount("1.0.2");
 	private static final AccountID another = asAccount("1.0.300");
-	private static final TransferList transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
+	private static final CurrencyAdjustments transfers = CurrencyAdjustments.fromGrpc(
+			withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList());
 	private static final TokenID tokenCreated = asToken("3.0.2");
 	private static final List<AccountAmount> adjustments =
 			withAdjustments(payer, -2L, created, 1L, another, 1L).getAccountAmountsList();
@@ -278,7 +278,7 @@ class ExpiringCreationsTest {
 		assertSame(hash, created.getTxnHash());
 		assertEquals(memo, created.getMemo());
 		assertEquals(receiptBuilder.build(), created.getReceipt());
-		assertEquals(timestamp, created.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, created.getConsensusTime().toJava());
 		assertEquals(scheduleRef, created.getScheduleRef().toGrpcScheduleId());
 		assertNull(created.getTokens());
 		assertNull(created.getTokenAdjustments());
@@ -317,7 +317,7 @@ class ExpiringCreationsTest {
 		assertEquals(totalFee, created.getFee());
 		assertSame(hash, created.getTxnHash());
 		assertEquals(memo, created.getMemo());
-		assertEquals(timestamp, created.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, created.getConsensusTime().toJava());
 		assertNull(created.getScheduleRef());
 	}
 
@@ -338,7 +338,7 @@ class ExpiringCreationsTest {
 		assertEquals(receipt.build(), actualRecord.getReceipt());
 		assertEquals(memo, actualRecord.getMemo());
 		assertArrayEquals(hash, actualRecord.getTxnHash());
-		assertEquals(timestamp, actualRecord.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, actualRecord.getConsensusTime().toJava());
 		assertEquals(scheduleRef, actualRecord.getScheduleRef().toGrpcScheduleId());
 	}
 

@@ -21,11 +21,11 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.EvmAccount;
@@ -42,9 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Optional;
-import java.util.OptionalLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.any;
@@ -54,41 +52,34 @@ import static org.mockito.BDDMockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class HederaSStoreOperationTest {
-	HederaSStoreOperation subject;
-
 	@Mock
-	GasCalculator gasCalculator;
-
+	private GasCalculator gasCalculator;
 	@Mock
-	MessageFrame messageFrame;
-
+	private MessageFrame messageFrame;
 	@Mock
-	EVM evm;
-
+	private EVM evm;
 	@Mock
-	HederaWorldUpdater worldUpdater;
-
+	private HederaWorldUpdater worldUpdater;
 	@Mock
-	MutableAccount mutableAccount;
-
+	private MutableAccount mutableAccount;
 	@Mock
-	EvmAccount evmAccount;
-
+	private EvmAccount evmAccount;
 	@Mock
-	Bytes keyBytesMock;
-
+	private Bytes keyBytesMock;
 	@Mock
-	Bytes valueBytesMock;
-
+	private Bytes valueBytesMock;
 	@Mock
-	BlockValues hederaBlockValues;
-
+	private BlockValues hederaBlockValues;
+	@Mock
+	private StorageGasCalculator storageGasCalculator;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 
+	private HederaSStoreOperation subject;
+
 	@BeforeEach
 	void setUp() {
-		subject = new HederaSStoreOperation(gasCalculator, dynamicProperties);
+		subject = new HederaSStoreOperation(gasCalculator, storageGasCalculator, dynamicProperties);
 	}
 
 	@Test
@@ -182,31 +173,25 @@ class HederaSStoreOperationTest {
 
 	@Test
 	void executesWithZero() {
-		final UInt256 keyBytes = UInt256.fromBytes(keyBytesMock);
-		final UInt256 valueBytes = UInt256.fromBytes(Bytes.fromHexString("0x12345678"));
+		final UInt256 key = UInt256.fromBytes(keyBytesMock);
+		final UInt256 value = UInt256.fromBytes(Bytes.fromHexString("0x12345678"));
 
-		givenValidContext(keyBytes, valueBytes);
+		givenValidContext(key, value);
 		given(mutableAccount.getStorageValue(any())).willReturn(UInt256.ZERO);
 
-		final var expectedExpiry = 20L;
-		Deque<MessageFrame> frameDeque = new ArrayDeque<>();
-		frameDeque.add(messageFrame);
-		given(messageFrame.getMessageFrameStack()).willReturn(frameDeque);
-		given(messageFrame.getContextVariable("expiry")).willReturn(OptionalLong.of(expectedExpiry));
-		given(messageFrame.getContextVariable("sbh")).willReturn(5L);
-		given(messageFrame.getBlockValues()).willReturn(hederaBlockValues);
-		given(messageFrame.getGasPrice()).willReturn(Wei.of(50000L));
-		given(hederaBlockValues.getTimestamp()).willReturn(10L);
+		final var frameGasCost = Gas.of(10L);
+		given(storageGasCalculator.gasCostOfStorageIn(messageFrame)).willReturn(frameGasCost);
 
 		final var result = subject.execute(messageFrame, evm);
 
-		final var expected = new Operation.OperationResult(Optional.of(Gas.of(10)), Optional.empty());
+		final var expected = new Operation.OperationResult(Optional.of(frameGasCost), Optional.empty());
 
 		assertEquals(expected.getGasCost(), result.getGasCost());
 		assertEquals(expected.getHaltReason(), result.getHaltReason());
 
-		verify(mutableAccount).setStorageValue(any(), any());
-		verify(messageFrame).storageWasUpdated(any(), any());
+		verify(mutableAccount).setStorageValue(key, value);
+		verify(messageFrame).storageWasUpdated(key, value);
+		verify(worldUpdater).addSbhRefund(frameGasCost);
 	}
 
 	private void givenValidContext(Bytes key, Bytes value) {

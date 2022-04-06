@@ -23,8 +23,8 @@ package com.hedera.services.sigs;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
-import com.hedera.services.contracts.sources.SoliditySigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareSoliditySigsVerifier;
+import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -37,7 +37,6 @@ import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.sigs.verification.SyncVerifier;
 import com.hedera.services.state.logic.PayerSigValidity;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -49,13 +48,11 @@ import javax.inject.Singleton;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
-import static com.hedera.services.state.logic.TerminalSigStatuses.TERMINAL_SIG_STATUSES;
-
 @Module
 public interface SigsModule {
 	@Binds
 	@Singleton
-	SoliditySigsVerifier provideSoliditySigsVerifier(TxnAwareSoliditySigsVerifier txnAwareSoliditySigsVerifier);
+	EvmSigsVerifier provideSoliditySigsVerifier(TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier);
 
 	@Binds
 	@Singleton
@@ -90,12 +87,6 @@ public interface SigsModule {
 	@Singleton
 	static Predicate<TransactionBody> provideQueryPaymentTest(final NodeInfo nodeInfo) {
 		return PrecheckUtils.queryPaymentTestFor(nodeInfo);
-	}
-
-	@Provides
-	@Singleton
-	static Predicate<ResponseCodeEnum> provideTerminalSigStatusTest() {
-		return TERMINAL_SIG_STATUSES;
 	}
 
 	@Provides

@@ -26,8 +26,8 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -40,7 +40,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.Set;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -50,6 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 public class CallEvmTxProcessor extends EvmTxProcessor {
 	private final CodeCache codeCache;
 	private final AliasManager aliasManager;
+	private final StorageExpiry storageExpiry;
 
 	@Inject
 	public CallEvmTxProcessor(
@@ -60,11 +60,19 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
 			final Map<String, PrecompiledContract> precompiledContractMap,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final StorageExpiry storageExpiry
 	) {
-		super(worldState, livePricesSource, dynamicProperties, gasCalculator, hederaOperations, precompiledContractMap);
+		super(
+				worldState,
+				livePricesSource,
+				dynamicProperties,
+				gasCalculator,
+				hederaOperations,
+				precompiledContractMap);
 		this.codeCache = codeCache;
 		this.aliasManager = aliasManager;
+		this.storageExpiry = storageExpiry;
 	}
 
 	public TransactionProcessingResult execute(
@@ -86,7 +94,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 				false,
 				consensusTime,
 				false,
-				OptionalLong.empty(),
+				storageExpiry.hapiCallOracle(),
 				aliasManager.resolveForEvm(receiver));
 	}
 
@@ -98,13 +106,12 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
 	@Override
 	protected MessageFrame buildInitialFrame(
 			final MessageFrame.Builder baseInitialFrame,
-			final HederaWorldUpdater updater,
 			final Address to,
 			final Bytes payload
 	) {
 		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 		/* The ContractCallTransitionLogic would have rejected a missing or deleted
-		* contract, so at this point we should have non-null bytecode available. */
+		 * contract, so at this point we should have non-null bytecode available. */
 		validateTrue(code != null, FAIL_INVALID);
 
 		return baseInitialFrame

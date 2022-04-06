@@ -59,7 +59,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,7 +99,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
+@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
 class BasicTransactionContextTest {
 	private final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
@@ -114,9 +113,10 @@ class BasicTransactionContextTest {
 			ExchangeRateSet.newBuilder().setCurrentRate(rateNow).setNextRate(rateNow).build();
 	private final AccountID payer = asAccount("0.0.2");
 	private final AccountID anotherNodeAccount = asAccount("0.0.4");
-	private final AccountID created = asAccount("1.0.2");
-	private final AccountID another = asAccount("1.0.300");
-	private final TransferList transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
+	private final AccountID created = asAccount("0.0.2");
+	private final AccountID another = asAccount("0.0.300");
+	private final CurrencyAdjustments transfers = CurrencyAdjustments.fromChanges(new long[] { -2L, 1L, 1L },
+			new long[] { payer.getAccountNum(), created.getAccountNum(), another.getAccountNum() });
 	private final TokenID tokenCreated = asToken("3.0.2");
 	private final ScheduleID scheduleCreated = asSchedule("0.0.10");
 	private final TokenTransferList tokenTransfers = TokenTransferList.newBuilder()
@@ -377,6 +377,7 @@ class BasicTransactionContextTest {
 
 		setUpBuildingExpirableTxnRecord();
 		// expect:
+		final var transfers = withAdjustments(payer, -2L, created, 1L, another, 1L);
 		assertEquals(transfers, subject.recordSoFar().build().asGrpc().getTransferList());
 	}
 
@@ -396,7 +397,7 @@ class BasicTransactionContextTest {
 		assertEquals(memo, record.getMemo());
 		assertArrayEquals(hash, record.asGrpc().getTransactionHash().toByteArray());
 		assertEquals(txnId, record.asGrpc().getTransactionID());
-		assertEquals(RichInstant.fromJava(now), record.getConsensusTimestamp());
+		assertEquals(RichInstant.fromJava(now), record.getConsensusTime());
 	}
 
 	@Test
@@ -633,7 +634,6 @@ class BasicTransactionContextTest {
 			TxnReceipt receipt
 	) {
 		long amount = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
-		TransferList transfersList = transfers;
 		List<TokenTransferList> tokenTransferList = List.of(tokenTransfers);
 
 		var builder = ExpirableTxnRecord.newBuilder()
@@ -643,8 +643,7 @@ class BasicTransactionContextTest {
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setMemo(accessor.getTxn().getMemo())
 				.setFee(amount)
-				.setTransferList(!transfersList.getAccountAmountsList().isEmpty() ? CurrencyAdjustments.fromGrpc(
-						transfersList) : null)
+				.setHbarAdjustments(transfers)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
 				.setNewTokenAssociations(newTokenAssociations);
 
