@@ -74,7 +74,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	@Mock
 	private StateView view;
 	@Mock
-	AdjustAllowanceLogic adjustAllowanceLogic;
+	private AdjustAllowanceLogic adjustAllowanceLogic;
 
 	private TransactionBody cryptoAdjustAllowanceTxn;
 	private CryptoAdjustAllowanceTransactionBody op;

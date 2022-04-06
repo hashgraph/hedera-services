@@ -620,6 +620,7 @@ class ERC721PrecompilesTest {
     }
 
     @Test
+    @Disabled
     void transferFrom() {
         givenMinimalFrameContext();
         givenLedgers();

@@ -23,16 +23,19 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -123,6 +126,19 @@ public class SyntheticTxnFactory {
 					.build());
 		}
 		return TransactionBody.newBuilder().setCryptoAdjustAllowance(builder);
+	}
+
+	public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final EntityId owner) {
+
+		final var builder = CryptoDeleteAllowanceTransactionBody.newBuilder();
+
+			builder.addAllNftAllowances(List.of(NftRemoveAllowance.newBuilder().setOwner(owner.toGrpcAccountId())
+						.setTokenId(approveWrapper.token())
+						.addAllSerialNumbers(List.of(approveWrapper.serialNumber().longValue()))
+						.build()))
+					.build();
+
+		return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
 	}
 
 	public TransactionBody.Builder createAdjustAllowanceForAllNFT(final SetApprovalForAllWrapper setApprovalForAllWrapper, TokenID tokenID) {
@@ -233,10 +249,10 @@ public class SyntheticTxnFactory {
 
 	public static class NftExchange {
 		private final long serialNo;
+
 		private final TokenID tokenType;
 		private final AccountID sender;
 		private final AccountID receiver;
-
 		public NftExchange(long serialNo, TokenID tokenType, AccountID sender, AccountID receiver) {
 			this.serialNo = serialNo;
 			this.tokenType = tokenType;
@@ -254,6 +270,10 @@ public class SyntheticTxnFactory {
 
 		public TokenID getTokenType() {
 			return tokenType;
+		}
+
+		public long getSerialNo() {
+			return serialNo;
 		}
 	}
 

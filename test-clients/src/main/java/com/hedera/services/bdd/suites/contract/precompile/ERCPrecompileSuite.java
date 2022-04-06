@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -50,6 +51,7 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -719,7 +721,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 												ContractResources.ALIASED_TRANSFER_DEPLOY_WITH_CREATE2_ABI,
 												asAddress(spec.registry().getTokenID(TOKEN_A)))
 												.exposingResultTo(result -> {
-													final var res = (byte[])result[0];
+													final var res = (byte[]) result[0];
 													ALIASED_ADDRESS[0] = res;
 												})
 												.payingWith(ACCOUNT)
@@ -2054,6 +2056,137 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				).then(
 						getTxnRecord(allowanceTxn).andAllChildRecords().logged(),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+				);
+	}
+
+	private HapiApiSpec getErc721ClearsApprovalAfterTransfer() {
+		final var transferFromOwnerTxn = "transferFromToAccountTxn";
+
+		return defaultHapiSpec("ERC_721_CLEARS_APPROVAL_AFTER_TRANSFER")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(OWNER).balance(10 * ONE_MILLION_HBARS),
+						cryptoCreate(RECIPIENT),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NON_FUNGIBLE_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY),
+						fileCreate(ERC_721_CONTRACT_NAME),
+						updateLargeFile(OWNER, ERC_721_CONTRACT_NAME, extractByteCode(ContractResources.ERC_721_CONTRACT)),
+						contractCreate(ERC_721_CONTRACT_NAME)
+								.bytecode(ERC_721_CONTRACT_NAME)
+								.gas(300_000),
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META))
+				).when(withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
+												tokenAssociate(RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
+												cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1, 2).
+														between(TOKEN_TREASURY, OWNER)).payingWith(OWNER),
+												cryptoApproveAllowance()
+														.payingWith(OWNER)
+														.addNftAllowance(OWNER, NON_FUNGIBLE_TOKEN, RECIPIENT, false, List.of(1L))
+														.via("otherAdjustTxn"),
+												getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(RECIPIENT),
+												getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender(),
+												contractCall(ERC_721_CONTRACT_NAME,
+														ContractResources.ERC_721_TRANSFER_FROM_CALL,
+														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
+														asAddress(spec.registry().getAccountID(OWNER)),
+														asAddress(spec.registry().getAccountID(RECIPIENT)), 1)
+														.payingWith(OWNER)
+														.via(transferFromOwnerTxn)
+														.hasKnownStatus(SUCCESS)
+										)
+
+						)
+				).then(
+						getAccountInfo(OWNER).logged(),
+						getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
+						getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender()
+				);
+	}
+
+
+	private HapiApiSpec erc721ApproveWithZeroAddressClearsPreviousApprovals() {
+		final String owner = "owner";
+		final String spender = "spender";
+		final String spender1 = "spender1";
+		final String nft = "nft";
+		return defaultHapiSpec("ERC_721_APPROVE_WITH_ZERO_ADDRESS_CLEARS_PREVIOUS_APPROVALS")
+				.given(
+						cryptoCreate(owner)
+								.balance(ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						fileCreate(ERC_721_CONTRACT_NAME),
+						updateLargeFile(owner, ERC_721_CONTRACT_NAME, extractByteCode(ContractResources.ERC_721_CONTRACT)),
+						contractCreate(ERC_721_CONTRACT_NAME)
+								.bytecode(ERC_721_CONTRACT_NAME)
+								.gas(300_000),
+						newKeyNamed("supplyKey"),
+						cryptoCreate(spender)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(spender1)
+								.balance(ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS)
+								.maxAutomaticTokenAssociations(10),
+						tokenCreate(nft)
+								.maxSupply(10L)
+								.initialSupply(0)
+								.supplyType(TokenSupplyType.FINITE)
+								.tokenType(NON_FUNGIBLE_UNIQUE)
+								.supplyKey("supplyKey")
+								.treasury(TOKEN_TREASURY),
+						tokenAssociate(owner, nft),
+						mintToken(nft, List.of(
+								ByteString.copyFromUtf8("a"),
+								ByteString.copyFromUtf8("b"),
+								ByteString.copyFromUtf8("c")
+						)).via("nftTokenMint"),
+						cryptoTransfer(movingUnique(nft, 1L, 2L, 3L)
+								.between(TOKEN_TREASURY, owner))
+				)
+				.when(
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addNftAllowance(owner, nft, spender, false, List.of(1L, 2L))
+								.addNftAllowance(owner, nft, spender1, false, List.of(3L)),
+
+						getAccountInfo(owner)
+								.has(accountWith()
+										.noCryptoAllowances()
+										.noTokenAllowances(owner)
+										.nftApprovedForAllAllowancesCount(0)
+								),
+						getTokenNftInfo(nft, 1L).hasSpenderID(spender),
+						getTokenNftInfo(nft, 2L).hasSpenderID(spender),
+						getTokenNftInfo(nft, 3L).hasSpenderID(spender1)
+				)
+				.then(
+						withOpContext(
+								(spec, opLog) ->
+										allRunFor(
+												spec,
+												contractCall(ERC_721_CONTRACT_NAME,
+														ContractResources.ERC_721_APPROVE_CALL,
+														asAddress(spec.registry().getTokenID(nft)),
+														asAddress(AccountID.parseFrom(new byte[]{})),
+														1)
+														.payingWith(owner)
+														.via("cryptoDeleteAllowanceTxn")
+														.hasKnownStatus(SUCCESS)
+														.gas(GAS_TO_OFFER)
+										)
+						),
+						getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
+						getTokenNftInfo(nft, 1L).hasNoSpender(),
+						getTokenNftInfo(nft, 2L).hasSpenderID(spender),
+						getTokenNftInfo(nft, 3L).hasSpenderID(spender1)
 				);
 	}
 
