@@ -664,7 +664,7 @@ class ApproveAllowanceChecksTest {
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
 
-		assertEquals(EMPTY_ALLOWANCES, subject.commonChecks(op.getCryptoAllowancesList(),
+		assertEquals(EMPTY_ALLOWANCES, subject.validateAllowanceCount(op.getCryptoAllowancesList(),
 				op.getTokenAllowancesList(), op.getNftAllowancesList()));
 	}
 

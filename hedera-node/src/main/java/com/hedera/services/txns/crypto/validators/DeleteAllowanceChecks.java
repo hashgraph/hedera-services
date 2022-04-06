@@ -65,7 +65,7 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 	public DeleteAllowanceChecks(
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator) {
-		super(dynamicProperties, validator);
+		super(dynamicProperties);
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}
@@ -74,20 +74,15 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 	 * Validates all allowances provided in
 	 * {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody}
 	 *
-	 * @param cryptoAllowances
-	 * 		given crypto allowances to remove
-	 * @param tokenAllowances
-	 * 		given fungible token allowances to remove
 	 * @param nftAllowances
 	 * 		given nft serials allowances to remove
 	 * @param payerAccount
 	 * 		payer for the transaction
 	 * @param view
+	 * 		working view
 	 * @return validation response
 	 */
 	public ResponseCodeEnum deleteAllowancesValidation(
-			final List<CryptoRemoveAllowance> cryptoAllowances,
-			final List<TokenRemoveAllowance> tokenAllowances,
 			final List<NftRemoveAllowance> nftAllowances,
 			final Account payerAccount,
 			final StateView view) {
@@ -96,24 +91,16 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 			return NOT_SUPPORTED;
 		}
 
-		var validity = commonDeleteChecks(cryptoAllowances, tokenAllowances, nftAllowances);
-		if (validity != OK) {
-			return validity;
-		}
-		final var accountStore = new AccountStore(validator, dynamicProperties, view.asReadOnlyAccountStore());
-		validity = validateCryptoDeleteAllowances(cryptoAllowances, payerAccount, accountStore);
+		var validity = validateAllowancesCount(nftAllowances);
 		if (validity != OK) {
 			return validity;
 		}
 
+		final var accountStore = new AccountStore(validator, dynamicProperties, view.asReadOnlyAccountStore());
 		final var tokenStore = new ReadOnlyTokenStore(accountStore,
 				view.asReadOnlyTokenStore(),
 				view.asReadOnlyNftStore(),
 				view.asReadOnlyAssociationStore());
-		validity = validateTokenDeleteAllowances(tokenAllowances, payerAccount, tokenStore, accountStore);
-		if (validity != OK) {
-			return validity;
-		}
 
 		validity = validateNftDeleteAllowances(nftAllowances, payerAccount, tokenStore, accountStore);
 		if (validity != OK) {
@@ -305,28 +292,11 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 		return validateSerialNums(serialNums, token, tokenStore);
 	}
 
-	@Override
-	public ResponseCodeEnum validateAmount(final long amount, final Account owner, final Id spender) {
-		throw new UnsupportedOperationException("Delete allowance checks will not validate amounts");
-	}
-
-	@Override
-	public ResponseCodeEnum validateTokenAmount(final Account ownerAccount, final long amount, final Token token,
-			final Id spender) {
-		throw new UnsupportedOperationException("Delete allowance checks will not validate token amounts");
-	}
-
-	ResponseCodeEnum commonDeleteChecks(
-			final List<CryptoRemoveAllowance> cryptoAllowances,
-			final List<TokenRemoveAllowance> tokenAllowances,
-			final List<NftRemoveAllowance> nftAllowances) {
+	ResponseCodeEnum validateAllowancesCount(final List<NftRemoveAllowance> nftAllowances) {
 		// each serial number of an NFT is considered as an allowance.
 		// So for Nft allowances aggregated amount is considered for transaction limit calculation.
 		// Number of serials will not be counted for allowance on account.
-		final var totalAllowances = cryptoAllowances.size() + tokenAllowances.size() +
-				aggregateNftDeleteAllowances(nftAllowances);
-
-		return validateTotalAllowances(totalAllowances);
+		return validateTotalAllowances(aggregateNftDeleteAllowances(nftAllowances));
 	}
 
 	/**
