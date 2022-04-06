@@ -24,6 +24,8 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.CommonUtils;
@@ -36,7 +38,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Function;
 
-import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
@@ -45,8 +46,9 @@ public class SerializedForms {
 	private static final String FORM_TPL = "%s-v%d-sn%d.hex";
 
 	public static void main(String... args)	 {
-		saveAccountStates(MIN_TEST_CASES_PER_VERSION);
+//		saveAccountStates(MIN_TEST_CASES_PER_VERSION);
 //		saveTxnReceipts(2 * MIN_TEST_CASES_PER_VERSION);
+		saveNetworkContexts(MerkleNetworkContextSerdeTest.NUM_TEST_CASES);
 	}
 
 	public static <T extends SelfSerializable> byte[] loadForm(
@@ -85,6 +87,10 @@ public class SerializedForms {
 
 	private static void saveAccountStates(final int n) {
 		saveForCurrentVersion(MerkleAccountState.class, MerkleAccountStateSerdeTest::accountStateFactory, n);
+	}
+
+	private static void saveNetworkContexts(final int n) {
+		saveForCurrentVersion(MerkleNetworkContext.class, SeededPropertySource::nextNetworkContext, n);
 	}
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(

@@ -30,6 +30,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -41,7 +42,9 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -64,20 +67,55 @@ import java.util.stream.IntStream;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 
 public class SeededPropertySource {
-	private static final long DEFAULT_SEED = 4_242_424L;
+	private static final long BASE_SEED = 4_242_424L;
 
 	private final SplittableRandom SEEDED_RANDOM;
-
-	public SeededPropertySource() {
-		this.SEEDED_RANDOM = new SplittableRandom(DEFAULT_SEED);
-	}
 
 	public SeededPropertySource(final SplittableRandom SEEDED_RANDOM) {
 		this.SEEDED_RANDOM = SEEDED_RANDOM;
 	}
 
 	public static SeededPropertySource forSerdeTest(final int version, final int testCaseNo) {
-		return new SeededPropertySource(new SplittableRandom(version * DEFAULT_SEED + testCaseNo));
+		return new SeededPropertySource(new SplittableRandom(version * BASE_SEED + testCaseNo));
+	}
+
+	public MerkleNetworkContext nextNetworkContext() {
+		final var numThrottles = 5;
+		final var seeded = new MerkleNetworkContext();
+		seeded.setConsensusTimeOfLastHandledTxn(nextNullableInstant());
+		seeded.setSeqNo(nextSeqNo());
+		seeded.updateLastScannedEntity(nextInRangeLong());
+		seeded.setMidnightRates(nextExchangeRates());
+		seeded.setUsageSnapshots(nextUsageSnapshots(numThrottles));
+		seeded.setGasThrottleUsageSnapshot(nextUsageSnapshot());
+		seeded.setCongestionLevelStarts(nextNullableInstants(numThrottles));
+		seeded.setStateVersion(nextUnsignedInt());
+		seeded.updateAutoRenewSummaryCounts(nextUnsignedInt(), nextUnsignedInt());
+		seeded.setLastMidnightBoundaryCheck(nextNullableInstant());
+		seeded.setPreparedUpdateFileNum(nextInRangeLong());
+		seeded.setPreparedUpdateFileHash(nextBytes(48));
+		seeded.setMigrationRecordsStreamed(nextBoolean());
+		return seeded;
+	}
+
+	public Instant[] nextNullableInstants(final int n) {
+		return IntStream.range(0, n)
+				.mapToObj(i -> nextNullableInstant())
+				.toArray(Instant[]::new);
+	}
+
+	public DeterministicThrottle.UsageSnapshot[] nextUsageSnapshots(final int n) {
+		return IntStream.range(0, n)
+				.mapToObj(i -> nextUsageSnapshot())
+				.toArray(DeterministicThrottle.UsageSnapshot[]::new);
+	}
+
+	public DeterministicThrottle.UsageSnapshot nextUsageSnapshot() {
+		return new DeterministicThrottle.UsageSnapshot(nextUnsignedLong(), nextNullableInstant());
+	}
+
+	public SequenceNumber nextSeqNo() {
+		return new SequenceNumber(nextInRangeLong());
 	}
 
 	public boolean nextBoolean() {
@@ -153,6 +191,12 @@ public class SeededPropertySource {
 
 	public Instant nextInstant() {
 		return Instant.ofEpochSecond(nextInRangeLong(), SEEDED_RANDOM.nextInt(1_000_000));
+	}
+
+	public Instant nextNullableInstant() {
+		return nextBoolean()
+				? null
+				: Instant.ofEpochSecond(nextInRangeLong(), SEEDED_RANDOM.nextInt(1_000_000));
 	}
 
 	public TxnId nextScheduledTxnId() {

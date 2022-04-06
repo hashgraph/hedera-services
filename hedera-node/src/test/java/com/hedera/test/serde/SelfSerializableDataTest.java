@@ -36,6 +36,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static com.hedera.test.utils.SerdeUtils.deserializeFromBytes;
@@ -73,6 +75,15 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	 */
 	protected void registerConstructables() throws ConstructableRegistryException {
 		// No-op
+	}
+
+	/**
+	 * If non-empty, the test for use for equality assertions instead of JUnit5.
+	 *
+	 * @return the equals override, if any
+	 */
+	protected Optional<BiConsumer<T, T>> customAssertEquals() {
+		return Optional.empty();
 	}
 
 	/**
@@ -124,7 +135,9 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 
 		final T actualObject = deserializeFromBytes(() -> instantiate(getType()), version, serializedForm);
 
-		assertEquals(expectedObject, actualObject);
+		customAssertEquals().ifPresentOrElse(
+				customAssert -> customAssert.accept(expectedObject, actualObject),
+				() -> assertEquals(expectedObject, actualObject));
 	}
 
 	static class SupportedVersionsArgumentsProvider implements ArgumentsProvider {

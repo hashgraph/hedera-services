@@ -21,6 +21,7 @@ package com.hedera.services.state.serdes;
  */
 
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -77,5 +78,9 @@ public class IoUtils {
 				return bos.toByteArray();
 			}
 		}
+	}
+
+	public static RichInstant staticReadNullableInstant(SerializableDataInputStream in) throws IOException {
+		return staticReadNullable(in, RichInstant::from);
 	}
 }

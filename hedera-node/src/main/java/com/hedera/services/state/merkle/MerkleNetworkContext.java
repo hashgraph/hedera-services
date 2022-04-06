@@ -22,8 +22,8 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.DualStateAccessor;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
@@ -33,7 +33,6 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
-import com.swirlds.platform.state.DualStateImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,6 +43,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
+import static com.hedera.services.state.serdes.IoUtils.staticWriteNullable;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
@@ -61,11 +62,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public static final DeterministicThrottle.UsageSnapshot NO_GAS_THROTTLE_SNAPSHOT =
 			new DeterministicThrottle.UsageSnapshot(-1, Instant.EPOCH);
 
-	static final int RELEASE_0130_VERSION = 2;
-	static final int RELEASE_0140_VERSION = 3;
-	static final int RELEASE_0150_VERSION = 4;
-	static final int RELEASE_0190_VERSION = 5;
-	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
 	static final int CURRENT_VERSION = RELEASE_0240_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
@@ -74,7 +70,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public static final Instant NULL_CONSENSUS_TIME = null;
 
-	static DomainSerdes serdes = new DomainSerdes();
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
 
@@ -92,19 +87,19 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private boolean migrationRecordsStreamed;
 	private FeeMultiplierSource multiplierSource = null;
 	private FunctionalityThrottling throttling = null;
-	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 	private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
+	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 
 	public MerkleNetworkContext() {
-		/* No-op for RuntimeConstructable facility; will be followed by a call to deserialize. */
+		// No-op for RuntimeConstructable facility; will be followed by a call to deserialize
 	}
 
-	/* Used at network genesis only */
+	// Used at network genesis only
 	public MerkleNetworkContext(
-			Instant consensusTimeOfLastHandledTxn,
-			SequenceNumber seqNo,
-			long lastScannedEntity,
-			ExchangeRates midnightRates
+			final Instant consensusTimeOfLastHandledTxn,
+			final SequenceNumber seqNo,
+			final long lastScannedEntity,
+			final ExchangeRates midnightRates
 	) {
 		this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
 		this.seqNo = seqNo;
@@ -129,7 +124,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.migrationRecordsStreamed = that.migrationRecordsStreamed;
 	}
 
-	/* --- Helpers that reset the received argument based on the network context */
+	// Helpers that reset the received argument based on the network context
 	public void resetMultiplierSourceFromSavedCongestionStarts(FeeMultiplierSource feeMultiplierSource) {
 		if (congestionLevelStarts.length > 0) {
 			feeMultiplierSource.resetCongestionLevelStarts(congestionLevelStarts);
@@ -231,35 +226,30 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		final var lastHandleTime = serdes.readNullableInstant(in);
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+		final var lastHandleTime = staticReadNullable(in, RichInstant::from);
 		consensusTimeOfLastHandledTxn = (lastHandleTime == null) ? null : lastHandleTime.toJava();
 
 		seqNo = seqNoSupplier.get();
 		seqNo.deserialize(in);
 		midnightRates = in.readSerializable(true, ratesSupplier);
 
-		if (version >= RELEASE_0130_VERSION) {
-			readCongestionControlData(in);
-		}
-		if (version >= RELEASE_0140_VERSION) {
-			whenVersionHigherOrEqualTo0140(in);
-		}
-		if (version >= RELEASE_0150_VERSION) {
-			whenVersionHigherOrEqualTo0150(in);
-		}
-		if (version >= RELEASE_0190_VERSION) {
-			preparedUpdateFileNum = in.readLong();
-			preparedUpdateFileHash = in.readByteArray(UPDATE_FILE_HASH_LEN);
-		}
-		if (version >= RELEASE_0200_VERSION) {
-			var used = in.readLong();
-			var lastUsed = serdes.readNullableInstant(in);
-			gasThrottleUsageSnapshot = new DeterministicThrottle.UsageSnapshot(used, (lastUsed == null) ? null : lastUsed.toJava());
-		}
-		if (version >= RELEASE_0240_VERSION) {
-			migrationRecordsStreamed = in.readBoolean();
-		}
+		// Added in 0.13
+		readCongestionControlData(in);
+		// Added in 0.14
+		whenVersionHigherOrEqualTo0140(in);
+		// Added in 0.15
+		whenVersionHigherOrEqualTo0150(in);
+		// Added in 0.19
+		preparedUpdateFileNum = in.readLong();
+		preparedUpdateFileHash = in.readByteArray(UPDATE_FILE_HASH_LEN);
+		// Added in 0.20
+		final var gasUsed = in.readLong();
+		final var lastGasUsage = staticReadNullable(in, RichInstant::from);
+		gasThrottleUsageSnapshot = new DeterministicThrottle.UsageSnapshot(
+				gasUsed, (lastGasUsage == null) ? null : lastGasUsage.toJava());
+		// Added in 0.24
+		migrationRecordsStreamed = in.readBoolean();
 	}
 
 	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
@@ -267,8 +257,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (numUsageSnapshots > 0) {
 			usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
 			for (int i = 0; i < numUsageSnapshots; i++) {
-				var used = in.readLong();
-				var lastUsed = serdes.readNullableInstant(in);
+				final var used = in.readLong();
+				final var lastUsed = staticReadNullable(in, RichInstant::from);
 				usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
 						used, (lastUsed == null) ? null : lastUsed.toJava());
 			}
@@ -277,7 +267,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (numCongestionStarts > 0) {
 			congestionLevelStarts = new Instant[numCongestionStarts];
 			for (int i = 0; i < numCongestionStarts; i++) {
-				final var levelStart = serdes.readNullableInstant(in);
+				final var levelStart = staticReadNullable(in, RichInstant::from);
 				congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
 			}
 		}
@@ -291,35 +281,35 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	private void whenVersionHigherOrEqualTo0150(final SerializableDataInputStream in) throws IOException {
-		final var lastBoundaryCheck = serdes.readNullableInstant(in);
+		final var lastBoundaryCheck = staticReadNullable(in, RichInstant::from);
 		lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		serdes.writeNullableInstant(fromJava(consensusTimeOfLastHandledTxn), out);
+		staticWriteNullable(fromJava(consensusTimeOfLastHandledTxn), out, RichInstant::serialize);
 		seqNo.serialize(out);
 		out.writeSerializable(midnightRates, true);
 		int n = usageSnapshots.length;
 		out.writeInt(n);
 		for (var usageSnapshot : usageSnapshots) {
 			out.writeLong(usageSnapshot.used());
-			serdes.writeNullableInstant(fromJava(usageSnapshot.lastDecisionTime()), out);
+			staticWriteNullable(fromJava(usageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
 		}
 		n = congestionLevelStarts.length;
 		out.writeInt(n);
 		for (var congestionStart : congestionLevelStarts) {
-			serdes.writeNullableInstant(fromJava(congestionStart), out);
+			staticWriteNullable(fromJava(congestionStart), out, RichInstant::serialize);
 		}
 		out.writeLong(lastScannedEntity);
 		out.writeLong(entitiesScannedThisSecond);
 		out.writeLong(entitiesTouchedThisSecond);
 		out.writeInt(stateVersion);
-		serdes.writeNullableInstant(fromJava(lastMidnightBoundaryCheck), out);
+		staticWriteNullable(fromJava(lastMidnightBoundaryCheck), out, RichInstant::serialize);
 		out.writeLong(preparedUpdateFileNum);
 		out.writeByteArray(preparedUpdateFileHash);
 		out.writeLong(gasThrottleUsageSnapshot.used());
-		serdes.writeNullableInstant(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out);
+		staticWriteNullable(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
 		out.writeBoolean(migrationRecordsStreamed);
 	}
 
@@ -333,6 +323,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return CURRENT_VERSION;
 	}
 
+	@Override
+	public int getMinimumSupportedVersion() {
+		return CURRENT_VERSION;
+	}
+
+	@Override
+	public String toString() {
+		return summarized();
+	}
+
 	public String summarized() {
 		return summarizedWith(null);
 	}
@@ -340,7 +340,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public String summarizedWith(DualStateAccessor dualStateAccessor) {
 		final var isDualStateAvailable = dualStateAccessor != null && dualStateAccessor.getDualState() != null;
 		final var freezeTime = isDualStateAvailable
-				? ((DualStateImpl) dualStateAccessor.getDualState()).getFreezeTime()
+				? dualStateAccessor.getDualState().getFreezeTime()
 				: null;
 		final var pendingUpdateDesc = currentPendingUpdateDesc();
 		final var pendingMaintenanceDesc = freezeTimeDesc(freezeTime, isDualStateAvailable) + pendingUpdateDesc;
@@ -498,7 +498,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				log.info("Reset {} with saved usage snapshot", throttle);
 			} catch (Exception e) {
 				log.warn(
-						"Saved usage snapshot # {} was not compatible with the corresponding active throttle ( {}) not" +
+						"Saved usage snapshot # {} was not compatible with the corresponding active throttle ( {}) " +
+								"not" +
 								" " +
 								"performing a reset !",
 						(i + 1), e.getMessage());
@@ -558,7 +559,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	/* Only used for unit tests */
-	void setCongestionLevelStarts(Instant[] congestionLevelStarts) {
+	public void setUsageSnapshots(final DeterministicThrottle.UsageSnapshot[] usageSnapshots) {
+		this.usageSnapshots = usageSnapshots;
+	}
+
+	public void setCongestionLevelStarts(final Instant[] congestionLevelStarts) {
 		this.congestionLevelStarts = congestionLevelStarts;
 	}
 
@@ -568,10 +573,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	Instant getConsensusTimeOfLastHandledTxn() {
 		return consensusTimeOfLastHandledTxn;
-	}
-
-	void setUsageSnapshots(DeterministicThrottle.UsageSnapshot[] usageSnapshots) {
-		this.usageSnapshots = usageSnapshots;
 	}
 
 	DeterministicThrottle.UsageSnapshot[] usageSnapshots() {
@@ -598,7 +599,11 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return gasThrottleUsageSnapshot;
 	}
 
-	void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
+	public void setGasThrottleUsageSnapshot(DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
 		this.gasThrottleUsageSnapshot = gasThrottleUsageSnapshot;
+	}
+
+	public void setMigrationRecordsStreamed(final boolean migrationRecordsStreamed) {
+		this.migrationRecordsStreamed = migrationRecordsStreamed;
 	}
 }
