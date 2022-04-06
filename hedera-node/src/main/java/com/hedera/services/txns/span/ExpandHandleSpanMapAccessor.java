@@ -55,7 +55,6 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String CRYPTO_CREATE_META_KEY = "cryptoCreateMeta";
 	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 	private static final String CRYPTO_APPROVE_META_KEY = "cryptoApproveMeta";
-	private static final String CRYPTO_ADJUST_META_KEY = "cryptoAdjustMeta";
 	private static final String CRYPTO_DELETE_ALLOWANCE_META_KEY = "cryptoDeleteAllowanceMeta";
 
 	@Inject
