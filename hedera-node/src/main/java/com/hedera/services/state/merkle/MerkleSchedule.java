@@ -20,12 +20,12 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityIdUtils;
@@ -55,36 +55,29 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.protobuf.ByteString.copyFrom;
+import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
+import static com.hedera.services.state.serdes.IoUtils.staticWriteNullable;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNum> {
-	static final int PRE_RELEASE_0180_VERSION = 1;
 	static final int RELEASE_0180_VERSION = 2;
-
 	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
+	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d2b7d9e673285fcL;
 
 	static final int MAX_NUM_PUBKEY_BYTES = 33;
 
-	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d2b7d9e673285fcL;
-	static DomainSerdes serdes = new DomainSerdes();
-
-	public static final Key UNUSED_GRPC_KEY = null;
-	public static final JKey UNUSED_KEY = null;
-	public static final EntityId UNUSED_PAYER = null;
-	public static final RichInstant UNRESOLVED_TIME = null;
-
-	private Key grpcAdminKey = UNUSED_GRPC_KEY;
-	private JKey adminKey = UNUSED_KEY;
+	private Key grpcAdminKey = null;
+	private JKey adminKey = null;
 	private String memo;
 	private boolean deleted = false;
 	private boolean executed = false;
-	private EntityId payer = UNUSED_PAYER;
+	private EntityId payer = null;
 	private EntityId schedulingAccount;
 	private RichInstant schedulingTXValidStart;
 	private long expiry;
-	private RichInstant resolutionTime = UNRESOLVED_TIME;
+	private RichInstant resolutionTime = null;
 
 	private int number;
 
@@ -92,8 +85,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 	private TransactionBody ordinaryScheduledTxn;
 	private SchedulableTransactionBody scheduledTxn;
 
-	private Set<ByteString> notary = ConcurrentHashMap.newKeySet();
-	private List<byte[]> signatories = new ArrayList<>();
+	private final List<byte[]> signatories = new ArrayList<>();
+	private final Set<ByteString> notary = ConcurrentHashMap.newKeySet();
 
 	public MerkleSchedule() {
 		/* RuntimeConstructable */
@@ -149,8 +142,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 	public boolean hasValidSignatureFor(byte[] key) {
 		return notary.contains(copyFrom(key));
 	}
-
-	/* Object */
 
 	/**
 	 * Two {@code MerkleSchedule}s are identical as long as they agree on
@@ -211,14 +202,13 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		bodyBytes = in.readByteArray(Integer.MAX_VALUE);
 		executed = in.readBoolean();
 		deleted = in.readBoolean();
-		resolutionTime = serdes.readNullableInstant(in);
+		resolutionTime = staticReadNullable(in, RichInstant::from);
 		int numSignatories = in.readInt();
 		while (numSignatories-- > 0) {
 			witnessValidSignature(in.readByteArray(MAX_NUM_PUBKEY_BYTES));
 		}
-		if (version >= RELEASE_0180_VERSION) {
-			number = in.readInt();
-		}
+		// Added in 0.18
+		number = in.readInt();
 
 		initFromBodyBytes();
 	}
@@ -229,7 +219,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		out.writeByteArray(bodyBytes);
 		out.writeBoolean(executed);
 		out.writeBoolean(deleted);
-		serdes.writeNullableInstant(resolutionTime, out);
+		staticWriteNullable(resolutionTime, out, RichInstant::serialize);
 		out.writeInt(signatories.size());
 		for (byte[] key : signatories) {
 			out.writeByteArray(key);
@@ -240,6 +230,11 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 	@Override
 	public long getClassId() {
 		return RUNTIME_CONSTRUCTABLE_ID;
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return CURRENT_VERSION;
 	}
 
 	@Override
@@ -300,27 +295,29 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		return Optional.ofNullable(this.memo);
 	}
 
-	public void setMemo(String memo) {
-		throwIfImmutable("Cannot change this schedule's memo if it's immutable.");
-		this.memo = memo;
-	}
-
 	public boolean hasAdminKey() {
-		return adminKey != UNUSED_KEY;
+		return adminKey != null;
 	}
 
 	public Optional<JKey> adminKey() {
 		return Optional.ofNullable(adminKey);
 	}
 
+	@VisibleForTesting
 	public void setAdminKey(JKey adminKey) {
 		throwIfImmutable("Cannot change this schedule's adminKey if it's immutable.");
 		this.adminKey = adminKey;
 	}
 
+	@VisibleForTesting
 	public void setPayer(EntityId payer) {
 		throwIfImmutable("Cannot change this schedule's payer if it's immutable.");
 		this.payer = payer;
+	}
+
+	@VisibleForTesting
+	public void setBodyBytes(final byte[] bodyBytes) {
+		this.bodyBytes = bodyBytes;
 	}
 
 	public EntityId payer() {
@@ -332,7 +329,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 	}
 
 	public boolean hasExplicitPayer() {
-		return payer != UNUSED_PAYER;
+		return payer != null;
 	}
 
 	public EntityId schedulingAccount() {
@@ -390,6 +387,11 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		return resolutionTime.toGrpc();
 	}
 
+	@VisibleForTesting
+	public RichInstant getResolutionTime() {
+		return resolutionTime;
+	}
+
 	public HederaFunctionality scheduledFunction() {
 		try {
 			return MiscUtils.functionOf(ordinaryScheduledTxn);
@@ -427,7 +429,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 			}
 			if (creationOp.hasAdminKey()) {
 				MiscUtils.asUsableFcKey(creationOp.getAdminKey()).ifPresent(this::setAdminKey);
-				if (adminKey != UNUSED_KEY) {
+				if (adminKey != null) {
 					grpcAdminKey = creationOp.getAdminKey();
 				}
 			}

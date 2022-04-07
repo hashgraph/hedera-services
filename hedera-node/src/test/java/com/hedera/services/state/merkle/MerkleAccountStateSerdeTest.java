@@ -22,7 +22,6 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
@@ -30,7 +29,6 @@ import com.swirlds.common.CommonUtils;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
@@ -83,41 +81,13 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 					Collections.emptyMap(),
 					Collections.emptySet());
 		} else {
-			return accountStateFactory(propertySource);
+			return getExpectedObject(propertySource);
 		}
 	}
 
-	@Test
-	void checkSerializationRegressionsForCurrentVersion() {
-		SerializedForms.assertStableSerialization(
-				MerkleAccountState.class,
-				MerkleAccountStateSerdeTest::accountStateFactory,
-				MerkleAccountState.CURRENT_VERSION,
-				getNumTestCasesFor(MerkleAccountState.CURRENT_VERSION));
-	}
-
-	public static MerkleAccountState accountStateFactory(final SeededPropertySource propertySource) {
-		final var seeded = new MerkleAccountState(
-				propertySource.nextKey(),
-				propertySource.nextUnsignedLong(),
-				propertySource.nextUnsignedLong(),
-				propertySource.nextUnsignedLong(),
-				propertySource.nextString(100),
-				propertySource.nextBoolean(),
-				propertySource.nextBoolean(),
-				propertySource.nextBoolean(),
-				propertySource.nextEntityId(),
-				propertySource.nextInt(),
-				propertySource.nextUnsignedInt(),
-				propertySource.nextByteString(36),
-				propertySource.nextUnsignedInt(),
-				// This migration relied on the fact that no 0.24.x production state ever included allowances
-				propertySource.nextGrantedCryptoAllowances(10),
-				propertySource.nextGrantedFungibleAllowances(10),
-				propertySource.nextApprovedForAllAllowances(10));
-		seeded.setTokenAssociationMetadata(new TokenAssociationMetadata(
-				propertySource.nextUnsignedInt(), propertySource.nextUnsignedInt(), propertySource.nextPair()));
-		return seeded;
+	@Override
+	protected MerkleAccountState getExpectedObject(final SeededPropertySource propertySource) {
+		return propertySource.nextAccountState();
 	}
 
 	private static byte[] getForm(final int version, final int testCaseNo) {

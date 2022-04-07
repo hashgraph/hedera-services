@@ -23,7 +23,6 @@ package com.hedera.services.state.merkle;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
-import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -56,12 +55,8 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
 		return SeededPropertySource.forSerdeTest(version, testCaseNo).nextNetworkContext();
 	}
 
-	@Test
-	void checkSerializationRegressionsForCurrentVersion() {
-		SerializedForms.assertStableSerialization(
-				MerkleNetworkContext.class,
-				SeededPropertySource::nextNetworkContext,
-				MerkleNetworkContext.CURRENT_VERSION,
-				getNumTestCasesFor(MerkleNetworkContext.CURRENT_VERSION));
+	@Override
+	protected MerkleNetworkContext getExpectedObject(final SeededPropertySource propertySource) {
+		return propertySource.nextNetworkContext();
 	}
 }

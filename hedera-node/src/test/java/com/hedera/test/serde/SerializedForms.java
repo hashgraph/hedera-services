@@ -9,9 +9,9 @@ package com.hedera.test.serde;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,9 +23,10 @@ package com.hedera.test.serde;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduleSerdeTest;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.CommonUtils;
@@ -45,10 +46,12 @@ public class SerializedForms {
 	private static final String SERIALIZED_FORMS_LOC = "src/test/resources/serdes";
 	private static final String FORM_TPL = "%s-v%d-sn%d.hex";
 
-	public static void main(String... args)	 {
+	public static void main(String... args) {
 //		saveAccountStates(MIN_TEST_CASES_PER_VERSION);
 //		saveTxnReceipts(2 * MIN_TEST_CASES_PER_VERSION);
-		saveNetworkContexts(MerkleNetworkContextSerdeTest.NUM_TEST_CASES);
+//		saveNetworkContexts(MerkleNetworkContextSerdeTest.NUM_TEST_CASES);
+//		saveRecords(ExpirableTxnRecordSerdeTest.NUM_TEST_CASES);
+		saveSchedules(MerkleScheduleSerdeTest.NUM_TEST_CASES);
 	}
 
 	public static <T extends SelfSerializable> byte[] loadForm(
@@ -64,21 +67,19 @@ public class SerializedForms {
 		}
 	}
 
-	public static <T extends SelfSerializable> void assertStableSerialization(
+	public static <T extends SelfSerializable> void assertSameSerialization(
 			final Class<T> type,
 			final Function<SeededPropertySource, T> factory,
 			final int version,
-			final int numTestCases
+			final int testCaseNo
 	) {
-		for (int i = 0; i < numTestCases; i++) {
-			final var propertySource = SeededPropertySource.forSerdeTest(version, i);
-			final var example = factory.apply(propertySource);
-			final var actual = SerdeUtils.serialize(example);
-			final var expected = loadForm(type, version, i);
-			assertArrayEquals(
-					expected, actual,
-					"Regression in serializing test case #" + i);
-		}
+		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
+		final var example = factory.apply(propertySource);
+		final var actual = SerdeUtils.serialize(example);
+		final var expected = loadForm(type, version, testCaseNo);
+		assertArrayEquals(
+				expected, actual,
+				"Regression in serializing test case #" + testCaseNo);
 	}
 
 	private static void saveTxnReceipts(final int n) {
@@ -86,11 +87,19 @@ public class SerializedForms {
 	}
 
 	private static void saveAccountStates(final int n) {
-		saveForCurrentVersion(MerkleAccountState.class, MerkleAccountStateSerdeTest::accountStateFactory, n);
+		saveForCurrentVersion(MerkleAccountState.class, SeededPropertySource::nextAccountState, n);
 	}
 
 	private static void saveNetworkContexts(final int n) {
 		saveForCurrentVersion(MerkleNetworkContext.class, SeededPropertySource::nextNetworkContext, n);
+	}
+
+	private static void saveRecords(final int n) {
+		saveForCurrentVersion(ExpirableTxnRecord.class, SeededPropertySource::nextRecord, n);
+	}
+
+	private static void saveSchedules(final int n) {
+		saveForCurrentVersion(MerkleSchedule.class, SeededPropertySource::nextSchedule, n);
 	}
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(

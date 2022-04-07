@@ -30,7 +30,9 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -43,12 +45,14 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
+import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -77,6 +81,93 @@ public class SeededPropertySource {
 
 	public static SeededPropertySource forSerdeTest(final int version, final int testCaseNo) {
 		return new SeededPropertySource(new SplittableRandom(version * BASE_SEED + testCaseNo));
+	}
+
+	public MerkleSchedule nextSchedule() {
+		final var seeded = new MerkleSchedule();
+		seeded.setExpiry(nextUnsignedLong());
+		seeded.setBodyBytes(nextSerializedTransactionBody());
+		if (nextBoolean()) {
+			seeded.markDeleted(nextInstant());
+		} else if (nextBoolean()) {
+			seeded.markExecuted(nextInstant());
+		}
+		final var numSignatures = SEEDED_RANDOM.nextInt(10);
+		for (int i = 0; i < numSignatures; i++) {
+			seeded.witnessValidSignature(nextBytes(nextBoolean() ? 32 : 33));
+		}
+		seeded.setKey(nextNum());
+		return seeded;
+	}
+
+	public MerkleAccountState nextAccountState() {
+		final var seeded = new MerkleAccountState(
+				nextKey(),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextString(100),
+				nextBoolean(),
+				nextBoolean(),
+				nextBoolean(),
+				nextEntityId(),
+				nextInt(),
+				nextUnsignedInt(),
+				nextByteString(36),
+				nextUnsignedInt(),
+				nextGrantedCryptoAllowances(10),
+				nextGrantedFungibleAllowances(10),
+				nextApprovedForAllAllowances(10));
+		seeded.setTokenAssociationMetadata(
+				new TokenAssociationMetadata(nextUnsignedInt(), nextUnsignedInt(), nextPair()));
+		return seeded;
+	}
+
+	public ExpirableTxnRecord nextRecord() {
+		// Releases 0.23/4 and 0.25 all used the same fields; only serialization format changed
+		final var builder = ExpirableTxnRecord.newBuilder()
+				.setTxnId(nextTxnId())
+				.setReceiptBuilder(nextReceiptBuilder())
+				.setConsensusTime(nextRichInstant())
+				.setFee(nextUnsignedLong())
+				.setNumChildRecords(nextUnsignedShort());
+		if (nextBoolean()) {
+			builder.setAlias(nextByteString(32));
+		}
+		if (nextBoolean()) {
+			builder.setHbarAdjustments(nextCurrencyAdjustments());
+		}
+		if (nextBoolean()) {
+			builder.setMemo(nextString(100));
+		}
+		if (nextBoolean()) {
+			builder.setContractCallResult(nextEvmFnResult());
+		} else if (nextBoolean()) {
+			builder.setContractCreateResult(nextEvmFnResult());
+		}
+		if (nextBoolean()) {
+			builder.setScheduleRef(nextEntityId());
+			builder.setParentConsensusTime(nextInstant());
+		}
+		if (nextBoolean()) {
+			builder.setCryptoAllowances(nextCryptoAllowances(1, 2, 4));
+		}
+		if (nextBoolean()) {
+			builder.setFungibleTokenAllowances(nextFungibleAllowances(1, 2, 4, 8));
+		}
+		if (nextBoolean()) {
+			nextTokenAdjustmentsIn(builder);
+		}
+		if (nextBoolean()) {
+			builder.setAssessedCustomFees(nextAssessedFeesList());
+		}
+		if (nextBoolean()) {
+			builder.setNewTokenAssociations(nextTokenAssociationsList());
+		}
+		final var seeded = builder.build();
+		seeded.setSubmittingMember(nextUnsignedLong());
+		seeded.setExpiry(nextUnsignedLong());
+		return seeded;
 	}
 
 	public MerkleNetworkContext nextNetworkContext() {
@@ -457,6 +548,10 @@ public class SeededPropertySource {
 		return sb.toString();
 	}
 
+	public JKey nextNullableKey() {
+		return nextBoolean() ? null : nextKey();
+	}
+
 	public JKey nextKey() {
 		final var keyType = SEEDED_RANDOM.nextInt(5);
 		if (keyType == 0) {
@@ -511,5 +606,13 @@ public class SeededPropertySource {
 				.setRealmNum(nextUnsignedLong())
 				.setContractNum(nextUnsignedLong())
 				.build();
+	}
+
+	public byte[] nextSerializedTransactionBody() {
+		return TransactionBody.newBuilder()
+				.setTransactionID(nextTxnId().toGrpc())
+				.setMemo(nextString(50))
+				.build()
+				.toByteArray();
 	}
 }

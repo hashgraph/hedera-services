@@ -27,7 +27,6 @@ import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import org.junit.jupiter.api.Test;
 
 public class TxnReceiptSerdeTest extends SelfSerializableDataTest<TxnReceipt> {
 	@Override
@@ -57,13 +56,9 @@ public class TxnReceiptSerdeTest extends SelfSerializableDataTest<TxnReceipt> {
 		return receiptFactory(propertySource);
 	}
 
-	@Test
-	void checkSerializationRegressionsForCurrentVersion() {
-		SerializedForms.assertStableSerialization(
-				TxnReceipt.class,
-				TxnReceiptSerdeTest::receiptFactory,
-				TxnReceipt.CURRENT_VERSION,
-				getNumTestCasesFor(TxnReceipt.CURRENT_VERSION));
+	@Override
+	protected TxnReceipt getExpectedObject(final SeededPropertySource propertySource) {
+		return propertySource.nextReceipt();
 	}
 
 	public static TxnReceipt receiptFactory(final SeededPropertySource propertySource) {

@@ -20,6 +20,7 @@ package com.hedera.test.serde;
  * ‍
  */
 
+import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -40,6 +41,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
+import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
 import static com.hedera.test.utils.SerdeUtils.deserializeFromBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -122,6 +124,14 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	 */
 	protected abstract T getExpectedObject(final int version, final int testCaseNo);
 
+	/**
+	 * Returns the expected object created with a given seeded property source.
+	 *
+	 * @param propertySource the property source to use
+	 * @return the expected object
+	 */
+	protected abstract T getExpectedObject(final SeededPropertySource propertySource);
+
 	@BeforeEach
 	void setUp() throws ConstructableRegistryException {
 		registerConstructables();
@@ -129,7 +139,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 
 	@ParameterizedTest
 	@ArgumentsSource(SupportedVersionsArgumentsProvider.class)
-	void serdeWorksForAllTestCases(final int version, final int testCaseNo) {
+	void deserializationWorksForAllSupportedVersions(final int version, final int testCaseNo) {
 		final var serializedForm = getSerializedForm(version, testCaseNo);
 		final var expectedObject = getExpectedObject(version, testCaseNo);
 
@@ -140,21 +150,52 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 				() -> assertEquals(expectedObject, actualObject));
 	}
 
+	@ParameterizedTest
+	@ArgumentsSource(CurrentVersionArgumentsProvider.class)
+	void serializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {
+		assertSameSerialization(getType(), this::getExpectedObject, version, testCaseNo);
+	}
+
 	static class SupportedVersionsArgumentsProvider implements ArgumentsProvider {
 		@Override
 		public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
 			final var testType = context.getRequiredTestClass();
 			final var ref = (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
-			return testCasesFrom(ref).stream();
+			return allTestCasesFrom(ref).stream();
 		}
 	}
 
-	private static <T extends SelfSerializable> List<Arguments> testCasesFrom(final SelfSerializableDataTest<T> ref) {
-		final var refType = instantiate(ref.getType());
+	static class CurrentVersionArgumentsProvider implements ArgumentsProvider {
+		@Override
+		public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
+			final var testType = context.getRequiredTestClass();
+			final var ref = (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
+			return currentTestCasesFrom(ref).stream();
+		}
+	}
+
+	private static <T extends SelfSerializable> List<Arguments> allTestCasesFrom(
+			final SelfSerializableDataTest<T> refTest
+	) {
+		return testCasesFrom(refTest, false);
+	}
+
+	private static <T extends SelfSerializable> List<Arguments> currentTestCasesFrom(
+			final SelfSerializableDataTest<T> refTest
+	) {
+		return testCasesFrom(refTest, true);
+	}
+
+	private static <T extends SelfSerializable> List<Arguments> testCasesFrom(
+			final SelfSerializableDataTest<T> refTest,
+			final boolean onlyCurrent
+	) {
+		final var ref = instantiate(refTest.getType());
 		final List<Arguments> argumentsList = new ArrayList<>();
-		final var minVersion = refType.getMinimumSupportedVersion();
-		for (int i = minVersion, n = refType.getVersion(); i <= n; i++) {
-			final var testCasesForVersion = ref.getNumTestCasesFor(i);
+		final var version = ref.getVersion();
+		final var minVersion = onlyCurrent ? version : ref.getMinimumSupportedVersion();
+		for (int i = minVersion; i <= version; i++) {
+			final var testCasesForVersion = refTest.getNumTestCasesFor(i);
 			if (testCasesForVersion < MIN_TEST_CASES_PER_VERSION) {
 				throw new IllegalStateException("Only " + testCasesForVersion
 						+ " registered test cases for supported version " + i
