@@ -295,15 +295,4 @@ public class TxnUtils {
 		return reconstruction;
 	}
 
-	public static <T extends SelfSerializable> String serializeToHex(final T source) {
-		final var baos = new ByteArrayOutputStream();
-		final var out = new SerializableDataOutputStream(baos);
-		try {
-			source.serialize(out);
-			out.flush();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-		return hex(baos.toByteArray());
-	}
 }

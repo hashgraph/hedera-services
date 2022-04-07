@@ -56,7 +56,7 @@ public class FcTokenAllowanceId implements SelfSerializable, Comparable<FcTokenA
 		/* RuntimeConstructable */
 	}
 
-	FcTokenAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
+	public FcTokenAllowanceId(final EntityNum tokenNum, final EntityNum spenderNum) {
 		this.tokenNum = tokenNum;
 		this.spenderNum = spenderNum;
 	}

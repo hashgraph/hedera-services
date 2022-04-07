@@ -55,14 +55,7 @@ import static com.hedera.services.utils.SerializationUtils.serializeTokenAllowan
 public class MerkleAccountState extends AbstractMerkleLeaf {
 	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
 
-	static final int MAX_CONCEIVABLE_TOKEN_BALANCES_SIZE = 4_096;
-
-	static final int RELEASE_090_VERSION = 4;
-	static final int RELEASE_0160_VERSION = 5;
 	static final int RELEASE_0180_PRE_SDK_VERSION = 6;
-	static final int RELEASE_0180_VERSION = 7;
-	static final int RELEASE_0210_VERSION = 8;
-	static final int RELEASE_0220_VERSION = 9;
 	static final int RELEASE_0230_VERSION = 10;
 	static final int RELEASE_0250_VERSION = 11;
 	private static final int CURRENT_VERSION = RELEASE_0250_VERSION;
@@ -92,14 +85,14 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int numPositiveBalances;
 	private long headTokenId;
 
-	// As per the issue https://github.com/hashgraph/hedera-services/issues/2842 these maps will
-	// be modified to use MapValueLinkedList in the future
+	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
+	// these per-account maps to top-level maps using the "linked-list" values idiom
 	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
 	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
 	private Set<FcTokenAllowanceId> approveForAllNfts = Collections.emptySet();
 
 	public MerkleAccountState() {
-		/* RuntimeConstructable */
+		// RuntimeConstructable
 	}
 
 	public MerkleAccountState(
@@ -158,6 +151,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0230_VERSION;
+	}
+
+	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		key = serdes.readNullable(in, serdes::deserializeKey);
 		expiry = in.readLong();
@@ -168,10 +166,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
 		proxy = serdes.readNullableSerializable(in);
-		if (version >= RELEASE_0160_VERSION) {
-			/* The number of nfts owned is being saved in the state after RELEASE_0160_VERSION */
-			nftsOwned = in.readLong();
-		}
+		// Added in 0.16
+		nftsOwned = in.readLong();
+		// Added in 0.18
 		if (version >= RELEASE_0180_PRE_SDK_VERSION) {
 			if (version >= RELEASE_0250_VERSION) {
 				maxAutoAssociations = in.readInt();
@@ -182,16 +179,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				usedAutoAssociations = getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
 			}
 		}
-		if (version >= RELEASE_0180_VERSION) {
-			number = in.readInt();
-		}
-		if (version >= RELEASE_0210_VERSION) {
-			alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
-		}
-		if (version >= RELEASE_0220_VERSION) {
-			numContractKvPairs = in.readInt();
-		}
-
+		number = in.readInt();
+		// Added in 0.21
+		alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
+		// Added in 0.22
+		numContractKvPairs = in.readInt();
 		if (version >= RELEASE_0230_VERSION) {
 			cryptoAllowances = deserializeCryptoAllowances(in);
 			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);

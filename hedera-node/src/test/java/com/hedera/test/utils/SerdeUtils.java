@@ -9,9 +9,9 @@ package com.hedera.test.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.tuple.Pair;
@@ -50,10 +51,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.SplittableRandom;
+import java.io.UncheckedIOException;
 import java.util.TreeMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.swirlds.common.CommonUtils.hex;
 
 public class SerdeUtils {
 	public static byte[] serOutcome(ThrowingConsumer<DataOutputStream> serializer) throws Exception {
@@ -127,68 +131,34 @@ public class SerdeUtils {
 				grpc.getData().isEmpty() ? EvmLog.MISSING_BYTES : grpc.getData().toByteArray());
 	}
 
-	public static long unsignedLongFrom(final SplittableRandom sr) {
-		return sr.nextLong(Long.MAX_VALUE);
-	}
+	public static <T extends SelfSerializable> T deserializeFromBytes(
+			final Supplier<T> factory,
+			final int version,
+			final byte[] serializedForm
+	) {
+		final var reconstruction = factory.get();
 
-	public static int unsignedIntFrom(final SplittableRandom sr) {
-		return sr.nextInt(Integer.MAX_VALUE);
-	}
-
-	public static String stringFrom(final SplittableRandom sr, final int n) {
-		final var sb = new StringBuilder();
-		for (int i = 0; i < n; i++) {
-			sb.append((char) sr.nextInt(0x7f));
+		final var bais = new ByteArrayInputStream(serializedForm);
+		final var in = new SerializableDataInputStream(bais);
+		try {
+			reconstruction.deserialize(in, version);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
-		return sb.toString();
+
+		return reconstruction;
 	}
 
-	public static JKey keyFrom(final SplittableRandom sr) {
-		final var keyType = sr.nextInt(5);
-		if (keyType == 0) {
-			return ed25519KeyFrom(sr);
-		} else if (keyType == 1) {
-			return secp256k1KeyFrom(sr);
-		} else if (keyType == 2) {
-			return new JContractIDKey(contractIdFrom(sr));
-		} else if (keyType == 3) {
-			return new JDelegatableContractAliasKey(contractIdFrom(sr).toBuilder()
-					.clearContractNum()
-					.setEvmAddress(ByteString.copyFrom(bytesFrom(sr, 20)))
-					.build());
-		} else {
-			return new JKeyList(List.of(keyFrom(sr), keyFrom(sr)));
+	public static <T extends SelfSerializable> String serializeToHex(final T source) {
+		final var baos = new ByteArrayOutputStream();
+		final var out = new SerializableDataOutputStream(baos);
+		try {
+			source.serialize(out);
+			out.flush();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
-	}
-
-	public static ContractID contractIdFrom(final SplittableRandom sr) {
-		return ContractID.newBuilder()
-				.setShardNum(sr.nextLong(Long.MAX_VALUE))
-				.setRealmNum(sr.nextLong(Long.MAX_VALUE))
-				.setContractNum(sr.nextLong(Long.MAX_VALUE))
-				.build();
-	}
-
-	public static EntityId entityIdFrom(final SplittableRandom sr) {
-		return new EntityId(sr.nextLong(Long.MAX_VALUE), sr.nextLong(Long.MAX_VALUE), sr.nextLong(Long.MAX_VALUE));
-	}
-
-	public static JKey ed25519KeyFrom(final SplittableRandom sr) {
-		return new JEd25519Key(bytesFrom(sr, 32));
-	}
-
-	public static JKey secp256k1KeyFrom(final SplittableRandom sr) {
-		return new JECDSASecp256k1Key(bytesFrom(sr, 33));
-	}
-
-	public static ByteString byteStringFrom(final SplittableRandom sr, final int n) {
-		return ByteString.copyFrom(bytesFrom(sr, n));
-	}
-
-	public static byte[] bytesFrom(final SplittableRandom sr, final int n) {
-		final var ans = new byte[n];
-		sr.nextBytes(ans);
-		return ans;
+		return hex(baos.toByteArray());
 	}
 
 	@FunctionalInterface
