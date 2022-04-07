@@ -47,9 +47,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordOne;
-import static com.hedera.services.state.serdes.DomainSerdesTest.recordTwo;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.TxnUtils.recordOne;
+import static com.hedera.test.utils.TxnUtils.recordTwo;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;

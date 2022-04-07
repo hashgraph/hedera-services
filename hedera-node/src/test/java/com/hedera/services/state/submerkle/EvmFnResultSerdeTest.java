@@ -20,51 +20,36 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
+import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
-import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.SplittableRandom;
+public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> {
+	public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
 
-import static com.hedera.services.state.submerkle.EvmFnResult.RELEASE_0250_VERSION;
-import static com.hedera.test.utils.TxnUtils.assertSerdeWorks;
-
-class EvmFnResultSerdeTest {
-	private static final SeededPropertySource propertySource = new SeededPropertySource(new SplittableRandom());
-
-	@Test
-	void serdeWorksWithNoStateChanges() throws IOException, ConstructableRegistryException {
-		registerResultConstructable();
-
-		final var subject = propertySource.nextEvmFnResult();
-		subject.setStateChanges(Collections.emptyMap());
-
-		assertSerdeWorks(subject, EvmFnResult::new, RELEASE_0250_VERSION);
+	@Override
+	protected Class<EvmFnResult> getType() {
+		return EvmFnResult.class;
 	}
 
-	@Test
-	void serdeWorksWithStateChanges() throws IOException, ConstructableRegistryException {
-		registerResultConstructable();
+	@Override
+	protected int getNumTestCasesFor(final int version) {
+		return version == EvmFnResult.RELEASE_0240_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
+	}
 
-		for (int i = 0; i < 10; i++) {
-			final var subject = propertySource.nextEvmFnResult();
-
-			assertSerdeWorks(subject, EvmFnResult::new, RELEASE_0250_VERSION);
+	@Override
+	protected EvmFnResult getExpectedObject(final int version, final int testCaseNo) {
+		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextEvmResult();
+		if (version == EvmFnResult.RELEASE_0240_VERSION) {
+			// Always empty before 0.25
+			seeded.setGas(0);
+			seeded.setAmount(0);
+			seeded.setFunctionParameters(EvmFnResult.EMPTY);
 		}
+		return seeded;
 	}
 
-	private void registerResultConstructable() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(TxnId.class, TxnId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcTokenAllowance.class, FcTokenAllowance::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcTokenAllowanceId.class, FcTokenAllowanceId::new));
+	@Override
+	protected EvmFnResult getExpectedObject(final SeededPropertySource propertySource) {
+		return propertySource.nextEvmResult();
 	}
 }
