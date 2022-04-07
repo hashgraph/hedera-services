@@ -250,8 +250,8 @@ public class ContractCallSuite extends HapiApiSuite {
 										.via(evmWhitelistCheckTxn)
 						))
 				).then(
-						getTxnRecord(mirrorWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged(),
-						getTxnRecord(evmWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged()
+//						getTxnRecord(mirrorWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged(),
+//						getTxnRecord(evmWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged()
 				);
 	}
 
