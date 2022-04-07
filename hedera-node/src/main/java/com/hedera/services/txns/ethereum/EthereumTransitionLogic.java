@@ -53,7 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 
 public class EthereumTransitionLogic implements PreFetchableTransition {
 
-	private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(100_000_000);
+	private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
 	private final TransactionContext txnCtx;
 	private final ExpandHandleSpanMapAccessor spanMapAccessor;
@@ -84,8 +84,9 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	@Override
 	public void doStateTransition() {
 		var syntheticTxBody = getOrCreateTransactionBody(txnCtx.accessor());
-		maybeUpdateCallData(txnCtx.accessor(), spanMapAccessor.getEthTxDataMeta(txnCtx.accessor()), txnCtx.accessor().getTxn().getEthereumTransaction());
-		var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor());
+		EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnCtx.accessor());
+		maybeUpdateCallData(txnCtx.accessor(), ethTxData, txnCtx.accessor().getTxn().getEthereumTransaction());
+		var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 
 		var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 
@@ -108,10 +109,10 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		return txBody;
 	}
 
-	private EthTxSigs getOrCreateEthSigs(final TxnAccessor txnCtx) {
+	private EthTxSigs getOrCreateEthSigs(final TxnAccessor txnCtx, EthTxData ethTxData) {
 		var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(txnCtx);
 		if (ethTxSigs == null) {
-			ethTxSigs = spanMapAccessor.getEthTxDataMeta(txnCtx).extractSignatures();
+			ethTxSigs = EthTxSigs.extractSignatures(ethTxData);
 			spanMapAccessor.setEthTxSigsMeta(txnCtx, ethTxSigs);
 		}
 		return ethTxSigs;
@@ -134,7 +135,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		if (accessor.getExpandedSigStatus() == ResponseCodeEnum.OK) {
 			// this is not precheck, so do more involved checks
 			maybeUpdateCallData(accessor, ethTxData, txBody.getEthereumTransaction());
-			var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor());
+			var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 			var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 			if (callingAccount == null) {
 				return ResponseCodeEnum.INVALID_ACCOUNT_ID; // FIXME new response code?
@@ -167,7 +168,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		EthereumTransactionBody op = accessor.getTxn().getEthereumTransaction();
 		ethTxData = maybeUpdateCallData(accessor, ethTxData, op);
 
-		var ethTxSigs = ethTxData.extractSignatures();
+		var ethTxSigs = EthTxSigs.extractSignatures(ethTxData);
 		spanMapAccessor.setEthTxSigsMeta(accessor, ethTxSigs);
 
 		TransactionBody txBody = createSyntheticTransactionBody(ethTxData);
@@ -185,7 +186,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			//TODO for now existing init codes are hex encoded.  We should make a way for them to be binary encoded.
 			byte[] callDataFile = Hex.decode(hfs.cat(callDataFileId));
 			validateFalse(callDataFile.length == 0, CONTRACT_FILE_EMPTY); // FIXME new failure response code
-			ethTxData = ethTxData.relpaceCallData(callDataFile);
+			ethTxData = ethTxData.replaceCallData(callDataFile);
 			spanMapAccessor.setEthTxDataMeta(accessor, ethTxData);
 		}
 		return ethTxData;
