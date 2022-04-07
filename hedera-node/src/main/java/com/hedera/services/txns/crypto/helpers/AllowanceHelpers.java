@@ -332,4 +332,47 @@ public class AllowanceHelpers {
 	public static void validateAllowanceLimitsOn(final Account owner, final int maxAllowanceLimitPerAccount) {
 		validateFalse(owner.getTotalAllowances() > maxAllowanceLimitPerAccount, MAX_ALLOWANCES_EXCEEDED);
 	}
+
+	public static List<GrantedNftAllowance> getNftGrantedAllowancesList(final MerkleAccount account) {
+		if (!account.getApproveForAllNfts().isEmpty()) {
+			List<GrantedNftAllowance> nftAllowances = new ArrayList<>();
+			for (var a : account.getApproveForAllNfts()) {
+				final var approveForAllNftsAllowance = GrantedNftAllowance.newBuilder();
+				approveForAllNftsAllowance.setTokenId(a.getTokenNum().toGrpcTokenId());
+				approveForAllNftsAllowance.setSpender(a.getSpenderNum().toGrpcAccountId());
+				nftAllowances.add(approveForAllNftsAllowance.build());
+			}
+			return nftAllowances;
+		}
+		return Collections.emptyList();
+	}
+
+	public static List<GrantedTokenAllowance> getFungibleGrantedTokenAllowancesList(final MerkleAccount account) {
+		if (!account.getFungibleTokenAllowances().isEmpty()) {
+			List<GrantedTokenAllowance> tokenAllowances = new ArrayList<>();
+			final var tokenAllowance = GrantedTokenAllowance.newBuilder();
+			for (var a : account.getFungibleTokenAllowances().entrySet()) {
+				tokenAllowance.setTokenId(a.getKey().getTokenNum().toGrpcTokenId());
+				tokenAllowance.setSpender(a.getKey().getSpenderNum().toGrpcAccountId());
+				tokenAllowance.setAmount(a.getValue());
+				tokenAllowances.add(tokenAllowance.build());
+			}
+			return tokenAllowances;
+		}
+		return Collections.emptyList();
+	}
+
+	public static List<GrantedCryptoAllowance> getCryptoGrantedAllowancesList(final MerkleAccount account) {
+		if (!account.getCryptoAllowances().isEmpty()) {
+			List<GrantedCryptoAllowance> cryptoAllowances = new ArrayList<>();
+			final var cryptoAllowance = GrantedCryptoAllowance.newBuilder();
+			for (var a : account.getCryptoAllowances().entrySet()) {
+				cryptoAllowance.setSpender(a.getKey().toGrpcAccountId());
+				cryptoAllowance.setAmount(a.getValue());
+				cryptoAllowances.add(cryptoAllowance.build());
+			}
+			return cryptoAllowances;
+		}
+		return Collections.emptyList();
+	}
 }
