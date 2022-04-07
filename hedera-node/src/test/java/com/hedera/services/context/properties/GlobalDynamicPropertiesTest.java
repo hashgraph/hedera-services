@@ -83,6 +83,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.isCreate2Enabled());
 		assertTrue(subject.isRedirectTokenCallsEnabled());
 		assertFalse(subject.areAllowancesEnabled());
+		assertFalse(subject.areTokenAssociationsLimited());
 		assertTrue(subject.isHTSPrecompileCreateEnabled());
 	}
 
@@ -133,6 +134,7 @@ class GlobalDynamicPropertiesTest {
 
 		// then:
 		assertEquals(1, subject.maxTokensRelsPerInfoQuery());
+		assertEquals(1, subject.maxTokensPerAccount());
 		assertEquals(2, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(6, subject.maxFileSizeKb());
 		assertEquals(15, subject.maxTransferListSize());
@@ -205,6 +207,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isCreate2Enabled());
 		assertFalse(subject.isRedirectTokenCallsEnabled());
 		assertTrue(subject.areAllowancesEnabled());
+		assertTrue(subject.areTokenAssociationsLimited());
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
 	}
 
@@ -217,6 +220,7 @@ class GlobalDynamicPropertiesTest {
 
 		// then:
 		assertEquals(2, subject.maxTokensRelsPerInfoQuery());
+		assertEquals(2, subject.maxTokensPerAccount());
 		assertEquals(3, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(7, subject.maxFileSizeKb());
 		assertEquals(9, subject.cacheRecordsTtl());
@@ -287,6 +291,7 @@ class GlobalDynamicPropertiesTest {
 
 	private void givenPropsWithSeed(int i) {
 		given(properties.getIntProperty("tokens.maxRelsPerInfoQuery")).willReturn(i);
+		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolUtf8Bytes")).willReturn(i + 1);
 		given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
 		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long) i + 2);
@@ -363,6 +368,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("contracts.enableTraceability"))
 				.willReturn((i + 59) % 2 == 0);
 		given(properties.getBooleanProperty("hedera.allowances.isEnabled")).willReturn((i + 60) % 2 == 0);
+		given(properties.getBooleanProperty("accounts.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
 		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
 				.willReturn((i + 61) % 2 == 0);
 	}

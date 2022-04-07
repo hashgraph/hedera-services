@@ -25,8 +25,6 @@ import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.CommonUtils;
 
-import java.util.Collections;
-
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
 
 public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<MerkleAccountState> {
@@ -49,24 +47,7 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 	protected MerkleAccountState getExpectedObject(final int version, final int testCaseNo) {
 		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
 		if (version == RELEASE_0230_VERSION) {
-			return new MerkleAccountState(
-					propertySource.nextKey(),
-					propertySource.nextUnsignedLong(),
-					propertySource.nextUnsignedLong(),
-					propertySource.nextUnsignedLong(),
-					propertySource.nextString(100),
-					propertySource.nextBoolean(),
-					propertySource.nextBoolean(),
-					propertySource.nextBoolean(),
-					propertySource.nextEntityId(),
-					propertySource.nextInt(),
-					propertySource.nextUnsignedInt(),
-					propertySource.nextByteString(36),
-					propertySource.nextUnsignedInt(),
-					// This migration relied on the fact that no 0.24.x production state ever included allowances
-					Collections.emptyMap(),
-					Collections.emptyMap(),
-					Collections.emptySet());
+			return propertySource.next0241AccountState();
 		} else {
 			return getExpectedObject(propertySource);
 		}

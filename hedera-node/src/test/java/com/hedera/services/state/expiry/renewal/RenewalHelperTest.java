@@ -29,7 +29,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -143,8 +142,6 @@ class RenewalHelperTest {
 	private AliasManager aliasManager;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
-	@Mock
-	private TokenAssociationMetadata tokenAssociationMetadata;
 
 	private RenewalHelper subject;
 
@@ -256,11 +253,11 @@ class RenewalHelperTest {
 	void shortCircuitsToJustRemovingRelIfZeroBalance() {
 		// setup:
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
-		final var expiredMeta = new TokenAssociationMetadata(
-				3, 0, EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
-
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
-		expiredAccountZeroBalance.setTokenAssociationMetadata(expiredMeta);
+		expiredAccountZeroBalance.setKey(expiredKey);
+		expiredAccountZeroBalance.setHeadTokenId(deletedTokenNum);
+		expiredAccountZeroBalance.setNumPositiveBalances(0);
+		expiredAccountZeroBalance.setNumAssociations(3);
 		givenTokenPresent(deletedTokenId, deletedToken);
 		givenTokenPresent(survivedTokenId, longLivedToken);
 		final var missingTokenNum = EntityNum.fromTokenId(missingTokenGrpcId);
@@ -298,9 +295,10 @@ class RenewalHelperTest {
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
 
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
-		final var expiredMeta = new TokenAssociationMetadata(
-				3, 0, EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
-		expiredAccountZeroBalance.setTokenAssociationMetadata(expiredMeta);
+		expiredAccountZeroBalance.setKey(expiredKey);
+		expiredAccountZeroBalance.setHeadTokenId(deletedTokenNum);
+		expiredAccountZeroBalance.setNumPositiveBalances(0);
+		expiredAccountZeroBalance.setNumAssociations(3);
 		givenTokenPresent(deletedTokenId, deletedToken);
 		givenTokenPresent(survivedTokenId, longLivedToken);
 		final var missingTokenNum = EntityNum.fromTokenId(missingTokenGrpcId);
@@ -345,9 +343,9 @@ class RenewalHelperTest {
 		MerkleMap<EntityNum, MerkleAccount> accountsMap = new MerkleMap<>();
 		accountsMap.put(EntityNum.fromLong(nonExpiredAccountNum), nonExpiredAccount);
 		accountsMap.put(EntityNum.fromLong(brokeExpiredAccountNum), expiredAccountZeroBalance);
-		final var expiredMeta = new TokenAssociationMetadata(
-				3, 0, EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum));
-		expiredAccountZeroBalance.setTokenAssociationMetadata(expiredMeta);
+		expiredAccountZeroBalance.setHeadTokenId(deletedTokenNum);
+		expiredAccountZeroBalance.setNumPositiveBalances(0);
+		expiredAccountZeroBalance.setNumAssociations(3);
 
 		final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
 		AliasManager liveAliasManager = new AliasManager(() -> aliases);
@@ -456,8 +454,8 @@ class RenewalHelperTest {
 		final var rel = assoc(account, token);
 		final var asc  = new MerkleTokenRelStatus(balance, false, false, false);
 		asc.setKey(key);
-		asc.setPrevKey(prevKey);
-		asc.setNextKey(nextKey);
+		asc.setPrev(prevKey.getLowOrderAsLong());
+		asc.setNext(nextKey.getLowOrderAsLong());
 		given(tokenRels.get(rel)).willReturn(asc);
 	}
 
