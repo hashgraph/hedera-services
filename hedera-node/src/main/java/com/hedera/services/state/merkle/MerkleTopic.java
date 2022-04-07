@@ -318,6 +318,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		this.memo = ((null != memo) && !memo.isEmpty()) ? memo : null;
 	}
 
+	@Nullable
 	public String getNullableMemo() {
 		return memo;
 	}
@@ -330,6 +331,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		return hasAdminKey() ? adminKey : getDefaultJKey();
 	}
 
+	@Nullable
 	public JKey getNullableAdminKey() {
 		return adminKey;
 	}
@@ -352,6 +354,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		this.submitKey = ((null != submitKey) && !submitKey.isEmpty()) ? submitKey : null;
 	}
 
+	@Nullable
 	public JKey getNullableSubmitKey() {
 		return submitKey;
 	}
@@ -373,6 +376,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		return hasAutoRenewAccountId() ? autoRenewAccountId : new EntityId();
 	}
 
+	@Nullable
 	public EntityId getNullableAutoRenewAccountId() {
 		return autoRenewAccountId;
 	}
@@ -392,6 +396,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		return hasExpirationTimestamp() ? expirationTimestamp : new RichInstant();
 	}
 
+	@Nullable
 	public RichInstant getNullableExpirationTimestamp() {
 		return expirationTimestamp;
 	}
@@ -431,6 +436,7 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		return (runningHash != null) ? runningHash : new byte[RUNNING_HASH_BYTE_ARRAY_SIZE];
 	}
 
+	@Nullable
 	public byte[] getNullableRunningHash() {
 		return runningHash;
 	}

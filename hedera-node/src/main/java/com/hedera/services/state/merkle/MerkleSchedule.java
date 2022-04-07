@@ -45,6 +45,7 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -68,15 +69,19 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 
 	static final int MAX_NUM_PUBKEY_BYTES = 33;
 
+	@Nullable
 	private Key grpcAdminKey = null;
+	@Nullable
 	private JKey adminKey = null;
 	private String memo;
 	private boolean deleted = false;
 	private boolean executed = false;
+	@Nullable
 	private EntityId payer = null;
 	private EntityId schedulingAccount;
 	private RichInstant schedulingTXValidStart;
 	private long expiry;
+	@Nullable
 	private RichInstant resolutionTime = null;
 
 	private int number;

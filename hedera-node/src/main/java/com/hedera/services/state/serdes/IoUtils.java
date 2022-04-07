@@ -26,6 +26,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -35,6 +36,7 @@ public class IoUtils {
 		out.write(key.serialize());
 	}
 
+	@Nullable
 	public static String readNullableString(
 			final SerializableDataInputStream in,
 			final int maxLen
@@ -43,12 +45,13 @@ public class IoUtils {
 	}
 
 	public static void writeNullableString(
-			final String msg,
+			@Nullable final String msg,
 			final SerializableDataOutputStream out
 	) throws IOException {
 		writeNullable(msg, out, (msgVal, outVal) -> outVal.writeNormalisedString(msgVal));
 	}
 
+	@Nullable
 	public static <T> T readNullable(
 			final SerializableDataInputStream in,
 			final IoReadingFunction<T> reader
@@ -57,7 +60,7 @@ public class IoUtils {
 	}
 
 	public static <T extends SelfSerializable> void writeNullableSerializable(
-			final T data,
+			@Nullable final T data,
 			final SerializableDataOutputStream out
 	) throws IOException {
 		if (data == null) {
@@ -68,6 +71,7 @@ public class IoUtils {
 		}
 	}
 
+	@Nullable
 	public static <T extends SelfSerializable> T readNullableSerializable(
 			final SerializableDataInputStream in
 	) throws IOException {
@@ -75,7 +79,7 @@ public class IoUtils {
 	}
 
 	public static <T> void writeNullable(
-			final T data,
+			@Nullable final T data,
 			final SerializableDataOutputStream out,
 			final IoWritingConsumer<T> writer
 	) throws IOException {

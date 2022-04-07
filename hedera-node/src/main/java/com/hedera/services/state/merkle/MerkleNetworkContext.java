@@ -69,16 +69,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
-	public static final Instant NULL_CONSENSUS_TIME = null;
-
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
 
 	private int stateVersion = UNRECORDED_STATE_VERSION;
 	private Instant[] congestionLevelStarts = NO_CONGESTION_STARTS;
 	private ExchangeRates midnightRates;
+	@Nullable
 	private Instant lastMidnightBoundaryCheck = null;
-	private Instant consensusTimeOfLastHandledTxn = NULL_CONSENSUS_TIME;
+	@Nullable
+	private Instant consensusTimeOfLastHandledTxn = null;
 	private SequenceNumber seqNo;
 	private long lastScannedEntity;
 	private long entitiesScannedThisSecond = 0L;
@@ -86,7 +86,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long preparedUpdateFileNum = NO_PREPARED_UPDATE_FILE_NUM;
 	private byte[] preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
 	private boolean migrationRecordsStreamed;
+	@Nullable
 	private FeeMultiplierSource multiplierSource = null;
+	@Nullable
 	private FunctionalityThrottling throttling = null;
 	private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
