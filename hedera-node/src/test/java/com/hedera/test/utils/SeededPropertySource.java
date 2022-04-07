@@ -118,7 +118,7 @@ public class SeededPropertySource {
 		if (nextBoolean()) {
 			seeded.setAutoRenewAccountId(nextEntityId());
 		}
-		seeded.setExpirationTimestamp(nextRichInstant());
+		seeded.setExpirationTimestamp(nextNullableRichInstant());
 		seeded.setKey(nextNum());
 		seeded.setDeleted(nextBoolean());
 		seeded.setSequenceNumber(nextUnsignedLong());
@@ -745,6 +745,10 @@ public class SeededPropertySource {
 
 	public RichInstant nextRichInstant() {
 		return new RichInstant(nextUnsignedLong(), SEEDED_RANDOM.nextInt(1_000_000));
+	}
+
+	public RichInstant nextNullableRichInstant() {
+		return nextBoolean() ? null : nextRichInstant();
 	}
 
 	public ContractID nextContractId() {

@@ -45,6 +45,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
@@ -208,20 +209,16 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 			return false;
 		}
 		final var that = (MerkleTopic) o;
-		try {
-			return Objects.equals(this.memo, that.memo)
-					&& this.number == that.number
-					&& Arrays.equals(getAdminKey().serialize(), that.getAdminKey().serialize())
-					&& Arrays.equals(getSubmitKey().serialize(), that.getSubmitKey().serialize())
-					&& Objects.equals(this.autoRenewDurationSeconds, that.autoRenewDurationSeconds)
-					&& Objects.equals(this.autoRenewAccountId, that.autoRenewAccountId)
-					&& Objects.equals(this.expirationTimestamp, that.expirationTimestamp)
-					&& (this.deleted == that.deleted)
-					&& (this.sequenceNumber == that.sequenceNumber)
-					&& Arrays.equals(this.runningHash, that.runningHash);
-		} catch (IOException ex) {
-			throw new KeySerializationException(ex.getMessage());
-		}
+		return Objects.equals(this.memo, that.memo)
+				&& this.number == that.number
+				&& equalUpToDecodability(this.getAdminKey(), that.getAdminKey())
+				&& equalUpToDecodability(this.getSubmitKey(), that.getSubmitKey())
+				&& Objects.equals(this.autoRenewDurationSeconds, that.autoRenewDurationSeconds)
+				&& Objects.equals(this.autoRenewAccountId, that.autoRenewAccountId)
+				&& Objects.equals(this.expirationTimestamp, that.expirationTimestamp)
+				&& (this.deleted == that.deleted)
+				&& (this.sequenceNumber == that.sequenceNumber)
+				&& Arrays.equals(this.runningHash, that.runningHash);
 	}
 
 	@Override
@@ -305,12 +302,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 	@Override
 	public void setKey(EntityNum phi) {
 		number = phi.intValue();
-	}
-
-	public static class KeySerializationException extends RuntimeException {
-		public KeySerializationException(final String message) {
-			super(message);
-		}
 	}
 
 	/* --- Bean --- */
@@ -438,6 +429,10 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public byte[] getRunningHash() {
 		return (runningHash != null) ? runningHash : new byte[RUNNING_HASH_BYTE_ARRAY_SIZE];
+	}
+
+	public byte[] getNullableRunningHash() {
+		return runningHash;
 	}
 
 	public void setRunningHash(final @Nullable byte[] runningHash) {

@@ -27,8 +27,8 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleTopicSerdeTest;
 import com.hedera.services.state.submerkle.EvmFnResult;
-import com.hedera.services.state.submerkle.EvmFnResultSerdeTest;
 import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
@@ -62,9 +62,10 @@ public class SerializedForms {
 //		saveTokens(MerkleTokenSerdeTest.NUM_TEST_CASES);
 //		saveLogs(EvmLogSerdeTest.NUM_TEST_CASES);
 //		saveTxnIds(TxnIdSerdeTest.NUM_TEST_CASES);
-//		saveTopics(MerkleTopicSerdeTest.NUM_TEST_CASES);
-		saveEvmResults(EvmFnResultSerdeTest.MIN_TEST_CASES_PER_VERSION);
+		saveTopics(MerkleTopicSerdeTest.NUM_TEST_CASES);
+//		saveEvmResults(EvmFnResultSerdeTest.MIN_TEST_CASES_PER_VERSION);
 	}
+
 
 	public static <T extends SelfSerializable> byte[] loadForm(
 			final Class<T> type,

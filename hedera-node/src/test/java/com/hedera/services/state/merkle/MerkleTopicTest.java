@@ -106,6 +106,13 @@ class MerkleTopicTest {
 		assertEquals(MerkleTopic.RUNTIME_CONSTRUCTABLE_ID, topic.getClassId());
 	}
 
+	@Test
+	void copyWorks() throws IOException {
+		final var original = topicFrom(2);
+		final var reproduction = original.copy();
+		assertEquals(original, reproduction);
+	}
+
 	private MerkleTopic topicFrom(int s) throws IOException {
 		long v = 1_234_567L + s * 1_000_000L;
 		long t = s + 1;

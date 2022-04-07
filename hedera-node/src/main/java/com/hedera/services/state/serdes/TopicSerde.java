@@ -29,6 +29,7 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 
 import java.io.IOException;
 
+import static com.hedera.services.state.merkle.MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE;
 import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
 import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.staticReadNullableString;
@@ -47,23 +48,18 @@ public class TopicSerde {
 		to.setExpirationTimestamp(staticReadNullable(in, RichInstant::from));
 		to.setDeleted(in.readBoolean());
 		to.setSequenceNumber(in.readLong());
-		to.setRunningHash(in.readBoolean() ? in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE) : null);
+		to.setRunningHash(in.readBoolean() ? in.readByteArray(RUNNING_HASH_BYTE_ARRAY_SIZE) : null);
 	}
 
-	public void serialize(final MerkleTopic merkleTopic, final SerializableDataOutputStream out) throws IOException {
-		staticWriteNullableString(merkleTopic.getNullableMemo(), out);
-		staticWriteNullable(merkleTopic.getNullableAdminKey(), out, IoUtils::serializeKey);
-		staticWriteNullable(merkleTopic.getNullableSubmitKey(), out, IoUtils::serializeKey);
-		out.writeLong(merkleTopic.getAutoRenewDurationSeconds());
-		staticWriteNullable(merkleTopic.getNullableAutoRenewAccountId(), out, EntityId::serialize);
-		staticWriteNullable(merkleTopic.getExpirationTimestamp(), out, RichInstant::serialize);
-		out.writeBoolean(merkleTopic.isDeleted());
-		out.writeLong(merkleTopic.getSequenceNumber());
-		if (merkleTopic.hasRunningHash()) {
-			out.writeBoolean(true);
-			out.writeByteArray(merkleTopic.getRunningHash());
-		} else {
-			out.writeBoolean(false);
-		}
+	public void serialize(final MerkleTopic topic, final SerializableDataOutputStream out) throws IOException {
+		staticWriteNullableString(topic.getNullableMemo(), out);
+		staticWriteNullable(topic.getNullableAdminKey(), out, IoUtils::serializeKey);
+		staticWriteNullable(topic.getNullableSubmitKey(), out, IoUtils::serializeKey);
+		out.writeLong(topic.getAutoRenewDurationSeconds());
+		staticWriteNullable(topic.getNullableAutoRenewAccountId(), out, EntityId::serialize);
+		staticWriteNullable(topic.getNullableExpirationTimestamp(), out, RichInstant::serialize);
+		out.writeBoolean(topic.isDeleted());
+		out.writeLong(topic.getSequenceNumber());
+		staticWriteNullable(topic.getNullableRunningHash(), out, (hashOut, dout) -> dout.writeByteArray(hashOut));
 	}
 }
