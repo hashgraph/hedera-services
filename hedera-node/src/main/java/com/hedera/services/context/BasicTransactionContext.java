@@ -30,9 +30,9 @@ import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
@@ -279,6 +279,11 @@ public class BasicTransactionContext implements TransactionContext {
 	public void setCallResult(final EvmFnResult result) {
 		this.evmFnResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(result);
+	}
+
+	@Override
+	public void updateFromEvmCallContext(final EvmFnResult.EvmFnCallContext callContext) {
+		this.evmFnResult.updateFromEvmCallContext(callContext);
 	}
 
 	@Override

@@ -182,15 +182,25 @@ public interface TransactionContext {
 	 * Record that the current transaction called a smart contract with
 	 * a specified result.
 	 *
-	 * @param result the result of the contract call
+	 * @param result
+	 * 		the result of the contract call
 	 */
 	void setCallResult(EvmFnResult result);
+
+	/**
+	 * Add call context information to an already set call result
+	 *
+	 * @param callContext
+	 * 		the context to add to the call result
+	 */
+	void updateFromEvmCallContext(EvmFnResult.EvmFnCallContext callContext);
 
 	/**
 	 * Record that the current transaction created a smart contract with
 	 * a specified result.
 	 *
-	 * @param result the result of the contract creation.
+	 * @param result
+	 * 		the result of the contract creation.
 	 */
 	void setCreateResult(EvmFnResult result);
 
