@@ -1,4 +1,4 @@
-package com.hedera.services.queries.crypto;
+package com.hedera.services.queries.meta;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;

@@ -77,6 +77,6 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 
 	@Override
 	public void getAccountDetails(final Query query, final StreamObserver<Response> observer) {
-		queryHelper.answer(query, observer, metaAnswers.getExecTime(), GetAccountDetails);
+		queryHelper.answer(query, observer, metaAnswers.getAccountDetails(), GetAccountDetails);
 	}
 }
