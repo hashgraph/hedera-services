@@ -32,8 +32,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 
 import static com.hedera.services.state.serdes.IoUtils.byteStream;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullable;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 
 public class HFileMetaSerde {
 	public static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
@@ -47,7 +47,7 @@ public class HFileMetaSerde {
 			serOut.writeBoolean(meta.isDeleted());
 			serOut.writeLong(meta.getExpiry());
 			serOut.writeNormalisedString(meta.getMemo());
-			staticWriteNullable(meta.getWacl(), serOut, IoUtils::serializeKey);
+			writeNullable(meta.getWacl(), serOut, IoUtils::serializeKey);
 		});
 	}
 
@@ -75,7 +75,7 @@ public class HFileMetaSerde {
 		final var isDeleted = serIn.readBoolean();
 		final var expiry = serIn.readLong();
 		final var memo = serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES);
-		final JKey wacl = staticReadNullable(serIn, JKeySerializer::deserialize);
+		final JKey wacl = readNullable(serIn, JKeySerializer::deserialize);
 		return new HFileMeta(isDeleted, wacl, expiry, memo);
 	}
 

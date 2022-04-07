@@ -48,11 +48,11 @@ import java.util.TreeMap;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableString;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
@@ -311,20 +311,20 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		staticWriteNullableSerializable(receipt, out);
+		writeNullableSerializable(receipt, out);
 
 		out.writeByteArray(txnHash);
 
-		staticWriteNullableSerializable(txnId, out);
+		writeNullableSerializable(txnId, out);
 
-		staticWriteNullable(consensusTime, out, RichInstant::serialize);
-		staticWriteNullableString(memo, out);
+		writeNullable(consensusTime, out, RichInstant::serialize);
+		writeNullableString(memo, out);
 
 		out.writeLong(this.fee);
 
-		staticWriteNullableSerializable(hbarAdjustments, out);
-		staticWriteNullableSerializable(contractCallResult, out);
-		staticWriteNullableSerializable(contractCreateResult, out);
+		writeNullableSerializable(hbarAdjustments, out);
+		writeNullableSerializable(contractCallResult, out);
+		writeNullableSerializable(contractCreateResult, out);
 
 		out.writeLong(expiry);
 		out.writeLong(submittingMember);
@@ -332,7 +332,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		out.writeSerializableList(tokens, true, true);
 		out.writeSerializableList(tokenAdjustments, true, true);
 
-		staticWriteNullableSerializable(scheduleRef, out);
+		writeNullableSerializable(scheduleRef, out);
 		out.writeSerializableList(nftTokenAdjustments, true, true);
 		out.writeSerializableList(assessedCustomFees, true, true);
 		out.writeSerializableList(newTokenAssociations, true, true);
@@ -357,22 +357,22 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		receipt = staticReadNullableSerializable(in);
+		receipt = readNullableSerializable(in);
 		txnHash = in.readByteArray(MAX_TXN_HASH_BYTES);
-		txnId = staticReadNullableSerializable(in);
-		consensusTime = staticReadNullable(in, RichInstant::from);
-		memo = IoUtils.staticReadNullableString(in, MAX_MEMO_BYTES);
+		txnId = readNullableSerializable(in);
+		consensusTime = readNullable(in, RichInstant::from);
+		memo = IoUtils.readNullableString(in, MAX_MEMO_BYTES);
 		fee = in.readLong();
-		hbarAdjustments = staticReadNullableSerializable(in);
-		contractCallResult = staticReadNullableSerializable(in);
-		contractCreateResult = staticReadNullableSerializable(in);
+		hbarAdjustments = readNullableSerializable(in);
+		contractCallResult = readNullableSerializable(in);
+		contractCreateResult = readNullableSerializable(in);
 		expiry = in.readLong();
 		submittingMember = in.readLong();
 		// Added in 0.7
 		tokens = in.readSerializableList(MAX_INVOLVED_TOKENS);
 		tokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
 		// Added in 0.8
-		scheduleRef = staticReadNullableSerializable(in);
+		scheduleRef = readNullableSerializable(in);
 		// Added in 0.16
 		nftTokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
 		assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);

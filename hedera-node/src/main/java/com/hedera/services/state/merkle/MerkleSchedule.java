@@ -55,8 +55,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.protobuf.ByteString.copyFrom;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullable;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
@@ -202,7 +202,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		bodyBytes = in.readByteArray(Integer.MAX_VALUE);
 		executed = in.readBoolean();
 		deleted = in.readBoolean();
-		resolutionTime = staticReadNullable(in, RichInstant::from);
+		resolutionTime = readNullable(in, RichInstant::from);
 		int numSignatories = in.readInt();
 		while (numSignatories-- > 0) {
 			witnessValidSignature(in.readByteArray(MAX_NUM_PUBKEY_BYTES));
@@ -219,7 +219,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		out.writeByteArray(bodyBytes);
 		out.writeBoolean(executed);
 		out.writeBoolean(deleted);
-		staticWriteNullable(resolutionTime, out, RichInstant::serialize);
+		writeNullable(resolutionTime, out, RichInstant::serialize);
 		out.writeInt(signatories.size());
 		for (byte[] key : signatories) {
 			out.writeByteArray(key);

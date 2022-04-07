@@ -47,10 +47,10 @@ import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlready
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.services.state.submerkle.TokenAssociationMetadata.EMPTY_TOKEN_ASSOCIATION_META;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
@@ -153,7 +153,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-		key = staticReadNullable(in, JKeySerializer::deserialize);
+		key = readNullable(in, JKeySerializer::deserialize);
 		expiry = in.readLong();
 		hbarBalance = in.readLong();
 		autoRenewSecs = in.readLong();
@@ -161,7 +161,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		deleted = in.readBoolean();
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
-		proxy = staticReadNullableSerializable(in);
+		proxy = readNullableSerializable(in);
 		// Added in 0.16
 		nftsOwned = in.readLong();
 		// Added in 0.18
@@ -184,7 +184,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	@Override
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
-		staticWriteNullable(key, out, (keyOut, dout) -> dout.write(keyOut.serialize()));
+		writeNullable(key, out, (keyOut, dout) -> dout.write(keyOut.serialize()));
 		out.writeLong(expiry);
 		out.writeLong(hbarBalance);
 		out.writeLong(autoRenewSecs);
@@ -192,7 +192,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeBoolean(deleted);
 		out.writeBoolean(smartContract);
 		out.writeBoolean(receiverSigRequired);
-		staticWriteNullableSerializable(proxy, out);
+		writeNullableSerializable(proxy, out);
 		out.writeLong(nftsOwned);
 		out.writeInt(autoAssociationMetadata);
 		out.writeInt(number);

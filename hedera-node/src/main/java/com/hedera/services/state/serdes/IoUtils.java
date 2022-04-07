@@ -35,28 +35,28 @@ public class IoUtils {
 		out.write(key.serialize());
 	}
 
-	public static String staticReadNullableString(
+	public static String readNullableString(
 			final SerializableDataInputStream in,
 			final int maxLen
 	) throws IOException {
-		return staticReadNullable(in, input -> input.readNormalisedString(maxLen));
+		return readNullable(in, input -> input.readNormalisedString(maxLen));
 	}
 
-	public static void staticWriteNullableString(
+	public static void writeNullableString(
 			final String msg,
 			final SerializableDataOutputStream out
 	) throws IOException {
-		staticWriteNullable(msg, out, (msgVal, outVal) -> outVal.writeNormalisedString(msgVal));
+		writeNullable(msg, out, (msgVal, outVal) -> outVal.writeNormalisedString(msgVal));
 	}
 
-	public static <T> T staticReadNullable(
+	public static <T> T readNullable(
 			final SerializableDataInputStream in,
 			final IoReadingFunction<T> reader
 	) throws IOException {
 		return in.readBoolean() ? reader.read(in) : null;
 	}
 
-	public static <T extends SelfSerializable> void staticWriteNullableSerializable(
+	public static <T extends SelfSerializable> void writeNullableSerializable(
 			final T data,
 			final SerializableDataOutputStream out
 	) throws IOException {
@@ -68,13 +68,13 @@ public class IoUtils {
 		}
 	}
 
-	public static <T extends SelfSerializable> T staticReadNullableSerializable(
+	public static <T extends SelfSerializable> T readNullableSerializable(
 			final SerializableDataInputStream in
 	) throws IOException {
 		return in.readBoolean() ? in.readSerializable() : null;
 	}
 
-	public static <T> void staticWriteNullable(
+	public static <T> void writeNullable(
 			final T data,
 			final SerializableDataOutputStream out,
 			final IoWritingConsumer<T> writer

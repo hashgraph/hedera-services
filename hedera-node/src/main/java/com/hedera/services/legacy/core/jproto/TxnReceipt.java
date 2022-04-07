@@ -38,8 +38,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.CommonUtils.getNormalisedStringFromBytes;
@@ -124,12 +124,12 @@ public class TxnReceipt implements SelfSerializable {
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeNormalisedString(status);
 		out.writeSerializable(exchangeRates, true);
-		staticWriteNullableSerializable(accountId, out);
-		staticWriteNullableSerializable(fileId, out);
-		staticWriteNullableSerializable(contractId, out);
-		staticWriteNullableSerializable(topicId, out);
-		staticWriteNullableSerializable(tokenId, out);
-		staticWriteNullableSerializable(scheduleId, out);
+		writeNullableSerializable(accountId, out);
+		writeNullableSerializable(fileId, out);
+		writeNullableSerializable(contractId, out);
+		writeNullableSerializable(topicId, out);
+		writeNullableSerializable(tokenId, out);
+		writeNullableSerializable(scheduleId, out);
 		if (topicRunningHash == MISSING_RUNNING_HASH) {
 			out.writeBoolean(false);
 		} else {
@@ -139,7 +139,7 @@ public class TxnReceipt implements SelfSerializable {
 			out.writeByteArray(topicRunningHash);
 		}
 		out.writeLong(newTotalSupply);
-		staticWriteNullableSerializable(scheduledTxnId, out);
+		writeNullableSerializable(scheduledTxnId, out);
 		out.writeLongArray(serialNumbers);
 	}
 
@@ -147,14 +147,14 @@ public class TxnReceipt implements SelfSerializable {
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
 		status = getNormalisedStringFromBytes(in.readByteArray(MAX_STATUS_BYTES));
 		exchangeRates = in.readSerializable(true, ExchangeRates::new);
-		accountId = staticReadNullableSerializable(in);
-		fileId = staticReadNullableSerializable(in);
-		contractId = staticReadNullableSerializable(in);
-		topicId = staticReadNullableSerializable(in);
+		accountId = readNullableSerializable(in);
+		fileId = readNullableSerializable(in);
+		contractId = readNullableSerializable(in);
+		topicId = readNullableSerializable(in);
 		// Added in 0.7
-		tokenId = staticReadNullableSerializable(in);
+		tokenId = readNullableSerializable(in);
 		// Added in 0.11
-		scheduleId = staticReadNullableSerializable(in);
+		scheduleId = readNullableSerializable(in);
 		final var isSubmitMessageReceipt = in.readBoolean();
 		if (isSubmitMessageReceipt) {
 			topicSequenceNumber = in.readLong();
@@ -164,7 +164,7 @@ public class TxnReceipt implements SelfSerializable {
 		// Added in 0.9
 		newTotalSupply = in.readLong();
 		// Added in 0.12
-		scheduledTxnId = staticReadNullableSerializable(in);
+		scheduledTxnId = readNullableSerializable(in);
 		// Added in 0.16
 		serialNumbers = in.readLongArray(MAX_SERIAL_NUMBERS);
 	}

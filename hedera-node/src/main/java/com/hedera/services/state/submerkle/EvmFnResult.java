@@ -47,10 +47,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullableString;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableString;
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableString;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
 import static com.swirlds.common.CommonUtils.hex;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
@@ -166,8 +166,8 @@ public class EvmFnResult implements SelfSerializable {
 		gasUsed = in.readLong();
 		bloom = in.readByteArray(EvmLog.MAX_BLOOM_BYTES);
 		result = in.readByteArray(MAX_RESULT_BYTES);
-		error = staticReadNullableString(in, MAX_ERROR_BYTES);
-		contractId = staticReadNullableSerializable(in);
+		error = readNullableString(in, MAX_ERROR_BYTES);
+		contractId = readNullableSerializable(in);
 		logs = in.readSerializableList(MAX_LOGS, true, EvmLog::new);
 		createdContractIds = in.readSerializableList(MAX_CREATED_IDS, true, EntityId::new);
 		// Added in 0.23
@@ -201,8 +201,8 @@ public class EvmFnResult implements SelfSerializable {
 		out.writeLong(gasUsed);
 		out.writeByteArray(bloom);
 		out.writeByteArray(result);
-		staticWriteNullableString(error, out);
-		staticWriteNullableSerializable(contractId, out);
+		writeNullableString(error, out);
+		writeNullableSerializable(contractId, out);
 		out.writeSerializableList(logs, true, true);
 		out.writeSerializableList(createdContractIds, true, true);
 		out.writeByteArray(evmAddress);

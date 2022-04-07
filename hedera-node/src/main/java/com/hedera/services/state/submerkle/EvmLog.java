@@ -39,8 +39,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 
 public class EvmLog implements SelfSerializable {
 	static final int MERKLE_VERSION = 1;
@@ -110,7 +110,7 @@ public class EvmLog implements SelfSerializable {
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		data = in.readByteArray(MAX_DATA_BYTES);
 		bloom = in.readByteArray(MAX_BLOOM_BYTES);
-		contractId = staticReadNullableSerializable(in);
+		contractId = readNullableSerializable(in);
 		int numTopics = in.readInt();
 		if (numTopics > 0) {
 			topics = new LinkedList<>();
@@ -124,7 +124,7 @@ public class EvmLog implements SelfSerializable {
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeByteArray(data);
 		out.writeByteArray(bloom);
-		staticWriteNullableSerializable(contractId, out);
+		writeNullableSerializable(contractId, out);
 		out.writeInt(topics.size());
 		for (byte[] topic : topics) {
 			out.writeByteArray(topic);

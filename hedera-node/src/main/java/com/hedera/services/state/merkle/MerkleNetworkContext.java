@@ -43,8 +43,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullable;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
@@ -228,7 +228,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-		final var lastHandleTime = staticReadNullable(in, RichInstant::from);
+		final var lastHandleTime = readNullable(in, RichInstant::from);
 		consensusTimeOfLastHandledTxn = (lastHandleTime == null) ? null : lastHandleTime.toJava();
 
 		seqNo = seqNoSupplier.get();
@@ -246,7 +246,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		preparedUpdateFileHash = in.readByteArray(UPDATE_FILE_HASH_LEN);
 		// Added in 0.20
 		final var gasUsed = in.readLong();
-		final var lastGasUsage = staticReadNullable(in, RichInstant::from);
+		final var lastGasUsage = readNullable(in, RichInstant::from);
 		gasThrottleUsageSnapshot = new DeterministicThrottle.UsageSnapshot(
 				gasUsed, (lastGasUsage == null) ? null : lastGasUsage.toJava());
 		if (version >= RELEASE_0240_VERSION) {
@@ -260,7 +260,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
 			for (int i = 0; i < numUsageSnapshots; i++) {
 				final var used = in.readLong();
-				final var lastUsed = staticReadNullable(in, RichInstant::from);
+				final var lastUsed = readNullable(in, RichInstant::from);
 				usageSnapshots[i] = new DeterministicThrottle.UsageSnapshot(
 						used, (lastUsed == null) ? null : lastUsed.toJava());
 			}
@@ -269,7 +269,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (numCongestionStarts > 0) {
 			congestionLevelStarts = new Instant[numCongestionStarts];
 			for (int i = 0; i < numCongestionStarts; i++) {
-				final var levelStart = staticReadNullable(in, RichInstant::from);
+				final var levelStart = readNullable(in, RichInstant::from);
 				congestionLevelStarts[i] = (levelStart == null) ? null : levelStart.toJava();
 			}
 		}
@@ -283,35 +283,35 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	private void whenVersionHigherOrEqualTo0150(final SerializableDataInputStream in) throws IOException {
-		final var lastBoundaryCheck = staticReadNullable(in, RichInstant::from);
+		final var lastBoundaryCheck = readNullable(in, RichInstant::from);
 		lastMidnightBoundaryCheck = (lastBoundaryCheck == null) ? null : lastBoundaryCheck.toJava();
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		staticWriteNullable(fromJava(consensusTimeOfLastHandledTxn), out, RichInstant::serialize);
+		writeNullable(fromJava(consensusTimeOfLastHandledTxn), out, RichInstant::serialize);
 		seqNo.serialize(out);
 		out.writeSerializable(midnightRates, true);
 		int n = usageSnapshots.length;
 		out.writeInt(n);
 		for (var usageSnapshot : usageSnapshots) {
 			out.writeLong(usageSnapshot.used());
-			staticWriteNullable(fromJava(usageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
+			writeNullable(fromJava(usageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
 		}
 		n = congestionLevelStarts.length;
 		out.writeInt(n);
 		for (var congestionStart : congestionLevelStarts) {
-			staticWriteNullable(fromJava(congestionStart), out, RichInstant::serialize);
+			writeNullable(fromJava(congestionStart), out, RichInstant::serialize);
 		}
 		out.writeLong(lastScannedEntity);
 		out.writeLong(entitiesScannedThisSecond);
 		out.writeLong(entitiesTouchedThisSecond);
 		out.writeInt(stateVersion);
-		staticWriteNullable(fromJava(lastMidnightBoundaryCheck), out, RichInstant::serialize);
+		writeNullable(fromJava(lastMidnightBoundaryCheck), out, RichInstant::serialize);
 		out.writeLong(preparedUpdateFileNum);
 		out.writeByteArray(preparedUpdateFileHash);
 		out.writeLong(gasThrottleUsageSnapshot.used());
-		staticWriteNullable(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
+		writeNullable(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
 		out.writeBoolean(migrationRecordsStreamed);
 	}
 

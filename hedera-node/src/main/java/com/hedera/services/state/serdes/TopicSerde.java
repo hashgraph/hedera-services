@@ -30,36 +30,36 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.IOException;
 
 import static com.hedera.services.state.merkle.MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.staticReadNullableString;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullable;
-import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableString;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableString;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
 
 public class TopicSerde {
 	public static final int MAX_MEMO_BYTES = 4_096;
 
 	public void deserialize(final SerializableDataInputStream in, final MerkleTopic to) throws IOException {
-		to.setMemo(staticReadNullableString(in, MAX_MEMO_BYTES));
-		to.setAdminKey(staticReadNullable(in, JKeySerializer::deserialize));
-		to.setSubmitKey(staticReadNullable(in, JKeySerializer::deserialize));
+		to.setMemo(readNullableString(in, MAX_MEMO_BYTES));
+		to.setAdminKey(readNullable(in, JKeySerializer::deserialize));
+		to.setSubmitKey(readNullable(in, JKeySerializer::deserialize));
 		to.setAutoRenewDurationSeconds(in.readLong());
-		to.setAutoRenewAccountId(staticReadNullableSerializable(in));
-		to.setExpirationTimestamp(staticReadNullable(in, RichInstant::from));
+		to.setAutoRenewAccountId(readNullableSerializable(in));
+		to.setExpirationTimestamp(readNullable(in, RichInstant::from));
 		to.setDeleted(in.readBoolean());
 		to.setSequenceNumber(in.readLong());
 		to.setRunningHash(in.readBoolean() ? in.readByteArray(RUNNING_HASH_BYTE_ARRAY_SIZE) : null);
 	}
 
 	public void serialize(final MerkleTopic topic, final SerializableDataOutputStream out) throws IOException {
-		staticWriteNullableString(topic.getNullableMemo(), out);
-		staticWriteNullable(topic.getNullableAdminKey(), out, IoUtils::serializeKey);
-		staticWriteNullable(topic.getNullableSubmitKey(), out, IoUtils::serializeKey);
+		writeNullableString(topic.getNullableMemo(), out);
+		writeNullable(topic.getNullableAdminKey(), out, IoUtils::serializeKey);
+		writeNullable(topic.getNullableSubmitKey(), out, IoUtils::serializeKey);
 		out.writeLong(topic.getAutoRenewDurationSeconds());
-		staticWriteNullable(topic.getNullableAutoRenewAccountId(), out, EntityId::serialize);
-		staticWriteNullable(topic.getNullableExpirationTimestamp(), out, RichInstant::serialize);
+		writeNullable(topic.getNullableAutoRenewAccountId(), out, EntityId::serialize);
+		writeNullable(topic.getNullableExpirationTimestamp(), out, RichInstant::serialize);
 		out.writeBoolean(topic.isDeleted());
 		out.writeLong(topic.getSequenceNumber());
-		staticWriteNullable(topic.getNullableRunningHash(), out, (hashOut, dout) -> dout.writeByteArray(hashOut));
+		writeNullable(topic.getNullableRunningHash(), out, (hashOut, dout) -> dout.writeByteArray(hashOut));
 	}
 }
