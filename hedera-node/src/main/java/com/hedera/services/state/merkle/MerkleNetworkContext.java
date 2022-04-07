@@ -101,7 +101,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private long blockNo = 0;
 	private boolean isNewBlock = false;
 	private Instant firstConsTimeOfCurrentBlock = NULL_CONSENSUS_TIME;
-	private Hash currentBlockHash = new Hash();
+	private Hash prevStreamedRecordHash = new Hash();
 	//This initial capacity should prevent the map from rehashing since we will store only 256 pairs and this is less than 0.75*344
 	private Map<Long, Hash> blockNumberToHash = new LinkedHashMap<>(344);
 
@@ -138,7 +138,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.preparedUpdateFileHash = that.preparedUpdateFileHash;
 		this.migrationRecordsStreamed = that.migrationRecordsStreamed;
 		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
-		this.currentBlockHash = that.currentBlockHash;
+		this.prevStreamedRecordHash = that.prevStreamedRecordHash;
 		this.blockNo = that.blockNo;
 		this.blockNumberToHash = that.blockNumberToHash;
 		this.isNewBlock = that.isNewBlock;
@@ -279,7 +279,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			final var firstBlockTime = serdes.readNullableInstant(in);
 			firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
 			blockNo = in.readLong();
-			currentBlockHash = serdes.readNullableSerializable(in);
+			prevStreamedRecordHash = serdes.readNullableSerializable(in);
 			isNewBlock = in.readBoolean();
 			final var cacheLength = in.readInt();
 			for(int i = 0; i < cacheLength; i++) {
@@ -351,7 +351,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeBoolean(migrationRecordsStreamed);
 		serdes.writeNullableInstant(fromJava(firstConsTimeOfCurrentBlock), out);
 		out.writeLong(blockNo);
-		serdes.writeNullableSerializable(currentBlockHash, out);
+		serdes.writeNullableSerializable(prevStreamedRecordHash, out);
 		out.writeBoolean(isNewBlock);
 
 		out.writeInt(blockNumberToHash.size());
@@ -417,20 +417,14 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return blockNo;
 	}
 
-	public void cacheBlockHash(final Hash blockHash) {
+	private void cacheBlockHash() {
 		//When the cache exceeds 256 entries we need to remove the first entry to free one slot for the new block
 		if(blockNumberToHash.size() > 255 && !blockNumberToHash.containsKey(blockNo)) {
 			final var firstKey = (Long) blockNumberToHash.keySet().toArray()[0];
 			blockNumberToHash.remove(firstKey);
 		}
 
-		if(blockNumberToHash.putIfAbsent(blockNo, currentBlockHash)!=null) {
-			isNewBlock = false;
-		}
-
-		if(isNewBlock) {
-			currentBlockHash = blockHash;
-		}
+		blockNumberToHash.putIfAbsent(blockNo, prevStreamedRecordHash);
 	}
 
 	public Hash getBlockHashCache(final long blockNumber) {
@@ -445,13 +439,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.firstConsTimeOfCurrentBlock = firstConsTimeOfCurrentBlock;
 	}
 
-	public Hash getCurrentBlockHash() {
-		return currentBlockHash;
+	public Hash getPrevStreamedRecordHash() {
+		return prevStreamedRecordHash;
 	}
 
-	public void setCurrentBlockHash(final Hash currentBlockHash) {
-		this.currentBlockHash = currentBlockHash;
-		cacheBlockHash(currentBlockHash);
+	public void setPrevStreamedRecordHash(final Hash prevStreamedRecordHash) {
+		this.prevStreamedRecordHash = prevStreamedRecordHash;
+		cacheBlockHash();
 	}
 
 	private String usageSnapshotsDesc() {

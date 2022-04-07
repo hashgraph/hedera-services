@@ -246,7 +246,7 @@ public class RecordStreamManagerTest {
 		addRecordStreamObject(runningAvgsMock, mockQueue, 257, OVERWRITING_HASH);
 
 		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getBlockHashCache(257));
-		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getCurrentBlockHash());
+		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getPrevStreamedRecordHash());
 		assertEquals(256, merkleNetworkContext.getBlockHashCache().size());
 		assertEquals(257, merkleNetworkContext.getBlockNo());
 

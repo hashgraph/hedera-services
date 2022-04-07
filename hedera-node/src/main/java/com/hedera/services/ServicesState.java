@@ -408,7 +408,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				dualState.setFreezeTime(null);
 				log.info("START OVER START OVER START OVER");
 				networkCtx().setFirstConsTimeOfCurrentBlock(null);
-				networkCtx().setCurrentBlockHash(new Hash());
+				networkCtx().setPrevStreamedRecordHash(new Hash());
 			}
 			if (stateVersion < CURRENT_VERSION) {
 				// Only signal the MigrationRecordsManager to re-run if this is an upgrade

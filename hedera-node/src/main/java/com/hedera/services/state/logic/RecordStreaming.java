@@ -103,10 +103,10 @@ public class RecordStreaming implements Runnable {
 			Hash computedHash = new Hash();
 			try {
 				computedHash = curRunningHashLeaf.getRunningHash().getFutureHash().get();
-			} catch (InterruptedException e) {
+			} catch (final InterruptedException e) {
 				log.error("Error in computing hash for block #{}", curNetworkCtx.getBlockNo());
 			}
-			curNetworkCtx.setCurrentBlockHash(computedHash);
+			curNetworkCtx.setPrevStreamedRecordHash(computedHash);
 			curNetworkCtx.incrementBlockNo();
 			curNetworkCtx.setFirstConsTimeOfCurrentBlock(rso.getTimestamp());
 			log.info("Beginning block #{} @ {}", curNetworkCtx.getBlockNo(), rso.getTimestamp());
