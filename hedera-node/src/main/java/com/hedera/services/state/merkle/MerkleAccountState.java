@@ -183,8 +183,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		staticWriteNullable(key, out, (key, dout) -> dout.write(key.serialize()));
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
+		staticWriteNullable(key, out, (keyOut, dout) -> dout.write(keyOut.serialize()));
 		out.writeLong(expiry);
 		out.writeLong(hbarBalance);
 		out.writeLong(autoRenewSecs);

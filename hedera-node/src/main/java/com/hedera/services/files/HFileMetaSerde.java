@@ -86,4 +86,8 @@ public class HFileMetaSerde {
 		JKey wacl = JKeySerializer.deserialize(new DataInputStream(new ByteArrayInputStream(key)));
 		return new HFileMeta(deleted, wacl, expirationTime);
 	}
+
+	private HFileMetaSerde() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 }
