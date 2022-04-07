@@ -27,13 +27,9 @@ import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -94,8 +90,6 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	OptionValidator optionValidator;
 	@Mock
-	HederaLedger hederaLedger;
-	@Mock
 	GlobalDynamicProperties globalDynamicProperties;
 	ContractCallTransitionLogic contractCallTransitionLogic;
 	ContractCreateTransitionLogic contractCreateTransitionLogic;
@@ -130,8 +124,6 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private ExpandHandleSpanMapAccessor spanMapAccessor;
 	@Mock
-	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	@Mock
 	private HederaFs hfs;
 	private TransactionBody ethTxTxn;
 	private EthTxData ethTxData;
@@ -145,8 +137,8 @@ class EthereumTransactionTransitionLogicTest {
 				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian);
 		given(globalDynamicProperties.getChainId()).willReturn(0x128);
 		subject = new EthereumTransitionLogic(txnCtx, spanMapAccessor, contractCallTransitionLogic,
-				contractCreateTransitionLogic,
-				hfs, globalDynamicProperties, aliasManager, accountsLedger);
+				contractCreateTransitionLogic, recordService,
+				hfs, globalDynamicProperties, aliasManager);
 	}
 
 	@Test
@@ -187,6 +179,7 @@ class EthereumTransactionTransitionLogicTest {
 
 		// then:
 		verify(recordService).externaliseEvmCallTransaction(any());
+		verify(recordService).updateFromEvmCallContext(any());
 		verify(worldState).getCreatedContractIds();
 		verify(txnCtx).setTargetedContract(target);
 	}
@@ -223,6 +216,7 @@ class EthereumTransactionTransitionLogicTest {
 
 		// then:
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
+		verify(recordService).updateFromEvmCallContext(any());
 		verify(worldState).getCreatedContractIds();
 		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
 	}
@@ -231,6 +225,8 @@ class EthereumTransactionTransitionLogicTest {
 	void verifyProcessorCallingWithCorrectCallData() {
 		// setup:
 		callData = Hex.decode("fffefdfc");
+		gas = 867_5309;
+		sent = 100_000_000L;
 		givenValidTxnCtx();
 
 		// and:

@@ -86,6 +86,7 @@ hedera-node/data/onboard/GenesisPub32Key.txt
 hedera-node/data/recordstreams/
 hedera-node/data/saved/
 hedera-node/data/jdb/
+hedera-node/database/
 hedera-node/output/
 hedera-node/target/
 hedera-node/src/test/resources/diskFs

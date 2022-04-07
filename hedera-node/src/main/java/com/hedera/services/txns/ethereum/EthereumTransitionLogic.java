@@ -27,6 +27,8 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.PreFetchableTransition;
@@ -62,6 +64,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	private final ExpandHandleSpanMapAccessor spanMapAccessor;
 	private final ContractCallTransitionLogic contractCallTransitionLogic;
 	private final ContractCreateTransitionLogic contractCreateTransitionLogic;
+	private final TransactionRecordService recordService;
 	private final AliasManager aliasManager;
 	private final HederaFs hfs;
 	private final byte[] chainId;
@@ -73,6 +76,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			final ExpandHandleSpanMapAccessor spanMapAccessor,
 			final ContractCallTransitionLogic contractCallTransitionLogic,
 			final ContractCreateTransitionLogic contractCreateTransitionLogic,
+			final TransactionRecordService recordService,
 			final HederaFs hfs,
 			GlobalDynamicProperties globalDynamicProperties,
 			AliasManager aliasManager,
@@ -81,6 +85,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		this.spanMapAccessor = spanMapAccessor;
 		this.contractCallTransitionLogic = contractCallTransitionLogic;
 		this.contractCreateTransitionLogic = contractCreateTransitionLogic;
+		this.recordService = recordService;
 		this.hfs = hfs;
 		this.chainId = Integers.toBytes(globalDynamicProperties.getChainId());
 		this.aliasManager = aliasManager;
@@ -98,12 +103,11 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
 		if (syntheticTxBody.hasContractCall()) {
 			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId());
-			//FIXME add gas, amount, callData to the TransactionRecord.
 		} else if (syntheticTxBody.hasContractCreateInstance()) {
 			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId());
-			//FIXME add gas, amount, callData to the TransactionRecord.
 		}
-		//TODO when processing token and topic calls add a new child tx record.
+		recordService.updateFromEvmCallContext(new EvmFnResult.EvmFnCallContext(ethTxData.gasLimit(),
+				ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact(), ethTxData.callData()));
 	}
 
 	private TransactionBody getOrCreateTransactionBody(final TxnAccessor txnCtx) {
@@ -187,7 +191,8 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		}
 	}
 
-	private EthTxData maybeUpdateCallData(final TxnAccessor accessor, EthTxData ethTxData, final EthereumTransactionBody op) {
+	private EthTxData maybeUpdateCallData(final TxnAccessor accessor, EthTxData ethTxData,
+			final EthereumTransactionBody op) {
 		if ((ethTxData.callData() == null || ethTxData.callData().length == 0) && op.hasCallData()) {
 			var callDataFileId = op.getCallData();
 			validateTrue(hfs.exists(callDataFileId), INVALID_FILE_ID);
