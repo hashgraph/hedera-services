@@ -21,14 +21,12 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -45,8 +43,6 @@ class NonBlockingHandoffTest {
 	private RecordStreamManager recordStreamManager;
 	@Mock
 	private NodeLocalProperties nodeLocalProperties;
-    @Mock
-    private Supplier<MerkleNetworkContext> merkleNetworkContext;
 
 	private NonBlockingHandoff subject;
 
@@ -54,7 +50,7 @@ class NonBlockingHandoffTest {
 	void handoffWorksAsExpected() {
 		given(nodeLocalProperties.recordStreamQueueCapacity()).willReturn(mockCap);
 		// and:
-		subject = new NonBlockingHandoff(recordStreamManager, nodeLocalProperties, merkleNetworkContext);
+		subject = new NonBlockingHandoff(recordStreamManager, nodeLocalProperties);
 
 		// when:
 		assertTrue(subject.offer(rso));
@@ -64,7 +60,7 @@ class NonBlockingHandoffTest {
 
 		// then:
 		try {
-			verify(recordStreamManager).addRecordStreamObject(rso, merkleNetworkContext.get());
+			verify(recordStreamManager).addRecordStreamObject(rso);
 		} catch (NullPointerException ignore) {
 			/* In CI apparently Mockito can have problems here? */
 		}
@@ -74,7 +70,7 @@ class NonBlockingHandoffTest {
 	void shutdownHookWorksAsExpected() {
 		given(nodeLocalProperties.recordStreamQueueCapacity()).willReturn(mockCap);
 		// and:
-		subject = new NonBlockingHandoff(recordStreamManager, nodeLocalProperties, merkleNetworkContext);
+		subject = new NonBlockingHandoff(recordStreamManager, nodeLocalProperties);
 		// and:
 		subject.setExecutor(executorService);
 

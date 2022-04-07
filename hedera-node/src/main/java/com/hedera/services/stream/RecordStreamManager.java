@@ -22,7 +22,6 @@ package com.hedera.services.stream;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.logic.StandardProcessLogic;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.swirlds.common.Platform;
 import com.swirlds.common.crypto.DigestType;
@@ -201,11 +200,10 @@ public class RecordStreamManager {
 	 * @param recordStreamObject
 	 * 		the {@link RecordStreamObject} object to be added
 	 */
-	public void addRecordStreamObject(final RecordStreamObject recordStreamObject, final MerkleNetworkContext curNetworkCtx) {
+	public void addRecordStreamObject(final RecordStreamObject recordStreamObject) {
 		if (!inFreeze) {
 			try {
 				multiStream.addObject(recordStreamObject);
-				curNetworkCtx.cacheBlockHash(recordStreamObject.getRunningHash().getHash());
 			} catch (Exception e) {
 				log.warn("Unhandled exception while streaming {}", recordStreamObject, e);
 			}

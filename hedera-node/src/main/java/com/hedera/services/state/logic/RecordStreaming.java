@@ -25,6 +25,8 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,8 +48,10 @@ public class RecordStreaming implements Runnable {
 	private final NonBlockingHandoff nonBlockingHandoff;
 	private final Consumer<RunningHash> runningHashUpdate;
 	private final AccountRecordsHistorian recordsHistorian;
+	private final Supplier<RecordsRunningHashLeaf> runningHashLeaf;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private MerkleNetworkContext curNetworkCtx;
+	private RecordsRunningHashLeaf curRunningHashLeaf;
 	private Instant lastConsensusTimestamp = null;
 
 	@Inject
@@ -56,18 +60,21 @@ public class RecordStreaming implements Runnable {
 			final NonBlockingHandoff nonBlockingHandoff,
 			final Consumer<RunningHash> runningHashUpdate,
 			final AccountRecordsHistorian recordsHistorian,
-			final Supplier<MerkleNetworkContext> networkCtx
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<RecordsRunningHashLeaf> runningHashLeaf
 	) {
 		this.txnCtx = txnCtx;
 		this.networkCtx = networkCtx;
 		this.nonBlockingHandoff = nonBlockingHandoff;
 		this.runningHashUpdate = runningHashUpdate;
+		this.runningHashLeaf = runningHashLeaf;
 		this.recordsHistorian = recordsHistorian;
 	}
 
 	@Override
 	public void run() {
 		curNetworkCtx = networkCtx.get();
+		curRunningHashLeaf = runningHashLeaf.get();
 
 		if (recordsHistorian.hasPrecedingChildRecords()) {
 			for (final var childRso : recordsHistorian.getPrecedingChildRecords()) {
@@ -92,13 +99,20 @@ public class RecordStreaming implements Runnable {
 	}
 
 	public void stream(final RecordStreamObject rso) {
-		runningHashUpdate.accept(rso.getRunningHash());
 		if (isInNewBlock(rso)) {
+			Hash computedHash = new Hash();
+			try {
+				computedHash = curRunningHashLeaf.getRunningHash().getFutureHash().get();
+			} catch (InterruptedException e) {
+				log.error("Error in computing hash for block #{}", curNetworkCtx.getBlockNo());
+			}
+			curNetworkCtx.setCurrentBlockHash(computedHash);
 			curNetworkCtx.incrementBlockNo();
 			curNetworkCtx.setFirstConsTimeOfCurrentBlock(rso.getTimestamp());
 			log.info("Beginning block #{} @ {}", curNetworkCtx.getBlockNo(), rso.getTimestamp());
 		}
 
+		runningHashUpdate.accept(rso.getRunningHash());
 		lastConsensusTimestamp = rso.getTimestamp();
 		while (!nonBlockingHandoff.offer(rso)) {
 			/* Cannot proceed until we have handed off the record. */

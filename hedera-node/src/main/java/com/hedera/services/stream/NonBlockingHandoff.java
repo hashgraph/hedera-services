@@ -21,7 +21,6 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -29,7 +28,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
@@ -42,12 +40,10 @@ public class NonBlockingHandoff {
 	private final AtomicBoolean timeToStop = new AtomicBoolean(false);
 	private final RecordStreamManager recordStreamManager;
 	private final BlockingQueue<RecordStreamObject> queue;
-	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	@Inject
-	public NonBlockingHandoff(final RecordStreamManager recordStreamManager, final NodeLocalProperties nodeLocalProperties, final Supplier<MerkleNetworkContext> networkCtx) {
+	public NonBlockingHandoff(final RecordStreamManager recordStreamManager, final NodeLocalProperties nodeLocalProperties) {
 		this.recordStreamManager = recordStreamManager;
-		this.networkCtx = networkCtx;
 		final int capacity = Math.max(MIN_CAPACITY, nodeLocalProperties.recordStreamQueueCapacity());
 		queue = new ArrayBlockingQueue<>(capacity);
 		executor.execute(this::handoff);
@@ -62,7 +58,7 @@ public class NonBlockingHandoff {
 		while (!timeToStop.get()) {
 			final var rso = queue.poll();
 			if (rso != null) {
-				recordStreamManager.addRecordStreamObject(rso, networkCtx.get());
+				recordStreamManager.addRecordStreamObject(rso);
 			}
 		}
 	}

@@ -26,6 +26,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.RunningHash;
@@ -66,12 +67,14 @@ class RecordStreamingTest {
 	private RecordStreamObject firstPrecedingChildRso;
 	@Mock
 	private MerkleNetworkContext networkCtx;
+	@Mock
+	private RecordsRunningHashLeaf recordsRunningHashLeaf;
 
 	private RecordStreaming subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RecordStreaming(txnCtx, nonBlockingHandoff, runningHashUpdate, recordsHistorian, () -> networkCtx);
+		subject = new RecordStreaming(txnCtx, nonBlockingHandoff, runningHashUpdate, recordsHistorian, () -> networkCtx, () -> recordsRunningHashLeaf);
 	}
 
 	@Test

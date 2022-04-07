@@ -451,6 +451,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	public void setCurrentBlockHash(final Hash currentBlockHash) {
 		this.currentBlockHash = currentBlockHash;
+		cacheBlockHash(currentBlockHash);
 	}
 
 	private String usageSnapshotsDesc() {

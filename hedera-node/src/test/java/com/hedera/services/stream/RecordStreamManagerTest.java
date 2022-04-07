@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
 
 import java.util.Map;
 import java.util.Queue;
@@ -87,8 +86,6 @@ public class RecordStreamManagerTest {
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private RecordStreamManager recordStreamManager;
-	@Mock
-	private MerkleNetworkContext merkleNetworkContext;
 
 	@BeforeAll
 	public static void init() throws Exception {
@@ -158,7 +155,7 @@ public class RecordStreamManagerTest {
 		willThrow(RuntimeException.class).given(multiStreamMock).addObject(any());
 
 		// when:
-		recordStreamManager.addRecordStreamObject(new RecordStreamObject(), merkleNetworkContext);
+		recordStreamManager.addRecordStreamObject(new RecordStreamObject());
 
 		// then:
 		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith("Unhandled exception while streaming")));
@@ -180,7 +177,7 @@ public class RecordStreamManagerTest {
 				"inFreeze should be false after initialization");
 		final int recordsNum = 10;
 		for (int i = 1; i <= recordsNum; i++) {
-			addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, i, INITIAL_RANDOM_HASH);
+			addRecordStreamObject(runningAvgsMock, mockQueue, i, INITIAL_RANDOM_HASH);
 		}
 		// set inFreeze to be true
 		recordStreamManager.setInFreeze(true);
@@ -192,7 +189,7 @@ public class RecordStreamManagerTest {
 		given(mockQueue.size()).willReturn(recordsNum);
 		when(writeQueueThreadMock.getQueue()).thenReturn(mockQueue);
 
-		recordStreamManager.addRecordStreamObject(objectAfterFreeze, merkleNetworkContext);
+		recordStreamManager.addRecordStreamObject(objectAfterFreeze);
 		// after frozen, when adding object to the RecordStreamManager, multiStream.add(object) should not be called
 		verify(multiStreamMock, never()).addObject(objectAfterFreeze);
 		// multiStreamMock should be closed when inFreeze is set to be true
@@ -218,7 +215,7 @@ public class RecordStreamManagerTest {
 		final int recordsNum = 256;
 
 		for (int i = 1; i <= recordsNum; i++) {
-			addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, i, INITIAL_RANDOM_HASH);
+			addRecordStreamObject(runningAvgsMock, mockQueue, i, INITIAL_RANDOM_HASH);
 		}
 		assertEquals(new Hash(), merkleNetworkContext.getBlockHashCache(1));
 		assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHashCache(256));
@@ -243,10 +240,10 @@ public class RecordStreamManagerTest {
 
 		final Hash OVERWRITING_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
 		for (int i = 1; i <= 255; i++) {
-			addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, i, INITIAL_RANDOM_HASH);
+			addRecordStreamObject(runningAvgsMock, mockQueue, i, INITIAL_RANDOM_HASH);
 		}
-		addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, 256, OVERWRITING_HASH);
-		addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, 257, OVERWRITING_HASH);
+		addRecordStreamObject(runningAvgsMock, mockQueue, 256, OVERWRITING_HASH);
+		addRecordStreamObject(runningAvgsMock, mockQueue, 257, OVERWRITING_HASH);
 
 		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getBlockHashCache(257));
 		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getCurrentBlockHash());
@@ -280,7 +277,7 @@ public class RecordStreamManagerTest {
 		final int recordsNum = 1234;
 
 		for (int i = 1; i <= recordsNum; i++) {
-			addRecordStreamObject(runningAvgsMock, merkleNetworkContext, mockQueue, i, INITIAL_RANDOM_HASH);
+			addRecordStreamObject(runningAvgsMock, mockQueue, i, INITIAL_RANDOM_HASH);
 		}
 
 		assertEquals(new Hash(), merkleNetworkContext.getBlockHashCache(1));
@@ -329,14 +326,13 @@ public class RecordStreamManagerTest {
 
 	// For ease of testing, we will assume that a new block contains a single RecordStreamObject.
 	// In the real world scenario, a block/record file will contain >=1 RecordStreamObjects.
-	private void addRecordStreamObject(final MiscRunningAvgs runningAvgsMock, final MerkleNetworkContext merkleNetworkContext,
+	private void addRecordStreamObject(final MiscRunningAvgs runningAvgsMock,
 													 final Queue mockQueue, final int queueSize, final Hash hash) {
 		final RecordStreamObject recordStreamObject = mock(RecordStreamObject.class);
 		when(writeQueueThreadMock.getQueue()).thenReturn(mockQueue);
 		given(mockQueue.size()).willReturn(queueSize);
 		when(recordStreamObject.getRunningHash()).thenReturn(new RunningHash(hash));
-		merkleNetworkContext.incrementBlockNo();
-		recordStreamManager.addRecordStreamObject(recordStreamObject, merkleNetworkContext);
+		recordStreamManager.addRecordStreamObject(recordStreamObject);
 		verify(multiStreamMock).addObject(recordStreamObject);
 		verify(runningAvgsMock).writeQueueSizeRecordStream(queueSize);
 		// multiStream should not be closed after adding it
