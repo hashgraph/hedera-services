@@ -168,7 +168,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void getDelegatesToWrappedIfNotDeletedAndNotMutable() {
-		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
+//		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 		final var wrappedAccount =
 				worldState.new WorldStateAccount(
 						aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID);
@@ -248,7 +248,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void getReusesMutableIfPresent() {
-		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
+//		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
@@ -300,8 +300,8 @@ class AbstractLedgerWorldUpdaterTest {
 	void commitsToWrappedTrackingAccountsAreRespectedAndSyncedWithUpdatedAccounts() {
 		final var mockNftsOwned = 1_234_567L;
 		setupWellKnownAccounts();
-		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
-		given(aliases.resolveForEvm(bAddress)).willReturn(bAddress);
+//		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
+//		given(aliases.resolveForEvm(bAddress)).willReturn(bAddress);
 
 		/* Make some pending changes to one of the well-known accounts */
 		subject.getAccount(aAddress).getMutable().setBalance(Wei.of(aHbarBalance + 1));

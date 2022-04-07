@@ -502,9 +502,9 @@ class HederaWorldStateTest {
 	@Test
 	void onlyStoresCodeIfUpdated() {
 		givenNonNullWorldLedgers();
-		given(worldLedgers.aliases()).willReturn(aliases);
+//		given(worldLedgers.aliases()).willReturn(aliases);
 		final var someAddress = contract.asEvmAddress();
-		given(aliases.resolveForEvm(someAddress)).willReturn(someAddress);
+//		given(aliases.resolveForEvm(someAddress)).willReturn(someAddress);
 
 		final var actualSubject = subject.updater();
 

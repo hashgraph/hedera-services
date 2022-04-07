@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
@@ -74,12 +75,14 @@ class HederaStackedWorldStateUpdaterTest {
 	private HederaStackedWorldStateUpdater.CustomizerFactory customizerFactory;
 	@Mock
 	private ContractCustomizer customizer;
+	@Mock
+	private GlobalDynamicProperties globalDynamicProperties;
 
 	private HederaStackedWorldStateUpdater subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers);
+		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers, globalDynamicProperties);
 	}
 
 	@Test

@@ -156,7 +156,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
 	@Override
 	public Updater updater() {
-		return new Updater(this, entityAccess.worldLedgers().wrapped());
+		return new Updater(this, entityAccess.worldLedgers().wrapped(), dynamicProperties);
 	}
 
 	@Override
@@ -362,12 +362,14 @@ public class HederaWorldState implements HederaMutableWorldState {
 			implements HederaWorldUpdater {
 
 		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(BytesComparator.INSTANCE);
+		GlobalDynamicProperties dynamicProperties;
 
 		private int numAllocatedIds = 0;
 		private Gas sbhRefund = Gas.ZERO;
 
-		protected Updater(final HederaWorldState world, final WorldLedgers trackingLedgers) {
+		protected Updater(final HederaWorldState world, final WorldLedgers trackingLedgers, GlobalDynamicProperties dynamicProperties) {
 			super(world, trackingLedgers);
+			this.dynamicProperties = dynamicProperties;
 		}
 
 		public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
@@ -506,7 +508,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 		@Override
 		public WorldUpdater updater() {
 			return new HederaStackedWorldStateUpdater(this, wrappedWorldView(),
-					trackingLedgers().wrapped());
+					trackingLedgers().wrapped(), dynamicProperties
+			);
 		}
 
 		@Override

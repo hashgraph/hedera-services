@@ -144,9 +144,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public Account get(final Address addressOrAlias) {
-		final var address = aliases().resolveForEvm(addressOrAlias);
-
+	public Account get(final Address address) {
 		final var extantMutable = this.updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return extantMutable;
@@ -156,9 +154,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public EvmAccount getAccount(final Address addressOrAlias) {
-		final var address = aliases().resolveForEvm(addressOrAlias);
-
+	public EvmAccount getAccount(final Address address) {
 		final var extantMutable = updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return new WrappedEvmAccount(extantMutable);
