@@ -42,7 +42,7 @@ public class GetAccountDetailsAnswer implements AnswerService {
 
 	@Override
 	public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
-		AccountID id = query.getCryptoGetInfo().getAccountID();
+		AccountID id = query.getAccountDetails().getAccountId();
 		var entityNum = id.getAlias().isEmpty() ?
 				EntityNum.fromAccountId(id) :
 				aliasManager.lookupIdBy(id.getAlias());
