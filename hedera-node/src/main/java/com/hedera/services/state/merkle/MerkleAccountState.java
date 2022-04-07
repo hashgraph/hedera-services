@@ -23,7 +23,7 @@ package com.hedera.services.state.merkle;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
@@ -43,6 +43,10 @@ import java.util.SortedMap;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.SerializationUtils.deserializeApproveForAllNftsAllowances;
@@ -60,8 +64,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	static final int RELEASE_0251_VERSION = 12;
 	private static final int CURRENT_VERSION = RELEASE_0251_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final String DEFAULT_MEMO = "";
 	private static final ByteString DEFAULT_ALIAS = ByteString.EMPTY;
@@ -156,8 +158,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		key = serdes.readNullable(in, serdes::deserializeKey);
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+		key = readNullable(in, JKeySerializer::deserialize);
 		expiry = in.readLong();
 		hbarBalance = in.readLong();
 		autoRenewSecs = in.readLong();
@@ -165,7 +167,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		deleted = in.readBoolean();
 		smartContract = in.readBoolean();
 		receiverSigRequired = in.readBoolean();
-		proxy = serdes.readNullableSerializable(in);
+		proxy = readNullableSerializable(in);
 		// Added in 0.16
 		nftsOwned = in.readLong();
 		// Added in 0.18
@@ -195,8 +197,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		serdes.writeNullable(key, out, serdes::serializeKey);
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
+		writeNullable(key, out, (keyOut, dout) -> dout.write(keyOut.serialize()));
 		out.writeLong(expiry);
 		out.writeLong(hbarBalance);
 		out.writeLong(autoRenewSecs);
@@ -204,7 +206,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeBoolean(deleted);
 		out.writeBoolean(smartContract);
 		out.writeBoolean(receiverSigRequired);
-		serdes.writeNullableSerializable(proxy, out);
+		writeNullableSerializable(proxy, out);
 		out.writeLong(nftsOwned);
 		out.writeInt(maxAutoAssociations);
 		out.writeInt(usedAutoAssociations);

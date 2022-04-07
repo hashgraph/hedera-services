@@ -24,22 +24,16 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.MutabilityException;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -49,13 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.times;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 class MerkleAccountStateTest {
 	private static final JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
@@ -98,9 +85,7 @@ class MerkleAccountStateTest {
 	private static final EntityNum tokenForAllowance = EntityNum.fromLong(2000L);
 	private static final long headTokenNum = tokenForAllowance.longValue();
 	private static final Long cryptoAllowance = 10L;
-	private static final boolean approvedForAll = false;
 	private static final Long tokenAllowanceVal = 1L;
-	private static final List<Long> serialNumbers = List.of(1L, 2L);
 
 	private static final FcTokenAllowanceId tokenAllowanceKey1 = FcTokenAllowanceId.from(tokenForAllowance, spenderNum1);
 	private static final FcTokenAllowanceId tokenAllowanceKey2 = FcTokenAllowanceId.from(tokenForAllowance, spenderNum2);
@@ -112,8 +97,6 @@ class MerkleAccountStateTest {
 	TreeMap<EntityNum, Long> otherCryptoAllowances = new TreeMap<>();
 	TreeMap<FcTokenAllowanceId, Long> otherFungibleTokenAllowances = new TreeMap<>();
 	TreeSet<FcTokenAllowanceId> otherApproveForAllNfts = new TreeSet<>();
-
-	private DomainSerdes serdes;
 
 	private MerkleAccountState subject;
 
@@ -141,13 +124,6 @@ class MerkleAccountStateTest {
 				numPositiveBalances,
 				headTokenNum);
 		subject.setNftsOwned(nftsOwned);
-		serdes = mock(DomainSerdes.class);
-		MerkleAccountState.serdes = serdes;
-	}
-
-	@AfterEach
-	void cleanup() {
-		MerkleAccountState.serdes = new DomainSerdes();
 	}
 
 //	@Test
@@ -244,42 +220,6 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setApproveForAllNfts(approveForAllNfts));
 		assertThrows(MutabilityException.class,
 				() -> subject.setUsedAutomaticAssociations(usedAutoAssociations));
-	}
-
-	@Test
-	void serializeWorks() throws IOException {
-		final var out = mock(SerializableDataOutputStream.class);
-		final var inOrder = inOrder(serdes, out);
-
-		subject.serialize(out);
-
-		inOrder.verify(serdes).writeNullable(argThat(key::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(out).writeLong(expiry);
-		inOrder.verify(out).writeLong(balance);
-		inOrder.verify(out).writeLong(autoRenewSecs);
-		inOrder.verify(out).writeNormalisedString(memo);
-		inOrder.verify(out, times(3)).writeBoolean(true);
-		inOrder.verify(serdes).writeNullableSerializable(proxy, out);
-		verify(out, never()).writeLongArray(any());
-		inOrder.verify(out).writeInt(maxAutoAssociations);
-		inOrder.verify(out).writeInt(usedAutoAssociations);
-		inOrder.verify(out).writeInt(number);
-		inOrder.verify(out).writeByteArray(alias.toByteArray());
-
-		inOrder.verify(out).writeInt(cryptoAllowances.size());
-		inOrder.verify(out).writeLong(spenderNum1.longValue());
-		inOrder.verify(out).writeLong(cryptoAllowance);
-
-		inOrder.verify(out).writeInt(fungibleTokenAllowances.size());
-		inOrder.verify(out).writeSerializable(tokenAllowanceKey1, true);
-		inOrder.verify(out).writeLong(tokenAllowanceVal);
-
-		inOrder.verify(out).writeInt(approveForAllNfts.size());
-		inOrder.verify(out).writeSerializable(tokenAllowanceKey2, true);
-
-		inOrder.verify(out).writeInt(associatedTokensCount);
-		inOrder.verify(out).writeInt(numPositiveBalances);
-		inOrder.verify(out).writeLong(headTokenNum);
 	}
 
 	@Test
