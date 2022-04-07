@@ -199,8 +199,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				sendHbarsToOuterContractFromDifferentAddresses(),
 				sendHbarsToCallerFromDifferentAddresses(),
 				bitcarbonTestStillPasses(),
-				contractCreationStoragePriceMatchesFinalExpiry()
-//				whitelistingAliasedContract()
+				contractCreationStoragePriceMatchesFinalExpiry(),
+				whitelistingAliasedContract()
 		});
 	}
 

@@ -70,17 +70,18 @@ public class HederaSLoadOperation extends AbstractOperation {
 	@Override
 	public OperationResult execute(final MessageFrame frame, final EVM evm) {
 		try {
+			final var addressOrAlias = frame.getRecipientAddress();
 			final var worldUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-			final Account account = worldUpdater.get(frame.getRecipientAddress());
+			if (worldUpdater.isInconsistentMirrorAddress(addressOrAlias)) {
+				return new Operation.OperationResult(
+						coldCost,
+						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+			}
+			final Account account = worldUpdater.get(addressOrAlias);
 			final Address address = account.getAddress();
 			final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
 			final boolean slotIsWarm = frame.warmUpStorage(address, key);
 			final Optional<Gas> optionalCost = slotIsWarm ? warmCost : coldCost;
-			if (worldUpdater.isInconsistentMirrorAddress(address)) {
-				return new Operation.OperationResult(
-						optionalCost,
-						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-			}
 			if (frame.getRemainingGas().compareTo(optionalCost.orElse(Gas.ZERO)) < 0) {
 				return new OperationResult(
 						optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
