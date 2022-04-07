@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.utils.sysfiles.AddressBookPojo;
 import com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
@@ -56,37 +55,28 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 	public byte[] toValidatedRawFile(String styledFile) {
 		var pojo = pojoFrom(styledFile);
 		for (var entry : pojo.getEntries()) {
-			validateIPandPort(entry.getDeprecatedIp(), entry.getDeprecatedPortNo(), "Deprecated");
-
-			try {
-				HapiPropertySource.asAccount(entry.getDeprecatedMemo());
-			} catch (Exception e) {
-				throw new IllegalStateException(
-						"Deprecated memo field cannot be set to '" + entry.getDeprecatedMemo() + "'", e);
-			}
-
-			for(BookEntryPojo.EndpointPojo endpointPojo : entry.getEndpoints()) {
-				validateIPandPort(endpointPojo.getIpAddressV4(), endpointPojo.getPort(), "Endpoint");
+			for (BookEntryPojo.EndpointPojo endpointPojo : entry.getEndpoints()) {
+				validateIPandPort(endpointPojo.getIpAddressV4(), endpointPojo.getPort());
 			}
 		}
 		return grpcBytesFromPojo(pojo);
 	}
 
-	private void validateIPandPort(String IpV4Address, Integer portNo, String type) {
+	private void validateIPandPort(String IpV4Address, Integer portNo) {
 		try {
 			BookEntryPojo.asOctets(IpV4Address);
 		} catch (Exception e) {
 			throw new IllegalStateException(
-					type + " IP field cannot be set to '" + IpV4Address + "'", e);
+					"Endpoint" + " IP field cannot be set to '" + IpV4Address + "'", e);
 		}
 
 		try {
 			if (portNo <= 0) {
 				throw new IllegalStateException(
-						type + " portno field cannot be set to '" + portNo + "'");
+						"Endpoint" + " portno field cannot be set to '" + portNo + "'");
 			}
 		} catch (NullPointerException e) {
-			throw new IllegalStateException(type + " portno field is not set", e);
+			throw new IllegalStateException("Endpoint" + " portno field is not set", e);
 		}
 	}
 
