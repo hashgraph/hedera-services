@@ -847,7 +847,7 @@ class SigRequirementsTest {
 
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
+				contains(OWNER_ACCOUNT_KT.asKey()));
 	}
 
 	@Test

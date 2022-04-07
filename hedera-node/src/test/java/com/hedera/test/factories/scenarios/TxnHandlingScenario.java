@@ -642,6 +642,7 @@ public interface TxnHandlingScenario {
 	List<NftRemoveAllowance> nftDeleteAllowanceList = List.of(NftRemoveAllowance.newBuilder()
 			.setOwner(OWNER_ACCOUNT)
 			.setTokenId(KNOWN_TOKEN_WITH_WIPE)
+			.addAllSerialNumbers(List.of(1L))
 			.build());
 
 	List<NftRemoveAllowance> nftDeleteAllowanceMissingOwnerList = List.of(NftRemoveAllowance.newBuilder()
