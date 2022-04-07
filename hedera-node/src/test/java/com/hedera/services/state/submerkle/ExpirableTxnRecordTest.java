@@ -22,10 +22,10 @@ package com.hedera.services.state.submerkle;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -144,9 +144,9 @@ class ExpirableTxnRecordTest {
 	}
 
 	private static TransactionRecord grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
-		return DomainSerdesTest.recordOne().asGrpc().toBuilder()
+		return TxnUtils.recordOne().asGrpc().toBuilder()
 				.setTransactionHash(ByteString.copyFrom(pretendHash))
-				.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+				.setContractCreateResult(TxnUtils.recordTwo().getContractCallResult().toGrpc())
 				.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
 				.setScheduleRef(scheduleID)
 				.addAssessedCustomFees(balanceChange.toGrpc())
@@ -157,9 +157,9 @@ class ExpirableTxnRecordTest {
 
 	private static ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRefCustomFees() {
 		final var s = fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
+				TxnUtils.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+						.setContractCreateResult(TxnUtils.recordTwo().getContractCallResult().toGrpc())
 						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
 						.setScheduleRef(scheduleID)
 						.addAssessedCustomFees(balanceChange.toGrpc())
@@ -402,7 +402,7 @@ class ExpirableTxnRecordTest {
 
 	@Test
 	void objectContractWorks() {
-		final var two = DomainSerdesTest.recordOne();
+		final var two = TxnUtils.recordOne();
 		final var three = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
 
 		assertNotEquals(two, three);
