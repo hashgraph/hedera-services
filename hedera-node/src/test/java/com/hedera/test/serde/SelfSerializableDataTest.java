@@ -106,7 +106,9 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	 * @throws IllegalStateException
 	 * 		if too few test cases are available
 	 */
-	protected abstract int getNumTestCasesFor(int version);
+	protected int getNumTestCasesFor(int version) {
+		return MIN_TEST_CASES_PER_VERSION;
+	}
 
 	/**
 	 * Returns the serialized form created with a given version for a given test case.

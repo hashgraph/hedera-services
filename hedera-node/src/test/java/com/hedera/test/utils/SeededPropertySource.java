@@ -52,7 +52,6 @@ import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
@@ -225,8 +224,57 @@ public class SeededPropertySource {
 		return seeded;
 	}
 
+	/**
+	 * Provides a current {@link MerkleAccountState} that has the same "value" as a previously serialized instance.
+	 *
+	 * @return the "modernized" account state
+	 */
+	public MerkleAccountState next0241AccountState() {
+		final var key = nextKey();
+		final var expiry = nextUnsignedLong();
+		final var balance = nextUnsignedLong();
+		final var autoRenewSecs = nextUnsignedLong();
+		final var memo = nextString(100);
+		final var isDeleted = nextBoolean();
+		final var isSmartContract = nextBoolean();
+		final var isReceiverSigReq = nextBoolean();
+		final var proxy = nextEntityId();
+		final var num = nextInt();
+		final var autoAssocMeta = nextUnsignedInt();
+		final var alias = nextByteString(36);
+		final var kvPairs = nextUnsignedInt();
+		// Preserve same seeded values, but these will be ignored
+		nextGrantedCryptoAllowances(10);
+		nextGrantedFungibleAllowances(10);
+		nextApprovedForAllAllowances(10);
+
+		final var newMaxAutoAssociations = BitPackUtils.getMaxAutomaticAssociationsFrom(autoAssocMeta);
+		final var newUsedAutoAssociations = BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom(autoAssocMeta);
+		final var seeded = new MerkleAccountState();
+		seeded.setAccountKey(key);
+		seeded.setExpiry(expiry);
+		seeded.setHbarBalance(balance);
+		seeded.setAutoRenewSecs(autoRenewSecs);
+		seeded.setMemo(memo);
+		seeded.setDeleted(isDeleted);
+		seeded.setSmartContract(isSmartContract);
+		seeded.setReceiverSigRequired(isReceiverSigReq);
+		seeded.setProxy(proxy);
+		seeded.setNumber(num);
+		seeded.setUsedAutomaticAssociations(newUsedAutoAssociations);
+		seeded.setMaxAutomaticAssociations(newMaxAutoAssociations);
+		seeded.setAlias(alias);
+		seeded.setNumContractKvPairs(kvPairs);
+
+		return seeded;
+	}
+
 	public MerkleAccountState nextAccountState() {
-		final var seeded = new MerkleAccountState(
+		final var maxAutoAssoc = SEEDED_RANDOM.nextInt(1234);
+		final var usedAutoAssoc = SEEDED_RANDOM.nextInt(maxAutoAssoc + 1);
+		final var numAssociations = SEEDED_RANDOM.nextInt(12345);
+		final var numPositiveBalanceAssociations = SEEDED_RANDOM.nextInt(numAssociations);
+		return new MerkleAccountState(
 				nextKey(),
 				nextUnsignedLong(),
 				nextUnsignedLong(),
@@ -237,15 +285,16 @@ public class SeededPropertySource {
 				nextBoolean(),
 				nextEntityId(),
 				nextInt(),
-				nextUnsignedInt(),
+				maxAutoAssoc,
+				usedAutoAssoc,
 				nextByteString(36),
 				nextUnsignedInt(),
 				nextGrantedCryptoAllowances(10),
 				nextGrantedFungibleAllowances(10),
-				nextApprovedForAllAllowances(10));
-		seeded.setTokenAssociationMetadata(
-				new TokenAssociationMetadata(nextUnsignedInt(), nextUnsignedInt(), nextPair()));
-		return seeded;
+				nextApprovedForAllAllowances(10),
+				numAssociations,
+				numPositiveBalanceAssociations,
+				nextInRangeLong());
 	}
 
 	public ExpirableTxnRecord nextRecord() {
