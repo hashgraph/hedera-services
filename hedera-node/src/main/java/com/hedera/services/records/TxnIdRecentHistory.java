@@ -72,7 +72,7 @@ public class TxnIdRecentHistory {
 	private static final Comparator<RichInstant> RI_CMP =
 			comparingLong(RichInstant::getSeconds).thenComparingInt(RichInstant::getNanos);
 	private static final Comparator<ExpirableTxnRecord> CONSENSUS_TIME_COMPARATOR =
-			comparing(ExpirableTxnRecord::getConsensusTimestamp, RI_CMP);
+			comparing(ExpirableTxnRecord::getConsensusTime, RI_CMP);
 
 	private int numDuplicatesFromDifferentNodes = 0;
 

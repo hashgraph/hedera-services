@@ -85,7 +85,7 @@ public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
 	NEXT_KEY {
 		@Override
 		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
-			return (a, f) -> a.setNextKey((EntityNumPair) f);
+			return (a, f) -> a.setNext((long) f);
 		}
 
 		@Override
@@ -96,7 +96,7 @@ public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
 	PREV_KEY {
 		@Override
 		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
-			return (a, f) -> a.setPrevKey((EntityNumPair) f);
+			return (a, f) -> a.setPrev((long) f);
 		}
 
 		@Override

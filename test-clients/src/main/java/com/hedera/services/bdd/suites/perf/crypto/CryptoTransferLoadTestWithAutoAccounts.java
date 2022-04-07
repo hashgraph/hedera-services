@@ -36,12 +36,14 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -117,11 +119,16 @@ public class CryptoTransferLoadTestWithAutoAccounts extends LoadTest {
 			};
 		};
 
+		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+
 		return defaultHapiSpec("RunCryptoTransfersWithAutoAccounts")
 				.given(
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when(
+						fileUpdate(THROTTLE_DEFS)
+								.payingWith(GENESIS)
+								.contents(defaultThrottles.toByteArray()),
 						cryptoCreate("sender")
 								.balance(ignore -> settings.getInitialBalance())
 								.payingWith(GENESIS)

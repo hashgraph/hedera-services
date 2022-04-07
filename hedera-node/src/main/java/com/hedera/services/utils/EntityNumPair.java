@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
@@ -70,19 +69,23 @@ public record EntityNumPair(long value) {
 	}
 
 	public EntityNum getHiOrderAsNum() {
-		return EntityNum.fromLong(unsignedHighOrder32From(value));
+		return EntityNum.fromLong(getHiOrderAsLong());
 	}
 
 	public long getLowOrderAsLong() {
 		return unsignedLowOrder32From(value);
 	}
 
+	public long getHiOrderAsLong() {
+		return unsignedHighOrder32From(value);
+	}
+
 	public EntityId getHighOrderAsEntityId() {
-		return STATIC_PROPERTIES.scopedEntityIdWith(unsignedHighOrder32From(value));
+		return STATIC_PROPERTIES.scopedEntityIdWith(getHiOrderAsLong());
 	}
 
 	public EntityId getLowOrderAsEntityId() {
-		return STATIC_PROPERTIES.scopedEntityIdWith(unsignedLowOrder32From(value));
+		return STATIC_PROPERTIES.scopedEntityIdWith(getLowOrderAsLong());
 	}
 
 	public static EntityNumPair fromModelRel(TokenRelationship tokenRelationship) {
@@ -91,18 +94,18 @@ public record EntityNumPair(long value) {
 
 	public Pair<AccountID, TokenID> asAccountTokenRel() {
 		return Pair.of(
-				STATIC_PROPERTIES.scopedAccountWith(unsignedHighOrder32From(value)),
-				STATIC_PROPERTIES.scopedTokenWith(unsignedLowOrder32From(value)));
+				STATIC_PROPERTIES.scopedAccountWith(getHiOrderAsLong()),
+				STATIC_PROPERTIES.scopedTokenWith(getLowOrderAsLong()));
 	}
 
 	public Pair<Long, Long> asTokenNumAndSerialPair() {
 		return Pair.of(
-				unsignedHighOrder32From(value),
-				unsignedLowOrder32From(value));
+				getHiOrderAsLong(),
+				getLowOrderAsLong());
 	}
 
 	public EntityNum getLowOrderAsNum() {
-		return EntityNum.fromLong(unsignedLowOrder32From(value));
+		return EntityNum.fromLong(getLowOrderAsLong());
 	}
 
 	@Override
@@ -113,8 +116,8 @@ public record EntityNumPair(long value) {
 	@Override
 	public String toString() {
 		return "PermHashLong("
-				+ BitPackUtils.unsignedHighOrder32From(value)
+				+ getHiOrderAsLong()
 				+ ", "
-				+ BitPackUtils.unsignedLowOrder32From(value) + ")";
+				+ getLowOrderAsLong() + ")";
 	}
 }

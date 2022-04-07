@@ -363,7 +363,7 @@ public interface TxnHandlingScenario {
 		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE))
 				.willAnswer(inv -> {
 					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
-					entity.setPayer(MerkleSchedule.UNUSED_PAYER);
+					entity.setPayer(null);
 					return entity;
 				});
 
@@ -373,7 +373,7 @@ public interface TxnHandlingScenario {
 				.willAnswer(inv -> {
 					var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
 					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
-					entity.setPayer(MerkleSchedule.UNUSED_PAYER);
+					entity.setPayer(null);
 					entity.setAdminKey(adminKey);
 					return entity;
 				});

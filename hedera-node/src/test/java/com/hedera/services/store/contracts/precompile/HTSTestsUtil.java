@@ -293,4 +293,47 @@ public class HTSTestsUtil {
 					payer
 			)
 	);
+
+	public static TokenCreateWrapper createTokenCreateWrapperWithKeys(final List<TokenCreateWrapper.TokenKeyWrapper> keys) {
+		return new TokenCreateWrapper(
+				true,
+				"token",
+				"symbol",
+				account,
+				"memo",
+				false,
+				BigInteger.valueOf(Long.MAX_VALUE),
+				BigInteger.valueOf(Integer.MAX_VALUE),
+				5054L,
+				false,
+				keys,
+				new TokenCreateWrapper.TokenExpiryWrapper(442L, payer, 555L)
+		);
+	}
+
+	public static TokenCreateWrapper createNonFungibleTokenCreateWrapperWithKeys(
+			final List<TokenCreateWrapper.TokenKeyWrapper> keys
+	) {
+		return new TokenCreateWrapper(
+				false,
+				"nft",
+				"NFT",
+				account,
+				"nftMemo",
+				true,
+				BigInteger.ZERO,
+				BigInteger.ZERO,
+				5054L,
+				true,
+				keys,
+				new TokenCreateWrapper.TokenExpiryWrapper(0L, null, 0L)
+		);
+	}
+
+	public static final TokenCreateWrapper.FixedFeeWrapper fixedFee =
+			new TokenCreateWrapper.FixedFeeWrapper(5, token, false, false, receiver);
+	public static final TokenCreateWrapper.FractionalFeeWrapper fractionalFee =
+			new TokenCreateWrapper.FractionalFeeWrapper(4, 5, 10, 20, true, receiver);
+	public static final TokenCreateWrapper.RoyaltyFeeWrapper royaltyFee =
+			new TokenCreateWrapper.RoyaltyFeeWrapper(4, 5, fixedFee, receiver);
 }

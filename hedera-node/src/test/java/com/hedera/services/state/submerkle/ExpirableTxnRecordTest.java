@@ -20,16 +20,14 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.DomainSerdesTest;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -37,26 +35,18 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_ASSESSED_CUSTOM_FEES_CHANGES;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MAX_INVOLVED_TOKENS;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_ALIAS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PARENT_CONSENSUS_TIMESTAMP;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.NO_CHILD_TRANSACTIONS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.allToGrpc;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
@@ -65,12 +55,9 @@ import static com.hedera.test.utils.TxnUtils.withNftAdjustments;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.times;
 
 class ExpirableTxnRecordTest {
 	private static final long expiry = 1_234_567L;
@@ -118,12 +105,8 @@ class ExpirableTxnRecordTest {
 	private static final ScheduleID scheduleID = IdUtils.asSchedule("5.6.7");
 	private static final FcAssessedCustomFee balanceChange =
 			new FcAssessedCustomFee(feeCollector, token, units, new long[] { 234L });
-	private static final FcTokenAllowance nftAllowance1 = FcTokenAllowance.from(true);
-	private static final FcTokenAllowance nftAllowance2 = FcTokenAllowance.from(List.of(1L, 2L));
 	private static final FcTokenAllowanceId fungibleAllowanceId =
 			FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenA), spenderNum);
-	private static final FcTokenAllowanceId nftAllowanceId =
-			FcTokenAllowanceId.from(EntityNum.fromTokenId(nft), spenderNum);
 	private static final Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = new TreeMap<>() {{
 		put(ownerNum, new TreeMap<>() {{
 			put(spenderNum, initialAllowance);
@@ -145,41 +128,12 @@ class ExpirableTxnRecordTest {
 			.setSpender(spender)
 			.setTokenId(tokenA)
 			.build();
-	private static final NftAllowance nftAllowanceAll = NftAllowance.newBuilder()
-			.setOwner(owner)
-			.setApprovedForAll(BoolValue.of(true))
-			.setTokenId(tokenA)
-			.setSpender(spender)
-			.build();
-	private static final NftAllowance nftAllowanceSome = NftAllowance.newBuilder()
-			.setOwner(owner)
-			.setApprovedForAll(BoolValue.of(false))
-			.setTokenId(nft)
-			.addAllSerialNumbers(List.of(1L, 2L))
-			.setSpender(spender)
-			.build();
 
-	private DomainSerdes serdes;
 	private ExpirableTxnRecord subject;
 
 	@BeforeEach
 	void setup() {
 		subject = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
-
-		serdes = mock(DomainSerdes.class);
-
-		ExpirableTxnRecord.serdes = serdes;
-	}
-
-	private static ExpirableTxnRecord subjectRecordWithTokenTransfers() {
-		final var s = ExpirableTxnRecordTestHelper.fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
-						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
-						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
-						.build());
-		setNonGrpcDefaultsOn(s);
-		return s;
 	}
 
 	private static ExpirableTxnRecord subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
@@ -190,9 +144,9 @@ class ExpirableTxnRecordTest {
 	}
 
 	private static TransactionRecord grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
-		return DomainSerdesTest.recordOne().asGrpc().toBuilder()
+		return TxnUtils.recordOne().asGrpc().toBuilder()
 				.setTransactionHash(ByteString.copyFrom(pretendHash))
-				.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+				.setContractCreateResult(TxnUtils.recordTwo().getContractCallResult().toGrpc())
 				.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
 				.setScheduleRef(scheduleID)
 				.addAssessedCustomFees(balanceChange.toGrpc())
@@ -203,9 +157,9 @@ class ExpirableTxnRecordTest {
 
 	private static ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRefCustomFees() {
 		final var s = fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
+				TxnUtils.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+						.setContractCreateResult(TxnUtils.recordTwo().getContractCallResult().toGrpc())
 						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
 						.setScheduleRef(scheduleID)
 						.addAssessedCustomFees(balanceChange.toGrpc())
@@ -220,6 +174,14 @@ class ExpirableTxnRecordTest {
 		subject.setSubmittingMember(submittingMember);
 		subject.setNumChildRecords(numChildRecords);
 		subject.setPackedParentConsensusTime(packedParentConsTime);
+	}
+
+	@Test
+	void consensusSecondGetterWorks() {
+		final var tinySubject = ExpirableTxnRecord.newBuilder()
+				.setConsensusTime(new RichInstant(1_234_567, 890))
+				.build();
+		assertEquals(1_234_567, tinySubject.getConsensusSecond());
 	}
 
 	@Test
@@ -239,366 +201,8 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	void v0120DeserializeWorks() throws IOException {
-		subject = subjectRecordWithTokenTransfers();
-		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
-		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
-		final var fin = mock(SerializableDataInputStream.class);
-		given(serdes.readNullableSerializable(fin))
-				.willReturn(subject.getReceipt())
-				.willReturn(subject.getTxnId())
-				.willReturn(subject.getHbarAdjustments())
-				.willReturn(subject.getContractCallResult())
-				.willReturn(subject.getContractCreateResult())
-				.willReturn(subject.getScheduleRef());
-		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
-				.willReturn(List.of(
-						subject.getTokens().get(0),
-						subject.getTokens().get(1)))
-				.willReturn(List.of(
-						subject.getTokenAdjustments().get(0),
-						subject.getTokenAdjustments().get(1)));
-		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
-				.willReturn(subject.getTxnHash());
-		given(serdes.readNullableInstant(fin))
-				.willReturn(subject.getConsensusTimestamp());
-		given(fin.readLong()).willReturn(subject.getFee())
-				.willReturn(subject.getExpiry())
-				.willReturn(subject.getSubmittingMember());
-		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
-				.willReturn(subject.getMemo());
-		final var deserializedRecord = new ExpirableTxnRecord();
-
-		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0120_VERSION);
-		deserializedRecord.setNewTokenAssociations(Collections.emptyList());
-
-		assertEquals(subject, deserializedRecord);
-	}
-
-	@Test
-	void v0160DeserializeWorks() throws IOException {
-		subject = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
-		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
-		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
-		subject.setAlias(MISSING_ALIAS);
-
-		final var fin = mock(SerializableDataInputStream.class);
-		given(serdes.readNullableSerializable(fin))
-				.willReturn(subject.getReceipt())
-				.willReturn(subject.getTxnId())
-				.willReturn(subject.getHbarAdjustments())
-				.willReturn(subject.getContractCallResult())
-				.willReturn(subject.getContractCreateResult())
-				.willReturn(subject.getScheduleRef());
-		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
-				.willReturn(List.of(
-						subject.getTokens().get(0),
-						subject.getTokens().get(1)))
-				.willReturn(List.of(
-						subject.getTokenAdjustments().get(0),
-						subject.getTokenAdjustments().get(1)))
-				.willReturn(List.of(
-						subject.getNftTokenAdjustments().get(0),
-						subject.getNftTokenAdjustments().get(1)))
-				.willReturn(null);
-		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
-				.willReturn(subject.getTxnHash());
-		given(serdes.readNullableInstant(fin))
-				.willReturn(subject.getConsensusTimestamp());
-		given(fin.readLong()).willReturn(subject.getFee())
-				.willReturn(subject.getExpiry())
-				.willReturn(subject.getSubmittingMember());
-		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
-				.willReturn(subject.getMemo());
-		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES))
-				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
-		final var deserializedRecord = new ExpirableTxnRecord();
-
-		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0160_VERSION);
-
-		assertEquals(subject, deserializedRecord);
-	}
-
-	@Test
-	void v0180DeserializeWorks() throws IOException {
-		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
-		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
-		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
-		subject.setAlias(MISSING_ALIAS);
-		final var fin = mock(SerializableDataInputStream.class);
-		given(serdes.readNullableSerializable(fin))
-				.willReturn(subject.getReceipt())
-				.willReturn(subject.getTxnId())
-				.willReturn(subject.getHbarAdjustments())
-				.willReturn(subject.getContractCallResult())
-				.willReturn(subject.getContractCreateResult())
-				.willReturn(subject.getScheduleRef());
-		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
-				.willReturn(List.of(
-						subject.getTokens().get(0),
-						subject.getTokens().get(1),
-						subject.getTokens().get(2)))
-				.willReturn(List.of(
-						subject.getTokenAdjustments().get(0),
-						subject.getTokenAdjustments().get(1),
-						subject.getTokenAdjustments().get(2)))
-				.willReturn(List.of(
-						subject.getNftTokenAdjustments().get(0),
-						subject.getNftTokenAdjustments().get(1),
-						subject.getNftTokenAdjustments().get(2)
-				));
-		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
-				.willReturn(subject.getTxnHash());
-		given(serdes.readNullableInstant(fin))
-				.willReturn(subject.getConsensusTimestamp());
-		given(fin.readLong()).willReturn(subject.getFee())
-				.willReturn(subject.getExpiry())
-				.willReturn(subject.getSubmittingMember());
-		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
-				.willReturn(subject.getMemo());
-		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES))
-				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
-		given(fin.readSerializableList(Integer.MAX_VALUE))
-				.willReturn(List.of(subject.getNewTokenAssociations().get(0)));
-		final var deserializedRecord = new ExpirableTxnRecord();
-
-		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0180_VERSION);
-
-		assertEquals(deserializedRecord, subject);
-	}
-
-	@Test
-	void v0210DeserializeWorksWithAllChildRecordMeta() throws IOException {
-		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
-		final var fin = mock(SerializableDataInputStream.class);
-		given(serdes.readNullableSerializable(fin))
-				.willReturn(subject.getReceipt())
-				.willReturn(subject.getTxnId())
-				.willReturn(subject.getHbarAdjustments())
-				.willReturn(subject.getContractCallResult())
-				.willReturn(subject.getContractCreateResult())
-				.willReturn(subject.getScheduleRef());
-		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
-				.willReturn(List.of(
-						subject.getTokens().get(0),
-						subject.getTokens().get(1),
-						subject.getTokens().get(2)))
-				.willReturn(List.of(
-						subject.getTokenAdjustments().get(0),
-						subject.getTokenAdjustments().get(1),
-						subject.getTokenAdjustments().get(2)))
-				.willReturn(List.of(
-						subject.getNftTokenAdjustments().get(0),
-						subject.getNftTokenAdjustments().get(1),
-						subject.getNftTokenAdjustments().get(2)
-				));
-		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
-				.willReturn(subject.getTxnHash());
-		given(serdes.readNullableInstant(fin))
-				.willReturn(subject.getConsensusTimestamp());
-		given(fin.readLong()).willReturn(subject.getFee())
-				.willReturn(subject.getExpiry())
-				.willReturn(subject.getSubmittingMember())
-				.willReturn(subject.getPackedParentConsensusTime());
-		given(fin.readShort()).willReturn(subject.getNumChildRecords());
-		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
-				.willReturn(subject.getMemo());
-		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES))
-				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
-		given(fin.readSerializableList(Integer.MAX_VALUE))
-				.willReturn(List.of(subject.getNewTokenAssociations().get(0)));
-		given(fin.readBoolean()).willReturn(true);
-		given(fin.readByteArray(Integer.MAX_VALUE))
-				.willReturn(subject.getAlias().toByteArray());
-		final var deserializedRecord = new ExpirableTxnRecord();
-
-		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0210_VERSION);
-
-		assertEquals(deserializedRecord, subject);
-	}
-
-	@Test
-	void v0210DeserializeWorksWithNoChildRecordMeta() throws IOException {
-		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
-		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
-		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
-		final var fin = mock(SerializableDataInputStream.class);
-		given(serdes.readNullableSerializable(fin))
-				.willReturn(subject.getReceipt())
-				.willReturn(subject.getTxnId())
-				.willReturn(subject.getHbarAdjustments())
-				.willReturn(subject.getContractCallResult())
-				.willReturn(subject.getContractCreateResult())
-				.willReturn(subject.getScheduleRef());
-		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
-				.willReturn(List.of(
-						subject.getTokens().get(0),
-						subject.getTokens().get(1),
-						subject.getTokens().get(2)))
-				.willReturn(List.of(
-						subject.getTokenAdjustments().get(0),
-						subject.getTokenAdjustments().get(1),
-						subject.getTokenAdjustments().get(2)))
-				.willReturn(List.of(
-						subject.getNftTokenAdjustments().get(0),
-						subject.getNftTokenAdjustments().get(1),
-						subject.getNftTokenAdjustments().get(2)
-				));
-		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
-				.willReturn(subject.getTxnHash());
-		given(serdes.readNullableInstant(fin))
-				.willReturn(subject.getConsensusTimestamp());
-		given(fin.readLong()).willReturn(subject.getFee())
-				.willReturn(subject.getExpiry())
-				.willReturn(subject.getSubmittingMember())
-				.willReturn(subject.getPackedParentConsensusTime());
-		given(fin.readShort()).willReturn(subject.getNumChildRecords());
-		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
-				.willReturn(subject.getMemo());
-		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES))
-				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
-		given(fin.readSerializableList(Integer.MAX_VALUE))
-				.willReturn(List.of(subject.getNewTokenAssociations().get(0)));
-		given(fin.readByteArray(Integer.MAX_VALUE))
-				.willReturn(subject.getAlias().toByteArray());
-		final var deserializedRecord = new ExpirableTxnRecord();
-
-		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0210_VERSION);
-
-		assertEquals(deserializedRecord, subject);
-	}
-
-	@Test
-	void v0230DeserializeWorksWithAllowanceMaps() throws IOException {
-		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
-		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
-		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
-		final var fin = mock(SerializableDataInputStream.class);
-		given(serdes.readNullableSerializable(fin))
-				.willReturn(subject.getReceipt())
-				.willReturn(subject.getTxnId())
-				.willReturn(subject.getHbarAdjustments())
-				.willReturn(subject.getContractCallResult())
-				.willReturn(subject.getContractCreateResult())
-				.willReturn(subject.getScheduleRef());
-		given(fin.readSerializableList(MAX_INVOLVED_TOKENS))
-				.willReturn(List.of(
-						subject.getTokens().get(0),
-						subject.getTokens().get(1),
-						subject.getTokens().get(2)))
-				.willReturn(List.of(
-						subject.getTokenAdjustments().get(0),
-						subject.getTokenAdjustments().get(1),
-						subject.getTokenAdjustments().get(2)))
-				.willReturn(List.of(
-						subject.getNftTokenAdjustments().get(0),
-						subject.getNftTokenAdjustments().get(1),
-						subject.getNftTokenAdjustments().get(2)
-				));
-		given(fin.readByteArray(ExpirableTxnRecord.MAX_TXN_HASH_BYTES))
-				.willReturn(subject.getTxnHash());
-		given(serdes.readNullableInstant(fin))
-				.willReturn(subject.getConsensusTimestamp());
-		given(fin.readLong())
-				.willReturn(subject.getFee())
-				.willReturn(subject.getExpiry())
-				.willReturn(subject.getSubmittingMember());
-		given(fin.readShort()).willReturn(subject.getNumChildRecords());
-		given(serdes.readNullableString(fin, ExpirableTxnRecord.MAX_MEMO_BYTES))
-				.willReturn(subject.getMemo());
-		given(fin.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES))
-				.willReturn(List.of(subject.getCustomFeesCharged().get(0)));
-		given(fin.readSerializableList(Integer.MAX_VALUE))
-				.willReturn(List.of(subject.getNewTokenAssociations().get(0)));
-		given(fin.readByteArray(Integer.MAX_VALUE))
-				.willReturn(subject.getAlias().toByteArray());
-		given(fin.readInt())
-				.willReturn(0)
-				.willReturn(0)
-				.willReturn(0);
-		final var deserializedRecord = new ExpirableTxnRecord();
-
-		deserializedRecord.deserialize(fin, ExpirableTxnRecord.RELEASE_0230_VERSION);
-
-		assertEquals(deserializedRecord, subject);
-	}
-
-	@Test
-	void serializeWorksWithBothChildAndParentMetaAndAllowanceMaps() throws IOException {
-		final var fout = mock(SerializableDataOutputStream.class);
-		final var inOrder = Mockito.inOrder(serdes, fout);
-		subject.setCryptoAllowances(cryptoAllowances);
-		subject.setFungibleTokenAllowances(fungibleAllowances);
-
-		subject.serialize(fout);
-
-		inOrder.verify(serdes).writeNullableSerializable(subject.getReceipt(), fout);
-		inOrder.verify(fout).writeByteArray(subject.getTxnHash());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getTxnId(), fout);
-		inOrder.verify(serdes).writeNullableInstant(subject.getConsensusTimestamp(), fout);
-		inOrder.verify(serdes).writeNullableString(subject.getMemo(), fout);
-		inOrder.verify(fout).writeLong(subject.getFee());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getHbarAdjustments(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCallResult(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCreateResult(), fout);
-		inOrder.verify(fout).writeLong(subject.getExpiry());
-		inOrder.verify(fout).writeLong(subject.getSubmittingMember());
-		inOrder.verify(fout).writeSerializableList(
-				subject.getTokens(), true, true);
-		inOrder.verify(fout).writeSerializableList(
-				subject.getTokenAdjustments(), true, true);
-		inOrder.verify(serdes).writeNullableSerializable(EntityId.fromGrpcScheduleId(scheduleID), fout);
-		inOrder.verify(fout).writeSerializableList(
-				subject.getNftTokenAdjustments(), true, true);
-		inOrder.verify(fout).writeSerializableList(subject.getCustomFeesCharged(), true, true);
-		inOrder.verify(fout).writeBoolean(true);
-		inOrder.verify(fout).writeShort(numChildRecords);
-		inOrder.verify(fout).writeBoolean(true);
-		inOrder.verify(fout).writeLong(packedParentConsTime);
-		inOrder.verify(fout).writeByteArray(subject.getAlias().toByteArray());
-		inOrder.verify(fout).writeInt(cryptoAllowances.size());
-		inOrder.verify(fout).writeLong(spenderNum.longValue());
-		inOrder.verify(fout).writeLong(initialAllowance);
-		inOrder.verify(fout).writeInt(fungibleAllowances.size());
-		inOrder.verify(fout).writeSerializable(fungibleAllowanceId, true);
-		inOrder.verify(fout).writeLong(initialAllowance);
-	}
-
-	@Test
-	void serializeWorksWithNeitherChildAndParentMeta() throws IOException {
-		final var fout = mock(SerializableDataOutputStream.class);
-		final var inOrder = Mockito.inOrder(serdes, fout);
-
-		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
-		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
-		subject.serialize(fout);
-
-		inOrder.verify(serdes).writeNullableSerializable(subject.getReceipt(), fout);
-		inOrder.verify(fout).writeByteArray(subject.getTxnHash());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getTxnId(), fout);
-		inOrder.verify(serdes).writeNullableInstant(subject.getConsensusTimestamp(), fout);
-		inOrder.verify(serdes).writeNullableString(subject.getMemo(), fout);
-		inOrder.verify(fout).writeLong(subject.getFee());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getHbarAdjustments(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCallResult(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCreateResult(), fout);
-		inOrder.verify(fout).writeLong(subject.getExpiry());
-		inOrder.verify(fout).writeLong(subject.getSubmittingMember());
-		inOrder.verify(fout).writeSerializableList(
-				subject.getTokens(), true, true);
-		inOrder.verify(fout).writeSerializableList(
-				subject.getTokenAdjustments(), true, true);
-		inOrder.verify(serdes).writeNullableSerializable(EntityId.fromGrpcScheduleId(scheduleID), fout);
-		inOrder.verify(fout).writeSerializableList(
-				subject.getNftTokenAdjustments(), true, true);
-		inOrder.verify(fout).writeSerializableList(subject.getCustomFeesCharged(), true, true);
-		inOrder.verify(fout, times(2)).writeBoolean(false);
-		inOrder.verify(fout).writeByteArray(subject.getAlias().toByteArray());
-	}
-
-	@Test
 	void serializableDetWorks() {
-		assertEquals(ExpirableTxnRecord.MERKLE_VERSION, subject.getVersion());
+		assertEquals(ExpirableTxnRecord.CURRENT_VERSION, subject.getVersion());
 		assertEquals(ExpirableTxnRecord.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
@@ -626,29 +230,183 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	void makeupNftAdjustmentsUsesNullForNullFungibleAdjusts() {
-		assertNull(subject.makeupNftAdjustsMatching(null));
+	void nullEqualsWorks() {
+		final var sameButDifferent = subject;
+		assertNotEquals(subject, null);
+		assertNotEquals(subject, new Object());
+		assertEquals(subject, sameButDifferent);
 	}
 
 	@Test
-	void nullEqualsWorks() {
-		assertNotEquals(null, subject);
-		assertEquals(subject, subject);
+	void equalsDetectsFeeDiff() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setFee(123).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsChildRecordsDif() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setNumChildRecords((short) 123).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsPackedConsTimeDif() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setParentConsensusTime(Instant.ofEpochSecond(1_234_567))
+				.build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffExpiry() {
+		final var a = new ExpirableTxnRecord();
+		final var b = new ExpirableTxnRecord();
+		b.setExpiry(1_234_567L);
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffSubmitter() {
+		final var a = new ExpirableTxnRecord();
+		final var b = new ExpirableTxnRecord();
+		b.setSubmittingMember(1_234_567L);
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffReceipt() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setReceipt(new TxnReceipt()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffHash() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setTxnHash(new byte[] { (byte) 0xFF }).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffTxnId() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setTxnId(new TxnId()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffConsTime() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setConsensusTime(new RichInstant(1_234_567, 890)).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffMemo() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder().setMemo("HI").build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffCallResult() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setContractCallResult(new EvmFnResult()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffCreateResult() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setContractCreateResult(new EvmFnResult()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffHbarAdjusts() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setHbarAdjustments(new CurrencyAdjustments()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffTokens() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setTokens(new ArrayList<>()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffTokenAdjusts() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setTokenAdjustments(new ArrayList<>()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffNftAdjusts() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setNftTokenAdjustments(new ArrayList<>()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffAssessedFees() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setAssessedCustomFees(new ArrayList<>()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffTokenAssociations() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setNewTokenAssociations(new ArrayList<>()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffAlias() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setAlias(ByteString.copyFromUtf8("asdf")).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffCryptoAllowances() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setCryptoAllowances(Map.of()).build();
+		assertNotEquals(a, b);
+	}
+
+	@Test
+	void equalsDetectsDiffFungibleAllowances() {
+		final var a = new ExpirableTxnRecord();
+		final var b = ExpirableTxnRecord.newBuilder()
+				.setFungibleTokenAllowances(Map.of()).build();
+		assertNotEquals(a, b);
 	}
 
 	@Test
 	void objectContractWorks() {
-		final var one = subject;
-		final var two = DomainSerdesTest.recordOne();
+		final var two = TxnUtils.recordOne();
 		final var three = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
 
-		assertNotEquals(null, one);
-		assertNotEquals(new Object(), one);
-		assertEquals(one, three);
-		assertNotEquals(one, two);
-
-		assertNotEquals(one.hashCode(), two.hashCode());
-		assertEquals(one.hashCode(), three.hashCode());
+		assertNotEquals(two, three);
+		assertNotEquals(two.hashCode(), three.hashCode());
 	}
 
 	@Test
@@ -730,10 +488,5 @@ class ExpirableTxnRecordTest {
 				"spender : EntityNum{value=8}, allowance : 100}]}";
 
 		assertEquals(expected, subject.toString());
-	}
-
-	@AfterEach
-	void cleanup() {
-		ExpirableTxnRecord.serdes = new DomainSerdes();
 	}
 }

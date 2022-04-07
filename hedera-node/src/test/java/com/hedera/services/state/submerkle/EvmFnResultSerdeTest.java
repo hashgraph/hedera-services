@@ -20,82 +20,36 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.swirlds.common.constructable.ConstructableRegistryException;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.Test;
+import com.hedera.test.serde.SelfSerializableDataTest;
+import com.hedera.test.utils.SeededPropertySource;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+public class EvmFnResultSerdeTest extends SelfSerializableDataTest<EvmFnResult> {
+	public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
 
-import static com.hedera.services.state.submerkle.EvmFnResult.RELEASE_0250_VERSION;
-import static com.hedera.test.utils.TxnUtils.assertSerdeWorks;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomAddress;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomBytes;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomEntityId;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomEvmWord;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.randomStateChangePair;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest.registerRecordConstructables;
-
-class EvmFnResultSerdeTest {
-	@Test
-	void serdeWorksWithNoStateChanges() throws IOException, ConstructableRegistryException {
-		registerRecordConstructables();
-
-		final var subject = new EvmFnResult(
-				randomEntityId(),
-				randomBytes(128),
-				"Mind the vase now!",
-				randomBytes(32),
-				123321,
-				List.of(),
-				List.of(),
-				randomBytes(20),
-				Collections.emptyMap(),
-				123321,
-				1233211233,
-				randomBytes(64));
-
-		assertSerdeWorks(subject, EvmFnResult::new, RELEASE_0250_VERSION);
+	@Override
+	protected Class<EvmFnResult> getType() {
+		return EvmFnResult.class;
 	}
 
-	@Test
-	void serdeWorksWithStateChanges() throws IOException, ConstructableRegistryException {
-		registerRecordConstructables();
-
-		for (int i = 0; i < 10; i++) {
-			final var subject = new EvmFnResult(
-					randomEntityId(),
-					randomBytes(128),
-					"Mind the vase now!",
-					randomBytes(32),
-					123321,
-					List.of(),
-					List.of(),
-					randomBytes(20),
-					randomStateChanges(5, 10),
-					123321,
-					1233211233,
-					randomBytes(64));
-
-			assertSerdeWorks(subject, EvmFnResult::new, RELEASE_0250_VERSION);
-		}
+	@Override
+	protected int getNumTestCasesFor(final int version) {
+		return version == EvmFnResult.RELEASE_0240_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
 	}
 
-	private static Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> randomStateChanges(int n, final int changesPerAddress) {
-		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> ans = new TreeMap<>();
-		while (n-- > 0) {
-			final var address = randomAddress();
-			final Map<Bytes, Pair<Bytes, Bytes>> changes = new TreeMap<>();
-			for (int i = 0; i < changesPerAddress; i++)	{
-				changes.put(randomEvmWord(), randomStateChangePair());
-			}
-			ans.put(address, changes);
+	@Override
+	protected EvmFnResult getExpectedObject(final int version, final int testCaseNo) {
+		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextEvmResult();
+		if (version == EvmFnResult.RELEASE_0240_VERSION) {
+			// Always empty before 0.25
+			seeded.setGas(0);
+			seeded.setAmount(0);
+			seeded.setFunctionParameters(EvmFnResult.EMPTY);
 		}
-		return ans;
+		return seeded;
+	}
+
+	@Override
+	protected EvmFnResult getExpectedObject(final SeededPropertySource propertySource) {
+		return propertySource.nextEvmResult();
 	}
 }

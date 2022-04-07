@@ -27,7 +27,6 @@ import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -259,7 +258,7 @@ class AutoRenewCalcsTest {
 				.proxy(asAccount("0.0.12345"))
 				.memo("SHOCKED, I tell you!")
 				.associatedTokensCount(associatedTokensCount)
-				.lastAssociatedToken(EntityNumPair.fromLongs(2, 5).value())
+				.lastAssociatedToken(5)
 				.get();
 	}
 
