@@ -22,7 +22,6 @@ package com.hedera.services.state.serdes;
 
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -34,6 +33,7 @@ import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableString;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
 
 public class TopicSerde {
@@ -56,7 +56,7 @@ public class TopicSerde {
 		writeNullable(topic.getNullableAdminKey(), out, IoUtils::serializeKey);
 		writeNullable(topic.getNullableSubmitKey(), out, IoUtils::serializeKey);
 		out.writeLong(topic.getAutoRenewDurationSeconds());
-		writeNullable(topic.getNullableAutoRenewAccountId(), out, EntityId::serialize);
+		writeNullableSerializable(topic.getNullableAutoRenewAccountId(), out);
 		writeNullable(topic.getNullableExpirationTimestamp(), out, RichInstant::serialize);
 		out.writeBoolean(topic.isDeleted());
 		out.writeLong(topic.getSequenceNumber());
