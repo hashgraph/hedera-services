@@ -22,7 +22,6 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ClassConstructorPair;
@@ -74,12 +73,14 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 					propertySource.nextEntityId(),
 					propertySource.nextInt(),
 					propertySource.nextUnsignedInt(),
+					propertySource.nextUnsignedInt(),
 					propertySource.nextByteString(36),
 					propertySource.nextUnsignedInt(),
 					// This migration relied on the fact that no 0.24.x production state ever included allowances
 					Collections.emptyMap(),
 					Collections.emptyMap(),
-					Collections.emptySet());
+					Collections.emptySet(),
+					0,0,0L);
 		} else {
 			final var seeded = new MerkleAccountState(
 					propertySource.nextKey(),
@@ -93,14 +94,16 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 					propertySource.nextEntityId(),
 					propertySource.nextInt(),
 					propertySource.nextUnsignedInt(),
+					propertySource.nextUnsignedInt(),
 					propertySource.nextByteString(36),
 					propertySource.nextUnsignedInt(),
 					// This migration relied on the fact that no 0.24.x production state ever included allowances
 					propertySource.nextGrantedCryptoAllowances(10),
 					propertySource.nextGrantedFungibleAllowances(10),
-					propertySource.nextApprovedForAllAllowances(10));
-			seeded.setTokenAssociationMetadata(new TokenAssociationMetadata(
-					propertySource.nextUnsignedInt(), propertySource.nextUnsignedInt(), propertySource.nextPair()));
+					propertySource.nextApprovedForAllAllowances(10),
+					propertySource.nextUnsignedInt(),
+					propertySource.nextUnsignedInt(),
+					propertySource.nextLong());
 			return seeded;
 		}
 	}
