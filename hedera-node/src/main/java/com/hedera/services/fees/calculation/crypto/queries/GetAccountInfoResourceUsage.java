@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.Query;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Collections;
 import java.util.Map;
 
 @Singleton
@@ -75,6 +76,9 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 				.setCurrentlyHasProxy(details.hasProxyAccountID())
 				.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
 				.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentTokenAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 				.build();
 		return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
 	}
