@@ -194,6 +194,7 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
 		given(dissociationRel.dissociatingToken()).willReturn(firstToken);
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
+		given(tokenRel.getBalanceChange()).willReturn(-1L);
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(secondToken);
 		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
 		given(tokenStore.loadTokenRelationship(any(), any())).willReturn(secondRel);
@@ -203,6 +204,7 @@ class AccountTest {
 
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
+		assertEquals(numPositiveBalances - 1 , subject.getNumPositiveBalances());
 		assertEquals(numAssociations - 1 , subject.getNumAssociations());
 		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
@@ -495,7 +497,7 @@ class AccountTest {
 		subject.setAlreadyUsedAutomaticAssociations(0);
 
 		assertFailsWith(
-				() -> subject.decrementUsedAutomaticAssocitions(),
+				() -> subject.decrementUsedAutomaticAssociations(),
 				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 	}
 
