@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -34,8 +33,6 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
@@ -50,23 +47,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
+import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.staticReadNullableString;
+import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableString;
 import static com.swirlds.common.CommonUtils.hex;
 import static org.apache.commons.collections4.CollectionUtils.isNotEmpty;
 
 public class EvmFnResult implements SelfSerializable {
-	private static final Logger log = LogManager.getLogger(EvmFnResult.class);
-
 	public static final byte[] EMPTY = new byte[0];
 
-	static final int PRE_RELEASE_0230_VERSION = 1;
-	static final int RELEASE_0230_VERSION = 2;
 	static final int RELEASE_0240_VERSION = 3;
 	static final int RELEASE_0250_VERSION = 4;
-	static final int MERKLE_VERSION = RELEASE_0250_VERSION;
+	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final int MAX_LOGS = 1_024;
 	public static final int MAX_CREATED_IDS = 32;
@@ -89,7 +84,7 @@ public class EvmFnResult implements SelfSerializable {
 	private byte[] functionParameters = EMPTY;
 
 	public EvmFnResult() {
-		/* RuntimeConstructable */
+		// RuntimeConstructable
 	}
 
 	public static EvmFnResult fromCall(final TransactionProcessingResult result) {
@@ -123,18 +118,18 @@ public class EvmFnResult implements SelfSerializable {
 	}
 
 	public EvmFnResult(
-			EntityId contractId,
-			byte[] result,
-			String error,
-			byte[] bloom,
-			long gasUsed,
-			List<EvmLog> logs,
-			List<EntityId> createdContractIds,
-			byte[] evmAddress,
-			Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
-			long gas,
-			long amount,
-			byte [] functionParameters
+			final EntityId contractId,
+			final byte[] result,
+			final String error,
+			final byte[] bloom,
+			final long gasUsed,
+			final List<EvmLog> logs,
+			final List<EntityId> createdContractIds,
+			final byte[] evmAddress,
+			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges,
+			final long gas,
+			final long amount,
+			final byte[] functionParameters
 	) {
 		this.contractId = contractId;
 		this.result = result;
@@ -158,7 +153,12 @@ public class EvmFnResult implements SelfSerializable {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0240_VERSION;
 	}
 
 	@Override
@@ -166,31 +166,29 @@ public class EvmFnResult implements SelfSerializable {
 		gasUsed = in.readLong();
 		bloom = in.readByteArray(EvmLog.MAX_BLOOM_BYTES);
 		result = in.readByteArray(MAX_RESULT_BYTES);
-		error = serdes.readNullableString(in, MAX_ERROR_BYTES);
-		contractId = serdes.readNullableSerializable(in);
+		error = staticReadNullableString(in, MAX_ERROR_BYTES);
+		contractId = staticReadNullableSerializable(in);
 		logs = in.readSerializableList(MAX_LOGS, true, EvmLog::new);
 		createdContractIds = in.readSerializableList(MAX_CREATED_IDS, true, EntityId::new);
-		if (version >= RELEASE_0230_VERSION) {
-			evmAddress = in.readByteArray(MAX_ADDRESS_BYTES);
-		}
-		if (version >= RELEASE_0240_VERSION) {
-			int numAffectedContracts = in.readInt();
-			final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> state = new TreeMap<>();
-			while (numAffectedContracts-- > 0) {
-				final byte[] contractAddress = in.readByteArray(MAX_ADDRESS_BYTES);
-				int numAffectedSlots = in.readInt();
-				final Map<Bytes, Pair<Bytes, Bytes>> storage = new TreeMap<>();
-				state.put(Address.fromHexString(hex(contractAddress)), storage);
-				while (numAffectedSlots-- > 0) {
-					Bytes slot = Bytes.wrap(in.readByteArray(32));
-					Bytes left = Bytes.wrap(in.readByteArray(32));
-					boolean hasRight = in.readBoolean();
-					Bytes right = hasRight ? Bytes.wrap(in.readByteArray(32)) : null;
-					storage.put(slot, Pair.of(left, right));
-				}
+		// Added in 0.23
+		evmAddress = in.readByteArray(MAX_ADDRESS_BYTES);
+		// Added in 0.24
+		int numAffectedContracts = in.readInt();
+		final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> state = new TreeMap<>();
+		while (numAffectedContracts-- > 0) {
+			final byte[] contractAddress = in.readByteArray(MAX_ADDRESS_BYTES);
+			int numAffectedSlots = in.readInt();
+			final Map<Bytes, Pair<Bytes, Bytes>> storage = new TreeMap<>();
+			state.put(Address.fromHexString(hex(contractAddress)), storage);
+			while (numAffectedSlots-- > 0) {
+				final var slot = Bytes.wrap(in.readByteArray(32));
+				final var left = Bytes.wrap(in.readByteArray(32));
+				final var hasRight = in.readBoolean();
+				final var right = hasRight ? Bytes.wrap(in.readByteArray(32)) : null;
+				storage.put(slot, Pair.of(left, right));
 			}
-			stateChanges = state;
 		}
+		stateChanges = state;
 		if (version >= RELEASE_0250_VERSION) {
 			gas = in.readLong();
 			amount = in.readLong();
@@ -203,8 +201,8 @@ public class EvmFnResult implements SelfSerializable {
 		out.writeLong(gasUsed);
 		out.writeByteArray(bloom);
 		out.writeByteArray(result);
-		serdes.writeNullableString(error, out);
-		serdes.writeNullableSerializable(contractId, out);
+		staticWriteNullableString(error, out);
+		staticWriteNullableSerializable(contractId, out);
 		out.writeSerializableList(logs, true, true);
 		out.writeSerializableList(createdContractIds, true, true);
 		out.writeByteArray(evmAddress);

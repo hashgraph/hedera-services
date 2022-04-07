@@ -91,6 +91,22 @@ public class SeededPropertySource {
 		return new SeededPropertySource(new SplittableRandom(version * BASE_SEED + testCaseNo));
 	}
 
+	public EvmFnResult nextEvmResult() {
+		return new EvmFnResult(
+				nextEntityId(),
+				nextBytes(32),
+				nextString(64),
+				nextBytes(256),
+				nextUnsignedLong(),
+				nextEvmLogs(3),
+				nextEntityIds(2),
+				nextBytes(20),
+				nextStateChanges(2, 5),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextBytes(128));
+	}
+
 	public MerkleTopic nextTopic() {
 		final var seeded = new MerkleTopic();
 		if (nextBoolean()) {
@@ -430,6 +446,10 @@ public class SeededPropertySource {
 				nextBytes(64));
 	}
 
+	public List<EvmLog> nextEvmLogs(final int n) {
+		return IntStream.range(0, n).mapToObj(i -> nextEvmLog()).toList();
+	}
+
 	public EvmLog nextEvmLog() {
 		return new EvmLog(nextEntityId(), nextBytes(256), nextLogTopics(5), nextBytes(64));
 	}
@@ -607,6 +627,12 @@ public class SeededPropertySource {
 		return IntStream.range(0, n)
 				.mapToLong(i -> nextLong())
 				.toArray();
+	}
+
+	public List<EntityId> nextEntityIds(final int n) {
+		return IntStream.range(0, n)
+				.mapToObj(i -> nextEntityId())
+				.toList();
 	}
 
 	public long[] nextUnsignedLongs(final int n) {

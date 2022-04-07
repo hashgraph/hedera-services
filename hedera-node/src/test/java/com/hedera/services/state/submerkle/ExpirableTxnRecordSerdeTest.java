@@ -27,7 +27,6 @@ import com.hedera.test.utils.SeededPropertySource;
 import java.util.Collections;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0230_VERSION;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0250_VERSION;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
 	public static final int NUM_TEST_CASES = 4 * MIN_TEST_CASES_PER_VERSION;
@@ -51,15 +50,11 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 	protected ExpirableTxnRecord getExpectedObject(final int version, final int testCaseNo) {
 		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextRecord();
 		if (version == RELEASE_0230_VERSION) {
-			// Always empty before release 0.25
+			// Always empty before 0.25
 			seeded.setCryptoAllowances(Collections.emptyMap());
 			seeded.setFungibleTokenAllowances(Collections.emptyMap());
-			return seeded;
-		} else if (version == RELEASE_0250_VERSION) {
-			return seeded;
-		} else {
-			throw new IllegalArgumentException("Version " + version + " isn't actually supported");
 		}
+		return seeded;
 	}
 
 	@Override
