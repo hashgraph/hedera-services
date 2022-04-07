@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Assertions;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
@@ -127,7 +126,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -167,7 +165,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	public static void main(String... args) {
 		new CryptoTransferSuite().runSuiteAsync();
 	}
-
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
@@ -447,7 +444,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var secondStakingFund = "0.0.801";
 		final var snapshot800 = "800startBalance";
 		final var snapshot801 = "801startBalance";
-		final AtomicLong somebodyNum = new AtomicLong();
 		final var multiKey = "swiss";
 		final var mutableToken = "token";
 
@@ -487,8 +483,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.hasKnownStatus(INVALID_ACCOUNT_ID),
 						cryptoDelete(firstStakingFund)
-								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
-								.hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE),
+								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR).hasKnownStatus(INVALID_ACCOUNT_ID),
 						// Immutable accounts cannot serve any role for tokens
 						tokenCreate(mutableToken).adminKey(multiKey),
 						tokenAssociate(secondStakingFund, mutableToken)

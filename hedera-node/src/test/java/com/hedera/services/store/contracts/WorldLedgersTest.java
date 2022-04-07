@@ -41,9 +41,11 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fchashmap.FCHashMap;
@@ -55,6 +57,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
+
+import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
 import static com.hedera.services.ledger.properties.TokenProperty.NAME;
@@ -64,6 +69,7 @@ import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -84,6 +90,8 @@ class WorldLedgersTest {
 	private static final AccountID accountID = treasury.toGrpcAccountId();
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final Address sponsor = Address.fromHexString("0xcba");
+
+	private static final NftId nftId = new NftId(0, 0, 123, 456);
 
 	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
@@ -136,6 +144,29 @@ class WorldLedgersTest {
 		final var expected = treasury.toEvmAddress();
 		final var actual = subject.ownerOf(target);
 		assertEquals(expected, actual);
+	}
+
+	@Test
+	void metadataOfWorksWithStatic() {
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+		given(staticEntityAccess.metadataOf(nftId)).willReturn("There, the eyes are");
+
+		assertEquals("There, the eyes are", subject.metadataOf(nftId));
+	}
+
+	@Test
+	void metadataOfWorks() {
+		given(nftsLedger.exists(nftId)).willReturn(true);
+		given(nftsLedger.get(nftId, METADATA)).willReturn("There, the eyes are".getBytes());
+
+		assertEquals("There, the eyes are", subject.metadataOf(nftId));
+	}
+
+	@Test
+	void metadataOfWorksWithNonExistant() {
+		given(nftsLedger.exists(nftId)).willReturn(false);
+
+		assertEquals(URI_QUERY_NON_EXISTING_TOKEN_ERROR, subject.metadataOf(nftId));
 	}
 
 	@Test

@@ -14,6 +14,6 @@ NODE=0
 while [ $NODE -lt $NUM_NODES ]; do
   NODE_DIR="hedera-node/data/saved/com.hedera.services.ServicesMain/$NODE/123/$ROUND/"
   mkdir -p $NODE_DIR
-  cp $FROM_DIR/* $NODE_DIR
+  cp -R $FROM_DIR/* $NODE_DIR
   NODE=$((NODE+1))
 done
