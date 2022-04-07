@@ -1,4 +1,4 @@
-package com.hedera.services.state.merkle;
+package com.hedera.services.state.submerkle;
 
 /*-
  * ‌
@@ -22,16 +22,22 @@ package com.hedera.services.state.merkle;
 
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 
-import java.util.Optional;
-import java.util.function.BiConsumer;
-
-public class MerkleScheduleSerdeTest extends SelfSerializableDataTest<MerkleSchedule> {
+public class EvmLogSerdeTest extends SelfSerializableDataTest<EvmLog> {
 	public static final int NUM_TEST_CASES = MIN_TEST_CASES_PER_VERSION;
 
 	@Override
-	protected Class<MerkleSchedule> getType() {
-		return MerkleSchedule.class;
+	protected Class<EvmLog> getType() {
+		return EvmLog.class;
+	}
+
+	@Override
+	protected void registerConstructables() throws ConstructableRegistryException {
+		ConstructableRegistry.registerConstructable(
+				new ClassConstructorPair(EntityId.class, EntityId::new));
 	}
 
 	@Override
@@ -40,12 +46,7 @@ public class MerkleScheduleSerdeTest extends SelfSerializableDataTest<MerkleSche
 	}
 
 	@Override
-	protected Optional<BiConsumer<MerkleSchedule, MerkleSchedule>> customAssertEquals() {
-		return Optional.of(MerkleScheduleTest::assertEqualSchedules);
-	}
-
-	@Override
-	protected MerkleSchedule getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextSchedule();
+	protected EvmLog getExpectedObject(final SeededPropertySource propertySource) {
+		return propertySource.nextEvmLog();
 	}
 }

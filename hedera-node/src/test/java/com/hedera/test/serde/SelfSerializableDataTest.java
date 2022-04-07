@@ -113,7 +113,9 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	 * @param testCaseNo the zero-indexed number of test case for this version
 	 * @return the serialized form
 	 */
-	protected abstract byte[] getSerializedForm(final int version, final int testCaseNo);
+	protected byte[] getSerializedForm(final int version, final int testCaseNo) {
+		return SerializedForms.loadForm(getType(), version, testCaseNo);
+	}
 
 	/**
 	 * Returns the expected object created with a given version for a given test case.
@@ -122,7 +124,9 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	 * @param testCaseNo the zero-indexed number of test case for this version
 	 * @return the expected object
 	 */
-	protected abstract T getExpectedObject(final int version, final int testCaseNo);
+	protected T getExpectedObject(final int version, final int testCaseNo) {
+		return getExpectedObject(SeededPropertySource.forSerdeTest(version, testCaseNo));
+	}
 
 	/**
 	 * Returns the expected object created with a given seeded property source.

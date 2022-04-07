@@ -23,8 +23,6 @@ package com.hedera.services.state.submerkle;
 import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
@@ -33,18 +31,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.BDDMockito.argThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
-import static org.mockito.BDDMockito.mock;
 
 class EvmLogTest {
 	private static final byte[] data = "hgfedcba".getBytes();
@@ -57,16 +49,11 @@ class EvmLogTest {
 			"second00000000000000000000000000".getBytes(),
 			"third000000000000000000000000000".getBytes());
 
-	private DomainSerdes serdes;
 	private EvmLog subject;
 
 	@BeforeEach
 	void setup() {
-		serdes = mock(DomainSerdes.class);
-
 		subject = new EvmLog(aLoggerId, bloom, aTopics, data);
-
-		EvmLog.serdes = serdes;
 	}
 
 	@AfterEach
@@ -175,40 +162,6 @@ class EvmLogTest {
 	void serializableDetWorks() {
 		assertEquals(EvmLog.MERKLE_VERSION, subject.getVersion());
 		assertEquals(EvmLog.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
-	}
-
-	@Test
-	void serializeWorks() throws IOException {
-		final var out = mock(SerializableDataOutputStream.class);
-		final var inOrder = inOrder(serdes, out);
-
-		subject.serialize(out);
-
-		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, data)));
-		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, bloom)));
-		inOrder.verify(serdes).writeNullableSerializable(aLoggerId, out);
-		inOrder.verify(out).writeInt(aTopics.size());
-		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, aTopics.get(0))));
-		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, aTopics.get(1))));
-		inOrder.verify(out).writeByteArray(argThat((byte[] bytes) -> Arrays.equals(bytes, aTopics.get(2))));
-	}
-
-	@Test
-	void deserializeWorks() throws IOException {
-		final var in = mock(SerializableDataInputStream.class);
-		final var readSubject = new EvmLog();
-		given(in.readByteArray(EvmLog.MAX_BLOOM_BYTES)).willReturn(bloom);
-		given(in.readByteArray(EvmLog.MAX_DATA_BYTES)).willReturn(data);
-		given(serdes.readNullableSerializable(in)).willReturn(aLoggerId);
-		given(in.readInt()).willReturn(aTopics.size());
-		given(in.readByteArray(EvmLog.MAX_TOPIC_BYTES))
-				.willReturn(aTopics.get(0))
-				.willReturn(aTopics.get(1))
-				.willReturn(aTopics.get(2));
-
-		readSubject.deserialize(in, EvmLog.MERKLE_VERSION);
-
-		assertEquals(subject, readSubject);
 	}
 
 	static byte[] bloomFor(final Log log) {

@@ -40,6 +40,7 @@ import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
@@ -400,6 +401,14 @@ public class SeededPropertySource {
 				nextUnsignedLong(),
 				nextUnsignedLong(),
 				nextBytes(64));
+	}
+
+	public EvmLog nextEvmLog() {
+		return new EvmLog(nextEntityId(), nextBytes(256), nextLogTopics(5), nextBytes(64));
+	}
+
+	public List<byte[]> nextLogTopics(final int n) {
+		return IntStream.range(0, nextNonZeroInt(n)).mapToObj(i -> nextBytes(256)).toList();
 	}
 
 	public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> nextStateChanges(int n, final int changesPerAddress) {

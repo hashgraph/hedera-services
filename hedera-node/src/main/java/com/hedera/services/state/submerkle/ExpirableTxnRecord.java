@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.serdes.IoUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -48,6 +49,11 @@ import java.util.TreeMap;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
+import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.staticWriteNullable;
+import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeFungibleTokenAllowances;
@@ -308,19 +314,20 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		serdes.writeNullableSerializable(receipt, out);
+		staticWriteNullableSerializable(receipt, out);
 
 		out.writeByteArray(txnHash);
 
-		serdes.writeNullableSerializable(txnId, out);
-		serdes.writeNullableInstant(consensusTime, out);
-		serdes.writeNullableString(memo, out);
+		staticWriteNullableSerializable(txnId, out);
+
+		staticWriteNullable(consensusTime, out, RichInstant::serialize);
+		staticWriteNullableString(memo, out);
 
 		out.writeLong(this.fee);
 
-		serdes.writeNullableSerializable(hbarAdjustments, out);
-		serdes.writeNullableSerializable(contractCallResult, out);
-		serdes.writeNullableSerializable(contractCreateResult, out);
+		staticWriteNullableSerializable(hbarAdjustments, out);
+		staticWriteNullableSerializable(contractCallResult, out);
+		staticWriteNullableSerializable(contractCreateResult, out);
 
 		out.writeLong(expiry);
 		out.writeLong(submittingMember);
@@ -328,7 +335,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		out.writeSerializableList(tokens, true, true);
 		out.writeSerializableList(tokenAdjustments, true, true);
 
-		serdes.writeNullableSerializable(scheduleRef, out);
+		staticWriteNullableSerializable(scheduleRef, out);
 		out.writeSerializableList(nftTokenAdjustments, true, true);
 		out.writeSerializableList(assessedCustomFees, true, true);
 		out.writeSerializableList(newTokenAssociations, true, true);
@@ -353,22 +360,22 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		receipt = serdes.readNullableSerializable(in);
+		receipt = staticReadNullableSerializable(in);
 		txnHash = in.readByteArray(MAX_TXN_HASH_BYTES);
-		txnId = serdes.readNullableSerializable(in);
-		consensusTime = serdes.readNullableInstant(in);
-		memo = serdes.readNullableString(in, MAX_MEMO_BYTES);
+		txnId = staticReadNullableSerializable(in);
+		consensusTime = staticReadNullable(in, RichInstant::from);
+		memo = IoUtils.staticReadNullableString(in, MAX_MEMO_BYTES);
 		fee = in.readLong();
-		hbarAdjustments = serdes.readNullableSerializable(in);
-		contractCallResult = serdes.readNullableSerializable(in);
-		contractCreateResult = serdes.readNullableSerializable(in);
+		hbarAdjustments = staticReadNullableSerializable(in);
+		contractCallResult = staticReadNullableSerializable(in);
+		contractCreateResult = staticReadNullableSerializable(in);
 		expiry = in.readLong();
 		submittingMember = in.readLong();
 		// Added in 0.7
 		tokens = in.readSerializableList(MAX_INVOLVED_TOKENS);
 		tokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
 		// Added in 0.8
-		scheduleRef = serdes.readNullableSerializable(in);
+		scheduleRef = staticReadNullableSerializable(in);
 		// Added in 0.16
 		nftTokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
 		assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);

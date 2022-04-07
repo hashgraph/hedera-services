@@ -36,6 +36,20 @@ public class IoUtils {
 		out.write(key.serialize());
 	}
 
+	public static String staticReadNullableString(
+			final SerializableDataInputStream in,
+			final int maxLen
+	) throws IOException {
+		return staticReadNullable(in, input -> input.readNormalisedString(maxLen));
+	}
+
+	public static void staticWriteNullableString(
+			final String msg,
+			final SerializableDataOutputStream out
+	) throws IOException {
+		staticWriteNullable(msg, out, (msgVal, outVal) -> outVal.writeNormalisedString(msgVal));
+	}
+
 	public static <T> T staticReadNullable(
 			final SerializableDataInputStream in,
 			final IoReadingFunction<T> reader
