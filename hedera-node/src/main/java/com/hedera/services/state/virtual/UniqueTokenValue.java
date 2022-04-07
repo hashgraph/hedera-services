@@ -80,7 +80,7 @@ public class UniqueTokenValue implements VirtualValue {
 		this.metadata = metadata;
 	}
 
-	private UniqueTokenValue(UniqueTokenValue other) {
+	public UniqueTokenValue(UniqueTokenValue other) {
 		ownerAccountNum = other.ownerAccountNum;
 		spenderAccountNum = other.spenderAccountNum;
 		packedCreationTime = other.packedCreationTime;
