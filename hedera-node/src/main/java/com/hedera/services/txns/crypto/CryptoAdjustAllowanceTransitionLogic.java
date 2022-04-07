@@ -36,7 +36,6 @@ import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -49,7 +48,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.validateAllowanceLimitsOn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -58,7 +56,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
  * Implements the {@link TransitionLogic} for a HAPI CryptoAdjustAllowance transaction,
  * and the conditions under which such logic is syntactically correct.
  */
-public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
+public class CryptoAdjustAllowanceTransitionLogic extends BaseAllowancesTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
@@ -78,6 +76,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			final GlobalDynamicProperties dynamicProperties,
 			final SideEffectsTracker sideEffectsTracker,
 			final StateView workingView) {
+		super(accountStore, tokenStore, dynamicProperties);
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
@@ -105,7 +104,7 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 		/* --- Do the business logic --- */
 		adjustCryptoAllowances(op.getCryptoAllowancesList(), payerAccount);
 		adjustFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
-		adjustNftAllowances(op.getNftAllowancesList(), payerAccount);
+		applyNftAllowances(op.getNftAllowancesList(), payerAccount, entitiesChanged, nftsTouched);
 
 		/* --- Persist the entities --- */
 		for (final var nft : nftsTouched.values()) {
@@ -184,53 +183,6 @@ public class CryptoAdjustAllowanceTransitionLogic implements TransitionLogic {
 			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
 			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
 			sideEffectsTracker.setCryptoAllowances(accountToAdjust.getId().asEntityNum(), cryptoMap);
-		}
-	}
-
-	/**
-	 * Adjusts all changes needed for NFT allowances from the transaction. If the key{tokenNum, spenderNum} doesn't
-	 * exist in the map the allowance will be inserted. If the key exists, existing allowance values will be adjusted
-	 * based on the new allowances given in operation
-	 *
-	 * @param nftAllowances
-	 * 		newly given list of nft allowances
-	 * @param payerAccount
-	 * 		account of the payer for this adjustAllowance txn
-	 */
-	private void adjustNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
-		if (nftAllowances.isEmpty()) {
-			return;
-		}
-
-		for (var allowance : nftAllowances) {
-			final var owner = allowance.getOwner();
-
-			final var accountToAdjust = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var mutableApprovedForAllNftsAllowances = accountToAdjust.getMutableApprovedForAllNftsAllowances();
-
-			final var spenderAccount = allowance.getSpender();
-			final var approvedForAll = allowance.getApprovedForAll();
-			final var serialNums = allowance.getSerialNumbersList();
-			final var tokenID = allowance.getTokenId();
-			final var tokenId = Id.fromGrpcToken(tokenID);
-			final var spender = Id.fromGrpcAccount(spenderAccount);
-			accountStore.loadAccountOrFailWith(spender, INVALID_ALLOWANCE_SPENDER_ID);
-			final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(),
-					spender.asEntityNum());
-
-			if (approvedForAll.getValue()) {
-				mutableApprovedForAllNftsAllowances.add(key);
-			} else {
-				mutableApprovedForAllNftsAllowances.remove(key);
-			}
-
-			validateAllowanceLimitsOn(accountToAdjust, dynamicProperties.maxAllowanceLimitPerAccount());
-
-			final var nfts = updateSpender(tokenStore, accountToAdjust.getId(), spender, tokenId, serialNums);
-			for (var nft : nfts) {
-				nftsTouched.put(nft.getNftId(), nft);
-			}
-			entitiesChanged.put(accountToAdjust.getId().num(), accountToAdjust);
 		}
 	}
 

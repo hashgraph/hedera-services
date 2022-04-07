@@ -398,7 +398,7 @@ public class DomainSerdesTest {
 				.setMemo("Alpha bravo charlie")
 				.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(9_999_999_999L)))
 				.setFee(555L)
-				.setTransferList(
+				.setHbarAdjustments(
 						CurrencyAdjustments.fromChanges(new long[] { -4L, 2L, 2L }, new long[] { 2L, 1001L, 1002L }))
 				.setContractCallResult(SerdeUtils.fromGrpc(ContractFunctionResult.newBuilder()
 						.setContractID(asContract("1.2.3"))
@@ -419,7 +419,7 @@ public class DomainSerdesTest {
 				.setMemo("Alpha bravo charlie")
 				.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(7_777_777_777L)))
 				.setFee(556L)
-				.setTransferList(
+				.setHbarAdjustments(
 						CurrencyAdjustments.fromChanges(new long[] { -6L, 3L, 3L }, new long[] { 2L, 1001L, 1002L }))
 				.setContractCallResult(SerdeUtils.fromGrpc(ContractFunctionResult.newBuilder()
 						.setContractID(asContract("4.3.2"))
