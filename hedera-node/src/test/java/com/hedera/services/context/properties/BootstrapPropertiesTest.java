@@ -108,6 +108,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.redirectTokenCalls", true),
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),
 			entry("contracts.precompile.exportRecordResults", true),
+			entry("contracts.precompile.htsEnableTokenCreate", true),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),

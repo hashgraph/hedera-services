@@ -71,7 +71,7 @@ public class ExpirableTxnRecordTestHelper {
 				.setConsensusTime(RichInstant.fromGrpc(record.getConsensusTimestamp()))
 				.setMemo(record.getMemo())
 				.setFee(record.getTransactionFee())
-				.setTransferList(
+				.setHbarAdjustments(
 						record.hasTransferList() ? CurrencyAdjustments.fromGrpc(
 								record.getTransferList().getAccountAmountsList()) : null)
 				.setContractCallResult(record.hasContractCallResult() ? SerdeUtils.fromGrpc(

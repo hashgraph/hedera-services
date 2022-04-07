@@ -278,7 +278,7 @@ class ExpiringCreationsTest {
 		assertSame(hash, created.getTxnHash());
 		assertEquals(memo, created.getMemo());
 		assertEquals(receiptBuilder.build(), created.getReceipt());
-		assertEquals(timestamp, created.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, created.getConsensusTime().toJava());
 		assertEquals(scheduleRef, created.getScheduleRef().toGrpcScheduleId());
 		assertNull(created.getTokens());
 		assertNull(created.getTokenAdjustments());
@@ -317,7 +317,7 @@ class ExpiringCreationsTest {
 		assertEquals(totalFee, created.getFee());
 		assertSame(hash, created.getTxnHash());
 		assertEquals(memo, created.getMemo());
-		assertEquals(timestamp, created.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, created.getConsensusTime().toJava());
 		assertNull(created.getScheduleRef());
 	}
 
@@ -338,7 +338,7 @@ class ExpiringCreationsTest {
 		assertEquals(receipt.build(), actualRecord.getReceipt());
 		assertEquals(memo, actualRecord.getMemo());
 		assertArrayEquals(hash, actualRecord.getTxnHash());
-		assertEquals(timestamp, actualRecord.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, actualRecord.getConsensusTime().toJava());
 		assertEquals(scheduleRef, actualRecord.getScheduleRef().toGrpcScheduleId());
 	}
 
