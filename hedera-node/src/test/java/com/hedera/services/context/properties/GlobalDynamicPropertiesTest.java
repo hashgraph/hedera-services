@@ -84,6 +84,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isRedirectTokenCallsEnabled());
 		assertFalse(subject.areAllowancesEnabled());
 		assertFalse(subject.areTokenAssociationsLimited());
+		assertTrue(subject.isHTSPrecompileCreateEnabled());
 	}
 
 	@Test
@@ -207,6 +208,7 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.isRedirectTokenCallsEnabled());
 		assertTrue(subject.areAllowancesEnabled());
 		assertTrue(subject.areTokenAssociationsLimited());
+		assertFalse(subject.isHTSPrecompileCreateEnabled());
 	}
 
 	@Test
@@ -367,6 +369,8 @@ class GlobalDynamicPropertiesTest {
 				.willReturn((i + 59) % 2 == 0);
 		given(properties.getBooleanProperty("hedera.allowances.isEnabled")).willReturn((i + 60) % 2 == 0);
 		given(properties.getBooleanProperty("accounts.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
+				.willReturn((i + 61) % 2 == 0);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

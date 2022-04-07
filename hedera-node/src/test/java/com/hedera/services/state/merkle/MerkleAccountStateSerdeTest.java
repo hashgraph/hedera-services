@@ -40,14 +40,6 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 	}
 
 	@Override
-	protected void registerConstructables() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcTokenAllowanceId.class, FcTokenAllowanceId::new));
-	}
-
-	@Override
 	protected int getNumTestCasesFor(int version) {
 		return version == RELEASE_0230_VERSION ? num0240Forms : hexedForms.length - num0240Forms;
 	}

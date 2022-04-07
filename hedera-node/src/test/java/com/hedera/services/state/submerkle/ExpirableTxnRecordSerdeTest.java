@@ -40,30 +40,6 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 	}
 
 	@Override
-	protected void registerConstructables() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(TxnId.class, TxnId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(TxnReceipt.class, TxnReceipt::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcTokenAssociation.class, FcTokenAssociation::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcAssessedCustomFee.class, FcAssessedCustomFee::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(NftAdjustments.class, NftAdjustments::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(CurrencyAdjustments.class, CurrencyAdjustments::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EvmFnResult.class, EvmFnResult::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcTokenAllowance.class, FcTokenAllowance::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcTokenAllowanceId.class, FcTokenAllowanceId::new));
-	}
-
-	@Override
 	protected int getNumTestCasesFor(int version) {
 		return version == RELEASE_0230_VERSION ? num0240Forms : hexedForms.length - num0240Forms;
 	}

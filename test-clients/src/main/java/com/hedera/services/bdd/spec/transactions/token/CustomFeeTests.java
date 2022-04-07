@@ -30,6 +30,10 @@ import java.util.function.BiConsumer;
 
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.builtFixedHts;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.builtFractional;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.builtRoyaltyNoFallback;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.builtRoyaltyWithFallback;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
 
 public class CustomFeeTests {
 	public static BiConsumer<HapiApiSpec, List<CustomFee>> fixedHbarFeeInSchedule(
@@ -65,6 +69,45 @@ public class CustomFeeTests {
 			final var expected = builtFractional(
 					numerator, denominator, min, max, netOfTransfers, collector, spec);
 			failUnlessPresent("fractional", actual, expected);
+		};
+	}
+
+	public static BiConsumer<HapiApiSpec, List<CustomFee>> royaltyFeeWithoutFallbackInSchedule(
+			long numerator,
+			long denominator,
+			String collector
+	) {
+		return (spec, actual) -> {
+			final var expected = builtRoyaltyNoFallback(
+					numerator, denominator, collector, spec);
+			failUnlessPresent("royalty", actual, expected);
+		};
+	}
+
+	public static BiConsumer<HapiApiSpec, List<CustomFee>> royaltyFeeWithFallbackInHbarsInSchedule(
+			long numerator,
+			long denominator,
+			long fallbackAmount,
+			String collector
+	) {
+		return (spec, actual) -> {
+			final var expected = builtRoyaltyWithFallback(
+					numerator, denominator, collector, fixedHbarFeeInheritingRoyaltyCollector(fallbackAmount), spec);
+			failUnlessPresent("royalty", actual, expected);
+		};
+	}
+
+	public static BiConsumer<HapiApiSpec, List<CustomFee>> royaltyFeeWithFallbackInTokenInSchedule(
+			long numerator,
+			long denominator,
+			long fallbackAmount,
+			String fallbackDenom,
+			String collector
+	) {
+		return (spec, actual) -> {
+			final var expected = builtRoyaltyWithFallback(
+					numerator, denominator, collector, fixedHtsFeeInheritingRoyaltyCollector(fallbackAmount, fallbackDenom), spec);
+			failUnlessPresent("royalty", actual, expected);
 		};
 	}
 
