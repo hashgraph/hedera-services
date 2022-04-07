@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<MerkleNetworkContext> {
-	public static final int NUM_TEST_CASES = 3 * SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
+	public static final int NUM_TEST_CASES = 3 * MIN_TEST_CASES_PER_VERSION;
 
 	@Override
 	protected Class<MerkleNetworkContext> getType() {
@@ -42,7 +42,7 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
 
 	@Override
 	protected int getNumTestCasesFor(final int version) {
-		return NUM_TEST_CASES;
+		return version == MerkleNetworkContext.RELEASE_0200_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
 	}
 
 	@Override
@@ -52,7 +52,11 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
 
 	@Override
 	protected MerkleNetworkContext getExpectedObject(final int version, final int testCaseNo) {
-		return SeededPropertySource.forSerdeTest(version, testCaseNo).nextNetworkContext();
+		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextNetworkContext();
+		if (version == MerkleNetworkContext.RELEASE_0200_VERSION) {
+			seeded.setMigrationRecordsStreamed(false);
+		}
+		return seeded;
 	}
 
 	@Override

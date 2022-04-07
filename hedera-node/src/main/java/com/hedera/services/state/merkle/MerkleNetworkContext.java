@@ -62,6 +62,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public static final DeterministicThrottle.UsageSnapshot NO_GAS_THROTTLE_SNAPSHOT =
 			new DeterministicThrottle.UsageSnapshot(-1, Instant.EPOCH);
 
+	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
 	static final int CURRENT_VERSION = RELEASE_0240_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
@@ -248,8 +249,9 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		final var lastGasUsage = staticReadNullable(in, RichInstant::from);
 		gasThrottleUsageSnapshot = new DeterministicThrottle.UsageSnapshot(
 				gasUsed, (lastGasUsage == null) ? null : lastGasUsage.toJava());
-		// Added in 0.24
-		migrationRecordsStreamed = in.readBoolean();
+		if (version >= RELEASE_0240_VERSION) {
+			migrationRecordsStreamed = in.readBoolean();
+		}
 	}
 
 	private void readCongestionControlData(final SerializableDataInputStream in) throws IOException {
@@ -325,7 +327,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	@Override
 	public int getMinimumSupportedVersion() {
-		return CURRENT_VERSION;
+		return RELEASE_0200_VERSION;
 	}
 
 	@Override
