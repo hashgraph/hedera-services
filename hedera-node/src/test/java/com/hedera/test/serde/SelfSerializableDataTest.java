@@ -20,6 +20,7 @@ package com.hedera.test.serde;
  * ‍
  */
 
+import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.ClassLoaderHelper;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
@@ -38,8 +39,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
+import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
 import static com.hedera.test.utils.SerdeUtils.deserializeFromBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -65,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * 		the SelfSerializable type being tested
  */
 public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
-	private static final int MIN_TEST_CASES_PER_VERSION = 5;
+	public static final int MIN_TEST_CASES_PER_VERSION = 5;
 
 	/**
 	 * A hook for the test class to register any {@link com.swirlds.common.constructable.RuntimeConstructable}
@@ -75,6 +79,15 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	 */
 	protected void registerConstructables() {
 		// No-op. By default, all classes in the classpath will be registered.
+	}
+
+	/**
+	 * If non-empty, the test for use for equality assertions instead of JUnit5.
+	 *
+	 * @return the equals override, if any
+	 */
+	protected Optional<BiConsumer<T, T>> customAssertEquals() {
+		return Optional.empty();
 	}
 
 	/**
@@ -93,7 +106,9 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	 * @throws IllegalStateException
 	 * 		if too few test cases are available
 	 */
-	protected abstract int getNumTestCasesFor(int version);
+	protected int getNumTestCasesFor(int version) {
+		return MIN_TEST_CASES_PER_VERSION;
+	}
 
 	/**
 	 * Returns the serialized form created with a given version for a given test case.
@@ -102,7 +117,9 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	 * @param testCaseNo the zero-indexed number of test case for this version
 	 * @return the serialized form
 	 */
-	protected abstract byte[] getSerializedForm(final int version, final int testCaseNo);
+	protected byte[] getSerializedForm(final int version, final int testCaseNo) {
+		return SerializedForms.loadForm(getType(), version, testCaseNo);
+	}
 
 	/**
 	 * Returns the expected object created with a given version for a given test case.
@@ -111,7 +128,17 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	 * @param testCaseNo the zero-indexed number of test case for this version
 	 * @return the expected object
 	 */
-	protected abstract T getExpectedObject(final int version, final int testCaseNo);
+	protected T getExpectedObject(final int version, final int testCaseNo) {
+		return getExpectedObject(SeededPropertySource.forSerdeTest(version, testCaseNo));
+	}
+
+	/**
+	 * Returns the expected object created with a given seeded property source.
+	 *
+	 * @param propertySource the property source to use
+	 * @return the expected object
+	 */
+	protected abstract T getExpectedObject(final SeededPropertySource propertySource);
 
 	@BeforeEach
 	void setUp() {
@@ -125,13 +152,21 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 
 	@ParameterizedTest
 	@ArgumentsSource(SupportedVersionsArgumentsProvider.class)
-	void serdeWorksForAllTestCases(final int version, final int testCaseNo) {
+	void deserializationWorksForAllSupportedVersions(final int version, final int testCaseNo) {
 		final var serializedForm = getSerializedForm(version, testCaseNo);
 		final var expectedObject = getExpectedObject(version, testCaseNo);
 
 		final T actualObject = deserializeFromBytes(() -> instantiate(getType()), version, serializedForm);
 
-		assertEquals(expectedObject, actualObject);
+		customAssertEquals().ifPresentOrElse(
+				customAssert -> customAssert.accept(expectedObject, actualObject),
+				() -> assertEquals(expectedObject, actualObject));
+	}
+
+	@ParameterizedTest
+	@ArgumentsSource(CurrentVersionArgumentsProvider.class)
+	void serializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {
+		assertSameSerialization(getType(), this::getExpectedObject, version, testCaseNo);
 	}
 
 	static class SupportedVersionsArgumentsProvider implements ArgumentsProvider {
@@ -139,16 +174,41 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 		public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
 			final var testType = context.getRequiredTestClass();
 			final var ref = (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
-			return testCasesFrom(ref).stream();
+			return allTestCasesFrom(ref).stream();
 		}
 	}
 
-	private static <T extends SelfSerializable> List<Arguments> testCasesFrom(final SelfSerializableDataTest<T> ref) {
-		final var refType = instantiate(ref.getType());
+	static class CurrentVersionArgumentsProvider implements ArgumentsProvider {
+		@Override
+		public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
+			final var testType = context.getRequiredTestClass();
+			final var ref = (SelfSerializableDataTest<? extends SelfSerializable>) instantiate(testType);
+			return currentTestCasesFrom(ref).stream();
+		}
+	}
+
+	private static <T extends SelfSerializable> List<Arguments> allTestCasesFrom(
+			final SelfSerializableDataTest<T> refTest
+	) {
+		return testCasesFrom(refTest, false);
+	}
+
+	private static <T extends SelfSerializable> List<Arguments> currentTestCasesFrom(
+			final SelfSerializableDataTest<T> refTest
+	) {
+		return testCasesFrom(refTest, true);
+	}
+
+	private static <T extends SelfSerializable> List<Arguments> testCasesFrom(
+			final SelfSerializableDataTest<T> refTest,
+			final boolean onlyCurrent
+	) {
+		final var ref = instantiate(refTest.getType());
 		final List<Arguments> argumentsList = new ArrayList<>();
-		final var minVersion = refType.getMinimumSupportedVersion();
-		for (int i = minVersion, n = refType.getVersion(); i <= n; i++) {
-			final var testCasesForVersion = ref.getNumTestCasesFor(i);
+		final var version = ref.getVersion();
+		final var minVersion = onlyCurrent ? version : ref.getMinimumSupportedVersion();
+		for (int i = minVersion; i <= version; i++) {
+			final var testCasesForVersion = refTest.getNumTestCasesFor(i);
 			if (testCasesForVersion < MIN_TEST_CASES_PER_VERSION) {
 				throw new IllegalStateException("Only " + testCasesForVersion
 						+ " registered test cases for supported version " + i
@@ -161,7 +221,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 		return argumentsList;
 	}
 
-	private static <R> R instantiate(final Class<R> type) {
+	static <R> R instantiate(final Class<R> type) {
 		try {
 			final var cons = noArgConstructorFor(type);
 			return cons.newInstance();

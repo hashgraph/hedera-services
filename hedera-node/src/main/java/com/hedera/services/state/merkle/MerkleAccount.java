@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -61,8 +60,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
 
-	static DomainSerdes serdes = new DomainSerdes();
-
 	@Override
 	public EntityNum getKey() {
 		return new EntityNum(state().number());
@@ -73,7 +70,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setNumber(phi.intValue());
 	}
 
-	/* Order of Merkle node children */
+	// Order of Merkle node children
 	public static final class ChildIndices {
 		private static final int STATE = 0;
 		private static final int RELEASE_090_RECORDS = 1;
@@ -116,7 +113,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return ChildIndices.NUM_0240_CHILDREN;
 	}
 
-	/* --- FastCopyable --- */
+	// --- FastCopyable ---
 	@Override
 	public MerkleAccount copy() {
 		if (isImmutable()) {
@@ -136,7 +133,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 				new MerkleAccount(List.of(state().copy(), records().copy()), this);
 	}
 
-	/* ---- Object ---- */
+	// ---- Object ----
 	@Override
 	public boolean equals(final Object o) {
 		if (o == this) {
@@ -184,8 +181,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		addDeserializedChildren(List.of(state(), records()), RELEASE_0240_VERSION);
 	}
 
-	/* ----  Bean  ---- */
-
+	// ----  Bean  ----
 	public long getNftsOwned() {
 		return state().nftsOwned();
 	}

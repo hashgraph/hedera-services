@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
+import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -57,7 +58,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
-import static com.swirlds.common.CommonUtils.hex;
 
 public class SerdeUtils {
 	public static byte[] serOutcome(ThrowingConsumer<DataOutputStream> serializer) throws Exception {
@@ -150,6 +150,10 @@ public class SerdeUtils {
 	}
 
 	public static <T extends SelfSerializable> String serializeToHex(final T source) {
+		return CommonUtils.hex(serialize(source));
+	}
+
+	public static <T extends SelfSerializable> byte[] serialize(final T source) {
 		final var baos = new ByteArrayOutputStream();
 		final var out = new SerializableDataOutputStream(baos);
 		try {
@@ -158,7 +162,7 @@ public class SerdeUtils {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-		return hex(baos.toByteArray());
+		return baos.toByteArray();
 	}
 
 	@FunctionalInterface
