@@ -100,34 +100,14 @@ public class CryptoOpsUsage {
 		var op = cryptoInfoReq.getCryptoGetInfo();
 
 		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
-		estimate.addTb(BASIC_ENTITY_ID_SIZE);
-		long extraRb = 0;
-		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
-		extraRb += getAccountKeyStorageSize(ctx.currentKey());
-		if (ctx.currentlyHasProxy()) {
-			extraRb += BASIC_ENTITY_ID_SIZE;
-		}
-		extraRb += ctx.currentNumTokenRels() * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship();
-		estimate.addRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
-
-		return estimate.get();
+		return getUsage(estimate, ctx);
 	}
 
 	public FeeData accountDetailsUsage(Query accountDetailsReq, ExtantCryptoContext ctx) {
 		var op = accountDetailsReq.getAccountDetails();
 
 		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
-		estimate.addTb(BASIC_ENTITY_ID_SIZE);
-		long extraRb = 0;
-		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
-		extraRb += getAccountKeyStorageSize(ctx.currentKey());
-		if (ctx.currentlyHasProxy()) {
-			extraRb += BASIC_ENTITY_ID_SIZE;
-		}
-		extraRb += ctx.currentNumTokenRels() * TOKEN_ENTITY_SIZES.bytesUsedPerAccountRelationship();
-		estimate.addRb(CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + extraRb);
-
-		return estimate.get();
+		return getUsage(estimate, ctx);
 	}
 
 	private FeeData getUsage(QueryUsage estimate, ExtantCryptoContext ctx) {
