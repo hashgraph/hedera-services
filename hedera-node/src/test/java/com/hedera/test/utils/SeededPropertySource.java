@@ -30,9 +30,12 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.state.enums.TokenSupplyType;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -40,8 +43,10 @@ import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -81,6 +86,86 @@ public class SeededPropertySource {
 
 	public static SeededPropertySource forSerdeTest(final int version, final int testCaseNo) {
 		return new SeededPropertySource(new SplittableRandom(version * BASE_SEED + testCaseNo));
+	}
+
+	public MerkleToken nextToken() {
+		final var initialSupply = SEEDED_RANDOM.nextLong(100_000_000);
+		final var seeded = new MerkleToken(
+				nextUnsignedLong(),
+				initialSupply,
+				nextUnsignedInt(),
+				nextString(24),
+				nextString(48),
+				nextBoolean(),
+				nextBoolean(),
+				nextEntityId(),
+				nextInt());
+		seeded.setMemo(nextString(36));
+		seeded.setDeleted(nextBoolean());
+		seeded.setFeeSchedule(nextCustomFeeSchedule());
+		seeded.setAutoRenewPeriod(nextUnsignedLong());
+		seeded.setTokenType(nextTokenType());
+		seeded.setSupplyType(nextTokenSupplyType());
+		seeded.setLastUsedSerialNumber(nextUnsignedLong());
+		seeded.setMaxSupply(initialSupply + SEEDED_RANDOM.nextLong(100_000_000));
+		seeded.setPaused(nextBoolean());
+		seeded.setAdminKey(nextNullableKey());
+		seeded.setFreezeKey(nextNullableKey());
+		seeded.setKycKey(nextNullableKey());
+		seeded.setWipeKey(nextNullableKey());
+		seeded.setSupplyKey(nextNullableKey());
+		seeded.setFeeScheduleKey(nextNullableKey());
+		seeded.setPauseKey(nextNullableKey());
+		seeded.setKey(nextNum());
+		return seeded;
+	}
+
+	public List<FcCustomFee> nextCustomFeeSchedule() {
+		return IntStream.range(0, SEEDED_RANDOM.nextInt(10))
+				.mapToObj(i -> nextCustomFee())
+				.toList();
+	}
+
+	public FcCustomFee nextCustomFee() {
+		final var type = nextFeeType();
+		return switch (type) {
+			case FIXED_FEE -> FcCustomFee.fixedFee(nextUnsignedLong(), nextEntityId(), nextEntityId());
+			case ROYALTY_FEE -> {
+				final var denom = 1 + nextNonZeroInt(100);
+				final var numer = nextNonZeroInt(denom - 1);
+				if (nextBoolean()) {
+					yield FcCustomFee.royaltyFee(numer, denom, null, nextEntityId());
+				} else {
+					yield FcCustomFee.royaltyFee(numer, denom, nextFixedFeeSpec(), nextEntityId());
+				}
+			}
+			case FRACTIONAL_FEE -> {
+				final var denom = 1 + nextNonZeroInt(100);
+				final var numer = nextNonZeroInt(denom - 1);
+				final var minUnits = nextNonZeroInt(100);
+				final var maxUnits = minUnits + nextNonZeroInt(100);
+				yield FcCustomFee.fractionalFee(numer, denom, minUnits, maxUnits, nextBoolean(), nextEntityId());
+			}
+		};
+	}
+
+	private FixedFeeSpec nextFixedFeeSpec() {
+		return new FixedFeeSpec(nextNonZeroInt(1_000_000), nextEntityId());
+	}
+
+	public FcCustomFee.FeeType nextFeeType() {
+		final var choices = FcCustomFee.FeeType.class.getEnumConstants();
+		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+	}
+
+	public TokenType nextTokenType() {
+		final var choices = TokenType.class.getEnumConstants();
+		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+	}
+
+	public TokenSupplyType nextTokenSupplyType() {
+		final var choices = TokenSupplyType.class.getEnumConstants();
+		return choices[SEEDED_RANDOM.nextInt(choices.length)];
 	}
 
 	public MerkleSchedule nextSchedule() {

@@ -23,6 +23,7 @@ package com.hedera.services.files;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.legacy.core.jproto.JObjectType;
+import com.hedera.services.state.serdes.IoUtils;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 
@@ -46,7 +47,7 @@ public class HFileMetaSerde {
 			serOut.writeBoolean(meta.isDeleted());
 			serOut.writeLong(meta.getExpiry());
 			serOut.writeNormalisedString(meta.getMemo());
-			staticWriteNullable(meta.getWacl(), serOut, (key, dout) -> dout.write(key.serialize()));
+			staticWriteNullable(meta.getWacl(), serOut, IoUtils::serializeKey);
 		});
 	}
 

@@ -20,6 +20,7 @@ package com.hedera.services.state.serdes;
  * ‍
  */
 
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.SelfSerializable;
@@ -31,6 +32,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class IoUtils {
+	public static void serializeKey(final JKey key, final DataOutputStream out) throws IOException {
+		out.write(key.serialize());
+	}
+
 	public static <T> T staticReadNullable(
 			final SerializableDataInputStream in,
 			final IoReadingFunction<T> reader

@@ -82,7 +82,7 @@ public class DomainSerdes {
 	public <T extends SelfSerializable> T readNullableSerializable(
 			final SerializableDataInputStream in
 	) throws IOException {
-		return in.readBoolean() ? in.readSerializable() : null;
+		return IoUtils.staticReadNullableSerializable(in);
 	}
 
 	@SuppressWarnings("unchecked")

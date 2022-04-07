@@ -330,11 +330,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return RELEASE_0200_VERSION;
 	}
 
-	@Override
-	public String toString() {
-		return summarized();
-	}
-
 	public String summarized() {
 		return summarizedWith(null);
 	}
