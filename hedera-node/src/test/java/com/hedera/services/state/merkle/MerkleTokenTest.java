@@ -25,31 +25,18 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.IoReadingFunction;
-import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.fees.CustomFeeBuilder;
 import com.hederahashgraph.api.proto.java.CustomFee;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.state.merkle.MerkleTopic.serdes;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
 import static java.util.stream.Collectors.toList;
@@ -59,14 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.times;
 
 class MerkleTokenTest {
 	private static final JKey adminKey = new JEd25519Key("not-a-real-admin-key".getBytes());
@@ -157,60 +136,11 @@ class MerkleTokenTest {
 		subject.setSymbol(symbol);
 		subject.setAccountsFrozenByDefault(true);
 		subject.setFeeScheduleFrom(grpcFeeSchedule);
-
-		serdes = mock(DomainSerdes.class);
-		MerkleToken.serdes = serdes;
-	}
-
-	@AfterEach
-	void cleanup() {
-		MerkleToken.serdes = new DomainSerdes();
 	}
 
 	@Test
 	void deleteIsNoop() {
 		assertDoesNotThrow(subject::release);
-	}
-
-	@Test
-	void serializeWorks() throws IOException {
-		subject.setPauseKey(pauseKey);
-		subject.setPaused(isPaused);
-		final var out = mock(SerializableDataOutputStream.class);
-		final var inOrder = inOrder(serdes, out);
-
-		subject.serialize(out);
-
-		inOrder.verify(out).writeBoolean(isDeleted);
-		inOrder.verify(out).writeLong(expiry);
-		inOrder.verify(serdes).writeNullableSerializable(autoRenewAccount, out);
-		inOrder.verify(out).writeLong(autoRenewPeriod);
-		inOrder.verify(out).writeNormalisedString(symbol);
-		inOrder.verify(out).writeNormalisedString(name);
-		inOrder.verify(out).writeSerializable(treasury, true);
-		inOrder.verify(out).writeLong(totalSupply);
-		inOrder.verify(out).writeInt(decimals);
-		inOrder.verify(out, times(2)).writeBoolean(true);
-		inOrder.verify(serdes).writeNullable(
-				argThat(adminKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(serdes).writeNullable(
-				argThat(freezeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(serdes).writeNullable(
-				argThat(kycKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(serdes).writeNullable(
-				argThat(supplyKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(serdes).writeNullable(
-				argThat(wipeKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(out).writeNormalisedString(memo);
-		inOrder.verify(out, times(2)).writeInt(0);
-		inOrder.verify(out, times(2)).writeLong(0);
-		inOrder.verify(out).writeSerializableList(feeSchedule, true, true);
-		inOrder.verify(serdes).writeNullable(
-				argThat(feeScheduleKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(out).writeInt(number);
-		inOrder.verify(serdes).writeNullable(
-				argThat(pauseKey::equals), argThat(out::equals), any(IoWritingConsumer.class));
-		inOrder.verify(out).writeBoolean(isPaused);
 	}
 
 	@Test
@@ -226,179 +156,6 @@ class MerkleTokenTest {
 	@Test
 	void getterWorks() {
 		assertEquals(feeSchedule, subject.customFeeSchedule());
-	}
-
-	@Test
-	void v0120DeserializeWorks() throws IOException {
-		final var fin = mock(SerializableDataInputStream.class);
-		subject.setFeeScheduleFrom(Collections.emptyList());
-		subject.setFeeScheduleKey(MerkleToken.UNUSED_KEY);
-		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
-		given(serdes.deserializeKey(fin)).willReturn(adminKey);
-		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
-				.willReturn(adminKey)
-				.willReturn(freezeKey)
-				.willReturn(kycKey)
-				.willReturn(supplyKey)
-				.willReturn(wipeKey);
-		given(fin.readNormalisedString(anyInt()))
-				.willReturn(symbol)
-				.willReturn(name)
-				.willReturn(memo);
-		given(fin.readLong())
-				.willReturn(subject.expiry())
-				.willReturn(subject.autoRenewPeriod())
-				.willReturn(subject.totalSupply())
-				.willReturn(subject.getLastUsedSerialNumber());
-		given(fin.readInt()).willReturn(subject.decimals())
-				.willReturn(TokenType.FUNGIBLE_COMMON.ordinal())
-				.willReturn(TokenSupplyType.INFINITE.ordinal());
-		given(fin.readBoolean())
-				.willReturn(isDeleted)
-				.willReturn(subject.accountsAreFrozenByDefault());
-		given(fin.readSerializable()).willReturn(subject.treasury());
-		final var read = new MerkleToken();
-
-		read.deserialize(fin, MerkleToken.RELEASE_0120_VERSION);
-
-		// then:
-		assertNotEquals(subject, read);
-
-		// and when:
-		read.setKey(new EntityNum(number));
-
-		// expect:
-		assertEquals(subject, read);
-	}
-
-	@Test
-	void v0160DeserializeWorks() throws IOException {
-		final var fin = mock(SerializableDataInputStream.class);
-		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
-		given(serdes.deserializeKey(fin)).willReturn(adminKey);
-		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
-				.willReturn(adminKey)
-				.willReturn(freezeKey)
-				.willReturn(kycKey)
-				.willReturn(supplyKey)
-				.willReturn(wipeKey)
-				.willReturn(feeScheduleKey);
-		given(fin.readNormalisedString(anyInt()))
-				.willReturn(symbol)
-				.willReturn(name)
-				.willReturn(memo);
-		given(fin.readLong())
-				.willReturn(subject.expiry())
-				.willReturn(subject.autoRenewPeriod())
-				.willReturn(subject.totalSupply())
-				.willReturn(subject.maxSupply())
-				.willReturn(subject.getLastUsedSerialNumber());
-		given(fin.readInt())
-				.willReturn(subject.decimals())
-				.willReturn(subject.tokenType().ordinal())
-				.willReturn(subject.supplyType().ordinal());
-		given(fin.readBoolean())
-				.willReturn(isDeleted)
-				.willReturn(subject.accountsAreFrozenByDefault());
-		given(fin.readSerializable()).willReturn(subject.treasury());
-		given(fin.<FcCustomFee>readSerializableList(eq(Integer.MAX_VALUE), eq(true), any()))
-				.willReturn(feeSchedule);
-		final var read = new MerkleToken();
-
-		read.deserialize(fin, MerkleToken.RELEASE_0160_VERSION);
-
-		// and when:
-		read.setKey(new EntityNum(number));
-
-		// expect:
-		assertEquals(subject, read);
-	}
-
-	@Test
-	void v0180DeserializeWorks() throws IOException {
-		final var fin = mock(SerializableDataInputStream.class);
-		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
-		given(serdes.deserializeKey(fin)).willReturn(adminKey);
-		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
-				.willReturn(adminKey)
-				.willReturn(freezeKey)
-				.willReturn(kycKey)
-				.willReturn(supplyKey)
-				.willReturn(wipeKey)
-				.willReturn(feeScheduleKey);
-		given(fin.readNormalisedString(anyInt()))
-				.willReturn(symbol)
-				.willReturn(name)
-				.willReturn(memo);
-		given(fin.readLong())
-				.willReturn(subject.expiry())
-				.willReturn(subject.autoRenewPeriod())
-				.willReturn(subject.totalSupply())
-				.willReturn(subject.maxSupply())
-				.willReturn(subject.getLastUsedSerialNumber());
-		given(fin.readInt())
-				.willReturn(subject.decimals())
-				.willReturn(subject.tokenType().ordinal())
-				.willReturn(subject.supplyType().ordinal())
-				.willReturn(subject.getKey().intValue());
-		given(fin.readBoolean())
-				.willReturn(isDeleted)
-				.willReturn(subject.accountsAreFrozenByDefault());
-		given(fin.readSerializable()).willReturn(subject.treasury());
-		given(fin.<FcCustomFee>readSerializableList(eq(Integer.MAX_VALUE), eq(true), any()))
-				.willReturn(feeSchedule);
-		final var read = new MerkleToken();
-
-		read.deserialize(fin, MerkleToken.RELEASE_0180_VERSION);
-
-		// expect:
-		assertEquals(subject, read);
-	}
-
-	@Test
-	void v0190DeserializeWorks() throws IOException {
-		subject.setPauseKey(pauseKey);
-		subject.setPaused(isPaused);
-		final var fin = mock(SerializableDataInputStream.class);
-		given(serdes.readNullableSerializable(any())).willReturn(autoRenewAccount);
-		given(serdes.deserializeKey(fin)).willReturn(adminKey);
-		given(serdes.readNullable(argThat(fin::equals), any(IoReadingFunction.class)))
-				.willReturn(adminKey)
-				.willReturn(freezeKey)
-				.willReturn(kycKey)
-				.willReturn(supplyKey)
-				.willReturn(wipeKey)
-				.willReturn(feeScheduleKey)
-				.willReturn(pauseKey);
-		given(fin.readNormalisedString(anyInt()))
-				.willReturn(symbol)
-				.willReturn(name)
-				.willReturn(memo);
-		given(fin.readLong())
-				.willReturn(subject.expiry())
-				.willReturn(subject.autoRenewPeriod())
-				.willReturn(subject.totalSupply())
-				.willReturn(subject.maxSupply())
-				.willReturn(subject.getLastUsedSerialNumber());
-		given(fin.readInt())
-				.willReturn(subject.decimals())
-				.willReturn(subject.tokenType().ordinal())
-				.willReturn(subject.supplyType().ordinal())
-				.willReturn(subject.getKey().intValue());
-		given(fin.readBoolean())
-				.willReturn(isDeleted)
-				.willReturn(subject.accountsAreFrozenByDefault())
-				.willReturn(subject.accountsKycGrantedByDefault())
-				.willReturn(isPaused);
-		given(fin.readSerializable()).willReturn(subject.treasury());
-		given(fin.<FcCustomFee>readSerializableList(eq(Integer.MAX_VALUE), eq(true), any()))
-				.willReturn(feeSchedule);
-		final var read = new MerkleToken();
-
-		read.deserialize(fin, MerkleToken.CURRENT_VERSION);
-
-		// expect:
-		assertEquals(subject, read);
 	}
 
 	@Test
@@ -776,28 +533,6 @@ class MerkleTokenTest {
 	@Test
 	void throwsIaeIfTotalSupplyGoesNegative() {
 		assertThrows(IllegalArgumentException.class, () -> subject.adjustTotalSupplyBy(-1_500_000L));
-	}
-
-	@Test
-	void liveFireSerdeWorks() throws IOException, ConstructableRegistryException {
-		final var baos = new ByteArrayOutputStream();
-		final var dos = new SerializableDataOutputStream(baos);
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcCustomFee.class, FcCustomFee::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
-		MerkleToken.serdes = new DomainSerdes();
-
-		subject.serialize(dos);
-		dos.flush();
-		final var bytes = baos.toByteArray();
-		final var bais = new ByteArrayInputStream(bytes);
-		final var din = new SerializableDataInputStream(bais);
-
-		final var newSubject = new MerkleToken();
-		newSubject.deserialize(din, MerkleToken.CURRENT_VERSION);
-
-		assertEquals(subject, newSubject);
 	}
 
 	@Test
