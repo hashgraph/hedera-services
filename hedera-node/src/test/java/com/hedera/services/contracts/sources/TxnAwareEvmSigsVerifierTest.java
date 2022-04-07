@@ -226,6 +226,35 @@ class TxnAwareEvmSigsVerifierTest {
 
 		assertFalse(verdict);
 	}
+
+	@Test
+	void testsCryptoKeyIfPresent() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+		final var verdict = subject.cryptoKeyIsActive(expectedKey);
+
+		assertTrue(verdict);
+	}
+
+	@Test
+	void testsCryptoKeyIfPresentButInvalid() {
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
+
+		final var verdict = subject.cryptoKeyIsActive(expectedKey);
+
+		assertFalse(verdict);
+	}
+
+	@Test
+	void testsNullCryptoKey() {
+		final var verdict = subject.cryptoKeyIsActive(null);
+
+		assertFalse(verdict);
+	}
 	
 	@Test
 	void filtersContracts() {

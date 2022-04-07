@@ -35,16 +35,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.BALANCE;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.BURN;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.DECIMALS;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.ERC_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.MINT;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.NAME;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.OWNER;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.SYMBOL;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.TOKEN_URI;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.FunctionType.TOTAL_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -54,6 +44,7 @@ public class EncodingFacade {
 	private static final String STRING_RETURN_TYPE = "(string)";
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
+	private static final TupleType createReturnType = TupleType.parse("(int32,address)");
 	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
 	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
 	private static final TupleType decimalsType = TupleType.parse("(uint8)");
@@ -123,7 +114,7 @@ public class EncodingFacade {
 
 	public Bytes encodeMintSuccess(final long totalSupply, final long[] serialNumbers) {
 		return functionResultBuilder()
-				.forFunction(MINT)
+				.forFunction(FunctionType.MINT)
 				.withStatus(SUCCESS.getNumber())
 				.withTotalSupply(totalSupply)
 				.withSerialNumbers(serialNumbers != null ? serialNumbers : NO_MINTED_SERIAL_NUMBERS)
@@ -132,7 +123,7 @@ public class EncodingFacade {
 
 	public Bytes encodeMintFailure(final ResponseCodeEnum status) {
 		return functionResultBuilder()
-				.forFunction(MINT)
+				.forFunction(FunctionType.MINT)
 				.withStatus(status.getNumber())
 				.withTotalSupply(0L)
 				.withSerialNumbers(NO_MINTED_SERIAL_NUMBERS)
@@ -162,8 +153,24 @@ public class EncodingFacade {
 				.build();
 	}
 
+	public Bytes encodeCreateSuccess(final Address newTokenAddress) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.CREATE)
+				.withStatus(SUCCESS.getNumber())
+				.withNewTokenAddress(newTokenAddress)
+				.build();
+	}
+
+	public Bytes encodeCreateFailure(final ResponseCodeEnum status) {
+		return functionResultBuilder()
+				.forFunction(FunctionType.CREATE)
+				.withStatus(status.getNumber())
+				.withNewTokenAddress(Address.ZERO)
+				.build();
+	}
+
 	protected enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
+		CREATE, MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER
 	}
 
 	private FunctionResultBuilder functionResultBuilder() {
@@ -174,6 +181,7 @@ public class EncodingFacade {
 		private FunctionType functionType;
 		private TupleType tupleType;
 		private int status;
+		private Address newTokenAddress;
 		private boolean ercFungibleTransferStatus;
 		private long totalSupply;
 		private long balance;
@@ -185,27 +193,19 @@ public class EncodingFacade {
 		private String metadata;
 
 		private FunctionResultBuilder forFunction(final FunctionType functionType) {
-			if (functionType == FunctionType.MINT) {
-				tupleType = mintReturnType;
-			} else if (functionType == FunctionType.BURN) {
-				tupleType = burnReturnType;
-			} else if (functionType == FunctionType.TOTAL_SUPPLY) {
-				tupleType = totalSupplyType;
-			} else if (functionType == FunctionType.DECIMALS) {
-				tupleType = decimalsType;
-			} else if (functionType == FunctionType.BALANCE) {
-				tupleType = balanceOfType;
-			} else if (functionType == FunctionType.OWNER) {
-				tupleType = ownerOfType;
-			} else if (functionType == FunctionType.NAME) {
-				tupleType = nameType;
-			} else if (functionType == FunctionType.SYMBOL) {
-				tupleType = symbolType;
-			} else if (functionType == FunctionType.TOKEN_URI) {
-				tupleType = tokenUriType;
-			} else if (functionType == FunctionType.ERC_TRANSFER) {
-				tupleType = ercTransferType;
-			}
+			this.tupleType = switch (functionType) {
+				case CREATE -> createReturnType;
+				case MINT -> mintReturnType;
+				case BURN ->  burnReturnType;
+				case TOTAL_SUPPLY ->  totalSupplyType;
+				case DECIMALS ->  decimalsType;
+				case BALANCE ->  balanceOfType;
+				case OWNER ->  ownerOfType;
+				case NAME ->  nameType;
+				case SYMBOL ->  symbolType;
+				case TOKEN_URI ->  tokenUriType;
+				case ERC_TRANSFER ->  ercTransferType;
+			};
 
 			this.functionType = functionType;
 			return this;
@@ -213,6 +213,11 @@ public class EncodingFacade {
 
 		private FunctionResultBuilder withStatus(final int status) {
 			this.status = status;
+			return this;
+		}
+
+		private FunctionResultBuilder withNewTokenAddress(final Address newTokenAddress) {
+			this.newTokenAddress = newTokenAddress;
 			return this;
 		}
 
@@ -262,29 +267,19 @@ public class EncodingFacade {
 		}
 
 		private Bytes build() {
-			Tuple result = Tuple.of(status);
-
-			if (MINT.equals(functionType)) {
-				result = Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
-			} else if (BURN.equals(functionType)) {
-				result = Tuple.of(status, BigInteger.valueOf(totalSupply));
-			} else if (TOTAL_SUPPLY.equals(functionType)) {
-				result = Tuple.of(BigInteger.valueOf(totalSupply));
-			} else if (DECIMALS.equals(functionType)) {
-				result = Tuple.of(decimals);
-			} else if (BALANCE.equals(functionType)) {
-				result = Tuple.of(BigInteger.valueOf(balance));
-			} else if (OWNER.equals(functionType)) {
-				result = Tuple.of(convertBesuAddressToHeadlongAddress(owner));
-			} else if (NAME.equals(functionType)) {
-				result = Tuple.of(name);
-			} else if (SYMBOL.equals(functionType)) {
-				result = Tuple.of(symbol);
-			} else if (TOKEN_URI.equals(functionType)) {
-				result = Tuple.of(metadata);
-			} else if (ERC_TRANSFER.equals(functionType)) {
-				result = Tuple.of(ercFungibleTransferStatus);
-			}
+			final var result = switch (functionType) {
+				case CREATE -> Tuple.of(status, convertBesuAddressToHeadlongAddress(newTokenAddress));
+				case MINT -> Tuple.of(status, BigInteger.valueOf(totalSupply), serialNumbers);
+				case BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply));
+				case TOTAL_SUPPLY -> Tuple.of(BigInteger.valueOf(totalSupply));
+				case DECIMALS -> Tuple.of(decimals);
+				case BALANCE -> Tuple.of(BigInteger.valueOf(balance));
+				case OWNER -> Tuple.of(convertBesuAddressToHeadlongAddress(owner));
+				case NAME -> Tuple.of(name);
+				case SYMBOL -> Tuple.of(symbol);
+				case TOKEN_URI -> Tuple.of(metadata);
+				case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
+			};
 
 			return Bytes.wrap(tupleType.encode(result).array());
 		}
