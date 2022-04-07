@@ -84,7 +84,11 @@ public class QueryVerbs {
 	}
 
 	public static HapiGetAccountDetails getAccountDetails(final String account) {
-		return new HapiGetAccountDetails(account);
+		return new HapiGetAccountDetails(account).nodePayment(1234L);
+	}
+
+	public static HapiGetAccountDetails getAccountDetailsNoPayment(final String account) {
+		return new HapiGetAccountDetails(account).nodePayment(1234L);
 	}
 
 	public static HapiGetTxnRecord getTxnRecord(final String txn) {

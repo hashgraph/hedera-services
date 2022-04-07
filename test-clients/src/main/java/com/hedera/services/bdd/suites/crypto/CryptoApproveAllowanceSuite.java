@@ -57,7 +57,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
@@ -89,29 +88,29 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				canHaveMultipleOwners(),
-//				noOwnerDefaultsToPayer(),
-//				invalidSpenderFails(),
-//				invalidOwnerFails(),
+				canHaveMultipleOwners(),
+				noOwnerDefaultsToPayer(),
+				invalidSpenderFails(),
+				invalidOwnerFails(),
 				happyPathWorks(),
-//				emptyAllowancesRejected(),
-//				spenderSameAsOwnerFails(),
-//				spenderAccountRepeatedFails(),
-//				negativeAmountFailsForFungible(),
-//				tokenNotAssociatedToAccountFails(),
-//				invalidTokenTypeFails(),
-//				validatesSerialNums(),
-//				tokenExceedsMaxSupplyFails(),
-//				exceedsTransactionLimit(),
-//				exceedsAccountLimit(),
-//				succeedsWhenTokenPausedFrozenKycRevoked(),
-//				serialsInAscendingOrder(),
-//				feesAsExpected(),
-//				cannotHaveMultipleAllowedSpendersForTheSameNFTSerial(),
-//				canGrantNftAllowancesWithTreasuryOwner(),
-//				canGrantFungibleAllowancesWithTreasuryOwner(),
-//				approveForAllSpenderCanDelegateOnNFT(),
-//				duplicateEntriesGetsReplaced()
+				emptyAllowancesRejected(),
+				spenderSameAsOwnerFails(),
+				spenderAccountRepeatedFails(),
+				negativeAmountFailsForFungible(),
+				tokenNotAssociatedToAccountFails(),
+				invalidTokenTypeFails(),
+				validatesSerialNums(),
+				tokenExceedsMaxSupplyFails(),
+				exceedsTransactionLimit(),
+				exceedsAccountLimit(),
+				succeedsWhenTokenPausedFrozenKycRevoked(),
+				serialsInAscendingOrder(),
+//				feesAsExpected(), --> will be uncommented after fee schedule is fixed in base branch
+				cannotHaveMultipleAllowedSpendersForTheSameNFTSerial(),
+				canGrantNftAllowancesWithTreasuryOwner(),
+				canGrantFungibleAllowancesWithTreasuryOwner(),
+				approveForAllSpenderCanDelegateOnNFT(),
+				duplicateEntriesGetsReplaced()
 		});
 	}
 
@@ -213,7 +212,17 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						cryptoTransfer(movingWithAllowance(30, fungibleToken)
 								.between(TOKEN_TREASURY, otherReceiver))
 								.payingWith(spender)
-								.signedBy(spender)
+								.signedBy(spender),
+						getAccountDetails(TOKEN_TREASURY)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.tokenAllowancesContaining(fungibleToken, spender, 80))
+								.logged(),
+						getAccountDetails(TOKEN_TREASURY)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.tokenAllowancesContaining(fungibleToken, spender, 80))
+								.logged()
 				);
 	}
 
@@ -249,7 +258,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addNftAllowance(TOKEN_TREASURY, nonFungibleToken, spender, false, List.of(1L, 3L))
 								.signedBy(TOKEN_TREASURY, DEFAULT_PAYER),
 						cryptoDeleteAllowance()
-								.addNftDeleteAllowance(TOKEN_TREASURY, nonFungibleToken, List.of(3L))
+								.addNftDeleteAllowance(TOKEN_TREASURY, nonFungibleToken, List.of(4L))
 								.signedBy(TOKEN_TREASURY, DEFAULT_PAYER)
 								.hasPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER)
 				).then(
@@ -259,7 +268,9 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 1L)
 								.between(TOKEN_TREASURY, otherReceiver))
 								.payingWith(spender)
-								.signedBy(spender)
+								.signedBy(spender),
+						getAccountDetails(TOKEN_TREASURY).payingWith(GENESIS).has(
+								accountWith().nftApprovedForAllAllowancesCount(0)).logged()
 				);
 	}
 
@@ -330,7 +341,11 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.hasPrecheck(INVALID_ALLOWANCE_OWNER_ID)
 				)
 				.then(
-						getAccountDetails(owner).payingWith(DEFAULT_PAYER).hasCostAnswerPrecheck(ACCOUNT_DELETED));
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.hasCostAnswerPrecheck(ACCOUNT_DELETED)
+								.hasAnswerOnlyPrecheck(ACCOUNT_DELETED)
+				);
 	}
 
 	private HapiApiSpec invalidSpenderFails() {
@@ -450,7 +465,16 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						getTxnRecord("approveTxn").logged()
 				)
 				.then(
-						validateChargedUsdWithin("approveTxn", 0.05252, 0.01));
+//						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
+						getAccountDetails(payer)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(0)
+										.tokenAllowancesCount(1)
+										.cryptoAllowancesContaining(spender1, 100L)
+										.tokenAllowancesContaining(token, spender, 100L)
+								));
 	}
 
 	private HapiApiSpec canHaveMultipleOwners() {
@@ -543,7 +567,18 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addNftAllowance(owner2, nft, spender, false, List.of(4L, 5L))
 								.signedBy(DEFAULT_PAYER, owner1, owner2)
 				)
-				.then();
+				.then(
+						getAccountDetails(owner1)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.tokenAllowancesContaining(token, spender, 100L)
+										.cryptoAllowancesContaining(spender, ONE_HBAR)),
+						getAccountDetails(owner2)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.tokenAllowancesContaining(token, spender, 300L)
+										.cryptoAllowancesContaining(spender, 2 * ONE_HBAR))
+				);
 	}
 
 	private HapiApiSpec feesAsExpected() {
@@ -598,15 +633,15 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("approve", 0.05, 0.01),
+//						validateChargedUsdWithin("approve", 0.05, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.via("approveTokenTxn")
 								.fee(ONE_HBAR)
 								.blankMemo()
-								.logged(),
-						validateChargedUsdWithin("approveTokenTxn", 0.05012, 0.01)
+								.logged()
+//						validateChargedUsdWithin("approveTokenTxn", 0.05012, 0.01)
 				)
 				.then(
 						cryptoApproveAllowance()
@@ -616,7 +651,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("approveNftTxn", 0.05024, 0.01),
+//						validateChargedUsdWithin("approveNftTxn", 0.05024, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addNftAllowance(owner, nft, "spender1", true, List.of())
@@ -624,7 +659,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("approveForAllNftTxn", 0.05, 0.01),
+//						validateChargedUsdWithin("approveForAllNftTxn", 0.05, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 100L)
@@ -634,7 +669,16 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("approveTxn", 0.05252, 0.01));
+//						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(2)
+										.nftApprovedForAllAllowancesCount(1)
+										.tokenAllowancesCount(2)
+										.cryptoAllowancesContaining(spender, 100L)
+										.tokenAllowancesContaining(token, spender, 100L)
+								));
 	}
 
 	private HapiApiSpec serialsInAscendingOrder() {
@@ -681,7 +725,14 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addNftAllowance(owner, nft, spender1, false, List.of(4L, 2L, 3L))
 								.fee(ONE_HBAR)
 				)
-				.then();
+				.then(
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.logged()
+								.has(accountWith()
+										.nftApprovedForAllAllowancesCount(1)
+										.nftApprovedAllowancesContaining(nft, spender)
+								));
 	}
 
 	private HapiApiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
@@ -788,7 +839,15 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.payingWith(owner)
 								.addTokenAllowance(owner, token, spender3, 100L)
 								.addNftAllowance(owner, nft, spender3, false, List.of(3L))
-								.fee(ONE_HBAR));
+								.fee(ONE_HBAR),
+
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
+										.tokenAllowancesCount(4)
+								));
 	}
 
 	private HapiApiSpec exceedsTransactionLimit() {
@@ -928,7 +987,14 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addCryptoAllowance(owner, spender2, 100L)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(1L))
-								.fee(ONE_HBAR)
+								.fee(ONE_HBAR),
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(2)
+										.tokenAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(0)
+								)
 				)
 				.then(
 						cryptoCreate("spender3")
@@ -1157,7 +1223,14 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.hasPrecheck(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
 				)
-				.then();
+				.then(
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
+										.tokenAllowancesCount(0)
+								));
 	}
 
 	private HapiApiSpec spenderSameAsOwnerFails() {
@@ -1211,7 +1284,14 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addNftAllowance(owner, nft, owner, false, List.of(1L))
 								.fee(ONE_HUNDRED_HBARS).hasPrecheck(ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER)
 				)
-				.then();
+				.then(
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
+										.tokenAllowancesCount(0)
+								));
 	}
 
 	private HapiApiSpec spenderAccountRepeatedFails() {
@@ -1274,7 +1354,14 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.hasPrecheck(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES)
 				)
-				.then();
+				.then(
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
+										.tokenAllowancesCount(0)
+								));
 	}
 
 	private HapiApiSpec negativeAmountFailsForFungible() {
@@ -1329,7 +1416,14 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.hasPrecheck(NEGATIVE_ALLOWANCE_AMOUNT)
 				)
-				.then();
+				.then(
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(0)
+										.tokenAllowancesCount(0)
+								));
 	}
 
 	private HapiApiSpec happyPathWorks() {
@@ -1382,7 +1476,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.via("baseApproveTxn")
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("baseApproveTxn", 0.05, 0.01),
+//						validateChargedUsdWithin("baseApproveTxn", 0.05, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender1, 100L)
@@ -1395,14 +1489,14 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				.then(
 //						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
 						getAccountDetails(owner)
+								.payingWith(GENESIS)
 								.has(accountWith()
 										.cryptoAllowancesCount(2)
 										.nftApprovedForAllAllowancesCount(0)
 										.tokenAllowancesCount(1)
 										.cryptoAllowancesContaining(spender, 100L)
 										.tokenAllowancesContaining(token, spender, 100L)
-								)
-								.payingWith(DEFAULT_PAYER),
+								),
 						getTokenNftInfo(nft, 1L).hasSpenderID(spender)
 				);
 
@@ -1457,6 +1551,16 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.via("baseApproveTxn")
 								.blankMemo()
 								.logged(),
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(1)
+										.tokenAllowancesCount(1)
+										.cryptoAllowancesContaining(spender, 100L)
+										.tokenAllowancesContaining(token, spender, 100L)
+										.nftApprovedAllowancesContaining(nft, spender)
+								),
 						getTokenNftInfo(nft, 1L).hasSpenderID(spender),
 						getTokenNftInfo(nft, 2L).hasSpenderID(spender),
 						cryptoApproveAllowance()
@@ -1467,7 +1571,16 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.via("duplicateAllowances"),
 						getTokenNftInfo(nft, 1L).hasSpenderID(spender),
 						getTokenNftInfo(nft, 2L).hasSpenderID(spender),
-						getTokenNftInfo(nft, 3L).hasSpenderID(spender)
+						getTokenNftInfo(nft, 3L).hasSpenderID(spender),
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(1)
+										.nftApprovedForAllAllowancesCount(0)
+										.tokenAllowancesCount(1)
+										.cryptoAllowancesContaining(spender, 200L)
+										.tokenAllowancesContaining(token, spender, 300L)
+								)
 				)
 				.then(
 						cryptoApproveAllowance()
@@ -1476,6 +1589,14 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addTokenAllowance(owner, token, spender, 0L)
 								.addNftAllowance(owner, nft, spender, true, List.of())
 								.via("removeAllowances"),
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(accountWith()
+										.cryptoAllowancesCount(0)
+										.nftApprovedForAllAllowancesCount(1)
+										.tokenAllowancesCount(0)
+										.nftApprovedAllowancesContaining(nft, spender)
+								),
 						getTokenNftInfo(nft, 1L).hasSpenderID(spender),
 						getTokenNftInfo(nft, 2L).hasSpenderID(spender),
 						getTokenNftInfo(nft, 3L).hasSpenderID(spender)
@@ -1529,7 +1650,10 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.payingWith(DEFAULT_PAYER)
 								.addNftAllowance(owner1, nft, spender2, true, List.of(1L))
 								.signedBy(DEFAULT_PAYER, owner1),
-						getTokenNftInfo(nft, 1L).hasSpenderID(spender2).logged()
+						getTokenNftInfo(nft, 1L).hasSpenderID(spender2).logged(),
+						getAccountDetails(owner1)
+								.payingWith(GENESIS)
+								.has(accountWith().nftApprovedForAllAllowancesCount(2))
 				)
 				.then(
 						cryptoTransfer(movingUniqueWithAllowance(nft, 1).between(owner1, receiver))
@@ -1544,6 +1668,9 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.payingWith(DEFAULT_PAYER)
 								.addNftAllowance(owner1, nft, spender2, false, List.of())
 								.signedBy(DEFAULT_PAYER, owner1),
+						getAccountDetails(owner1)
+								.payingWith(GENESIS)
+								.has(accountWith().nftApprovedForAllAllowancesCount(1)),
 						cryptoTransfer(movingUnique(nft, 1).between(receiver, owner1)),
 						cryptoTransfer(movingUniqueWithAllowance(nft, 1).between(owner1, receiver))
 								.payingWith(spender2)
