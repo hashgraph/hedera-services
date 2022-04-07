@@ -4,18 +4,9 @@ import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.rlp.RLPItem;
 import com.esaulpaugh.headlong.util.Integers;
-import com.sun.jna.ptr.LongByReference;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
-import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.List;
-
-import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
-import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;
-import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recover;
-import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recoverable_signature_parse_compact;
 
 
 public record EthTxData(
@@ -31,17 +22,17 @@ public record EthTxData(
 		BigInteger value,
 		byte[] callData,
 		byte[] accessList,
-		byte recId,
+		int recId,
 		byte[] v,
 		byte[] r,
 		byte[] s) {
-	// TODO constant should be in besu-native
+
+	// TODO constants should be in besu-native
 	static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
 	static final int SECP256K1_FLAGS_BIT_COMPRESSION = 1 << 8;
 	static final int SECP256K1_EC_COMPRESSED = (SECP256K1_FLAGS_TYPE_COMPRESSION | SECP256K1_FLAGS_BIT_COMPRESSION);
 
 	public static EthTxData populateEthTxData(byte[] data) {
-
 		var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(data);
 		var rlpItem = decoder.next();
 		EthTransactionType type;
@@ -128,119 +119,36 @@ public record EthTxData(
 				r,
 				s);
 	}
-	
-	EthTxData relpaceCallData(byte[] callData) {
+
+	EthTxData replaceCallData(byte[] callData) {
 		return new EthTxData(
-				rawTx, type, chainId, nonce, gasPrice, maxPriorityGas, maxGas, gasLimit, to, value, callData, accessList, recId, v, r, s); 
-	
+				null, type, chainId, nonce, gasPrice, maxPriorityGas, maxGas, gasLimit, to, value, callData, accessList,
+				recId, v, r, s);
+
 	}
 
-	EthTxSigs extractSignatures() {
-		byte[] message = calculateSingableMessage();
-		var pubKey = extractSig(recId, r, s, message);
-		byte[] address = recoverAddressFromPubKey(pubKey);
-		byte[] compressedKey = recoverCompressedPubKey(pubKey);
-
-		return new EthTxSigs(compressedKey, address);
-	}
-
-	private byte[] calculateSingableMessage() {
-		byte[] message;
-		if (type == EthTransactionType.LEGACY_ETHEREUM) {
-			if (chainId != null) {
-				message =
-						RLPEncoder.encodeAsList(
-								Integers.toBytes(nonce),
-								gasPrice,
-								Integers.toBytes(gasLimit),
-								to,
-								Integers.toBytesUnsigned(value),
-								callData,
-								chainId,
-								Integers.toBytes(0),
-								Integers.toBytes(0));
-			} else {
-				message =
-						RLPEncoder.encodeAsList(
-								Integers.toBytes(nonce),
-								gasPrice,
-								Integers.toBytes(gasLimit),
-								to,
-								Integers.toBytesUnsigned(value),
-								callData);
-			}
-		} else if (type == EthTransactionType.EIP1559) {
-			message =
-					RLPEncoder.encodeSequentially(
-							Integers.toBytes(2),
-							new Object[] {
-									chainId,
-									Integers.toBytes(nonce),
-									maxPriorityGas,
-									maxGas,
-									Integers.toBytes(gasLimit),
-									to,
-									Integers.toBytesUnsigned(value),
-									callData,
-									new Object[0]
-							});
-
-		} else {
-			throw new RuntimeException("Unsupported transaction type " + type);
+	public byte[] encodeTx() {
+		if (accessList != null && accessList.length > 0) {
+			throw new RuntimeException("Re-encoding access list is unsupported");
 		}
-		return message;
+		return switch (type) {
+			case LEGACY_ETHEREUM -> RLPEncoder.encodeAsList(
+					Integers.toBytes(nonce), gasPrice, Integers.toBytes(gasLimit), to, Integers.toBytesUnsigned(value),
+					callData, v, r, s);
+			case EIP2930 -> RLPEncoder.encodeSequentially(Integers.toBytes(0x01), List.of(
+					chainId, Integers.toBytes(nonce), gasPrice, Integers.toBytes(gasLimit), to,
+					Integers.toBytesUnsigned(value), callData, List.of(/*accessList*/), Integers.toBytes(recId), r, s
+			));
+			case EIP1559 -> RLPEncoder.encodeSequentially(Integers.toBytes(0x02), List.of(
+					chainId, Integers.toBytes(nonce), maxPriorityGas, maxGas, Integers.toBytes(gasLimit), to,
+					Integers.toBytesUnsigned(value), callData, List.of(/*accessList*/), Integers.toBytes(recId), r, s
+			));
+		};
 	}
-
-	byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
-		final ByteBuffer recoveredFullKey = ByteBuffer.allocate(65);
-		final LongByReference fullKeySize = new LongByReference(recoveredFullKey.limit());
-		LibSecp256k1.secp256k1_ec_pubkey_serialize(
-				CONTEXT, recoveredFullKey, fullKeySize, pubKey, SECP256K1_EC_UNCOMPRESSED);
-
-		recoveredFullKey.get(); // recoveryId is not part of the account hash
-		var preHash = new byte[64];
-		recoveredFullKey.get(preHash, 0, 64);
-		var keyHash = new Keccak.Digest256().digest(preHash);
-		var address = new byte[20];
-		System.arraycopy(keyHash, 12, address, 0, 20);
-		return address;
-	}
-
-	byte[] recoverCompressedPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
-		final ByteBuffer recoveredFullKey = ByteBuffer.allocate(33);
-		final LongByReference fullKeySize = new LongByReference(recoveredFullKey.limit());
-		LibSecp256k1.secp256k1_ec_pubkey_serialize(
-				CONTEXT, recoveredFullKey, fullKeySize, pubKey, SECP256K1_EC_COMPRESSED);
-		return recoveredFullKey.array();
-	}
-
-	private LibSecp256k1.secp256k1_pubkey extractSig(int recId, byte[] r, byte[] s, byte[] message) {
-		byte[] dataHash = new Keccak.Digest256().digest(message);
-
-		byte[] signature = new byte[64];
-		System.arraycopy(r, 0, signature, 0, r.length);
-		System.arraycopy(s, 0, signature, 32, s.length);
-
-		final LibSecp256k1.secp256k1_ecdsa_recoverable_signature parsedSignature =
-				new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
-
-		if (secp256k1_ecdsa_recoverable_signature_parse_compact(CONTEXT, parsedSignature, signature, recId) == 0) {
-			throw new IllegalArgumentException("Could not parse signature");
-		}
-		final LibSecp256k1.secp256k1_pubkey newPubKey = new LibSecp256k1.secp256k1_pubkey();
-		if (secp256k1_ecdsa_recover(CONTEXT, newPubKey, parsedSignature, dataHash) == 0) {
-			throw new IllegalArgumentException("Could not recover signature");
-		} else {
-			return newPubKey;
-		}
-	}
-
 
 	public enum EthTransactionType {
 		LEGACY_ETHEREUM,
 		EIP2930,
 		EIP1559,
 	}
-
-
 }
