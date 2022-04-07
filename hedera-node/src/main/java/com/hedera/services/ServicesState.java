@@ -406,7 +406,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				/* This was an upgrade, discard now-obsolete preparation state */
 				networkCtx().discardPreparedUpgradeMeta();
 				dualState.setFreezeTime(null);
-				System.out.println("START OVER START OVER START OVER");
+				log.info("START OVER START OVER START OVER");
 				networkCtx().setFirstConsTimeOfCurrentBlock(null);
 				networkCtx().setCurrentBlockHash(new Hash());
 			}
