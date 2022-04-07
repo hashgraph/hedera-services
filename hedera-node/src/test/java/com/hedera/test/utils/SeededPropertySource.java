@@ -75,6 +75,7 @@ import java.util.TreeSet;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 
 public class SeededPropertySource {
 	private static final long BASE_SEED = 4_242_424L;
@@ -355,7 +356,7 @@ public class SeededPropertySource {
 	}
 
 	public int nextNonce() {
-		return SEEDED_RANDOM.nextInt(1000);
+		return nextNonZeroInt(999);
 	}
 
 	public int nextInt() {
@@ -363,7 +364,11 @@ public class SeededPropertySource {
 	}
 
 	public TxnId nextTxnId() {
-		return new TxnId(nextEntityId(), nextRichInstant(), nextBoolean(), nextNonce());
+		if (nextBoolean()) {
+			return new TxnId(nextEntityId(), nextRichInstant(), nextBoolean(), nextNonce());
+		} else {
+			return new TxnId(nextEntityId(), nextRichInstant(), nextBoolean(), USER_TRANSACTION_NONCE);
+		}
 	}
 
 	public Instant nextInstant() {

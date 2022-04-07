@@ -29,6 +29,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.state.submerkle.TxnIdSerdeTest;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.CommonUtils;
@@ -56,7 +57,7 @@ public class SerializedForms {
 //		saveSchedules(MerkleScheduleSerdeTest.NUM_TEST_CASES);
 //		saveTokens(MerkleTokenSerdeTest.NUM_TEST_CASES);
 //		saveLogs(EvmLogSerdeTest.NUM_TEST_CASES);
-		saveTxnIds(TxnReceiptSerdeTest.MIN_TEST_CASES_PER_VERSION);
+		saveTxnIds(TxnIdSerdeTest.NUM_TEST_CASES);
 	}
 
 	public static <T extends SelfSerializable> byte[] loadForm(
