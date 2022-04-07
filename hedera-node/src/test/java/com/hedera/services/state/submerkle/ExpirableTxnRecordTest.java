@@ -202,7 +202,7 @@ class ExpirableTxnRecordTest {
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(ExpirableTxnRecord.MERKLE_VERSION, subject.getVersion());
+		assertEquals(ExpirableTxnRecord.CURRENT_VERSION, subject.getVersion());
 		assertEquals(ExpirableTxnRecord.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 

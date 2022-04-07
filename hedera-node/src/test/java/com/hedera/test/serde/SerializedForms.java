@@ -29,7 +29,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.state.submerkle.TxnIdSerdeTest;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.CommonUtils;
@@ -40,6 +39,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.function.Function;
 
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
@@ -54,10 +54,11 @@ public class SerializedForms {
 //		saveTxnReceipts(2 * MIN_TEST_CASES_PER_VERSION);
 //		saveNetworkContexts(MerkleNetworkContextSerdeTest.MIN_TEST_CASES_PER_VERSION);
 //		saveRecords(ExpirableTxnRecordSerdeTest.NUM_TEST_CASES);
+		save024xRecords(5);
 //		saveSchedules(MerkleScheduleSerdeTest.NUM_TEST_CASES);
 //		saveTokens(MerkleTokenSerdeTest.NUM_TEST_CASES);
 //		saveLogs(EvmLogSerdeTest.NUM_TEST_CASES);
-		saveTxnIds(TxnIdSerdeTest.NUM_TEST_CASES);
+//		saveTxnIds(TxnIdSerdeTest.NUM_TEST_CASES);
 	}
 
 	public static <T extends SelfSerializable> byte[] loadForm(
@@ -114,6 +115,15 @@ public class SerializedForms {
 
 	private static void saveRecords(final int n) {
 		saveForCurrentVersion(ExpirableTxnRecord.class, SeededPropertySource::nextRecord, n);
+	}
+
+	private static void save024xRecords(final int n) {
+		saveForCurrentVersion(ExpirableTxnRecord.class, propertySource -> {
+			final var seeded = propertySource.nextRecord();
+			seeded.setCryptoAllowances(Collections.emptyMap());
+			seeded.setFungibleTokenAllowances(Collections.emptyMap());
+			return seeded;
+		}, n);
 	}
 
 	private static void saveSchedules(final int n) {
