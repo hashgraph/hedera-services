@@ -20,21 +20,11 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 
 public class MerkleTokenSerdeTest extends SelfSerializableDataTest<MerkleToken> {
 	public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
-
-	@Override
-	protected void registerConstructables() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
-	}
 
 	@Override
 	protected Class<MerkleToken> getType() {

@@ -36,6 +36,7 @@ import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -88,6 +89,13 @@ public class SeededPropertySource {
 
 	public static SeededPropertySource forSerdeTest(final int version, final int testCaseNo) {
 		return new SeededPropertySource(new SplittableRandom(version * BASE_SEED + testCaseNo));
+	}
+
+	public MerkleTopic nextTopic() {
+		final var seeded = new MerkleTopic();
+
+		seeded.setKey(nextNum());
+		return seeded;
 	}
 
 	public MerkleToken nextToken() {

@@ -20,13 +20,9 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 
 import java.util.Collections;
 
@@ -39,30 +35,6 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 	@Override
 	protected Class<ExpirableTxnRecord> getType() {
 		return ExpirableTxnRecord.class;
-	}
-
-	@Override
-	protected void registerConstructables() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(TxnId.class, TxnId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(TxnReceipt.class, TxnReceipt::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcTokenAssociation.class, FcTokenAssociation::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcAssessedCustomFee.class, FcAssessedCustomFee::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(NftAdjustments.class, NftAdjustments::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(CurrencyAdjustments.class, CurrencyAdjustments::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EvmFnResult.class, EvmFnResult::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcTokenAllowance.class, FcTokenAllowance::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcTokenAllowanceId.class, FcTokenAllowanceId::new));
 	}
 
 	@Override

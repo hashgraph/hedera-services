@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -82,7 +81,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xcfc535576b57baf0L;
 
 	static TopicSerde topicSerde = new TopicSerde();
-	static DomainSerdes serdes = new DomainSerdes();
 
 	private String memo;
 	private JKey adminKey;

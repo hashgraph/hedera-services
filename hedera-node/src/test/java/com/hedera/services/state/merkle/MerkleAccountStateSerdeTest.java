@@ -20,15 +20,10 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 
 import java.util.Collections;
 
@@ -38,14 +33,6 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 	@Override
 	protected Class<MerkleAccountState> getType() {
 		return MerkleAccountState.class;
-	}
-
-	@Override
-	protected void registerConstructables() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(FcTokenAllowanceId.class, FcTokenAllowanceId::new));
 	}
 
 	@Override

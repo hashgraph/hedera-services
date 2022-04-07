@@ -20,24 +20,14 @@ package com.hedera.services.legacy.core.jproto;
  * ‍
  */
 
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 
 public class TxnReceiptSerdeTest extends SelfSerializableDataTest<TxnReceipt> {
 	@Override
 	protected Class<TxnReceipt> getType() {
 		return TxnReceipt.class;
-	}
-
-	@Override
-	protected void registerConstructables() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
 	}
 
 	@Override

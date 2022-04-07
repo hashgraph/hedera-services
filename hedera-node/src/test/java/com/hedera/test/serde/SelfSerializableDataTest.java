@@ -21,11 +21,13 @@ package com.hedera.test.serde;
  */
 
 import com.hedera.test.utils.SeededPropertySource;
+import com.hedera.test.utils.ClassLoaderHelper;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.Versioned;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -75,8 +77,8 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	 *
 	 * @throws ConstructableRegistryException
 	 */
-	protected void registerConstructables() throws ConstructableRegistryException {
-		// No-op
+	protected void registerConstructables() {
+		// No-op. By default, all classes in the classpath will be registered.
 	}
 
 	/**
@@ -137,8 +139,13 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	protected abstract T getExpectedObject(final SeededPropertySource propertySource);
 
 	@BeforeEach
-	void setUp() throws ConstructableRegistryException {
+	void setUp() {
 		registerConstructables();
+	}
+
+	@BeforeAll
+	static void setUpClass() {
+		ClassLoaderHelper.loadClassPathDependencies();
 	}
 
 	@ParameterizedTest

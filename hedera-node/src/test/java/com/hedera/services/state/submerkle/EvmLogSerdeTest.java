@@ -22,9 +22,6 @@ package com.hedera.services.state.submerkle;
 
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
 
 public class EvmLogSerdeTest extends SelfSerializableDataTest<EvmLog> {
 	public static final int NUM_TEST_CASES = MIN_TEST_CASES_PER_VERSION;
@@ -32,12 +29,6 @@ public class EvmLogSerdeTest extends SelfSerializableDataTest<EvmLog> {
 	@Override
 	protected Class<EvmLog> getType() {
 		return EvmLog.class;
-	}
-
-	@Override
-	protected void registerConstructables() throws ConstructableRegistryException {
-		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(EntityId.class, EntityId::new));
 	}
 
 	@Override
