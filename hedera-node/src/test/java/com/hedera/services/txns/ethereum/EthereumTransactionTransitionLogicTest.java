@@ -27,8 +27,11 @@ import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -89,6 +92,8 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private AliasManager aliasManager;
 	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
 	private HederaFs hfs;
 	private TransactionBody contractCallTxn;
 
@@ -100,7 +105,7 @@ class EthereumTransactionTransitionLogicTest {
 		contractCreateTransitionLogic = new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator,
 				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian);
 		subject = new EthereumTransitionLogic(txnCtx, null, contractCallTransitionLogic, contractCreateTransitionLogic,
-				hfs, globalDynamicProperties, aliasManager);
+				hfs, globalDynamicProperties, aliasManager, accountsLedger);
 	}
 
 	@Test

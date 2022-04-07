@@ -25,7 +25,10 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
@@ -62,6 +65,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	private final AliasManager aliasManager;
 	private final HederaFs hfs;
 	private final byte[] chainId;
+	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	@Inject
 	public EthereumTransitionLogic(
@@ -71,7 +75,8 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			final ContractCreateTransitionLogic contractCreateTransitionLogic,
 			final HederaFs hfs,
 			GlobalDynamicProperties globalDynamicProperties,
-			AliasManager aliasManager) {
+			AliasManager aliasManager,
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		this.txnCtx = txnCtx;
 		this.spanMapAccessor = spanMapAccessor;
 		this.contractCallTransitionLogic = contractCallTransitionLogic;
@@ -79,6 +84,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		this.hfs = hfs;
 		this.chainId = Integers.toBytes(globalDynamicProperties.getChainId());
 		this.aliasManager = aliasManager;
+		this.accountsLedger = accountsLedger;
 	}
 
 	@Override
@@ -140,6 +146,8 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 				return ResponseCodeEnum.INVALID_ACCOUNT_ID; // FIXME new response code?
 			}
 			//TODO is the nonce valid?
+			var accountNonce = (long) accountsLedger.get(callingAccount.toGrpcAccountId(), AccountProperty.TRANSACTION_COUNTER);
+			validateTrue(ethTxData.nonce() == accountNonce, ResponseCodeEnum.FAIL_INVALID); //FIXME ResponseCodeEnum.WRONG_NONCE
 		}
 
 		if (txBody.hasContractCall()) {
