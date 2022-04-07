@@ -418,7 +418,11 @@ class CryptoOpsUsageTest {
 
 		expected.addBpt(msgBytesUsed);
 		long lifetime = ESTIMATOR_UTILS.relativeLifetime(txn, oldExpiry);
-		expected.addRbs(msgBytesUsed * lifetime);
+		final var expectedBytes = (approveOp.getCryptoAllowancesCount() * CRYPTO_ALLOWANCE_SIZE)
+				+ (approveOp.getTokenAllowancesCount() * TOKEN_ALLOWANCE_SIZE)
+				+ (approveOp.getNftAllowancesCount() * NFT_ALLOWANCE_SIZE);
+
+		expected.addRbs(expectedBytes * lifetime);
 
 		var actual = new UsageAccumulator();
 
@@ -426,7 +430,7 @@ class CryptoOpsUsageTest {
 
 		assertEquals(expected, actual);
 	}
-
+	
 	@Test
 	void estimatesDeleteAsExpected() {
 		givenDeleteOp();

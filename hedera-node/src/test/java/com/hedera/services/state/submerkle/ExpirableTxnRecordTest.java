@@ -224,45 +224,6 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	void serializeWorksWithBothChildAndParentMetaAndAllowanceMaps() throws IOException {
-		final var fout = mock(SerializableDataOutputStream.class);
-		final var inOrder = Mockito.inOrder(serdes, fout);
-
-		subject.serialize(fout);
-
-		inOrder.verify(serdes).writeNullableSerializable(subject.getReceipt(), fout);
-		inOrder.verify(fout).writeByteArray(subject.getTxnHash());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getTxnId(), fout);
-		inOrder.verify(serdes).writeNullableInstant(subject.getConsensusTime(), fout);
-		inOrder.verify(serdes).writeNullableString(subject.getMemo(), fout);
-		inOrder.verify(fout).writeLong(subject.getFee());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getHbarAdjustments(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCallResult(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCreateResult(), fout);
-		inOrder.verify(fout).writeLong(subject.getExpiry());
-		inOrder.verify(fout).writeLong(subject.getSubmittingMember());
-		inOrder.verify(fout).writeSerializableList(
-				subject.getTokens(), true, true);
-		inOrder.verify(fout).writeSerializableList(
-				subject.getTokenAdjustments(), true, true);
-		inOrder.verify(serdes).writeNullableSerializable(EntityId.fromGrpcScheduleId(scheduleID), fout);
-		inOrder.verify(fout).writeSerializableList(
-				subject.getNftTokenAdjustments(), true, true);
-		inOrder.verify(fout).writeSerializableList(subject.getCustomFeesCharged(), true, true);
-		inOrder.verify(fout).writeBoolean(true);
-		inOrder.verify(fout).writeShort(numChildRecords);
-		inOrder.verify(fout).writeBoolean(true);
-		inOrder.verify(fout).writeLong(packedParentConsTime);
-		inOrder.verify(fout).writeByteArray(subject.getAlias().toByteArray());
-		inOrder.verify(fout).writeInt(cryptoAllowances.size());
-		inOrder.verify(fout).writeLong(spenderNum.longValue());
-		inOrder.verify(fout).writeLong(initialAllowance);
-		inOrder.verify(fout).writeInt(fungibleAllowances.size());
-		inOrder.verify(fout).writeSerializable(fungibleAllowanceId, true);
-		inOrder.verify(fout).writeLong(initialAllowance);
-	}
-
-	@Test
 	void serializeWorksWithNeitherChildAndParentMeta() throws IOException {
 		final var fout = mock(SerializableDataOutputStream.class);
 		final var inOrder = Mockito.inOrder(serdes, fout);

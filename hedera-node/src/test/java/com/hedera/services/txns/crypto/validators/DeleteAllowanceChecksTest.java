@@ -230,7 +230,6 @@ class DeleteAllowanceChecksTest {
 	@Test
 	void validatesIfOwnerExists() {
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
-		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
 		nftAllowances.add(nftAllowance2);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willThrow(InvalidTransactionException.class);
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
@@ -248,11 +247,11 @@ class DeleteAllowanceChecksTest {
 	@Test
 	void failsIfTokenNotAssociatedToAccount() {
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
-		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
+//		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
 		nftAllowances.add(nftAllowance2);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId))).willReturn(ownerAccount);
 		given(tokenStore.hasAssociation(token2Model, ownerAccount)).willReturn(false);
-		given(tokenStore.hasAssociation(token1Model, ownerAccount)).willReturn(false);
+//		given(tokenStore.hasAssociation(token1Model, ownerAccount)).willReturn(false);
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT,
 				subject.validateNftDeleteAllowances(nftAllowances, payer, tokenStore, accountStore));
 	}
@@ -263,8 +262,8 @@ class DeleteAllowanceChecksTest {
 
 		token1Model.setType(TokenType.FUNGIBLE_COMMON);
 		token2Model.setType(TokenType.NON_FUNGIBLE_UNIQUE);
-		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token2))).willReturn(token2Model);
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(token1))).willReturn(token1Model);
+		nftAllowances.add(NftRemoveAllowance.newBuilder().setTokenId(token1).build());
 		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES,
 				subject.validateNftDeleteAllowances(nftAllowances, payer, tokenStore, accountStore));
 	}
@@ -435,21 +434,21 @@ class DeleteAllowanceChecksTest {
 				new TokenAssociationMetadata(1, 0, EntityNumPair.MISSING_NUM_PAIR));
 
 		given(store.getImmutableRef(ownerId)).willReturn(ownerMerkleAccount);
-		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
+//		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
 		given(tokens.getImmutableRef(token2)).willReturn(merkleToken2);
 		given(nfts.getImmutableRef(token2Nft1)).willReturn(merkleUniqueToken);
 		given(nfts.getImmutableRef(token2Nft2)).willReturn(merkleUniqueToken);
-		given(rels.contains(Pair.of(ownerId, token1))).willReturn(true);
+//		given(rels.contains(Pair.of(ownerId, token1))).willReturn(true);
 		given(rels.contains(Pair.of(ownerId, token2))).willReturn(true);
 
-		given(merkleToken1.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
+//		given(merkleToken1.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(ownerMerkleAccount.state()).willReturn(new MerkleAccountState());
 		given(merkleUniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(merkleUniqueToken.getSpender()).willReturn(Id.MISSING_ID.asEntityId());
 
-		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
-		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+//		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
+//		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(merkleToken2.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 	}
 }
