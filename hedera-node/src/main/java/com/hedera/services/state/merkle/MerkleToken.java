@@ -48,6 +48,7 @@ import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+import static com.hedera.services.state.serdes.IoUtils.staticReadNullable;
 import static com.hedera.services.state.serdes.IoUtils.staticReadNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.staticWriteNullable;
 import static com.hedera.services.state.serdes.IoUtils.staticWriteNullableSerializable;
@@ -279,11 +280,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		decimals = in.readInt();
 		accountsFrozenByDefault = in.readBoolean();
 		accountsKycGrantedByDefault = in.readBoolean();
-		adminKey = IoUtils.staticReadNullable(in, JKeySerializer::deserialize);
-		freezeKey = IoUtils.staticReadNullable(in, JKeySerializer::deserialize);
-		kycKey = IoUtils.staticReadNullable(in, JKeySerializer::deserialize);
-		supplyKey = IoUtils.staticReadNullable(in, JKeySerializer::deserialize);
-		wipeKey = IoUtils.staticReadNullable(in, JKeySerializer::deserialize);
+		adminKey = staticReadNullable(in, JKeySerializer::deserialize);
+		freezeKey = staticReadNullable(in, JKeySerializer::deserialize);
+		kycKey = staticReadNullable(in, JKeySerializer::deserialize);
+		supplyKey = staticReadNullable(in, JKeySerializer::deserialize);
+		wipeKey = staticReadNullable(in, JKeySerializer::deserialize);
 		/* Memo present since 0.12.0 */
 		memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
 		// Added in 0.16
@@ -292,11 +293,11 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		maxSupply = in.readLong();
 		lastUsedSerialNumber = in.readLong();
 		feeSchedule = unmodifiableList(in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
-		feeScheduleKey = IoUtils.staticReadNullable(in, JKeySerializer::deserialize);
+		feeScheduleKey = staticReadNullable(in, JKeySerializer::deserialize);
 		// Added in 0.18
 		number = in.readInt();
 		// Added in 0.19
-		pauseKey = IoUtils.staticReadNullable(in, JKeySerializer::deserialize);
+		pauseKey = staticReadNullable(in, JKeySerializer::deserialize);
 		paused = in.readBoolean();
 		if (tokenType == null) {
 			tokenType = TokenType.FUNGIBLE_COMMON;

@@ -41,7 +41,6 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.time.Instant;
 
@@ -59,7 +58,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoInteractions;
 import static org.mockito.BDDMockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.times;
 
 public class DomainSerdesTest {
 	private DomainSerdes subject = new DomainSerdes();
@@ -201,26 +199,6 @@ public class DomainSerdesTest {
 
 		// then:
 		assertEquals(data, msg);
-	}
-
-	@Test
-	void readsLegacyTimestamp() throws IOException {
-		// setup:
-		var in = mock(DataInputStream.class);
-		// and:
-		var expected = new RichInstant(123L, 456);
-
-		given(in.readLong()).willReturn(1L).willReturn(2L).willReturn(123L);
-		given(in.readInt()).willReturn(456);
-
-		// when:
-		var fromStream = subject.deserializeLegacyTimestamp(in);
-
-		// then:
-		verify(in, times(3)).readLong();
-		verify(in).readInt();
-		// and:
-		assertEquals(expected, fromStream);
 	}
 
 	@Test

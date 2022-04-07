@@ -26,6 +26,8 @@ import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleTopicSerdeTest;
 import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;
@@ -54,11 +56,12 @@ public class SerializedForms {
 //		saveTxnReceipts(2 * MIN_TEST_CASES_PER_VERSION);
 //		saveNetworkContexts(MerkleNetworkContextSerdeTest.MIN_TEST_CASES_PER_VERSION);
 //		saveRecords(ExpirableTxnRecordSerdeTest.NUM_TEST_CASES);
-		save024xRecords(5);
+//		save024xRecords(ExpirableTxnRecordSerdeTest.MIN_TEST_CASES_PER_VERSION);
 //		saveSchedules(MerkleScheduleSerdeTest.NUM_TEST_CASES);
 //		saveTokens(MerkleTokenSerdeTest.NUM_TEST_CASES);
 //		saveLogs(EvmLogSerdeTest.NUM_TEST_CASES);
 //		saveTxnIds(TxnIdSerdeTest.NUM_TEST_CASES);
+		saveTopics(MerkleTopicSerdeTest.NUM_TEST_CASES);
 	}
 
 	public static <T extends SelfSerializable> byte[] loadForm(
@@ -103,6 +106,10 @@ public class SerializedForms {
 
 	private static void saveLogs(final int n) {
 		saveForCurrentVersion(EvmLog.class, SeededPropertySource::nextEvmLog, n);
+	}
+
+	private static void saveTopics(final int n) {
+		saveForCurrentVersion(MerkleTopic.class, SeededPropertySource::nextTopic, n);
 	}
 
 	private static void saveTxnIds(final int n) {

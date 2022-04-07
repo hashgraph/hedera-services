@@ -73,7 +73,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
 	public static final long RUNNING_HASH_VERSION = 3L;
 
-	static final int PRE_RELEASE_0180_VERSION = 1;
 	static final int RELEASE_0180_VERSION = 2;
 
 	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
@@ -176,11 +175,15 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	@Override
+	public int getMinimumSupportedVersion() {
+		return CURRENT_VERSION;
+	}
+
+	@Override
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-		topicSerde.deserializeV1(in, this);
-		if (version >= RELEASE_0180_VERSION) {
-			number = in.readInt();
-		}
+		topicSerde.deserialize(in, this);
+		// Added in 0.18
+		number = in.readInt();
 	}
 
 	@Override
@@ -324,12 +327,20 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		this.memo = ((null != memo) && !memo.isEmpty()) ? memo : null;
 	}
 
+	public String getNullableMemo() {
+		return memo;
+	}
+
 	public boolean hasAdminKey() {
 		return adminKey != null;
 	}
 
 	public JKey getAdminKey() {
 		return hasAdminKey() ? adminKey : getDefaultJKey();
+	}
+
+	public JKey getNullableAdminKey() {
+		return adminKey;
 	}
 
 	public void setAdminKey(final @Nullable JKey adminKey) {
@@ -350,6 +361,10 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		this.submitKey = ((null != submitKey) && !submitKey.isEmpty()) ? submitKey : null;
 	}
 
+	public JKey getNullableSubmitKey() {
+		return submitKey;
+	}
+
 	public long getAutoRenewDurationSeconds() {
 		return autoRenewDurationSeconds;
 	}
@@ -367,6 +382,10 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		return hasAutoRenewAccountId() ? autoRenewAccountId : new EntityId();
 	}
 
+	public EntityId getNullableAutoRenewAccountId() {
+		return autoRenewAccountId;
+	}
+
 	public void setAutoRenewAccountId(final @Nullable EntityId autoRenewAccountId) {
 		throwIfImmutable("Cannot change this topic's auto renewal account if it's immutable.");
 		this.autoRenewAccountId = ((null != autoRenewAccountId) && (0 != autoRenewAccountId.num()))
@@ -380,6 +399,10 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public RichInstant getExpirationTimestamp() {
 		return hasExpirationTimestamp() ? expirationTimestamp : new RichInstant();
+	}
+
+	public RichInstant getNullableExpirationTimestamp() {
+		return expirationTimestamp;
 	}
 
 	public void setExpirationTimestamp(final @Nullable RichInstant expiry) {

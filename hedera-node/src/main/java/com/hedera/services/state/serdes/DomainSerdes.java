@@ -91,21 +91,6 @@ public class DomainSerdes {
 		outVal.writeSerializable(id, true);
 	}
 
-	public RichInstant deserializeLegacyTimestamp(DataInputStream in) throws IOException {
-		in.readLong();
-		in.readLong();
-		return new RichInstant(in.readLong(), in.readInt());
-	}
-
-	public RichInstant deserializeTimestamp(DataInputStream in) throws IOException {
-		return RichInstant.from((SerializableDataInputStream) in);
-	}
-
-	@SuppressWarnings("unchecked")
-	public void serializeTimestamp(RichInstant ts, DataOutputStream out) throws IOException {
-		ts.serialize((SerializableDataOutputStream) out);
-	}
-
 	public EntityId deserializeId(DataInputStream _in) throws IOException {
 		var in = (SerializableDataInputStream) _in;
 		return in.readSerializable();

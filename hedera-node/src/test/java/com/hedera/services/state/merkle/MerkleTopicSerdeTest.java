@@ -1,4 +1,4 @@
-package com.hedera.services.state.submerkle;
+package com.hedera.services.state.merkle;
 
 /*-
  * ‌
@@ -23,12 +23,12 @@ package com.hedera.services.state.submerkle;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 
-public class TxnIdSerdeTest extends SelfSerializableDataTest<TxnId> {
+public class MerkleTopicSerdeTest extends SelfSerializableDataTest<MerkleTopic> {
 	public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
 
 	@Override
-	protected Class<TxnId> getType() {
-		return TxnId.class;
+	protected Class<MerkleTopic> getType() {
+		return MerkleTopic.class;
 	}
 
 	@Override
@@ -37,7 +37,7 @@ public class TxnIdSerdeTest extends SelfSerializableDataTest<TxnId> {
 	}
 
 	@Override
-	protected TxnId getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextTxnId();
+	protected MerkleTopic getExpectedObject(final SeededPropertySource propertySource) {
+		return propertySource.nextTopic();
 	}
 }

@@ -23,30 +23,21 @@ package com.hedera.services.state.merkle;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 class MerkleTopicTest {
-	private final int number = 123_456;
-
 	String[] memos = new String[] {
 			"First memo",
 			"Second memo",
@@ -64,75 +55,7 @@ class MerkleTopicTest {
 	};
 
 	@Test
-	void serializeWorks() throws IOException {
-		// setup:
-		final var topicSerde = mock(TopicSerde.class);
-		final var out = mock(SerializableDataOutputStream.class);
-		MerkleTopic.topicSerde = topicSerde;
-
-		// given:
-		final var subject = new MerkleTopic();
-		subject.setKey(EntityNum.fromInt(number));
-
-		// expect:
-		assertEquals(number, subject.getKey().intValue());
-
-		// and when:
-		subject.serialize(out);
-
-		// then:
-		verify(topicSerde).serialize(subject, out);
-		verify(out).writeInt(number);
-
-		// cleanup:
-		MerkleTopic.topicSerde = new TopicSerde();
-	}
-
-	@Test
-	void deserializeWorksForPre0180() throws IOException {
-		// setup:
-		final var topicSerde = mock(TopicSerde.class);
-		final var in = mock(SerializableDataInputStream.class);
-		MerkleTopic.topicSerde = topicSerde;
-
-		// given:
-		final var subject = new MerkleTopic();
-
-		// and when:
-		subject.deserialize(in, MerkleTopic.PRE_RELEASE_0180_VERSION);
-
-		// then:
-		verify(topicSerde).deserializeV1(in, subject);
-
-		// cleanup:
-		MerkleTopic.topicSerde = new TopicSerde();
-	}
-
-	@Test
-	void deserializeWorksFor0180() throws IOException {
-		// setup:
-		final var topicSerde = mock(TopicSerde.class);
-		final var in = mock(SerializableDataInputStream.class);
-		MerkleTopic.topicSerde = topicSerde;
-
-		given(in.readInt()).willReturn(number);
-		// and:
-		final var subject = new MerkleTopic();
-
-		// and when:
-		subject.deserialize(in, MerkleTopic.RELEASE_0180_VERSION);
-
-		// then:
-		verify(topicSerde).deserializeV1(in, subject);
-		// and:
-		assertEquals(number, subject.getKey().intValue());
-
-		// cleanup:
-		MerkleTopic.topicSerde = new TopicSerde();
-	}
-
-	@Test
-	void toStringWorks() throws IOException, NoSuchAlgorithmException {
+	void toStringWorks() throws IOException {
 		// expect:
 		assertEquals(
 				"MerkleTopic{number=0 <-> 0.0.0, "

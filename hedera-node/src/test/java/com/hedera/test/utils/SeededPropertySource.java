@@ -93,8 +93,22 @@ public class SeededPropertySource {
 
 	public MerkleTopic nextTopic() {
 		final var seeded = new MerkleTopic();
-
+		if (nextBoolean()) {
+			seeded.setMemo(nextString(100));
+		}
+		seeded.setAdminKey(nextNullableKey());
+		seeded.setSubmitKey(nextNullableKey());
+		seeded.setAutoRenewDurationSeconds(nextUnsignedLong());
+		if (nextBoolean()) {
+			seeded.setAutoRenewAccountId(nextEntityId());
+		}
+		seeded.setExpirationTimestamp(nextRichInstant());
 		seeded.setKey(nextNum());
+		seeded.setDeleted(nextBoolean());
+		seeded.setSequenceNumber(nextUnsignedLong());
+		if (nextBoolean()) {
+			seeded.setRunningHash(nextBytes(48));
+		}
 		return seeded;
 	}
 
