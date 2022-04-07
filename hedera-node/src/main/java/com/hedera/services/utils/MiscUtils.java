@@ -173,6 +173,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
+import static com.hederahashgraph.api.proto.java.Query.QueryCase.ACCOUNTDETAILS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONSENSUSGETTOPICINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTCALLLOCAL;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTGETBYTECODE;
@@ -184,7 +185,6 @@ import static com.hederahashgraph.api.proto.java.Query.QueryCase.CRYPTOGETINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CRYPTOGETLIVEHASH;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.FILEGETCONTENTS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.FILEGETINFO;
-import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETACCOUNTDETAILS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYKEY;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.GETBYSOLIDITYID;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.NETWORKGETEXECUTIONTIME;
@@ -289,7 +289,7 @@ public final class MiscUtils {
 		queryFunctions.put(TOKENGETACCOUNTNFTINFOS, TokenGetAccountNftInfos);
 		queryFunctions.put(SCHEDULEGETINFO, ScheduleGetInfo);
 		queryFunctions.put(NETWORKGETEXECUTIONTIME, NetworkGetExecutionTime);
-		queryFunctions.put(GETACCOUNTDETAILS, GetAccountDetails);
+		queryFunctions.put(ACCOUNTDETAILS, GetAccountDetails);
 	}
 
 	private static final Map<HederaFunctionality, String> BASE_STAT_NAMES = new EnumMap<>(HederaFunctionality.class);
@@ -530,8 +530,8 @@ public final class MiscUtils {
 				return Optional.of(query.getNetworkGetVersionInfo().getHeader());
 			case NETWORKGETEXECUTIONTIME:
 				return Optional.of(query.getNetworkGetExecutionTime().getHeader());
-			case GETACCOUNTDETAILS:
-				return Optional.of(query.getGetAccountDetails().getHeader());
+			case ACCOUNTDETAILS:
+				return Optional.of(query.getAccountDetails().getHeader());
 			default:
 				return Optional.empty();
 		}

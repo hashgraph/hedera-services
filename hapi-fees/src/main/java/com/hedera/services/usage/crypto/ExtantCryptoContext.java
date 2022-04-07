@@ -20,12 +20,19 @@ package com.hedera.services.usage.crypto;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
+import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
@@ -188,6 +195,24 @@ public class ExtantCryptoContext {
 		public ExtantCryptoContext.Builder setCurrentApproveForAllNftAllowances(
 				Set<AllowanceId> currentApproveForAllNftAllowances) {
 			this.currentApproveForAllNftAllowances = currentApproveForAllNftAllowances;
+			mask |= NFT_ALLOWANCES_MASK;
+			return this;
+		}
+
+		public Builder setCurrentCryptoAllowances(final List<GrantedCryptoAllowance> grantedCryptoAllowancesList) {
+			this.currentCryptoAllowances = convertToCryptoMapFromGranted(grantedCryptoAllowancesList);
+			mask |= CRYPTO_ALLOWANCES_MASK;
+			return this;
+		}
+
+		public Builder setCurrentTokenAllowances(final List<GrantedTokenAllowance> grantedTokenAllowancesList) {
+			this.currentTokenAllowances = convertToTokenMapFromGranted(grantedTokenAllowancesList);
+			mask |= TOKEN_ALLOWANCES_MASK;
+			return this;
+		}
+
+		public Builder setCurrentApproveForAllNftAllowances(final List<GrantedNftAllowance> grantedNftAllowancesList) {
+			this.currentApproveForAllNftAllowances = convertToNftMapFromGranted(grantedNftAllowancesList);
 			mask |= NFT_ALLOWANCES_MASK;
 			return this;
 		}

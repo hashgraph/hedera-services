@@ -27,6 +27,7 @@ import com.hedera.services.bdd.spec.queries.contract.HapiGetContractBytecode;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractRecords;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
+import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountDetails;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountRecords;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
@@ -80,6 +81,10 @@ public class QueryVerbs {
 
 	public static HapiGetAccountRecords getAccountRecords(final String account) {
 		return new HapiGetAccountRecords(account);
+	}
+
+	public static HapiGetAccountDetails getAccountDetails(final String account) {
+		return new HapiGetAccountDetails(account);
 	}
 
 	public static HapiGetTxnRecord getTxnRecord(final String txn) {

@@ -100,6 +100,17 @@ public class CryptoOpsUsage {
 		var op = cryptoInfoReq.getCryptoGetInfo();
 
 		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
+		return getUsage(estimate, ctx);
+	}
+
+	public FeeData accountDetailsUsage(Query accountDetailsReq, ExtantCryptoContext ctx) {
+		var op = accountDetailsReq.getAccountDetails();
+
+		var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
+		return getUsage(estimate, ctx);
+	}
+
+	private FeeData getUsage(QueryUsage estimate, ExtantCryptoContext ctx) {
 		estimate.addTb(BASIC_ENTITY_ID_SIZE);
 		long extraRb = 0;
 		extraRb += ctx.currentMemo().getBytes(StandardCharsets.UTF_8).length;
