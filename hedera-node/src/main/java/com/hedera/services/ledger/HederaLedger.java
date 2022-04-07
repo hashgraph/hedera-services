@@ -272,7 +272,6 @@ public class HederaLedger {
 		if (tokenRelsLedger == null) {
 			throw new IllegalStateException("Ledger has no manageable token relationships!");
 		}
-
 		final var positiveBalances = (int) accountsLedger.get(aId, NUM_POSITIVE_BALANCES);
 		return positiveBalances == 0;
 	}

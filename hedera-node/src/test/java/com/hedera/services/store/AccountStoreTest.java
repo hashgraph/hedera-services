@@ -227,7 +227,7 @@ class AccountStoreTest {
 		model.setMaxAutomaticAssociations(newMax);
 		// decrease the already Used automatic associations by 10
 		for (int i = 0; i < 11; i++) {
-			model.decrementUsedAutomaticAssocitions();
+			model.decrementUsedAutomaticAssociations();
 		}
 		model.incrementUsedAutomaticAssocitions();
 
