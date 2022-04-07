@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.TokenAssociationMetadata;
@@ -47,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.mock;
 
 class MerkleAccountStateTest {
 	private static final JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
@@ -105,8 +103,6 @@ class MerkleAccountStateTest {
 	TreeMap<FcTokenAllowanceId, Long> otherFungibleTokenAllowances = new TreeMap<>();
 	TreeSet<FcTokenAllowanceId> otherApproveForAllNfts = new TreeSet<>();
 
-	private DomainSerdes serdes;
-
 	private MerkleAccountState subject;
 
 	@BeforeEach
@@ -130,7 +126,6 @@ class MerkleAccountStateTest {
 				approveForAllNfts);
 		subject.setTokenAssociationMetadata(tokenAssociationMetadata);
 		subject.setNftsOwned(nftsOwned);
-		serdes = mock(DomainSerdes.class);
 	}
 
 	@Test

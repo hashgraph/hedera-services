@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.IoUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -85,8 +84,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 	public static final ByteString MISSING_ALIAS = ByteString.EMPTY;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	private long expiry;
 	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;

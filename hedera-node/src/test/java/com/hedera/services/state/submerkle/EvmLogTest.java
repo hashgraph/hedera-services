@@ -20,14 +20,12 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,11 +52,6 @@ class EvmLogTest {
 	@BeforeEach
 	void setup() {
 		subject = new EvmLog(aLoggerId, bloom, aTopics, data);
-	}
-
-	@AfterEach
-	public void cleanup() {
-		EvmLog.serdes = new DomainSerdes();
 	}
 
 	@Test

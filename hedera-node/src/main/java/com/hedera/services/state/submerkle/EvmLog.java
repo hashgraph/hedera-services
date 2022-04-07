@@ -22,7 +22,6 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
@@ -53,8 +52,6 @@ public class EvmLog implements SelfSerializable {
 	private byte[] bloom = MISSING_BYTES;
 	private EntityId contractId;
 	private List<byte[]> topics = Collections.emptyList();
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final int MAX_DATA_BYTES = Integer.MAX_VALUE;
 	public static final int MAX_BLOOM_BYTES = 256;
