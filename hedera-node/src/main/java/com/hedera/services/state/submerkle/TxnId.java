@@ -21,7 +21,6 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
@@ -37,13 +36,10 @@ import static com.hedera.services.utils.EntityIdUtils.asAccount;
 public class TxnId implements SelfSerializable {
 	public static final int USER_TRANSACTION_NONCE = 0;
 
-	static final int RELEASE_0130_VERSION = 3;
 	static final int RELEASE_0210_VERSION = 4;
-	private static final int MERKLE_VERSION = RELEASE_0210_VERSION;
+	private static final int CURRENT_VERSION = RELEASE_0210_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x61a52dfb3a18d9bL;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	private int nonce = USER_TRANSACTION_NONCE;
 	private boolean scheduled = false;
@@ -86,28 +82,32 @@ public class TxnId implements SelfSerializable {
 
 	@Override
 	public int getVersion() {
-		return MERKLE_VERSION;
+		return CURRENT_VERSION;
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return CURRENT_VERSION;
 	}
 
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		payerAccount = in.readSerializable(true, EntityId::new);
-		validStart = serdes.deserializeTimestamp(in);
+		validStart = RichInstant.from(in);
 		scheduled = in.readBoolean();
-		if (version >= RELEASE_0210_VERSION) {
-			final var hasNonUserNonce = in.readBoolean();
-			if (hasNonUserNonce) {
-				nonce = in.readInt();
-			} else {
-				nonce = USER_TRANSACTION_NONCE;
-			}
+		// Added in 0.21
+		final var hasNonUserNonce = in.readBoolean();
+		if (hasNonUserNonce) {
+			nonce = in.readInt();
+		} else {
+			nonce = USER_TRANSACTION_NONCE;
 		}
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeSerializable(payerAccount, true);
-		serdes.serializeTimestamp(validStart, out);
+		validStart.serialize(out);
 		out.writeBoolean(scheduled);
 		if (nonce != USER_TRANSACTION_NONCE) {
 			out.writeBoolean(true);
