@@ -37,6 +37,8 @@ import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.virtual.UniqueTokenKey;
+import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
@@ -57,6 +59,7 @@ import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -146,6 +149,8 @@ class ServicesStateTest {
 	private Consumer<ServicesState> mockMigrator;
 	@Mock
 	private Consumer<ServicesState> uniqueTokenMigrator;
+	@Mock
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> uniqueTokens;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -233,7 +238,7 @@ class ServicesStateTest {
 
 	@Test
 	void onReleaseAndArchiveNoopIfMetadataNull() {
-		setAllMmsTo(mock(MerkleMap.class));
+		setAllMmsTo(mock(MerkleMap.class), mock(VirtualMap.class));
 		Assertions.assertDoesNotThrow(subject::archive);
 		Assertions.assertDoesNotThrow(subject::onRelease);
 	}
@@ -253,9 +258,10 @@ class ServicesStateTest {
 	@Test
 	void archiveForwardsToMetadataAndMerkleMaps() {
 		final MerkleMap<?, ?> mockMm = mock(MerkleMap.class);
+		final VirtualMap<?, ?> mockVm = mock(VirtualMap.class);
 
 		subject.setMetadata(metadata);
-		setAllMmsTo(mockMm);
+		setAllMmsTo(mockMm, mockVm);
 
 		// when:
 		subject.archive();
@@ -429,12 +435,10 @@ class ServicesStateTest {
 		ServicesState.setStakeFundingMigrator(mockMigrator);
 		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
 
-		subject = mock(ServicesState.class);
-		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0230_VERSION);
-		given(subject.accounts()).willReturn(accounts);
+		setAllMmsTo(mock(MerkleMap.class), mock(VirtualMap.class));
 		given(accounts.keySet()).willReturn(Set.of());
-
+		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setDeserializedVersion(StateVersions.RELEASE_0230_VERSION);
 		subject.migrate();
 
 		verify(mockMigrator).accept(subject);
@@ -735,11 +739,11 @@ class ServicesStateTest {
 		assertSame(specialFiles, copy.specialFiles());
 	}
 
-	private void setAllMmsTo(final MerkleMap<?, ?> mockMm) {
+	private void setAllMmsTo(final MerkleMap<?, ?> mockMm, final VirtualMap<?, ?> virtualMm) {
 		subject.setChild(StateChildIndices.ACCOUNTS, mockMm);
 		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, mockMm);
 		subject.setChild(StateChildIndices.TOKENS, mockMm);
-		subject.setChild(StateChildIndices.UNIQUE_TOKENS, mockMm);
+		subject.setChild(StateChildIndices.UNIQUE_TOKENS, virtualMm);
 		subject.setChild(StateChildIndices.STORAGE, mockMm);
 		subject.setChild(StateChildIndices.TOPICS, mockMm);
 		subject.setChild(StateChildIndices.SCHEDULE_TXS, mockMm);

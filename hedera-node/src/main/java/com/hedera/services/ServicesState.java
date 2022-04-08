@@ -65,7 +65,6 @@ import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.units.qual.A;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -367,10 +366,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	private void runPostMigrationTasks() {
-		if (postMigrationTasks == null) {
-			// This can happen if this class is mocked for tests.
-			return;
-		}
 		for (Runnable task : postMigrationTasks) {
 			task.run();
 		}
