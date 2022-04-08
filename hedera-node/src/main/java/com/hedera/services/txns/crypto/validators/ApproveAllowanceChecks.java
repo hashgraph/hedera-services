@@ -110,17 +110,17 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 		if (validity != OK) {
 			return validity;
 		}
-		
+
 		final var tokenStore = new ReadOnlyTokenStore(accountStore,
 				view.asReadOnlyTokenStore(),
 				view.asReadOnlyNftStore(),
 				view.asReadOnlyAssociationStore());
-		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount, tokenStore, accountStore);
+		validity = validateFungibleTokenAllowances(tokenAllowances, payerAccount, accountStore, tokenStore);
 		if (validity != OK) {
 			return validity;
 		}
 
-		validity = validateNftAllowances(tokenStore, accountStore, nftAllowances, payerAccount);
+		validity = validateNftAllowances(nftAllowances, payerAccount, accountStore, tokenStore);
 		if (validity != OK) {
 			return validity;
 		}
@@ -135,8 +135,9 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 	 * @param cryptoAllowances
 	 * 		crypto allowances list
 	 * @param payerAccount
-	 * 		Account of the payer for the Allowance approve/adjust txn
+	 * 		Account of the payer for the approveAllowance txn
 	 * @param accountStore
+	 * 		account store
 	 * @return response code after validation
 	 */
 	ResponseCodeEnum validateCryptoAllowances(
@@ -185,22 +186,24 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 	 * @param tokenAllowances
 	 * 		token allowances list
 	 * @param payerAccount
-	 * 		Account of the payer for the Allowance approve/adjust txn
+	 * 		Account of the payer for the approveAllowance txn
 	 * @param accountStore
+	 * 		account store
+	 * @param tokenStore
+	 * 		read only token store
 	 * @return
 	 */
 	ResponseCodeEnum validateFungibleTokenAllowances(
 			final List<TokenAllowance> tokenAllowances,
 			final Account payerAccount,
-			final ReadOnlyTokenStore tokenStore,
-			final AccountStore accountStore) {
+			final AccountStore accountStore,
+			final ReadOnlyTokenStore tokenStore) {
 		if (tokenAllowances.isEmpty()) {
 			return OK;
 		}
 		final List<Pair<EntityNum, FcTokenAllowanceId>> tokenKeys = new ArrayList<>();
 		for (var allowance : tokenAllowances) {
-			tokenKeys.add(
-					buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
+			tokenKeys.add(buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
 		}
 		if (hasRepeatedId(tokenKeys)) {
 			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
@@ -209,8 +212,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 		for (final var allowance : tokenAllowances) {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var spender = Id.fromGrpcAccount(allowance.getSpender());
-			final var tokenId = allowance.getTokenId();
-			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
+			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
 
 			final var fetchResult = fetchOwnerAccount(owner, payerAccount, accountStore);
 			if (fetchResult.getRight() != OK) {
@@ -237,17 +239,21 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 	/**
 	 * Validate nft allowances list {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} transaction
 	 *
-	 * @param tokenStore
-	 * @param accountStore
 	 * @param nftAllowancesList
+	 * 		nft allowances
 	 * @param payerAccount
+	 * 		payer for approveAllowance txn
+	 * @param accountStore
+	 * 		account store
+	 * @param tokenStore
+	 * 		token store
 	 * @return
 	 */
 	ResponseCodeEnum validateNftAllowances(
-			final ReadOnlyTokenStore tokenStore,
-			final AccountStore accountStore,
 			final List<NftAllowance> nftAllowancesList,
-			final Account payerAccount) {
+			final Account payerAccount,
+			final AccountStore accountStore,
+			final ReadOnlyTokenStore tokenStore) {
 		if (nftAllowancesList.isEmpty()) {
 			return OK;
 		}

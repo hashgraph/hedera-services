@@ -77,18 +77,18 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//				happyPathWorks(),
-//				approvedForAllNotAffectedOnDelete(),
-//				noOwnerDefaultsToPayerInDeleteAllowance(),
-//				invalidOwnerFails(),
-//				canDeleteMultipleOwners(),
-//				emptyAllowancesDeleteRejected(),
-//				repeatedAllowancesFail(),
-//				tokenNotAssociatedToAccountFailsOnDeleteAllowance(),
-//				invalidTokenTypeFailsInDeleteAllowance(),
-//				validatesSerialNums(),
-//				exceedsTransactionLimit(),
-//				succeedsWhenTokenPausedFrozenKycRevoked(),
+				happyPathWorks(),
+				approvedForAllNotAffectedOnDelete(),
+				noOwnerDefaultsToPayerInDeleteAllowance(),
+				invalidOwnerFails(),
+				canDeleteMultipleOwners(),
+				emptyAllowancesDeleteRejected(),
+				repeatedAllowancesFail(),
+				tokenNotAssociatedToAccountFailsOnDeleteAllowance(),
+				invalidTokenTypeFailsInDeleteAllowance(),
+				validatesSerialNums(),
+				exceedsTransactionLimit(),
+				succeedsWhenTokenPausedFrozenKycRevoked(),
 				feesAsExpected()
 		});
 	}
@@ -284,7 +284,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 100L)
 								.addTokenAllowance(owner, token, "spender2", 100L)
-								.addNftAllowance(owner, nft, "spender2", false, List.of(1L)),
+								.addNftAllowance(owner, nft, "spender2", false, List.of(1L, 2L, 3L)),
 						/*--- without specifying owner */
 						cryptoDeleteAllowance()
 								.payingWith(owner)
@@ -303,7 +303,15 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.blankMemo()
 								.addNftDeleteAllowance(owner, nft, List.of(1L))
 								.via("baseDeleteNft"),
-						validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01)
+						validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01),
+
+						/*--- with specifying owner */
+						cryptoDeleteAllowance()
+								.payingWith(owner)
+								.blankMemo()
+								.addNftDeleteAllowance(owner, nft, List.of(2L, 3L))
+								.via("twoDeleteNft"),
+						validateChargedUsdWithin("twoDeleteNft", 0.050101, 0.01)
 				);
 	}
 

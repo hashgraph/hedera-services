@@ -348,10 +348,11 @@ class ApproveAllowanceChecksTest {
 				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getCryptoAllowancesList(), owner,
 				accountStore));
 		assertEquals(OK, subject.validateFungibleTokenAllowances(
-				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getTokenAllowancesList(), owner, tokenStore,
-				accountStore));
-		assertEquals(OK, subject.validateNftAllowances(tokenStore, accountStore,
-				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getNftAllowancesList(), owner));
+				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getTokenAllowancesList(), owner, accountStore,
+				tokenStore));
+		assertEquals(OK, subject.validateNftAllowances(
+				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getNftAllowancesList(), owner, accountStore,
+				tokenStore));
 	}
 
 	@Test
@@ -378,11 +379,11 @@ class ApproveAllowanceChecksTest {
 
 		tokenAllowances.add(badTokenAllowance);
 		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER, subject.validateFungibleTokenAllowances(tokenAllowances, owner,
-				tokenStore, accountStore));
+				accountStore, tokenStore));
 
 		nftAllowances.add(badNftAllowance);
-		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER, subject.validateNftAllowances(
-				tokenStore, accountStore, nftAllowances, owner));
+		assertEquals(SPENDER_ACCOUNT_SAME_AS_OWNER,
+				subject.validateNftAllowances(nftAllowances, owner, accountStore, tokenStore));
 	}
 
 	@Test
@@ -402,8 +403,8 @@ class ApproveAllowanceChecksTest {
 				accountStore));
 
 		tokenAllowances.add(badTokenAllowance);
-		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, owner,
-				tokenStore, accountStore));
+		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT,
+				subject.validateFungibleTokenAllowances(tokenAllowances, owner, accountStore, tokenStore));
 	}
 
 	@Test
@@ -415,9 +416,9 @@ class ApproveAllowanceChecksTest {
 		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
 				subject.validateCryptoAllowances(cryptoAllowances, owner, accountStore));
 		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
-				subject.validateFungibleTokenAllowances(tokenAllowances, owner, tokenStore, accountStore));
-		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES, subject.validateNftAllowances(
-				tokenStore, accountStore, nftAllowances, owner));
+				subject.validateFungibleTokenAllowances(tokenAllowances, owner, accountStore, tokenStore));
+		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
+				subject.validateNftAllowances(nftAllowances, owner, accountStore, tokenStore));
 	}
 
 	@Test
@@ -431,7 +432,7 @@ class ApproveAllowanceChecksTest {
 
 		tokenAllowances.add(badTokenAllowance);
 		assertEquals(AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY, subject.validateFungibleTokenAllowances(tokenAllowances, owner,
-				tokenStore, accountStore));
+				accountStore, tokenStore));
 	}
 
 	@Test
@@ -445,7 +446,7 @@ class ApproveAllowanceChecksTest {
 
 		tokenAllowances.add(badTokenAllowance);
 		assertEquals(NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES, subject.validateFungibleTokenAllowances(tokenAllowances, owner,
-				tokenStore, accountStore));
+				accountStore, tokenStore));
 	}
 
 	@Test
@@ -533,7 +534,7 @@ class ApproveAllowanceChecksTest {
 		nftAllowances.add(badNftAllowance);
 
 		assertEquals(DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL,
-				subject.validateNftAllowances(tokenStore, accountStore, nftAllowances, owner));
+				subject.validateNftAllowances(nftAllowances, owner, accountStore, tokenStore));
 	}
 
 	@Test
@@ -555,7 +556,7 @@ class ApproveAllowanceChecksTest {
 		nftAllowances.add(badNftAllowance);
 
 		assertEquals(DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL,
-				subject.validateNftAllowances(tokenStore, accountStore, nftAllowances, owner));
+				subject.validateNftAllowances(nftAllowances, owner, accountStore, tokenStore));
 	}
 
 	@Test
@@ -581,7 +582,7 @@ class ApproveAllowanceChecksTest {
 		nftAllowances.clear();
 		nftAllowances.add(badNftAllowance);
 
-		assertEquals(OK, subject.validateNftAllowances(tokenStore, accountStore, nftAllowances, owner));
+		assertEquals(OK, subject.validateNftAllowances(nftAllowances, owner, accountStore, tokenStore));
 	}
 
 	@Test
@@ -590,7 +591,7 @@ class ApproveAllowanceChecksTest {
 		given(tokenStore.loadPossiblyPausedToken(token1Model.getId())).willReturn(token1Model);
 		given(tokenStore.hasAssociation(token1Model, owner)).willReturn(false);
 		assertEquals(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, subject.validateFungibleTokenAllowances(tokenAllowances, owner,
-				tokenStore, accountStore));
+				accountStore, tokenStore));
 	}
 
 	@Test
@@ -620,7 +621,7 @@ class ApproveAllowanceChecksTest {
 
 		nftAllowances.add(badNftAllowance);
 		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES,
-				subject.validateNftAllowances(tokenStore, accountStore, nftAllowances, owner));
+				subject.validateNftAllowances(nftAllowances, owner, accountStore, tokenStore));
 	}
 
 	@Test
@@ -689,15 +690,16 @@ class ApproveAllowanceChecksTest {
 
 		getValidTxnCtx();
 
-		assertEquals(OK, subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount, tokenStore,
-				accountStore));
+		assertEquals(OK, subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount,
+				accountStore,
+				tokenStore));
 		verify(accountStore).loadAccount(Id.fromGrpcAccount(ownerId1));
 
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willThrow(InvalidTransactionException.class);
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
-				subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount, tokenStore,
-						accountStore));
+				subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount, accountStore,
+						tokenStore));
 	}
 
 	@Test
@@ -714,12 +716,12 @@ class ApproveAllowanceChecksTest {
 		getValidTxnCtx();
 
 		assertEquals(OK,
-				subject.validateNftAllowances(tokenStore, accountStore, op.getNftAllowancesList(), payerAccount));
+				subject.validateNftAllowances(op.getNftAllowancesList(), payerAccount, accountStore, tokenStore));
 		verify(accountStore).loadAccount(Id.fromGrpcAccount(ownerId1));
 
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willThrow(InvalidTransactionException.class);
-		assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.validateNftAllowances(
-				tokenStore, accountStore, op.getNftAllowancesList(), payerAccount));
+		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
+				subject.validateNftAllowances(op.getNftAllowancesList(), payerAccount, accountStore, tokenStore));
 		verify(accountStore, times(2)).loadAccount(Id.fromGrpcAccount(ownerId1));
 	}
 
@@ -759,7 +761,7 @@ class ApproveAllowanceChecksTest {
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 		assertEquals(OK, subject.validateFungibleTokenAllowances(
 				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getTokenAllowancesList(),
-				payerAccount, tokenStore, accountStore));
+				payerAccount, accountStore, tokenStore));
 		verify(accountStore, never()).loadAccount(any());
 
 
@@ -769,8 +771,10 @@ class ApproveAllowanceChecksTest {
 						CryptoApproveAllowanceTransactionBody.newBuilder().addAllNftAllowances(nftAllowances)
 				).build();
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
-		assertEquals(OK, subject.validateNftAllowances(tokenStore, accountStore,
-				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getNftAllowancesList(), payerAccount));
+		assertEquals(OK, subject.validateNftAllowances(
+				cryptoApproveAllowanceTxn.getCryptoApproveAllowance().getNftAllowancesList(), payerAccount,
+				accountStore,
+				tokenStore));
 		verify(accountStore, never()).loadAccount(any());
 	}
 

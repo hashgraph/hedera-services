@@ -237,8 +237,6 @@ public class CryptoOpsUsage {
 				ctx.currentNftAllowances());
 		newTotalBytes += newApproveForAllNfts * NFT_ALLOWANCE_SIZE;
 
-		// should we count all serials every time since they are stored on Token ??
-
 		return newTotalBytes;
 	}
 }

@@ -72,9 +72,7 @@ public class CryptoDeleteAllowanceMeta {
 	}
 
 	public long getMsgBytesUsed() {
-		// This is to make sure the fees is the same for base case even if owner field is not specified in the
-		// transaction
-		return Math.max(msgBytesUsed, NFT_DELETE_ALLOWANCE_SIZE);
+		return msgBytesUsed;
 	}
 
 	public static class Builder {

@@ -466,7 +466,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						getTxnRecord("approveTxn").logged()
 				)
 				.then(
-						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
+						validateChargedUsdWithin("approveTxn", 0.05238, 0.01),
 						getAccountDetails(payer)
 								.payingWith(GENESIS)
 								.has(accountWith()
@@ -652,7 +652,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("approveNftTxn", 0.05024, 0.01),
+						validateChargedUsdWithin("approveNftTxn", 0.050101, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addNftAllowance(owner, nft, "spender1", true, List.of())
@@ -670,7 +670,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
+						validateChargedUsdWithin("approveTxn", 0.05238, 0.01),
 						getAccountDetails(owner)
 								.payingWith(GENESIS)
 								.has(accountWith()
@@ -1488,7 +1488,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.logged()
 				)
 				.then(
-						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
+						validateChargedUsdWithin("approveTxn", 0.05238, 0.01),
 						getAccountDetails(owner)
 								.payingWith(GENESIS)
 								.has(accountWith()

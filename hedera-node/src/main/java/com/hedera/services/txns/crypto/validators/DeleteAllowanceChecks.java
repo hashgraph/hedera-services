@@ -97,7 +97,7 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 				view.asReadOnlyNftStore(),
 				view.asReadOnlyAssociationStore());
 
-		validity = validateNftDeleteAllowances(nftAllowances, payerAccount, tokenStore, accountStore);
+		validity = validateNftDeleteAllowances(nftAllowances, payerAccount, accountStore, tokenStore);
 		if (validity != OK) {
 			return validity;
 		}
@@ -119,8 +119,8 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 	public ResponseCodeEnum validateNftDeleteAllowances(
 			final List<NftRemoveAllowance> nftAllowances,
 			final Account payerAccount,
-			final ReadOnlyTokenStore tokenStore,
-			final AccountStore accountStore) {
+			final AccountStore accountStore,
+			final ReadOnlyTokenStore tokenStore) {
 		if (nftAllowances.isEmpty()) {
 			return OK;
 		}
