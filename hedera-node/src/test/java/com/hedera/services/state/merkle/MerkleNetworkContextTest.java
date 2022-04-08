@@ -35,6 +35,9 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.common.MutabilityException;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.platform.state.DualStateImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,9 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,6 +67,7 @@ class MerkleNetworkContextTest {
 			"x123456789x123456789x123456789x123456789x1234567".getBytes(StandardCharsets.UTF_8);
 	private Instant lastMidnightBoundaryCheck;
 	private Instant consensusTimeOfLastHandledTxn;
+	private Instant firstConsTimeOfCurrentBlock;
 	private SequenceNumber seqNo;
 	private SequenceNumber seqNoCopy;
 	private ExchangeRates midnightRateSet;
@@ -92,6 +94,7 @@ class MerkleNetworkContextTest {
 		};
 
 		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
+		firstConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_567L, 13579L);
 		lastMidnightBoundaryCheck = consensusTimeOfLastHandledTxn.minusSeconds(123L);
 
 		seqNo = mock(SequenceNumber.class);
@@ -123,6 +126,7 @@ class MerkleNetworkContextTest {
 		subject.setPreparedUpdateFileNum(preparedUpdateFileNum);
 		subject.setPreparedUpdateFileHash(preparedUpdateFileHash);
 		subject.markMigrationRecordsStreamed();
+		subject.setFirstConsTimeOfCurrentBlock(firstConsTimeOfCurrentBlock);
 	}
 
 	@Test
@@ -166,6 +170,9 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
 		assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
 		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
+		assertSame(subjectCopy.getBlockHashCache(), subject.getBlockHashCache());
+		assertSame(subjectCopy.getBlockNo(), subject.getBlockNo());
+		assertSame(subjectCopy.getFirstConsTimeOfCurrentBlock(), subject.getFirstConsTimeOfCurrentBlock());
 		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());
 		// and:
 		assertTrue(subject.isImmutable());
@@ -237,6 +244,9 @@ class MerkleNetworkContextTest {
 		assertArrayEquals(a.usageSnapshots(), b.usageSnapshots());
 		assertArrayEquals(a.getCongestionLevelStarts(), b.getCongestionLevelStarts());
 		assertEquals(a.getStateVersion(), b.getStateVersion());
+		assertEquals(a.getFirstConsTimeOfCurrentBlock(), b.getFirstConsTimeOfCurrentBlock());
+		assertEquals(a.getBlockNo(), b.getBlockNo());
+		assertEquals(a.getBlockHashCache(), b.getBlockHashCache());
 		assertEquals(a.getEntitiesScannedThisSecond(), b.getEntitiesScannedThisSecond());
 		assertEquals(a.getEntitiesTouchedThisSecond(), b.getEntitiesTouchedThisSecond());
 		assertEquals(a.getPreparedUpdateFileNum(), b.getPreparedUpdateFileNum());
