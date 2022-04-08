@@ -21,16 +21,16 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
-import com.hedera.services.utils.EntityNumPair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -72,8 +72,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 	@Test
 	void recognizesAccountWithZeroTokenBalances() {
-		when(accountsLedger.get(deletable, TOKEN_ASSOCIATION_METADATA)).thenReturn(
-				new TokenAssociationMetadata(2, 2, EntityNumPair.MISSING_NUM_PAIR));
+		when(accountsLedger.get(deletable, NUM_POSITIVE_BALANCES)).thenReturn(0);
 
 		assertTrue(subject.allTokenBalancesVanish(deletable));
 	}
@@ -118,7 +117,9 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 
 		verify(tokenRelsLedger).rollback();
 		verify(nftsLedger).rollback();
-		verify(accountsLedger).undoChangesOfType(List.of(TOKEN_ASSOCIATION_METADATA, NUM_NFTS_OWNED, ALREADY_USED_AUTOMATIC_ASSOCIATIONS));
+		verify(accountsLedger).undoChangesOfType(
+				List.of(NUM_POSITIVE_BALANCES, NUM_ASSOCIATIONS, HEAD_TOKEN_NUM,
+						NUM_NFTS_OWNED, USED_AUTOMATIC_ASSOCIATIONS));
 		verify(sideEffectsTracker).resetTrackedTokenChanges();
 	}
 

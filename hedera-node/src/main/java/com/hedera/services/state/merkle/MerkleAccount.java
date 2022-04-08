@@ -24,11 +24,9 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -62,8 +60,6 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x950bcf7255691908L;
 
-	static DomainSerdes serdes = new DomainSerdes();
-
 	@Override
 	public EntityNum getKey() {
 		return new EntityNum(state().number());
@@ -74,7 +70,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setNumber(phi.intValue());
 	}
 
-	/* Order of Merkle node children */
+	// Order of Merkle node children
 	public static final class ChildIndices {
 		private static final int STATE = 0;
 		private static final int RELEASE_090_RECORDS = 1;
@@ -117,7 +113,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		return ChildIndices.NUM_0240_CHILDREN;
 	}
 
-	/* --- FastCopyable --- */
+	// --- FastCopyable ---
 	@Override
 	public MerkleAccount copy() {
 		if (isImmutable()) {
@@ -137,7 +133,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 				new MerkleAccount(List.of(state().copy(), records().copy()), this);
 	}
 
-	/* ---- Object ---- */
+	// ---- Object ----
 	@Override
 	public boolean equals(final Object o) {
 		if (o == this) {
@@ -185,8 +181,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		addDeserializedChildren(List.of(state(), records()), RELEASE_0240_VERSION);
 	}
 
-	/* ----  Bean  ---- */
-
+	// ----  Bean  ----
 	public long getNftsOwned() {
 		return state().nftsOwned();
 	}
@@ -233,21 +228,35 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setTransactionCounter(transactionCounter);
 	}
 
-	public TokenAssociationMetadata getTokenAssociationMetadata() {
-		return state().getTokenAssociationMetadata();
-	}
-
-	public void setTokenAssociationMetadata(final TokenAssociationMetadata tokenAssociationMetaData) {
-		throwIfImmutable("Cannot change this account's tokenAssociationMetaData if it is immutable");
-		state().setTokenAssociationMetadata(tokenAssociationMetaData);
-	}
-
 	public int getNumAssociations() {
-		return getTokenAssociationMetadata().numAssociations();
+		return state().getNumAssociations();
+	}
+
+	public void setNumAssociations(final int numAssociations) {
+		throwIfImmutable("Cannot change this account's numAssociations if it;s immutable");
+		state().setNumAssociations(numAssociations);
+	}
+
+	public int getNumPositiveBalances() {
+		return state().getNumPositiveBalances();
+	}
+
+	public void setNumPositiveBalances(final int numPositiveBalances) {
+		throwIfImmutable("Cannot change this account's numPositiveBalances if it;s immutable");
+		state().setNumPositiveBalances(numPositiveBalances);
+	}
+
+	public long getHeadTokenId() {
+		return state().getHeadTokenId();
+	}
+
+	public void setHeadTokenId(final long headTokenId) {
+		throwIfImmutable("Cannot change this account's headTokenId if it;s immutable");
+		state().setHeadTokenId(headTokenId);
 	}
 
 	public EntityNumPair getLatestAssociation() {
-		return getTokenAssociationMetadata().latestAssociation();
+		return EntityNumPair.fromLongs(state().number(), getHeadTokenId());
 	}
 
 	public long getBalance() {
@@ -332,16 +341,16 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setMaxAutomaticAssociations(maxAutomaticAssociations);
 	}
 
-	public int getAlreadyUsedAutoAssociations() {
-		return state().getAlreadyUsedAutomaticAssociations();
+	public int getUsedAutoAssociations() {
+		return state().getUsedAutomaticAssociations();
 	}
 
-	public void setAlreadyUsedAutomaticAssociations(final int alreadyUsedAutoAssociations) {
-		if (alreadyUsedAutoAssociations < 0 || alreadyUsedAutoAssociations > getMaxAutomaticAssociations()) {
+	public void setUsedAutomaticAssociations(final int usedAutoAssociations) {
+		if (usedAutoAssociations < 0 || usedAutoAssociations > getMaxAutomaticAssociations()) {
 			throw new IllegalArgumentException(
-					"Cannot set alreadyUsedAutoAssociations to " + alreadyUsedAutoAssociations);
+					"Cannot set usedAutoAssociations to " + usedAutoAssociations);
 		}
-		state().setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		state().setUsedAutomaticAssociations(usedAutoAssociations);
 	}
 
 	public int getNumContractKvPairs() {

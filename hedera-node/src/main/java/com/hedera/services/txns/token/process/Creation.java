@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -68,7 +69,7 @@ public class Creation {
 
 	@FunctionalInterface
 	public interface NewRelsListing {
-		List<TokenRelationship> listFrom(Token provisionalToken, TypedTokenStore tokenStore);
+		List<TokenRelationship> listFrom(Token provisionalToken, TypedTokenStore tokenStore, GlobalDynamicProperties dynamicProperties);
 	}
 
 	private Id provisionalId;
@@ -120,8 +121,8 @@ public class Creation {
 		provisionalToken = modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now);
 		provisionalToken.getCustomFees().forEach(fee ->
 				fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore));
-		final var hasExistingAssociations = treasury.getLastAssociatedToken().value() != 0;
-		newAndUpdatedRels = listing.listFrom(provisionalToken, tokenStore);
+		final var hasExistingAssociations = treasury.getHeadTokenNum() != MISSING_ID.num();
+		newAndUpdatedRels = listing.listFrom(provisionalToken, tokenStore, dynamicProperties);
 		if (op.getInitialSupply() > 0) {
 			// When we created the new relationship for a treasury that already had a last-added relationship,
 			// we had to _first_ update the prev pointer on that relationship; so it will come first in the list of

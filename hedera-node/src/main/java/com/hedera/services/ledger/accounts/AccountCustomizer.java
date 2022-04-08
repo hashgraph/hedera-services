@@ -31,7 +31,6 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALIAS;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
@@ -41,6 +40,7 @@ import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.USED_AUTOMATIC_ASSOCIATIONS;
 import static java.util.Collections.unmodifiableMap;
 
 /**
@@ -71,7 +71,7 @@ public abstract class AccountCustomizer<
 		AUTO_RENEW_PERIOD,
 		IS_RECEIVER_SIG_REQUIRED,
 		MAX_AUTOMATIC_ASSOCIATIONS,
-		ALREADY_USED_AUTOMATIC_ASSOCIATIONS,
+		USED_AUTOMATIC_ASSOCIATIONS,
 		ALIAS
 	}
 
@@ -158,8 +158,8 @@ public abstract class AccountCustomizer<
 		return self();
 	}
 
-	public T alreadyUsedAutomaticAssociations(final int option) {
-		changeManager.update(changes, optionProperties.get(ALREADY_USED_AUTOMATIC_ASSOCIATIONS), option);
+	public T usedAutomaticAssociations(final int option) {
+		changeManager.update(changes, optionProperties.get(USED_AUTOMATIC_ASSOCIATIONS), option);
 		return self();
 	}
 }

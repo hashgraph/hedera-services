@@ -22,6 +22,7 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.TypedTokenStore;
@@ -45,15 +46,17 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 /**
@@ -85,8 +88,8 @@ public class Account {
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
 	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
 	private int numAssociations;
-	private int numZeroBalances;
-	private EntityNumPair lastAssociatedToken;
+	private int numPositiveBalances;
+	private long headTokenNum;
 	private long transactionCounter;
 
 	public Account(Id id) {
@@ -163,17 +166,17 @@ public class Account {
 		setAlreadyUsedAutomaticAssociations(++count);
 	}
 
-	public void decrementUsedAutomaticAssocitions() {
+	public void decrementUsedAutomaticAssociations() {
 		var count = getAlreadyUsedAutomaticAssociations();
 		setAlreadyUsedAutomaticAssociations(--count);
 	}
 
-	public EntityNumPair getLastAssociatedToken() {
-		return lastAssociatedToken;
+	public long getHeadTokenNum() {
+		return headTokenNum;
 	}
 
-	public void setLastAssociatedToken(final EntityNumPair lastAssociatedToken) {
-		this.lastAssociatedToken = lastAssociatedToken;
+	public void setHeadTokenNum(final long headTokenNum) {
+		this.headTokenNum = headTokenNum;
 	}
 
 	public int getNumAssociations() {
@@ -189,16 +192,16 @@ public class Account {
 		}
 	}
 
-	public int getNumZeroBalances() {
-		return numZeroBalances;
+	public int getNumPositiveBalances() {
+		return numPositiveBalances;
 	}
 
-	public void setNumZeroBalances(final int numZeroBalances) {
-		if (numZeroBalances < 0) {
+	public void setNumPositiveBalances(final int numPositiveBalances) {
+		if (numPositiveBalances < 0) {
 			// not possible
-			this.numZeroBalances = 0;
+			this.numPositiveBalances = 0;
 		} else {
-			this.numZeroBalances = numZeroBalances;
+			this.numPositiveBalances = numPositiveBalances;
 		}
 	}
 
@@ -213,16 +216,24 @@ public class Account {
 	 * 		boolean flag to denote if its an automaticAssociation.
 	 * @param shouldEnableRelationship
 	 * 		boolean flag to denote if the new relationships have to enabled by default without considering the KYC key and Freeze Key
+	 * @param dynamicProperties
+	 * 		GlobalDynamicProperties to fetch the token associations limit and enforce it.
 	 * @return A list of TokenRelationships [new and old] that are touched by associating the tokens to this account.
 	 */
 	public List<TokenRelationship> associateWith(
 			final List<Token> tokens,
 			final TypedTokenStore tokenStore,
 			final boolean isAutomaticAssociation,
-			final boolean shouldEnableRelationship) {
+			final boolean shouldEnableRelationship,
+			final GlobalDynamicProperties dynamicProperties) {
 		List<TokenRelationship> tokenRelationshipsToPersist = new ArrayList<>();
-		var currKey = lastAssociatedToken;
-		TokenRelationship prevRel = currKey.equals(MISSING_NUM_PAIR) ?
+
+		final var proposedTotalAssociations = tokens.size() + numAssociations;
+		validateFalse(exceedsTokenAssociationLimit(dynamicProperties, proposedTotalAssociations),
+				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
+		var currKey = headTokenNum;
+		TokenRelationship currRel = currKey == MISSING_ID.num() ?
 				null : tokenStore.getLatestTokenRelationship(this);
 		for (var token : tokens) {
 			validateFalse(tokenStore.hasAssociation(token, this), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
@@ -233,20 +244,20 @@ public class Account {
 			final var newRel = shouldEnableRelationship ?
 					token.newEnabledRelationship(this) :
 					token.newRelationshipWith(this, false);
-			if (prevRel != null) {
-				final var prevKey = prevRel.getPrevKey();
+			final var newTokenNum = token.getId().num();
+			if (currRel != null) {
+				final var prevKey = currRel.getPrevKey();
 				newRel.setPrevKey(prevKey);
 				newRel.setNextKey(currKey);
-				prevRel.setPrevKey(newRel.getKey());
-				tokenRelationshipsToPersist.add(prevRel);
+				currRel.setPrevKey(newTokenNum);
+				tokenRelationshipsToPersist.add(currRel);
 			}
-			numZeroBalances++;
 			numAssociations++;
-			prevRel = newRel;
-			currKey = newRel.getKey();
+			currRel = newRel;
+			currKey = newTokenNum;
 		}
-		lastAssociatedToken = currKey;
-		tokenRelationshipsToPersist.add(prevRel);
+		headTokenNum = currKey;
+		tokenRelationshipsToPersist.add(currRel);
 		return tokenRelationshipsToPersist;
 	}
 
@@ -262,31 +273,37 @@ public class Account {
 	 * @return A list of TokenRelationships that are touched by the dissociating tokens.
 	 */
 	public List<TokenRelationship> dissociateUsing(
-			List<Dissociation> dissociations,
-			TypedTokenStore tokenStore,
-			OptionValidator validator) {
+			final List<Dissociation> dissociations,
+			final TypedTokenStore tokenStore,
+			final OptionValidator validator
+	) {
 		final Map<EntityNumPair, TokenRelationship> unPersistedRelationships = new HashMap<>();
-		for (var dissociation : dissociations) {
+		for (final var dissociation : dissociations) {
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
 
-			decrementCounters(dissociation);
-
 			dissociation.updateModelRelsSubjectTo(validator);
-
-			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
-				decrementUsedAutomaticAssocitions();
+			final var pastRel = dissociation.dissociatingAccountRel();
+			if (pastRel.isAutomaticAssociation()) {
+				decrementUsedAutomaticAssociations();
+			}
+			if (pastRel.getBalanceChange() != 0) {
+				numPositiveBalances--;
 			}
 
 			final var tokenId = dissociation.dissociatedTokenId();
-			final var associationKey = EntityNumPair.fromLongs(id.num(),tokenId.num());
-
-			if (lastAssociatedToken.equals(associationKey)) {
+			final var relKey = EntityNumPair.fromLongs(id.num(),tokenId.num());
+			if (headTokenNum == tokenId.num()) {
 				// removing the latest associated token from the account
-				updateLastAssociation(tokenStore, unPersistedRelationships, associationKey);
+				if (numAssociations == 1) {
+					headTokenNum = MISSING_ID.num();
+				} else {
+					updateLastAssociation(tokenStore, unPersistedRelationships, relKey);
+				}
 			} else {
 				/* get next, prev tokenRelationships and update the links by un-linking the dissociating relationship */
-				updateAssociationList(tokenStore, unPersistedRelationships, dissociation.dissociatingToken(), associationKey);
+				updateAssociationList(tokenStore, unPersistedRelationships, dissociation.dissociatingToken(), relKey);
 			}
+			numAssociations--;
 		}
 		return unPersistedRelationships.values().stream().toList();
 	}
@@ -295,62 +312,43 @@ public class Account {
 			final TypedTokenStore tokenStore,
 			final Map<EntityNumPair, TokenRelationship> unPersistedRelationships,
 			final Token token,
-			final EntityNumPair associationKey) {
-		final var dissociatingRel = unPersistedRelationships.getOrDefault(associationKey,
-				tokenStore.loadTokenRelationship(token, this));
+			final EntityNumPair relKey) {
+		final var dissociatingRel = unPersistedRelationships.computeIfAbsent(relKey,
+				ignore -> tokenStore.loadTokenRelationship(token, this));
 		final var prevKey = dissociatingRel.getPrevKey();
 		final var prevToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
-				Id.fromGrpcToken(prevKey.asAccountTokenRel().getRight()));
-		final var prevRel = unPersistedRelationships.getOrDefault(prevKey,
-				tokenStore.loadTokenRelationship(prevToken, this));
+				STATIC_PROPERTIES.scopedIdWith(prevKey));
+		final var prevRelKey = EntityNumPair.fromLongs(id.num(), prevKey);
+		final var prevRel = unPersistedRelationships.computeIfAbsent(prevRelKey,
+				ignore -> tokenStore.loadTokenRelationship(prevToken, this));
 		// nextKey can be 0.
 		final var nextKey = dissociatingRel.getNextKey();
-		if (!nextKey.equals(MISSING_NUM_PAIR)) {
+		if (nextKey != MISSING_ID.num()) {
 			final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
-					Id.fromGrpcToken(nextKey.asAccountTokenRel().getRight()));
-			final var nextRel = unPersistedRelationships.getOrDefault(nextKey,
-					tokenStore.loadTokenRelationship(nextToken, this));
+					STATIC_PROPERTIES.scopedIdWith(nextKey));
+			final var nextRelKey = EntityNumPair.fromLongs(id.num(), nextKey);
+			final var nextRel = unPersistedRelationships.computeIfAbsent(nextRelKey,
+					ignore -> tokenStore.loadTokenRelationship(nextToken, this));
 			nextRel.setPrevKey(prevKey);
-			unPersistedRelationships.put(nextKey, nextRel);
 		}
 		prevRel.setNextKey(nextKey);
-		unPersistedRelationships.put(prevKey, prevRel);
 	}
 
 	private void updateLastAssociation(
 			final TypedTokenStore tokenStore,
 			final Map<EntityNumPair, TokenRelationship> unPersistedRelationships,
-			final EntityNumPair associationKey) {
-		final var latestRel =  unPersistedRelationships.getOrDefault(associationKey,
-				tokenStore.getLatestTokenRelationship(this));
+			final EntityNumPair relKey
+	) {
+		final var latestRel =  unPersistedRelationships.computeIfAbsent(relKey,
+				ignore -> tokenStore.getLatestTokenRelationship(this));
 		final var nextKey = latestRel.getNextKey();
-
-		if (!nextKey.equals(MISSING_NUM_PAIR)) {
-			final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
-					Id.fromGrpcToken(nextKey.asAccountTokenRel().getRight()));
-			final var nextRel = unPersistedRelationships.getOrDefault(nextKey,
-					tokenStore.loadTokenRelationship(nextToken, this));
-			lastAssociatedToken = nextRel.getKey();
-			nextRel.setPrevKey(latestRel.getPrevKey());
-			unPersistedRelationships.put(nextKey, nextRel);
-		} else {
-			lastAssociatedToken = MISSING_NUM_PAIR;
-		}
-	}
-
-	private void decrementCounters(final Dissociation dissociation) {
-		if (shouldDecreaseNumZeroBalances(dissociation)) {
-			numZeroBalances--;
-		}
-		numAssociations--;
-	}
-
-	private boolean shouldDecreaseNumZeroBalances(final Dissociation dissociation) {
-		if (dissociation.dissociatingToken().getTreasury().getId().equals(id)) {
-			return dissociation.dissociatedTokenTreasuryRel().getBalance() == 0;
-		} else {
-			return dissociation.dissociatingAccountRel().getBalance() == 0;
-		}
+		final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
+				STATIC_PROPERTIES.scopedIdWith(nextKey));
+		final var nextRelKey = EntityNumPair.fromLongs(id.num(), nextKey);
+		final var nextRel = unPersistedRelationships.computeIfAbsent(nextRelKey,
+				ignore -> tokenStore.loadTokenRelationship(nextToken, this));
+		headTokenNum = nextKey;
+		nextRel.setPrevKey(MISSING_ID.num());
 	}
 
 	public Id getId() {
@@ -359,6 +357,11 @@ public class Account {
 
 	private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
 		return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
+	}
+
+	private boolean exceedsTokenAssociationLimit(GlobalDynamicProperties dynamicProperties, int totalAssociations) {
+		return dynamicProperties.areTokenAssociationsLimited() &&
+				totalAssociations > dynamicProperties.maxTokensPerAccount();
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
@@ -390,8 +393,8 @@ public class Account {
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("approveForAllNfts", approveForAllNfts)
 				.add("numAssociations", numAssociations)
-				.add("numZeroBalances", numZeroBalances)
-				.add("lastAssociatedToken", lastAssociatedToken)
+				.add("numPositiveBalances", numPositiveBalances)
+				.add("headTokenNum", headTokenNum)
 				.add("transactionCounter", transactionCounter)
 				.toString();
 	}

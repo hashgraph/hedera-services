@@ -36,8 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class TokenRelPropertyTest {
 	private final long balance = 123, newBalance = 321;
 	private final EntityNumPair key = new EntityNumPair(1234566);
-	private final EntityNumPair nextKey = new EntityNumPair(1234567);
-	private final EntityNumPair prevKey = new EntityNumPair(1234565);
+	private final long nextKey = 12345;
+	private final long prevKey = 12346;
 	private final boolean frozen = true;
 	private final boolean kycGranted = false;
 	private final boolean automaticAssociation = false;
@@ -47,8 +47,8 @@ class TokenRelPropertyTest {
 	@Test
 	void gettersWork() {
 		target.setKey(key);
-		target.setNextKey(nextKey);
-		target.setPrevKey(prevKey);
+		target.setNext(nextKey);
+		target.setPrev(prevKey);
 		// expect:
 		assertEquals(balance, TOKEN_BALANCE.getter().apply(target));
 		assertEquals(frozen, IS_FROZEN.getter().apply(target));

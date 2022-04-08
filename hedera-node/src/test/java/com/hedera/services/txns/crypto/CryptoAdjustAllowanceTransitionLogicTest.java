@@ -326,7 +326,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 				.addAllSerialNumbers(List.of(serial1)).build();
 		nftAllowances.add(nftAllowance);
 
-		subject.adjustNftAllowances(nftAllowances, ownerAcccount);
+		subject.applyNftAllowances(nftAllowances, ownerAcccount, new HashMap<>(), new HashMap<>());
 
 		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 
@@ -338,7 +338,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 				.addAllSerialNumbers(List.of(serial1)).build();
 		nftAllowances.add(nftAllowance1);
 
-		subject.adjustNftAllowances(nftAllowances, ownerAcccount);
+		subject.applyNftAllowances(nftAllowances, ownerAcccount, new HashMap<>(), new HashMap<>());
 
 		assertEquals(0, ownerAcccount.getApprovedForAllNftsAllowances().size());
 	}

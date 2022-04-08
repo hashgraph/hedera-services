@@ -29,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalLong;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
@@ -52,6 +53,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -364,6 +366,16 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoTransfer(
 								moving(500, firstFungibleToken).between(treasury, beneficiary)
 						).hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("accounts.limitTokenAssociations", "false")),
+						// even with unlimited token associations the will fail as expected.
+						cryptoTransfer(
+								moving(500, firstFungibleToken).between(treasury, beneficiary)
+						).hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("accounts.limitTokenAssociations", "true")),
 						/* Dissociating from a token that didn't use a slot doesn't free one up */
 						tokenDissociate(beneficiary, secondFungibleToken),
 						cryptoTransfer(
@@ -372,7 +384,13 @@ public class TokenTransactSpecs extends HapiApiSuite {
 						cryptoUpdate(beneficiary).maxAutomaticAssociations(2),
 						cryptoTransfer(
 								moving(500, firstFungibleToken).between(treasury, beneficiary)
-						).via(secondXfer)
+						).via(secondXfer),
+						cryptoTransfer(
+								moving(500, thirdFungibleToken).between(treasury, beneficiary)
+						).hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS),
+						tokenAssociate(beneficiary, thirdFungibleToken),
+						cryptoTransfer(
+								moving(500, thirdFungibleToken).between(treasury, beneficiary))
 				).then(
 						getTxnRecord(firstXfer).hasPriority(recordWith()
 								.autoAssociated(accountTokenPairs(List.of(

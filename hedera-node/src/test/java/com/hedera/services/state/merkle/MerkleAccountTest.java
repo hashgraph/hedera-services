@@ -24,16 +24,12 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.fcqueue.FCQueue;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +39,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -69,9 +64,7 @@ class MerkleAccountTest {
 	private static final EntityId proxy = new EntityId(1L, 2L, 3L);
 	private final int number = 123;
 	private final int maxAutoAssociations = 1234;
-	private final int alreadyUsedAutoAssociations = 123;
-	private final int autoAssociationMetadata =
-			buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutoAssociations);
+	private final int usedAutoAssociations = 123;
 	private static final Key aliasKey = Key.newBuilder()
 			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
 	private static final int kvPairs = 123;
@@ -81,7 +74,7 @@ class MerkleAccountTest {
 	private static final long otherExpiry = 7_234_567L;
 	private static final long otherBalance = 666_666L;
 	private static final long otherAutoRenewSecs = 432_765L;
-	private static final EntityNumPair lastAssociationKey =  EntityNumPair.fromLongs(123, 456);
+	private static final long lastAssociatedTokenNum = 456;
 	private static final String otherMemo = "Another memo";
 	private static final boolean otherDeleted = false;
 	private static final boolean otherSmartContract = false;
@@ -89,8 +82,6 @@ class MerkleAccountTest {
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
 	private static final FcTokenAllowanceId tokenAllowanceKey =
 			FcTokenAllowanceId.from( EntityNum.fromLong(2000L),  EntityNum.fromLong(1000L));
-	private static final TokenAssociationMetadata tokenAssociationMetaData = new TokenAssociationMetadata(
-			0, 0, lastAssociationKey);
 
 	private MerkleAccountState state;
 	private FCQueue<ExpirableTxnRecord> payerRecords;
@@ -105,8 +96,6 @@ class MerkleAccountTest {
 
 	@BeforeEach
 	void setup() {
-		MerkleAccount.serdes = mock(DomainSerdes.class);
-
 		payerRecords = mock(FCQueue.class);
 		given(payerRecords.copy()).willReturn(payerRecords);
 		given(payerRecords.isImmutable()).willReturn(false);
@@ -128,22 +117,20 @@ class MerkleAccountTest {
 				deleted, smartContract, receiverSigRequired,
 				proxy,
 				number,
-				autoAssociationMetadata,
+				maxAutoAssociations,
+				usedAutoAssociations,
 				alias,
 				kvPairs,
 				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				approveForAllNfts);
-		state.setTokenAssociationMetadata(tokenAssociationMetaData);
+				approveForAllNfts,
+				0,
+				0,
+				lastAssociatedTokenNum);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);
-	}
-
-	@AfterEach
-	void cleanup() {
-		MerkleAccount.serdes = new DomainSerdes();
 	}
 
 	@Test
@@ -233,13 +220,15 @@ class MerkleAccountTest {
 		assertSame(tokens, subject.tokens());
 		assertEquals(2L, subject.getNftsOwned());
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
-		assertEquals(state.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutoAssociations());
+		assertEquals(state.getUsedAutomaticAssociations(), subject.getUsedAutoAssociations());
 		assertEquals(state.getAlias(), subject.getAlias());
 		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
 		assertEquals(state.getCryptoAllowances().entrySet(), subject.getCryptoAllowances().entrySet());
 		assertEquals(state.getFungibleTokenAllowances().entrySet(), subject.getFungibleTokenAllowances().entrySet());
 		assertEquals(state.getApproveForAllNfts(), subject.getApproveForAllNfts());
-		assertEquals(state.getTokenAssociationMetadata(), subject.getTokenAssociationMetadata());
+		assertEquals(state.getNumAssociations(), subject.getNumAssociations());
+		assertEquals(state.getNumPositiveBalances(), subject.getNumPositiveBalances());
+		assertEquals(state.getHeadTokenId(), subject.getHeadTokenId());
 	}
 
 	@Test
@@ -268,14 +257,16 @@ class MerkleAccountTest {
 		subject.setAccountKey(otherKey);
 		subject.setKey(new EntityNum(number));
 		subject.setMaxAutomaticAssociations(maxAutoAssociations);
-		subject.setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		subject.setUsedAutomaticAssociations(usedAutoAssociations);
 		subject.setNftsOwned(2L);
 		subject.setAlias(alias);
 		subject.setNumContractKvPairs(kvPairs);
 		subject.setCryptoAllowances(cryptoAllowances);
 		subject.setFungibleTokenAllowances(fungibleTokenAllowances);
 		subject.setApproveForAllNfts(approveForAllNfts);
-		subject.setTokenAssociationMetadata(tokenAssociationMetaData);
+		subject.setHeadTokenId(lastAssociatedTokenNum);
+		subject.setNumPositiveBalances(0);
+		subject.setNumAssociations(0);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -288,14 +279,16 @@ class MerkleAccountTest {
 		verify(delegate).setHbarBalance(otherBalance);
 		verify(delegate).setNumber(number);
 		verify(delegate).setMaxAutomaticAssociations(maxAutoAssociations);
-		verify(delegate).setAlreadyUsedAutomaticAssociations(alreadyUsedAutoAssociations);
+		verify(delegate).setUsedAutomaticAssociations(usedAutoAssociations);
 		verify(delegate).setNumContractKvPairs(kvPairs);
 		verify(delegate).setNftsOwned(2L);
 		verify(delegate).setAlias(alias);
 		verify(delegate).setCryptoAllowances(cryptoAllowances);
 		verify(delegate).setFungibleTokenAllowances(fungibleTokenAllowances);
 		verify(delegate).setApproveForAllNfts(approveForAllNfts);
-		verify(delegate).setTokenAssociationMetadata(tokenAssociationMetaData);
+		verify(delegate).setNumPositiveBalances(0);
+		verify(delegate).setNumAssociations(0);
+		verify(delegate).setHeadTokenId(lastAssociatedTokenNum);
 	}
 
 	@Test
@@ -348,8 +341,8 @@ class MerkleAccountTest {
 
 	@Test
 	void throwsOnInvalidAlreadyUsedAtoAssociations() {
-		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(-1));
-		assertThrows(IllegalArgumentException.class, () -> subject.setAlreadyUsedAutomaticAssociations(
+		assertThrows(IllegalArgumentException.class, () -> subject.setUsedAutomaticAssociations(-1));
+		assertThrows(IllegalArgumentException.class, () -> subject.setUsedAutomaticAssociations(
 				maxAutoAssociations + 1));
 	}
 
