@@ -26,9 +26,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.MutabilityException;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
@@ -45,15 +43,11 @@ import java.util.SortedMap;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
-import static com.hedera.services.state.submerkle.TokenAssociationMetadata.EMPTY_TOKEN_ASSOCIATION_META;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
-import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hedera.services.utils.SerializationUtils.deserializeApproveForAllNftsAllowances;
 import static com.hedera.services.utils.SerializationUtils.deserializeCryptoAllowances;
@@ -66,8 +60,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
 
 	static final int RELEASE_0230_VERSION = 10;
-	static final int RELEASE_0250_VERSION = 11;
-	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	static final int RELEASE_0251_VERSION = 11;
+	private static final int CURRENT_VERSION = RELEASE_0251_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
 	public static final String DEFAULT_MEMO = "";
@@ -85,9 +79,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private long nftsOwned;
 	private int number;
 	private ByteString alias = DEFAULT_ALIAS;
-	private int autoAssociationMetadata;
 	private int numContractKvPairs;
-	private TokenAssociationMetadata tokenAssociationMetaData = EMPTY_TOKEN_ASSOCIATION_META;
+	private int maxAutoAssociations;
+	private int usedAutoAssociations;
+	private int numAssociations;
+	private int numPositiveBalances;
+	private long headTokenId;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
 	// these per-account maps to top-level maps using the "linked-list" values idiom
@@ -110,12 +107,16 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final boolean receiverSigRequired,
 			final EntityId proxy,
 			final int number,
-			final int autoAssociationMetadata,
+			final int maxAutoAssociations,
+			final int usedAutoAssociations,
 			final ByteString alias,
 			final int numContractKvPairs,
 			final Map<EntityNum, Long> cryptoAllowances,
 			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances,
-			final Set<FcTokenAllowanceId> approveForAllNfts
+			final Set<FcTokenAllowanceId> approveForAllNfts,
+			final int numAssociations,
+			final int numPositiveBalances,
+			final long headTokenId
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -127,12 +128,16 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.receiverSigRequired = receiverSigRequired;
 		this.proxy = proxy;
 		this.number = number;
-		this.autoAssociationMetadata = autoAssociationMetadata;
+		this.maxAutoAssociations = maxAutoAssociations;
+		this.usedAutoAssociations = usedAutoAssociations;
 		this.alias = Optional.ofNullable(alias).orElse(DEFAULT_ALIAS);
 		this.numContractKvPairs = numContractKvPairs;
 		this.cryptoAllowances = cryptoAllowances;
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 		this.approveForAllNfts = approveForAllNfts;
+		this.numAssociations = numAssociations;
+		this.numPositiveBalances = numPositiveBalances;
+		this.headTokenId = headTokenId;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -165,7 +170,14 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		// Added in 0.16
 		nftsOwned = in.readLong();
 		// Added in 0.18
-		autoAssociationMetadata = in.readInt();
+		if (version >= RELEASE_0251_VERSION) {
+			maxAutoAssociations = in.readInt();
+			usedAutoAssociations = in.readInt();
+		} else {
+			final var autoAssociationMetadata = in.readInt();
+			maxAutoAssociations = getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
+			usedAutoAssociations = getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
+		}
 		number = in.readInt();
 		// Added in 0.21
 		alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
@@ -175,10 +187,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			cryptoAllowances = deserializeCryptoAllowances(in);
 			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
 			approveForAllNfts = deserializeApproveForAllNftsAllowances(in);
-			if (version >= RELEASE_0250_VERSION) {
-				tokenAssociationMetaData =
-						new TokenAssociationMetadata(in.readInt(), in.readInt(), new EntityNumPair(in.readLong()));
-			}
+		}
+		if (version >= RELEASE_0251_VERSION) {
+			numAssociations = in.readInt();
+			numPositiveBalances = in.readInt();
+			headTokenId = in.readLong();
 		}
 	}
 
@@ -194,16 +207,17 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeBoolean(receiverSigRequired);
 		writeNullableSerializable(proxy, out);
 		out.writeLong(nftsOwned);
-		out.writeInt(autoAssociationMetadata);
+		out.writeInt(maxAutoAssociations);
+		out.writeInt(usedAutoAssociations);
 		out.writeInt(number);
 		out.writeByteArray(alias.toByteArray());
 		out.writeInt(numContractKvPairs);
 		serializeCryptoAllowances(out, cryptoAllowances);
 		serializeTokenAllowances(out, fungibleTokenAllowances);
 		serializeApproveForAllNftsAllowances(out, approveForAllNfts);
-		out.writeInt(tokenAssociationMetaData.numAssociations());
-		out.writeInt(tokenAssociationMetaData.numZeroBalances());
-		out.writeLong(tokenAssociationMetaData.latestAssociation().value());
+		out.writeInt(numAssociations);
+		out.writeInt(numPositiveBalances);
+		out.writeLong(headTokenId);
 	}
 
 	/* --- Copyable --- */
@@ -220,14 +234,17 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				receiverSigRequired,
 				proxy,
 				number,
-				autoAssociationMetadata,
+				maxAutoAssociations,
+				usedAutoAssociations,
 				alias,
 				numContractKvPairs,
 				cryptoAllowances,
 				fungibleTokenAllowances,
-				approveForAllNfts);
+				approveForAllNfts,
+				numAssociations,
+				numPositiveBalances,
+				headTokenId);
 		copied.setNftsOwned(nftsOwned);
-		copied.setTokenAssociationMetadata(tokenAssociationMetaData);
 		return copied;
 	}
 
@@ -253,13 +270,16 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Objects.equals(this.proxy, that.proxy) &&
 				this.nftsOwned == that.nftsOwned &&
 				this.numContractKvPairs == that.numContractKvPairs &&
-				this.autoAssociationMetadata == that.autoAssociationMetadata &&
+				this.maxAutoAssociations == that.maxAutoAssociations &&
+				this.usedAutoAssociations == that.usedAutoAssociations &&
 				equalUpToDecodability(this.key, that.key) &&
 				Objects.equals(this.alias, that.alias) &&
 				Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
 				Objects.equals(this.fungibleTokenAllowances, that.fungibleTokenAllowances) &&
 				Objects.equals(this.approveForAllNfts, that.approveForAllNfts) &&
-				this.tokenAssociationMetaData.equals(that.tokenAssociationMetaData);
+				this.numAssociations == that.numAssociations &&
+				this.numPositiveBalances == that.numPositiveBalances &&
+				this.headTokenId == that.headTokenId;
 	}
 
 	@Override
@@ -276,12 +296,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				proxy,
 				nftsOwned,
 				number,
-				autoAssociationMetadata,
+				maxAutoAssociations,
+				usedAutoAssociations,
 				alias,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
-				tokenAssociationMetaData);
+				numAssociations,
+				numPositiveBalances,
+				headTokenId);
 	}
 
 	/* --- Bean --- */
@@ -300,16 +323,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("receiverSigRequired", receiverSigRequired)
 				.add("proxy", proxy)
 				.add("nftsOwned", nftsOwned)
-				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
-				.add("maxAutoAssociations", getMaxAutomaticAssociations())
+				.add("alreadyUsedAutoAssociations", usedAutoAssociations)
+				.add("maxAutoAssociations", maxAutoAssociations)
 				.add("alias", alias.toStringUtf8())
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("approveForAllNfts", approveForAllNfts)
-				.add("numAssociations", tokenAssociationMetaData.numAssociations())
-				.add("numZeroBalances", tokenAssociationMetaData.numZeroBalances())
-				.add("lastAssociation", tokenAssociationMetaData.latestAssociation().value()
-						+ "<->" + asRelationshipLiteral(tokenAssociationMetaData.latestAssociation().value()))
+				.add("numAssociations", numAssociations)
+				.add("numPositiveBalances", numPositiveBalances)
+				.add("headTokenId", headTokenId)
 				.toString();
 	}
 
@@ -419,13 +441,31 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.nftsOwned = nftsOwned;
 	}
 
-	public TokenAssociationMetadata getTokenAssociationMetadata() {
-		return tokenAssociationMetaData;
+	public int getNumAssociations() {
+		return numAssociations;
 	}
 
-	public void setTokenAssociationMetadata(final TokenAssociationMetadata tokenAssociationMetaData) {
-		assertMutable("tokenAssociationMetaData");
-		this.tokenAssociationMetaData = tokenAssociationMetaData;
+	public void setNumAssociations(final int numAssociations) {
+		assertMutable("numAssociations");
+		this.numAssociations = numAssociations;
+	}
+
+	public int getNumPositiveBalances() {
+		return numPositiveBalances;
+	}
+
+	public void setNumPositiveBalances(final int numPositiveBalances) {
+		assertMutable("numPositiveBalances");
+		this.numPositiveBalances = numPositiveBalances;
+	}
+
+	public long getHeadTokenId() {
+		return headTokenId;
+	}
+
+	public void setHeadTokenId(final long headTokenId) {
+		assertMutable("headTokenId");
+		this.headTokenId = headTokenId;
 	}
 
 	public int getNumContractKvPairs() {
@@ -438,21 +478,21 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	}
 
 	public int getMaxAutomaticAssociations() {
-		return getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
+		return maxAutoAssociations;
 	}
 
-	public int getAlreadyUsedAutomaticAssociations() {
-		return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
+	public int getUsedAutomaticAssociations() {
+		return usedAutoAssociations;
 	}
 
 	public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
 		assertMutable("maxAutomaticAssociations");
-		autoAssociationMetadata = setMaxAutomaticAssociationsTo(autoAssociationMetadata, maxAutomaticAssociations);
+		this.maxAutoAssociations = maxAutomaticAssociations;
 	}
 
-	public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
-		assertMutable("alreadyUsedAutomaticAssociations");
-		autoAssociationMetadata = setAlreadyUsedAutomaticAssociationsTo(autoAssociationMetadata, alreadyUsedCount);
+	public void setUsedAutomaticAssociations(int usedAutoAssociations) {
+		assertMutable("usedAutomaticAssociations");
+		this.usedAutoAssociations = usedAutoAssociations;
 	}
 
 	public Map<EntityNum, Long> getCryptoAllowances() {

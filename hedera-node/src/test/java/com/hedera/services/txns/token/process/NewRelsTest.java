@@ -20,6 +20,7 @@ package com.hedera.services.txns.token.process;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -65,13 +66,15 @@ class NewRelsTest {
 	private TokenRelationship collectorRel;
 	@Mock
 	private TypedTokenStore tokenStore;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	@Test
 	void associatesAsExpected() {
 		given(treasury.getId()).willReturn(treasuryId);
 		given(collector.getId()).willReturn(collectorId);
 		given(provisionalToken.getTreasury()).willReturn(treasury);
-		given(treasury.associateWith(anyList(), any(), anyBoolean(), anyBoolean())).willReturn(List.of(treasuryRel, collectorRel));
+		given(treasury.associateWith(anyList(), any(), anyBoolean(), anyBoolean(), any())).willReturn(List.of(treasuryRel, collectorRel));
 		given(feeCollectorAssociationRequired.requiresCollectorAutoAssociation()).willReturn(true);
 		given(feeCollectorAssociationRequired.getValidatedCollector()).willReturn(collector);
 		given(feeSameCollectorAssociationRequired.requiresCollectorAutoAssociation()).willReturn(true);
@@ -81,10 +84,10 @@ class NewRelsTest {
 				feeNoCollectorAssociationRequired,
 				feeSameCollectorAssociationRequired));
 
-		final var ans = NewRels.listFrom(provisionalToken, tokenStore);
+		final var ans = NewRels.listFrom(provisionalToken, tokenStore, dynamicProperties);
 
 		assertEquals(List.of(treasuryRel, collectorRel), ans);
-		verify(treasury).associateWith(List.of(provisionalToken), tokenStore, false, true);
-		verify(collector).associateWith(List.of(provisionalToken), tokenStore, false, true);
+		verify(treasury).associateWith(List.of(provisionalToken), tokenStore, false, true, dynamicProperties);
+		verify(collector).associateWith(List.of(provisionalToken), tokenStore, false, true, dynamicProperties);
 	}
 }

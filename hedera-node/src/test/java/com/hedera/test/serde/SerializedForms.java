@@ -23,11 +23,11 @@ package com.hedera.test.serde;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.merkle.MerkleTopicSerdeTest;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -53,7 +53,7 @@ public class SerializedForms {
 	private static final String FORM_TPL = "%s-v%d-sn%d.hex";
 
 	public static void main(String... args) {
-//		saveAccountStates(MIN_TEST_CASES_PER_VERSION);
+		saveAccountStates(MerkleAccountStateSerdeTest.MIN_TEST_CASES_PER_VERSION);
 //		saveTxnReceipts(2 * MIN_TEST_CASES_PER_VERSION);
 //		saveNetworkContexts(MerkleNetworkContextSerdeTest.MIN_TEST_CASES_PER_VERSION);
 //		saveRecords(ExpirableTxnRecordSerdeTest.NUM_TEST_CASES);
@@ -62,7 +62,7 @@ public class SerializedForms {
 //		saveTokens(MerkleTokenSerdeTest.NUM_TEST_CASES);
 //		saveLogs(EvmLogSerdeTest.NUM_TEST_CASES);
 //		saveTxnIds(TxnIdSerdeTest.NUM_TEST_CASES);
-		saveTopics(MerkleTopicSerdeTest.NUM_TEST_CASES);
+//		saveTopics(MerkleTopicSerdeTest.NUM_TEST_CASES);
 //		saveEvmResults(EvmFnResultSerdeTest.MIN_TEST_CASES_PER_VERSION);
 	}
 

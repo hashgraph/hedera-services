@@ -38,7 +38,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
@@ -59,7 +58,6 @@ import java.util.List;
 import static com.hedera.services.ledger.TransferLogic.dropTokenChanges;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
-import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -69,8 +67,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
+import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -273,9 +272,8 @@ public class HederaLedger {
 		if (tokenRelsLedger == null) {
 			throw new IllegalStateException("Ledger has no manageable token relationships!");
 		}
-
-		final var tokenAssociationMetadata = (TokenAssociationMetadata) accountsLedger.get(aId, TOKEN_ASSOCIATION_METADATA);
-		return tokenAssociationMetadata.hasNoTokenBalances();
+		final var positiveBalances = (int) accountsLedger.get(aId, NUM_POSITIVE_BALANCES);
+		return positiveBalances == 0;
 	}
 
 	public boolean isKnownTreasury(AccountID aId) {
@@ -395,7 +393,7 @@ public class HederaLedger {
 	}
 
 	public int alreadyUsedAutomaticAssociations(AccountID id) {
-		return (int) accountsLedger.get(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
+		return (int) accountsLedger.get(id, USED_AUTOMATIC_ASSOCIATIONS);
 	}
 
 	public void setMaxAutomaticAssociations(AccountID id, int max) {
@@ -403,7 +401,7 @@ public class HederaLedger {
 	}
 
 	public void setAlreadyUsedAutomaticAssociations(AccountID id, int usedCount) {
-		accountsLedger.set(id, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, usedCount);
+		accountsLedger.set(id, USED_AUTOMATIC_ASSOCIATIONS, usedCount);
 	}
 
 	public boolean isDeleted(AccountID id) {

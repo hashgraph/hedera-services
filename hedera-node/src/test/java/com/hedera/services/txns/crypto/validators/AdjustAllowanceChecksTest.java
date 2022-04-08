@@ -37,7 +37,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
@@ -48,7 +47,6 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -73,6 +71,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
@@ -376,8 +375,9 @@ class AdjustAllowanceChecksTest {
 		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(payerId));
 		given(store.getImmutableRef(payerId)).willReturn(ownerAccount);
 		given(ownerAccount.state()).willReturn(new MerkleAccountState());
-		given(ownerAccount.getTokenAssociationMetadata()).willReturn(
-				new TokenAssociationMetadata(1, 0, EntityNumPair.MISSING_NUM_PAIR));
+		given(ownerAccount.getNumAssociations()).willReturn(1);
+		given(ownerAccount.getNumPositiveBalances()).willReturn(0);
+		given(ownerAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
@@ -753,8 +753,9 @@ class AdjustAllowanceChecksTest {
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 		given(merkleToken1.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
-		given(ownerAccount.getTokenAssociationMetadata()).willReturn(
-				new TokenAssociationMetadata(1, 0, EntityNumPair.MISSING_NUM_PAIR));
+		given(ownerAccount.getNumAssociations()).willReturn(1);
+		given(ownerAccount.getNumPositiveBalances()).willReturn(0);
+		given(ownerAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 		given(ownerAccount.state()).willReturn(new MerkleAccountState());
 		given(uniqueTokenValue.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(uniqueTokenValue.getSpender()).willReturn(EntityId.fromGrpcAccountId(spender1));

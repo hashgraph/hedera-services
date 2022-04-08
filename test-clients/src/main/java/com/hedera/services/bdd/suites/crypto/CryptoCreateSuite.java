@@ -31,14 +31,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -47,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 
 public class CryptoCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
@@ -74,8 +78,51 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				createAnAccountThresholdKeyWithInvalidThreshold(),
 				createAnAccountInvalidED25519(),
 				syntaxChecksAreAsExpected(),
+				maxAutoAssociationSpec(),
 				usdFeeAsExpected()
 		);
+	}
+
+	private HapiApiSpec maxAutoAssociationSpec() {
+		final int MONOGAMOUS_NETWORK = 1;
+		final int maxAutoAssociations = 100;
+		final int ADVENTUROUS_NETWORK = 1_000;
+		final String user1 = "user1";
+		final String user2 = "user2";
+		return defaultHapiSpec("MaxAutoAssociationSpec")
+				.given(
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("tokens.maxPerAccount", "" + MONOGAMOUS_NETWORK))
+				)
+				.when()
+				.then(
+						cryptoCreate(user1)
+								.balance(ONE_HBAR)
+								.maxAutomaticTokenAssociations(maxAutoAssociations)
+								.hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("accounts.limitTokenAssociations", "false")),
+						cryptoCreate(user1)
+								.balance(ONE_HBAR)
+								.maxAutomaticTokenAssociations(maxAutoAssociations),
+						getAccountInfo(user1)
+								.hasMaxAutomaticAssociations(maxAutoAssociations),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("accounts.limitTokenAssociations", "true")),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of(
+										"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
+								)),
+						cryptoCreate(user2)
+								.balance(ONE_HBAR)
+								.maxAutomaticTokenAssociations(maxAutoAssociations),
+						getAccountInfo(user2)
+								.hasMaxAutomaticAssociations(maxAutoAssociations)
+				);
 	}
 
 	/* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */

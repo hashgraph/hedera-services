@@ -133,7 +133,8 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 		return defaultHapiSpec("CannotDeleteAccountsWithNonzeroTokenBalances")
 				.given(
 						newKeyNamed("admin"),
-						cryptoCreate("toBeDeleted"),
+						cryptoCreate("toBeDeleted")
+								.maxAutomaticTokenAssociations(1),
 						cryptoCreate("transferAccount"),
 						cryptoCreate(TOKEN_TREASURY)
 				).when(
@@ -143,18 +144,27 @@ public class CryptoDeleteSuite extends HapiApiSuite {
 								.treasury(TOKEN_TREASURY),
 						tokenAssociate("toBeDeleted", "misc"),
 						cryptoTransfer(moving(TOKEN_INITIAL_SUPPLY, "misc")
-								.between(TOKEN_TREASURY, "toBeDeleted"))
-				).then(
-						cryptoDelete(TOKEN_TREASURY)
-								.hasKnownStatus(ACCOUNT_IS_TREASURY),
-						tokenDelete("misc"),
+								.between(TOKEN_TREASURY, "toBeDeleted")),
 						cryptoDelete("toBeDeleted")
 								.transfer("transferAccount")
 								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+						cryptoTransfer(moving(TOKEN_INITIAL_SUPPLY, "misc")
+								.between("toBeDeleted", TOKEN_TREASURY)),
 						tokenDissociate("toBeDeleted", "misc"),
+						cryptoTransfer(moving(TOKEN_INITIAL_SUPPLY, "misc")
+								.between(TOKEN_TREASURY, "toBeDeleted")),
+						cryptoDelete("toBeDeleted")
+								.transfer("transferAccount")
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
+				).then(
+						cryptoDelete(TOKEN_TREASURY)
+								.hasKnownStatus(ACCOUNT_IS_TREASURY),
+						cryptoTransfer(moving(TOKEN_INITIAL_SUPPLY, "misc")
+								.between("toBeDeleted", TOKEN_TREASURY)),
 						cryptoDelete("toBeDeleted"),
 						cryptoDelete("toBeDeleted")
 								.hasKnownStatus(ACCOUNT_DELETED),
+						tokenDelete("misc"),
 						cryptoDelete(TOKEN_TREASURY)
 				);
 	}

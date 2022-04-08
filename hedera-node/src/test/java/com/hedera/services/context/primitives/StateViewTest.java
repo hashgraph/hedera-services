@@ -42,7 +42,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.UniqueTokenKey;
@@ -171,7 +170,6 @@ class StateViewTest {
 	private final String fileMemo = "Originally she thought";
 	private final ByteString create2Address = ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
-	private TokenAssociationMetadata tokenAssociationMetadata = new TokenAssociationMetadata(1, 0, tokenAssociationId);
 
 	private FileGetInfoResponse.FileInfo expected;
 	private FileGetInfoResponse.FileInfo expectedImmutable;
@@ -237,10 +235,13 @@ class StateViewTest {
 				.isSmartContract(false)
 				.tokens(tokenId)
 				.get();
+		tokenAccount.setKey(EntityNum.fromAccountId(tokenAccountId));
 		tokenAccount.setNftsOwned(10);
 		tokenAccount.setMaxAutomaticAssociations(123);
 		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
-		tokenAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
+		tokenAccount.setHeadTokenId(tokenId.getTokenNum());
+		tokenAccount.setNumAssociations(1);
+		tokenAccount.setNumPositiveBalances(0);
 		contract = MerkleAccountFactory.newAccount()
 				.alias(create2Address)
 				.memo("Stay cold...")
@@ -262,11 +263,11 @@ class StateViewTest {
 
 		tokenAccountRel = new MerkleTokenRelStatus(123L, false, true, true);
 		tokenAccountRel.setKey(tokenAssociationId);
-		tokenAccountRel.setNextKey(nftAssociationId);
+		tokenAccountRel.setNext(nftTokenId.getTokenNum());
 
 		nftAccountRel = new MerkleTokenRelStatus(2L, false, true, false);
 		tokenAccountRel.setKey(nftAssociationId);
-		tokenAccountRel.setPrevKey(tokenAssociationId);
+		tokenAccountRel.setPrev(tokenId.getTokenNum());
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(tokenAssociationId, tokenAccountRel);

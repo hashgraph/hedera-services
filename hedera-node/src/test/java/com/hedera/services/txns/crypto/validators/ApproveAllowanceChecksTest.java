@@ -37,7 +37,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
@@ -71,6 +70,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
@@ -197,8 +197,9 @@ class ApproveAllowanceChecksTest {
 		given(view.asReadOnlyTokenStore()).willReturn(tokens);
 		given(view.asReadOnlyNftStore()).willReturn(nfts);
 		given(view.asReadOnlyAssociationStore()).willReturn(rels);
-		given(ownerAccount.getTokenAssociationMetadata()).willReturn(
-				new TokenAssociationMetadata(1, 0, EntityNumPair.MISSING_NUM_PAIR));
+		given(ownerAccount.getNumAssociations()).willReturn(1);
+		given(ownerAccount.getNumPositiveBalances()).willReturn(0);
+		given(ownerAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		given(store.getImmutableRef(ownerId1)).willReturn(ownerAccount);
 		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
@@ -491,8 +492,9 @@ class ApproveAllowanceChecksTest {
 				)
 				.build();
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
-		given(ownerAccount.getTokenAssociationMetadata()).willReturn(
-				new TokenAssociationMetadata(1, 0, EntityNumPair.MISSING_NUM_PAIR));
+		given(ownerAccount.getNumAssociations()).willReturn(1);
+		given(ownerAccount.getNumPositiveBalances()).willReturn(0);
+		given(ownerAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		assertEquals(INVALID_ALLOWANCE_OWNER_ID,
 				subject.allowancesValidation(op.getCryptoAllowancesList(),
