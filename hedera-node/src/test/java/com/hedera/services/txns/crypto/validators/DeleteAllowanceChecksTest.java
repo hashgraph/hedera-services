@@ -336,26 +336,11 @@ class DeleteAllowanceChecksTest {
 	}
 
 	@Test
-	void validatesIfNegativeSerialsNotInExistingList() {
-		final var serials = List.of(-100L, 10L);
-
-		var validity = subject.validateSerialNums(serials, nftModel, tokenStore);
-		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
-	}
-
-	@Test
 	void validatesNegativeSerialsAreNotValid() {
 		final var serials = List.of(-100L, 10L);
 
 		var validity = subject.validateSerialNums(serials, nftModel, tokenStore);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
-	}
-
-	@Test
-	void validatesAbsoluteZeroSerialIsNotValid() {
-		final var serials = List.of(0L);
-
-		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, subject.validateSerialNums(serials, nftModel, tokenStore));
 	}
 
 	@Test
@@ -418,21 +403,15 @@ class DeleteAllowanceChecksTest {
 		given(ownerMerkleAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		given(store.getImmutableRef(ownerId)).willReturn(ownerMerkleAccount);
-//		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
 		given(tokens.getImmutableRef(nftToken)).willReturn(merkleToken);
 		given(nfts.getImmutableRef(nft1)).willReturn(merkleUniqueToken);
 		given(nfts.getImmutableRef(nft2)).willReturn(merkleUniqueToken);
-//		given(rels.contains(Pair.of(ownerId, token1))).willReturn(true);
 		given(rels.contains(Pair.of(ownerId, nftToken))).willReturn(true);
 
-//		given(merkleToken1.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(merkleToken.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(ownerMerkleAccount.state()).willReturn(new MerkleAccountState());
 		given(merkleUniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(merkleUniqueToken.getSpender()).willReturn(MISSING_ID.asEntityId());
-
-//		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
-//		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 	}
 }

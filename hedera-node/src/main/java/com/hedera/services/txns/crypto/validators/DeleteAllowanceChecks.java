@@ -107,14 +107,17 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 
 	/**
 	 * Validates all the {@link NftRemoveAllowance}s in the
-	 * {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowance}
-	 * transaction
+	 * {@link com.hederahashgraph.api.proto.java.CryptoDeleteAllowance} transaction
 	 *
 	 * @param nftAllowances
-	 * 		nft remove allowances list
+	 * 		nft remove allowances
 	 * @param payerAccount
-	 * 		payer for the transaction
-	 * @return validation response
+	 * 		payer for the txn
+	 * @param accountStore
+	 * 		account store
+	 * @param tokenStore
+	 * 		read only token store
+	 * @return
 	 */
 	public ResponseCodeEnum validateNftDeleteAllowances(
 			final List<NftRemoveAllowance> nftAllowances,
@@ -129,9 +132,8 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 		}
 		for (var allowance : nftAllowances) {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
-			final var tokenId = allowance.getTokenId();
 			final var serialNums = allowance.getSerialNumbersList();
-			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(tokenId));
+			final var token = tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(allowance.getTokenId()));
 
 			if (token.isFungibleCommon()) {
 				return FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
