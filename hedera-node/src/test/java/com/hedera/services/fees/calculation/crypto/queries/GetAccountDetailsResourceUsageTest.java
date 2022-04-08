@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,12 @@ import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.GetAccountDetailsQuery;
+import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
+import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
+import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
+import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -45,6 +48,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -61,7 +65,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class GetAccountInfoResourceUsageTest {
+class GetAccountDetailsResourceUsageTest {
 	private static final Key aKey = Key.newBuilder().setEd25519(ByteString.copyFrom("NONSENSE".getBytes())).build();
 	private static final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 	private static final String a = "0.0.1234";
@@ -86,77 +90,85 @@ class GetAccountInfoResourceUsageTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 
-	private GetAccountInfoResourceUsage subject;
+	private GetAccountDetailsResourceUsage subject;
+
+	private GrantedCryptoAllowance cryptoAllowances = GrantedCryptoAllowance.newBuilder().setSpender(proxy).setAmount(
+			10L).build();
+	private GrantedTokenAllowance tokenAllowances = GrantedTokenAllowance.newBuilder()
+			.setSpender(proxy).setAmount(10L).setTokenId(IdUtils.asToken("0.0.1000")).build();
+	private GrantedNftAllowance nftAllowances = GrantedNftAllowance.newBuilder().setSpender(proxy)
+			.setTokenId(IdUtils.asToken("0.0.1000")).build();
+
 
 	@BeforeEach
 	private void setup() {
-		subject = new GetAccountInfoResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties);
+		subject = new GetAccountDetailsResourceUsage(cryptoOpsUsage, aliasManager, dynamicProperties);
 	}
 
 	@Test
 	void usesEstimator() {
 		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		final var captor = ArgumentCaptor.forClass(ExtantCryptoContext.class);
-		final var info = CryptoGetInfoResponse.AccountInfo.newBuilder()
+		final var info = GetAccountDetailsResponse.AccountDetails.newBuilder()
 				.setLedgerId(ledgerId)
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
 				.setMemo(memo)
-				.setProxyAccountID(proxy)
+				.setProxyAccountId(proxy)
 				.setKey(aKey)
 				.addTokenRelationships(0, TokenRelationship.newBuilder().setTokenId(aToken))
 				.addTokenRelationships(1, TokenRelationship.newBuilder().setTokenId(bToken))
 				.addTokenRelationships(2, TokenRelationship.newBuilder().setTokenId(cToken))
 				.setMaxAutomaticTokenAssociations(maxAutomaticAssociations)
+				.addAllGrantedCryptoAllowances(List.of(cryptoAllowances))
+				.addAllGrantedNftAllowances(List.of(nftAllowances))
+				.addAllGrantedTokenAllowances(List.of(tokenAllowances))
 				.build();
-		final var query = accountInfoQuery(a, ANSWER_ONLY);
-		given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo)).willReturn(Optional.of(info));
-		given(cryptoOpsUsage.cryptoInfoUsage(any(), any())).willReturn(expected);
+		final var query = accountDetailsQuery(a, ANSWER_ONLY);
+		given(view.accountDetails(queryTarget, aliasManager, maxTokensPerAccountInfo)).willReturn(Optional.of(info));
+		given(cryptoOpsUsage.accountDetailsUsage(any(), any())).willReturn(expected);
 
 		final var usage = subject.usageGiven(query, view);
 
 		assertEquals(expected, usage);
-		verify(cryptoOpsUsage).cryptoInfoUsage(argThat(query::equals), captor.capture());
+		verify(cryptoOpsUsage).accountDetailsUsage(argThat(query::equals), captor.capture());
 
 		final var ctx = captor.getValue();
 		assertEquals(aKey, ctx.currentKey());
 		assertEquals(expiry, ctx.currentExpiry());
 		assertEquals(memo, ctx.currentMemo());
 		assertEquals(3, ctx.currentNumTokenRels());
-		assertEquals(0, ctx.currentCryptoAllowances().size());
-		assertEquals(0, ctx.currentNftAllowances().size());
-		assertEquals(0
-
-
-				, ctx.currentTokenAllowances().size());
+		assertEquals(1, ctx.currentCryptoAllowances().size());
+		assertEquals(1, ctx.currentNftAllowances().size());
+		assertEquals(1, ctx.currentTokenAllowances().size());
 		assertTrue(ctx.currentlyHasProxy());
 	}
 
 	@Test
 	void returnsDefaultIfNoSuchAccount() {
 		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
-		given(view.infoForAccount(queryTarget, aliasManager, maxTokensPerAccountInfo)).willReturn(Optional.empty());
+		given(view.accountDetails(queryTarget, aliasManager, maxTokensPerAccountInfo)).willReturn(Optional.empty());
 
-		final var usage = subject.usageGiven(accountInfoQuery(a, ANSWER_ONLY), view);
+		final var usage = subject.usageGiven(accountDetailsQuery(a, ANSWER_ONLY), view);
 
 		assertSame(FeeData.getDefaultInstance(), usage);
 	}
 
 	@Test
 	void recognizesApplicableQuery() {
-		final var accountInfoQuery = accountInfoQuery(a, COST_ANSWER);
-		final var nonAccountInfoQuery = Query.getDefaultInstance();
+		final var accountDetailsQuery = accountDetailsQuery(a, COST_ANSWER);
+		final var nonAccountDetailsQuery = Query.getDefaultInstance();
 
-		assertTrue(subject.applicableTo(accountInfoQuery));
-		assertFalse(subject.applicableTo(nonAccountInfoQuery));
+		assertTrue(subject.applicableTo(accountDetailsQuery));
+		assertFalse(subject.applicableTo(nonAccountDetailsQuery));
 	}
 
-	private static final Query accountInfoQuery(final String target, final ResponseType type) {
+	private static final Query accountDetailsQuery(final String target, final ResponseType type) {
 		final var id = asAccount(target);
-		final var op = CryptoGetInfoQuery.newBuilder()
-				.setAccountID(id)
+		final var op = GetAccountDetailsQuery.newBuilder()
+				.setAccountId(id)
 				.setHeader(QueryHeader.newBuilder().setResponseType(type));
 		return Query.newBuilder()
-				.setCryptoGetInfo(op)
+				.setAccountDetails(op)
 				.build();
 	}
 }
