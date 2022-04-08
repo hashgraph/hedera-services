@@ -327,6 +327,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
+		given(accountsLedger.get(any(), any())).willReturn(1L);
 
 		// expect:
 		assertEquals(OK, subject.validateSemantics(accessor));
