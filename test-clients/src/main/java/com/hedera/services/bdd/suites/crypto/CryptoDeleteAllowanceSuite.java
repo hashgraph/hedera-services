@@ -305,13 +305,24 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.via("baseDeleteNft"),
 						validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01),
 
-						/*--- with specifying owner */
+						/*--- with 2 serials ---*/
 						cryptoDeleteAllowance()
 								.payingWith(owner)
 								.blankMemo()
 								.addNftDeleteAllowance(owner, nft, List.of(2L, 3L))
 								.via("twoDeleteNft"),
-						validateChargedUsdWithin("twoDeleteNft", 0.050101, 0.01)
+						validateChargedUsdWithin("twoDeleteNft", 0.050101, 0.01),
+						/*--- with 2 sigs ---*/
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addNftAllowance(owner, nft, "spender2", false, List.of(1L)),
+						cryptoDeleteAllowance()
+								.payingWith(payer)
+								.blankMemo()
+								.addNftDeleteAllowance(owner, nft, List.of(1L))
+								.signedBy(payer, owner)
+								.via("twoDeleteNft"),
+						validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.01)
 				);
 	}
 
@@ -970,7 +981,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.via("cryptoDeleteAllowanceTxn")
 								.logged(),
 						getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
-//						validateChargedUsdWithin("cryptoDeleteAllowanceTxn", 0.051541, 0.01),
+						validateChargedUsdWithin("cryptoDeleteAllowanceTxn", 0.05, 0.01),
 						getAccountDetails(owner)
 								.payingWith(GENESIS)
 								.has(accountWith().nftApprovedForAllAllowancesCount(1)),

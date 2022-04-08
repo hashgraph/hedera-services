@@ -116,9 +116,9 @@ class ApproveAllowanceChecksTest {
 	@Mock
 	private StateView view;
 	@Mock
-	private MerkleToken merkleToken1;
+	private MerkleToken merkleTokenFungible;
 	@Mock
-	private MerkleToken merkleToken2;
+	private MerkleToken merkleTokenNFT;
 	@Mock
 	private OptionValidator validator;
 	@Mock
@@ -185,9 +185,9 @@ class ApproveAllowanceChecksTest {
 
 	private void setUpForTest() {
 		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
-		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
-		given(merkleToken2.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+		given(merkleTokenFungible.supplyType()).willReturn(TokenSupplyType.INFINITE);
+		given(merkleTokenFungible.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
+		given(merkleTokenNFT.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
 		final BackingStore<TokenID, MerkleToken> tokens = mock(BackingTokens.class);
@@ -202,15 +202,15 @@ class ApproveAllowanceChecksTest {
 		given(ownerAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		given(store.getImmutableRef(ownerId1)).willReturn(ownerAccount);
-		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
-		given(tokens.getImmutableRef(token2)).willReturn(merkleToken2);
+		given(tokens.getImmutableRef(token1)).willReturn(merkleTokenFungible);
+		given(tokens.getImmutableRef(token2)).willReturn(merkleTokenNFT);
 		given(nfts.getImmutableRef(token2Nft1)).willReturn(merkleUniqueToken);
 		given(nfts.getImmutableRef(token2Nft2)).willReturn(merkleUniqueToken);
 		given(rels.contains(Pair.of(ownerId1, token1))).willReturn(true);
 		given(rels.contains(Pair.of(ownerId1, token2))).willReturn(true);
 
-		given(merkleToken1.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
-		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(merkleTokenFungible.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
+		given(merkleTokenNFT.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
 		given(ownerAccount.state()).willReturn(new MerkleAccountState());
 		given(merkleUniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId1));
 		given(merkleUniqueToken.getSpender()).willReturn(EntityId.fromGrpcAccountId(spender1));
@@ -450,7 +450,7 @@ class ApproveAllowanceChecksTest {
 	}
 
 	@Test
-	void returnsInvalidOwnerIdOnceValidationOnceFailed() {
+	void returnsInvalidOwnerId() {
 		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(120);
 
 		final BackingStore<AccountID, MerkleAccount> store = mock(BackingAccounts.class);
@@ -461,10 +461,10 @@ class ApproveAllowanceChecksTest {
 		given(view.asReadOnlyNftStore()).willReturn(nfts);
 		given(store.getImmutableRef(ownerId1)).willThrow(InvalidTransactionException.class);
 
-		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
-		given(tokens.getImmutableRef(token2)).willReturn(merkleToken2);
-		given(merkleToken1.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
-		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
+		given(tokens.getImmutableRef(token1)).willReturn(merkleTokenFungible);
+		given(tokens.getImmutableRef(token2)).willReturn(merkleTokenNFT);
+		given(merkleTokenFungible.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
+		given(merkleTokenNFT.treasury()).willReturn(EntityId.fromGrpcAccountId(payer));
 		given(store.getImmutableRef(payer)).willReturn(ownerAccount);
 		given(ownerAccount.state()).willReturn(new MerkleAccountState());
 
@@ -634,7 +634,7 @@ class ApproveAllowanceChecksTest {
 	}
 
 	@Test
-	void validateNegativeSerials() {
+	void validateInvalidSerials() {
 		final var serials = List.of(-1L, 10L);
 		var validity = subject.validateSerialNums(serials, token2Model, tokenStore);
 		assertEquals(INVALID_TOKEN_NFT_SERIAL_NUMBER, validity);
@@ -691,8 +691,7 @@ class ApproveAllowanceChecksTest {
 		getValidTxnCtx();
 
 		assertEquals(OK, subject.validateFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount,
-				accountStore,
-				tokenStore));
+				accountStore, tokenStore));
 		verify(accountStore).loadAccount(Id.fromGrpcAccount(ownerId1));
 
 		given(accountStore.loadAccount(Id.fromGrpcAccount(ownerId1))).willThrow(InvalidTransactionException.class);

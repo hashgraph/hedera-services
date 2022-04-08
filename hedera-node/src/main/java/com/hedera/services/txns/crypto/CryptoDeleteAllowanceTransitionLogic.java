@@ -114,12 +114,12 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		for (var allowance : nftAllowances) {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
-			final var accountToWipe = fetchOwnerAccount(allowance.getOwner(), payerAccount, accountStore);
+			final var owner = fetchOwnerAccount(allowance.getOwner(), payerAccount, accountStore);
 			final var token = tokenStore.loadPossiblyPausedToken(tokenId);
 
 			for (var serial : serialNums) {
 				final var nft = tokenStore.loadUniqueToken(tokenId, serial);
-				validateTrue(validOwner(nft, accountToWipe.getId(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+				validateTrue(validOwner(nft, owner.getId(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 				nft.clearSpender();
 				nfts.add(nft);
 			}
