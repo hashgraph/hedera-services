@@ -117,6 +117,8 @@ class AbstractLedgerWorldUpdaterTest {
 	private ContractCustomizer customizer;
 	@Mock
 	private StaticEntityAccess staticEntityAccess;
+	@Mock
+	private WorldLedgers mockLedgers;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -151,6 +153,17 @@ class AbstractLedgerWorldUpdaterTest {
 		verify(recordsHistorian, times(1)).nextChildRecordSourceId();
 		verify(recordsHistorian).trackFollowingChildRecord(sourceId, firstSynthBuilder, firstRecord);
 		verify(recordsHistorian).trackFollowingChildRecord(sourceId, secondSynthBuilder, secondRecord);
+	}
+
+	@Test
+	void isInconsistentAddressWorks() {
+		subject = new MockLedgerWorldUpdater(worldState, mockLedgers, customizer);
+
+		given(mockLedgers.aliases()).willReturn(aliases);
+		given(aliases.isMirror(aAddress)).willReturn(true);
+		given(mockLedgers.hasAlias(aAddress)).willReturn(true);
+
+		assertTrue(subject.isInconsistentMirrorAddress(aAddress));
 	}
 
 	@Test
