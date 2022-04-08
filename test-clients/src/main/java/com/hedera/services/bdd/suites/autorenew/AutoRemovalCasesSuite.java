@@ -62,7 +62,6 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
 						displacesTokenUnitsAsExpected(),
 						immediatelyRemovesDeletedAccountOnExpiry(),
 						ignoresExpiredDeletedContracts(),
-
 						autoRemovalCasesSuiteCleanup(),
 				}
 		);
@@ -144,9 +143,10 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
 								.initialSupply(startSupply)
 								.treasury(civilian),
 						cryptoCreate(removedAccount)
+								.maxAutomaticTokenAssociations(1)
 								.balance(0L)
 								.autoRenewSecs(5),
-						tokenAssociate(removedAccount, List.of(deletedToken, liveToken, anotherLiveToken)),
+						tokenAssociate(removedAccount, List.of(deletedToken, liveToken)),
 						cryptoTransfer(
 								moving(displacedSupply, deletedToken).between(civilian, removedAccount),
 								moving(displacedSupply, liveToken).between(civilian, removedAccount),

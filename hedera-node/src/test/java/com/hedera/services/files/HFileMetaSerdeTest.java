@@ -21,42 +21,26 @@ package com.hedera.services.files;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.legacy.core.jproto.JObjectType;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.IoReadingFunction;
-import com.hedera.services.state.serdes.IoWritingConsumer;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.SeededPropertySource;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.common.CommonUtils;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.function.Function;
 
-import static com.hedera.services.files.HFileMetaSerde.MAX_CONCEIVABLE_MEMO_UTF8_BYTES;
 import static com.hedera.services.files.HFileMetaSerde.MEMO_VERSION;
 import static com.hedera.services.files.HFileMetaSerde.deserialize;
-import static com.hedera.services.files.HFileMetaSerde.getStreamContentDiscovery;
+import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
 class HFileMetaSerdeTest {
@@ -64,6 +48,81 @@ class HFileMetaSerdeTest {
 	private static final JKey wacl = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked().getKeyList();
 	private static final String memo = "Remember me?";
 	private static final boolean deleted = true;
+
+	private HFileMeta known;
+
+	@BeforeEach
+	void setUp() {
+		known = new HFileMeta(deleted, wacl, expiry, memo);
+	}
+
+	@Test
+	void deserializesWithMemoAndNonNullKey() throws IOException {
+		final var propertySource = SeededPropertySource.forSerdeTest((int) MEMO_VERSION, 1);
+		final var expected = new HFileMeta(
+				propertySource.nextBoolean(),
+				propertySource.nextKeyList(2),
+				propertySource.nextUnsignedLong(),
+				propertySource.nextString(42));
+
+		final var serializedForm = HFileMetaSerde.serialize(expected);
+
+		final var actual = HFileMetaSerde.deserialize(
+				new DataInputStream(new ByteArrayInputStream(serializedForm)));
+
+		assertEquals(expected.toString(), actual.toString());
+	}
+
+	@Test
+	void deserializesWithMemoAndNullKey() throws IOException {
+		final var propertySource = SeededPropertySource.forSerdeTest((int) MEMO_VERSION, 2);
+		final var expected = new HFileMeta(
+				propertySource.nextBoolean(),
+				null,
+				propertySource.nextUnsignedLong(),
+				propertySource.nextString(42));
+
+		final var serializedForm = HFileMetaSerde.serialize(expected);
+		final var actual = HFileMetaSerde.deserialize(
+				new DataInputStream(new ByteArrayInputStream(serializedForm)));
+
+		assertEquals(expected.toString(), actual.toString());
+	}
+
+	@Test
+	void legacySerdeTest() throws Exception {
+		final var fid = IdUtils.asFile("0.0.1001");
+		final var expInfo = toGrpc(known, fid, 1024);
+		final var legacyRepr = unhex(hexedLegacyKnown);
+
+		final var replica = deserialize(new DataInputStream(new ByteArrayInputStream(legacyRepr)));
+		final var replicaInfo = toGrpc(replica, fid, 1024);
+
+		assertEquals(expInfo.getExpirationTime(), replicaInfo.getExpirationTime());
+		assertEquals(expInfo.getDeleted(), replicaInfo.getDeleted());
+		assertEquals(expInfo.getKeys().getKeysCount(), replicaInfo.getKeys().getKeysCount());
+	}
+
+	@Test
+	void throwsOnWrongObjectType() throws IOException {
+		final var in = mock(DataInputStream.class);
+
+		given(in.readLong()).willReturn(JObjectType.FC_FILE_INFO.longValue() - 1);
+
+		assertThrows(IllegalStateException.class, () -> HFileMetaSerde.readPreMemoMeta(in));
+	}
+
+	private static FileInfo toGrpc(final HFileMeta info, final FileID fid, final long size) throws Exception {
+		final var expiry = Timestamp.newBuilder().setSeconds(info.getExpiry()).build();
+
+		return FileInfo.newBuilder()
+				.setFileID(fid)
+				.setSize(size)
+				.setExpirationTime(expiry)
+				.setDeleted(info.isDeleted())
+				.setKeys(JKey.mapJKey(info.getWacl()).getKeyList())
+				.build();
+	}
 
 	private static final String hexedLegacyKnown =
 			"00000000000000010000000000ee994300000000000002e101000000000012d6870000000000000" +
@@ -87,121 +146,4 @@ class HFileMetaSerdeTest {
 					"00020000000000ecf2ea000000000000002047c8c60779a621d370686f7b8ae2b670e65d67864da" +
 					"b067af7c4407ebeadc7b3";
 
-	private DomainSerdes serdes;
-	private HFileMetaSerde.StreamContentDiscovery discovery;
-	private Function<InputStream, SerializableDataInputStream> serInFactory;
-	private Function<OutputStream, SerializableDataOutputStream> serOutFactory;
-
-	private HFileMeta known;
-
-	@BeforeEach
-	void setUp() {
-		known = new HFileMeta(deleted, wacl, expiry, memo);
-	}
-
-	@Test
-	void deserializesNewVersionAsExpected() throws IOException {
-		doStaticMocking();
-		final var in = mock(DataInputStream.class);
-		final var serIn = mock(SerializableDataInputStream.class);
-		given(in.readLong()).willReturn(MEMO_VERSION);
-		given(serInFactory.apply(in)).willReturn(serIn);
-		given(serIn.readBoolean()).willReturn(known.isDeleted());
-		given(serIn.readLong()).willReturn(known.getExpiry());
-		given(serIn.readNormalisedString(MAX_CONCEIVABLE_MEMO_UTF8_BYTES)).willReturn(known.getMemo());
-		given(serdes.readNullable(argThat(serIn::equals), any(IoReadingFunction.class))).willReturn(known.getWacl());
-
-		final var replica = deserialize(in);
-
-		assertEquals(known.toString(), replica.toString());
-
-		undoStaticMocking();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	void serializesNewVersionAsExpected() throws IOException {
-		doStaticMocking();
-		final var pretend = "NOPE".getBytes();
-		final var out = mock(DataOutputStream.class);
-		final var serOut = mock(SerializableDataOutputStream.class);
-		final var captor =
-				ArgumentCaptor.forClass(JKeySerializer.StreamConsumer.class);
-		final var inOrder = inOrder(out, serOut, serOutFactory, serdes);
-		given(getStreamContentDiscovery().discoverFor(captor.capture())).willReturn(pretend);
-		given(serOutFactory.apply(out)).willReturn(serOut);
-
-		final var shouldBePretend = HFileMetaSerde.serialize(known);
-		final var consumer = captor.getValue();
-		consumer.accept(out);
-
-		assertSame(pretend, shouldBePretend);
-		inOrder.verify(serOutFactory).apply(out);
-		inOrder.verify(serOut).writeLong(HFileMetaSerde.MEMO_VERSION);
-		inOrder.verify(serOut).writeBoolean(deleted);
-		inOrder.verify(serOut).writeLong(expiry);
-		inOrder.verify(serOut).writeNormalisedString(memo);
-		inOrder.verify(serdes).writeNullable(
-				argThat(wacl::equals),
-				argThat(serOut::equals),
-				any(IoWritingConsumer.class));
-
-		undoStaticMocking();
-	}
-
-	@Test
-	void legacySerdeTest() throws Exception {
-		final var fid = IdUtils.asFile("0.0.1001");
-		final var expInfo = toGrpc(known, fid, 1024);
-		final var legacyRepr = CommonUtils.unhex(hexedLegacyKnown);
-
-		final var replica = deserialize(new DataInputStream(new ByteArrayInputStream(legacyRepr)));
-		final var replicaInfo = toGrpc(replica, fid, 1024);
-
-		assertEquals(expInfo.getExpirationTime(), replicaInfo.getExpirationTime());
-		assertEquals(expInfo.getDeleted(), replicaInfo.getDeleted());
-		assertEquals(expInfo.getKeys().getKeysCount(), replicaInfo.getKeys().getKeysCount());
-	}
-
-	@Test
-	void throwsOnWrongObjectType() throws IOException {
-		final var in = mock(DataInputStream.class);
-
-		given(in.readLong()).willReturn(JObjectType.FC_FILE_INFO.longValue() - 1);
-
-		assertThrows(IllegalStateException.class, () -> HFileMetaSerde.readPreMemoMeta(in));
-	}
-
-	@SuppressWarnings("unchecked")
-	private void doStaticMocking() {
-		serdes = mock(DomainSerdes.class);
-		discovery = mock(HFileMetaSerde.StreamContentDiscovery.class);
-		serInFactory = mock(Function.class);
-		serOutFactory = mock(Function.class);
-
-		serdes = mock(DomainSerdes.class);
-		HFileMetaSerde.serdes = serdes;
-		HFileMetaSerde.setSerInFactory(serInFactory);
-		HFileMetaSerde.setSerOutFactory(serOutFactory);
-		HFileMetaSerde.setStreamContentDiscovery(discovery);
-	}
-
-	private void undoStaticMocking() {
-		HFileMetaSerde.serdes = new DomainSerdes();
-		HFileMetaSerde.setSerInFactory(SerializableDataInputStream::new);
-		HFileMetaSerde.setSerOutFactory(SerializableDataOutputStream::new);
-		HFileMetaSerde.setStreamContentDiscovery(JKeySerializer::byteStream);
-	}
-
-	private static final FileInfo toGrpc(final HFileMeta info, final FileID fid, final long size) throws Exception {
-		final var expiry = Timestamp.newBuilder().setSeconds(info.getExpiry()).build();
-
-		return FileInfo.newBuilder()
-				.setFileID(fid)
-				.setSize(size)
-				.setExpirationTime(expiry)
-				.setDeleted(info.isDeleted())
-				.setKeys(JKey.mapJKey(info.getWacl()).getKeyList())
-				.build();
-	}
 }

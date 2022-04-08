@@ -95,6 +95,7 @@ import java.util.function.BiConsumer;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
@@ -660,13 +661,16 @@ public class StateView {
 			final int maxRels,
 			final BiConsumer<MerkleToken, MerkleTokenRelStatus> visitor
 	) {
+		final var accountNum = firstRel.getHiOrderAsLong();
+		var tokenNum = firstRel.getLowOrderAsLong();
 		var key = firstRel;
 		var counter = 0;
-		while (!key.equals(EntityNumPair.MISSING_NUM_PAIR) && counter < maxRels) {
+		while (tokenNum != MISSING_ID.num() && counter < maxRels) {
 			final var rel = tokenRels.get(key);
 			final var token = tokens.getOrDefault(key.getLowOrderAsNum(), REMOVED_TOKEN);
 			visitor.accept(token, rel);
-			key = rel.nextKey();
+			tokenNum = rel.nextKey();
+			key = EntityNumPair.fromLongs(accountNum, tokenNum);
 			counter++;
 		}
 	}

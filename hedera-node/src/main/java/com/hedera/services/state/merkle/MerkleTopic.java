@@ -24,7 +24,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -46,6 +45,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
@@ -74,7 +74,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 	public static final int RUNNING_HASH_BYTE_ARRAY_SIZE = 48;
 	public static final long RUNNING_HASH_VERSION = 3L;
 
-	static final int PRE_RELEASE_0180_VERSION = 1;
 	static final int RELEASE_0180_VERSION = 2;
 
 	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
@@ -82,7 +81,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xcfc535576b57baf0L;
 
 	static TopicSerde topicSerde = new TopicSerde();
-	static DomainSerdes serdes = new DomainSerdes();
 
 	private String memo;
 	private JKey adminKey;
@@ -178,11 +176,15 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 	}
 
 	@Override
+	public int getMinimumSupportedVersion() {
+		return CURRENT_VERSION;
+	}
+
+	@Override
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-		topicSerde.deserializeV1(in, this);
-		if (version >= RELEASE_0180_VERSION) {
-			number = in.readInt();
-		}
+		topicSerde.deserialize(in, this);
+		// Added in 0.18
+		number = in.readInt();
 	}
 
 	@Override
@@ -207,20 +209,16 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 			return false;
 		}
 		final var that = (MerkleTopic) o;
-		try {
-			return Objects.equals(this.memo, that.memo)
-					&& this.number == that.number
-					&& Arrays.equals(getAdminKey().serialize(), that.getAdminKey().serialize())
-					&& Arrays.equals(getSubmitKey().serialize(), that.getSubmitKey().serialize())
-					&& Objects.equals(this.autoRenewDurationSeconds, that.autoRenewDurationSeconds)
-					&& Objects.equals(this.autoRenewAccountId, that.autoRenewAccountId)
-					&& Objects.equals(this.expirationTimestamp, that.expirationTimestamp)
-					&& (this.deleted == that.deleted)
-					&& (this.sequenceNumber == that.sequenceNumber)
-					&& Arrays.equals(this.runningHash, that.runningHash);
-		} catch (IOException ex) {
-			throw new KeySerializationException(ex.getMessage());
-		}
+		return Objects.equals(this.memo, that.memo)
+				&& this.number == that.number
+				&& equalUpToDecodability(this.getAdminKey(), that.getAdminKey())
+				&& equalUpToDecodability(this.getSubmitKey(), that.getSubmitKey())
+				&& Objects.equals(this.autoRenewDurationSeconds, that.autoRenewDurationSeconds)
+				&& Objects.equals(this.autoRenewAccountId, that.autoRenewAccountId)
+				&& Objects.equals(this.expirationTimestamp, that.expirationTimestamp)
+				&& (this.deleted == that.deleted)
+				&& (this.sequenceNumber == that.sequenceNumber)
+				&& Arrays.equals(this.runningHash, that.runningHash);
 	}
 
 	@Override
@@ -306,12 +304,6 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		number = phi.intValue();
 	}
 
-	public static class KeySerializationException extends RuntimeException {
-		public KeySerializationException(final String message) {
-			super(message);
-		}
-	}
-
 	/* --- Bean --- */
 	public boolean hasMemo() {
 		return memo != null;
@@ -326,12 +318,22 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		this.memo = ((null != memo) && !memo.isEmpty()) ? memo : null;
 	}
 
+	@Nullable
+	public String getNullableMemo() {
+		return memo;
+	}
+
 	public boolean hasAdminKey() {
 		return adminKey != null;
 	}
 
 	public JKey getAdminKey() {
 		return hasAdminKey() ? adminKey : getDefaultJKey();
+	}
+
+	@Nullable
+	public JKey getNullableAdminKey() {
+		return adminKey;
 	}
 
 	public void setAdminKey(final @Nullable JKey adminKey) {
@@ -352,6 +354,11 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		this.submitKey = ((null != submitKey) && !submitKey.isEmpty()) ? submitKey : null;
 	}
 
+	@Nullable
+	public JKey getNullableSubmitKey() {
+		return submitKey;
+	}
+
 	public long getAutoRenewDurationSeconds() {
 		return autoRenewDurationSeconds;
 	}
@@ -369,6 +376,11 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 		return hasAutoRenewAccountId() ? autoRenewAccountId : new EntityId();
 	}
 
+	@Nullable
+	public EntityId getNullableAutoRenewAccountId() {
+		return autoRenewAccountId;
+	}
+
 	public void setAutoRenewAccountId(final @Nullable EntityId autoRenewAccountId) {
 		throwIfImmutable("Cannot change this topic's auto renewal account if it's immutable.");
 		this.autoRenewAccountId = ((null != autoRenewAccountId) && (0 != autoRenewAccountId.num()))
@@ -382,6 +394,11 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public RichInstant getExpirationTimestamp() {
 		return hasExpirationTimestamp() ? expirationTimestamp : new RichInstant();
+	}
+
+	@Nullable
+	public RichInstant getNullableExpirationTimestamp() {
+		return expirationTimestamp;
 	}
 
 	public void setExpirationTimestamp(final @Nullable RichInstant expiry) {
@@ -417,6 +434,11 @@ public final class MerkleTopic extends AbstractMerkleLeaf implements Keyed<Entit
 
 	public byte[] getRunningHash() {
 		return (runningHash != null) ? runningHash : new byte[RUNNING_HASH_BYTE_ARRAY_SIZE];
+	}
+
+	@Nullable
+	public byte[] getNullableRunningHash() {
+		return runningHash;
 	}
 
 	public void setRunningHash(final @Nullable byte[] runningHash) {
