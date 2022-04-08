@@ -201,7 +201,7 @@ public class UniqueTokenValue implements VirtualValue {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(ownerAccountNum, packedCreationTime, Arrays.hashCode(metadata));
+		return Objects.hash(ownerAccountNum, spenderAccountNum, packedCreationTime, Arrays.hashCode(metadata));
 	}
 
 	@Override
