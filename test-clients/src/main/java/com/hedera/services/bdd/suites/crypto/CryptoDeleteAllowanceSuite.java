@@ -981,7 +981,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.via("cryptoDeleteAllowanceTxn")
 								.logged(),
 						getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
-//						validateChargedUsdWithin("cryptoDeleteAllowanceTxn", 0.051541, 0.01),
+						validateChargedUsdWithin("cryptoDeleteAllowanceTxn", 0.05, 0.01),
 						getAccountDetails(owner)
 								.payingWith(GENESIS)
 								.has(accountWith().nftApprovedForAllAllowancesCount(1)),
