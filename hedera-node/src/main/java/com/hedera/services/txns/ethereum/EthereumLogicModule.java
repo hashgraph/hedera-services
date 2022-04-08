@@ -22,4 +22,7 @@ public class EthereumLogicModule {
 		return List.of(ethereumTransitionLogic);
 	}
 
+	private EthereumLogicModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
+	}
 }
