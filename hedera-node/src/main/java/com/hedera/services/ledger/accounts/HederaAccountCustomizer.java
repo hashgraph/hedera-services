@@ -46,7 +46,7 @@ public final class HederaAccountCustomizer extends
 		optionAccountPropertyMap.put(Option.IS_SMART_CONTRACT, AccountProperty.IS_SMART_CONTRACT);
 		optionAccountPropertyMap.put(Option.IS_RECEIVER_SIG_REQUIRED, AccountProperty.IS_RECEIVER_SIG_REQUIRED);
 		optionAccountPropertyMap.put(Option.MAX_AUTOMATIC_ASSOCIATIONS, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
-		optionAccountPropertyMap.put(Option.ALREADY_USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
+		optionAccountPropertyMap.put(Option.USED_AUTOMATIC_ASSOCIATIONS, AccountProperty.USED_AUTOMATIC_ASSOCIATIONS);
 		optionAccountPropertyMap.put(Option.ALIAS, AccountProperty.ALIAS);
 		OPTION_PROPERTIES = Collections.unmodifiableMap(optionAccountPropertyMap);
 	}

@@ -42,6 +42,7 @@ public class GlobalDynamicProperties {
 	private int maxNftTransfersLen;
 	private int maxBatchSizeWipe;
 	private long maxNftQueryRange;
+	private int maxTokensPerAccount;
 	private int maxTokenRelsPerInfoQuery;
 	private int maxCustomFeesAllowed;
 	private int maxTokenSymbolUtf8Bytes;
@@ -104,6 +105,7 @@ public class GlobalDynamicProperties {
 	private boolean redirectTokenCalls;
 	private boolean enableTraceability;
 	private boolean enableAllowances;
+	private boolean limitTokenAssociations;
 	private boolean enableHTSPrecompileCreate;
 
 	@Inject
@@ -123,6 +125,7 @@ public class GlobalDynamicProperties {
 		maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
 		maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
 		maxNftQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
+		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
 		maxTokenRelsPerInfoQuery = properties.getIntProperty("tokens.maxRelsPerInfoQuery");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
@@ -191,9 +194,13 @@ public class GlobalDynamicProperties {
 		redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
 		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
 		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
+		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
 	}
 
+	public int maxTokensPerAccount() {
+		return maxTokensPerAccount;
+	}
 	public int maxTokensRelsPerInfoQuery() {
 		return maxTokenRelsPerInfoQuery;
 	}
@@ -464,6 +471,10 @@ public class GlobalDynamicProperties {
 
 	public boolean areAllowancesEnabled() {
 		return enableAllowances;
+	}
+
+	public boolean areTokenAssociationsLimited() {
+		return limitTokenAssociations;
 	}
 
 	public boolean isHTSPrecompileCreateEnabled() {
