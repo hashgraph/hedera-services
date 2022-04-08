@@ -57,6 +57,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
@@ -105,7 +106,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 				exceedsAccountLimit(),
 				succeedsWhenTokenPausedFrozenKycRevoked(),
 				serialsInAscendingOrder(),
-//				feesAsExpected(), --> will be uncommented after fee schedule is fixed in base branch
+				feesAsExpected(),
 				cannotHaveMultipleAllowedSpendersForTheSameNFTSerial(),
 				canGrantNftAllowancesWithTreasuryOwner(),
 				canGrantFungibleAllowancesWithTreasuryOwner(),
@@ -465,7 +466,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 						getTxnRecord("approveTxn").logged()
 				)
 				.then(
-//						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
+						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
 						getAccountDetails(payer)
 								.payingWith(GENESIS)
 								.has(accountWith()
@@ -633,15 +634,15 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-//						validateChargedUsdWithin("approve", 0.05, 0.01),
+						validateChargedUsdWithin("approve", 0.05, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.via("approveTokenTxn")
 								.fee(ONE_HBAR)
 								.blankMemo()
-								.logged()
-//						validateChargedUsdWithin("approveTokenTxn", 0.05012, 0.01)
+								.logged(),
+						validateChargedUsdWithin("approveTokenTxn", 0.05012, 0.01)
 				)
 				.then(
 						cryptoApproveAllowance()
@@ -651,7 +652,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-//						validateChargedUsdWithin("approveNftTxn", 0.05024, 0.01),
+						validateChargedUsdWithin("approveNftTxn", 0.05024, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addNftAllowance(owner, nft, "spender1", true, List.of())
@@ -659,7 +660,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-//						validateChargedUsdWithin("approveForAllNftTxn", 0.05, 0.01),
+						validateChargedUsdWithin("approveForAllNftTxn", 0.05, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, "spender2", 100L)
@@ -669,7 +670,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HBAR)
 								.blankMemo()
 								.logged(),
-//						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
+						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
 						getAccountDetails(owner)
 								.payingWith(GENESIS)
 								.has(accountWith()
@@ -1476,7 +1477,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.via("baseApproveTxn")
 								.blankMemo()
 								.logged(),
-//						validateChargedUsdWithin("baseApproveTxn", 0.05, 0.01),
+						validateChargedUsdWithin("baseApproveTxn", 0.05, 0.01),
 						cryptoApproveAllowance()
 								.payingWith(owner)
 								.addCryptoAllowance(owner, spender1, 100L)
@@ -1487,7 +1488,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.logged()
 				)
 				.then(
-//						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
+						validateChargedUsdWithin("approveTxn", 0.05252, 0.01),
 						getAccountDetails(owner)
 								.payingWith(GENESIS)
 								.has(accountWith()

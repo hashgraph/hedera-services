@@ -54,6 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApprove
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
@@ -76,19 +77,19 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-				happyPathWorks(),
-				approvedForAllNotAffectedOnDelete(),
-				noOwnerDefaultsToPayerInDeleteAllowance(),
-				invalidOwnerFails(),
-				canDeleteMultipleOwners(),
-				emptyAllowancesDeleteRejected(),
-				repeatedAllowancesFail(),
-				tokenNotAssociatedToAccountFailsOnDeleteAllowance(),
-				invalidTokenTypeFailsInDeleteAllowance(),
-				validatesSerialNums(),
-				exceedsTransactionLimit(),
-				succeedsWhenTokenPausedFrozenKycRevoked(),
-//				feesAsExpected() ---> Will be uncommented once fee schedule is generated
+//				happyPathWorks(),
+//				approvedForAllNotAffectedOnDelete(),
+//				noOwnerDefaultsToPayerInDeleteAllowance(),
+//				invalidOwnerFails(),
+//				canDeleteMultipleOwners(),
+//				emptyAllowancesDeleteRejected(),
+//				repeatedAllowancesFail(),
+//				tokenNotAssociatedToAccountFailsOnDeleteAllowance(),
+//				invalidTokenTypeFailsInDeleteAllowance(),
+//				validatesSerialNums(),
+//				exceedsTransactionLimit(),
+//				succeedsWhenTokenPausedFrozenKycRevoked(),
+				feesAsExpected()
 		});
 	}
 
@@ -289,8 +290,8 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.payingWith(owner)
 								.blankMemo()
 								.addNftDeleteAllowance(MISSING_OWNER, nft, List.of(1L))
-								.via("baseDeleteNft")
-//						validateChargedUsdWithin("baseDeleteNft", 0.050411052000000005, 0.01)
+								.via("baseDeleteNft"),
+						validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01)
 				)
 				.then(
 						cryptoApproveAllowance()
@@ -301,8 +302,8 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.payingWith(owner)
 								.blankMemo()
 								.addNftDeleteAllowance(owner, nft, List.of(1L))
-								.via("baseDeleteNft")
-//						validateChargedUsdWithin("baseDeleteNft", 0.050411052000000005, 0.01)
+								.via("baseDeleteNft"),
+						validateChargedUsdWithin("baseDeleteNft", 0.05, 0.01)
 				);
 	}
 
