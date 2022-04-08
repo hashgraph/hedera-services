@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.CommonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.ethereum.core.CallTransaction;
 import org.junit.jupiter.api.Assertions;
 
@@ -135,6 +136,36 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
 					ByteString.copyFrom(contractCallResult.getBytes().toArray()),
 					result.getContractCallResult(),
 					"Wrong contract call result!");
+		});
+		return this;
+	}
+
+	public ContractFnResultAsserts gas(long gas) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			Assertions.assertEquals(
+					gas, result.getGas(),
+					"Wrong amount of initial Gas!");
+		});
+		return this;
+	}
+
+	public ContractFnResultAsserts amount(long amount) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			Assertions.assertEquals(
+					amount, result.getAmount(),
+					"Wrong amount of tinybars!");
+		});
+		return this;
+	}
+
+	public ContractFnResultAsserts functionParameters(Bytes functionParameters) {
+		registerProvider((spec, o) -> {
+			ContractFunctionResult result = (ContractFunctionResult) o;
+			Assertions.assertEquals(
+					ByteString.copyFrom(functionParameters.toArray()), result.getFunctionParameters(),
+					"Wrong function parameters!");
 		});
 		return this;
 	}

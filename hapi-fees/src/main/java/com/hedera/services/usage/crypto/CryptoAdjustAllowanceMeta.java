@@ -43,8 +43,8 @@ public class CryptoAdjustAllowanceMeta {
 	private final long effectiveNow;
 	private final long msgBytesUsed;
 	private final Map<Long, Long> cryptoAllowances;
-	private final Map<ExtantCryptoContext.AllowanceMapKey, Long> tokenAllowances;
-	private final Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> nftAllowances;
+	private final Map<AllowanceId, Long> tokenAllowances;
+	private final Map<AllowanceId, AllowanceDetails> nftAllowances;
 
 	public CryptoAdjustAllowanceMeta(Builder builder) {
 		effectiveNow = builder.effectiveNow;
@@ -86,11 +86,11 @@ public class CryptoAdjustAllowanceMeta {
 		return cryptoAllowances;
 	}
 
-	public Map<ExtantCryptoContext.AllowanceMapKey, Long> getTokenAllowances() {
+	public Map<AllowanceId, Long> getTokenAllowances() {
 		return tokenAllowances;
 	}
 
-	public Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> getNftAllowances() {
+	public Map<AllowanceId, AllowanceDetails> getNftAllowances() {
 		return nftAllowances;
 	}
 
@@ -98,8 +98,8 @@ public class CryptoAdjustAllowanceMeta {
 		private long effectiveNow;
 		private long msgBytesUsed;
 		private Map<Long, Long> cryptoAllowances;
-		private Map<ExtantCryptoContext.AllowanceMapKey, Long> tokenAllowances;
-		private Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> nftAllowances;
+		private Map<AllowanceId, Long> tokenAllowances;
+		private Map<AllowanceId, AllowanceDetails> nftAllowances;
 
 		public CryptoAdjustAllowanceMeta.Builder cryptoAllowances(Map<Long, Long> cryptoAllowances) {
 			this.cryptoAllowances = cryptoAllowances;
@@ -107,13 +107,13 @@ public class CryptoAdjustAllowanceMeta {
 		}
 
 		public CryptoAdjustAllowanceMeta.Builder tokenAllowances(
-				Map<ExtantCryptoContext.AllowanceMapKey, Long> tokenAllowances) {
+				Map<AllowanceId, Long> tokenAllowances) {
 			this.tokenAllowances = tokenAllowances;
 			return this;
 		}
 
 		public CryptoAdjustAllowanceMeta.Builder nftAllowances(
-				Map<ExtantCryptoContext.AllowanceMapKey, ExtantCryptoContext.AllowanceMapValue> nftAllowances) {
+				Map<AllowanceId, AllowanceDetails> nftAllowances) {
 			this.nftAllowances = nftAllowances;
 			return this;
 		}

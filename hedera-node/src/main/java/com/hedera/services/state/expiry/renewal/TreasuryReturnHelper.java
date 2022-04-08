@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 
 @Singleton
 public class TreasuryReturnHelper {

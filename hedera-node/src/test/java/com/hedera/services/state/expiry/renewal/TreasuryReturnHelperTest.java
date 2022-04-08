@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.ttlOf;
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -109,7 +108,7 @@ class TreasuryReturnHelperTest {
 
 		subject.updateReturns(num.toGrpcAccountId(), survivedTokenGrpcId, tokenTypes, returnTransfers);
 
-		verify(tokenRels).remove(fromAccountTokenRel(num.toGrpcAccountId(), survivedTokenGrpcId));
+		verify(tokenRels).remove(EntityNumPair.fromAccountTokenRel(num.toGrpcAccountId(), survivedTokenGrpcId));
 		final var ttls = List.of(
 				ttlOf(survivedTokenGrpcId,
 						num.toGrpcAccountId(), treasuryId.toGrpcAccountId(), tokenBalance));

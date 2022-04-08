@@ -72,14 +72,13 @@ class AssociateLogicTest {
 		given(accountStore.loadAccount(accountId)).willReturn(modelAccount);
 		given(tokenStore.loadToken(firstTokenId)).willReturn(firstModelToken);
 		given(tokenStore.loadToken(secondTokenId)).willReturn(secondModelToken);
-		given(firstModelToken.newRelationshipWith(modelAccount, false)).willReturn(firstModelTokenRel);
-		given(secondModelToken.newRelationshipWith(modelAccount, false)).willReturn(secondModelTokenRel);
+		given(modelAccount.associateWith(tokens, tokenStore, false, false, dynamicProperties))
+				.willReturn(List.of(firstModelTokenRel, secondModelTokenRel));
 
 		subject.associate(accountId, tokenIds);
 
-		verify(modelAccount).associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);
+		verify(modelAccount).associateWith(tokens, tokenStore, false, false, dynamicProperties);
 		verify(accountStore).commitAccount(modelAccount);
-		verify(tokenStore).commitTokenRelationships(List.of(firstModelTokenRel));
-		verify(tokenStore).commitTokenRelationships(List.of(secondModelTokenRel));
+		verify(tokenStore).commitTokenRelationships(List.of(firstModelTokenRel, secondModelTokenRel));
 	}
 }

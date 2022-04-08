@@ -21,6 +21,7 @@ package com.hedera.services.ledger.properties;
  */
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.utils.EntityNumPair;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -68,6 +69,39 @@ public enum TokenRelProperty implements BeanProperty<MerkleTokenRelStatus> {
 		@Override
 		public Function<MerkleTokenRelStatus, Object> getter() {
 			return MerkleTokenRelStatus::isAutomaticAssociation;
+		}
+	},
+	KEY {
+		@Override
+		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+			return (a, f) -> a.setKey((EntityNumPair) f);
+		}
+
+		@Override
+		public Function<MerkleTokenRelStatus, Object> getter() {
+			return MerkleTokenRelStatus::getKey;
+		}
+	},
+	NEXT_KEY {
+		@Override
+		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+			return (a, f) -> a.setNext((long) f);
+		}
+
+		@Override
+		public Function<MerkleTokenRelStatus, Object> getter() {
+			return MerkleTokenRelStatus::nextKey;
+		}
+	},
+	PREV_KEY {
+		@Override
+		public BiConsumer<MerkleTokenRelStatus, Object> setter() {
+			return (a, f) -> a.setPrev((long) f);
+		}
+
+		@Override
+		public Function<MerkleTokenRelStatus, Object> getter() {
+			return MerkleTokenRelStatus::prevKey;
 		}
 	}
 }

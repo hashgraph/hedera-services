@@ -46,6 +46,7 @@ public class GlobalDynamicProperties {
 	private int maxBatchSizeWipe;
 	private long maxNftQueryRange;
 	private int maxTokensPerAccount;
+	private int maxTokenRelsPerInfoQuery;
 	private int maxCustomFeesAllowed;
 	private int maxTokenSymbolUtf8Bytes;
 	private int maxTokenNameUtf8Bytes;
@@ -109,6 +110,8 @@ public class GlobalDynamicProperties {
 	private boolean redirectTokenCalls;
 	private boolean enableTraceability;
 	private boolean enableAllowances;
+	private boolean limitTokenAssociations;
+	private boolean enableHTSPrecompileCreate;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -128,6 +131,7 @@ public class GlobalDynamicProperties {
 		maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
 		maxNftQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
 		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
+		maxTokenRelsPerInfoQuery = properties.getIntProperty("tokens.maxRelsPerInfoQuery");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
 		maxAccountNum = properties.getLongProperty("ledger.maxAccountNum");
@@ -198,10 +202,15 @@ public class GlobalDynamicProperties {
 		final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
 		expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
 		expireContracts = autoRenewTargetTypes.contains(CONTRACT);
+		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
+		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
 	}
 
 	public int maxTokensPerAccount() {
 		return maxTokensPerAccount;
+	}
+	public int maxTokensRelsPerInfoQuery() {
+		return maxTokenRelsPerInfoQuery;
 	}
 
 	public int maxCustomFeesAllowed() {
@@ -478,5 +487,13 @@ public class GlobalDynamicProperties {
 
 	public boolean expireAccounts() {
 		return expireAccounts;
+        }
+        
+	public boolean areTokenAssociationsLimited() {
+		return limitTokenAssociations;
+	}
+
+	public boolean isHTSPrecompileCreateEnabled() {
+		return enableHTSPrecompileCreate;
 	}
 }

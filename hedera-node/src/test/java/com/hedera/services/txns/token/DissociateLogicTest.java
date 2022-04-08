@@ -97,7 +97,7 @@ class DissociateLogicTest {
 		subject.dissociate(accountId, txnCtx.accessor().getTxn().getTokenDissociate().getTokensList());
 
 		// then:
-		verify(account).dissociateUsing(List.of(dissociation), validator);
+		verify(account).dissociateUsing(List.of(dissociation), tokenStore, validator);
 		// and:
 		verify(accountStore).commitAccount(account);
 		verify(tokenStore).commitTokenRelationships(List.of(tokenRelationship));

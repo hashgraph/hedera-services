@@ -84,6 +84,8 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.isCreate2Enabled());
 		assertTrue(subject.isRedirectTokenCallsEnabled());
 		assertFalse(subject.areAllowancesEnabled());
+		assertFalse(subject.areTokenAssociationsLimited());
+		assertTrue(subject.isHTSPrecompileCreateEnabled());
 	}
 
 	@Test
@@ -132,6 +134,7 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// then:
+		assertEquals(1, subject.maxTokensRelsPerInfoQuery());
 		assertEquals(1, subject.maxTokensPerAccount());
 		assertEquals(2, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(6, subject.maxFileSizeKb());
@@ -207,6 +210,8 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.areAllowancesEnabled());
 		assertTrue(subject.expireAccounts());
 		assertTrue(subject.expireContracts());
+		assertTrue(subject.areTokenAssociationsLimited());
+		assertFalse(subject.isHTSPrecompileCreateEnabled());
 	}
 
 	@Test
@@ -217,6 +222,7 @@ class GlobalDynamicPropertiesTest {
 		subject = new GlobalDynamicProperties(numbers, properties);
 
 		// then:
+		assertEquals(2, subject.maxTokensRelsPerInfoQuery());
 		assertEquals(2, subject.maxTokensPerAccount());
 		assertEquals(3, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(7, subject.maxFileSizeKb());
@@ -287,6 +293,7 @@ class GlobalDynamicPropertiesTest {
 	}
 
 	private void givenPropsWithSeed(int i) {
+		given(properties.getIntProperty("tokens.maxRelsPerInfoQuery")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolUtf8Bytes")).willReturn(i + 1);
 		given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
@@ -368,6 +375,9 @@ class GlobalDynamicPropertiesTest {
 				.willReturn((i + 61) % 2 == 0
 						? EnumSet.of(EntityType.TOKEN)
 						: EnumSet.of(EntityType.ACCOUNT, EntityType.CONTRACT));
+		given(properties.getBooleanProperty("accounts.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
+				.willReturn((i + 61) % 2 == 0);
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

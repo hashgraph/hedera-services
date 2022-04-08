@@ -10,6 +10,7 @@
                         "ScheduleCreate",
                         "CryptoCreate", "CryptoTransfer", "CryptoUpdate", "CryptoDelete", "CryptoGetInfo", "CryptoGetAccountRecords",
 					  "CryptoApproveAllowance", "CryptoAdjustAllowance",
+                        "CryptoDeleteAllowance",
 					  "ConsensusCreateTopic", "ConsensusSubmitMessage", "ConsensusUpdateTopic", "ConsensusDeleteTopic", "ConsensusGetTopicInfo",
                         "TokenGetInfo", "TokenGetNftInfo", "TokenGetNftInfos", "TokenGetAccountNftInfos",
                         "ScheduleDelete", "ScheduleGetInfo",

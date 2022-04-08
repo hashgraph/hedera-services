@@ -27,7 +27,6 @@ import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -36,6 +35,7 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -81,7 +81,7 @@ class ExpiringCreationsTest {
 	private static final long newTokenSupply = 1_234_567L;
 	private static final TokenID newTokenId = IdUtils.asToken("0.0.666");
 	private static final AccountID effPayer = IdUtils.asAccount("0.0.75231");
-	private static final ExpirableTxnRecord record = DomainSerdesTest.recordOne();
+	private static final ExpirableTxnRecord record = TxnUtils.recordOne();
 	private static ExpirableTxnRecord expectedRecord;
 
 	@Mock
@@ -278,7 +278,7 @@ class ExpiringCreationsTest {
 		assertSame(hash, created.getTxnHash());
 		assertEquals(memo, created.getMemo());
 		assertEquals(receiptBuilder.build(), created.getReceipt());
-		assertEquals(timestamp, created.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, created.getConsensusTime().toJava());
 		assertEquals(scheduleRef, created.getScheduleRef().toGrpcScheduleId());
 		assertNull(created.getTokens());
 		assertNull(created.getTokenAdjustments());
@@ -317,7 +317,7 @@ class ExpiringCreationsTest {
 		assertEquals(totalFee, created.getFee());
 		assertSame(hash, created.getTxnHash());
 		assertEquals(memo, created.getMemo());
-		assertEquals(timestamp, created.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, created.getConsensusTime().toJava());
 		assertNull(created.getScheduleRef());
 	}
 
@@ -338,7 +338,7 @@ class ExpiringCreationsTest {
 		assertEquals(receipt.build(), actualRecord.getReceipt());
 		assertEquals(memo, actualRecord.getMemo());
 		assertArrayEquals(hash, actualRecord.getTxnHash());
-		assertEquals(timestamp, actualRecord.getConsensusTimestamp().toJava());
+		assertEquals(timestamp, actualRecord.getConsensusTime().toJava());
 		assertEquals(scheduleRef, actualRecord.getScheduleRef().toGrpcScheduleId());
 	}
 

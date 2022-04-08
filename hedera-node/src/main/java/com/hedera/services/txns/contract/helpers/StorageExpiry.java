@@ -23,7 +23,6 @@ package com.hedera.services.txns.contract.helpers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
@@ -45,7 +44,7 @@ import java.util.function.Supplier;
  *     <li>In the first case, the storage expiry is just the same as the (well-known) expiry of
  *     the allocating contract---which must be available in the accounts {@code MerkleMap}.</li>
  *     <li>In the second case, the expiry of the newly-created, allocating contract is determined by its
- *     "sponsor chain" (c.f. {@link HederaWorldState#customizeSponsoredAccounts()}).
+ *     sponsor contract.
  * </ol>
  * Note we say "sponsor <i>chain</i>"---and not simply "sponsor"---because the sponsor of the allocating
  * contract might have itself been created in the ongoing EVM transaction! So we have to walk up the

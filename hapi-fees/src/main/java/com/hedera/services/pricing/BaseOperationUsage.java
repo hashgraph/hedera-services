@@ -30,6 +30,7 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
@@ -45,7 +46,9 @@ import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
@@ -184,6 +187,11 @@ class BaseOperationUsage {
 					return cryptoAdjustAllowance();
 				}
 				break;
+			case CryptoDeleteAllowance:
+				if (type == DEFAULT) {
+					return cryptoDeleteAllowance();
+				}
+				break;
 			case TokenCreate:
 				switch (type) {
 					case TOKEN_FUNGIBLE_COMMON:
@@ -270,7 +278,7 @@ class BaseOperationUsage {
 				.setCurrentMaxAutomaticAssociations(0)
 				.setCurrentCryptoAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.build();
 
 		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(canonicalTxn.getCryptoApproveAllowance(), now);
@@ -302,13 +310,29 @@ class BaseOperationUsage {
 						.setAmount(1L)
 						.build()))
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.build();
 
 		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(canonicalTxn.getCryptoAdjustAllowance(), now);
 		final var into = new UsageAccumulator();
 		CRYPTO_OPS_USAGE.cryptoAdjustAllowanceUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoAdjustMeta,
 				ctx, into);
+		return into;
+	}
+
+	UsageAccumulator cryptoDeleteAllowance() {
+		final var now = Instant.now().getEpochSecond();
+		final var canonicalTxn = TransactionBody.newBuilder()
+				.setCryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody
+						.newBuilder()
+						.addCryptoAllowances(CryptoRemoveAllowance.newBuilder().setOwner(AN_ACCOUNT).build()))
+				.build();
+
+		final var cryptoDeleteAllowanceMeta = new CryptoDeleteAllowanceMeta(canonicalTxn.getCryptoDeleteAllowance(),
+				now);
+		final var into = new UsageAccumulator();
+		CRYPTO_OPS_USAGE.cryptoDeleteAllowanceUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS,
+				cryptoDeleteAllowanceMeta, into);
 		return into;
 	}
 
@@ -330,7 +354,7 @@ class BaseOperationUsage {
 				.setCurrentMaxAutomaticAssociations(0)
 				.setCurrentCryptoAllowances(Collections.emptyList())
 				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentNftAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
 				.build();
 		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
 		final var into = new UsageAccumulator();

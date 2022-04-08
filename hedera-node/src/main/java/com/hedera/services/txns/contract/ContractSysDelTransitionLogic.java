@@ -21,6 +21,8 @@ package com.hedera.services.txns.contract;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.TransitionLogic;
@@ -40,8 +42,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.context.properties.EntityType.CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -49,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class ContractSysDelTransitionLogic implements TransitionLogic {
 	private static final Logger log = LogManager.getLogger(ContractSysDelTransitionLogic.class);
 
+	private final boolean supported;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
@@ -61,13 +66,15 @@ public class ContractSysDelTransitionLogic implements TransitionLogic {
 			final TransactionContext txnCtx,
 			final SigImpactHistorian sigImpactHistorian,
 			final LegacySystemDeleter delegate,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts,
+			@CompositeProps final PropertySource properties
 	) {
 		this.validator = validator;
 		this.txnCtx = txnCtx;
 		this.delegate = delegate;
 		this.contracts = contracts;
 		this.sigImpactHistorian = sigImpactHistorian;
+		this.supported = properties.getTypesProperty("entities.systemDeletable").contains(CONTRACT);
 	}
 
 	@FunctionalInterface
@@ -105,6 +112,9 @@ public class ContractSysDelTransitionLogic implements TransitionLogic {
 	}
 
 	public ResponseCodeEnum validate(TransactionBody contractSysDelTxn) {
+		if (!supported) {
+			return NOT_SUPPORTED;
+		}
 		var op = contractSysDelTxn.getSystemDelete();
 		var status = validator.queryableContractStatus(op.getContractID(), contracts.get());
 		return (status != INVALID_CONTRACT_ID) ? OK : INVALID_CONTRACT_ID;

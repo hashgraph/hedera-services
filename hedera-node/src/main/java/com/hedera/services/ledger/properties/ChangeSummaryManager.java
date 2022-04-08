@@ -57,9 +57,7 @@ public final class ChangeSummaryManager<A, P extends Enum<P> & BeanProperty<A>> 
 	 * 		the account to receive the net changes
 	 */
 	public void persist(final Map<P, Object> changes, final A account) {
-		changes.entrySet().forEach(entry ->
-				entry.getKey().setter().accept(account, entry.getValue())
-		);
+		changes.forEach((key, value) -> key.setter().accept(account, value));
 	}
 
 	/**

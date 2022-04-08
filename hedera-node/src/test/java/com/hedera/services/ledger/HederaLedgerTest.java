@@ -39,7 +39,7 @@ import org.mockito.quality.Strictness;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
-import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -258,10 +258,10 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void delegatesToCorrectAlreadyUsedAutomaticAssociationProperty() {
 		subject.alreadyUsedAutomaticAssociations(genesis);
-		verify(accountsLedger).get(genesis, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
+		verify(accountsLedger).get(genesis, USED_AUTOMATIC_ASSOCIATIONS);
 
 		subject.setAlreadyUsedAutomaticAssociations(genesis, 7);
-		verify(accountsLedger).set(genesis, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, 7);
+		verify(accountsLedger).set(genesis, USED_AUTOMATIC_ASSOCIATIONS, 7);
 	}
 
 	@Test

@@ -32,7 +32,7 @@ import javax.inject.Singleton;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 
 /**
@@ -100,5 +100,10 @@ public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, 
 	private EntityNumPair forMerkleMap(Pair<AccountID, TokenID> key) {
 		return EntityNumPair.fromLongs(key.getLeft().getAccountNum(),
 				key.getRight().getTokenNum());
+	}
+
+	/* -- only for unit tests --*/
+	public Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> getDelegate() {
+		return delegate;
 	}
 }

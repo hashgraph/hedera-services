@@ -23,7 +23,6 @@ package com.hedera.services.context;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Id;
@@ -85,7 +84,6 @@ public class SideEffectsTracker {
 	private List<TokenTransferList> explicitNetTokenUnitOrOwnershipChanges = null;
 	private Map<EntityNum, Map<EntityNum, Long>> cryptoAllowances = Collections.emptyMap();
 	private Map<EntityNum, Map<FcTokenAllowanceId, Long>> fungibleTokenAllowances = Collections.emptyMap();
-	private Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances = Collections.emptyMap();
 
 	@Inject
 	public SideEffectsTracker() {
@@ -449,22 +447,6 @@ public class SideEffectsTracker {
 		this.fungibleTokenAllowances.put(ownerNum, fungibleTokenAllowances);
 	}
 
-	public Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> getNftAllowances() {
-		return nftAllowances;
-	}
-
-	public void setNftAllowances(Map<EntityNum, Map<FcTokenAllowanceId, FcTokenAllowance>> nftAllowances) {
-		this.nftAllowances = nftAllowances;
-	}
-
-	public void setNftAllowances(
-			final EntityNum ownerNum, final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		if (this.nftAllowances.equals(Collections.emptyMap())) {
-			this.nftAllowances = new TreeMap<>();
-		}
-		this.nftAllowances.put(ownerNum, nftAllowances);
-	}
-
 	/**
 	 * Clears all side effects tracked since the last call to this method.
 	 */
@@ -477,7 +459,6 @@ public class SideEffectsTracker {
 		newEntityAlias = ByteString.EMPTY;
 		cryptoAllowances = Collections.emptyMap();
 		fungibleTokenAllowances = Collections.emptyMap();
-		nftAllowances = Collections.emptyMap();
 	}
 
 	/**

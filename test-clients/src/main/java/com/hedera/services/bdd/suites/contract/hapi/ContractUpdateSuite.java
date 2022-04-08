@@ -98,6 +98,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						fridayThe13thSpec(),
 						updateDoesNotChangeBytecode(),
 						eip1014AddressAlwaysHasPriority(),
+						immutableContractKeyFormIsStandard(),
 				}
 		);
 	}
@@ -136,10 +137,11 @@ public class ContractUpdateSuite extends HapiApiSuite {
 										VARIOUS_CALLS_STATIC_ABI,
 										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, VARIOUS_CALLS_DELEGATE_ABI).via(delegatecallTxn),
-						sourcing(() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
-								resultWith().resultThruAbi(
-										VARIOUS_CALLS_DELEGATE_ABI,
-										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
+						sourcing(
+								() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
+										resultWith().resultThruAbi(
+												VARIOUS_CALLS_DELEGATE_ABI,
+												isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
 						contractCall(contract, VARIOUS_CALLS_CODE_ABI).via(callcodeTxn),
 						sourcing(() -> getTxnRecord(callcodeTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
@@ -238,6 +240,19 @@ public class ContractUpdateSuite extends HapiApiSuite {
 								.has(contractWith()
 										.adminKey("newAdminKey")
 										.memo("some new memo"))
+				);
+	}
+
+	// https://github.com/hashgraph/hedera-services/issues/3037
+	private HapiApiSpec immutableContractKeyFormIsStandard() {
+		final var immutableContract = "immutable";
+
+		return defaultHapiSpec("ImmutableContractKeyFormIsStandard")
+				.given(
+						contractCreate(immutableContract).immutable()
+				).when( ).then(
+						getContractInfo(immutableContract)
+								.has(contractWith().immutableContractKey(immutableContract))
 				);
 	}
 

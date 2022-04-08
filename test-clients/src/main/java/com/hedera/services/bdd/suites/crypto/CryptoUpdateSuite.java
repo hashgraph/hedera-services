@@ -109,11 +109,11 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cannotSetThresholdNegative(),
 						updateWithEmptyKeyFails(),
 						updateFailsIfMissingSigs(),
-						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
 						updateFailsWithContractKey(),
 						updateFailsWithOverlyLongLifetime(),
 						updateFailsWithInvalidMaxAutoAssociations(),
-						usdFeeAsExpected()
+						usdFeeAsExpected(),
+						sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign(),
 				}
 		);
 	}
@@ -242,6 +242,14 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("accounts.limitTokenAssociations", "false")),
+						cryptoUpdate(firstUser)
+								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("accounts.limitTokenAssociations", "true")),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(
 										Map.of("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork))
 				);
@@ -261,7 +269,7 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
-		String sysAccount = "0.0.977";
+		String sysAccount = "0.0.99";
 		String randomAccount = "randomAccount";
 		String firstKey = "firstKey";
 		String secondKey = "secondKey";

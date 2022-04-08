@@ -47,6 +47,50 @@
 		}
 	  },
 	  {
+		"transactionFeeSchedule" : {
+		  "hederaFunctionality" : "CryptoDeleteAllowance",
+		  "fees" : [ {
+			"subType" : "DEFAULT",
+			"nodedata" : {
+			  "constant" : 3826162316,
+			  "bpt" : 6116887,
+			  "vpt" : 15292217405,
+			  "rbh" : 4078,
+			  "sbh" : 306,
+			  "gas" : 40779,
+			  "bpr" : 6116887,
+			  "sbpr" : 152922,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"networkdata" : {
+			  "constant" : 76523246321,
+			  "bpt" : 122337739,
+			  "vpt" : 305844348100,
+			  "rbh" : 81558,
+			  "sbh" : 6117,
+			  "gas" : 815585,
+			  "bpr" : 122337739,
+			  "sbpr" : 3058443,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"servicedata" : {
+			  "constant" : 76523246321,
+			  "bpt" : 122337739,
+			  "vpt" : 305844348100,
+			  "rbh" : 81558,
+			  "sbh" : 6117,
+			  "gas" : 815585,
+			  "bpr" : 122337739,
+			  "sbpr" : 3058443,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			}
+		  } ]
+		}
+	  },
+	  {
 		"transactionFeeSchedule": {
 		  "hederaFunctionality": "CryptoApproveAllowance",
 		  "fees": [
@@ -2831,6 +2875,50 @@
 			  }
 			}
 		  ]
+		}
+	  },
+	  {
+		"transactionFeeSchedule" : {
+		  "hederaFunctionality" : "CryptoDeleteAllowance",
+		  "fees" : [ {
+			"subType" : "DEFAULT",
+			"nodedata" : {
+			  "constant" : 3826162316,
+			  "bpt" : 6116887,
+			  "vpt" : 15292217405,
+			  "rbh" : 4078,
+			  "sbh" : 306,
+			  "gas" : 40779,
+			  "bpr" : 6116887,
+			  "sbpr" : 152922,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"networkdata" : {
+			  "constant" : 76523246321,
+			  "bpt" : 122337739,
+			  "vpt" : 305844348100,
+			  "rbh" : 81558,
+			  "sbh" : 6117,
+			  "gas" : 815585,
+			  "bpr" : 122337739,
+			  "sbpr" : 3058443,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			},
+			"servicedata" : {
+			  "constant" : 76523246321,
+			  "bpt" : 122337739,
+			  "vpt" : 305844348100,
+			  "rbh" : 81558,
+			  "sbh" : 6117,
+			  "gas" : 815585,
+			  "bpr" : 122337739,
+			  "sbpr" : 3058443,
+			  "min" : 0,
+			  "max" : 1000000000000000
+			}
+		  } ]
 		}
 	  },
 	  {

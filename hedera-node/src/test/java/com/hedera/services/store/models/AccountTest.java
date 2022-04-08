@@ -21,12 +21,14 @@ package com.hedera.services.store.models;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -36,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
@@ -43,34 +46,78 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class AccountTest {
 	private static final byte[] mockCreate2Addr = unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb");
-	private final Id subjectId = new Id(0, 0, 12345);
-	private final CopyOnWriteIds assocTokens = new CopyOnWriteIds(new long[] { 666, 0, 0, 777, 0, 0 });
+	private final long miscAccountNum = 12345;
+	private final long treasuryNum = 11111;
+	private final long firstAssocTokenNum = 666;
+	private final long secondAssocTokenNum = 777;
+	private final long thirdAssocTokenNum = 555;
+	private final Id subjectId = new Id(0, 0, miscAccountNum);
+	private final Id treasuryId = new Id(0, 0, treasuryNum);
 	private final long ownedNfts = 5;
+	private final int numAssociations = 3;
+	private final int numPositiveBalances = 2;
 	private final int alreadyUsedAutoAssociations = 123;
 	private final int maxAutoAssociations = 1234;
 	private final int autoAssociationMetadata = buildAutomaticAssociationMetaData(maxAutoAssociations,
 			alreadyUsedAutoAssociations);
+	private final EntityNumPair firstRelKey = EntityNumPair.fromLongs(miscAccountNum, firstAssocTokenNum);
+	private final TokenRelationship firstRel = new TokenRelationship(null, null);
+	private final EntityNumPair secondRelKey = EntityNumPair.fromLongs(miscAccountNum, secondAssocTokenNum);
+	private final TokenRelationship secondRel = new TokenRelationship(null, null);
+	private final EntityNumPair thirdRelKey = EntityNumPair.fromLongs(miscAccountNum, thirdAssocTokenNum);
+	private final TokenRelationship thirdRel = new TokenRelationship(null, null);
+	private final Token firstToken = new Token(new Id(0,0, firstAssocTokenNum));
+	private final Token secondToken = new Token(new Id(0,0, secondAssocTokenNum));
+	private final Token thirdToken = new Token(new Id(0,0, thirdAssocTokenNum));
+	private final Account treasuryAccount = new Account(treasuryId);
 
 	private Account subject;
 	private OptionValidator validator;
+	private TypedTokenStore tokenStore;
+	private GlobalDynamicProperties dynamicProperties;
 
 	@BeforeEach
 	void setUp() {
 		subject = new Account(subjectId);
-		subject.setAssociatedTokens(assocTokens);
 		subject.setAutoAssociationMetadata(autoAssociationMetadata);
 		subject.setOwnedNfts(ownedNfts);
+		subject.setHeadTokenNum(firstAssocTokenNum);
+		subject.setNumAssociations(numAssociations);
+		subject.setNumPositiveBalances(numPositiveBalances);
+
+		firstRel.setKey(firstRelKey);
+		firstRel.setNextKey(secondAssocTokenNum);
+		secondRel.setKey(secondRelKey);
+		secondRel.setPrevKey(firstAssocTokenNum);
+		secondRel.setNextKey(thirdAssocTokenNum);
+		thirdRel.setKey(thirdRelKey);
+		thirdRel.setPrevKey(secondAssocTokenNum);
+
+		firstToken.setTreasury(treasuryAccount);
+		secondToken.setTreasury(treasuryAccount);
+		thirdToken.setTreasury(treasuryAccount);
 
 		validator = mock(ContextOptionValidator.class);
+		tokenStore = mock(TypedTokenStore.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
+	}
+
+	@Test
+	void cannotSetNegativeCounters() {
+		subject.setNumPositiveBalances(-1);
+		subject.setNumAssociations(-2);
+
+		assertEquals(0, subject.getNumPositiveBalances());
+		assertEquals(0, subject.getNumAssociations());
 	}
 
 	@Test
@@ -116,48 +163,191 @@ class AccountTest {
 
 		subject.setProxy(Id.DEFAULT);
 		assertEquals(Id.DEFAULT, subject.getProxy());
-	}
 
-	@Test
-	void associationTestedAsExpected() {
-		assertTrue(subject.isAssociatedWith(new Id(0, 0, 666)));
-		assertTrue(subject.isAssociatedWith(new Id(0, 0, 777)));
-		assertFalse(subject.isAssociatedWith(new Id(0, 0, 888)));
+		assertTrue(subject.getMutableCryptoAllowances().isEmpty());
+		assertTrue(subject.getMutableFungibleTokenAllowances().isEmpty());
+		assertTrue(subject.getMutableApprovedForAllNfts().isEmpty());
 	}
 
 	@Test
 	void toStringAsExpected() {
 		// given:
-		final var desired = "Account{id=Id[shard=0, realm=0, num=12345], expiry=0, balance=0, deleted=false, " +
-				"tokens=[0" +
-				".0.666, 0.0.777], ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, " +
-				"alias=, cryptoAllowances=null, fungibleTokenAllowances=null, nftAllowances=null" + subject.getAlias().toStringUtf8() + "}";
+		final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, " +
+				"ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, " +
+				"alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null" +
+				subject.getAlias().toStringUtf8() + ", numAssociations=" + numAssociations +", numPositiveBalances="+
+				numPositiveBalances + ", headTokenNum=666}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
 	}
 
 	@Test
-	void dissociationHappyPathWorks() {
+	void dissociationOnLastAssociatedTokenWorks() {
 		// setup:
-		final var alreadyAssocTokenId = new Id(0, 0, 666);
+		final var alreadyAssocTokenId = new Id(0, 0, firstAssocTokenNum);
 		final var dissociationRel = mock(Dissociation.class);
 		final var tokenRel = mock(TokenRelationship.class);
-		// and:
-		final var expectedFinalTokens = "[0.0.777]";
 
 		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
 		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
 		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(firstToken);
 		given(tokenRel.isAutomaticAssociation()).willReturn(true);
+		given(tokenRel.getBalanceChange()).willReturn(-1L);
+		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(secondToken);
+		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
+		given(tokenStore.loadTokenRelationship(any(), any())).willReturn(secondRel);
 
 		// when:
-		subject.dissociateUsing(List.of(dissociationRel), validator);
+		subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator);
 
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
-		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
+		assertEquals(numPositiveBalances - 1 , subject.getNumPositiveBalances());
+		assertEquals(numAssociations - 1 , subject.getNumAssociations());
 		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+	}
+
+	@Test
+	void dissociatingFirstAssociatedTokenWorks() {
+		// setup:
+		final var alreadyAssocTokenId = new Id(0, 0, thirdAssocTokenNum);
+		final var dissociationRel = mock(Dissociation.class);
+		final var tokenRel = mock(TokenRelationship.class);
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
+		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
+		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(thirdToken);
+		given(tokenRel.isAutomaticAssociation()).willReturn(true);
+		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(firstToken);
+		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
+		given(tokenStore.loadTokenRelationship(any(), any()))
+				.willReturn(thirdRel)
+				.willReturn(secondRel)
+				.willReturn(firstRel);
+
+		// when:
+		subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator);
+
+		// then:
+		verify(dissociationRel).updateModelRelsSubjectTo(validator);
+		assertEquals(numAssociations - 1, subject.getNumAssociations());
+		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+	}
+
+	@Test
+	void dissociationWorks() {
+		// setup:
+		final var alreadyAssocTokenId = new Id(0, 0, secondAssocTokenNum);
+		final var dissociationRel = mock(Dissociation.class);
+		final var tokenRel = mock(TokenRelationship.class);
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
+		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
+		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(secondToken);
+		given(tokenRel.isAutomaticAssociation()).willReturn(true);
+		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(firstToken);
+		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
+		given(tokenStore.loadTokenRelationship(any(), any()))
+				.willReturn(secondRel)
+				.willReturn(firstRel);
+
+		// when:
+		subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator);
+
+		// then:
+		verify(dissociationRel).updateModelRelsSubjectTo(validator);
+		assertEquals(numAssociations - 1, subject.getNumAssociations());
+		assertEquals(numPositiveBalances, subject.getNumPositiveBalances());
+		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+	}
+
+	@Test
+	void dissociatingWorksWithNonZeroBalance() {
+		// setup:
+		final var alreadyAssocTokenId = new Id(0, 0, secondAssocTokenNum);
+		final var dissociationRel = mock(Dissociation.class);
+		final var tokenRel = mock(TokenRelationship.class);
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
+		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
+		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(secondToken);
+		given(tokenRel.isAutomaticAssociation()).willReturn(true);
+		given(tokenRel.getBalance()).willReturn(100L);
+		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(firstToken);
+		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
+		given(tokenStore.loadTokenRelationship(any(), any()))
+				.willReturn(secondRel)
+				.willReturn(firstRel);
+
+		// when:
+		subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator);
+
+		// then:
+		verify(dissociationRel).updateModelRelsSubjectTo(validator);
+		assertEquals(numAssociations - 1, subject.getNumAssociations());
+		assertEquals(numPositiveBalances, subject.getNumPositiveBalances());
+		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+	}
+
+	@Test
+	void treasuryDissociationWorks() {
+		// setup:
+		final var alreadyAssocTokenId = new Id(0, 0, secondAssocTokenNum);
+		final var dissociationRel = mock(Dissociation.class);
+		final var tokenRel = mock(TokenRelationship.class);
+		secondToken.setTreasury(subject);
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
+		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
+		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatedTokenTreasuryRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(secondToken);
+		given(tokenRel.isAutomaticAssociation()).willReturn(true);
+		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(firstToken);
+		given(tokenStore.getLatestTokenRelationship(any())).willReturn(firstRel);
+		given(tokenStore.loadTokenRelationship(any(), any()))
+				.willReturn(secondRel)
+				.willReturn(firstRel);
+
+		// when:
+		subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator);
+
+		// then:
+		verify(dissociationRel).updateModelRelsSubjectTo(validator);
+		assertEquals(numAssociations - 1, subject.getNumAssociations());
+		assertEquals(numPositiveBalances, subject.getNumPositiveBalances());
+		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+	}
+
+	@Test
+	void dissociatingOnlyAssociationWorks() {
+		subject.setHeadTokenNum(thirdAssocTokenNum);
+		// setup:
+		final var alreadyAssocTokenId = new Id(0, 0, thirdAssocTokenNum);
+		final var dissociationRel = mock(Dissociation.class);
+		final var tokenRel = mock(TokenRelationship.class);
+
+		given(dissociationRel.dissociatingAccountId()).willReturn(subjectId);
+		given(dissociationRel.dissociatedTokenId()).willReturn(alreadyAssocTokenId);
+		given(dissociationRel.dissociatingAccountRel()).willReturn(tokenRel);
+		given(dissociationRel.dissociatingToken()).willReturn(thirdToken);
+		given(tokenRel.isAutomaticAssociation()).willReturn(true);
+		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(any())).willReturn(thirdToken);
+		given(tokenStore.getLatestTokenRelationship(any())).willReturn(thirdRel);
+		subject.setNumAssociations(1);
+
+		// when:
+		subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator);
+
+		// then:
+		verify(dissociationRel).updateModelRelsSubjectTo(validator);
+		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
+		assertEquals(MISSING_ID.num(), subject.getHeadTokenNum());
 	}
 
 	@Test
@@ -169,29 +359,32 @@ class AccountTest {
 		given(dissociationRel.dissociatingAccountId()).willReturn(notOurId);
 
 		// expect:
-		assertFailsWith(() -> subject.dissociateUsing(List.of(dissociationRel), validator), FAIL_INVALID);
+		assertFailsWith(() -> subject.dissociateUsing(List.of(dissociationRel), tokenStore, validator), FAIL_INVALID);
 	}
 
 	@Test
 	void failsOnAssociatingWithAlreadyRelatedToken() {
 		// setup:
 		final var alreadyAssocToken = new Token(new Id(0, 0, 666));
+		given(tokenStore.hasAssociation(alreadyAssocToken, subject)).willReturn(true);
 
 		// expect:
 		assertFailsWith(
-				() -> subject.associateWith(List.of(alreadyAssocToken), 100, false),
+				() -> subject.associateWith(List.of(alreadyAssocToken), tokenStore, false, false, dynamicProperties),
 				TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
 	}
 
 	@Test
-	void cantAssociateWithMoreThanMax() {
+	void failsOnCrossingAssociationLimit() {
 		// setup:
-		final var firstNewToken = new Token(new Id(0, 0, 888));
-		final var secondNewToken = new Token(new Id(0, 0, 999));
+		final var alreadyAssocToken = new Token(new Id(0, 0, 666));
+		given(tokenStore.hasAssociation(alreadyAssocToken, subject)).willReturn(false);
+		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(numAssociations);
 
-		// when:
+		// expect:
 		assertFailsWith(
-				() -> subject.associateWith(List.of(firstNewToken, secondNewToken), 3, false),
+				() -> subject.associateWith(List.of(alreadyAssocToken), tokenStore, false, false, dynamicProperties),
 				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
 	}
 
@@ -200,21 +393,24 @@ class AccountTest {
 		// setup:
 		final var firstNewToken = new Token(new Id(0, 0, 888));
 		final var secondNewToken = new Token(new Id(0, 0, 999));
-		final var expectedFinalTokens = "[0.0.666, 0.0.777, 0.0.888, 0.0.999]";
 		subject.setAutoAssociationMetadata(autoAssociationMetadata);
+		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(numAssociations+2);
 
 		// when:
-		subject.associateWith(List.of(firstNewToken, secondNewToken), 10, true);
+		subject.associateWith(List.of(firstNewToken, secondNewToken), tokenStore, true, true, dynamicProperties);
 
 		// expect:
-		assertEquals(expectedFinalTokens, assocTokens.toReadableIdList());
+		assertEquals(numAssociations + 2, subject.getNumAssociations());
+		assertEquals(secondNewToken.getId().num(), subject.getHeadTokenNum());
 	}
 
 	@Test
 	void accountEqualsCheck() {
 		// setup:
 		var account = new Account(subjectId);
-		account.setAssociatedTokens(assocTokens);
+		account.setNumAssociations(numAssociations);
+		account.setNumPositiveBalances(numPositiveBalances);
 		account.setExpiry(1000L);
 		account.initBalance(100L);
 		account.setOwnedNfts(1L);
@@ -222,6 +418,7 @@ class AccountTest {
 		account.setMaxAutomaticAssociations(123);
 		account.setAlreadyUsedAutomaticAssociations(12);
 		account.setSmartContract(false);
+		account.setHeadTokenNum(firstAssocTokenNum);
 
 		subject.setExpiry(1000L);
 		subject.initBalance(100L);
@@ -238,8 +435,6 @@ class AccountTest {
 		// and:
 		assertEquals(account.getId(), subject.getId());
 		// and:
-		assertEquals(account.getAssociatedTokens(), subject.getAssociatedTokens());
-		// and:
 		assertEquals(account.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(account.getAlreadyUsedAutomaticAssociations(), subject.getAlreadyUsedAutomaticAssociations());
 		assertEquals(subject.isSmartContract(), account.isSmartContract());
@@ -252,10 +447,12 @@ class AccountTest {
 		subject.setOwnedNfts(0);
 		var otherSubject = new Account(subjectId);
 		otherSubject.incrementOwnedNfts();
-		otherSubject.setAssociatedTokens(assocTokens);
+		otherSubject.setNumAssociations(numAssociations);
+		otherSubject.setNumPositiveBalances(numPositiveBalances);
 
 		subject.incrementOwnedNfts();
 		otherSubject.setAutoAssociationMetadata(autoAssociationMetadata);
+		otherSubject.setHeadTokenNum(firstAssocTokenNum);
 		// when:
 		var actualResult = subject.hashCode();
 
@@ -270,7 +467,7 @@ class AccountTest {
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations);
 
 		assertFailsWith(
-				() -> subject.associateWith(List.of(firstNewToken), 10, true),
+				() -> subject.associateWith(List.of(firstNewToken), tokenStore, true, true, dynamicProperties),
 				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 	}
 
@@ -280,7 +477,7 @@ class AccountTest {
 		subject.setMaxAutomaticAssociations(maxAutoAssociations);
 		subject.setAlreadyUsedAutomaticAssociations(maxAutoAssociations - 1);
 
-		subject.associateWith(List.of(firstNewToken), 10, true);
+		subject.associateWith(List.of(firstNewToken), tokenStore, true, false, dynamicProperties);
 
 		assertEquals(maxAutoAssociations, subject.getAlreadyUsedAutomaticAssociations());
 	}
@@ -300,7 +497,7 @@ class AccountTest {
 		subject.setAlreadyUsedAutomaticAssociations(0);
 
 		assertFailsWith(
-				() -> subject.decrementUsedAutomaticAssocitions(),
+				() -> subject.decrementUsedAutomaticAssociations(),
 				NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 	}
 
