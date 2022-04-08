@@ -106,6 +106,7 @@ public class RecordStreaming implements Runnable {
 			} catch (final InterruptedException e) {
 				log.error("Error in computing hash for block #{}", curNetworkCtx.getBlockNo());
 				Thread.currentThread().interrupt();
+				throw new RuntimeException(String.format("Failed to calculate hash for block #%d", curNetworkCtx.getBlockNo()));
 			}
 
 
