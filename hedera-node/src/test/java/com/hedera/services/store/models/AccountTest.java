@@ -171,7 +171,7 @@ class AccountTest {
 				"ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, " +
 				"alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null" +
 				subject.getAlias().toStringUtf8() + ", numAssociations=" + numAssociations +", numZeroBalances="+
-				numZeroBalances + ", lastAssociatedToken=PermHashLong(12345, 666)}";
+				numZeroBalances + ", lastAssociatedToken=PermHashLong(12345, 666), transactionCounter=0}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
