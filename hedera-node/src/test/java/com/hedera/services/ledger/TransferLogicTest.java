@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -32,9 +33,11 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
@@ -45,19 +48,24 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.jasperdb.JasperDbBuilder;
+import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
@@ -74,6 +82,9 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class TransferLogicTest {
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
+	private BackingNfts backingNfts;
+
 	private final GlobalDynamicProperties dynamicProperties = new MockGlobalDynamicProps();
 
 	private final long initialBalance = 1_000_000L;
@@ -99,8 +110,6 @@ class TransferLogicTest {
 	}};
 
 	@Mock
-	private TransactionalLedger<NftId, NftProperty, UniqueTokenValue> nftsLedger;
-	@Mock
 	private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger;
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
@@ -114,16 +123,30 @@ class TransferLogicTest {
 	private AccountsCommitInterceptor accountsCommitInterceptor;
 
 	private TransferLogic subject;
+	private VirtualMap<UniqueTokenKey, UniqueTokenValue> nftVirtualMap;
 
 	@BeforeEach
 	void setUp() {
 		final var backingAccounts = new HashMapBackingAccounts();
 		accountsLedger = new TransactionalLedger<>(
 				AccountProperty.class, MerkleAccount::new, backingAccounts, new ChangeSummaryManager<>());
+
+		nftVirtualMap = new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedUniqueTokenStorage();
+		backingNfts = new BackingNfts(() -> nftVirtualMap);
+		nftsLedger = new TransactionalLedger<>(
+				NftProperty.class,
+				UniqueTokenValue::new,
+				backingNfts,
+				new ChangeSummaryManager<>());
 		subject = new TransferLogic(
 				accountsLedger, nftsLedger, tokenRelsLedger, tokenStore,
 				sideEffectsTracker, dynamicProperties, TEST_VALIDATOR,
 				autoCreationLogic, recordsHistorian);
+	}
+
+	@AfterEach
+	void tearDown() {
+		nftVirtualMap.release();
 	}
 
 	@Test
@@ -236,19 +259,33 @@ class TransferLogicTest {
 		final var nftId = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
 		final var change1 = BalanceChange.changingNftOwnership(
 				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 1L), payer);
+		final var nftId2 = NftId.withDefaultShardRealm(fungibleTokenID.getTokenNum(), 123L);
 		final var change2 = BalanceChange.changingNftOwnership(
 				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, nftTransfer(owner, revokedSpender, 123L), payer);
 
 		given(tokenStore.tryTokenChange(change1)).willReturn(OK);
 		given(tokenStore.tryTokenChange(change2)).willReturn(OK);
-		given(nftsLedger.get(nftId, SPENDER)).willReturn(EntityId.fromGrpcAccountId(payer));
-
+		backingNfts.put(nftId,
+				new UniqueTokenValue(
+						MISSING_ENTITY_ID.num(),
+						payer.getAccountNum(),
+						RichInstant.fromJava(Instant.ofEpochSecond(0, 0)),
+						new byte[] { 0x1 }));
+		backingNfts.put(nftId2,
+				new UniqueTokenValue(
+						MISSING_ENTITY_ID.num(),
+						payer.getAccountNum(),
+						RichInstant.fromJava(Instant.ofEpochSecond(0, 0)),
+						new byte[] { 0x2 }));
 		accountsLedger.begin();
+		nftsLedger.begin();
+
 		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2)));
 
 		updateAllowanceMaps();
 		assertTrue(nftAllowances.contains(fungibleAllowanceId));
-		verify(nftsLedger).set(nftId, SPENDER, MISSING_ENTITY_ID);
+		assertThat(nftsLedger.get(nftId, SPENDER)).isEqualTo(MISSING_ENTITY_ID);
+		assertThat(nftsLedger.get(nftId2, SPENDER)).isEqualTo(MISSING_ENTITY_ID);
 	}
 
 	private AccountAmount aliasedAa(final ByteString alias, final long amount) {
