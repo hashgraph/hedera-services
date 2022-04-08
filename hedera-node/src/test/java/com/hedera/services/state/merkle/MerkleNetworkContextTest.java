@@ -244,9 +244,6 @@ class MerkleNetworkContextTest {
 		assertArrayEquals(a.usageSnapshots(), b.usageSnapshots());
 		assertArrayEquals(a.getCongestionLevelStarts(), b.getCongestionLevelStarts());
 		assertEquals(a.getStateVersion(), b.getStateVersion());
-		assertEquals(a.getFirstConsTimeOfCurrentBlock(), b.getFirstConsTimeOfCurrentBlock());
-		assertEquals(a.getBlockNo(), b.getBlockNo());
-		assertEquals(a.getBlockHashCache(), b.getBlockHashCache());
 		assertEquals(a.getEntitiesScannedThisSecond(), b.getEntitiesScannedThisSecond());
 		assertEquals(a.getEntitiesTouchedThisSecond(), b.getEntitiesTouchedThisSecond());
 		assertEquals(a.getPreparedUpdateFileNum(), b.getPreparedUpdateFileNum());

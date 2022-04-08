@@ -273,12 +273,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			final var firstBlockTime = readNullable(in, RichInstant::from);
 			firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
 			blockNo = in.readLong();
-			final var cacheLength = in.readInt();
-			for(int i = 0; i < cacheLength; i++) {
-				final var blockNumber = in.readLong();
-				final var blockHash = (Hash) in.readSerializable();
-				blockNumberToHash.put(blockNumber, blockHash);
-			}
 		}
 	}
 
@@ -343,11 +337,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		out.writeBoolean(migrationRecordsStreamed);
 		writeNullable(fromJava(firstConsTimeOfCurrentBlock), out, RichInstant::serialize);
 		out.writeLong(blockNo);
-		out.writeInt(blockNumberToHash.size());
-		for(final var blockNumberToHashEntry: blockNumberToHash.entrySet()) {
-			out.writeLong(blockNumberToHashEntry.getKey());
-			out.writeSerializable(blockNumberToHashEntry.getValue(), true);
-		}
 	}
 
 	@Override
@@ -673,12 +662,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	public Map<Long, Hash> getBlockHashCache() {
 		return blockNumberToHash;
 	}
-
+	
 	public void clearBlockCache() {
 		blockNumberToHash = new LinkedHashMap<>();
 	}
 
 	public void clearBlockNo() {
 		blockNo = 0;
+	}
+
+	public void setBlockNo(final long blockNo) {
+		this.blockNo = blockNo;
 	}
 }
