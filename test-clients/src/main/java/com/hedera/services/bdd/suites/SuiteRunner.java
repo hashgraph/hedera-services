@@ -70,6 +70,7 @@ import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoDeleteAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoGetInfoRegression;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
@@ -495,6 +496,7 @@ public class SuiteRunner {
 		put("MemoValidation", aof(MemoValidation::new));
 		/* Approval and Allowance */
 		put("CryptoApproveAllowanceSuite", aof(CryptoApproveAllowanceSuite::new));
+		put("CryptoDeleteAllowanceSuite", aof(CryptoDeleteAllowanceSuite::new));
 	}};
 
 	static boolean runAsync;

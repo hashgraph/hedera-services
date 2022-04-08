@@ -47,6 +47,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -114,6 +115,9 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 						.setCurrentKey(info.getKey())
 						.setCurrentlyHasProxy(info.hasProxyAccountID())
 						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
+						.setCurrentCryptoAllowances(Collections.emptyMap())
+						.setCurrentTokenAllowances(Collections.emptyMap())
+						.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
 				var opMeta = new CryptoApproveAllowanceMeta(_txn.getCryptoApproveAllowance(),

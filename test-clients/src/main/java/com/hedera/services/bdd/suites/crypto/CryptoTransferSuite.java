@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -66,6 +67,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -620,16 +622,23 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.signedBy(spender, owner, otherReceiver, otherOwner)
 								.via("complexAllowanceTransfer"),
 						getTxnRecord("complexAllowanceTransfer").logged(),
-						getAccountInfo(owner)
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
 								.hasToken(relationshipWith(fungibleToken).balance(925))
 								.hasToken(relationshipWith(nonFungibleToken).balance(0))
-								.has(accountWith()
-										.balanceLessThan(98 * ONE_HBAR)),
-						getAccountInfo(otherOwner)
+								.has(AccountDetailsAsserts.accountWith()
+										.balanceLessThan(98 * ONE_HBAR)
+										.cryptoAllowancesContaining(spender, 9 * ONE_HBAR)
+										.tokenAllowancesContaining(fungibleToken, spender, 475)),
+						getAccountDetails(otherOwner)
+								.payingWith(GENESIS)
 								.hasToken(relationshipWith(fungibleToken).balance(970))
 								.hasToken(relationshipWith(nonFungibleToken).balance(0))
-								.has(accountWith()
-										.balanceLessThan(98 * ONE_HBAR)),
+								.has(AccountDetailsAsserts.accountWith()
+										.balanceLessThan(98 * ONE_HBAR)
+										.cryptoAllowancesContaining(spender, 4 * ONE_HBAR)
+										.tokenAllowancesContaining(fungibleToken, spender, 85)
+										.nftApprovedAllowancesContaining(nonFungibleToken, spender)),
 						getAccountInfo(receiver)
 								.hasToken(relationshipWith(fungibleToken).balance(105))
 								.hasToken(relationshipWith(nonFungibleToken).balance(4))
@@ -801,7 +810,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
-						getAccountInfo(owner)
+						getAccountDetails(owner)
+								.has(AccountDetailsAsserts.accountWith().tokenAllowancesContaining(fungibleToken,
+										spender, 1450))
 								.hasToken(relationshipWith(fungibleToken).balance(950L)),
 						cryptoTransfer(moving(1000, fungibleToken).between(TOKEN_TREASURY, owner)),
 						cryptoTransfer(
@@ -827,7 +838,12 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver))
 								.payingWith(spender)
 								.signedBy(spender)
-								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)
+								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(AccountDetailsAsserts.accountWith()
+										.cryptoAllowancesCount(0)
+										.tokenAllowancesContaining(fungibleToken, spender, 1400))
 				);
 	}
 
@@ -1655,8 +1671,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.hasExpectedLedgerId("0x03")
 								.has(accountWith().balance(initialBalance - 3_000L)),
 						getAccountInfo("payeeSigReq").has(accountWith().balance(initialBalance + 1_000L)),
-						getAccountInfo("payeeNoSigReq").has(
-								accountWith().balance(initialBalance + 2_000L))
+						getAccountDetails("payeeNoSigReq")
+								.has(AccountDetailsAsserts.accountWith().balance(initialBalance + 2_000L).noAllowances())
 				);
 	}
 

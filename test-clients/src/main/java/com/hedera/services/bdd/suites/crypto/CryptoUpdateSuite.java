@@ -36,7 +36,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -228,10 +229,11 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.hasNewTokenAssociation(tokenB, firstUser)
 				)
 				.then(
-						getAccountInfo(firstUser)
+						getAccountDetails(firstUser)
+								.payingWith(GENESIS)
 								.hasAlreadyUsedAutomaticAssociations(originalMax)
-								.hasMaxAutomaticAssociations(originalMax),
-//								.has(accountWith().noAllowances()),
+								.hasMaxAutomaticAssociations(originalMax)
+								.has(accountWith().noAllowances()),
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(newBadMax)
 								.hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
@@ -313,7 +315,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoUpdate(TARGET_ACCOUNT)
 								.entityMemo(secondMemo)
 				).then(
-						getAccountInfo(TARGET_ACCOUNT)
+						getAccountDetails(TARGET_ACCOUNT)
+								.payingWith(GENESIS)
 								.has(accountWith().memo(secondMemo))
 				);
 	}

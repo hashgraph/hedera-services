@@ -50,8 +50,8 @@ public class CryptoDeleteAllowanceMeta {
 	}
 
 	private int bytesUsedInTxn(CryptoDeleteAllowanceTransactionBody op) {
-		return op.getNftAllowancesCount() * NFT_DELETE_ALLOWANCE_SIZE
-				+ countNftDeleteSerials(op.getNftAllowancesList()) * LONG_SIZE;
+		return op.getNftAllowancesCount() * NFT_DELETE_ALLOWANCE_SIZE +
+				countNftDeleteSerials(op.getNftAllowancesList()) * LONG_SIZE;
 	}
 
 	public static int countNftDeleteSerials(final List<NftRemoveAllowance> nftAllowancesList) {

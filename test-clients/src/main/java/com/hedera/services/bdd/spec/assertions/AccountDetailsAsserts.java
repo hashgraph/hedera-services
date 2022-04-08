@@ -137,4 +137,20 @@ public class AccountDetailsAsserts extends BaseErroringAssertsProvider<AccountDe
 		});
 		return this;
 	}
+
+	public AccountDetailsAsserts balanceLessThan(long amount) {
+		registerProvider((spec, o) -> {
+			long actual = ((AccountDetails) o).getBalance();
+			String errorMessage = String.format("Bad balance! %s is not less than %s", actual, amount);
+			assertTrue(actual < amount, errorMessage);
+		});
+		return this;
+	}
+
+	public AccountDetailsAsserts balance(long amount) {
+		registerProvider((spec, o) -> {
+			assertEquals(amount, ((AccountDetails) o).getBalance(), "Bad balance!");
+		});
+		return this;
+	}
 }

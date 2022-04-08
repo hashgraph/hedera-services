@@ -205,11 +205,12 @@ public class CryptoOpsUsage {
 
 		final long lifeTime = ESTIMATOR_UTILS.relativeLifetime(cryptoApproveMeta.getEffectiveNow(),
 				ctx.currentExpiry());
-
-		// This is to keep the fee same for new allowance insertion or modifying existing allowance using
-		// CryptoApproveAllowance transaction
-		final var adjustedBytes = Math.max(getNewBytes(cryptoApproveMeta, ctx), CRYPTO_ALLOWANCE_SIZE);
-		accumulator.addRbs(adjustedBytes * lifeTime);
+		// If the value is being adjusted instead of inserting a new entry , the fee charged will be slightly less than
+		// the base price
+		final var adjustedBytes = getNewBytes(cryptoApproveMeta, ctx);
+		if (adjustedBytes > 0) {
+			accumulator.addRbs(adjustedBytes * lifeTime);
+		}
 	}
 
 	public void cryptoDeleteAllowanceUsage(final SigUsage sigUsage,
