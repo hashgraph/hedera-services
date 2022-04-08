@@ -96,6 +96,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
 								.hasKnownStatus(ACCOUNT_IS_TREASURY),
 						tokenDelete("secondTbd")
 				).then(
+						tokenDissociate(TOKEN_TREASURY, "secondTbd"),
 						cryptoDelete(TOKEN_TREASURY)
 				);
 	}

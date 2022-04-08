@@ -153,7 +153,7 @@ public class Account {
 		setAlreadyUsedAutomaticAssociations(++count);
 	}
 
-	public void decrementUsedAutomaticAssocitions() {
+	public void decrementUsedAutomaticAssociations() {
 		var count = getAlreadyUsedAutomaticAssociations();
 		setAlreadyUsedAutomaticAssociations(--count);
 	}
@@ -260,32 +260,35 @@ public class Account {
 	 * @return A list of TokenRelationships that are touched by the dissociating tokens.
 	 */
 	public List<TokenRelationship> dissociateUsing(
-			List<Dissociation> dissociations,
-			TypedTokenStore tokenStore,
-			OptionValidator validator) {
+			final List<Dissociation> dissociations,
+			final TypedTokenStore tokenStore,
+			final OptionValidator validator
+	) {
 		final Map<EntityNumPair, TokenRelationship> unPersistedRelationships = new HashMap<>();
-		for (var dissociation : dissociations) {
+		for (final var dissociation : dissociations) {
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
 
 			dissociation.updateModelRelsSubjectTo(validator);
-
-			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
-				decrementUsedAutomaticAssocitions();
+			final var pastRel = dissociation.dissociatingAccountRel();
+			if (pastRel.isAutomaticAssociation()) {
+				decrementUsedAutomaticAssociations();
+			}
+			if (pastRel.getBalanceChange() != 0) {
+				numPositiveBalances--;
 			}
 
 			final var tokenId = dissociation.dissociatedTokenId();
-			final var associationKey = EntityNumPair.fromLongs(id.num(),tokenId.num());
-
+			final var relKey = EntityNumPair.fromLongs(id.num(),tokenId.num());
 			if (headTokenNum == tokenId.num()) {
 				// removing the latest associated token from the account
 				if (numAssociations == 1) {
 					headTokenNum = MISSING_ID.num();
 				} else {
-					updateLastAssociation(tokenStore, unPersistedRelationships, associationKey);
+					updateLastAssociation(tokenStore, unPersistedRelationships, relKey);
 				}
 			} else {
 				/* get next, prev tokenRelationships and update the links by un-linking the dissociating relationship */
-				updateAssociationList(tokenStore, unPersistedRelationships, dissociation.dissociatingToken(), associationKey);
+				updateAssociationList(tokenStore, unPersistedRelationships, dissociation.dissociatingToken(), relKey);
 			}
 			numAssociations--;
 		}
@@ -296,45 +299,43 @@ public class Account {
 			final TypedTokenStore tokenStore,
 			final Map<EntityNumPair, TokenRelationship> unPersistedRelationships,
 			final Token token,
-			final EntityNumPair associationKey) {
-		final var dissociatingRel = unPersistedRelationships.getOrDefault(associationKey,
-				tokenStore.loadTokenRelationship(token, this));
+			final EntityNumPair relKey) {
+		final var dissociatingRel = unPersistedRelationships.computeIfAbsent(relKey,
+				ignore -> tokenStore.loadTokenRelationship(token, this));
 		final var prevKey = dissociatingRel.getPrevKey();
 		final var prevToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 				STATIC_PROPERTIES.scopedIdWith(prevKey));
 		final var prevRelKey = EntityNumPair.fromLongs(id.num(), prevKey);
-		final var prevRel = unPersistedRelationships.getOrDefault(prevRelKey,
-				tokenStore.loadTokenRelationship(prevToken, this));
+		final var prevRel = unPersistedRelationships.computeIfAbsent(prevRelKey,
+				ignore -> tokenStore.loadTokenRelationship(prevToken, this));
 		// nextKey can be 0.
 		final var nextKey = dissociatingRel.getNextKey();
 		if (nextKey != MISSING_ID.num()) {
 			final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 					STATIC_PROPERTIES.scopedIdWith(nextKey));
 			final var nextRelKey = EntityNumPair.fromLongs(id.num(), nextKey);
-			final var nextRel = unPersistedRelationships.getOrDefault(nextRelKey,
-					tokenStore.loadTokenRelationship(nextToken, this));
+			final var nextRel = unPersistedRelationships.computeIfAbsent(nextRelKey,
+					ignore -> tokenStore.loadTokenRelationship(nextToken, this));
 			nextRel.setPrevKey(prevKey);
-			unPersistedRelationships.put(nextRelKey, nextRel);
 		}
 		prevRel.setNextKey(nextKey);
-		unPersistedRelationships.put(prevRelKey, prevRel);
 	}
 
 	private void updateLastAssociation(
 			final TypedTokenStore tokenStore,
 			final Map<EntityNumPair, TokenRelationship> unPersistedRelationships,
-			final EntityNumPair associationKey) {
-		final var latestRel =  unPersistedRelationships.getOrDefault(associationKey,
-				tokenStore.getLatestTokenRelationship(this));
+			final EntityNumPair relKey
+	) {
+		final var latestRel =  unPersistedRelationships.computeIfAbsent(relKey,
+				ignore -> tokenStore.getLatestTokenRelationship(this));
 		final var nextKey = latestRel.getNextKey();
 		final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
 				STATIC_PROPERTIES.scopedIdWith(nextKey));
 		final var nextRelKey = EntityNumPair.fromLongs(id.num(), nextKey);
-		final var nextRel = unPersistedRelationships.getOrDefault(nextRelKey,
-				tokenStore.loadTokenRelationship(nextToken, this));
+		final var nextRel = unPersistedRelationships.computeIfAbsent(nextRelKey,
+				ignore -> tokenStore.loadTokenRelationship(nextToken, this));
 		headTokenNum = nextKey;
 		nextRel.setPrevKey(MISSING_ID.num());
-		unPersistedRelationships.put(nextRelKey, nextRel);
 	}
 
 	public Id getId() {
