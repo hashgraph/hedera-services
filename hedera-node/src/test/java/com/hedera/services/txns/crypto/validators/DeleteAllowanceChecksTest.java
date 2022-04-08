@@ -37,7 +37,6 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
 import com.hedera.services.store.models.Account;
@@ -47,7 +46,6 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
@@ -72,6 +70,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
@@ -516,8 +515,9 @@ class DeleteAllowanceChecksTest {
 		given(view.asReadOnlyTokenStore()).willReturn(tokens);
 		given(view.asReadOnlyNftStore()).willReturn(nfts);
 		given(view.asReadOnlyAssociationStore()).willReturn(rels);
-		given(ownerMerkleAccount.getTokenAssociationMetadata()).willReturn(
-				new TokenAssociationMetadata(1, 0, EntityNumPair.MISSING_NUM_PAIR));
+		given(ownerMerkleAccount.getNumAssociations()).willReturn(1);
+		given(ownerMerkleAccount.getNumPositiveBalances()).willReturn(0);
+		given(ownerMerkleAccount.getHeadTokenId()).willReturn(MISSING_ID.num());
 
 		given(store.getImmutableRef(ownerId)).willReturn(ownerMerkleAccount);
 		given(tokens.getImmutableRef(token1)).willReturn(merkleToken1);
@@ -531,7 +531,7 @@ class DeleteAllowanceChecksTest {
 		given(merkleToken2.treasury()).willReturn(EntityId.fromGrpcAccountId(ownerId));
 		given(ownerMerkleAccount.state()).willReturn(new MerkleAccountState());
 		given(merkleUniqueToken.getOwner()).willReturn(EntityId.fromGrpcAccountId(ownerId));
-		given(merkleUniqueToken.getSpender()).willReturn(Id.MISSING_ID.asEntityId());
+		given(merkleUniqueToken.getSpender()).willReturn(MISSING_ID.asEntityId());
 
 		given(merkleToken1.supplyType()).willReturn(TokenSupplyType.INFINITE);
 		given(merkleToken1.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);

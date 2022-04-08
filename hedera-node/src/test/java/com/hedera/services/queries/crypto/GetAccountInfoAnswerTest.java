@@ -34,7 +34,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -68,8 +67,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
-import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
@@ -114,8 +113,6 @@ class GetAccountInfoAnswerTest {
 	private AliasManager aliasManager;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private TokenAssociationMetadata tokenAssociationMetadata;
 
 	private final MutableStateChildren children = new MutableStateChildren();
 
@@ -159,14 +156,14 @@ class GetAccountInfoAnswerTest {
 		final var missingRelKey = fromAccountTokenRel(payerId, missingToken);
 		missingRel.setKey(missingRelKey);
 
-		firstRel.setNextKey(secondRelKey);
-		secondRel.setNextKey(thirdRelKey);
-		secondRel.setPrevKey(firstRelKey);
-		thirdRel.setPrevKey(secondRelKey);
-		thirdRel.setNextKey(fourthRelKey);
-		fourthRel.setPrevKey(thirdRelKey);
-		fourthRel.setNextKey(missingRelKey);
-		missingRel.setPrevKey(fourthRelKey);
+		firstRel.setNext(secondToken.getTokenNum());
+		secondRel.setNext(thirdToken.getTokenNum());
+		secondRel.setPrev(firstToken.getTokenNum());
+		thirdRel.setPrev(secondToken.getTokenNum());
+		thirdRel.setNext(fourthToken.getTokenNum());
+		fourthRel.setPrev(thirdToken.getTokenNum());
+		fourthRel.setNext(missingToken.getTokenNum());
+		missingRel.setPrev(fourthToken.getTokenNum());
 
 		tokenRels.put(firstRelKey, firstRel);
 		tokenRels.put(secondRelKey, secondRel);
@@ -274,8 +271,8 @@ class GetAccountInfoAnswerTest {
 		given(tokens.getOrDefault(EntityNum.fromTokenId(thirdToken), REMOVED_TOKEN)).willReturn(token);
 		given(tokens.getOrDefault(EntityNum.fromTokenId(fourthToken), REMOVED_TOKEN)).willReturn(deletedToken);
 		given(tokens.getOrDefault(EntityNum.fromTokenId(missingToken), REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
-		payerAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.latestAssociation()).willReturn(firstRelKey);
+		payerAccount.setKey(EntityNum.fromAccountId(payerId));
+		payerAccount.setHeadTokenId(firstToken.getTokenNum());
 
 		given(token.symbol()).willReturn("HEYMA");
 		given(deletedToken.symbol()).willReturn("THEWAY");

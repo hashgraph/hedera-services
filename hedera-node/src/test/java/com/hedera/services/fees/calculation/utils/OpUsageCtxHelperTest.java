@@ -34,7 +34,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.SignedTxnAccessor;
@@ -81,8 +80,6 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -170,7 +167,6 @@ class OpUsageCtxHelperTest {
 	void returnsExpectedCtxForAccount() {
 		var accounts = mock(MerkleMap.class);
 		var merkleAccount = mock(MerkleAccount.class);
-		var tokenAssociationMetadata = mock(TokenAssociationMetadata.class);
 		given(workingView.accounts()).willReturn(accounts);
 		given(accounts.get(any())).willReturn(merkleAccount);
 		given(merkleAccount.getCryptoAllowances()).willReturn(Collections.emptyMap());

@@ -53,6 +53,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForReconnect.runTransfersBeforeReconnect;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 /**
  * A reconnect test in which  a few tokens are created while the node 0.0.8 is disconnected from the network. Once the
@@ -204,6 +205,11 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 								.hasKnownStatus(ACCOUNT_IS_TREASURY)
 								.setNode(reconnectingNode),
 						tokenDelete(anotherToken).setNode(reconnectingNode),
+						/* Should dissociate with any tokens[even deleted ones] to be able to delete the treasury */
+						cryptoDelete(TOKEN_TREASURY)
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES)
+								.setNode(reconnectingNode),
+						tokenDissociate(TOKEN_TREASURY, anotherToken),
 						cryptoDelete(TOKEN_TREASURY)
 				);
 	}
