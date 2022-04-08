@@ -76,6 +76,7 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 					propertySource.nextUnsignedInt(),
 					propertySource.nextByteString(36),
 					propertySource.nextUnsignedInt(),
+					propertySource.nextUnsignedLong(),
 					// This migration relied on the fact that no 0.24.x production state ever included allowances
 					Collections.emptyMap(),
 					Collections.emptyMap(),
@@ -95,6 +96,7 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 					propertySource.nextUnsignedInt(),
 					propertySource.nextByteString(36),
 					propertySource.nextUnsignedInt(),
+					propertySource.nextUnsignedLong(),
 					// This migration relied on the fact that no 0.24.x production state ever included allowances
 					propertySource.nextGrantedCryptoAllowances(10),
 					propertySource.nextGrantedFungibleAllowances(10),

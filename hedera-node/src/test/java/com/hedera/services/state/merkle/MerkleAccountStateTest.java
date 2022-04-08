@@ -596,7 +596,7 @@ class MerkleAccountStateTest {
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(MerkleAccountState.RELEASE_0250_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0260_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}

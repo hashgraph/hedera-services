@@ -37,6 +37,7 @@ import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
