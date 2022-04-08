@@ -491,7 +491,22 @@ class ServicesStateTest {
 		assertEquals(token1.longValue(), tokenAssociations.get(associationKey3).nextKey());
 		assertEquals(0, tokenAssociations.get(associationKey3).prevKey());
 		assertEquals(associationKey3, tokenAssociations.get(associationKey3).getKey());
-		ServicesState.setUniqueTokenMigrator(ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap);
+	}
+
+	@Test
+	void initTaskPostponedUntilAfterMigrationForVersionsBefore0250() {
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0240_VERSION);
+		assertDoesNotThrow(() -> subject.init(platform, addressBook, dualState));
+		assertThrows(NullPointerException.class, subject::migrate);
+	}
+
+	@Test
+	void initTaskNotPostponedAt0250AndLater() {
+		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0250_VERSION);
+		assertThrows(NullPointerException.class, () -> subject.init(platform, addressBook, dualState));
+		assertDoesNotThrow(subject::migrate);
 	}
 
 	@Test
