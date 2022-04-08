@@ -142,11 +142,12 @@ public class HederaStackedWorldStateUpdater
 	public Account get(Address addressOrAlias) {
 		final var address = aliases().resolveForEvm(addressOrAlias);
 
-		if (dynamicProperties.isRedirectTokenCallsEnabled() && trackingLedgers().tokens().contains(tokenIdFromEvmAddress(address))) {
+		final var tokensLedger = trackingLedgers().tokens();
+		if (tokensLedger != null && dynamicProperties.isRedirectTokenCallsEnabled() && tokensLedger.contains(tokenIdFromEvmAddress(address))) {
 			final var hederaWorldState = getHederaWorldState();
 			return hederaWorldState.new WorldStateTokenAccount(address, EntityId.fromAddress(address));
-
 		}
+
 		return super.get(address);
 	}
 
@@ -154,7 +155,8 @@ public class HederaStackedWorldStateUpdater
 	public EvmAccount getAccount(Address addressOrAlias) {
 		final var address = aliases().resolveForEvm(addressOrAlias);
 
-		if (dynamicProperties.isRedirectTokenCallsEnabled() && trackingLedgers().tokens().contains(tokenIdFromEvmAddress(address))) {
+		final var tokensLedger = trackingLedgers().tokens();
+		if (tokensLedger != null && dynamicProperties.isRedirectTokenCallsEnabled() && tokensLedger.contains(tokenIdFromEvmAddress(address))) {
 			final var worldStateTokenAccount = getHederaWorldState().new WorldStateTokenAccount(address,
 					EntityId.fromAddress(address));
 			final var newMutable =
