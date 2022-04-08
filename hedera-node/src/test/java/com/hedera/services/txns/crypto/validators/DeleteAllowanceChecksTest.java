@@ -195,6 +195,7 @@ class DeleteAllowanceChecksTest {
 		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(nftToken))).willReturn(nftModel);
 		given(tokenStore.hasAssociation(nftModel, payer)).willReturn(true);
 		given(payer.getId()).willReturn(Id.fromGrpcAccount(ownerId));
+		nftAllowances.clear();
 
 		nftAllowances.add(nftAllowance2);
 		nftAllowances.add(NftRemoveAllowance.newBuilder().setOwner(ownerId)
@@ -202,7 +203,7 @@ class DeleteAllowanceChecksTest {
 		nftAllowances.add(NftRemoveAllowance.newBuilder().setOwner(ownerId)
 				.setTokenId(nftToken).addAllSerialNumbers(List.of(30L)).build());
 
-		assertEquals(4, nftAllowances.size());
+		assertEquals(3, nftAllowances.size());
 		assertNotEquals(REPEATED_ALLOWANCES_TO_DELETE,
 				subject.validateNftDeleteAllowances(nftAllowances, payer, accountStore, tokenStore));
 		nftAllowances.add(NftRemoveAllowance.newBuilder().setOwner(ownerId)
@@ -242,7 +243,9 @@ class DeleteAllowanceChecksTest {
 	void failsIfInvalidTypes() {
 		nftAllowances.clear();
 
-		nftModel.setType(TokenType.NON_FUNGIBLE_UNIQUE);
+		nftModel.setType(TokenType.FUNGIBLE_COMMON);
+		given(tokenStore.loadPossiblyPausedToken(Id.fromGrpcToken(nftToken))).willReturn(nftModel);
+		nftModel.initSupplyConstraints(TokenSupplyType.FINITE, 5000L);
 		nftAllowances.add(NftRemoveAllowance.newBuilder().setTokenId(nftToken).build());
 		assertEquals(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES,
 				subject.validateNftDeleteAllowances(nftAllowances, payer, accountStore, tokenStore));
