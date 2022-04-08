@@ -33,6 +33,7 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
@@ -46,6 +47,7 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 	public static final String GET_VERSION_INFO_METRIC = "getVersionInfo";
 	public static final String GET_EXECUTION_TIME_METRIC = "getExecutionTime";
 	public static final String UNCHECKED_SUBMIT_METRIC = "uncheckedSubmit";
+	public static final String GET_ACCOUNT_DETAILS_METRIC = "getAccountDetails";
 
 	@Inject
 	public NetworkController(
@@ -71,5 +73,10 @@ public class NetworkController extends NetworkServiceGrpc.NetworkServiceImplBase
 	@Override
 	public void uncheckedSubmit(final Transaction signedTxn, final StreamObserver<TransactionResponse> observer) {
 		txnResponseHelper.submit(signedTxn, observer, UncheckedSubmit);
+	}
+
+	@Override
+	public void getAccountDetails(final Query query, final StreamObserver<Response> observer) {
+		queryHelper.answer(query, observer, metaAnswers.getAccountDetails(), GetAccountDetails);
 	}
 }

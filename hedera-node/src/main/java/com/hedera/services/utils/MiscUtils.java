@@ -97,6 +97,7 @@ import static com.hedera.services.grpc.controllers.FileController.GET_FILE_CONTE
 import static com.hedera.services.grpc.controllers.FileController.GET_FILE_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.FileController.UPDATE_FILE_METRIC;
 import static com.hedera.services.grpc.controllers.FreezeController.FREEZE_METRIC;
+import static com.hedera.services.grpc.controllers.NetworkController.GET_ACCOUNT_DETAILS_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.GET_EXECUTION_TIME_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
@@ -138,6 +139,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetCont
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
@@ -171,6 +173,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
+import static com.hederahashgraph.api.proto.java.Query.QueryCase.ACCOUNTDETAILS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONSENSUSGETTOPICINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTCALLLOCAL;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTGETBYTECODE;
@@ -225,7 +228,8 @@ public final class MiscUtils {
 			TokenGetNftInfo,
 			TokenGetNftInfos,
 			TokenGetAccountNftInfos,
-			NetworkGetExecutionTime
+			NetworkGetExecutionTime,
+			GetAccountDetails
 	);
 
 	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
@@ -285,6 +289,7 @@ public final class MiscUtils {
 		queryFunctions.put(TOKENGETACCOUNTNFTINFOS, TokenGetAccountNftInfos);
 		queryFunctions.put(SCHEDULEGETINFO, ScheduleGetInfo);
 		queryFunctions.put(NETWORKGETEXECUTIONTIME, NetworkGetExecutionTime);
+		queryFunctions.put(ACCOUNTDETAILS, GetAccountDetails);
 	}
 
 	private static final Map<HederaFunctionality, String> BASE_STAT_NAMES = new EnumMap<>(HederaFunctionality.class);
@@ -355,6 +360,7 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(TokenGetAccountNftInfos, TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC);
 		BASE_STAT_NAMES.put(TokenFeeScheduleUpdate, TOKEN_FEE_SCHEDULE_UPDATE_METRIC);
 		BASE_STAT_NAMES.put(NetworkGetExecutionTime, GET_EXECUTION_TIME_METRIC);
+		BASE_STAT_NAMES.put(GetAccountDetails, GET_ACCOUNT_DETAILS_METRIC);
 	}
 
 	public static String baseStatNameOf(final HederaFunctionality function) {
@@ -524,6 +530,8 @@ public final class MiscUtils {
 				return Optional.of(query.getNetworkGetVersionInfo().getHeader());
 			case NETWORKGETEXECUTIONTIME:
 				return Optional.of(query.getNetworkGetExecutionTime().getHeader());
+			case ACCOUNTDETAILS:
+				return Optional.of(query.getAccountDetails().getHeader());
 			default:
 				return Optional.empty();
 		}

@@ -61,6 +61,7 @@ import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -96,6 +97,9 @@ import java.util.function.BiConsumer;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -453,6 +457,52 @@ public class StateView {
 			info.addAllTokenRelationships(tokenRels);
 		}
 		return Optional.of(info.build());
+	}
+
+	public Optional<GetAccountDetailsResponse.AccountDetails> accountDetails(
+			final AccountID id,
+			final AliasManager aliasManager,
+			final int maxTokensForAccountInfo
+	) {
+		final var accountNum = id.getAlias().isEmpty()
+				? fromAccountId(id)
+				: aliasManager.lookupIdBy(id.getAlias());
+		final var account = accounts().get(accountNum);
+		if (account == null) {
+			return Optional.empty();
+		}
+
+		final AccountID accountID = id.getAlias().isEmpty() ? id : accountNum.toGrpcAccountId();
+		final var details = GetAccountDetailsResponse.AccountDetails.newBuilder()
+				.setLedgerId(networkInfo.ledgerId())
+				.setKey(asKeyUnchecked(account.getAccountKey()))
+				.setAccountId(accountID)
+				.setAlias(account.getAlias())
+				.setReceiverSigRequired(account.isReceiverSigRequired())
+				.setDeleted(account.isDeleted())
+				.setMemo(account.getMemo())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(account.getAutoRenewSecs()))
+				.setBalance(account.getBalance())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
+				.setContractAccountId(asHexedEvmAddress(accountID))
+				.setOwnedNfts(account.getNftsOwned())
+				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
+		Optional.ofNullable(account.getProxy())
+				.map(EntityId::toGrpcAccountId)
+				.ifPresent(details::setProxyAccountId);
+		final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
+		if (!tokenRels.isEmpty()) {
+			details.addAllTokenRelationships(tokenRels);
+		}
+		setAllowancesIfAny(details, account);
+		return Optional.of(details.build());
+	}
+
+	private void setAllowancesIfAny(final GetAccountDetailsResponse.AccountDetails.Builder details,
+			final MerkleAccount account) {
+		details.addAllGrantedCryptoAllowances(getCryptoGrantedAllowancesList(account));
+		details.addAllGrantedTokenAllowances(getFungibleGrantedTokenAllowancesList(account));
+		details.addAllGrantedNftAllowances(getNftGrantedAllowancesList(account));
 	}
 
 	public long numNftsOwnedBy(AccountID target) {

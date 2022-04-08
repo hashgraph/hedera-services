@@ -63,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetCont
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
@@ -180,6 +181,7 @@ public final class PermissionFileUtils {
 		permissionKeys.put(TransactionGetRecord, "getTxRecordByTxID");
 		permissionKeys.put(GetVersionInfo, "getVersionInfo");
 		permissionKeys.put(NetworkGetExecutionTime, "networkGetExecutionTime");
+		permissionKeys.put(GetAccountDetails, "getAccountDetails");
 		permissionKeys.put(TokenGetInfo, "tokenGetInfo");
 		permissionKeys.put(ScheduleGetInfo, "scheduleGetInfo");
 		permissionKeys.put(TokenGetNftInfo, "tokenGetNftInfo");
