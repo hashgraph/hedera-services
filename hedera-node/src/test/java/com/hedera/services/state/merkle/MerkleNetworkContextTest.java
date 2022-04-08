@@ -36,9 +36,12 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.common.MutabilityException;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.platform.state.DualStateImpl;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,28 +57,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.booleanThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.times;
 
@@ -1036,6 +1025,75 @@ class MerkleNetworkContextTest {
 		assertEquals(preparedUpdateFileNum, subject.getPreparedUpdateFileNum());
 		assertArrayEquals(preparedUpdateFileHash, subject.getPreparedUpdateFileHash());
 		assertEquals(gasLimitUsageSnapshot, subject.getGasThrottleUsageSnapshot());
+	}
+
+	@Test
+	void deserializeWorksFor0250() throws IOException {
+		// setup:
+		final var in = mock(SerializableDataInputStream.class);
+		MerkleNetworkContext.ratesSupplier = () -> midnightRateSet;
+		MerkleNetworkContext.seqNoSupplier = () -> seqNo;
+		final InOrder inOrder = inOrder(in, seqNo);
+		final var firstConsTimeOfCurrentBlock =  Instant.ofEpochSecond(2_345_678L, 36321L);
+		final var INITIAL_RANDOM_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
+
+		subject = new MerkleNetworkContext();
+
+		given(in.readInt())
+				.willReturn(usageSnapshots.length)
+				.willReturn(congestionStarts.length)
+				.willReturn(stateVersion);
+		given(in.readLong())
+				.willReturn(usageSnapshots[0].used())
+				.willReturn(usageSnapshots[1].used())
+				.willReturn(lastScannedEntity)
+				.willReturn(entitiesScannedThisSecond)
+				.willReturn(entitiesTouchedThisSecond)
+				.willReturn(preparedUpdateFileNum)
+				.willReturn(gasLimitUsageSnapshot.used())
+				.willReturn(1L)
+				.willReturn(1L)
+				.willReturn(1L);
+		given(serdes.readNullableInstant(in))
+				.willReturn(fromJava(consensusTimeOfLastHandledTxn))
+				.willReturn(fromJava(usageSnapshots[0].lastDecisionTime()))
+				.willReturn(fromJava(usageSnapshots[1].lastDecisionTime()))
+				.willReturn(fromJava(congestionStarts[0]))
+				.willReturn(fromJava(congestionStarts[1]))
+				.willReturn(fromJava(lastMidnightBoundaryCheck))
+				.willReturn(fromJava(gasLimitUsageSnapshot.lastDecisionTime()))
+				.willReturn(fromJava(firstConsTimeOfCurrentBlock)
+				);
+		given(in.readByteArray(48)).willReturn(preparedUpdateFileHash);
+		given(in.readBoolean()).willReturn(true);
+		given(in.readSerializable()).willReturn(INITIAL_RANDOM_HASH);
+		given(in.readSerializable()).willReturn(INITIAL_RANDOM_HASH);
+
+		// when:
+		subject.deserialize(in, MerkleNetworkContext.RELEASE_0250_VERSION);
+
+		// then:
+		assertEquals(lastMidnightBoundaryCheck, subject.lastMidnightBoundaryCheck());
+		assertEquals(consensusTimeOfLastHandledTxn, subject.getConsensusTimeOfLastHandledTxn());
+		assertEquals(entitiesScannedThisSecond, subject.getEntitiesScannedThisSecond());
+		assertEquals(entitiesTouchedThisSecond, subject.getEntitiesTouchedThisSecond());
+		assertArrayEquals(usageSnapshots, subject.usageSnapshots());
+		assertArrayEquals(congestionStarts(), subject.getCongestionLevelStarts());
+		assertTrue(subject.areMigrationRecordsStreamed());
+		// and:
+		inOrder.verify(seqNo).deserialize(in);
+		inOrder.verify(in).readSerializable(booleanThat(Boolean.TRUE::equals), any(Supplier.class));
+		// and:
+		assertEquals(lastScannedEntity, subject.lastScannedEntity());
+		assertEquals(stateVersion, subject.getStateVersion());
+		assertEquals(preparedUpdateFileNum, subject.getPreparedUpdateFileNum());
+		assertArrayEquals(preparedUpdateFileHash, subject.getPreparedUpdateFileHash());
+		assertEquals(gasLimitUsageSnapshot, subject.getGasThrottleUsageSnapshot());
+		assertEquals(firstConsTimeOfCurrentBlock, subject.getFirstConsTimeOfCurrentBlock());
+		assertEquals(1L, subject.getBlockNo());
+		assertEquals(1, subject.getBlockHashCache().size());
+		assertEquals(1L, subject.getBlockHashCache().entrySet().stream().findFirst().get().getKey());
+		assertEquals(INITIAL_RANDOM_HASH, subject.getBlockHashCache().entrySet().stream().findFirst().get().getValue());
 	}
 
 	@Test

@@ -37,7 +37,6 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.*;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleNode;
@@ -408,7 +407,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				dualState.setFreezeTime(null);
 				log.info("START OVER START OVER START OVER");
 				networkCtx().setFirstConsTimeOfCurrentBlock(null);
-				networkCtx().setPrevStreamedRecordHash(new Hash());
 			}
 			if (stateVersion < CURRENT_VERSION) {
 				// Only signal the MigrationRecordsManager to re-run if this is an upgrade

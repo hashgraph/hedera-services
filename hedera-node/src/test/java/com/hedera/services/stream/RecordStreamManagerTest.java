@@ -44,7 +44,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Map;
 import java.util.Queue;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
@@ -196,94 +195,6 @@ public class RecordStreamManagerTest {
 		verify(multiStreamMock).close();
 		// should get recordStream queue size and set to runningAvgs
 		verify(runningAvgsMock, times(2)).writeQueueSizeRecordStream(recordsNum);
-	}
-
-	@Test
-	void testMaxBlockHashCache() {
-		// setup:
-		final MiscRunningAvgs runningAvgsMock = mock(MiscRunningAvgs.class);
-		final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext(
-				NULL_CONSENSUS_TIME,
-				new SequenceNumber(2),
-				1,
-				new ExchangeRates());
-		final var mockQueue = mock(Queue.class);
-		recordStreamManager = new RecordStreamManager(
-				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
-		assertFalse(recordStreamManager.getInFreeze(),
-				"inFreeze should be false after initialization");
-		final int recordsNum = 256;
-
-		for (int i = 1; i <= recordsNum; i++) {
-			addRecordStreamObject(runningAvgsMock, mockQueue, i, INITIAL_RANDOM_HASH);
-		}
-		assertEquals(new Hash(), merkleNetworkContext.getBlockHashCache(1));
-		assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHashCache(256));
-		assertEquals(256, merkleNetworkContext.getBlockHashCache().size());
-		assertEquals(recordsNum, merkleNetworkContext.getBlockNo());
-	}
-
-	@Test
-	void testBlockHashCacheIsBeingOverwrittenAfterMaxLimit() {
-		// setup:
-		final MiscRunningAvgs runningAvgsMock = mock(MiscRunningAvgs.class);
-		final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext(
-				NULL_CONSENSUS_TIME,
-				new SequenceNumber(2),
-				1,
-				new ExchangeRates());
-		final var mockQueue = mock(Queue.class);
-		recordStreamManager = new RecordStreamManager(
-				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
-		assertFalse(recordStreamManager.getInFreeze(),
-				"inFreeze should be false after initialization");
-
-		final Hash OVERWRITING_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
-		for (int i = 1; i <= 255; i++) {
-			addRecordStreamObject(runningAvgsMock, mockQueue, i, INITIAL_RANDOM_HASH);
-		}
-		addRecordStreamObject(runningAvgsMock, mockQueue, 256, OVERWRITING_HASH);
-		addRecordStreamObject(runningAvgsMock, mockQueue, 257, OVERWRITING_HASH);
-
-		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getBlockHashCache(257));
-		assertEquals(OVERWRITING_HASH, merkleNetworkContext.getPrevStreamedRecordHash());
-		assertEquals(256, merkleNetworkContext.getBlockHashCache().size());
-		assertEquals(257, merkleNetworkContext.getBlockNo());
-
-		//Check blockNo and block hash of all block hash entries without the last one
-		int i = 2;
-		for (final Map.Entry<Long, Hash> blockHashEntry : merkleNetworkContext.getBlockHashCache().entrySet()) {
-			if (i != 257) {
-				assertEquals(i, blockHashEntry.getKey());
-				assertEquals(INITIAL_RANDOM_HASH, blockHashEntry.getValue());
-			}
-			i++;
-		}
-	}
-
-	@Test
-	void testExceedingMaxBlockHashCache() {
-		// setup:
-		final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext(
-				NULL_CONSENSUS_TIME,
-				new SequenceNumber(2),
-				1,
-				new ExchangeRates());
-		final var mockQueue = mock(Queue.class);
-		recordStreamManager = new RecordStreamManager(
-				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
-		assertFalse(recordStreamManager.getInFreeze(),
-				"inFreeze should be false after initialization");
-		final int recordsNum = 1234;
-
-		for (int i = 1; i <= recordsNum; i++) {
-			addRecordStreamObject(runningAvgsMock, mockQueue, i, INITIAL_RANDOM_HASH);
-		}
-
-		assertEquals(new Hash(), merkleNetworkContext.getBlockHashCache(1));
-		assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHashCache(1234));
-		assertEquals(256, merkleNetworkContext.getBlockHashCache().size());
-		assertEquals(recordsNum, merkleNetworkContext.getBlockNo());
 	}
 
 	@ParameterizedTest
