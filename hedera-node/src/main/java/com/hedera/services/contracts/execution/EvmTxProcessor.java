@@ -233,8 +233,6 @@ abstract class EvmTxProcessor {
 		messageFrameStack.addFirst(initialFrame);
 
 		while (!messageFrameStack.isEmpty()) {
-			// TODO: find a way to intercept and check here, if there is no way -> go through all operations and
-			//  convert addresses to hedera native separately
 			process(messageFrameStack.peekFirst(), new HederaTracer());
 		}
 

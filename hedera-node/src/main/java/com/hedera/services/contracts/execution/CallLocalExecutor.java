@@ -71,7 +71,6 @@ public class CallLocalExecutor {
 	) {
 		try {
 			final var paymentTxn = SignedTxnAccessor.uncheckedFrom(op.getHeader().getPayment()).getTxn();
-			// TODO: Should we do anything similar to this in the other places?
 			final var senderId = Id.fromGrpcAccount(paymentTxn.getTransactionID().getAccountID());
 			final var idOrAlias = op.getContractID();
 			final var contractId = EntityIdUtils.unaliased(idOrAlias, aliasManager).toId();
