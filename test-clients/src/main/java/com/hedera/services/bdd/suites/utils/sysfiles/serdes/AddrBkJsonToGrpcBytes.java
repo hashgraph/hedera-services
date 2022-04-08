@@ -62,21 +62,21 @@ public class AddrBkJsonToGrpcBytes implements SysFileSerde<String> {
 		return grpcBytesFromPojo(pojo);
 	}
 
-	private void validateIPandPort(String IpV4Address, Integer portNo) {
+	private void validateIPandPort(String IpV4Address, Integer portNum) {
 		try {
 			BookEntryPojo.asOctets(IpV4Address);
 		} catch (Exception e) {
 			throw new IllegalStateException(
-					"Endpoint" + " IP field cannot be set to '" + IpV4Address + "'", e);
+					"Endpoint IP field cannot be set to '" + IpV4Address + "'", e);
 		}
 
 		try {
-			if (portNo <= 0) {
+			if (portNum <= 0) {
 				throw new IllegalStateException(
-						"Endpoint" + " portno field cannot be set to '" + portNo + "'");
+						"Endpoint port field cannot be set to '" + portNum + "'");
 			}
 		} catch (NullPointerException e) {
-			throw new IllegalStateException("Endpoint" + " portno field is not set", e);
+			throw new IllegalStateException("Endpoint port field is not set", e);
 		}
 	}
 
