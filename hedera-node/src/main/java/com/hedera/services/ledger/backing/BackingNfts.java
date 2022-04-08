@@ -47,6 +47,9 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
 
 	@Override
 	public UniqueTokenValue getRef(NftId id) {
+		// Note: for any mutations that occur on the returned value, the caller is responsible for calling
+		// backingNfts.put(id, token) to store the mutations. Otherwise, the mutations will be discarded.
+		// VirtualMap's getForModify() cannot be used here as it can lead to race conditions.
 		return new UniqueTokenValue(delegate.get().get(UniqueTokenKey.fromNftId(id)));
 	}
 
