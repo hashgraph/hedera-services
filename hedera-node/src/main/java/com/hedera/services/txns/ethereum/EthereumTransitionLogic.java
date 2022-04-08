@@ -103,9 +103,9 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 
 		if (syntheticTxBody.hasContractCall()) {
-			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId());
+			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
 		} else if (syntheticTxBody.hasContractCreateInstance()) {
-			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId());
+			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
 		}
 		recordService.updateFromEvmCallContext(new EvmFnResult.EvmFnCallContext(ethTxData.gasLimit(),
 				ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact(), ethTxData.callData()));

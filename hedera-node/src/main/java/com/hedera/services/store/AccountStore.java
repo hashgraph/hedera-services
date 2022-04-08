@@ -157,6 +157,7 @@ public class AccountStore {
 		account.setDeleted(merkleAccount.isDeleted());
 		account.setSmartContract(merkleAccount.isSmartContract());
 		account.setAlias(merkleAccount.getAlias());
+		account.setTransactionCounter(merkleAccount.getTransactionCounter());
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
 		account.setApproveForAllNfts(merkleAccount.getApproveForAllNfts());
@@ -196,6 +197,7 @@ public class AccountStore {
 		mutableAccount.setDeleted(model.isDeleted());
 		mutableAccount.setAutoRenewSecs(model.getAutoRenewSecs());
 		mutableAccount.setSmartContract(model.isSmartContract());
+		mutableAccount.setTransactionCounter(model.getTransactionCounter());
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
 		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNfts());

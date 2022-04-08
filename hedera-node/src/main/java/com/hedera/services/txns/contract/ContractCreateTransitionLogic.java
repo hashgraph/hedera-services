@@ -102,10 +102,10 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		// --- Translate from gRPC types ---
 		var contractCreateTxn = txnCtx.accessor().getTxn();
 		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
-		doStateTransitionOperation(contractCreateTxn, senderId);
+		doStateTransitionOperation(contractCreateTxn, senderId, false);
 	}
 
-	public void doStateTransitionOperation(final TransactionBody contractCreateTxn, final Id senderId) {
+	public void doStateTransitionOperation(final TransactionBody contractCreateTxn, final Id senderId, boolean isEthTx) {
 		// --- Translate from gRPC types ---
 		var op = contractCreateTxn.getContractCreateInstance();
 		var key = op.hasAdminKey()
@@ -137,6 +137,11 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 					expiry);
 		} finally {
 			worldState.resetHapiSenderCustomizer();
+		}
+
+		if (isEthTx) {
+			sender.incrementTransactionCounter();
+			accountStore.commitAccount(sender);
 		}
 
 		// --- Persist changes into state ---

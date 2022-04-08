@@ -94,10 +94,10 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		// --- Translate from gRPC types ---
 		var contractCallTxn = txnCtx.accessor().getTxn();
 		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
-		doStateTransitionOperation(contractCallTxn, senderId);
+		doStateTransitionOperation(contractCallTxn, senderId, false);
 	}
 
-	public void doStateTransitionOperation(final TransactionBody contractCallTxn, final Id senderId) {
+	public void doStateTransitionOperation(final TransactionBody contractCallTxn, final Id senderId, boolean isEthTx) {
 		var op = contractCallTxn.getContractCall();
 		final var target = targetOf(op);
 		final var contractId = target.toId();
@@ -117,6 +117,11 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 				op.getAmount(),
 				callData,
 				txnCtx.consensusTime());
+
+		if (isEthTx) {
+			sender.incrementTransactionCounter();
+			accountStore.commitAccount(sender);
+		}
 
 		// --- Persist changes into state ---
 		final var createdContracts = worldState.getCreatedContractIds();
