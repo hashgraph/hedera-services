@@ -23,6 +23,8 @@ package com.hedera.services.ledger.accounts;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
@@ -113,6 +115,20 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 		curAliases().put(alias, num);
 	}
 
+	public boolean maybeLinkEvmAddress(final JKey key, final EntityNum num) {
+		if (key.hasECDSAsecp256k1Key()) {
+			byte[] rawCompressedKey = fromBytesInternal(key.getECDSASecp256k1Key());
+			if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
+				var evmAddress = calculateEthAddress(rawCompressedKey);
+				link(evmAddress, num);
+				//FIXME System out
+				System.out.printf(" %s <- 0x%s%n", num, Hex.toHexString(evmAddress.toByteArray()));
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	public void unlink(final ByteString alias) {
 		curAliases().remove(alias);
 	}
@@ -125,6 +141,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	 */
 	public void rebuildAliasesMap(final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		final var numCreate2Aliases = new AtomicInteger();
+		final var numEOAliases = new AtomicInteger();
 		final var workingAliases = curAliases();
 		workingAliases.clear();
 		forEach(accounts, (k, v) -> {
@@ -134,20 +151,18 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 					numCreate2Aliases.getAndIncrement();
 				}
 				try {
-					if (v.getAccountKey().hasECDSAsecp256k1Key()) {
-						byte[] rawCompressedKey = fromBytesInternal(v.getAlias().toByteArray());
-						var evmAddress = calculateEthAddress(rawCompressedKey);
-						workingAliases.put(evmAddress, k);
+					if (maybeLinkEvmAddress(v.getAccountKey(), v.getKey())) {
+						numEOAliases.incrementAndGet();
 					}
 				} catch (Exception e) {
 					e.printStackTrace(System.out);
 				}
 			}
 		});
-		log.info("Rebuild complete, re-mapped {} aliases ({} from CREATE2)",
-				workingAliases::size, numCreate2Aliases::get);
+		log.info("Rebuild complete, re-mapped {} aliases ({} from CREATE2, {} externally owned accounts)",
+				workingAliases::size, numCreate2Aliases::get, numEOAliases::get);
 	}
-	
+
 	static byte[] fromBytesInternal(byte[] publicKey) {
 		System.out.println(Hex.toHexString(publicKey));
 		if (publicKey.length == 33) {
