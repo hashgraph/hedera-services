@@ -116,7 +116,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	}
 
 	public boolean maybeLinkEvmAddress(final JKey key, final EntityNum num) {
-		if (key.hasECDSAsecp256k1Key()) {
+		if (key != null && key.hasECDSAsecp256k1Key()) {
 			byte[] rawCompressedKey = fromBytesInternal(key.getECDSASecp256k1Key());
 			if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
 				var evmAddress = calculateEthAddress(rawCompressedKey);
@@ -150,12 +150,8 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 				if (v.isSmartContract()) {
 					numCreate2Aliases.getAndIncrement();
 				}
-				try {
-					if (maybeLinkEvmAddress(v.getAccountKey(), v.getKey())) {
-						numEOAliases.incrementAndGet();
-					}
-				} catch (Exception e) {
-					e.printStackTrace(System.out);
+				if (maybeLinkEvmAddress(v.getAccountKey(), v.getKey())) {
+					numEOAliases.incrementAndGet();
 				}
 			}
 		});
