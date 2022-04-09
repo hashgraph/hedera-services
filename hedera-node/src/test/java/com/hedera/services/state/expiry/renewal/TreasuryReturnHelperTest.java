@@ -41,12 +41,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.asymmetricTtlOf;
 import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.ttlOf;
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TreasuryReturnHelperTest {
@@ -55,7 +53,6 @@ class TreasuryReturnHelperTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 
-	private List<EntityId> tokenTypes = new ArrayList<>();
 	private List<CurrencyAdjustments> returnTransfers = new ArrayList<>();
 
 	private TreasuryReturnHelper subject;
@@ -66,73 +63,53 @@ class TreasuryReturnHelperTest {
 	}
 
 	@Test
-	void onlyRemovesIfTokenDoesntExist() {
-		givenRelPresent(num, missingTokenId, 0);
+	void justReportsDebitIfTokenIsGoneSomehow() {
+		subject.updateReturns(expiredAccountNum, missingTokenNum, tokenBalance, returnTransfers);
 
-		subject.updateReturns(num.toGrpcAccountId(), missingTokenGrpcId, tokenTypes, returnTransfers);
-
-		verify(tokenRels).remove(EntityNumPair.fromNums(num, missingTokenId));
-		assertTrue(tokenTypes.isEmpty());
-		assertTrue(returnTransfers.isEmpty());
-	}
-
-	@Test
-	void onlyRemovesIfTokenDeleted() {
-		givenTokenPresent(deletedTokenId, deletedToken);
-		givenRelPresent(num, deletedTokenId, 123);
-
-		subject.updateReturns(num.toGrpcAccountId(), deletedTokenGrpcId, tokenTypes, returnTransfers);
-
-		verify(tokenRels).remove(EntityNumPair.fromNums(num, deletedTokenId));
-		assertTrue(tokenTypes.isEmpty());
-		assertTrue(returnTransfers.isEmpty());
-	}
-
-	@Test
-	void shortCircuitsToJustRemovingRelIfZeroBalance() {
-		givenTokenPresent(survivedTokenId, longLivedToken);
-		givenRelPresent(num, survivedTokenId, 0);
-
-		subject.updateReturns(num.toGrpcAccountId(), survivedTokenGrpcId, tokenTypes, returnTransfers);
-
-		verify(tokenRels).remove(EntityNumPair.fromNums(num, survivedTokenId));
-		assertTrue(tokenTypes.isEmpty());
-		assertTrue(returnTransfers.isEmpty());
-	}
-
-	@Test
-	void doesTreasuryReturnForNonzeroFungibleBalance() {
-		givenTokenPresent(survivedTokenId, longLivedToken);
-		givenRelPresent(num, survivedTokenId, tokenBalance);
-		givenModifiableRelPresent(treasuryNum, survivedTokenId, 0L);
-
-		subject.updateReturns(num.toGrpcAccountId(), survivedTokenGrpcId, tokenTypes, returnTransfers);
-
-		verify(tokenRels).remove(EntityNumPair.fromAccountTokenRel(num.toGrpcAccountId(), survivedTokenGrpcId));
 		final var ttls = List.of(
-				ttlOf(survivedTokenGrpcId,
-						num.toGrpcAccountId(), treasuryId.toGrpcAccountId(), tokenBalance));
-		assertEquals(tokensFrom(ttls), tokenTypes);
+				asymmetricTtlOf(missingTokenNum.toGrpcTokenId(),
+						expiredAccountNum.toGrpcAccountId(), tokenBalance));
 		assertEquals(adjustmentsFrom(ttls), returnTransfers);
 	}
 
+	@Test
+	void justReportsDebitIfTokenIsDeleted() {
+		givenTokenPresent(deletedTokenNum, deletedToken);
+
+		subject.updateReturns(expiredAccountNum, deletedTokenNum, tokenBalance, returnTransfers);
+
+		final var ttls = List.of(
+				asymmetricTtlOf(deletedTokenNum.toGrpcTokenId(),
+						expiredAccountNum.toGrpcAccountId(), tokenBalance));
+		assertEquals(adjustmentsFrom(ttls), returnTransfers);
+	}
+
+	@Test
+	void doesTreasuryReturnForNonzeroBalance() {
+		givenTokenPresent(survivedTokenNum, longLivedToken);
+		final var treasuryRel = mutableRel(treasuryNum, survivedTokenNum, tokenBalance);
+		givenModifiableRelPresent(treasuryNum, survivedTokenNum, treasuryRel);
+
+		subject.updateReturns(expiredAccountNum, survivedTokenNum, tokenBalance, returnTransfers);
+
+		final var ttls = List.of(
+				ttlOf(survivedTokenGrpcId,
+						expiredAccountNum.toGrpcAccountId(), treasuryId.toGrpcAccountId(), tokenBalance));
+		assertEquals(adjustmentsFrom(ttls), returnTransfers);
+		assertEquals(2 * tokenBalance, treasuryRel.getBalance());
+	}
+
 	private void givenTokenPresent(EntityNum id, MerkleToken token) {
-		given(tokens.containsKey(id)).willReturn(true);
 		given(tokens.get(id)).willReturn(token);
 	}
 
-	private void givenRelPresent(EntityNum account, EntityNum token, long balance) {
-		final var rel = EntityNumPair.fromNums(account, token);
-		given(tokenRels.get(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false, false));
-	}
-
-	private void givenModifiableRelPresent(EntityNum account, EntityNum token, long balance) {
+	private void givenModifiableRelPresent(EntityNum account, EntityNum token, MerkleTokenRelStatus mutableRel) {
 		var rel = EntityNumPair.fromLongs(account.longValue(), token.longValue());
-		given(tokenRels.getForModify(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false, true));
+		given(tokenRels.getForModify(rel)).willReturn(mutableRel);
 	}
 
-	static List<EntityId> tokensFrom(final List<TokenTransferList> ttls) {
-		return ttls.stream().map(TokenTransferList::getToken).map(EntityId::fromGrpcTokenId).collect(toList());
+	private MerkleTokenRelStatus mutableRel(EntityNum account, EntityNum token, long balance) {
+		return new MerkleTokenRelStatus(balance, false, false, true);
 	}
 
 	static List<CurrencyAdjustments> adjustmentsFrom(final List<TokenTransferList> ttls) {
@@ -147,21 +124,15 @@ class TreasuryReturnHelperTest {
 		).collect(Collectors.toList());
 	}
 
-	private final long expiredNum = 2L;
-	private final long deletedTokenNum = 1234L;
-	private final long survivedTokenNum = 4321L;
-	private final long missingTokenNum = 5678L;
 	private final long tokenBalance = 1_234L;
-	private final EntityId expiredTreasuryId = new EntityId(0, 0, expiredNum);
+	private final EntityId expiredTreasuryId = new EntityId(0, 0, 2L);
 	private final EntityNum treasuryNum = EntityNum.fromLong(666L);
-	private final EntityNum num = EntityNum.fromLong(expiredNum);
-	private final EntityNum deletedTokenId = EntityNum.fromLong(deletedTokenNum);
-	private final EntityNum survivedTokenId = EntityNum.fromLong(survivedTokenNum);
-	private final EntityNum missingTokenId = EntityNum.fromLong(missingTokenNum);
-	private final EntityId treasuryId = treasuryNum.toId().asEntityId();
-	private final TokenID deletedTokenGrpcId = deletedTokenId.toGrpcTokenId();
-	private final TokenID survivedTokenGrpcId = survivedTokenId.toGrpcTokenId();
-	private final TokenID missingTokenGrpcId = missingTokenId.toGrpcTokenId();
+	private final EntityNum expiredAccountNum = expiredTreasuryId.asNum();
+	private final EntityNum deletedTokenNum = EntityNum.fromLong(1234L);
+	private final EntityNum survivedTokenNum = EntityNum.fromLong(4321L);
+	private final EntityNum missingTokenNum = EntityNum.fromLong(5678L);
+	private final EntityId treasuryId = treasuryNum.toEntityId();
+	private final TokenID survivedTokenGrpcId = survivedTokenNum.toGrpcTokenId();
 	private final MerkleToken deletedToken = new MerkleToken(
 			Long.MAX_VALUE, 1L, 0,
 			"GONE", "Long lost dream",

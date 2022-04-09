@@ -9,9 +9,9 @@ package com.hedera.services.state.expiry.renewal;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,11 +23,8 @@ package com.hedera.services.state.expiry.renewal;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.inject.Inject;
@@ -35,8 +32,7 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static com.hedera.services.ledger.HederaLedger.ACCOUNT_ID_COMPARATOR;
-import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
 @Singleton
 public class TreasuryReturnHelper {
@@ -53,46 +49,53 @@ public class TreasuryReturnHelper {
 	}
 
 	void updateReturns(
-			final AccountID expired,
-			final TokenID associatedToken,
-			final List<EntityId> tokenTypes,
+			final EntityNum expiredAccountNum,
+			final EntityNum tokenNum,
+			final long balance,
 			final List<CurrencyAdjustments> returnTransfers
 	) {
-		final var curTokenRels = tokenRels.get();
-		final var expiredRel = fromAccountTokenRel(expired, associatedToken);
-		final var relStatus = curTokenRels.get(expiredRel);
-		final long balance = relStatus.getBalance();
-
-		curTokenRels.remove(expiredRel);
-
-		final var tokenNum = EntityNum.fromTokenId(associatedToken);
+		var treasury = MISSING_ENTITY_ID;
 		final var curTokens = tokens.get();
-		if (!curTokens.containsKey(tokenNum)) {
-			return;
-		}
 		final var token = curTokens.get(tokenNum);
-		if (token.isDeleted()) {
-			return;
+		if (token != null && !token.isDeleted()) {
+			treasury = token.treasury();
 		}
-		if (balance == 0) {
-			return;
+
+		if (treasury == MISSING_ENTITY_ID) {
+			final var returnTransfer = new CurrencyAdjustments(
+					new long[] { -balance },
+					new long[] { expiredAccountNum.longValue() });
+			returnTransfers.add(returnTransfer);
+		} else {
+			final var treasuryNum = treasury.asNum();
+			addProperReturn(expiredAccountNum, treasuryNum, balance, returnTransfers);
+			incrementBalance(treasuryNum, tokenNum, balance);
 		}
-		final var treasury = token.treasury().toGrpcAccountId();
-		final boolean expiredFirst = ACCOUNT_ID_COMPARATOR.compare(expired, treasury) < 0;
-		tokenTypes.add(EntityId.fromGrpcTokenId(associatedToken));
-		final var expiredId = EntityId.fromGrpcAccountId(expired);
-		final var treasuryId = EntityId.fromGrpcAccountId(treasury);
+	}
+
+	private void incrementBalance(final EntityNum treasuryNum, final EntityNum tokenNum, final long balance) {
+		final var curTokenRels = tokenRels.get();
+		final var treasuryRelKey = EntityNumPair.fromNums(treasuryNum, tokenNum);
+		final var treasuryRel = curTokenRels.getForModify(treasuryRelKey);
+		final long newTreasuryBalance = treasuryRel.getBalance() + balance;
+		treasuryRel.setBalance(newTreasuryBalance);
+	}
+
+	private void addProperReturn(
+			final EntityNum expiredAccountNum,
+			final EntityNum treasuryNum,
+			final long balance,
+			final List<CurrencyAdjustments> returnTransfers
+	) {
+		final boolean listDebitFirst = expiredAccountNum.compareTo(treasuryNum) < 0;
+		// For consistency, order the transfer list by increasing account number
 		returnTransfers.add(new CurrencyAdjustments(
-				expiredFirst
+				listDebitFirst
 						? new long[] { -balance, +balance }
 						: new long[] { +balance, -balance },
-				expiredFirst
-						? new long[] { expiredId.num(), treasuryId.num() }
-						: new long[] { treasuryId.num(), expiredId.num() }
+				listDebitFirst
+						? new long[] { expiredAccountNum.longValue(), treasuryNum.longValue() }
+						: new long[] { treasuryNum.longValue(), expiredAccountNum.longValue() }
 		));
-		final var treasuryRel = fromAccountTokenRel(treasury, associatedToken);
-		final var mutableTreasuryRelStatus = curTokenRels.getForModify(treasuryRel);
-		final long newTreasuryBalance = mutableTreasuryRelStatus.getBalance() + balance;
-		mutableTreasuryRelStatus.setBalance(newTreasuryBalance);
 	}
 }

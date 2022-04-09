@@ -209,6 +209,13 @@ class RenewalRecordsHelperTest {
 				.build();
 	}
 
+	static TokenTransferList asymmetricTtlOf(TokenID scope, AccountID src, long amount) {
+		return TokenTransferList.newBuilder()
+				.setToken(scope)
+				.addTransfers(aaOf(src, -amount))
+				.build();
+	}
+
 	static AccountAmount aaOf(AccountID id, long amount) {
 		return AccountAmount.newBuilder()
 				.setAccountID(id)

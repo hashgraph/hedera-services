@@ -24,12 +24,14 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.state.expiry.TokenRelsListRemoval;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,14 +40,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,12 +58,19 @@ class AccountGCTest {
 	private TreasuryReturnHelper treasuryReturnHelper;
 	@Mock
 	private BackingStore<AccountID, MerkleAccount> backingAccounts;
+	@Mock
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
+	@Mock
+	private AccountGC.RemovalFacilitation removalFacilitation;
+	@Mock
+	private TokenRelsListRemoval listRemoval;
 
 	private AccountGC subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new AccountGC(aliasManager, sigImpactHistorian, treasuryReturnHelper, backingAccounts);
+		subject = new AccountGC(aliasManager, sigImpactHistorian, treasuryReturnHelper, backingAccounts, () -> tokenRels);
+		subject.setRemovalFacilitation(removalFacilitation);
 	}
 
 	@Test
@@ -78,30 +85,30 @@ class AccountGCTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	void removalWithTokensWorks() {
-		final var counter = new AtomicInteger();
-		doAnswer(invocationOnMock -> {
-			final var tokenTypes = (List<EntityId>) invocationOnMock.getArgument(2);
-			final var no = counter.getAndIncrement();
-			if (no == 0) {
-				tokenTypes.add(aToken.toEntityId());
-			} else if (no == 1) {
-				tokenTypes.add(bToken.toEntityId());
-			} else {
-				tokenTypes.add(cToken.toEntityId());
-			}
-			return null;
-		}).when(treasuryReturnHelper).updateReturns(eq(num.toGrpcAccountId()), any(), any(), any());
-
 		final var expectedReturns = new TreasuryReturns(
-				List.of(aToken.toEntityId(), bToken.toEntityId(), cToken.toEntityId()),
+				List.of(aToken.toEntityId(), bToken.toEntityId()),
 				Collections.emptyList(), true);
+		final var rootKey = accountWithTokens.getLatestAssociation();
+		final var nextKey = EntityNumPair.fromLongs(num.longValue(), bNum);
+		final var unusedKey = EntityNumPair.fromLongs(num.longValue(), 888L);
+
+		given(removalFacilitation.removeNext(
+				eq(rootKey),
+				eq(rootKey),
+				any(TokenRelsListRemoval.class))).willReturn(nextKey);
+		given(removalFacilitation.removeNext(
+				eq(nextKey),
+				eq(nextKey),
+				any(TokenRelsListRemoval.class))).willReturn(unusedKey);
+		given(tokenRels.get(rootKey)).willReturn(new MerkleTokenRelStatus(1, false, false, false));
+		given(tokenRels.get(nextKey)).willReturn(new MerkleTokenRelStatus(0, true, true, true));
 
 		final var actualReturns = subject.expireBestEffort(num, accountWithTokens);
 
 		assertEquals(expectedReturns, actualReturns);
-		assertRemovalStepsTaken(num, accountNoTokens);
+		verify(treasuryReturnHelper, never()).updateReturns(any(), eq(bToken), eq(0), any());
+		assertRemovalStepsTaken(num, accountWithTokens);
 	}
 
 	private void assertRemovalStepsTaken(final EntityNum num, final MerkleAccount account) {
@@ -111,26 +118,22 @@ class AccountGCTest {
 	}
 
 	private final long expiredNum = 2L;
-	private final long aNum = 1234L;
-	private final long bNum = 4321L;
-	private final long cNum = 5678L;
+	private final long aNum = 666L;
+	private final long bNum = 777L;
 	private final EntityNum num = EntityNum.fromLong(expiredNum);
 	private final EntityNum aToken = EntityNum.fromLong(aNum);
 	private final EntityNum bToken = EntityNum.fromLong(bNum);
-	private final EntityNum cToken = EntityNum.fromLong(cNum);
 	private final ByteString anAlias = ByteString.copyFromUtf8("bbbb");
 	private final MerkleAccount accountNoTokens = MerkleAccountFactory.newAccount()
 			.balance(0)
+			.lastAssociatedToken(0)
+			.associatedTokensCount(0)
 			.alias(anAlias)
 			.get();
 	private final MerkleAccount accountWithTokens = MerkleAccountFactory.newAccount()
 			.balance(0)
+			.lastAssociatedToken(aNum)
+			.associatedTokensCount(2)
 			.alias(anAlias)
 			.get();
-
-	{
-		final var associations = new MerkleAccountTokens();
-		associations.associateAll(Set.of(aToken.toGrpcTokenId(), bToken.toGrpcTokenId(), cToken.toGrpcTokenId()));
-		accountWithTokens.setTokens(associations);
-	}
 }
