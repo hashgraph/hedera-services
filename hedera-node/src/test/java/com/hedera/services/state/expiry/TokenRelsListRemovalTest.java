@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -92,12 +93,26 @@ class TokenRelsListRemovalTest {
 	}
 
 	@Test
+	void getsNullPrevIfNoneSet() {
+		final var ans = subject.prev(targetRel);
+
+		assertNull(ans);
+	}
+
+	@Test
 	void getsExpectedNext() {
 		targetRel.setNext(nextNum);
 
 		final var ans = subject.next(targetRel);
 
 		assertEquals(nextRelKey, ans);
+	}
+
+	@Test
+	void getsNullNextIfNoneSet() {
+		final var ans = subject.next(targetRel);
+
+		assertNull(ans);
 	}
 
 	private final long rootNum = 2L;

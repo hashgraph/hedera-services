@@ -9,6 +9,8 @@ import org.jetbrains.annotations.Nullable;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 
 public class TokenRelsListRemoval implements MapValueListRemoval<EntityNumPair, MerkleTokenRelStatus> {
+	private static final long MISSING_KEY = MISSING_NUM.longValue();
+
 	final long accountNum;
 	final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 
@@ -84,7 +86,8 @@ public class TokenRelsListRemoval implements MapValueListRemoval<EntityNumPair, 
 	@Nullable
 	@Override
 	public EntityNumPair prev(final MerkleTokenRelStatus node) {
-		return EntityNumPair.fromLongs(accountNum, node.prevKey());
+		final var prevKey = node.prevKey();
+		return prevKey == MISSING_KEY ? null : EntityNumPair.fromLongs(accountNum, prevKey);
 	}
 
 	/**
@@ -93,6 +96,7 @@ public class TokenRelsListRemoval implements MapValueListRemoval<EntityNumPair, 
 	@Nullable
 	@Override
 	public EntityNumPair next(final MerkleTokenRelStatus node) {
-		return EntityNumPair.fromLongs(accountNum, node.nextKey());
+		final var nextKey = node.nextKey();
+		return nextKey == MISSING_KEY ? null : EntityNumPair.fromLongs(accountNum, nextKey);
 	}
 }

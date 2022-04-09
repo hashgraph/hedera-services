@@ -28,8 +28,8 @@ import java.util.Objects;
 public class MapValueListUtils {
 	/**
 	 * Removes the key/value pair with the given key from its containing linked list in the map represented by the
-	 * given {@link MapValueListRemoval}, updating the affected doubly-linked list to maintain the prev/next keys
-	 * of the "adjacent" value(s) as needed.
+	 * given {@link MapValueListRemoval}, updating the doubly-linked list to maintain the prev/next keys of the
+	 * "adjacent" value(s) as needed.
 	 *
 	 * @param key
 	 * 		the key of the mapping to remove
@@ -70,5 +70,9 @@ public class MapValueListUtils {
 			}
 		}
 		return key.equals(root) ? nextKey : root;
+	}
+
+	private MapValueListUtils() {
+		throw new UnsupportedOperationException("Utility Class");
 	}
 }
