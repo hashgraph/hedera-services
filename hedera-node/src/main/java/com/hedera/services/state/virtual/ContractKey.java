@@ -71,6 +71,10 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 		return new ContractKey(id.getAccountNum(), key.toArray());
 	}
 
+	public static ContractKey from(final long accountNum, final UInt256 key) {
+		return new ContractKey(accountNum, key.toArray());
+	}
+
 	public ContractKey(long contractId, long key) {
 		setContractId(contractId);
 		setKey(key);
