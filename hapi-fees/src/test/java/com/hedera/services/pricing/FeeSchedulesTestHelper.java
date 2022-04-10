@@ -37,7 +37,7 @@ import static java.math.RoundingMode.HALF_EVEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class FeeSchedulesTestHelper {
-	protected static final double ALLOWED_DEVIATION = 0.00000001;
+	protected static final double DEFAULT_ALLOWED_DEVIATION = 0.00000001;
 
 	protected static FeeSchedules subject = new FeeSchedules();
 	protected static AssetsLoader assetsLoader = new AssetsLoader();
@@ -50,19 +50,30 @@ class FeeSchedulesTestHelper {
 		canonicalTotalPricesInUsd = assetsLoader.loadCanonicalPrices();
 	}
 
-	protected void testCanonicalPriceFor(HederaFunctionality function, SubType subType) throws IOException {
+	protected void testCanonicalPriceFor(final HederaFunctionality function, final SubType subType) throws IOException {
+		testCanonicalPriceFor(function, subType, DEFAULT_ALLOWED_DEVIATION);
+	}
+
+	protected void testCanonicalPriceFor(
+			final HederaFunctionality function,
+			final SubType subType,
+			final double allowedDeviation
+	) throws IOException {
 		final var expectedBasePrice = canonicalTotalPricesInUsd.get(function).get(subType);
 		final var canonicalUsage = baseOperationUsage.baseUsageFor(function, subType);
 
-		testExpected(expectedBasePrice, canonicalUsage, function, subType, ALLOWED_DEVIATION);
+		System.out.println("Expected: " + expectedBasePrice);
+		System.out.println("Canonical usage: " + canonicalUsage);
+
+		testExpected(expectedBasePrice, canonicalUsage, function, subType, allowedDeviation);
 	}
 
 	protected void testExpected(
-			BigDecimal expectedBasePrice,
-			UsageAccumulator usage,
-			HederaFunctionality function,
-			SubType subType,
-			double allowedDeviation
+			final BigDecimal expectedBasePrice,
+			final UsageAccumulator usage,
+			final HederaFunctionality function,
+			final SubType subType,
+			final double allowedDeviation
 	) throws IOException {
 		final var computedResourcePrices = subject.canonicalPricesFor(function, subType);
 

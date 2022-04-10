@@ -36,6 +36,8 @@ public enum ContractEntitySizes {
 
 	static final int NUM_BYTES_IN_SOLIDITY_ADDRESS_REPR = 40;
 
+	public static final int NUM_BYTES_PER_KV_PAIR = 64;
+
 	public int fixedBytesInContractRepr() {
 		return NUM_FLAGS_IN_BASE_CONTRACT_REPRESENTATION * BOOL_SIZE
 				+ NUM_LONG_FIELDS_IN_BASE_CONTRACT_REPRESENTATION * LONG_SIZE

@@ -65,9 +65,9 @@ public class RenewalRecordsHelper {
 		this.dynamicProperties = dynamicProperties;
 	}
 
-	public void beginRenewalCycle(final Instant now) {
-		cycleStart = now;
-		consensusNanosIncr = 1;
+	public void beginRenewalCycle(final Instant nextAvailConsTime) {
+		cycleStart = nextAvailConsTime;
+		consensusNanosIncr = 0;
 		funding = dynamicProperties.fundingAccount();
 	}
 
@@ -80,8 +80,8 @@ public class RenewalRecordsHelper {
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
 		final var grpcId = id.toGrpcAccountId();
-		final var memo = "Entity " + id.toIdString() + " was automatically deleted.";
-		final var expirableTxnRecord = forCrypto(grpcId, eventTime)
+		final var memo = "Account " + id.toIdString() + " was automatically deleted.";
+		final var expirableTxnRecord = forTouchedAccount(grpcId, eventTime)
 				.setMemo(memo)
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
@@ -96,13 +96,13 @@ public class RenewalRecordsHelper {
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
 		final var grpcId = id.toGrpcAccountId();
-		final var memo = "Entity " +
+		final var memo = "Account " +
 				id.toIdString() +
 				" was automatically renewed. New expiration time: " +
 				newExpiry +
 				".";
 
-		final var expirableTxnRecord = forCrypto(grpcId, eventTime)
+		final var expirableTxnRecord = forTouchedAccount(grpcId, eventTime)
 				.setMemo(memo)
 				.setHbarAdjustments(feeXfers(fee, grpcId))
 				.setFee(fee)
@@ -129,13 +129,12 @@ public class RenewalRecordsHelper {
 		);
 	}
 
-	private ExpirableTxnRecord.Builder forCrypto(final AccountID accountId, final Instant consensusTime) {
+	private ExpirableTxnRecord.Builder forTouchedAccount(final AccountID accountId, final Instant consensusTime) {
 		final var at = RichInstant.fromJava(consensusTime);
 		final var id = EntityId.fromGrpcAccountId(accountId);
 		final var receipt = new TxnReceipt();
 		receipt.setAccountId(id);
 
-		/* FUTURE WORK - determine if, and how, the nonce should be altered here. */
 		final var txnId = new TxnId(
 				EntityId.fromGrpcAccountId(accountId), MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
 		return ExpirableTxnRecord.newBuilder()

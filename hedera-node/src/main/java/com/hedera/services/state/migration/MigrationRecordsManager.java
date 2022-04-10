@@ -24,7 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.EntityNum;
@@ -65,7 +65,7 @@ public class MigrationRecordsManager {
 
 	private final EntityCreator creator;
 	private final SigImpactHistorian sigImpactHistorian;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
@@ -74,7 +74,7 @@ public class MigrationRecordsManager {
 	public MigrationRecordsManager(
 			final EntityCreator creator,
 			final SigImpactHistorian sigImpactHistorian,
-			final AccountRecordsHistorian recordsHistorian,
+			final RecordsHistorian recordsHistorian,
 			final Supplier<MerkleNetworkContext> networkCtx
 	) {
 		this.sigImpactHistorian = sigImpactHistorian;

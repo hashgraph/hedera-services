@@ -1,4 +1,4 @@
-package com.hedera.services.state.expiry.renewal;
+package com.hedera.services.state.expiry.removal;
 
 /*-
  * ‌
@@ -41,8 +41,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.asymmetricTtlOf;
-import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.ttlOf;
+import static com.hedera.test.utils.TxnUtils.asymmetricTtlOf;
+import static com.hedera.test.utils.TxnUtils.ttlOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 

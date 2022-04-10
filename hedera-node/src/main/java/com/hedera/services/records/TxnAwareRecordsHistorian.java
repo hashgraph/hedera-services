@@ -46,10 +46,10 @@ import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
 
 /**
- * Provides a {@link AccountRecordsHistorian} using the natural collaborators.
+ * Provides a {@link RecordsHistorian} using the natural collaborators.
  */
 @Singleton
-public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
+public class TxnAwareRecordsHistorian implements RecordsHistorian {
 	public static final int DEFAULT_SOURCE_ID = 0;
 
 	private final RecordCache recordCache;

@@ -22,6 +22,7 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.state.expiry.EntityProcessResult;
+import com.hedera.services.state.expiry.removal.AccountGC;
 import com.hedera.services.utils.EntityNum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,11 +65,11 @@ public class RenewalProcess {
 		this.recordsHelper = recordsHelper;
 	}
 
-	public void beginRenewalCycle(Instant now) {
+	public void beginRenewalCycle(final Instant nextAvailConsTime) {
 		assertNotInCycle();
 
-		cycleTime = now;
-		recordsHelper.beginRenewalCycle(now);
+		cycleTime = nextAvailConsTime;
+		recordsHelper.beginRenewalCycle(nextAvailConsTime);
 	}
 
 	public EntityProcessResult process(final long entityNum) {
@@ -87,7 +88,7 @@ public class RenewalProcess {
 		};
 	}
 
-	private EntityProcessResult renewAccount(EntityNum accountId) {
+	private EntityProcessResult renewAccount(final EntityNum accountId) {
 		final var lastClassified = helper.getLastClassifiedAccount();
 		final long reqPeriod = lastClassified.getAutoRenewSecs();
 		final var usageAssessment = fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime);

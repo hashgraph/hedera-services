@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.test.utils.TxnUtils.ttlOf;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -88,12 +89,12 @@ class RenewalRecordsHelperTest {
 		final var secondTo = AccountID.newBuilder().setAccountNum(4_567L).build();
 		final var aBalance = 100L;
 		final var bBalance = 200L;
-		final var removalTime = instantNow.plusNanos(1);
+		final var removalTime = instantNow.plusNanos(0);
 		final var displacements = List.of(
 				ttlOf(aToken, from, firstTo, aBalance),
 				ttlOf(bToken, from, secondTo, bBalance));
 		final var rso = expectedRso(
-				cryptoRemovalRecord(removedId, removalTime, removedId, displacements), 1);
+				cryptoRemovalRecord(removedId, removalTime, removedId, displacements), 0);
 
 		subject.beginRenewalCycle(instantNow);
 		subject.streamCryptoRemoval(keyId, tokensFrom(displacements), adjustmentsFrom(displacements));
@@ -108,9 +109,9 @@ class RenewalRecordsHelperTest {
 
 	@Test
 	void streamsExpectedRenewalRecord() {
-		final var renewalTime = instantNow.plusNanos(1);
+		final var renewalTime = instantNow.plusNanos(0);
 		final var rso = expectedRso(
-				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding), 1);
+				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding), 0);
 
 		subject.beginRenewalCycle(instantNow);
 		subject.streamCryptoRenewal(keyId, fee, newExpiry);
@@ -159,7 +160,7 @@ class RenewalRecordsHelperTest {
 				.setReceipt(receipt)
 				.setConsensusTimestamp(asTimestamp(removedAt))
 				.setTransactionID(transactionID)
-				.setMemo(String.format("Entity %s was automatically deleted.", asLiteralString(accountRemoved)))
+				.setMemo(String.format("Account %s was automatically deleted.", asLiteralString(accountRemoved)))
 				.setTransactionFee(0L)
 				.addAllTokenTransferLists(displacements)
 				.build();
@@ -175,7 +176,7 @@ class RenewalRecordsHelperTest {
 	) {
 		final var receipt = TransactionReceipt.newBuilder().setAccountID(accountRenewed).build();
 		final var transactionID = TransactionID.newBuilder().setAccountID(autoRenewAccount).build();
-		final var memo = String.format("Entity %s was automatically renewed. New expiration time: %d.",
+		final var memo = String.format("Account %s was automatically renewed. New expiration time: %d.",
 				asLiteralString(accountRenewed),
 				newExpirationTime);
 		final var payerAmount = AccountAmount.newBuilder()
@@ -201,25 +202,4 @@ class RenewalRecordsHelperTest {
 				.build();
 	}
 
-	static TokenTransferList ttlOf(TokenID scope, AccountID src, AccountID dest, long amount) {
-		return TokenTransferList.newBuilder()
-				.setToken(scope)
-				.addTransfers(aaOf(src, -amount))
-				.addTransfers(aaOf(dest, +amount))
-				.build();
-	}
-
-	static TokenTransferList asymmetricTtlOf(TokenID scope, AccountID src, long amount) {
-		return TokenTransferList.newBuilder()
-				.setToken(scope)
-				.addTransfers(aaOf(src, -amount))
-				.build();
-	}
-
-	static AccountAmount aaOf(AccountID id, long amount) {
-		return AccountAmount.newBuilder()
-				.setAccountID(id)
-				.setAmount(amount)
-				.build();
-	}
 }

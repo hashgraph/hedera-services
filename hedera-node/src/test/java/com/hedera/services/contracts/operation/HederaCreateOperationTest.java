@@ -24,7 +24,7 @@ package com.hedera.services.contracts.operation;
 
 
 import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -60,7 +60,7 @@ class HederaCreateOperationTest {
 	@Mock
 	private EntityCreator creator;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private StorageGasCalculator storageGasCalculator;
 

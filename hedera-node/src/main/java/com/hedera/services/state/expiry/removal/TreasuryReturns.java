@@ -1,4 +1,4 @@
-package com.hedera.services.context.properties;
+package com.hedera.services.state.expiry.removal;
 
 /*-
  * ‌
@@ -20,19 +20,10 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 
-public enum EntityType {
-	ACCOUNT, CONTRACT, FILE, SCHEDULE, TOKEN, TOPIC;
+import java.util.List;
 
-	public static Set<EntityType> csvTypeSet(final String propertyValue) {
-		return Arrays.stream(propertyValue.split(","))
-				.map(String::strip)
-				.filter(desc -> desc.length() > 0)
-				.map(EntityType::valueOf)
-				.collect(Collectors.toCollection(() -> EnumSet.noneOf(EntityType.class)));
-	}
+public record TreasuryReturns(List<EntityId> tokenTypes, List<CurrencyAdjustments> transfers, boolean finished) {
 }

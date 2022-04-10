@@ -1,8 +1,8 @@
-package com.hedera.services.context.properties;
+package com.hedera.services.pricing;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Services API Fees
  * ​
  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
@@ -20,19 +20,16 @@ package com.hedera.services.context.properties;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+import org.junit.jupiter.api.Test;
 
-public enum EntityType {
-	ACCOUNT, CONTRACT, FILE, SCHEDULE, TOKEN, TOPIC;
+import java.io.IOException;
 
-	public static Set<EntityType> csvTypeSet(final String propertyValue) {
-		return Arrays.stream(propertyValue.split(","))
-				.map(String::strip)
-				.filter(desc -> desc.length() > 0)
-				.map(EntityType::valueOf)
-				.collect(Collectors.toCollection(() -> EnumSet.noneOf(EntityType.class)));
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAutoRenew;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
+
+public class ContractFeeSchedulesTest extends FeeSchedulesTestHelper {
+	@Test
+	void computesExpectedPriceForContractAutoRenew() throws IOException {
+		testCanonicalPriceFor(ContractAutoRenew, DEFAULT, 0.00001);
 	}
 }

@@ -70,7 +70,7 @@ public class GlobalDynamicProperties {
 	private int chainId;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
-	private boolean autoRenewEnabled;
+	private boolean atLeastOneAutoRenewTargetType;
 	private boolean expireAccounts;
 	private boolean expireContracts;
 	private int autoRenewNumberOfEntitiesToScan;
@@ -159,7 +159,6 @@ public class GlobalDynamicProperties {
 		chainId = properties.getIntProperty("contracts.chainId");
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
-		autoRenewEnabled = properties.getBooleanProperty("autorenew.isEnabled");
 		autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
 		autoRenewMaxNumberOfEntitiesToRenewOrDelete =
 				properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete");
@@ -202,6 +201,7 @@ public class GlobalDynamicProperties {
 		final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
 		expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
 		expireContracts = autoRenewTargetTypes.contains(CONTRACT);
+		atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
 		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
 	}
@@ -209,6 +209,7 @@ public class GlobalDynamicProperties {
 	public int maxTokensPerAccount() {
 		return maxTokensPerAccount;
 	}
+
 	public int maxTokensRelsPerInfoQuery() {
 		return maxTokenRelsPerInfoQuery;
 	}
@@ -329,8 +330,8 @@ public class GlobalDynamicProperties {
 		return feesTokenTransferUsageMultiplier;
 	}
 
-	public boolean autoRenewEnabled() {
-		return autoRenewEnabled;
+	public boolean shouldAutoRenewSomeEntityType() {
+		return atLeastOneAutoRenewTargetType;
 	}
 
 	public int autoRenewNumberOfEntitiesToScan() {
@@ -481,11 +482,11 @@ public class GlobalDynamicProperties {
 		return enableAllowances;
 	}
 
-	public boolean expireContracts() {
+	public boolean shouldAutoRenewContracts() {
 		return expireContracts;
 	}
 
-	public boolean expireAccounts() {
+	public boolean shouldAutoRenewAccounts() {
 		return expireAccounts;
         }
         

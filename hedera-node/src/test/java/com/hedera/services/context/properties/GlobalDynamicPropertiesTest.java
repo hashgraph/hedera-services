@@ -75,7 +75,7 @@ class GlobalDynamicPropertiesTest {
 		// then:
 		assertTrue(subject.shouldExportBalances());
 		assertTrue(subject.shouldExportTokenBalances());
-		assertFalse(subject.autoRenewEnabled());
+		assertTrue(subject.shouldAutoRenewSomeEntityType());
 		assertTrue(subject.areNftsEnabled());
 		assertTrue(subject.shouldThrottleByGas());
 		assertFalse(subject.isAutoCreationEnabled());
@@ -199,7 +199,7 @@ class GlobalDynamicPropertiesTest {
 		// then:
 		assertFalse(subject.shouldExportBalances());
 		assertFalse(subject.shouldExportTokenBalances());
-		assertTrue(subject.autoRenewEnabled());
+		assertTrue(subject.shouldAutoRenewSomeEntityType());
 		assertFalse(subject.areNftsEnabled());
 		assertFalse(subject.shouldThrottleByGas());
 		assertTrue(subject.isAutoCreationEnabled());
@@ -208,10 +208,20 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isCreate2Enabled());
 		assertFalse(subject.isRedirectTokenCallsEnabled());
 		assertTrue(subject.areAllowancesEnabled());
-		assertTrue(subject.expireAccounts());
-		assertTrue(subject.expireContracts());
+		assertTrue(subject.shouldAutoRenewAccounts());
+		assertTrue(subject.shouldAutoRenewContracts());
+		assertTrue(subject.shouldAutoRenewSomeEntityType());
 		assertTrue(subject.areTokenAssociationsLimited());
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
+	}
+
+	@Test
+	void knowsWhenNotToDoAnyAutoRenew() {
+		givenPropsWithSeed(3);
+
+		subject = new GlobalDynamicProperties(numbers, properties);
+
+		assertFalse(subject.shouldAutoRenewSomeEntityType());
 	}
 
 	@Test
@@ -328,7 +338,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers"))
 				.willReturn(i % 2 == 0 ? evenCongestion : oddCongestion);
 		given(properties.getIntProperty("fees.minCongestionPeriod")).willReturn(i + 29);
-		given(properties.getBooleanProperty("autorenew.isEnabled")).willReturn(i % 2 == 0);
 		given(properties.getIntProperty("autorenew.numberOfEntitiesToScan")).willReturn(i + 31);
 		given(properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete")).willReturn(i + 32);
 		given(properties.getLongProperty("autorenew.gracePeriod")).willReturn(i + 33L);
@@ -371,13 +380,20 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("contracts.enableTraceability"))
 				.willReturn((i + 59) % 2 == 0);
 		given(properties.getBooleanProperty("hedera.allowances.isEnabled")).willReturn((i + 60) % 2 == 0);
-		given(properties.getTypesProperty("autoRenew.targetTypes"))
-				.willReturn((i + 61) % 2 == 0
-						? EnumSet.of(EntityType.TOKEN)
-						: EnumSet.of(EntityType.ACCOUNT, EntityType.CONTRACT));
+		given(properties.getTypesProperty("autoRenew.targetTypes")).willReturn(typesFor(i));
 		given(properties.getBooleanProperty("accounts.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
 		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
 				.willReturn((i + 61) % 2 == 0);
+	}
+
+	private Set<EntityType> typesFor(final int i) {
+		if (i == 3) {
+			return EnumSet.noneOf(EntityType.class);
+		} else {
+			return ((i + 61) % 2 == 0
+					? EnumSet.of(EntityType.TOKEN)
+					: EnumSet.of(EntityType.ACCOUNT, EntityType.CONTRACT));
+		}
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

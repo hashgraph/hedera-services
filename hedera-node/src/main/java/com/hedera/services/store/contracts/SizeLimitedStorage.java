@@ -123,6 +123,7 @@ public class SizeLimitedStorage {
 		}
 		newUsages.forEach((contractNum, kvPairs) -> {
 			final var id = STATIC_PROPERTIES.scopedAccountWith(contractNum);
+			System.out.println("(SLS#126) 0.0." + id.getAccountNum() + " now has " + kvPairs.get() + " k/v pairs");
 			accountsLedger.set(id, NUM_CONTRACT_KV_PAIRS, kvPairs.get());
 		});
 	}

@@ -1,4 +1,4 @@
-package com.hedera.services.state.expiry.renewal;
+package com.hedera.services.state.expiry.removal;
 
 /*-
  * ‌

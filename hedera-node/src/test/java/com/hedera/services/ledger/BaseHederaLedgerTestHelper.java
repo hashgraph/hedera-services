@@ -31,7 +31,7 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -93,7 +93,7 @@ public class BaseHederaLedgerTestHelper {
 	protected HederaTokenStore tokenStore;
 	protected EntityIdSource ids;
 	protected ExpiringCreations creator;
-	protected AccountRecordsHistorian historian;
+	protected RecordsHistorian historian;
 	protected TransferLogic transferLogic;
 	protected TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -120,7 +120,7 @@ public class BaseHederaLedgerTestHelper {
 	protected void commonSetup() {
 		sideEffectsTracker = mock(SideEffectsTracker.class);
 		creator = mock(ExpiringCreations.class);
-		historian = mock(AccountRecordsHistorian.class);
+		historian = mock(RecordsHistorian.class);
 
 		ids = new EntityIdSource() {
 			long nextId = NEXT_ID;

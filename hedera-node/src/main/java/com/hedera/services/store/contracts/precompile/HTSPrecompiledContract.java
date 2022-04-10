@@ -45,7 +45,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -197,7 +197,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final OptionValidator validator;
 	private final EvmSigsVerifier sigsVerifier;
 	private final SigImpactHistorian sigImpactHistorian;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final DissociationFactory dissociationFactory;
 	private final UsagePricesProvider resourceCosts;
@@ -286,7 +286,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final SigImpactHistorian sigImpactHistorian,
-			final AccountRecordsHistorian recordsHistorian,
+			final RecordsHistorian recordsHistorian,
 			final TxnAwareEvmSigsVerifier sigsVerifier,
 			final DecodingFacade decoder,
 			final EncodingFacade encoder,
@@ -645,7 +645,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				GlobalDynamicProperties dynamicProperties,
 				OptionValidator validator,
 				AutoCreationLogic autoCreationLogic,
-				AccountRecordsHistorian recordsHistorian);
+				RecordsHistorian recordsHistorian);
 	}
 
 	@FunctionalInterface

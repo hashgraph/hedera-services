@@ -22,6 +22,8 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
+import com.hedera.services.state.expiry.removal.AccountGC;
+import com.hedera.services.state.expiry.removal.TreasuryReturns;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
