@@ -62,9 +62,6 @@ class FeeSchedulesTestHelper {
 		final var expectedBasePrice = canonicalTotalPricesInUsd.get(function).get(subType);
 		final var canonicalUsage = baseOperationUsage.baseUsageFor(function, subType);
 
-		System.out.println("Expected: " + expectedBasePrice);
-		System.out.println("Canonical usage: " + canonicalUsage);
-
 		testExpected(expectedBasePrice, canonicalUsage, function, subType, allowedDeviation);
 	}
 

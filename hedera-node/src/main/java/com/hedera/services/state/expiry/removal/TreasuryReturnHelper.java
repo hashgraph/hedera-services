@@ -32,6 +32,7 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
 @Singleton
@@ -57,7 +58,7 @@ public class TreasuryReturnHelper {
 		var treasury = MISSING_ENTITY_ID;
 		final var curTokens = tokens.get();
 		final var token = curTokens.get(tokenNum);
-		if (token != null && !token.isDeleted()) {
+		if (token != null && token.tokenType() == FUNGIBLE_COMMON && !token.isDeleted()) {
 			treasury = token.treasury();
 		}
 

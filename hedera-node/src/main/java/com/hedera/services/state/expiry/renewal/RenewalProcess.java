@@ -109,7 +109,8 @@ public class RenewalProcess {
 		final long renewalPeriod = assessment.renewalPeriod();
 		final long renewalFee = assessment.fee();
 		helper.renewLastClassifiedWith(renewalFee, renewalPeriod);
-		recordsHelper.streamCryptoRenewal(entityNum, renewalFee, lastClassified.getExpiry() + renewalPeriod);
+		recordsHelper.streamCryptoRenewal(
+				entityNum, renewalFee, lastClassified.getExpiry() + renewalPeriod, isContract);
 		return DONE;
 	}
 

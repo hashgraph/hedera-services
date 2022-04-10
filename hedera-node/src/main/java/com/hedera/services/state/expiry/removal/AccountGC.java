@@ -74,7 +74,7 @@ public class AccountGC {
 		if (expectedRels > 0) {
 			tokenTypes = new ArrayList<>();
 			returnTransfers = new ArrayList<>();
-			expireRelsWithTreasuryReturns(
+			doTreasuryReturnsWith(
 					expectedRels,
 					expiredAccountNum,
 					account.getLatestAssociation(),
@@ -92,8 +92,8 @@ public class AccountGC {
 		return new TreasuryReturns(tokenTypes, returnTransfers, true);
 	}
 
-	private void expireRelsWithTreasuryReturns(
-			final int maxRels,
+	private void doTreasuryReturnsWith(
+			final int expectedRels,
 			final EntityNum expiredAccountNum,
 			final EntityNumPair firstRelKey,
 			final List<EntityId> tokenTypes,
@@ -101,7 +101,7 @@ public class AccountGC {
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> curRels
 	) {
 		final var listRemoval = new TokenRelsListRemoval(expiredAccountNum.longValue(), curRels);
-		var i = maxRels;
+		var i = expectedRels;
 		var relKey = firstRelKey;
 		while (relKey != null && i-- > 0) {
 			final var rel = curRels.get(relKey);

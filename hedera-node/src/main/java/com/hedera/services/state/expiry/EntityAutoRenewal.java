@@ -50,12 +50,12 @@ public class EntityAutoRenewal {
 
 	@Inject
 	public EntityAutoRenewal(
-			HederaNumbers hederaNumbers,
-			RenewalProcess renewalProcess,
-			GlobalDynamicProperties dynamicProps,
-			NetworkCtxManager networkCtxManager,
-			Supplier<MerkleNetworkContext> networkCtx,
-			Supplier<SequenceNumber> seqNo
+			final HederaNumbers hederaNumbers,
+			final RenewalProcess renewalProcess,
+			final GlobalDynamicProperties dynamicProps,
+			final NetworkCtxManager networkCtxManager,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<SequenceNumber> seqNo
 	) {
 		this.seqNo = seqNo;
 		this.networkCtx = networkCtx;

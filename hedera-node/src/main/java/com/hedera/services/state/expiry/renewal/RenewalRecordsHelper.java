@@ -28,12 +28,11 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Transaction;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,14 +41,12 @@ import java.util.List;
 
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
+import static com.hedera.services.utils.MiscUtils.synthFromBody;
 
 @Singleton
 public class RenewalRecordsHelper {
-	private static final Logger log = LogManager.getLogger(RenewalRecordsHelper.class);
-
-	private static final Transaction EMPTY_SIGNED_TXN = Transaction.getDefaultInstance();
-
 	private final RecordStreaming recordStreaming;
+	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	private int consensusNanosIncr = 0;
@@ -59,10 +56,12 @@ public class RenewalRecordsHelper {
 	@Inject
 	public RenewalRecordsHelper(
 			final RecordStreaming recordStreaming,
+			final SyntheticTxnFactory syntheticTxnFactory,
 			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.recordStreaming = recordStreaming;
 		this.dynamicProperties = dynamicProperties;
+		this.syntheticTxnFactory = syntheticTxnFactory;
 	}
 
 	public void beginRenewalCycle(final Instant nextAvailConsTime) {
@@ -72,48 +71,55 @@ public class RenewalRecordsHelper {
 	}
 
 	public void streamCryptoRemoval(
-			final EntityNum id,
+			final EntityNum entityNum,
 			final List<EntityId> tokens,
 			final List<CurrencyAdjustments> tokenAdjustments
 	) {
 		assertInCycle();
-
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
-		final var grpcId = id.toGrpcAccountId();
-		final var memo = "Account " + id.toIdString() + " was automatically deleted.";
+		final var grpcId = entityNum.toGrpcAccountId();
+		final var memo = "Account " + entityNum.toIdString() + " was automatically deleted.";
 		final var expirableTxnRecord = forTouchedAccount(grpcId, eventTime)
 				.setMemo(memo)
 				.setTokens(tokens)
 				.setTokenAdjustments(tokenAdjustments)
 				.build();
-		stream(expirableTxnRecord, eventTime);
-
-		log.debug("Streamed crypto removal record {}", expirableTxnRecord);
+		final var synthBody = syntheticTxnFactory.synthAccountAutoRemove(entityNum);
+		stream(expirableTxnRecord, synthBody, eventTime);
 	}
 
-	public void streamCryptoRenewal(final EntityNum id, final long fee, final long newExpiry) {
+	public void streamCryptoRenewal(
+			final EntityNum entityNum,
+			final long fee,
+			final long newExpiry,
+			final boolean isContract
+	) {
 		assertInCycle();
 
 		final var eventTime = cycleStart.plusNanos(consensusNanosIncr++);
-		final var grpcId = id.toGrpcAccountId();
-		final var memo = "Account " +
-				id.toIdString() +
+		final var grpcId = entityNum.toGrpcAccountId();
+		final var memo = (isContract ? "Contract " : "Account ") +
+				entityNum.toIdString() +
 				" was automatically renewed. New expiration time: " +
 				newExpiry +
 				".";
-
+		final var synthBody = isContract
+				? syntheticTxnFactory.synthContractAutoRenew(entityNum, newExpiry)
+				: syntheticTxnFactory.synthAccountAutoRenew(entityNum, newExpiry);
 		final var expirableTxnRecord = forTouchedAccount(grpcId, eventTime)
 				.setMemo(memo)
 				.setHbarAdjustments(feeXfers(fee, grpcId))
 				.setFee(fee)
 				.build();
-		stream(expirableTxnRecord, eventTime);
-
-		log.debug("Streamed crypto renewal record {}", expirableTxnRecord);
+		stream(expirableTxnRecord, synthBody, eventTime);
 	}
 
-	private void stream(final ExpirableTxnRecord expiringRecord, final Instant at) {
-		final var rso = new RecordStreamObject(expiringRecord, EMPTY_SIGNED_TXN, at);
+	private void stream(
+			final ExpirableTxnRecord expiringRecord,
+			final TransactionBody.Builder synthBody,
+			final Instant at
+	) {
+		final var rso = new RecordStreamObject(expiringRecord, synthFromBody(synthBody.build()), at);
 		recordStreaming.stream(rso);
 	}
 

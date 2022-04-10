@@ -241,7 +241,7 @@ class RenewalProcessTest {
 	}
 
 	@Test
-	void renewsAtExpectedFee() {
+	void renewsAccountAtExpectedFee() {
 		// setup:
 		long fundedExpiredAccountNum = 1004L;
 		var key = EntityNum.fromLong(fundedExpiredAccountNum);
@@ -258,7 +258,28 @@ class RenewalProcessTest {
 
 		assertEquals(DONE, result);
 		verify(helper).renewLastClassifiedWith(fee, actualRenewalPeriod);
-		verify(recordsHelper).streamCryptoRenewal(key, fee, now - 1 + actualRenewalPeriod);
+		verify(recordsHelper).streamCryptoRenewal(key, fee, now - 1 + actualRenewalPeriod, false);
+	}
+
+	@Test
+	void renewsContractAtExpectedFee() {
+		// setup:
+		long fundedExpiredContractNum = 1004L;
+		var key = EntityNum.fromLong(fundedExpiredContractNum);
+
+		given(helper.classify(EntityNum.fromLong(fundedExpiredContractNum), now)).willReturn(
+				EXPIRED_CONTRACT_READY_TO_RENEW);
+		given(helper.getLastClassified()).willReturn(mockContract);
+		given(fees.assessCryptoAutoRenewal(mockContract, requestedRenewalPeriod, instantNow))
+				.willReturn(new RenewAssessment(fee, actualRenewalPeriod));
+		given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
+
+		subject.beginRenewalCycle(instantNow);
+		final var result = subject.process(fundedExpiredContractNum);
+
+		assertEquals(DONE, result);
+		verify(helper).renewLastClassifiedWith(fee, actualRenewalPeriod);
+		verify(recordsHelper).streamCryptoRenewal(key, fee, now - 1 + actualRenewalPeriod, true);
 	}
 
 	@Test

@@ -20,6 +20,7 @@ package com.hedera.services.state.expiry.removal;
  * ‍
  */
 
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -73,6 +74,18 @@ class TreasuryReturnHelperTest {
 	}
 
 	@Test
+	void justReportsDebitIfTokenIsNonfungible() {
+		givenTokenPresent(nonFungibleTokenNum, nonFungibleToken);
+
+		subject.updateReturns(expiredAccountNum, nonFungibleTokenNum, tokenBalance, returnTransfers);
+
+		final var ttls = List.of(
+				asymmetricTtlOf(nonFungibleTokenNum.toGrpcTokenId(),
+						expiredAccountNum.toGrpcAccountId(), tokenBalance));
+		assertEquals(adjustmentsFrom(ttls), returnTransfers);
+	}
+
+	@Test
 	void justReportsDebitIfTokenIsDeleted() {
 		givenTokenPresent(deletedTokenNum, deletedToken);
 
@@ -85,16 +98,31 @@ class TreasuryReturnHelperTest {
 	}
 
 	@Test
-	void doesTreasuryReturnForNonzeroBalance() {
-		givenTokenPresent(survivedTokenNum, longLivedToken);
-		final var treasuryRel = mutableRel(treasuryNum, survivedTokenNum, tokenBalance);
-		givenModifiableRelPresent(treasuryNum, survivedTokenNum, treasuryRel);
+	void doesTreasuryReturnForNonzeroFungibleBalance() {
+		givenTokenPresent(fungibleTokenNum, fungibleToken);
+		final var treasuryRel = mutableRel(treasuryNum, fungibleTokenNum, tokenBalance);
+		givenModifiableRelPresent(treasuryNum, fungibleTokenNum, treasuryRel);
 
-		subject.updateReturns(expiredAccountNum, survivedTokenNum, tokenBalance, returnTransfers);
+		subject.updateReturns(expiredAccountNum, fungibleTokenNum, tokenBalance, returnTransfers);
 
 		final var ttls = List.of(
 				ttlOf(survivedTokenGrpcId,
 						expiredAccountNum.toGrpcAccountId(), treasuryId.toGrpcAccountId(), tokenBalance));
+		assertEquals(adjustmentsFrom(ttls), returnTransfers);
+		assertEquals(2 * tokenBalance, treasuryRel.getBalance());
+	}
+
+	@Test
+	void ordersTreasuryReturnsByAccountNumber() {
+		givenTokenPresent(fungibleTokenNum, fungibleToken);
+		final var treasuryRel = mutableRel(treasuryNum, fungibleTokenNum, tokenBalance);
+		givenModifiableRelPresent(treasuryNum, fungibleTokenNum, treasuryRel);
+
+		subject.updateReturns(olderExpiredAccountNum, fungibleTokenNum, tokenBalance, returnTransfers);
+
+		final var ttls = List.of(
+				ttlOf(survivedTokenGrpcId,
+						treasuryId.toGrpcAccountId(), olderExpiredAccountNum.toGrpcAccountId(), -tokenBalance));
 		assertEquals(adjustmentsFrom(ttls), returnTransfers);
 		assertEquals(2 * tokenBalance, treasuryRel.getBalance());
 	}
@@ -128,20 +156,28 @@ class TreasuryReturnHelperTest {
 	private final EntityId expiredTreasuryId = new EntityId(0, 0, 2L);
 	private final EntityNum treasuryNum = EntityNum.fromLong(666L);
 	private final EntityNum expiredAccountNum = expiredTreasuryId.asNum();
+	private final EntityNum olderExpiredAccountNum = EntityNum.fromLong(1_000_000L);
 	private final EntityNum deletedTokenNum = EntityNum.fromLong(1234L);
-	private final EntityNum survivedTokenNum = EntityNum.fromLong(4321L);
+	private final EntityNum fungibleTokenNum = EntityNum.fromLong(4321L);
+	private final EntityNum nonFungibleTokenNum = EntityNum.fromLong(9999L);
 	private final EntityNum missingTokenNum = EntityNum.fromLong(5678L);
 	private final EntityId treasuryId = treasuryNum.toEntityId();
-	private final TokenID survivedTokenGrpcId = survivedTokenNum.toGrpcTokenId();
+	private final TokenID survivedTokenGrpcId = fungibleTokenNum.toGrpcTokenId();
 	private final MerkleToken deletedToken = new MerkleToken(
 			Long.MAX_VALUE, 1L, 0,
 			"GONE", "Long lost dream",
 			true, true, expiredTreasuryId);
-	private final MerkleToken longLivedToken = new MerkleToken(
+	private final MerkleToken fungibleToken = new MerkleToken(
+			Long.MAX_VALUE, 1L, 0,
+			"HERE", "Dreams never die",
+			true, true, treasuryId);
+	private final MerkleToken nonFungibleToken = new MerkleToken(
 			Long.MAX_VALUE, 1L, 0,
 			"HERE", "Dreams never die",
 			true, true, treasuryId);
 	{
 		deletedToken.setDeleted(true);
+		fungibleToken.setTokenType(TokenType.FUNGIBLE_COMMON);
+		nonFungibleToken.setTokenType(TokenType.NON_FUNGIBLE_UNIQUE);
 	}
 }

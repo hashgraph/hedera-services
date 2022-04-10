@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.assertTinybarAmountIsApproxUsd;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.INSTANT_HOG_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.literalInitcodeFor;
@@ -39,9 +40,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
 
@@ -75,6 +76,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 						enableContractAutoRenewWith(minimalLifetime, 0),
 						contractCreate(contractToRenew, INSTANT_HOG_CONS_ABI, 63)
 								.gas(2_000_000)
+								.entityMemo("")
 								.bytecode(initcode)
 								.autoRenewSecs(minimalLifetime)
 								.balance(initBalance)
@@ -93,10 +95,17 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 						// Any transaction will do
 						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L))
 				).then(
-						sourcing(() ->
-								getContractInfo(contractToRenew)
-										.has(contractWith().expiry(expectedExpiryPostRenew.get()))
-										.logged())
+						assertionsHold((spec, opLog) -> {
+							final var lookup =
+									getContractInfo(contractToRenew)
+											.has(contractWith().expiry(expectedExpiryPostRenew.get()))
+											.logged();
+							allRunFor(spec, lookup);
+							final var balance = lookup.getResponse().getContractGetInfo().getContractInfo().getBalance();
+							final var renewalFee = initBalance - balance;
+							final var canonicalUsdFee = 0.026;
+							assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
+						})
 				);
 	}
 
