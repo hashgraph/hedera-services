@@ -468,9 +468,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 				final var accountId = accountIdFromEvmAddress(updatedAccount.getAddress());
 				ensureExistence(accountId, entityAccess, wrapped.provisionalContractCreations);
 				if (updatedAccount.codeWasUpdated()) {
-					System.out.println("(HWS#471) 0.0."
-							+ updatedAccount.getAccountId().getAccountNum()
-							+ " has " + updatedAccount.getCode().size() + " bytes of code");
 					entityAccess.storeCode(accountId, updatedAccount.getCode());
 				}
 			}

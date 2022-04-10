@@ -100,12 +100,9 @@ public class RenewalProcess {
 	}
 
 	private EntityProcessResult renewIfTargeted(final EntityNum entityNum, final boolean isContract) {
-		if (!isContract && !dynamicProperties.shouldAutoRenewAccounts()) {
-			return NOTHING_TO_DO;
-		} else if (isContract && !dynamicProperties.shouldAutoRenewContracts()) {
+		if (isNotTargeted(isContract)) {
 			return NOTHING_TO_DO;
 		}
-
 		final var lastClassified = helper.getLastClassified();
 		final long reqPeriod = lastClassified.getAutoRenewSecs();
 		final var assessment = fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime);
@@ -114,6 +111,10 @@ public class RenewalProcess {
 		helper.renewLastClassifiedWith(renewalFee, renewalPeriod);
 		recordsHelper.streamCryptoRenewal(entityNum, renewalFee, lastClassified.getExpiry() + renewalPeriod);
 		return DONE;
+	}
+
+	private boolean isNotTargeted(final boolean isContract) {
+		return isContract ? !dynamicProperties.shouldAutoRenewContracts() : !dynamicProperties.shouldAutoRenewAccounts();
 	}
 
 	private EntityProcessResult expireAccountIfTargeted(final EntityNum accountNum) {

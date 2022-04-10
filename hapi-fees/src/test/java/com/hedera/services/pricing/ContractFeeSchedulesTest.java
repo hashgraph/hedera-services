@@ -27,7 +27,7 @@ import java.io.IOException;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAutoRenew;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
-public class ContractFeeSchedulesTest extends FeeSchedulesTestHelper {
+class ContractFeeSchedulesTest extends FeeSchedulesTestHelper {
 	@Test
 	void computesExpectedPriceForContractAutoRenew() throws IOException {
 		testCanonicalPriceFor(ContractAutoRenew, DEFAULT, 0.00001);
