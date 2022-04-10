@@ -28,8 +28,10 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -50,6 +52,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -60,6 +63,7 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -181,6 +185,12 @@ class BurnPrecompilesTest {
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
+	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private CreateChecks createChecks;
+	@Mock
+	private EntityIdSource entityIdSource;
+	@Mock
 	private AdjustAllowanceChecks allowanceChecks;
 
 	private HTSPrecompiledContract subject;
@@ -189,9 +199,9 @@ class BurnPrecompilesTest {
 	void setUp() {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder, encoder,
+				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, allowanceChecks);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
 		subject.setBurnLogicFactory(burnLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
@@ -396,6 +406,7 @@ class BurnPrecompilesTest {
 		given(frame.getRecipientAddress()).willReturn(recipientAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);

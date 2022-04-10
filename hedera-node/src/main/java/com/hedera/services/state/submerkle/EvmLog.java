@@ -22,7 +22,6 @@ package com.hedera.services.state.submerkle;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
@@ -40,6 +39,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
+
 public class EvmLog implements SelfSerializable {
 	static final int MERKLE_VERSION = 1;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2af05aa9c7ff917L;
@@ -50,8 +52,6 @@ public class EvmLog implements SelfSerializable {
 	private byte[] bloom = MISSING_BYTES;
 	private EntityId contractId;
 	private List<byte[]> topics = Collections.emptyList();
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	public static final int MAX_DATA_BYTES = Integer.MAX_VALUE;
 	public static final int MAX_BLOOM_BYTES = 256;
@@ -110,7 +110,7 @@ public class EvmLog implements SelfSerializable {
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		data = in.readByteArray(MAX_DATA_BYTES);
 		bloom = in.readByteArray(MAX_BLOOM_BYTES);
-		contractId = serdes.readNullableSerializable(in);
+		contractId = readNullableSerializable(in);
 		int numTopics = in.readInt();
 		if (numTopics > 0) {
 			topics = new LinkedList<>();
@@ -124,7 +124,7 @@ public class EvmLog implements SelfSerializable {
 	public void serialize(SerializableDataOutputStream out) throws IOException {
 		out.writeByteArray(data);
 		out.writeByteArray(bloom);
-		serdes.writeNullableSerializable(contractId, out);
+		writeNullableSerializable(contractId, out);
 		out.writeInt(topics.size());
 		for (byte[] topic : topics) {
 			out.writeByteArray(topic);

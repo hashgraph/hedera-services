@@ -61,8 +61,8 @@ public class TokenRelationship {
 	private boolean notYetPersisted = true;
 	private boolean automaticAssociation = false;
 	private EntityNumPair key = MISSING_NUM_PAIR;
-	private EntityNumPair nextKey = MISSING_NUM_PAIR;
-	private EntityNumPair prevKey = MISSING_NUM_PAIR;
+	private long nextKey;
+	private long prevKey;
 
 
 	private long balanceChange = 0L;
@@ -222,19 +222,19 @@ public class TokenRelationship {
 		this.key = key;
 	}
 
-	public EntityNumPair getNextKey() {
+	public long getNextKey() {
 		return nextKey;
 	}
 
-	public void setNextKey(final EntityNumPair nextKey) {
+	public void setNextKey(final long nextKey) {
 		this.nextKey = nextKey;
 	}
 
-	public EntityNumPair getPrevKey() {
+	public long getPrevKey() {
 		return prevKey;
 	}
 
-	public void setPrevKey(final EntityNumPair prevKey) {
+	public void setPrevKey(final long prevKey) {
 		this.prevKey = prevKey;
 	}
 

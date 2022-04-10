@@ -36,4 +36,8 @@ public record NftId(long shard, long realm, long num, long serialNo){
 	public static NftId withDefaultShardRealm(final long num, final long serialNo) {
 		return new NftId(STATIC_PROPERTIES.getShard(), STATIC_PROPERTIES.getRealm(), num, serialNo);
 	}
+
+	public static NftId fromGrpc(final TokenID tokenId, final long serialNo) {
+		return new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), serialNo);
+	}
 }

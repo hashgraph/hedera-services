@@ -20,5 +20,5 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-public record OwnerOfAndTokenURIWrapper(long tokenId) {
+public record OwnerOfAndTokenURIWrapper(long serialNo) {
 }

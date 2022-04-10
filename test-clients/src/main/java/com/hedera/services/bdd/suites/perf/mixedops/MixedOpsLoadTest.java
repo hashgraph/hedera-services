@@ -206,7 +206,7 @@ public class MixedOpsLoadTest extends LoadTest {
 										"hapi.throttling.ops.consensusUpdateTopic.capacityRequired", "1.0",
 										"hapi.throttling.ops.consensusGetTopicInfo.capacityRequired", "1.0",
 										"hapi.throttling.ops.consensusSubmitMessage.capacityRequired", "1.0",
-										"tokens.maxRelsPerInfoQuery", "10000000")),
+										"tokens.maxPerAccount", "10000000")),
 						cryptoCreate(sender)
 								.balance(initialBalance.getAsLong())
 								.withRecharging()

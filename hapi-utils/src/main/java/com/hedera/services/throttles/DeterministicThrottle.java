@@ -194,7 +194,7 @@ public class DeterministicThrottle {
 				.toString();
 	}
 
-	public static record UsageSnapshot(long used, Instant lastDecisionTime) {
+	public record UsageSnapshot(long used, Instant lastDecisionTime) {
 		@Override
 		public String toString() {
 			final var sb = new StringBuilder("DeterministicThrottle.UsageSnapshot{");
