@@ -118,13 +118,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 		subject.setNftsOwned(nftsOwned);
 	}
 
@@ -256,13 +256,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -280,13 +280,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -304,13 +304,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -328,13 +328,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -352,13 +352,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -376,13 +376,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -400,13 +400,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -424,13 +424,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -448,13 +448,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -472,13 +472,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -496,13 +496,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				otherAlias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -520,13 +520,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				otherKvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -550,13 +550,14 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				otherCryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter
+				);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -582,13 +583,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				otherFungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -614,13 +615,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				otherApproveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -638,20 +639,20 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances+1,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(MerkleAccountState.RELEASE_0260_VERSION, subject.getVersion());
+		assertEquals(MerkleAccountState.RELEASE_0251_VERSION, subject.getVersion());
 		assertEquals(MerkleAccountState.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 		assertTrue(subject.isLeaf());
 	}
@@ -670,13 +671,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 		identicalSubject.setNftsOwned(nftsOwned);
 
 		final var otherSubject = new MerkleAccountState(
@@ -690,13 +691,13 @@ class MerkleAccountStateTest {
 				usedAutoAssociations,
 				alias,
 				otherKvPairs,
-				transactionCounter,
 				otherCryptoAllowances,
 				otherFungibleTokenAllowances,
 				otherApproveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
 		assertNotEquals(subject.hashCode(), otherSubject.hashCode());

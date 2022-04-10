@@ -61,7 +61,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 
 	static final int RELEASE_0230_VERSION = 10;
 	static final int RELEASE_0251_VERSION = 11;
-	static final int RELEASE_0260_VERSION = 12;
 	private static final int CURRENT_VERSION = RELEASE_0251_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
@@ -86,13 +85,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int numAssociations;
 	private int numPositiveBalances;
 	private long headTokenId;
-	private long transactionCounter;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
 	// these per-account maps to top-level maps using the "linked-list" values idiom
 	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
 	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
 	private Set<FcTokenAllowanceId> approveForAllNfts = Collections.emptySet();
+	private long transactionCounter;
 
 	public MerkleAccountState() {
 		// RuntimeConstructable
@@ -113,13 +112,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final int usedAutoAssociations,
 			final ByteString alias,
 			final int numContractKvPairs,
-			final long transactionCounter,
 			final Map<EntityNum, Long> cryptoAllowances,
 			final Map<FcTokenAllowanceId, Long> fungibleTokenAllowances,
 			final Set<FcTokenAllowanceId> approveForAllNfts,
 			final int numAssociations,
 			final int numPositiveBalances,
-			final long headTokenId
+			final long headTokenId,
+			final long transactionCounter
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -196,8 +195,6 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			numAssociations = in.readInt();
 			numPositiveBalances = in.readInt();
 			headTokenId = in.readLong();
-		}
-		if (version >= RELEASE_0260_VERSION) {
 			transactionCounter = in.readLong();
 		}
 	}
@@ -222,10 +219,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		serializeCryptoAllowances(out, cryptoAllowances);
 		serializeTokenAllowances(out, fungibleTokenAllowances);
 		serializeApproveForAllNftsAllowances(out, approveForAllNfts);
-		out.writeLong(transactionCounter);
 		out.writeInt(numAssociations);
 		out.writeInt(numPositiveBalances);
 		out.writeLong(headTokenId);
+		out.writeLong(transactionCounter);
 	}
 
 	/* --- Copyable --- */
@@ -246,13 +243,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				usedAutoAssociations,
 				alias,
 				numContractKvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				numAssociations,
 				numPositiveBalances,
-				headTokenId);
+				headTokenId,
+				transactionCounter);
 		copied.setNftsOwned(nftsOwned);
 		return copied;
 	}
@@ -309,13 +306,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				maxAutoAssociations,
 				usedAutoAssociations,
 				alias,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				numAssociations,
 				numPositiveBalances,
-				headTokenId);
+				headTokenId,
+				transactionCounter);
 	}
 
 	/* --- Bean --- */

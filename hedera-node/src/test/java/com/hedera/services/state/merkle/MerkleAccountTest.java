@@ -121,13 +121,13 @@ class MerkleAccountTest {
 				usedAutoAssociations,
 				alias,
 				kvPairs,
-				transactionCounter,
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
 				0,
 				0,
-				lastAssociatedTokenNum);
+				lastAssociatedTokenNum,
+				transactionCounter);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);
