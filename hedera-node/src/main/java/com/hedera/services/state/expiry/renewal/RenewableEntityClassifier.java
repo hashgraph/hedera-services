@@ -34,8 +34,11 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT;
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_ACCOUNT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_CONTRACT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.OTHER;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
@@ -51,7 +54,7 @@ public class RenewableEntityClassifier {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	private EntityNum lastClassifiedNum;
-	private MerkleAccount lastClassifiedAccount = null;
+	private MerkleAccount lastClassified = null;
 
 	@Inject
 	public RenewableEntityClassifier(
@@ -70,34 +73,32 @@ public class RenewableEntityClassifier {
 		if (!curAccounts.containsKey(lastClassifiedNum)) {
 			return OTHER;
 		} else {
-			lastClassifiedAccount = curAccounts.get(lastClassifiedNum);
-			if (lastClassifiedAccount.isSmartContract()) {
-				return OTHER;
-			}
-			final long expiry = lastClassifiedAccount.getExpiry();
+			lastClassified = curAccounts.get(lastClassifiedNum);
+			final long expiry = lastClassified.getExpiry();
 			if (expiry > now) {
 				return OTHER;
 			}
-			if (lastClassifiedAccount.getBalance() > 0) {
-				return EXPIRED_ACCOUNT_READY_TO_RENEW;
+			final var isContract = lastClassified.isSmartContract();
+			if (lastClassified.getBalance() > 0) {
+				return isContract ? EXPIRED_CONTRACT_READY_TO_RENEW : EXPIRED_ACCOUNT_READY_TO_RENEW;
 			}
-			if (lastClassifiedAccount.isDeleted()) {
-				return DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+			if (lastClassified.isDeleted()) {
+				return isContract ? DETACHED_CONTRACT_GRACE_PERIOD_OVER : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 			}
 			final long gracePeriodEnd = expiry + dynamicProperties.autoRenewGracePeriod();
 			if (gracePeriodEnd > now) {
-				return DETACHED_ACCOUNT;
+				return isContract ? DETACHED_CONTRACT : DETACHED_ACCOUNT;
 			}
 			final var grpcId = lastClassifiedNum.toGrpcAccountId();
 			if (tokenStore.isKnownTreasury(grpcId)) {
 				return DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 			}
-			return DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+			return isContract ? DETACHED_CONTRACT_GRACE_PERIOD_OVER : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 		}
 	}
 
-	public MerkleAccount getLastClassifiedAccount() {
-		return lastClassifiedAccount;
+	public MerkleAccount getLastClassified() {
+		return lastClassified;
 	}
 
 	// --- Internal helpers ---
@@ -122,13 +123,13 @@ public class RenewableEntityClassifier {
 	}
 
 	private void assertHasLastClassifiedAccount() {
-		if (lastClassifiedAccount == null) {
+		if (lastClassified == null) {
 			throw new IllegalStateException("Cannot remove a last classified account; none is present!");
 		}
 	}
 
 	private void assertLastClassifiedAccountCanAfford(long fee) {
-		if (lastClassifiedAccount.getBalance() < fee) {
+		if (lastClassified.getBalance() < fee) {
 			var msg = "Cannot charge " + fee + " to account number " + lastClassifiedNum.longValue() + "!";
 			throw new IllegalStateException(msg);
 		}

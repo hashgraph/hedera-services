@@ -24,14 +24,10 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,12 +35,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Set;
-
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT;
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_CONTRACT_GRACE_PERIOD_OVER;
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_ACCOUNT_READY_TO_RENEW;
+import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_CONTRACT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.OTHER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,53 +81,82 @@ class RenewableEntityClassifierTest {
 	}
 
 	@Test
-	void classifiesContractAccount() {
+	void classifiesNonExpiredContract() {
 		givenPresent(nonExpiredAccountNum, contractAccount);
 
 		// expect:
-		assertEquals(OTHER, subject.classify(EntityNum.fromLong(nonExpiredAccountNum), now));
+		assertEquals(EXPIRED_CONTRACT_READY_TO_RENEW, subject.classify(EntityNum.fromLong(nonExpiredAccountNum), now));
 	}
 
 	@Test
 	void classifiesDeletedAccountAfterExpiration() {
-		givenPresent(brokeExpiredAccountNum, expiredDeletedAccount);
+		givenPresent(brokeExpiredNum, expiredDeletedAccount);
 
 		// expect:
 		assertEquals(
 				DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
-				subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now));
+				subject.classify(EntityNum.fromLong(brokeExpiredNum), now));
+	}
+
+	@Test
+	void classifiesDeletedContractAfterExpiration() {
+		givenPresent(brokeExpiredNum, expiredDeletedContract);
+
+		assertEquals(
+				DETACHED_CONTRACT_GRACE_PERIOD_OVER,
+				subject.classify(EntityNum.fromLong(brokeExpiredNum), now));
 	}
 
 	@Test
 	void classifiesDetachedAccountAfterGracePeriod() {
-		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
+		givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
 
 		// expect:
 		assertEquals(
 				DETACHED_ACCOUNT_GRACE_PERIOD_OVER,
-				subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now + dynamicProps.autoRenewGracePeriod()));
+				subject.classify(EntityNum.fromLong(brokeExpiredNum), now + dynamicProps.autoRenewGracePeriod()));
+	}
+
+	@Test
+	void classifiesDetachedContractAfterGracePeriod() {
+		givenPresent(brokeExpiredNum, expiredContractZeroBalance);
+
+		// expect:
+		assertEquals(
+				DETACHED_CONTRACT_GRACE_PERIOD_OVER,
+				subject.classify(EntityNum.fromLong(brokeExpiredNum), now + dynamicProps.autoRenewGracePeriod()));
 	}
 
 	@Test
 	void classifiesDetachedAccountAfterGracePeriodAsOtherIfTokenNotYetRemoved() {
-		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
-		given(tokenStore.isKnownTreasury(grpcIdWith(brokeExpiredAccountNum))).willReturn(true);
+		givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
+		given(tokenStore.isKnownTreasury(grpcIdWith(brokeExpiredNum))).willReturn(true);
 
 		// expect:
 		assertEquals(
 				DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN,
-				subject.classify(EntityNum.fromLong(brokeExpiredAccountNum),
+				subject.classify(EntityNum.fromLong(brokeExpiredNum),
 						now + dynamicProps.autoRenewGracePeriod()));
 	}
 
 	@Test
 	void classifiesDetachedAccount() {
-		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
+		givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
 
 		// expect:
 		assertEquals(
 				DETACHED_ACCOUNT,
-				subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now));
+				subject.classify(EntityNum.fromLong(brokeExpiredNum), now));
+	}
+
+	@Test
+	void classifiesDetachedContract() {
+		givenPresent(brokeExpiredNum, expiredContractZeroBalance);
+
+		// expect:
+		assertEquals(
+				DETACHED_CONTRACT,
+				subject.classify(EntityNum.fromLong(brokeExpiredNum), now));
 	}
 
 	@Test
@@ -140,7 +166,7 @@ class RenewableEntityClassifierTest {
 		// expect:
 		assertEquals(EXPIRED_ACCOUNT_READY_TO_RENEW, subject.classify(EntityNum.fromLong(fundedExpiredAccountNum), now));
 		// and:
-		assertEquals(expiredAccountNonZeroBalance, subject.getLastClassifiedAccount());
+		assertEquals(expiredAccountNonZeroBalance, subject.getLastClassified());
 	}
 
 	@Test
@@ -172,10 +198,10 @@ class RenewableEntityClassifierTest {
 
 	@Test
 	void rejectsAsIseIfFeeIsUnaffordable() {
-		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
+		givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
 
 		// when:
-		subject.classify(EntityNum.fromLong(brokeExpiredAccountNum), now);
+		subject.classify(EntityNum.fromLong(brokeExpiredNum), now);
 		// expect:
 		assertThrows(IllegalStateException.class,
 				() -> subject.renewLastClassifiedWith(nonZeroBalance, 3600L));
@@ -212,7 +238,19 @@ class RenewableEntityClassifierTest {
 			.balance(0).expirationTime(now - 1)
 			.alias(ByteString.copyFromUtf8("bbbb"))
 			.get();
+	private final MerkleAccount expiredContractZeroBalance = MerkleAccountFactory.newAccount()
+			.isSmartContract(true)
+			.balance(0).expirationTime(now - 1)
+			.alias(ByteString.copyFromUtf8("bbbb"))
+			.get();
 	private final MerkleAccount expiredDeletedAccount = MerkleAccountFactory.newAccount()
+			.balance(0)
+			.deleted(true)
+			.alias(ByteString.copyFromUtf8("cccc"))
+			.expirationTime(now - 1)
+			.get();
+	private final MerkleAccount expiredDeletedContract = MerkleAccountFactory.newAccount()
+			.isSmartContract(true)
 			.balance(0)
 			.deleted(true)
 			.alias(ByteString.copyFromUtf8("cccc"))
@@ -228,28 +266,9 @@ class RenewableEntityClassifierTest {
 			.get();
 	private final MerkleAccount contractAccount = MerkleAccountFactory.newAccount()
 			.isSmartContract(true)
-			.balance(0).expirationTime(now - 1)
+			.balance(1).expirationTime(now - 1)
 			.get();
 	private final long nonExpiredAccountNum = 1L;
-	private final long brokeExpiredAccountNum = 2L;
+	private final long brokeExpiredNum = 2L;
 	private final long fundedExpiredAccountNum = 3L;
-	private final EntityId expiredTreasuryId = new EntityId(0, 0, brokeExpiredAccountNum);
-	private final EntityId treasuryId = new EntityId(0, 0, 666L);
-	private final MerkleToken deletedToken = new MerkleToken(
-			Long.MAX_VALUE, 1L, 0,
-			"GONE", "Long lost dream",
-			true, true, expiredTreasuryId);
-	private final long deletedTokenNum = 1234L, survivedTokenNum = 4321L;
-	private final EntityNum deletedTokenId = EntityNum.fromLong(deletedTokenNum);
-	private final EntityNum survivedTokenId = EntityNum.fromLong(survivedTokenNum);
-	private final TokenID deletedTokenGrpcId = deletedTokenId.toGrpcTokenId();
-	private final TokenID survivedTokenGrpcId = survivedTokenId.toGrpcTokenId();
-	private final TokenID missingTokenGrpcId = TokenID.newBuilder().setTokenNum(5678L).build();
-
-	{
-		deletedToken.setDeleted(true);
-		final var associations = new MerkleAccountTokens();
-		associations.associateAll(Set.of(deletedTokenGrpcId, survivedTokenGrpcId, missingTokenGrpcId));
-		expiredAccountZeroBalance.setTokens(associations);
-	}
 }

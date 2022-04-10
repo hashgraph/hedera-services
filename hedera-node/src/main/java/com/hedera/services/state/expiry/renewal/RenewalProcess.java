@@ -20,6 +20,8 @@ package com.hedera.services.state.expiry.renewal;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.removal.AccountGC;
@@ -47,8 +49,9 @@ public class RenewalProcess {
 
 	private final AccountGC accountGC;
 	private final FeeCalculator fees;
-	private final RenewableEntityClassifier helper;
 	private final RenewalRecordsHelper recordsHelper;
+	private final GlobalDynamicProperties dynamicProperties;
+	private final RenewableEntityClassifier helper;
 
 	private Instant cycleTime = null;
 
@@ -57,60 +60,69 @@ public class RenewalProcess {
 			final AccountGC accountGC,
 			final FeeCalculator fees,
 			final RenewableEntityClassifier helper,
+			final GlobalDynamicProperties dynamicProperties,
 			final RenewalRecordsHelper recordsHelper
 	) {
 		this.fees = fees;
 		this.helper = helper;
 		this.accountGC = accountGC;
 		this.recordsHelper = recordsHelper;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public void beginRenewalCycle(final Instant nextAvailConsTime) {
 		assertNotInCycle();
-
 		cycleTime = nextAvailConsTime;
 		recordsHelper.beginRenewalCycle(nextAvailConsTime);
 	}
 
-	public EntityProcessResult process(final long entityNum) {
+	public void endRenewalCycle() {
+		assertInCycle();
+		cycleTime = null;
+		recordsHelper.endRenewalCycle();
+	}
+
+	public EntityProcessResult process(final long literalNum) {
 		assertInCycle();
 
 		final var longNow = cycleTime.getEpochSecond();
-		final var entityKey = EntityNum.fromLong(entityNum);
-		final var classification = helper.classify(entityKey, longNow);
+		final var entityNum = EntityNum.fromLong(literalNum);
+		final var classification = helper.classify(entityNum, longNow);
 		if (TERMINAL_CLASSIFICATIONS.contains(classification)) {
-			log.debug("Terminal classification entity num {} ({})", entityNum, classification);
+			log.debug("Terminal classification entity num {} ({})", literalNum, classification);
 		}
 		return switch (classification) {
-			case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> expireAccount(entityKey);
-			case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewAccount(entityKey);
+			case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> expireAccountIfTargeted(entityNum);
+			case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewIfTargeted(entityNum, false);
+			case EXPIRED_CONTRACT_READY_TO_RENEW -> renewIfTargeted(entityNum, true);
 			default -> NOTHING_TO_DO;
 		};
 	}
 
-	private EntityProcessResult renewAccount(final EntityNum accountId) {
-		final var lastClassified = helper.getLastClassifiedAccount();
-		final long reqPeriod = lastClassified.getAutoRenewSecs();
-		final var usageAssessment = fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime);
-		final long effPeriod = usageAssessment.renewalPeriod();
-		final long renewalFee = usageAssessment.fee();
+	private EntityProcessResult renewIfTargeted(final EntityNum entityNum, final boolean isContract) {
+		if (!isContract && !dynamicProperties.shouldAutoRenewAccounts()) {
+			return NOTHING_TO_DO;
+		} else if (isContract && !dynamicProperties.shouldAutoRenewContracts()) {
+			return NOTHING_TO_DO;
+		}
 
-		helper.renewLastClassifiedWith(renewalFee, effPeriod);
-		recordsHelper.streamCryptoRenewal(accountId, renewalFee, lastClassified.getExpiry() + effPeriod);
+		final var lastClassified = helper.getLastClassified();
+		final long reqPeriod = lastClassified.getAutoRenewSecs();
+		final var assessment = fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime);
+		final long renewalPeriod = assessment.renewalPeriod();
+		final long renewalFee = assessment.fee();
+		helper.renewLastClassifiedWith(renewalFee, renewalPeriod);
+		recordsHelper.streamCryptoRenewal(entityNum, renewalFee, lastClassified.getExpiry() + renewalPeriod);
 		return DONE;
 	}
 
-	private EntityProcessResult expireAccount(EntityNum num) {
-		final var treasuryReturns = accountGC.expireBestEffort(num, helper.getLastClassifiedAccount());
-		recordsHelper.streamCryptoRemoval(num, treasuryReturns.tokenTypes(), treasuryReturns.transfers());
+	private EntityProcessResult expireAccountIfTargeted(final EntityNum accountNum) {
+		if (!dynamicProperties.shouldAutoRenewAccounts()) {
+			return NOTHING_TO_DO;
+		}
+		final var treasuryReturns = accountGC.expireBestEffort(accountNum, helper.getLastClassified());
+		recordsHelper.streamCryptoRemoval(accountNum, treasuryReturns.tokenTypes(), treasuryReturns.transfers());
 		return treasuryReturns.finished() ? DONE : STILL_MORE_TO_DO;
-	}
-
-	public void endRenewalCycle() {
-		assertInCycle();
-
-		cycleTime = null;
-		recordsHelper.endRenewalCycle();
 	}
 
 	private void assertInCycle() {
@@ -125,6 +137,7 @@ public class RenewalProcess {
 		}
 	}
 
+	@VisibleForTesting
 	Instant getCycleTime() {
 		return cycleTime;
 	}

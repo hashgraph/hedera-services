@@ -141,13 +141,14 @@ class StandardProcessLogicTest {
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, triggeredConsensusNow, member)).willReturn(true);
 		given(txnCtx.triggeredTxn()).willReturn(triggeredAccessor);
+		given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(postChildConsNow);
 
 		subject.incorporateConsensusTxn(swirldTransaction, consensusNow, member);
 
 		verify(expiries).purge(consensusNow.getEpochSecond());
 		verify(txnManager).process(accessor, triggeredConsensusNow, member);
 		verify(txnManager).process(triggeredAccessor, consensusNow, member);
-		verify(autoRenewal).execute(consensusNow);
+		verify(autoRenewal).execute(postChildConsNow);
 	}
 
 	@Test

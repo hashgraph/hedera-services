@@ -9,9 +9,9 @@ package com.hedera.services.bdd.suites.autorenew;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -83,7 +83,8 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 							final var lookup = getTxnRecord(creation);
 							allRunFor(spec, lookup);
 							final var record = lookup.getResponseRecord();
-							expectedExpiryPostRenew.set(record.getConsensusTimestamp().getSeconds() + standardLifetime);
+							final var birth = record.getConsensusTimestamp().getSeconds();
+							expectedExpiryPostRenew.set(birth + minimalLifetime + standardLifetime);
 							opLog.info("Expecting post-renewal expiry of {}", expectedExpiryPostRenew.get());
 						}),
 						contractUpdate(contractToRenew).newAutoRenew(7776000L),
