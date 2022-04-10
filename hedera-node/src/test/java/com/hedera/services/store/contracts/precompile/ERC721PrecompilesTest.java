@@ -27,12 +27,14 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -44,6 +46,7 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.process.DissociationFactory;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,6 +57,8 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -66,12 +71,9 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
@@ -119,7 +121,7 @@ class ERC721PrecompilesTest {
     @Mock
     private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock
-    private AccountRecordsHistorian recordsHistorian;
+    private RecordsHistorian recordsHistorian;
     @Mock
     private DecodingFacade decoder;
     @Mock
@@ -170,6 +172,12 @@ class ERC721PrecompilesTest {
     private FeeObject mockFeeObject;
     @Mock
     private UsagePricesProvider resourceCosts;
+    @Mock
+    private SigImpactHistorian sigImpactHistorian;
+    @Mock
+    private CreateChecks createChecks;
+    @Mock
+    private EntityIdSource entityIdSource;
 
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
@@ -178,9 +186,9 @@ class ERC721PrecompilesTest {
     void setUp() {
         subject = new HTSPrecompiledContract(
                 validator, dynamicProperties, gasCalculator,
-                recordsHistorian, sigsVerifier, decoder, encoder,
+                sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
                 syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
+                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
@@ -204,7 +212,6 @@ class ERC721PrecompilesTest {
     void name() {
         givenMinimalFrameContext();
         given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString("0" + Integer.toHexString(ABI_ID_NAME)));
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
@@ -235,7 +242,6 @@ class ERC721PrecompilesTest {
     void symbol() {
         givenMinimalFrameContext();
         given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString(Integer.toHexString(ABI_ID_SYMBOL)));
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
@@ -266,7 +272,6 @@ class ERC721PrecompilesTest {
     void totalSupply() {
         givenMinimalFrameContext();
         given(pretendArguments.slice(24)).willReturn(Bytes.fromHexString(Integer.toHexString(ABI_ID_TOTAL_SUPPLY_TOKEN)));
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
                 .willReturn(mockRecordBuilder);
@@ -279,16 +284,14 @@ class ERC721PrecompilesTest {
                 .willReturn(1L);
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
-        given(tokens.get(any(), any())).willReturn(10L);
+        given(wrappedLedgers.totalSupplyOf(any())).willReturn(10L);
         given(encoder.encodeTotalSupply(10L)).willReturn(successResult);
 
-        // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
         subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
-        // then:
         assertEquals(successResult, result);
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -297,8 +300,6 @@ class ERC721PrecompilesTest {
     @Test
     void balanceOf() {
         givenMinimalFrameContext();
-        given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_BALANCE_OF_TOKEN);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -314,11 +315,8 @@ class ERC721PrecompilesTest {
                 .willReturn(1L);
         given(decoder.decodeBalanceOf(eq(nestedPretendArguments), any())).willReturn(
                 BALANCE_OF_WRAPPER);
-        given(tokenRels.exists(any())).willReturn(true);
-        given(tokenRels.get(any(), any())).willReturn(10L);
+        given(wrappedLedgers.balanceOf(any(), any())).willReturn(10L);
         given(encoder.encodeBalance(10L)).willReturn(successResult);
-
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 
         // when:
         subject.prepareFields(frame);
@@ -329,21 +327,11 @@ class ERC721PrecompilesTest {
         assertEquals(successResult, subject.computeInternal(frame));
         verify(wrappedLedgers).commit();
         verify(worldUpdater).manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-
-        // when:
-        given(tokenRels.exists(any())).willReturn(false);
-        given(encoder.encodeBalance(0L)).willReturn(successResult);
-
-        // then:
-        assertEquals(successResult, subject.computeInternal(frame));
-        verify(encoder).encodeBalance(0L);
     }
 
     @Test
     void ownerOf() {
         givenMinimalFrameContext();
-        given(wrappedLedgers.nfts()).willReturn(nfts);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
@@ -359,9 +347,8 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-        given(nfts.exists(any())).willReturn(true);
         given(wrappedLedgers.ownerOf(any())).willReturn(senderAddress);
-        given(worldUpdater.priorityAddress(senderAddress)).willReturn(senderAddress);
+        given(wrappedLedgers.canonicalAddress(senderAddress)).willReturn(senderAddress);
         given(encoder.encodeOwner(senderAddress)).willReturn(successResult);
 
         // when:
@@ -377,8 +364,6 @@ class ERC721PrecompilesTest {
     @Test
     void erc20FailureResultIsNull() {
         givenMinimalFrameContext();
-        given(wrappedLedgers.nfts()).willReturn(nfts);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_OWNER_OF_NFT);
@@ -394,9 +379,8 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeOwnerOf(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-        given(nfts.exists(any())).willReturn(true);
         given(wrappedLedgers.ownerOf(any())).willReturn(senderAddress);
-        given(worldUpdater.priorityAddress(senderAddress)).willThrow(IllegalStateException.class);
+        given(wrappedLedgers.canonicalAddress(senderAddress)).willThrow(IllegalStateException.class);
 
         // when:
         subject.prepareFields(frame);
@@ -411,8 +395,6 @@ class ERC721PrecompilesTest {
     void tokenURI() {
         givenMinimalFrameContext();
 
-        given(wrappedLedgers.nfts()).willReturn(nfts);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_TOKEN_URI_NFT);
         given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -427,42 +409,8 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
         given(decoder.decodeTokenUriNFT(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-        given(nfts.get(any(), eq(NftProperty.METADATA))).willReturn("Metadata".getBytes());
+        given(wrappedLedgers.metadataOf(any())).willReturn("Metadata");
         given(encoder.encodeTokenUri("Metadata")).willReturn(successResult);
-        given(nfts.exists(any())).willReturn(true);
-
-        // when:
-        subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, а -> а);
-        subject.computeViewFunctionGasRequirement(TEST_CONSENSUS_TIME);
-        final var result = subject.computeInternal(frame);
-
-        // then:
-        assertEquals(successResult, result);
-    }
-
-    @Test
-    void defaultErrorMsgReturnedForMissingTokenURI() {
-        givenMinimalFrameContext();
-
-        given(wrappedLedgers.nfts()).willReturn(nfts);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
-        given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
-        given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_TOKEN_URI_NFT);
-        given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
-                .willReturn(mockRecordBuilder);
-        given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
-                .willReturn(1L);
-        given(feeCalculator.estimatePayment(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
-        given(mockFeeObject.getNodeFee())
-                .willReturn(1L);
-        given(mockFeeObject.getNetworkFee())
-                .willReturn(1L);
-        given(mockFeeObject.getServiceFee())
-                .willReturn(1L);
-        given(decoder.decodeTokenUriNFT(nestedPretendArguments)).willReturn(ownerOfAndTokenUriWrapper);
-        given(nfts.exists(any())).willReturn(false);
-        given(encoder.encodeTokenUri("ERC721Metadata: URI query for nonexistent token")).willReturn(successResult);
 
         // when:
         subject.prepareFields(frame);
@@ -477,9 +425,8 @@ class ERC721PrecompilesTest {
     @Test
     void transferNotSupported() {
         givenMinimalFrameContextWithoutParentUpdater();
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ERC_TRANSFER);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
@@ -490,9 +437,8 @@ class ERC721PrecompilesTest {
     @Test
     void decimalsNotSupported() {
         givenMinimalFrameContextWithoutParentUpdater();
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_DECIMALS);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
         subject.prepareFields(frame);
 
         final var exception = assertThrows(InvalidTransactionException.class,
@@ -503,6 +449,8 @@ class ERC721PrecompilesTest {
     private void givenMinimalFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(Gas.of(300));
+        given(frame.getValue()).willReturn(Wei.ZERO);
         Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -521,15 +469,4 @@ class ERC721PrecompilesTest {
     }
 
     public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);
-    public static final TokenTransferWrapper TOKEN_TRANSFER_WRAPPER = new TokenTransferWrapper(
-            List.of(new SyntheticTxnFactory.NftExchange(1, token, sender, receiver)),
-            new ArrayList<>() {}
-    );
-
-    private void givenLedgers() {
-        given(wrappedLedgers.accounts()).willReturn(accounts);
-        given(wrappedLedgers.tokenRels()).willReturn(tokenRels);
-        given(wrappedLedgers.nfts()).willReturn(nfts);
-        given(wrappedLedgers.tokens()).willReturn(tokens);
-    }
 }

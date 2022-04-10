@@ -120,11 +120,13 @@ public class CryptoOpsUsage {
 				+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
 	}
 
-	public void cryptoUpdateUsage(final SigUsage sigUsage,
+	public void cryptoUpdateUsage(
+			final SigUsage sigUsage,
 			final BaseTransactionMeta baseMeta,
 			final CryptoUpdateMeta cryptoUpdateMeta,
 			final ExtantCryptoContext ctx,
-			final UsageAccumulator accumulator) {
+			final UsageAccumulator accumulator
+	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(cryptoUpdateMeta.getMsgBytesUsed());
@@ -215,6 +217,15 @@ public class CryptoOpsUsage {
 		}
 	}
 
+	public void cryptoDeleteAllowanceUsage(final SigUsage sigUsage,
+			final BaseTransactionMeta baseMeta,
+			final CryptoDeleteAllowanceMeta cryptoDeleteAllowanceMeta,
+			final UsageAccumulator accumulator) {
+
+		accumulator.resetForTransaction(baseMeta, sigUsage);
+		accumulator.addBpt(cryptoDeleteAllowanceMeta.getMsgBytesUsed());
+	}
+
 	private long getAdjustedBytes(final CryptoAdjustAllowanceMeta cryptoAdjustMeta, final ExtantCryptoContext ctx) {
 		long adjustedBytesCount = 0;
 		final var adjustedCryptoBytes = getChangedCryptoKeys(cryptoAdjustMeta.getCryptoAllowances().keySet(),
@@ -227,10 +238,10 @@ public class CryptoOpsUsage {
 		adjustedBytesCount += adjustedTokenBytes * TOKEN_ALLOWANCE_SIZE;
 
 		final var adjustedNftBytes = getChangedTokenKeys(cryptoAdjustMeta.getNftAllowances().keySet(),
-				ctx.currentNftAllowances().keySet());
+				ctx.currentNftAllowances());
 		adjustedBytesCount += adjustedNftBytes * NFT_ALLOWANCE_SIZE;
 
-		final var adjustedSerials = getNewSerials(cryptoAdjustMeta.getNftAllowances(), ctx.currentNftAllowances());
+		final var adjustedSerials = getNewSerials(cryptoAdjustMeta.getNftAllowances());
 		adjustedBytesCount += adjustedSerials * LONG_SIZE;
 
 		return adjustedBytesCount;

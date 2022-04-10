@@ -73,7 +73,7 @@ import static org.mockito.Mockito.verify;
 class TokenTest {
 	private final JKey someKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
 	private final int numAssociations = 2;
-	private final int numZeroBalances = 1;
+	private final int numPositiveBalances = 1;
 	private final long initialSupply = 1_000L;
 	private final long initialTreasuryBalance = 500L;
 	private final Id tokenId = new Id(1, 2, 3);
@@ -94,9 +94,9 @@ class TokenTest {
 		subject.initTotalSupply(initialSupply);
 		subject.setTreasury(treasuryAccount);
 
-		treasuryAccount.setNumZeroBalances(numZeroBalances);
+		treasuryAccount.setNumPositiveBalances(numPositiveBalances);
 		treasuryAccount.setNumAssociations(numAssociations);
-		nonTreasuryAccount.setNumZeroBalances(numZeroBalances);
+		nonTreasuryAccount.setNumPositiveBalances(numPositiveBalances);
 		nonTreasuryAccount.setNumAssociations(numAssociations);
 
 		treasuryRel = new TokenRelationship(subject, treasuryAccount);
@@ -367,7 +367,7 @@ class TokenTest {
 		assertEquals(2, removedUniqueTokens.size());
 		assertEquals(serialNumber0, removedUniqueTokens.get(0).getSerialNumber());
 		assertEquals(serialNumber1, removedUniqueTokens.get(1).getSerialNumber());
-		assertEquals(numZeroBalances + 1, treasuryAccount.getNumZeroBalances());
+		assertEquals(numPositiveBalances - 1, treasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
@@ -387,7 +387,7 @@ class TokenTest {
 		assertEquals(1, subject.mintedUniqueTokens().get(0).getSerialNumber());
 		assertEquals(1, subject.getLastUsedSerialNumber());
 		assertEquals(TokenType.NON_FUNGIBLE_UNIQUE, subject.getType());
-		assertEquals(numZeroBalances - 1, treasuryAccount.getNumZeroBalances());
+		assertEquals(numPositiveBalances + 1, treasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
@@ -418,14 +418,14 @@ class TokenTest {
 		subject.wipe(nonTreasuryRel, 10);
 		assertEquals(initialSupply - 10, subject.getTotalSupply());
 		assertEquals(90, nonTreasuryRel.getBalance());
-		assertEquals(numZeroBalances, nonTreasuryAccount.getNumZeroBalances());
+		assertEquals(numPositiveBalances, nonTreasuryAccount.getNumPositiveBalances());
 
 		nonTreasuryRel.setBalance(30);
 
 		subject.wipe(nonTreasuryRel, 30);
 		assertEquals(initialSupply - 40, subject.getTotalSupply());
 		assertEquals(0, nonTreasuryRel.getBalance());
-		assertEquals(numZeroBalances + 1, nonTreasuryAccount.getNumZeroBalances());
+		assertEquals(numPositiveBalances - 1, nonTreasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
@@ -482,7 +482,7 @@ class TokenTest {
 		assertEquals(1, subject.removedUniqueTokens().get(0).getSerialNumber());
 		assertTrue(subject.hasChangedSupply());
 		assertEquals(100000, subject.getMaxSupply());
-		assertEquals(numZeroBalances, nonTreasuryAccount.getNumZeroBalances());
+		assertEquals(numPositiveBalances, nonTreasuryAccount.getNumPositiveBalances());
 
 		nonTreasuryRel.setBalance(2);
 
@@ -494,7 +494,7 @@ class TokenTest {
 		assertTrue(subject.hasRemovedUniqueTokens());
 		assertTrue(subject.hasChangedSupply());
 		assertEquals(100000, subject.getMaxSupply());
-		assertEquals(numZeroBalances + 1, nonTreasuryAccount.getNumZeroBalances());
+		assertEquals(numPositiveBalances - 1, nonTreasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
@@ -641,8 +641,8 @@ class TokenTest {
 		final var desired = "Token{id=1.2.3, type=null, deleted=false, autoRemoved=false, " +
 				"treasury=Account{id=0.0.0, expiry=0, balance=0, deleted=false, " +
 				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=, cryptoAllowances=null, " +
-				"fungibleTokenAllowances=null, nftAllowances=null, numAssociations=2, numZeroBalances=1," +
-				" lastAssociatedToken=null}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, " +
+				"fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=2, numPositiveBalances=1, " +
+				"headTokenNum=0}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, " +
 				"frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, pauseKey=<N/A>, paused=false}";
 
 		assertEquals(desired, subject.toString());

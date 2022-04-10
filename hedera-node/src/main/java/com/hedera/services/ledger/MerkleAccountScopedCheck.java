@@ -22,24 +22,29 @@ package com.hedera.services.ledger;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
+import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
-import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
+import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -50,10 +55,15 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 	private final OptionValidator validator;
 
 	private BalanceChange balanceChange;
+	private TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
-	public MerkleAccountScopedCheck(final GlobalDynamicProperties dynamicProperties, final OptionValidator validator) {
+	public MerkleAccountScopedCheck(
+			final GlobalDynamicProperties dynamicProperties,
+			final OptionValidator validator,
+			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger) {
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
+		this.nftsLedger = nftsLedger;
 	}
 
 	@Override
@@ -114,8 +124,8 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 				return useExtantProps ? extantProps.apply(CRYPTO_ALLOWANCES) : account.getCryptoAllowances();
 			case FUNGIBLE_TOKEN_ALLOWANCES:
 				return useExtantProps ? extantProps.apply(FUNGIBLE_TOKEN_ALLOWANCES) : account.getFungibleTokenAllowances();
-			case NFT_ALLOWANCES:
-				return useExtantProps ? extantProps.apply(NFT_ALLOWANCES) : account.getNftAllowances();
+			case APPROVE_FOR_ALL_NFTS_ALLOWANCES:
+				return useExtantProps ? extantProps.apply(APPROVE_FOR_ALL_NFTS_ALLOWANCES) : account.getApproveForAllNfts();
 			default:
 				throw new IllegalArgumentException("Invalid Property " + prop + " cannot be validated in scoped check");
 		}
@@ -130,7 +140,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		}
 
 		final var balance = (long) getEffective(BALANCE, account, extantProps, changeSet);
-		final var isDetached = dynamicProperties.autoRenewEnabled() &&
+		final var isDetached = dynamicProperties.shouldAutoRenewSomeEntityType() &&
 				balance == 0L &&
 				!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, extantProps, changeSet));
 		if (isDetached) {
@@ -156,26 +166,16 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 			@Nullable final Function<AccountProperty, Object> extantProps,
 			final Map<AccountProperty, Object> changeSet) {
 		if (balanceChange.isApprovedAllowance()) {
-			final var nftAllowances = (Map<FcTokenAllowanceId, FcTokenAllowance>) getEffective(
-					NFT_ALLOWANCES, account, extantProps, changeSet);
-			final var nftAllowance = nftAllowances.getOrDefault(
-					FcTokenAllowanceId.from(
-							balanceChange.getToken().asEntityNum(), EntityNum.fromAccountId(balanceChange.getPayerID())),
-					null
-			);
+			final var approveForAllNftsAllowances = (Set<FcTokenAllowanceId>) getEffective(
+					APPROVE_FOR_ALL_NFTS_ALLOWANCES, account, extantProps, changeSet);
+			final var nftAllowanceId = FcTokenAllowanceId.from(
+							balanceChange.getToken().asEntityNum(), EntityNum.fromAccountId(balanceChange.getPayerID()));
 
-			if (nftAllowance == null) {
-				return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-			} else {
-				final var allowAll = nftAllowance.isApprovedForAll();
-				final var allowedSerialNums = nftAllowance.getSerialNumbers();
+			if (!approveForAllNftsAllowances.contains(nftAllowanceId)) {
+				final var approvedSpender = (EntityId) nftsLedger.get(balanceChange.nftId(), SPENDER);
 
-				if (allowAll) {
-					return OK;
-				} else {
-					if (!allowedSerialNums.contains(balanceChange.serialNo())) {
-						return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-					}
+				if (!approvedSpender.matches(balanceChange.getPayerID())) {
+					return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 				}
 			}
 		}

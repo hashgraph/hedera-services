@@ -148,8 +148,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 			final double allowedPercentDiff
 	) {
 		registerProvider((spec, o) -> {
-			var expectedTinyBarsToSubtract = expectedUsdToSubstract
-					* 100
+			var expectedTinyBarsToSubtract = expectedUsdToSubstract * 100
 					* spec.ratesProvider().rates().getHbarEquiv() / spec.ratesProvider().rates().getCentEquiv()
 					* ONE_HBAR;
 			var expected = amount - expectedTinyBarsToSubtract;
@@ -160,6 +159,19 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 					"Unexpected balance");
 		});
 		return this;
+	}
+
+	public static void assertTinybarAmountIsApproxUsd(
+			final HapiApiSpec spec,
+			final double expectedFractionalUsd,
+			final long actualTinybars,
+			final double allowedPercentDiff
+	) {
+		final var expectedTinybars = expectedFractionalUsd * 100
+				* spec.ratesProvider().rates().getHbarEquiv() / spec.ratesProvider().rates().getCentEquiv()
+				* ONE_HBAR;
+		final var allowedDiff = (allowedPercentDiff / 100.0) * expectedTinybars;
+		assertEquals(expectedTinybars, actualTinybars, allowedDiff, "Wrong balance");
 	}
 
 	public AccountInfoAsserts hasAlias() {
@@ -324,16 +336,29 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts nftAllowancesContaining(String token, String spender, boolean approvedForAll,
-			List<Long> serials) {
+	public AccountInfoAsserts nftApprovedAllowancesContaining(String token, String spender) {
 		registerProvider((spec, o) -> {
 			var nftAllowance = GrantedNftAllowance.newBuilder()
-					.setApprovedForAll(approvedForAll)
 					.setTokenId(spec.registry().getTokenID(token))
 					.setSpender(spec.registry().getAccountID(spender))
-					.addAllSerialNumbers(serials)
 					.build();
 			assertTrue(((AccountInfo) o).getGrantedNftAllowancesList().contains(nftAllowance),
+					"Bad NftAllowances!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts noCryptoAllowances() {
+		registerProvider((spec, o) -> {
+			assertTrue(((AccountInfo) o).getGrantedCryptoAllowancesList().isEmpty(),
+					"Bad NftAllowances!");
+		});
+		return this;
+	}
+
+	public AccountInfoAsserts noTokenAllowances(String owner) {
+		registerProvider((spec, o) -> {
+			assertTrue(((AccountInfo) o).getGrantedTokenAllowancesList().isEmpty(),
 					"Bad NftAllowances!");
 		});
 		return this;
@@ -355,7 +380,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts nftAllowancesCount(int count) {
+	public AccountInfoAsserts nftApprovedForAllAllowancesCount(int count) {
 		registerProvider((spec, o) -> {
 			assertEquals(count, ((AccountInfo) o).getGrantedNftAllowancesCount(),
 					"Bad NFTAllowances!");

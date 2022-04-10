@@ -25,6 +25,10 @@ import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.services.ledger.backing.BackingNfts;
+import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -39,7 +43,6 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -149,11 +152,14 @@ class StateViewTest {
 	private final AccountID accountWithAlias = asAccountWithAlias("aaaa");
 	private final AccountID treasuryOwnerId = asAccount("0.0.0");
 	private final AccountID nftOwnerId = asAccount("0.0.44");
+	private final AccountID nftSpenderId = asAccount("0.0.66");
 	private final ScheduleID scheduleId = asSchedule("0.0.8");
 	private final ScheduleID missingScheduleId = asSchedule("0.0.9");
 	private final ContractID cid = asContract("0.0.1");
-	private final EntityNumPair tokenAssociationId = EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), tokenId.getTokenNum());
-	private final EntityNumPair nftAssociationId = EntityNumPair.fromLongs(tokenAccountId.getAccountNum(), nftTokenId.getTokenNum());
+	private final EntityNumPair tokenAssociationId = EntityNumPair.fromLongs(tokenAccountId.getAccountNum(),
+			tokenId.getTokenNum());
+	private final EntityNumPair nftAssociationId = EntityNumPair.fromLongs(tokenAccountId.getAccountNum(),
+			nftTokenId.getTokenNum());
 	private final byte[] cidAddress = asEvmAddress(0, 0, cid.getContractNum());
 	private final AccountID autoRenew = asAccount("0.0.6");
 	private final AccountID creatorAccountID = asAccount("0.0.7");
@@ -161,7 +167,6 @@ class StateViewTest {
 	private final String fileMemo = "Originally she thought";
 	private final ByteString create2Address = ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
-	private TokenAssociationMetadata tokenAssociationMetadata = new TokenAssociationMetadata(1, 0, tokenAssociationId);
 
 	private FileGetInfoResponse.FileInfo expected;
 	private FileGetInfoResponse.FileInfo expectedImmutable;
@@ -173,6 +178,7 @@ class StateViewTest {
 	private MerkleMap<EntityNum, MerkleToken> tokens;
 	private MerkleMap<EntityNum, MerkleTopic> topics;
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
+	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	private VirtualMap<ContractKey, ContractValue> contractStorage;
@@ -226,10 +232,13 @@ class StateViewTest {
 				.isSmartContract(false)
 				.tokens(tokenId)
 				.get();
+		tokenAccount.setKey(EntityNum.fromAccountId(tokenAccountId));
 		tokenAccount.setNftsOwned(10);
 		tokenAccount.setMaxAutomaticAssociations(123);
 		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
-		tokenAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
+		tokenAccount.setHeadTokenId(tokenId.getTokenNum());
+		tokenAccount.setNumAssociations(1);
+		tokenAccount.setNumPositiveBalances(0);
 		contract = MerkleAccountFactory.newAccount()
 				.alias(create2Address)
 				.memo("Stay cold...")
@@ -237,8 +246,6 @@ class StateViewTest {
 				.isSmartContract(true)
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.proxy(asAccount("0.0.3"))
-				.senderThreshold(1_234L)
-				.receiverThreshold(4_321L)
 				.receiverSigRequired(true)
 				.balance(555L)
 				.autoRenewPeriod(1_000_000L)
@@ -251,11 +258,11 @@ class StateViewTest {
 
 		tokenAccountRel = new MerkleTokenRelStatus(123L, false, true, true);
 		tokenAccountRel.setKey(tokenAssociationId);
-		tokenAccountRel.setNextKey(nftAssociationId);
+		tokenAccountRel.setNext(nftTokenId.getTokenNum());
 
 		nftAccountRel = new MerkleTokenRelStatus(2L, false, true, false);
 		tokenAccountRel.setKey(nftAssociationId);
-		tokenAccountRel.setPrevKey(tokenAssociationId);
+		tokenAccountRel.setPrev(tokenId.getTokenNum());
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(tokenAssociationId, tokenAccountRel);
@@ -300,7 +307,7 @@ class StateViewTest {
 		bytecode = mock(Map.class);
 		specialFiles = mock(MerkleSpecialFiles.class);
 
-		final var uniqueTokens = new MerkleMap<EntityNumPair, MerkleUniqueToken>();
+		uniqueTokens = new MerkleMap<>();
 		uniqueTokens.put(targetNftKey, targetNft);
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
@@ -754,7 +761,7 @@ class StateViewTest {
 		final var children = new MutableStateChildren();
 		children.setTopics(topics);
 
-		subject = new StateView( null, children, null);
+		subject = new StateView(null, children, null);
 
 		final var actualTopics = subject.topics();
 
@@ -767,7 +774,7 @@ class StateViewTest {
 		children.setContractStorage(contractStorage);
 		children.setStorage(storage);
 
-		subject = new StateView( null, children, null);
+		subject = new StateView(null, children, null);
 
 		final var actualStorage = subject.storage();
 		final var actualContractStorage = subject.contractStorage();
@@ -917,6 +924,22 @@ class StateViewTest {
 	}
 
 	@Test
+	void getsSpenderAsExpected() {
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+		final var optionalNftInfo = subject.infoForNft(targetNftId);
+
+		assertTrue(optionalNftInfo.isPresent());
+		final var info = optionalNftInfo.get();
+		assertEquals(ledgerId, info.getLedgerId());
+		assertEquals(targetNftId, info.getNftID());
+		assertEquals(nftOwnerId, info.getAccountID());
+		assertEquals(MISSING_ENTITY_ID, EntityId.fromGrpcAccountId(info.getSpenderId()));
+		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
+		assertArrayEquals(nftMeta, info.getMetadata().toByteArray());
+	}
+
+	@Test
 	void interpolatesTreasuryIdOnNftGet() {
 		targetNft.setOwner(MISSING_ENTITY_ID);
 
@@ -938,6 +961,7 @@ class StateViewTest {
 	@Test
 	void getNftsAsExpected() {
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
+		targetNft.setSpender(EntityId.fromGrpcAccountId(nftSpenderId));
 
 		final var optionalNftInfo = subject.infoForNft(targetNftId);
 
@@ -946,6 +970,7 @@ class StateViewTest {
 		assertEquals(ledgerId, info.getLedgerId());
 		assertEquals(targetNftId, info.getNftID());
 		assertEquals(nftOwnerId, info.getAccountID());
+		assertEquals(nftSpenderId, info.getSpenderId());
 		assertEquals(fromJava(nftCreation).toGrpc(), info.getCreationTime());
 		assertArrayEquals(nftMeta, info.getMetadata().toByteArray());
 	}
@@ -975,6 +1000,18 @@ class StateViewTest {
 		assertFalse(subject.scheduleExists(scheduleId));
 		assertFalse(subject.tokenExists(tokenId));
 		assertEquals(0, subject.numNftsOwnedBy(nftOwnerId));
+	}
+
+	@Test
+	void constructsBackingStores() {
+		assertTrue(subject.asReadOnlyAccountStore() instanceof BackingAccounts);
+		assertTrue(subject.asReadOnlyTokenStore() instanceof BackingTokens);
+		assertTrue(subject.asReadOnlyNftStore() instanceof BackingNfts);
+		assertTrue(subject.asReadOnlyAssociationStore() instanceof BackingTokenRels);
+		assertEquals(tokens, ((BackingTokens) subject.asReadOnlyTokenStore()).getDelegate().get());
+		assertEquals(contracts, ((BackingAccounts) subject.asReadOnlyAccountStore()).getDelegate().get());
+		assertEquals(uniqueTokens, ((BackingNfts) subject.asReadOnlyNftStore()).getDelegate().get());
+		assertEquals(tokenRels, ((BackingTokenRels) subject.asReadOnlyAssociationStore()).getDelegate().get());
 	}
 
 	private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);

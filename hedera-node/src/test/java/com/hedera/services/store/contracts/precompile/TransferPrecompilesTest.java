@@ -30,6 +30,7 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -38,7 +39,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -52,6 +53,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.token.process.DissociationFactory;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -149,7 +151,7 @@ class TransferPrecompilesTest {
 	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private DecodingFacade decoder;
 	@Mock
@@ -207,6 +209,12 @@ class TransferPrecompilesTest {
 	private ContractAliases aliases;
 	@Mock
 	private UsagePricesProvider resourceCosts;
+	@Mock
+	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private CreateChecks createChecks;
+	@Mock
+	private EntityIdSource entityIdSource;
 
 	private HTSPrecompiledContract subject;
 
@@ -214,9 +222,9 @@ class TransferPrecompilesTest {
 	void setUp() {
 		subject = new HTSPrecompiledContract(
 				validator, dynamicProperties, gasCalculator,
-				recordsHistorian, sigsVerifier, decoder, encoder,
+				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
 		subject.setTransferLogicFactory(transferLogicFactory);
 		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
@@ -228,6 +236,7 @@ class TransferPrecompilesTest {
 	void transferFailsFastGivenWrongSyntheticValidity() {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
+		given(frame.getRemainingGas()).willReturn(Gas.of(300));
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -255,7 +264,7 @@ class TransferPrecompilesTest {
 				.willReturn(mockRecordBuilder);
 		given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
 		given(frame.getRemainingGas()).willReturn(Gas.of(100L));
-		given(frame.getValue()).willReturn(Wei.ONE);
+		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(frame.getInputData()).willReturn(pretendArguments);
 
 		// when:
@@ -270,7 +279,7 @@ class TransferPrecompilesTest {
 		verify(mockRecordBuilder).setContractCallResult(captor.capture());
 		assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN.name(), captor.getValue().getError());
 		assertEquals(100L, captor.getValue().getGas());
-		assertEquals(1L, captor.getValue().getAmount());
+		assertEquals(0L, captor.getValue().getAmount());
 		assertEquals(pretendArguments.toArrayUnsafe(), captor.getValue().getFunctionParameters());
 	}
 
@@ -339,9 +348,11 @@ class TransferPrecompilesTest {
 	@Test
 	void abortsIfImpliedCustomFeesCannotBeAssessed() {
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(frame.getValue()).willReturn(Wei.ZERO);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
 		given(frame.getSenderAddress()).willReturn(contractAddress);
+		given(frame.getRemainingGas()).willReturn(Gas.of(300));
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 
@@ -804,6 +815,8 @@ class TransferPrecompilesTest {
 	private void givenMinimalFrameContext() {
 		given(frame.getContractAddress()).willReturn(contractAddr);
 		given(frame.getWorldUpdater()).willReturn(worldUpdater);
+		given(frame.getRemainingGas()).willReturn(Gas.of(300));
+		given(frame.getValue()).willReturn(Wei.ZERO);
 		Optional<WorldUpdater> parent = Optional.of(worldUpdater);
 		given(worldUpdater.parentUpdater()).willReturn(parent);
 		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);

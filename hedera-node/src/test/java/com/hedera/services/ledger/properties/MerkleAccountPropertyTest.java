@@ -29,12 +29,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -50,26 +47,29 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
-import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.NFT_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
+import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -134,16 +134,12 @@ class MerkleAccountPropertyTest {
 		final int oldNumKvPairs = 123;
 		final int newNumKvPairs = 123;
 		final long initialAllowance = 100L;
-		final EntityNumPair origLastAssociatedToken = new EntityNumPair(123L);
-		final EntityNumPair newLastAssociatedToken = new EntityNumPair(234L);
+		final long origLastAssociatedTokenNum = 123L;
+		final long newLastAssociatedTokenNum = 234L;
 		final int origAssociationCount = 10;
 		final int newAssociationCount = 12;
-		final int origNumZeroBalances = 4;
-		final int newNumZeroBalances = 7;
-		final TokenAssociationMetadata origTokenAssociationMetaData =
-				new TokenAssociationMetadata(origAssociationCount, origNumZeroBalances, origLastAssociatedToken);
-		final TokenAssociationMetadata newTokenAssociationMetadata =
-				new TokenAssociationMetadata(newAssociationCount, newNumZeroBalances, newLastAssociatedToken);
+		final int origNumPositiveBalances = 4;
+		final int newNumPositiveBalances = 7;
 		final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
 		final EntityNum payerNum = EntityNum.fromAccountId(payer);
 		final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
@@ -158,9 +154,9 @@ class MerkleAccountPropertyTest {
 		final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {{
 			put(fungibleAllowanceId, initialAllowance);
 		}};
-		final TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>() {{
-			put(fungibleAllowanceId, FcTokenAllowance.from(true));
-			put(nftAllowanceId, FcTokenAllowance.from(List.of(1L, 2L)));
+		final TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>() {{
+			add(fungibleAllowanceId);
+			add(nftAllowanceId);
 		}};
 		final UInt256 oldFirstKey =
 				UInt256.fromHexString("0x0000fe0432ce31138ecf09aa3e8a410004a1e204ef84efe01ee160fea1e22060");
@@ -183,12 +179,14 @@ class MerkleAccountPropertyTest {
 		account.setFirstUint256StorageKey(explicitOldFirstKey);
 		account.setNumContractKvPairs(oldNumKvPairs);
 		account.setNftsOwned(origNumNfts);
-		account.setTokenAssociationMetadata(origTokenAssociationMetaData);
+		account.setHeadTokenId(origLastAssociatedTokenNum);
+		account.setNumPositiveBalances(origNumPositiveBalances);
+		account.setNumAssociations(origAssociationCount);
 		account.setBalance(origBalance);
 		account.records().offer(origPayerRecords.get(0));
 		account.records().offer(origPayerRecords.get(1));
 		account.setMaxAutomaticAssociations(origMaxAutoAssociations);
-		account.setAlreadyUsedAutomaticAssociations(origAlreadyUsedAutoAssociations);
+		account.setUsedAutomaticAssociations(origAlreadyUsedAutoAssociations);
 
 		final var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
 		final var unfrozenToken = new MerkleToken(
@@ -216,13 +214,15 @@ class MerkleAccountPropertyTest {
 		PROXY.setter().accept(account, newProxy);
 		NUM_NFTS_OWNED.setter().accept(account, newNumNfts);
 		MAX_AUTOMATIC_ASSOCIATIONS.setter().accept(account, newMaxAutoAssociations);
-		ALREADY_USED_AUTOMATIC_ASSOCIATIONS.setter().accept(account, newAlreadyUsedAutoAssociations);
+		USED_AUTOMATIC_ASSOCIATIONS.setter().accept(account, newAlreadyUsedAutoAssociations);
 		NUM_CONTRACT_KV_PAIRS.setter().accept(account, newNumKvPairs);
 		CRYPTO_ALLOWANCES.setter().accept(account, cryptoAllowances);
 		FUNGIBLE_TOKEN_ALLOWANCES.setter().accept(account, fungibleAllowances);
-		NFT_ALLOWANCES.setter().accept(account, nftAllowances);
 		FIRST_CONTRACT_STORAGE_KEY.setter().accept(account, explicitNewFirstKey);
-		TOKEN_ASSOCIATION_METADATA.setter().accept(account, newTokenAssociationMetadata);
+		APPROVE_FOR_ALL_NFTS_ALLOWANCES.setter().accept(account, nftAllowances);
+		NUM_ASSOCIATIONS.setter().accept(account, newAssociationCount);
+		HEAD_TOKEN_NUM.setter().accept(account, newLastAssociatedTokenNum);
+		NUM_POSITIVE_BALANCES.setter().accept(account, newNumPositiveBalances);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -234,15 +234,17 @@ class MerkleAccountPropertyTest {
 		assertEquals(newMemo, MEMO.getter().apply(account));
 		assertEquals(newProxy, PROXY.getter().apply(account));
 		assertEquals(newNumNfts, NUM_NFTS_OWNED.getter().apply(account));
-		assertEquals(newAlreadyUsedAutoAssociations, ALREADY_USED_AUTOMATIC_ASSOCIATIONS.getter().apply(account));
+		assertEquals(newAlreadyUsedAutoAssociations, USED_AUTOMATIC_ASSOCIATIONS.getter().apply(account));
 		assertEquals(newMaxAutoAssociations, MAX_AUTOMATIC_ASSOCIATIONS.getter().apply(account));
 		assertEquals(newAlias, ALIAS.getter().apply(account));
 		assertEquals(newNumKvPairs, NUM_CONTRACT_KV_PAIRS.getter().apply(account));
 		assertEquals(cryptoAllowances, CRYPTO_ALLOWANCES.getter().apply(account));
 		assertEquals(fungibleAllowances, FUNGIBLE_TOKEN_ALLOWANCES.getter().apply(account));
-		assertEquals(nftAllowances, NFT_ALLOWANCES.getter().apply(account));
 		assertEquals(explicitNewFirstKey, FIRST_CONTRACT_STORAGE_KEY.getter().apply(account));
-		assertEquals(newTokenAssociationMetadata, TOKEN_ASSOCIATION_METADATA.getter().apply(account));
+		assertEquals(nftAllowances, APPROVE_FOR_ALL_NFTS_ALLOWANCES.getter().apply(account));
+		assertEquals(newAssociationCount, NUM_ASSOCIATIONS.getter().apply(account));
+		assertEquals(newNumPositiveBalances, NUM_POSITIVE_BALANCES.getter().apply(account));
+		assertEquals(newLastAssociatedTokenNum, HEAD_TOKEN_NUM.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import static com.hedera.services.state.virtual.KeyPackingUtils.deserializeUint256Key;
 import static com.hedera.services.state.virtual.KeyPackingUtils.serializePackedBytes;
 import static com.hedera.services.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
-import static com.swirlds.jasperdb.utilities.NonCryptographicHashing.perm64;
+import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
 /**
  * The key of a key/value pair used by a Smart Contract for storage purposes.
@@ -143,9 +143,10 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 	 */
 	@Override
 	public int hashCode() {
-		return (int) perm64(perm64(perm64(perm64(perm64(perm64(perm64(perm64(perm64(
-				contractId) ^ uint256Key[7]) ^ uint256Key[6]) ^ uint256Key[5]) ^ uint256Key[4]) ^
-				uint256Key[3]) ^ uint256Key[2]) ^ uint256Key[1]) ^ uint256Key[0]);
+		return hash32(
+				contractId,
+				uint256Key[7], uint256Key[6], uint256Key[5], uint256Key[4],
+				uint256Key[3], uint256Key[2], uint256Key[1], uint256Key[0]);
 	}
 
 	@Override

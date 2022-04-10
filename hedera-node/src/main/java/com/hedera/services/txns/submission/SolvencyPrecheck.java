@@ -139,7 +139,7 @@ public class SolvencyPrecheck {
 			ResponseCodeEnum finalStatus = OK;
 			if (payerBalance < requiredPayerBalance) {
 				final var isDetached = payerBalance == 0
-						&& dynamicProperties.autoRenewEnabled()
+						&& dynamicProperties.shouldAutoRenewSomeEntityType()
 						&& !validator.isAfterConsensusSecond(payerAccount.getExpiry());
 				finalStatus = isDetached ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : INSUFFICIENT_PAYER_BALANCE;
 			}

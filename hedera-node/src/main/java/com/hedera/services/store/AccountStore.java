@@ -24,7 +24,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -136,15 +135,17 @@ public class AccountStore {
 	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode,
 			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
 		final var merkleAccount = accounts.getImmutableRef(id.asGrpcAccount());
-
 		validateUsable(merkleAccount, explicitResponseCode, nonExistingCode, deletedCode);
+		return loadMerkleAccount(merkleAccount, id);
+	}
 
+	private Account loadMerkleAccount(final MerkleAccount merkleAccount, final Id id) {
 		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
-		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
+		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getUsedAutoAssociations());
 		if (merkleAccount.getProxy() != null) {
 			account.setProxy(merkleAccount.getProxy().asId());
 		}
@@ -157,11 +158,10 @@ public class AccountStore {
 		account.setAlias(merkleAccount.getAlias());
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
-		account.setNftAllowances(merkleAccount.getNftAllowances());
-		final var tokenAssociationMetadata = merkleAccount.getTokenAssociationMetadata();
-		account.setLastAssociatedToken(tokenAssociationMetadata.lastAssociation());
-		account.setNumAssociations(tokenAssociationMetadata.numAssociations());
-		account.setNumZeroBalances(tokenAssociationMetadata.numZeroBalances());
+		account.setApproveForAllNfts(merkleAccount.getApproveForAllNfts());
+		account.setHeadTokenNum(merkleAccount.getHeadTokenId());
+		account.setNumAssociations(merkleAccount.getNumAssociations());
+		account.setNumPositiveBalances(merkleAccount.getNumPositiveBalances());
 
 		return account;
 	}
@@ -188,7 +188,7 @@ public class AccountStore {
 		mutableAccount.setBalanceUnchecked(model.getBalance());
 		mutableAccount.setNftsOwned(model.getOwnedNfts());
 		mutableAccount.setMaxAutomaticAssociations(model.getMaxAutomaticAssociations());
-		mutableAccount.setAlreadyUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
+		mutableAccount.setUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
 		mutableAccount.state().setAccountKey(model.getKey());
 		mutableAccount.setReceiverSigRequired(model.isReceiverSigRequired());
 		mutableAccount.setDeleted(model.isDeleted());
@@ -196,10 +196,10 @@ public class AccountStore {
 		mutableAccount.setSmartContract(model.isSmartContract());
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
-		mutableAccount.setNftAllowances(model.getMutableNftAllowances());
-		final var tokenAssociationMetadata = new TokenAssociationMetadata(
-				model.getNumAssociations(), model.getNumZeroBalances(), model.getLastAssociatedToken());
-		mutableAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
+		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNfts());
+		mutableAccount.setHeadTokenId(model.getHeadTokenNum());
+		mutableAccount.setNumPositiveBalances(model.getNumPositiveBalances());
+		mutableAccount.setNumAssociations(model.getNumAssociations());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,
@@ -211,7 +211,7 @@ public class AccountStore {
 	}
 
 	private boolean isExpired(long balance, long expiry) {
-		if (dynamicProperties.autoRenewEnabled() && balance == 0) {
+		if (dynamicProperties.shouldAutoRenewSomeEntityType() && balance == 0) {
 			return !validator.isAfterConsensusSecond(expiry);
 		} else {
 			return false;

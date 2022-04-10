@@ -21,7 +21,6 @@ package com.hedera.services.legacy.core.jproto;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.TxnId;
@@ -30,15 +29,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
-import org.mockito.Mockito;
 
-import java.io.IOException;
 import java.util.List;
 
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH;
@@ -51,25 +44,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 
 class TxnReceiptTest {
-	private static final int MAX_STATUS_BYTES = 128;
-
 	final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setScheduled(true)
 			.setAccountID(IdUtils.asAccount("0.0.2"))
 			.build();
-
-	DomainSerdes serdes;
-	ExchangeRates mockRates;
-	TxnReceipt subject;
-	private long[] serialNumbers = new long[] { 1, 2, 3, 4, 5 };
 
 	private TopicID getTopicId(long shard, long realm, long num) {
 		return TopicID.newBuilder().setShardNum(shard).setRealmNum(realm).setTopicNum(num).build();
@@ -85,14 +65,6 @@ class TxnReceiptTest {
 			hash[i] = (byte) i;
 		}
 		return hash;
-	}
-
-	@BeforeEach
-	void setup() {
-		serdes = mock(DomainSerdes.class);
-		mockRates = mock(ExchangeRates.class);
-
-		TxnReceipt.serdes = serdes;
 	}
 
 	@Test
@@ -367,179 +339,7 @@ class TxnReceiptTest {
 
 		assertEquals(1000L, cut.getNewTotalSupply());
 
-		assertAll(() -> Assertions.assertDoesNotThrow(() -> cut.toString()),
+		assertAll(() -> Assertions.assertDoesNotThrow(cut::toString),
 				() -> assertNotNull(cut.toString()));
-	}
-
-	@Test
-	void serializeWorks() throws IOException {
-		// setup:
-		SerializableDataOutputStream fout = mock(SerializableDataOutputStream.class);
-		// and:
-		InOrder inOrder = Mockito.inOrder(serdes, fout);
-
-		subject = TxnReceipt.newBuilder()
-				.setStatus("SUCCESS")
-				.setExchangeRates(mockRates)
-				.setTopicSequenceNumber(-1)
-				.setRunningHashVersion(-1)
-				.setTopicSequenceNumber(0L)
-				.setNewTotalSupply(100L)
-				.setScheduledTxnId(TxnId.fromGrpc(scheduledTxnId))
-				.setSerialNumbers(serialNumbers)
-				.build();
-
-		// when:
-		subject.serialize(fout);
-
-		// then:
-		inOrder.verify(fout).writeNormalisedString(subject.getStatus());
-		inOrder.verify(fout).writeSerializable(mockRates, true);
-		inOrder.verify(serdes, times(6)).writeNullableSerializable(null, fout);
-		inOrder.verify(fout).writeBoolean(false);
-		inOrder.verify(fout).writeLong(subject.getNewTotalSupply());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getScheduledTxnId(), fout);
-		inOrder.verify(fout).writeLongArray(serialNumbers);
-	}
-
-	@Test
-	void v0120DeserializeWorks() throws IOException {
-		final var scheduleId = EntityId.fromGrpcScheduleId(IdUtils.asSchedule("0.0.312"));
-		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-
-		subject = TxnReceipt.newBuilder()
-				.setStatus("SUCCESS")
-				.setScheduleId(scheduleId)
-				.setExchangeRates(mockRates)
-				.setTopicSequenceNumber(-1)
-				.setRunningHashVersion(-1)
-				.setTopicSequenceNumber(0L)
-				.setNewTotalSupply(0L)
-				.setScheduledTxnId(TxnId.fromGrpc(scheduledTxnId))
-				.build();
-
-
-		given(fin.readByteArray(MAX_STATUS_BYTES)).willReturn(subject.getStatus().getBytes());
-		given(fin.readSerializable(anyBoolean(), any())).willReturn(mockRates);
-		given(serdes.readNullableSerializable(fin))
-				.willReturn(subject.getAccountId())
-				.willReturn(subject.getFileId())
-				.willReturn(subject.getContractId())
-				.willReturn(subject.getTopicId())
-				.willReturn(subject.getTokenId())
-				.willReturn(subject.getScheduleId())
-				.willReturn(subject.getScheduledTxnId());
-		given(fin.readBoolean()).willReturn(true);
-		given(fin.readLong()).willReturn(subject.getTopicSequenceNumber());
-		given(fin.readLong()).willReturn(subject.getRunningHashVersion());
-		given(fin.readAllBytes()).willReturn(subject.getTopicRunningHash());
-		given(fin.readLong()).willReturn(subject.getNewTotalSupply());
-
-		// and:
-		TxnReceipt txnReceipt = new TxnReceipt();
-
-		// when:
-		txnReceipt.deserialize(fin, TxnReceipt.RELEASE_0120_VERSION);
-
-		// then:
-		assertEquals(subject.getNewTotalSupply(), txnReceipt.getNewTotalSupply());
-		assertEquals(subject.getStatus(), txnReceipt.getStatus());
-		assertEquals(subject.getExchangeRates(), txnReceipt.getExchangeRates());
-		assertEquals(subject.getTokenId(), txnReceipt.getTokenId());
-		assertEquals(subject.getScheduledTxnId(), txnReceipt.getScheduledTxnId());
-	}
-
-	@Test
-	void v0160DeserializeWorks() throws IOException {
-		final var scheduleId = EntityId.fromGrpcScheduleId(IdUtils.asSchedule("0.0.312"));
-		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-
-		subject = TxnReceipt.newBuilder()
-				.setStatus("SUCCESS")
-				.setScheduleId(scheduleId)
-				.setExchangeRates(mockRates)
-				.setTopicSequenceNumber(-1)
-				.setRunningHashVersion(-1)
-				.setTopicSequenceNumber(0L)
-				.setNewTotalSupply(0L)
-				.setScheduledTxnId(TxnId.fromGrpc(scheduledTxnId))
-				.setSerialNumbers(new long[] { 1, 2, 3, 4, 5 })
-				.build();
-
-
-		given(fin.readByteArray(MAX_STATUS_BYTES)).willReturn(subject.getStatus().getBytes());
-		given(fin.readSerializable(anyBoolean(), any())).willReturn(mockRates);
-		given(serdes.readNullableSerializable(fin))
-				.willReturn(subject.getAccountId())
-				.willReturn(subject.getFileId())
-				.willReturn(subject.getContractId())
-				.willReturn(subject.getTopicId())
-				.willReturn(subject.getTokenId())
-				.willReturn(subject.getScheduleId())
-				.willReturn(subject.getScheduledTxnId());
-		given(fin.readBoolean()).willReturn(true);
-		given(fin.readLong()).willReturn(subject.getTopicSequenceNumber());
-		given(fin.readLong()).willReturn(subject.getRunningHashVersion());
-		given(fin.readAllBytes()).willReturn(subject.getTopicRunningHash());
-		given(fin.readLong()).willReturn(subject.getNewTotalSupply());
-		given(fin.readLongArray(anyInt())).willReturn(subject.getSerialNumbers());
-
-		// and:
-		TxnReceipt txnReceipt = new TxnReceipt();
-
-		// when:
-		txnReceipt.deserialize(fin, TxnReceipt.RELEASE_0160_VERSION);
-
-		// then:
-		assertEquals(subject.getNewTotalSupply(), txnReceipt.getNewTotalSupply());
-		assertEquals(subject.getStatus(), txnReceipt.getStatus());
-		assertEquals(subject.getExchangeRates(), txnReceipt.getExchangeRates());
-		assertEquals(subject.getTokenId(), txnReceipt.getTokenId());
-		assertEquals(subject.getScheduledTxnId(), txnReceipt.getScheduledTxnId());
-		assertArrayEquals(subject.getSerialNumbers(), txnReceipt.getSerialNumbers());
-	}
-
-	@Test
-	void v0100DeserializeWorks() throws IOException {
-		final var tokenId = EntityId.fromGrpcTokenId(
-				TokenID.newBuilder().setTokenNum(1001L).setRealmNum(0).setShardNum(0).build());
-		SerializableDataInputStream fin = mock(SerializableDataInputStream.class);
-
-		subject = TxnReceipt.newBuilder()
-				.setStatus("SUCCESS")
-				.setScheduleId(tokenId)
-				.setExchangeRates(mockRates)
-				.setTopicSequenceNumber(-1)
-				.setRunningHashVersion(-1)
-				.setTopicSequenceNumber(0L)
-				.setNewTotalSupply(100L)
-				.setScheduledTxnId(MISSING_SCHEDULED_TXN_ID)
-				.build();
-
-		given(fin.readByteArray(MAX_STATUS_BYTES)).willReturn(subject.getStatus().getBytes());
-		given(fin.readSerializable(anyBoolean(), any())).willReturn(mockRates);
-		given(serdes.readNullableSerializable(fin))
-				.willReturn(subject.getAccountId())
-				.willReturn(subject.getFileId())
-				.willReturn(subject.getContractId())
-				.willReturn(subject.getTopicId())
-				.willReturn(subject.getTokenId());
-		given(fin.readBoolean()).willReturn(true);
-		given(fin.readLong()).willReturn(subject.getTopicSequenceNumber());
-		given(fin.readLong()).willReturn(subject.getRunningHashVersion());
-		given(fin.readAllBytes()).willReturn(subject.getTopicRunningHash());
-		given(fin.readLong()).willReturn(subject.getNewTotalSupply());
-
-		// and:
-		TxnReceipt txnReceipt = new TxnReceipt();
-
-		// when:
-		txnReceipt.deserialize(fin, TxnReceipt.RELEASE_0100_VERSION);
-
-		// then:
-		assertEquals(subject.getNewTotalSupply(), txnReceipt.getNewTotalSupply());
-		assertEquals(subject.getStatus(), txnReceipt.getStatus());
-		assertEquals(subject.getExchangeRates(), txnReceipt.getExchangeRates());
-		assertEquals(subject.getTokenId(), txnReceipt.getTokenId());
 	}
 }

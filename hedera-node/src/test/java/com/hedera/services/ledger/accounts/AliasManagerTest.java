@@ -99,6 +99,15 @@ class AliasManagerTest {
 	}
 
 	@Test
+	void forgetReturnsExpectedValues() {
+		final var unusedAlias = ByteString.copyFromUtf8("bbb");
+		aliases.put(alias, num);
+		assertFalse(subject.forgetAlias(ByteString.EMPTY));
+		assertFalse(subject.forgetAlias(unusedAlias));
+		assertTrue(subject.forgetAlias(alias));
+	}
+
+	@Test
 	void forgetAliasRemovesFromMap() {
 		subject.getAliases().put(alias, num);
 
@@ -146,7 +155,7 @@ class AliasManagerTest {
 		assertEquals(withNum, subject.getAliases().get(upToDateAlias));
 
 		// finally when
-		subject.forgetAliasIfPresent(withNum, liveAccounts);
+		subject.forgetAlias(accountWithAlias.getAlias());
 		assertEquals(1, subject.getAliases().size());
 	}
 }

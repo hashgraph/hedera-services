@@ -21,8 +21,9 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -93,7 +94,9 @@ class AbstractRecordingCreateOperationTest {
 	@Mock
 	private EntityCreator creator;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
+	@Mock
+	private ContractCustomizer contractCustomizer;
 
 	private static final Gas childStipend = Gas.of(1_000_000L);
 	private static final Wei gasPrice = Wei.of(1000L);
@@ -199,7 +202,8 @@ class AbstractRecordingCreateOperationTest {
 		final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
 		givenSpawnPrereqs();
 		givenBuilderPrereqs();
-		given(syntheticTxnFactory.createContractSkeleton()).willReturn(mockCreation);
+		given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
+		given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
 		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
 		given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
 
@@ -286,7 +290,7 @@ class AbstractRecordingCreateOperationTest {
 				final GasCalculator gasCalculator,
 				final EntityCreator creator,
 				final SyntheticTxnFactory syntheticTxnFactory,
-				final AccountRecordsHistorian recordsHistorian
+				final RecordsHistorian recordsHistorian
 		) {
 			super(
 					opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator,
