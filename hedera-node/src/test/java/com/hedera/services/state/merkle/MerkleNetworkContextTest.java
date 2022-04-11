@@ -507,6 +507,20 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
+	void startNewBlockWork() {
+		// when:
+		final Instant consTime = Instant.ofEpochSecond(1_234_567L, 890);
+
+		subject.setBlockNo(10);
+		subject.setFirstConsTimeOfCurrentBlock(consTime);
+		subject.startNewBlock();
+
+		// then:
+		assertEquals(11, subject.getBlockNo());
+		assertEquals(null, subject.getFirstConsTimeOfCurrentBlock());
+	}
+
+	@Test
 	void updatesEmptySnapshotsAsExpected() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
