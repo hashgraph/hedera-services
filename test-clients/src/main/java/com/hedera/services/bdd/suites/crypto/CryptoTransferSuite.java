@@ -835,15 +835,28 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
+						cryptoTransfer(movingUnique(nonFungibleToken, 2L).between(receiver, owner)),
 						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver))
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addNftAllowance(owner, nonFungibleToken, spender, true, List.of())
+								.fee(ONE_HUNDRED_HBARS),
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver))
+								.payingWith(spender)
+								.signedBy(spender),
+						cryptoTransfer(movingUnique(nonFungibleToken, 2L).between(receiver, owner)),
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver))
+								.payingWith(spender)
+								.signedBy(spender),
 						getAccountDetails(owner)
 								.payingWith(GENESIS)
 								.has(AccountDetailsAsserts.accountWith()
 										.cryptoAllowancesCount(0)
-										.tokenAllowancesContaining(fungibleToken, spender, 1400))
+										.tokenAllowancesContaining(fungibleToken, spender, 1400)
+										.nftApprovedAllowancesContaining(nonFungibleToken, spender))
 				);
 	}
 
