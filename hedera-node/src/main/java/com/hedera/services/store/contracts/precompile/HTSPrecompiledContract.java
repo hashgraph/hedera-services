@@ -165,8 +165,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
-	private static final String UNKNOWN_FUNCTION_ID_ERROR_MESSAGE =
-			"%s precompile received unknown functionId=%x (via %s)";
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -1100,8 +1098,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_TRANSFER_TOKEN -> decoder.decodeTransferToken(input, aliasResolver);
 				case ABI_ID_TRANSFER_NFTS -> decoder.decodeTransferNFTs(input, aliasResolver);
 				case ABI_ID_TRANSFER_NFT -> decoder.decodeTransferNFT(input, aliasResolver);
-				default -> throw new InvalidTransactionException(
-						String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE, "Transfer", functionId, input), FAIL_INVALID);
+				default -> null;
 			};
 			syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			extrapolateDetailsFromSyntheticTxn();
@@ -1374,9 +1371,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			super.transferOp = switch (nestedInput.getInt(0)) {
 				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID,
 						aliasResolver);
-				default -> throw new InvalidTransactionException(
-						String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE, "Transfer", functionId, nestedInput),
-						FAIL_INVALID);
+				default -> null;
 			};
 			super.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			super.extrapolateDetailsFromSyntheticTxn();
