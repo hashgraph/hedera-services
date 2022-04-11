@@ -20,6 +20,7 @@ package com.hedera.services;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
@@ -31,6 +32,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.KvPairIterationMigrator;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
@@ -61,6 +63,7 @@ import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
 import com.swirlds.virtualmap.VirtualMap;
+import com.swirlds.virtualmap.VirtualMapMigration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,11 +75,13 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_024x_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_025x_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0260_VERSION;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
@@ -159,6 +164,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			// add the links to the doubly linked list of MerkleTokenRelStatus map and
 			// update each account's last associated token entityNumPair
 			updateLinks();
+		}
+		if (deserializedVersionFromState < RELEASE_0260_VERSION) {
+			makeStorageIterable(
+					this,
+					KvPairIterationMigrator::new,
+					VirtualMapMigration::extractVirtualMapData,
+					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
 		}
 	}
 
@@ -497,10 +509,12 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		this.deserializedVersion = deserializedVersion;
 	}
 
+	@VisibleForTesting
 	static void setAppBuilder(final Supplier<ServicesApp.Builder> appBuilder) {
 		ServicesState.appBuilder = appBuilder;
 	}
 
+	@VisibleForTesting
 	static void setStakeFundingMigrator(final Consumer<ServicesState> stakeFundingMigrator) {
 		ServicesState.stakeFundingMigrator = stakeFundingMigrator;
 	}

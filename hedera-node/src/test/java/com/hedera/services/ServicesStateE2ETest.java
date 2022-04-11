@@ -25,7 +25,6 @@ import com.swirlds.platform.SignedStateFileManager;
 import com.swirlds.platform.state.SignedState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -41,10 +40,11 @@ public class ServicesStateE2ETest {
 
 	@Test
 	void testBasicState() throws IOException {
-		loadSignedState(signedStateDir + "basicTest/SignedState.swh");
+		final var signedState = loadSignedState(signedStateDir + "basicTest/SignedState.swh");
+		signedState.getSwirldState().migrate();
 	}
 
-	private static SignedState loadSignedState(String path) throws IOException {
+	private static SignedState loadSignedState(final String path) throws IOException {
 		var signedPair = SignedStateFileManager.readSignedStateFromFile(new File(path));
 		// Because it's possible we are loading old data, we cannot check equivalence of the hash.
 		Assertions.assertNotNull(signedPair.getRight());

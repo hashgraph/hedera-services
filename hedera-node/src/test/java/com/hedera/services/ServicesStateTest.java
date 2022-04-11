@@ -28,12 +28,10 @@ import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
@@ -49,13 +47,13 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.Address;
 import com.swirlds.common.system.AddressBook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.transaction.SwirldTransaction;
-import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.hamcrest.Matchers;
@@ -68,10 +66,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
@@ -88,7 +84,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -405,74 +400,6 @@ class ServicesStateTest {
 		APPS.save(selfId.getId(), app);
 
 		assertDoesNotThrow(() -> subject.init(platform, addressBook, null));
-	}
-
-	@Test
-	void migratesWhenInitializingFromRelease0230() {
-		ServicesState.setStakeFundingMigrator(mockMigrator);
-
-		subject = mock(ServicesState.class);
-		doCallRealMethod().when(subject).migrate();
-		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0230_VERSION);
-		given(subject.accounts()).willReturn(accounts);
-		given(accounts.keySet()).willReturn(Set.of());
-
-		subject.migrate();
-
-		verify(mockMigrator).accept(subject);
-		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
-	}
-
-	@Test
-	void migratesWhenInitializingFromStateWithReleaseLessThan0250() {
-		var merkleAccount1 = mock(MerkleAccount.class);
-		var merkleAccount2 = mock(MerkleAccount.class);
-		var merkleAccountTokens1 = mock(MerkleAccountTokens.class);
-		var merkleAccountTokens2 = mock(MerkleAccountTokens.class);
-		final var account1 = new EntityNum(1001);
-		final var account2 = new EntityNum(1002);
-		final var token1 = new EntityNum(1003);
-		final var token2 = new EntityNum(1004);
-		final var associationKey1 = EntityNumPair.fromLongs(account1.longValue(), token1.longValue());
-		final var associationKey2 = EntityNumPair.fromLongs(account2.longValue(), token1.longValue());
-		final var associationKey3 = EntityNumPair.fromLongs(account2.longValue(), token2.longValue());
-		final var association1 = new MerkleTokenRelStatus(1000L, false, true, false);
-		final var association2 = new MerkleTokenRelStatus(0L, true, true, false);
-		final var association3 = new MerkleTokenRelStatus(500L, false, false, true);
-
-		MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations = new MerkleMap<>();
-		tokenAssociations.put(associationKey1, association1);
-		tokenAssociations.put(associationKey2, association2);
-		tokenAssociations.put(associationKey3, association3);
-
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_024x_VERSION);
-		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
-		given(accounts.keySet()).willReturn(Set.of(account1, account2));
-		given(accounts.getForModify(account1)).willReturn(merkleAccount1);
-		given(accounts.getForModify(account2)).willReturn(merkleAccount2);
-		given(merkleAccount1.tokens()).willReturn(merkleAccountTokens1);
-		given(merkleAccount2.tokens()).willReturn(merkleAccountTokens2);
-		given(merkleAccountTokens1.asTokenIds()).willReturn(List.of(token1.toGrpcTokenId()));
-		given(merkleAccountTokens2.asTokenIds()).willReturn(List.of(token1.toGrpcTokenId(), token2.toGrpcTokenId()));
-
-		subject.migrate();
-
-		verify(merkleAccount1).setHeadTokenId(token1.longValue());
-		verify(merkleAccount1).setNumAssociations(1);
-		verify(merkleAccount1).setNumPositiveBalances(1);
-		verify(merkleAccount2).setHeadTokenId(token2.longValue());
-		verify(merkleAccount2).setNumAssociations(2);
-		verify(merkleAccount2).setNumPositiveBalances(1);
-		assertEquals(0, tokenAssociations.get(associationKey1).nextKey());
-		assertEquals(0, tokenAssociations.get(associationKey1).prevKey());
-		assertEquals(associationKey1, tokenAssociations.get(associationKey1).getKey());
-		assertEquals(0, tokenAssociations.get(associationKey2).nextKey());
-		assertEquals(token2.longValue(), tokenAssociations.get(associationKey2).prevKey());
-		assertEquals(associationKey2, tokenAssociations.get(associationKey2).getKey());
-		assertEquals(token1.longValue(), tokenAssociations.get(associationKey3).nextKey());
-		assertEquals(0, tokenAssociations.get(associationKey3).prevKey());
-		assertEquals(associationKey3, tokenAssociations.get(associationKey3).getKey());
 	}
 
 	@Test
