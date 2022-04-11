@@ -61,8 +61,8 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -231,7 +231,7 @@ class ERC20PrecompilesTest {
     @Mock
     private AccountStore accountStore;
     @Mock
-    CryptoAdjustAllowanceTransactionBody cryptoAdjustAllowanceTransactionBody;
+    CryptoApproveAllowanceTransactionBody cryptoAdjustAllowanceTransactionBody;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -629,7 +629,7 @@ class ERC20PrecompilesTest {
 
         given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
                 .willReturn(mockSynthBodyBuilder);
-        given(mockSynthBodyBuilder.getCryptoAdjustAllowance()).willReturn(cryptoAdjustAllowanceTransactionBody);
+        given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoAdjustAllowanceTransactionBody);
 
         given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);

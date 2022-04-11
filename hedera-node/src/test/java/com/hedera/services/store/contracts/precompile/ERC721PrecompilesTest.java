@@ -62,8 +62,8 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -237,7 +237,7 @@ class ERC721PrecompilesTest {
     @Mock
     private ImpliedTransfersMeta impliedTransfersMeta;
     @Mock
-    CryptoAdjustAllowanceTransactionBody cryptoAdjustAllowanceTransactionBody;
+    CryptoApproveAllowanceTransactionBody cryptoApproveAllowanceTransactionBody;
 
     private HTSPrecompiledContract subject;
     private final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -395,7 +395,7 @@ class ERC721PrecompilesTest {
 
         given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
                 .willReturn(mockSynthBodyBuilder);
-        given(mockSynthBodyBuilder.getCryptoAdjustAllowance()).willReturn(cryptoAdjustAllowanceTransactionBody);
+        given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
         given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
@@ -446,7 +446,7 @@ class ERC721PrecompilesTest {
 
         given(syntheticTxnFactory.createApproveAllowanceForAllNFT(SET_APPROVAL_FOR_ALL_WRAPPER, token))
                 .willReturn(mockSynthBodyBuilder);
-        given(mockSynthBodyBuilder.getCryptoAdjustAllowance()).willReturn(cryptoAdjustAllowanceTransactionBody);
+        given(mockSynthBodyBuilder.getCryptoApproveAllowance()).willReturn(cryptoApproveAllowanceTransactionBody);
 
         given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
