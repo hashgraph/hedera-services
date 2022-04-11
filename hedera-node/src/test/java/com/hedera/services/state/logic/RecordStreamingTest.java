@@ -60,7 +60,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 class RecordStreamingTest {
     private static final Instant topLevelConsTime = Instant.ofEpochSecond(1_234_567L, 890);
     private static final Hash INITIAL_RANDOM_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
-    private static final RunningHash runningHash = new RunningHash(INITIAL_RANDOM_HASH);
 
     @Mock
     private TransactionContext txnCtx;
@@ -314,7 +313,6 @@ class RecordStreamingTest {
         final var numberOfBlocks = 3;
 
         var consTime = topLevelConsTime;
-        blockNumberToHash.put((long) 1, MerkleNetworkContext.convertSwirldsHashToBesuHash(EMPTY_HASH));
         for (int i = 0, j = 0; i < numberOfTransactions; i++) {
             final var randomHash = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
             if (i % 2 == 0) {
@@ -346,7 +344,6 @@ class RecordStreamingTest {
 
             subject.run();
         }
-
 
         assertEquals(numberOfBlocks, merkleNetworkContext.getBlockHashCache().size());
         assertEquals(numberOfBlocks, merkleNetworkContext.getBlockNo());
@@ -413,5 +410,78 @@ class RecordStreamingTest {
 
         assertEquals(0, merkleNetworkContext.getBlockHashCache().size());
         assertEquals(0, merkleNetworkContext.getBlockNo());
+    }
+
+    @Test
+    void checkBlockIsCreatedWhenFirstConsAndLastConsBlockTimesAreNull() throws InterruptedException {
+        final var txn = Transaction.getDefaultInstance();
+        final var lastRecord = ExpirableTxnRecord.newBuilder().build();
+        final var expectedRso = new RecordStreamObject(lastRecord, txn, topLevelConsTime);
+
+        given(accessor.getSignedTxnWrapper()).willReturn(txn);
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(txnCtx.consensusTime()).willReturn(topLevelConsTime);
+        given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(INITIAL_RANDOM_HASH);
+        given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
+        given(nonBlockingHandoff.offer(expectedRso))
+                .willReturn(false)
+                .willReturn(true);
+        merkleNetworkContext.setFirstConsTimeOfCurrentBlock(null);
+        merkleNetworkContext.setLatestConsTimeOfCurrentBlock(null);
+
+        subject.run();
+
+        verify(nonBlockingHandoff, times(2)).offer(expectedRso);
+    }
+
+    @Test
+    void checkNewBlockIsNotCreatedWhenMinimumIntervalIsNotMetAndMinimumLastTxnNsPeriodIsMet() throws InterruptedException {
+        final Map<Long, org.hyperledger.besu.datatypes.Hash> blockNumberToHash = new TreeMap<>();
+        final var numberOfTransactions = 5;
+        final var numberOfBlocks = 2;
+
+        var consTime = topLevelConsTime;
+        blockNumberToHash.put((long) 0, MerkleNetworkContext.convertSwirldsHashToBesuHash(EMPTY_HASH));
+        for (int i = 0, j = 0; i < numberOfTransactions; i++) {
+            final var randomHash = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
+            if (i % 2 == 0) {
+                consTime = consTime.plusSeconds(1);
+                blockNumberToHash.put((long) j, MerkleNetworkContext.convertSwirldsHashToBesuHash(randomHash));
+                if (i != 2) {
+                    j++;
+                }
+            } else {
+                consTime = consTime.plusNanos(1001);
+            }
+
+            final var txn = Transaction.getDefaultInstance();
+            final var lastRecord = ExpirableTxnRecord.newBuilder().build();
+            final var expectedRso = new RecordStreamObject(lastRecord, txn, consTime);
+
+            given(accessor.getSignedTxnWrapper()).willReturn(txn);
+            given(txnCtx.accessor()).willReturn(accessor);
+            given(txnCtx.consensusTime()).willReturn(consTime);
+
+            if (i != 0 && i % 2 == 0) {
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(randomHash);
+            } else if (i == 0) {
+                blockNumberToHash.put((long) i, MerkleNetworkContext.convertSwirldsHashToBesuHash(EMPTY_HASH));
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(EMPTY_HASH);
+            }
+
+            given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
+            given(nonBlockingHandoff.offer(expectedRso))
+                    .willReturn(true);
+
+            subject.run();
+        }
+
+
+        assertEquals(numberOfBlocks, merkleNetworkContext.getBlockHashCache().size());
+        assertEquals(numberOfBlocks, merkleNetworkContext.getBlockNo());
+
+        for (int i = 0; i < numberOfBlocks; i++) {
+            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashCache(i));
+        }
     }
 }

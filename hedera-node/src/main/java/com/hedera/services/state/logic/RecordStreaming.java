@@ -98,7 +98,7 @@ public class RecordStreaming implements Runnable {
 
 	public void stream(final RecordStreamObject rso) {
 		if (isInNewBlock(rso)) {
-			Hash computedHash = new Hash();
+			Hash computedHash;
 			try {
 				computedHash = curRunningHashLeaf.getLatestBlockHash();
 			} catch (final InterruptedException e) {
