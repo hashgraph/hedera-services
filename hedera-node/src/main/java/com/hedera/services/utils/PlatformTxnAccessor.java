@@ -22,10 +22,10 @@ package com.hedera.services.utils;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 
 /**
- * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.SwirldTransaction}
+ * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.system.transaction.SwirldTransaction}
  * whose contents is <i>supposed</i> to be a Hedera Services gRPC {@link Transaction}. (The constructor of this
  * class immediately tries to parse the {@code byte[]} contents of the txn, and propagates any protobuf
  * exceptions encountered.)

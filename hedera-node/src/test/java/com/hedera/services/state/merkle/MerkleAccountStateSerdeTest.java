@@ -23,7 +23,7 @@ package com.hedera.services.state.merkle;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0251_VERSION;

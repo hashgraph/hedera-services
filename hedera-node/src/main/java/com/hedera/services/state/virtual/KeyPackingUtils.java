@@ -20,7 +20,7 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;

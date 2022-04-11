@@ -23,7 +23,7 @@ package com.hedera.services.stream;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.stats.MiscRunningAvgs;
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -43,7 +43,7 @@ import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-import static com.swirlds.common.Units.SECONDS_TO_MILLISECONDS;
+import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 
 /**
  * This class is used for generating record stream files when record streaming is enabled,

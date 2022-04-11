@@ -29,7 +29,7 @@ import com.hedera.services.stream.CurrentRecordStreamType;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.stream.RecordStreamType;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import dagger.Binds;

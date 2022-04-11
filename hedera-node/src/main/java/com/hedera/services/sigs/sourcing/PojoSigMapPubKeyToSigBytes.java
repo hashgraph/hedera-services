@@ -22,7 +22,7 @@ package com.hedera.services.sigs.sourcing;
 
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 
 import java.util.Arrays;
 

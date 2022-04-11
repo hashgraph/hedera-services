@@ -20,10 +20,10 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.swirlds.common.PlatformStatus;
+import com.swirlds.common.system.PlatformStatus;
 
 /**
- * Defines a type that sets and gets the status of the underlying {@link com.swirlds.common.Platform}.
+ * Defines a type that sets and gets the status of the underlying {@link com.swirlds.common.system.Platform}.
  * Intended for use as a per-classloader singleton for all running nodes.
  */
 public interface CurrentPlatformStatus {

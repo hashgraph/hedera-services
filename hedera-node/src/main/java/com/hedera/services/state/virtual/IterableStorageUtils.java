@@ -21,7 +21,7 @@ package com.hedera.services.state.virtual;
  */
 
 import com.hedera.services.utils.MapValueListUtils;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualMap;
 import org.jetbrains.annotations.NotNull;
 

@@ -21,7 +21,7 @@ package com.hedera.services.state.virtual;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;

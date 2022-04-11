@@ -21,8 +21,8 @@ package com.hedera.services.state.virtual;
  */
 
 import com.google.common.annotations.VisibleForTesting;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
 import org.apache.tuweni.bytes.Bytes32;

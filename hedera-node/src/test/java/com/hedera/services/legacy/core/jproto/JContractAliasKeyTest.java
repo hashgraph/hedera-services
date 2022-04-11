@@ -22,7 +22,7 @@ package com.hedera.services.legacy.core.jproto;
 
 import org.junit.jupiter.api.Test;
 
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JContractAliasKeyTest {

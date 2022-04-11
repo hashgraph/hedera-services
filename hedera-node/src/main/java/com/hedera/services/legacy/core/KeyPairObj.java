@@ -20,7 +20,7 @@ package com.hedera.services.legacy.core;
  * ‍
  */
 
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 
 import java.io.Serializable;

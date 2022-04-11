@@ -22,8 +22,8 @@ package com.hedera.services.stats;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.swirlds.common.Platform;
 import com.swirlds.common.statistics.StatsSpeedometer;
+import com.swirlds.common.system.Platform;
 
 import java.util.Arrays;
 import java.util.EnumMap;

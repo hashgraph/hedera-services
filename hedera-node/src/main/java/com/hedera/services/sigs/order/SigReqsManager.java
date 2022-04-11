@@ -35,8 +35,8 @@ import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.TxnAccessor;
-import com.swirlds.common.Platform;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
