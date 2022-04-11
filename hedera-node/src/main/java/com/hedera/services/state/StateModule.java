@@ -56,7 +56,7 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.validation.BasedLedgerValidator;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -278,7 +278,7 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	static Supplier<VirtualMap<ContractKey, ContractValue>> provideWorkingContractStorage(
+	static Supplier<VirtualMap<ContractKey, IterableContractValue>> provideWorkingContractStorage(
 			final MutableStateChildren workingState
 	) {
 		return workingState::contractStorage;

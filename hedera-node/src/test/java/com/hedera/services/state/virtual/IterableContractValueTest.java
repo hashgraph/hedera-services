@@ -33,9 +33,9 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
-import static com.hedera.services.state.virtual.ContractValue.ITERABLE_VERSION;
-import static com.hedera.services.state.virtual.ContractValue.NON_ITERABLE_SERIALIZED_SIZE;
-import static com.hedera.services.state.virtual.ContractValue.RUNTIME_CONSTRUCTABLE_ID;
+import static com.hedera.services.state.virtual.IterableContractValue.ITERABLE_VERSION;
+import static com.hedera.services.state.virtual.IterableContractValue.NON_ITERABLE_SERIALIZED_SIZE;
+import static com.hedera.services.state.virtual.IterableContractValue.RUNTIME_CONSTRUCTABLE_ID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class ContractValueTest {
+class IterableContractValueTest {
 	private static final UInt256 prevUint256Key =
 			UInt256.fromHexString("0x00304ed432ce31138ecf09aa3e8a410dd4a1e204ef84efed1ee16dfea1e22060");
 	private static final byte numNonZeroBytesInPrev = 31;
@@ -71,16 +71,16 @@ class ContractValueTest {
 	private static final ContractKey prevKey = new ContractKey(scopedContractId, prevUint256Key.toArray());
 	private static final ContractKey nextKey = new ContractKey(scopedContractId, nextUint256Key.toArray());
 
-	private ContractValue subject;
+	private IterableContractValue subject;
 
 	@BeforeEach
 	void setup() {
-		subject = new ContractValue(bytesValue, explicitPrevKey, explicitNextKey);
+		subject = new IterableContractValue(bytesValue, explicitPrevKey, explicitNextKey);
 	}
 
 	@Test
 	void keyGettersSettersWork() {
-		subject = new ContractValue(bytesValue);
+		subject = new IterableContractValue(bytesValue);
 
 		subject.setPrevKey(explicitPrevKey);
 		subject.setNextKey(explicitNextKey);
@@ -108,21 +108,21 @@ class ContractValueTest {
 
 	@Test
 	void objectContractMet() {
-		final var sameButDifferent = new ContractValue(bytesValue, explicitPrevKey, explicitNextKey);
+		final var sameButDifferent = new IterableContractValue(bytesValue, explicitPrevKey, explicitNextKey);
 		assertEquals(subject, sameButDifferent);
 		assertEquals(subject.hashCode(), sameButDifferent.hashCode());
 
-		var differentPrevKey = new ContractValue(bytesValue, null, explicitNextKey);
+		var differentPrevKey = new IterableContractValue(bytesValue, null, explicitNextKey);
 		assertNotEquals(subject, differentPrevKey);
 		assertNotEquals(subject.hashCode(), differentPrevKey.hashCode());
-		differentPrevKey = new ContractValue(bytesValue, explicitOtherKey, explicitNextKey);
+		differentPrevKey = new IterableContractValue(bytesValue, explicitOtherKey, explicitNextKey);
 		assertNotEquals(subject, differentPrevKey);
 		assertNotEquals(subject.hashCode(), differentPrevKey.hashCode());
 
-		var differentNextKey = new ContractValue(bytesValue, explicitPrevKey, null);
+		var differentNextKey = new IterableContractValue(bytesValue, explicitPrevKey, null);
 		assertNotEquals(subject, differentNextKey);
 		assertNotEquals(subject.hashCode(), differentNextKey.hashCode());
-		differentNextKey = new ContractValue(bytesValue, explicitPrevKey, explicitOtherKey);
+		differentNextKey = new IterableContractValue(bytesValue, explicitPrevKey, explicitOtherKey);
 		assertNotEquals(subject, differentNextKey);
 		assertNotEquals(subject.hashCode(), differentNextKey.hashCode());
 	}
@@ -140,7 +140,7 @@ class ContractValueTest {
 
 	@Test
 	void hasExpectedVersion() {
-		assertEquals(ContractValue.ITERABLE_VERSION, subject.getVersion());
+		assertEquals(IterableContractValue.ITERABLE_VERSION, subject.getVersion());
 	}
 
 	@Test
@@ -157,8 +157,8 @@ class ContractValueTest {
 	@Test
 	void setsLongValue() {
 		final var LONG_VALUE = 5L;
-		subject = new ContractValue();
-		final var expected = new ContractValue(LONG_VALUE);
+		subject = new IterableContractValue();
+		final var expected = new IterableContractValue(LONG_VALUE);
 
 		subject.setValue(LONG_VALUE);
 
@@ -236,7 +236,7 @@ class ContractValueTest {
 		final var out = mock(SerializableDataOutputStream.class);
 		final var inOrder = inOrder(out);
 
-		subject = new ContractValue(bytesValue);
+		subject = new IterableContractValue(bytesValue);
 
 		subject.serialize(out);
 
@@ -267,7 +267,7 @@ class ContractValueTest {
 
 	@Test
 	void deserializeWorksForV1() throws IOException {
-		subject = new ContractValue();
+		subject = new IterableContractValue();
 		final var in = mock(SerializableDataInputStream.class);
 		doAnswer(invocation -> {
 			subject.setValue(bytesValue);
@@ -291,8 +291,8 @@ class ContractValueTest {
 		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 		final var din = new SerializableDataInputStream(bais);
 
-		final var newSubject = new ContractValue();
-		newSubject.deserialize(din, ContractValue.ITERABLE_VERSION);
+		final var newSubject = new IterableContractValue();
+		newSubject.deserialize(din, IterableContractValue.ITERABLE_VERSION);
 
 		assertEquals(subject, newSubject);
 	}
@@ -301,15 +301,15 @@ class ContractValueTest {
 	void deserializeWorksForV2WithNoKeys() throws IOException {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		final var dos = new SerializableDataOutputStream(baos);
-		subject = new ContractValue(bytesValue);
+		subject = new IterableContractValue(bytesValue);
 		subject.serialize(dos);
 		dos.flush();
 		final var bytes = baos.toByteArray();
 		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 		final var din = new SerializableDataInputStream(bais);
 
-		final var newSubject = new ContractValue();
-		newSubject.deserialize(din, ContractValue.ITERABLE_VERSION);
+		final var newSubject = new IterableContractValue();
+		newSubject.deserialize(din, IterableContractValue.ITERABLE_VERSION);
 
 		assertEquals(subject, newSubject);
 	}
@@ -318,7 +318,7 @@ class ContractValueTest {
 	void deserializeWorksForV2WithOnlyPrevKey() throws IOException {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		final var dos = new SerializableDataOutputStream(baos);
-		subject = new ContractValue(bytesValue);
+		subject = new IterableContractValue(bytesValue);
 		subject.setPrevKey(explicitPrevKey);
 		subject.serialize(dos);
 		dos.flush();
@@ -326,8 +326,8 @@ class ContractValueTest {
 		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 		final var din = new SerializableDataInputStream(bais);
 
-		final var newSubject = new ContractValue();
-		newSubject.deserialize(din, ContractValue.ITERABLE_VERSION);
+		final var newSubject = new IterableContractValue();
+		newSubject.deserialize(din, IterableContractValue.ITERABLE_VERSION);
 
 		assertEquals(subject, newSubject);
 	}
@@ -336,7 +336,7 @@ class ContractValueTest {
 	void deserializeWorksForV2WithOnlyNext() throws IOException {
 		final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		final var dos = new SerializableDataOutputStream(baos);
-		subject = new ContractValue(bytesValue);
+		subject = new IterableContractValue(bytesValue);
 		subject.setNextKey(explicitNextKey);
 		subject.serialize(dos);
 		dos.flush();
@@ -344,8 +344,8 @@ class ContractValueTest {
 		final ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
 		final var din = new SerializableDataInputStream(bais);
 
-		final var newSubject = new ContractValue();
-		newSubject.deserialize(din, ContractValue.ITERABLE_VERSION);
+		final var newSubject = new IterableContractValue();
+		newSubject.deserialize(din, IterableContractValue.ITERABLE_VERSION);
 
 		assertEquals(subject, newSubject);
 	}
@@ -360,7 +360,7 @@ class ContractValueTest {
 
 	@Test
 	void deserializeWithByteBufferWorks() throws IOException {
-		subject = new ContractValue();
+		subject = new IterableContractValue();
 		final var byteBuffer = mock(ByteBuffer.class);
 		doAnswer(invocation -> {
 			subject.setValue(bytesValue);
@@ -381,7 +381,7 @@ class ContractValueTest {
 		subject.serialize(buffer);
 		buffer.reset();
 
-		final var newSubject = new ContractValue();
+		final var newSubject = new IterableContractValue();
 		newSubject.deserialize(buffer, ITERABLE_VERSION);
 
 		assertEquals(subject, newSubject);

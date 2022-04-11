@@ -26,7 +26,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.Cryptography;
@@ -45,16 +45,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public record StorageInfrastructure(
 		AtomicReference<MerkleMap<EntityNum, MerkleAccount>> accounts,
-		AtomicReference<VirtualMap<ContractKey, ContractValue>> storage,
+		AtomicReference<VirtualMap<ContractKey, IterableContractValue>> storage,
 		TransactionalLedger<AccountID, AccountProperty, MerkleAccount> ledger) {
 
 	private static final Cryptography crypto = new CryptoEngine();
 
 	public static StorageInfrastructure from(
 			final MerkleMap<EntityNum, MerkleAccount> accounts,
-			final VirtualMap<ContractKey, ContractValue> storage
+			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
-		final AtomicReference<VirtualMap<ContractKey, ContractValue>> storageRef = new AtomicReference<>(storage);
+		final AtomicReference<VirtualMap<ContractKey, IterableContractValue>> storageRef = new AtomicReference<>(storage);
 		final AtomicReference<MerkleMap<EntityNum, MerkleAccount>> accountsRef = new AtomicReference<>(accounts);
 		final var backingAccounts = new BackingAccounts(accountsRef::get);
 		backingAccounts.rebuildFromSources();
@@ -73,7 +73,7 @@ public record StorageInfrastructure(
 			accounts = mMapIn.readMerkleTree(Integer.MAX_VALUE);
 		}
 
-		VirtualMap<ContractKey, ContractValue> storage = new VirtualMap<>();
+		VirtualMap<ContractKey, IterableContractValue> storage = new VirtualMap<>();
 		final var vMapMetaLoc = InfrastructureManager.vMapMetaIn(storageLoc);
 		final var path = Paths.get(vMapMetaLoc);
 		final var storageDir = new File(storageLoc);

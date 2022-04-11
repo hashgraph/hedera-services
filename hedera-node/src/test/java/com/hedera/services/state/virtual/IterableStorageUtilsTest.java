@@ -44,11 +44,11 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class IterableStorageUtilsTest {
 	@Mock
-	private VirtualMap<ContractKey, ContractValue> storage;
+	private VirtualMap<ContractKey, IterableContractValue> storage;
 
-	private final ContractValue rootValue = new ContractValue(rootEvmValue.toArray());
-	private final ContractValue nextValue = new ContractValue(nextEvmValue.toArray());
-	private final ContractValue targetValue = new ContractValue(targetEvmValue.toArray());
+	private final IterableContractValue rootValue = new IterableContractValue(rootEvmValue.toArray());
+	private final IterableContractValue nextValue = new IterableContractValue(nextEvmValue.toArray());
+	private final IterableContractValue targetValue = new IterableContractValue(targetEvmValue.toArray());
 
 	@Test
 	void canListStorageValues() {

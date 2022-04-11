@@ -24,13 +24,13 @@ import com.hedera.services.utils.MapValueListRemoval;
 import com.swirlds.virtualmap.VirtualMap;
 import org.jetbrains.annotations.Nullable;
 
-public class ContractStorageListRemoval implements MapValueListRemoval<ContractKey, ContractValue> {
+public class ContractStorageListRemoval implements MapValueListRemoval<ContractKey, IterableContractValue> {
 	final long contractId;
-	final VirtualMap<ContractKey, ContractValue> storage;
+	final VirtualMap<ContractKey, IterableContractValue> storage;
 
 	public ContractStorageListRemoval(
 			final long contractId,
-			final VirtualMap<ContractKey, ContractValue> storage
+			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
 		this.contractId = contractId;
 		this.storage = storage;
@@ -41,7 +41,7 @@ public class ContractStorageListRemoval implements MapValueListRemoval<ContractK
 	 */
 	@Nullable
 	@Override
-	public ContractValue get(final ContractKey key) {
+	public IterableContractValue get(final ContractKey key) {
 		return storage.get(key);
 	}
 
@@ -50,7 +50,7 @@ public class ContractStorageListRemoval implements MapValueListRemoval<ContractK
 	 */
 	@Nullable
 	@Override
-	public ContractValue getForModify(final ContractKey key) {
+	public IterableContractValue getForModify(final ContractKey key) {
 		return storage.getForModify(key);
 	}
 
@@ -66,7 +66,7 @@ public class ContractStorageListRemoval implements MapValueListRemoval<ContractK
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void markAsHead(final ContractValue contractValue) {
+	public void markAsHead(final IterableContractValue contractValue) {
 		contractValue.markAsRootMapping();
 	}
 
@@ -74,7 +74,7 @@ public class ContractStorageListRemoval implements MapValueListRemoval<ContractK
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void markAsTail(final ContractValue contractValue) {
+	public void markAsTail(final IterableContractValue contractValue) {
 		contractValue.markAsLastMapping();
 	}
 
@@ -82,7 +82,7 @@ public class ContractStorageListRemoval implements MapValueListRemoval<ContractK
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void updatePrev(final ContractValue contractValue, final ContractKey prev) {
+	public void updatePrev(final IterableContractValue contractValue, final ContractKey prev) {
 		contractValue.setPrevKey(prev.getKey());
 	}
 
@@ -90,7 +90,7 @@ public class ContractStorageListRemoval implements MapValueListRemoval<ContractK
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void updateNext(ContractValue contractValue, ContractKey next) {
+	public void updateNext(IterableContractValue contractValue, ContractKey next) {
 		contractValue.setNextKey(next.getKey());
 	}
 
@@ -99,7 +99,7 @@ public class ContractStorageListRemoval implements MapValueListRemoval<ContractK
 	 */
 	@Nullable
 	@Override
-	public ContractKey next(final ContractValue contractValue) {
+	public ContractKey next(final IterableContractValue contractValue) {
 		return contractValue.getNextKeyScopedTo(contractId);
 	}
 
@@ -108,7 +108,7 @@ public class ContractStorageListRemoval implements MapValueListRemoval<ContractK
 	 */
 	@Nullable
 	@Override
-	public ContractKey prev(final ContractValue contractValue) {
+	public ContractKey prev(final IterableContractValue contractValue) {
 		return contractValue.getPrevKeyScopedTo(contractId);
 	}
 }

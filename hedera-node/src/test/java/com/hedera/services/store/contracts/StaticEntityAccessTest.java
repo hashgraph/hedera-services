@@ -35,7 +35,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
@@ -93,7 +93,7 @@ class StaticEntityAccessTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private VirtualMap<ContractKey, ContractValue> storage;
+	private VirtualMap<ContractKey, IterableContractValue> storage;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
 	@Mock
@@ -111,7 +111,7 @@ class StaticEntityAccessTest {
 	private final Bytes bytesKey = uint256Key.toBytes();
 	private final ContractKey contractKey = new ContractKey(id.getAccountNum(), uint256Key.toArray());
 	private final VirtualBlobKey blobKey = new VirtualBlobKey(CONTRACT_BYTECODE, (int) id.getAccountNum());
-	private final ContractValue contractVal = new ContractValue(BigInteger.ONE);
+	private final IterableContractValue contractVal = new IterableContractValue(BigInteger.ONE);
 	private final VirtualBlobValue blobVal = new VirtualBlobValue("data".getBytes());
 	private static final ByteString pretendAlias =
 			ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));

@@ -22,14 +22,14 @@ package com.hedera.services.state.virtual;
 
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.services.state.virtual.ContractValue.RUNTIME_CONSTRUCTABLE_ID;
-import static com.hedera.services.state.virtual.ContractValueSupplier.CLASS_ID;
-import static com.hedera.services.state.virtual.ContractValueSupplier.CURRENT_VERSION;
+import static com.hedera.services.state.virtual.IterableContractValue.RUNTIME_CONSTRUCTABLE_ID;
+import static com.hedera.services.state.virtual.IterableContractValueSupplier.CLASS_ID;
+import static com.hedera.services.state.virtual.IterableContractValueSupplier.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class ContractValueSupplierTest {
-	private ContractValueSupplier subject = new ContractValueSupplier();
+class IterableContractValueSupplierTest {
+	private IterableContractValueSupplier subject = new IterableContractValueSupplier();
 
 	@Test
 	void gettersWork() {

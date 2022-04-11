@@ -43,13 +43,13 @@ import static com.hedera.services.state.virtual.KeyPackingUtils.serializePackedB
  * Representation of a 256bit unsigned int, stored internally as a big-endian byte array.
  */
 @SuppressWarnings({ "PointlessBitwiseExpression", "unused" })
-public class ContractValue implements VirtualValue {
+public class IterableContractValue implements VirtualValue {
 	public static final int ITERABLE_VERSION = 2;
 
 	public static final int NON_ITERABLE_SERIALIZED_SIZE = 32;
 	public static final int ITERABLE_SERIALIZED_SIZE = DataFileCommon.VARIABLE_DATA_SIZE;
 
-	public static final long RUNTIME_CONSTRUCTABLE_ID = 0xd7c4802f00979857L;
+	public static final long RUNTIME_CONSTRUCTABLE_ID = 0xabf8bd64a87ee740L;
 
 	// The raw big-endian data for the uint256 EVM value
 	private byte[] uint256Value;
@@ -70,14 +70,14 @@ public class ContractValue implements VirtualValue {
 	private static final String IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR =
 			"Tried to set value on immutable ContractValue";
 
-	public static ContractValue from(final UInt256 value) {
-		return new ContractValue(value.toArray());
+	public static IterableContractValue from(final UInt256 value) {
+		return new IterableContractValue(value.toArray());
 	}
 
 	/**
 	 * Construct a zero ContractValue
 	 */
-	public ContractValue() {
+	public IterableContractValue() {
 		this.uint256Value = new byte[32];
 	}
 
@@ -87,7 +87,7 @@ public class ContractValue implements VirtualValue {
 	 * @param value
 	 * 		long value to be used
 	 */
-	public ContractValue(long value) {
+	public IterableContractValue(long value) {
 		setValue(value);
 	}
 
@@ -97,7 +97,7 @@ public class ContractValue implements VirtualValue {
 	 * @param value
 	 * 		BigInteger value to be used
 	 */
-	public ContractValue(BigInteger value) {
+	public IterableContractValue(BigInteger value) {
 		Objects.requireNonNull(value);
 		setValue(value);
 	}
@@ -109,12 +109,12 @@ public class ContractValue implements VirtualValue {
 	 * @param bigEndianValue
 	 * 		big endian value to be used
 	 */
-	public ContractValue(byte[] bigEndianValue) {
+	public IterableContractValue(byte[] bigEndianValue) {
 		Objects.requireNonNull(bigEndianValue);
 		setValue(bigEndianValue);
 	}
 
-	public ContractValue(final byte[] bigEndianValue, final int[] prevUint256Key, final int[] nextUint256Key) {
+	public IterableContractValue(final byte[] bigEndianValue, final int[] prevUint256Key, final int[] nextUint256Key) {
 		Objects.requireNonNull(bigEndianValue);
 		setValue(bigEndianValue);
 		setExplicitPrevKey(prevUint256Key);
@@ -238,7 +238,7 @@ public class ContractValue implements VirtualValue {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		final var that = (ContractValue) o;
+		final var that = (IterableContractValue) o;
 		return Arrays.equals(uint256Value, that.uint256Value) &&
 				Arrays.equals(prevUint256Key, that.prevUint256Key) &&
 				Arrays.equals(nextUint256Key, that.nextUint256Key);
@@ -270,14 +270,14 @@ public class ContractValue implements VirtualValue {
 	}
 
 	@Override
-	public ContractValue copy() {
+	public IterableContractValue copy() {
 		isImmutable = true;
-		return new ContractValue(uint256Value, prevUint256Key, nextUint256Key);
+		return new IterableContractValue(uint256Value, prevUint256Key, nextUint256Key);
 	}
 
 	@Override
-	public ContractValue asReadOnly() { // is it too expensive to make a copy here?
-		final var readOnlyThat = new ContractValue(uint256Value, prevUint256Key, nextUint256Key);
+	public IterableContractValue asReadOnly() { // is it too expensive to make a copy here?
+		final var readOnlyThat = new IterableContractValue(uint256Value, prevUint256Key, nextUint256Key);
 		readOnlyThat.isImmutable = true;
 		return readOnlyThat;
 	}

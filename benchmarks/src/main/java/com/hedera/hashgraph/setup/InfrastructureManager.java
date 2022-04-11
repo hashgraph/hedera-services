@@ -51,7 +51,7 @@ public class InfrastructureManager {
 			}
 		};
 		final var vmFactory = new VirtualMapFactory(jdbBuilderFactory);
-		final var storage = vmFactory.newVirtualizedStorage();
+		final var storage = vmFactory.newVirtualizedIterableStorage();
 		final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
 		return StorageInfrastructure.from(accounts, storage);
 	}

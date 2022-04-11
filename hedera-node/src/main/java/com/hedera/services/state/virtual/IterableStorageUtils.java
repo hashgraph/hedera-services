@@ -37,7 +37,7 @@ public class IterableStorageUtils {
 
 	public static String joinedStorageMappings(
 			final ContractKey firstKey,
-			final VirtualMap<ContractKey, ContractValue> storage
+			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
 		if (firstKey == null) {
 			return NO_ITERABLE_STORAGE;
@@ -83,10 +83,10 @@ public class IterableStorageUtils {
 	 */
 	public static ContractKey upsertMapping(
 			@NotNull final ContractKey key,
-			@NotNull final ContractValue value,
+			@NotNull final IterableContractValue value,
 			@Nullable final ContractKey rootKey,
-			@Nullable final ContractValue rootValue,
-			final VirtualMap<ContractKey, ContractValue> storage
+			@Nullable final IterableContractValue rootValue,
+			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
 		final var oldValue = storage.getForModify(key);
 		if (oldValue != null) {
@@ -119,7 +119,7 @@ public class IterableStorageUtils {
 	public static @Nullable ContractKey removeMapping(
 			@NotNull final ContractKey key,
 			@NotNull final ContractKey root,
-			final VirtualMap<ContractKey, ContractValue> storage
+			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
 		return MapValueListUtils.removeFromMapValueList(key, root, new ContractStorageListRemoval(key.getContractId(), storage));
 	}

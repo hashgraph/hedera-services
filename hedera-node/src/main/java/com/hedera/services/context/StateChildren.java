@@ -30,7 +30,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -56,7 +56,7 @@ public interface StateChildren {
 
 	VirtualMap<VirtualBlobKey, VirtualBlobValue> storage();
 
-	VirtualMap<ContractKey, ContractValue> contractStorage();
+	VirtualMap<ContractKey, IterableContractValue> contractStorage();
 
 	MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations();
 

@@ -5,7 +5,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractStorageListRemoval;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityNum;
@@ -34,7 +34,7 @@ class ContractGCTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
 	@Mock
-	private VirtualMap<ContractKey, ContractValue> storage;
+	private VirtualMap<ContractKey, IterableContractValue> storage;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
 	@Mock

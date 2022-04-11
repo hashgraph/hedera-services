@@ -368,16 +368,16 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void minimumVersionIsRelease0190() {
+	void minimumVersionIsRelease0240() {
 		// expect:
-		assertEquals(StateVersions.RELEASE_0220_VERSION, subject.getMinimumSupportedVersion());
+		assertEquals(StateVersions.RELEASE_024x_VERSION, subject.getMinimumSupportedVersion());
 	}
 
 	@Test
 	void minimumChildCountsAsExpected() {
 		assertEquals(
 				StateChildIndices.NUM_POST_0210_CHILDREN,
-				subject.getMinimumChildCount(StateVersions.RELEASE_0230_VERSION));
+				subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION));
 		assertThrows(IllegalArgumentException.class,
 				() -> subject.getMinimumChildCount(StateVersions.MINIMUM_SUPPORTED_VERSION - 1));
 		assertThrows(IllegalArgumentException.class,
@@ -405,19 +405,6 @@ class ServicesStateTest {
 		APPS.save(selfId.getId(), app);
 
 		assertDoesNotThrow(() -> subject.init(platform, addressBook, null));
-	}
-
-	@Test
-	void doesntMigrateWhenInitializingFromRelease0220() {
-		given(accounts.keySet()).willReturn(Set.of());
-		ServicesState.setStakeFundingMigrator(mockMigrator);
-
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
-		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
-
-		assertDoesNotThrow(subject::migrate);
-
-		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
 	}
 
 	@Test
@@ -458,7 +445,7 @@ class ServicesStateTest {
 		tokenAssociations.put(associationKey2, association2);
 		tokenAssociations.put(associationKey3, association3);
 
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0240_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_024x_VERSION);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		given(accounts.keySet()).willReturn(Set.of(account1, account2));

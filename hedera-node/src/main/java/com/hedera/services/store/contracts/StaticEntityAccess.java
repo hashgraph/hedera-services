@@ -37,7 +37,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
@@ -76,7 +76,7 @@ public class StaticEntityAccess implements EntityAccess {
 	private final MerkleMap<EntityNum, MerkleAccount> accounts;
 	private final MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
 	private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
-	private final VirtualMap<ContractKey, ContractValue> storage;
+	private final VirtualMap<ContractKey, IterableContractValue> storage;
 	private final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
 
 	public StaticEntityAccess(
@@ -197,7 +197,7 @@ public class StaticEntityAccess implements EntityAccess {
 	@Override
 	public UInt256 getStorage(AccountID id, UInt256 key) {
 		final var contractKey = new ContractKey(id.getAccountNum(), key.toArray());
-		ContractValue value = storage.get(contractKey);
+		IterableContractValue value = storage.get(contractKey);
 		return value == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(value.getValue()));
 	}
 

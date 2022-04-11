@@ -26,7 +26,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -63,7 +63,7 @@ import static org.apache.tuweni.units.bigints.UInt256.ZERO;
  */
 @Singleton
 public class SizeLimitedStorage {
-	public static final ContractValue ZERO_VALUE = ContractValue.from(ZERO);
+	public static final IterableContractValue ZERO_VALUE = IterableContractValue.from(ZERO);
 
 	// Used to upsert to a contract's doubly-linked list of storage mappings
 	private final IterableStorageUpserter storageUpserter;
@@ -74,13 +74,13 @@ public class SizeLimitedStorage {
 	// Used to look up the initial key/value counts for the contracts involved in a change set
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 	// Used to both read and write key/value pairs throughout the lifecycle of a change set
-	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
+	private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
 
 	private final Map<Long, ContractKey> newFirstKeys = new HashMap<>();
 	private final Map<Long, AtomicInteger> newUsages = new TreeMap<>();
 	private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
 	private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
-	private final Map<ContractKey, ContractValue> newMappings = new HashMap<>();
+	private final Map<ContractKey, IterableContractValue> newMappings = new HashMap<>();
 
 	private long totalKvPairs;
 
@@ -90,7 +90,7 @@ public class SizeLimitedStorage {
 			final IterableStorageRemover storageRemover,
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
-			final Supplier<VirtualMap<ContractKey, ContractValue>> storage
+			final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage
 	) {
 		this.dynamicProperties = dynamicProperties;
 		this.storageRemover = storageRemover;
@@ -195,10 +195,10 @@ public class SizeLimitedStorage {
 	public interface IterableStorageUpserter {
 		ContractKey upsertMapping(
 				ContractKey key,
-				ContractValue value,
+				IterableContractValue value,
 				ContractKey rootKey,
-				ContractValue rootValue,
-				VirtualMap<ContractKey, ContractValue> storage);
+				IterableContractValue rootValue,
+				VirtualMap<ContractKey, IterableContractValue> storage);
 	}
 
 	@FunctionalInterface
@@ -206,7 +206,7 @@ public class SizeLimitedStorage {
 		ContractKey removeMapping(
 				ContractKey key,
 				ContractKey rootKey,
-				VirtualMap<ContractKey, ContractValue> storage);
+				VirtualMap<ContractKey, IterableContractValue> storage);
 	}
 
 	private AtomicInteger kvPairsLookup(final Long num) {
@@ -252,11 +252,11 @@ public class SizeLimitedStorage {
 	 */
 	static int incorporateKvImpact(
 			final ContractKey key,
-			final ContractValue value,
+			final IterableContractValue value,
 			final Map<Long, TreeSet<ContractKey>> updatedKeys,
 			final Map<Long, TreeSet<ContractKey>> removedKeys,
-			final Map<ContractKey, ContractValue> newMappings,
-			final VirtualMap<ContractKey, ContractValue> storage
+			final Map<ContractKey, IterableContractValue> newMappings,
+			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
 		if (value == ZERO_VALUE) {
 			return incorporateZeroingOf(key, updatedKeys, removedKeys, newMappings, storage);
@@ -267,11 +267,11 @@ public class SizeLimitedStorage {
 
 	private static int incorporateSettingOf(
 			final ContractKey key,
-			final ContractValue value,
+			final IterableContractValue value,
 			final Map<Long, TreeSet<ContractKey>> updatedKeys,
 			final Map<Long, TreeSet<ContractKey>> removedKeys,
-			final Map<ContractKey, ContractValue> newMappings,
-			final VirtualMap<ContractKey, ContractValue> storage
+			final Map<ContractKey, IterableContractValue> newMappings,
+			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
 		final Long contractId = key.getContractId();
 		final var hasPendingUpdate = newMappings.containsKey(key);
@@ -298,8 +298,8 @@ public class SizeLimitedStorage {
 			final ContractKey key,
 			final Map<Long, TreeSet<ContractKey>> updatedKeys,
 			final Map<Long, TreeSet<ContractKey>> removedKeys,
-			final Map<ContractKey, ContractValue> newMappings,
-			final VirtualMap<ContractKey, ContractValue> storage
+			final Map<ContractKey, IterableContractValue> newMappings,
+			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
 		final Long contractId = key.getContractId();
 		final var hasPendingUpdate = newMappings.containsKey(key);
@@ -346,7 +346,7 @@ public class SizeLimitedStorage {
 		}
 		final var curStorage = storage.get();
 		updatedKeys.forEach((id, changeSet) -> {
-			ContractValue firstValue = null;
+			IterableContractValue firstValue = null;
 			var firstKey = newFirstKeys.computeIfAbsent(id, this::firstKeyLookup);
 			for (final var changedKey : changeSet) {
 				final var newValue = newMappings.get(changedKey);
@@ -373,8 +373,8 @@ public class SizeLimitedStorage {
 
 	static Function<Long, TreeSet<ContractKey>> treeSetFactory = ignore -> new TreeSet<>();
 
-	private static ContractValue virtualValueFrom(final UInt256 evmWord) {
-		return evmWord.isZero() ? ZERO_VALUE : ContractValue.from(evmWord);
+	private static IterableContractValue virtualValueFrom(final UInt256 evmWord) {
+		return evmWord.isZero() ? ZERO_VALUE : IterableContractValue.from(evmWord);
 	}
 
 	// --- Only used by unit tests ---
@@ -404,7 +404,7 @@ public class SizeLimitedStorage {
 	}
 
 	@VisibleForTesting
-	Map<ContractKey, ContractValue> getNewMappings() {
+	Map<ContractKey, IterableContractValue> getNewMappings() {
 		return newMappings;
 	}
 }

@@ -31,7 +31,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -59,7 +59,7 @@ public class ImmutableStateChildren implements StateChildren {
 	private final WeakReference<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
 	private final WeakReference<MerkleMap<EntityNum, MerkleSchedule>> schedules;
 	private final WeakReference<VirtualMap<VirtualBlobKey, VirtualBlobValue>> storage;
-	private final WeakReference<VirtualMap<ContractKey, ContractValue>> contractStorage;
+	private final WeakReference<VirtualMap<ContractKey, IterableContractValue>> contractStorage;
 	private final WeakReference<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations;
 	private final WeakReference<MerkleNetworkContext> networkCtx;
 	private final WeakReference<AddressBook> addressBook;
@@ -112,7 +112,7 @@ public class ImmutableStateChildren implements StateChildren {
 	}
 
 	@Override
-	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+	public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
 		return Objects.requireNonNull(contractStorage.get());
 	}
 

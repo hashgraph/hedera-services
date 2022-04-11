@@ -31,7 +31,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
@@ -62,7 +62,7 @@ class ImmutableStateChildrenTest {
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	@Mock
-	private VirtualMap<ContractKey, ContractValue> contractStorage;
+	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
 	@Mock
 	private MerkleMap<EntityNum, MerkleTopic> topics;
 	@Mock

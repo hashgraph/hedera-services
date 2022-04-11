@@ -49,8 +49,6 @@ public final class ContractKey implements VirtualKey<ContractKey> {
 	private static final int[] BIT_SHIFTS = { 0, 8, 16, 24, 32, 40, 48, 56 };
 	/** The estimated average size for a contract key when serialized */
 	public static final int ESTIMATED_AVERAGE_SIZE = 20; // assume 50% full typically, max size is (1 + 8 + 32)
-	/** The max size for a contract key when serialized */
-	public static final int MAX_SIZE = 1 + Long.SIZE + 32;
 	/** this is the number part of the contract address */
 	private long contractId;
 	/** number of the least significant bytes in contractId that contain ones. Max is 8 */

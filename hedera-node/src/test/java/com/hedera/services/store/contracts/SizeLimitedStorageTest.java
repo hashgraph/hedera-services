@@ -25,7 +25,7 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -72,13 +72,13 @@ class SizeLimitedStorageTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private VirtualMap<ContractKey, ContractValue> storage;
+	private VirtualMap<ContractKey, IterableContractValue> storage;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	private final Map<Long, TreeSet<ContractKey>> updatedKeys = new TreeMap<>();
 	private final Map<Long, TreeSet<ContractKey>> removedKeys = new TreeMap<>();
-	private final Map<ContractKey, ContractValue> newMappings = new HashMap<>();
+	private final Map<ContractKey, IterableContractValue> newMappings = new HashMap<>();
 
 	private SizeLimitedStorage subject;
 
@@ -438,7 +438,7 @@ class SizeLimitedStorageTest {
 		given(accounts.get(key)).willReturn(account);
 	}
 
-	private void givenContainedStorage(final ContractKey key, final ContractValue value) {
+	private void givenContainedStorage(final ContractKey key, final IterableContractValue value) {
 		given(storage.get(key)).willReturn(value);
 		given(storage.containsKey(key)).willReturn(true);
 	}
@@ -463,9 +463,9 @@ class SizeLimitedStorageTest {
 	private static final ContractKey nextAKey = ContractKey.from(nextAccount, aLiteralKey);
 	private static final ContractKey firstRootKey = ContractKey.from(firstAccount, cLiteralKey);
 	private static final ContractKey nextRootKey = ContractKey.from(nextAccount, cLiteralKey);
-	private static final ContractValue aValue = ContractValue.from(aLiteralValue);
-	private static final ContractValue bValue = ContractValue.from(bLiteralValue);
-	private static final ContractValue dValue = ContractValue.from(dLiteralValue);
+	private static final IterableContractValue aValue = IterableContractValue.from(aLiteralValue);
+	private static final IterableContractValue bValue = IterableContractValue.from(bLiteralValue);
+	private static final IterableContractValue dValue = IterableContractValue.from(dLiteralValue);
 	private static final int firstKvPairs = 5;
 	private static final int nextKvPairs = 6;
 }

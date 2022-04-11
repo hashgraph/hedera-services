@@ -37,7 +37,7 @@ import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
@@ -75,8 +75,8 @@ import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_0240_VERSION;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_0250_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_024x_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_025x_VERSION;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
@@ -152,10 +152,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
-		if (deserializedVersionFromState < RELEASE_0240_VERSION) {
+		if (deserializedVersionFromState < RELEASE_024x_VERSION) {
 			stakeFundingMigrator.accept(this);
 		}
-		if (deserializedVersionFromState < RELEASE_0250_VERSION) {
+		if (deserializedVersionFromState < RELEASE_025x_VERSION) {
 			// add the links to the doubly linked list of MerkleTokenRelStatus map and
 			// update each account's last associated token entityNumPair
 			updateLinks();
@@ -344,7 +344,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.UNIQUE_TOKENS);
 	}
 
-	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+	public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
 		return getChild(StateChildIndices.CONTRACT_STORAGE);
 	}
 
@@ -464,7 +464,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
-		setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedStorage());
+		setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
 	}
 
 	private RecordsRunningHashLeaf genesisRunningHashLeaf() {

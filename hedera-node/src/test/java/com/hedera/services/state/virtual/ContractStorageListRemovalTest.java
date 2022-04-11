@@ -38,7 +38,7 @@ import static org.mockito.Mockito.verify;
 class ContractStorageListRemovalTest {
 	private static final long contractId = 123L;
 	@Mock
-	private VirtualMap<ContractKey, ContractValue> storage;
+	private VirtualMap<ContractKey, IterableContractValue> storage;
 
 	private ContractStorageListRemoval subject;
 
@@ -133,7 +133,7 @@ class ContractStorageListRemovalTest {
 	private static final ContractKey rootKey = ContractKey.from(contractId, rootEvmKey);
 	private static final ContractKey targetKey = ContractKey.from(contractId, targetEvmKey);
 	private static final ContractKey nextKey = ContractKey.from(contractId, nextEvmKey);
-	private final ContractValue rootValue = new ContractValue(rootEvmValue.toArray());
-	private final ContractValue nextValue = new ContractValue(nextEvmValue.toArray());
-	private final ContractValue targetValue = new ContractValue(targetEvmValue.toArray());
+	private final IterableContractValue rootValue = new IterableContractValue(rootEvmValue.toArray());
+	private final IterableContractValue nextValue = new IterableContractValue(nextEvmValue.toArray());
+	private final IterableContractValue targetValue = new IterableContractValue(targetEvmValue.toArray());
 }

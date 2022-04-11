@@ -44,7 +44,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -181,7 +181,7 @@ class StateViewTest {
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-	private VirtualMap<ContractKey, ContractValue> contractStorage;
+	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
 	private NetworkInfo networkInfo;
@@ -312,7 +312,7 @@ class StateViewTest {
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
 		storage = (VirtualMap<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMap.class);
-		contractStorage = (VirtualMap<ContractKey, ContractValue>) mock(VirtualMap.class);
+		contractStorage = (VirtualMap<ContractKey, IterableContractValue>) mock(VirtualMap.class);
 
 		children = new MutableStateChildren();
 		children.setUniqueTokens(uniqueTokens);

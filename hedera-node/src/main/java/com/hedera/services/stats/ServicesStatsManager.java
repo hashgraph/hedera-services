@@ -22,7 +22,7 @@ package com.hedera.services.stats;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.Pause;
@@ -52,7 +52,7 @@ public class ServicesStatsManager {
 	private final MiscSpeedometers speedometers;
 	private final HapiOpSpeedometers opSpeedometers;
 	private final NodeLocalProperties properties;
-	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
+	private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
 	@Inject
@@ -62,7 +62,7 @@ public class ServicesStatsManager {
 			final MiscSpeedometers speedometers,
 			final HapiOpSpeedometers opSpeedometers,
 			final NodeLocalProperties properties,
-			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
+			final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
 		this.storage = storage;

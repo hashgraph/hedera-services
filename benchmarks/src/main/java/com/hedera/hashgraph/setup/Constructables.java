@@ -26,8 +26,8 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractKeySerializer;
 import com.hedera.services.state.virtual.ContractKeySupplier;
-import com.hedera.services.state.virtual.ContractValue;
-import com.hedera.services.state.virtual.ContractValueSupplier;
+import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.IterableContractValueSupplier;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -69,9 +69,9 @@ public class Constructables {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(ContractKeySupplier.class, ContractKeySupplier::new));
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(ContractValue.class, ContractValue::new));
+				new ClassConstructorPair(IterableContractValue.class, IterableContractValue::new));
 		ConstructableRegistry.registerConstructable(
-				new ClassConstructorPair(ContractValueSupplier.class, ContractValueSupplier::new));
+				new ClassConstructorPair(IterableContractValueSupplier.class, IterableContractValueSupplier::new));
 	}
 
 	public static void registerForMerkleMap() throws ConstructableRegistryException {

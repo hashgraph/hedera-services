@@ -5,7 +5,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractStorageListRemoval;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityNum;
@@ -24,7 +24,7 @@ import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYT
 public class ContractGC {
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
-	private final Supplier<VirtualMap<ContractKey, ContractValue>> storage;
+	private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
 	private ContractGC.RemovalFacilitation removalFacilitation = MapValueListUtils::removeFromMapValueList;
@@ -33,7 +33,7 @@ public class ContractGC {
 	public ContractGC(
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts,
-			final Supplier<VirtualMap<ContractKey, ContractValue>> storage,
+			final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage,
 			final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode
 	) {
 		this.contracts = contracts;
@@ -64,7 +64,7 @@ public class ContractGC {
 			final int maxKvPairs,
 			final EntityNum contractNum,
 			final ContractKey rootKey,
-			final VirtualMap<ContractKey, ContractValue> storage
+			final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
 		final var listRemoval = new ContractStorageListRemoval(contractNum.longValue(), storage);
 		var i = maxKvPairs;

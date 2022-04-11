@@ -26,18 +26,18 @@ import com.swirlds.jasperdb.SelfSerializableSupplier;
 
 import java.io.IOException;
 
-public class ContractValueSupplier implements SelfSerializableSupplier<ContractValue> {
-	static final long CLASS_ID = 0x11cd526cdc0e925dL;
+public class IterableContractValueSupplier implements SelfSerializableSupplier<IterableContractValue> {
+	static final long CLASS_ID = 0x2137d0dcac9ab2b2L;
 	static final int CURRENT_VERSION = 1;
 
 	@Override
-	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
-		/* No-op */
+	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
+		// Nothing to do here
 	}
 
 	@Override
 	public void serialize(SerializableDataOutputStream out) throws IOException {
-		/* No-op */
+		// Nothing to do here
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public class ContractValueSupplier implements SelfSerializableSupplier<ContractV
 	}
 
 	@Override
-	public ContractValue get() {
-		return new ContractValue();
+	public IterableContractValue get() {
+		return new IterableContractValue();
 	}
 }
