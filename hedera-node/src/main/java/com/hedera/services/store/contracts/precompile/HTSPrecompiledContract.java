@@ -63,6 +63,7 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculator;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.models.Id;
@@ -101,7 +102,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
@@ -156,7 +156,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -173,17 +172,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
 			.setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
 			.build();
-	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
-	private static final String UNKNOWN_FUNCTION_ID_ERROR_MESSAGE =
-			"%s precompile received unknown functionId=%x (via %s)";
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
-	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
 	public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
@@ -571,10 +566,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
 				sideEffects);
-	}
-
-	private static Bytes resultFrom(final ResponseCodeEnum status) {
-		return UInt256.valueOf(status.getNumber());
 	}
 
 	void decodeInput(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
@@ -1175,8 +1166,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_TRANSFER_TOKEN -> decoder.decodeTransferToken(input, aliasResolver);
 				case ABI_ID_TRANSFER_NFTS -> decoder.decodeTransferNFTs(input, aliasResolver);
 				case ABI_ID_TRANSFER_NFT -> decoder.decodeTransferNFT(input, aliasResolver);
-				default -> throw new InvalidTransactionException(
-						String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE, "Transfer", functionId, input), FAIL_INVALID);
+				default -> null;
 			};
 			syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			extrapolateDetailsFromSyntheticTxn();
@@ -1450,9 +1440,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenId, callerAccountID, aliasResolver);
 				case ABI_ID_ERC_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenId,
 						isFungible, aliasResolver);
-				default -> throw new InvalidTransactionException(
-						String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE, "Transfer", functionId, nestedInput),
-						FAIL_INVALID);
+				default -> null;
 			};
 			super.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			super.extrapolateDetailsFromSyntheticTxn();
