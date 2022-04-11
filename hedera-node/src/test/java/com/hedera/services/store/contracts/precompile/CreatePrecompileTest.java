@@ -56,6 +56,7 @@ import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.txns.token.CreateLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
@@ -201,6 +202,8 @@ class CreatePrecompileTest {
 	private AccountStore accountStore;
 	@Mock
 	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
+	@Mock
+	private AdjustAllowanceChecks allowanceChecks;
 
 	private HTSPrecompiledContract subject;
 	private UpdateTrackingLedgerAccount senderMutableAccount;
@@ -221,7 +224,7 @@ class CreatePrecompileTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
 		subject.setCreateLogicFactory(createLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);

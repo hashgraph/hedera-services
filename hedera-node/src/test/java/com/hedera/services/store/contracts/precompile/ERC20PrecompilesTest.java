@@ -526,7 +526,6 @@ class ERC20PrecompilesTest {
         alowances.put(FcTokenAllowanceId.from(EntityNum.fromLong(token.getTokenNum()), EntityNum.fromLong(receiver.getAccountNum())), 10L);
 
         givenMinimalFrameContext();
-        given(wrappedLedgers.tokens()).willReturn(tokens);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments)).willReturn(mockSynthBodyBuilder);
         given(nestedPretendArguments.getInt(0)).willReturn(ABI_ID_ALLOWANCE);
@@ -548,7 +547,7 @@ class ERC20PrecompilesTest {
                 ALLOWANCE_WRAPPER);
         given(accounts.get(any(), any())).willReturn(alowances);
         given(encoder.encodeAllowance(10L)).willReturn(successResult);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
         subject.prepareFields(frame);
@@ -641,7 +640,7 @@ class ERC20PrecompilesTest {
 
         given(decoder.decodeTokenApprove(eq(nestedPretendArguments), eq(token), eq(true), any())).willReturn(
                 APPROVE_WRAPPER);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(accounts.get(any(), any())).willReturn(allowances);
         given(encoder.encodeApprove(true)).willReturn(successResult);
 
@@ -770,7 +769,7 @@ class ERC20PrecompilesTest {
 
         given(aliases.resolveForEvm(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
-        given(tokens.get(token, TOKEN_TYPE)).willReturn(TokenType.FUNGIBLE_COMMON);
+        given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(encoder.encodeEcFungibleTransfer(true)).willReturn(successResult);
         // when:
         subject.prepareFields(frame);

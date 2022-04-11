@@ -63,8 +63,8 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculator;
+import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -101,6 +101,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
@@ -120,9 +121,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -132,15 +133,8 @@ import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
-import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
-import static com.hedera.services.ledger.properties.TokenProperty.NAME;
-import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
-import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
-import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
-import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.store.contracts.precompile.DescriptorUtils.isTokenProxyRedirect;
@@ -162,6 +156,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -178,6 +173,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
 			.setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
 			.build();
+	private static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
 	private static final Bytes STATIC_CALL_REVERT_REASON = Bytes.of("HTS precompiles are not static".getBytes());
 	private static final String NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-20 token!";
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
@@ -187,6 +183,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			"%s precompile received unknown functionId=%x (via %s)";
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
+	private static final List<FcAssessedCustomFee> NO_CUSTOM_FEES = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
 	public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
@@ -384,6 +381,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	@Override
 	public Bytes compute(final Bytes input, final MessageFrame frame) {
+		boolean isRedirectProxy = ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
+
+		if (frame.isStatic() && !isRedirectProxy) {
+			frame.setRevertReason(STATIC_CALL_REVERT_REASON);
+			return null;
+		}
+
 		prepareFields(frame);
 		prepareComputation(input, updater::unaliased);
 
@@ -520,18 +524,18 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							nestedPrecompile = new ERCTransferPrecompile(tokenId, this.senderAddress, isFungibleToken);
 						} else if (ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
 							this.isTokenReadOnlyTransaction = false;
-							nestedPrecompile = new ERCTransferPrecompile(tokenID, this.senderAddress, isFungibleToken);
+							nestedPrecompile = new ERCTransferPrecompile(tokenId, this.senderAddress, isFungibleToken);
 						} else if (ABI_ID_ALLOWANCE == nestedFunctionSelector) {
-							nestedPrecompile = new AllowancePrecompile(tokenID);
+							nestedPrecompile = new AllowancePrecompile(tokenId);
 						} else if (ABI_ID_APPROVE == nestedFunctionSelector) {
 							this.isTokenReadOnlyTransaction = false;
-							nestedPrecompile = new ApprovePrecompile(tokenID, isFungibleToken);
+							nestedPrecompile = new ApprovePrecompile(tokenId, isFungibleToken);
 						} else if (ABI_ID_SET_APPROVAL_FOR_ALL == nestedFunctionSelector) {
-							nestedPrecompile = new SetApprovalForAllPrecompile(tokenID);
+							nestedPrecompile = new SetApprovalForAllPrecompile(tokenId);
 						} else if (ABI_ID_GET_APPROVED == nestedFunctionSelector) {
-							nestedPrecompile = new GetApprovedPrecompile(tokenID);
+							nestedPrecompile = new GetApprovedPrecompile(tokenId);
 						} else if (ABI_ID_IS_APPROVED_FOR_ALL == nestedFunctionSelector) {
-							nestedPrecompile = new IsApprovedForAllPrecompile(tokenID);
+							nestedPrecompile = new IsApprovedForAllPrecompile(tokenId);
 						} else {
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = null;
@@ -567,6 +571,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
 				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
 				sideEffects);
+	}
+
+	private static Bytes resultFrom(final ResponseCodeEnum status) {
+		return UInt256.valueOf(status.getNumber());
 	}
 
 	void decodeInput(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
@@ -1424,13 +1432,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class ERCTransferPrecompile extends TransferPrecompile {
-		private final TokenID tokenID;
+		private final TokenID tokenId;
 		private final AccountID callerAccountID;
 		private final boolean isFungible;
 
-		public ERCTransferPrecompile(final TokenID tokenID, final Address callerAccount, final boolean isFungible) {
+		public ERCTransferPrecompile(final TokenID tokenId, final Address callerAccount, final boolean isFungible) {
 			this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
-			this.tokenID = tokenID;
+			this.tokenId = tokenId;
 			this.isFungible = isFungible;
 		}
 
@@ -1440,8 +1448,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			final var nestedInput = input.slice(24);
 			super.transferOp = switch (nestedInput.getInt(0)) {
-				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID, aliasResolver);
-				case ABI_ID_ERC_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenID,
+				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenId, callerAccountID, aliasResolver);
+				case ABI_ID_ERC_TRANSFER_FROM -> decoder.decodeERCTransferFrom(nestedInput, tokenId,
 						isFungible, aliasResolver);
 				default -> throw new InvalidTransactionException(
 						String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE, "Transfer", functionId, nestedInput),
@@ -1464,8 +1472,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				//logic for delete approvals in case of transfer of ERC721
 				final var accountStore = createAccountStore();
 				final var tokenStore = createTokenStore(accountStore, sideEffectsTracker);
-				final var approveWrapper = new ApproveWrapper(tokenID, null, BigInteger.ZERO, BigInteger.valueOf(transferOp.get(0).nftExchanges().get(0).getSerialNo()), BigInteger.ZERO, isFungible);
-				var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(), approveWrapper.serialNumber().longValue());
+				final var approveWrapper = new ApproveWrapper(tokenId, null, BigInteger.ZERO, BigInteger.valueOf(transferOp.get(0).nftExchanges().get(0).getSerialNo()), BigInteger.ZERO, isFungible);
+				var nftId = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(), approveWrapper.serialNumber().longValue());
 				var owner = (EntityId) ledgers.nfts().get(nftId, OWNER);
 				final var deleteAllowanceTxn = syntheticTxnFactory.createDeleteAllowance(approveWrapper, owner);
 				final var deleteAllowanceLogic = deleteAllowanceLogicFactory.newDeleteAllowanceLogic(accountStore, tokenStore);
@@ -1561,8 +1569,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class TotalSupplyPrecompile extends ERCReadOnlyAbstractPrecompile {
-		public TotalSupplyPrecompile(final TokenID tokenID) {
-			super(tokenID);
+		public TotalSupplyPrecompile(final TokenID tokenId) {
+			super(tokenId);
 		}
 
 		@Override
@@ -1575,8 +1583,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class TokenURIPrecompile extends ERCReadOnlyAbstractPrecompile {
 		private NftId nftId;
 
-		public TokenURIPrecompile(final TokenID tokenID) {
-			super(tokenID);
+		public TokenURIPrecompile(final TokenID tokenId) {
+			super(tokenId);
 		}
 
 		@Override
@@ -1596,8 +1604,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class OwnerOfPrecompile extends ERCReadOnlyAbstractPrecompile {
 		private NftId nftId;
 
-		public OwnerOfPrecompile(final TokenID tokenID) {
-			super(tokenID);
+		public OwnerOfPrecompile(final TokenID tokenId) {
+			super(tokenId);
 		}
 
 		@Override
@@ -1618,8 +1626,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class BalanceOfPrecompile extends ERCReadOnlyAbstractPrecompile {
 		private BalanceOfWrapper balanceWrapper;
 
-		public BalanceOfPrecompile(final TokenID tokenID) {
-			super(tokenID);
+		public BalanceOfPrecompile(final TokenID tokenId) {
+			super(tokenId);
 		}
 
 		@Override
@@ -1639,8 +1647,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class AllowancePrecompile extends ERCReadOnlyAbstractPrecompile {
 		private TokenAllowanceWrapper allowanceWrapper;
 
-		public AllowancePrecompile(final TokenID tokenID) {
-			super(tokenID);
+		public AllowancePrecompile(final TokenID tokenId) {
+			super(tokenId);
 		}
 
 		@Override
@@ -1787,11 +1795,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	protected class SetApprovalForAllPrecompile implements Precompile {
-		protected TokenID tokenID;
+		protected TokenID tokenId;
 		private SetApprovalForAllWrapper setApprovalForAllWrapper;
 
-		public SetApprovalForAllPrecompile(final TokenID tokenID) {
-			this.tokenID = tokenID;
+		public SetApprovalForAllPrecompile(final TokenID tokenId) {
+			this.tokenId = tokenId;
 		}
 
 		@Override
@@ -1799,7 +1807,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var nestedInput = input.slice(24);
 			setApprovalForAllWrapper = decoder.decodeSetApprovalForAll(nestedInput, aliasResolver);
 
-			return syntheticTxnFactory.createAdjustAllowanceForAllNFT(setApprovalForAllWrapper, tokenID);
+			return syntheticTxnFactory.createAdjustAllowanceForAllNFT(setApprovalForAllWrapper, tokenId);
 		}
 
 		@Override
@@ -1852,8 +1860,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class GetApprovedPrecompile extends ERCReadOnlyAbstractPrecompile {
 		GetApprovedWrapper getApprovedWrapper;
 
-		public GetApprovedPrecompile(final TokenID tokenID) {
-			super(tokenID);
+		public GetApprovedPrecompile(final TokenID tokenId) {
+			super(tokenId);
 		}
 
 		@Override
@@ -1867,7 +1875,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		@Override
 		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 			TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger = ledgers.nfts();
-			var nftId = new NftId(tokenID.getShardNum(), tokenID.getRealmNum(), tokenID.getTokenNum(),
+			var nftId = new NftId(tokenId.getShardNum(), tokenId.getRealmNum(), tokenId.getTokenNum(),
 					getApprovedWrapper.tokenId());
 			var owner = (EntityId) nftsLedger.get(nftId, OWNER);
 			TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger = ledgers.accounts();
@@ -1887,8 +1895,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	protected class IsApprovedForAllPrecompile extends ERCReadOnlyAbstractPrecompile {
 		private IsApproveForAllWrapper isApproveForAllWrapper;
 
-		public IsApprovedForAllPrecompile(final TokenID tokenID) {
-			super(tokenID);
+		public IsApprovedForAllPrecompile(final TokenID tokenId) {
+			super(tokenId);
 		}
 
 		@Override

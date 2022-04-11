@@ -51,9 +51,9 @@ import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC_20_SYMBOL_CALL;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC_20_TRANSFER_CALL;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC_721_OWNER_OF_CALL;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
@@ -85,11 +85,10 @@ import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostS
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -106,6 +105,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	private static final String ACCOUNT = "anybody";
 	private static final String RECIPIENT = "recipient";
 	private static final ByteString FIRST_META = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
+	private static final ByteString SECOND_META = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
+	private static final String TRANSFER_SIG_NAME = "transferSig";
 	private static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
 
 	public static void main(String... args) {
