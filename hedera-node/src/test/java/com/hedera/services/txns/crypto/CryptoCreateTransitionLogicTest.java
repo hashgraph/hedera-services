@@ -30,7 +30,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -93,7 +93,7 @@ class CryptoCreateTransitionLogicTest {
 	private TransactionBody cryptoCreateTxn;
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private CryptoCreateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
 
@@ -102,7 +102,7 @@ class CryptoCreateTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
@@ -243,7 +243,7 @@ class CryptoCreateTransitionLogicTest {
 				.setCryptoCreateAccount(cryptoCreateTxn.getCryptoCreateAccount().toBuilder().setKey(unmappableKey()))
 				.build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
 
@@ -343,7 +343,7 @@ class CryptoCreateTransitionLogicTest {
 								.setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
 				).build();
 		given(accessor.getTxn()).willReturn(cryptoCreateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
 	private TransactionID ourTxnId() {

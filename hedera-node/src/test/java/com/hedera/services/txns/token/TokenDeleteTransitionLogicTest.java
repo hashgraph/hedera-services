@@ -26,7 +26,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
@@ -51,7 +51,7 @@ class TokenDeleteTransitionLogicTest {
 	private static final TokenID grpcTokenId = IdUtils.asToken("0.0.12345");
 	private static final Id tokenId = Id.fromGrpcToken(grpcTokenId);
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private TypedTokenStore typedTokenStore;
 	private Token token;
 
@@ -62,7 +62,7 @@ class TokenDeleteTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		txnCtx = mock(TransactionContext.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		typedTokenStore = mock(TypedTokenStore.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		subject = new TokenDeleteTransitionLogic(txnCtx, typedTokenStore, sigImpactHistorian);
@@ -140,7 +140,7 @@ class TokenDeleteTransitionLogicTest {
 						.setToken(grpcTokenId))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenDeleteTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(typedTokenStore.loadToken(tokenId)).willReturn(token);
 	}
 

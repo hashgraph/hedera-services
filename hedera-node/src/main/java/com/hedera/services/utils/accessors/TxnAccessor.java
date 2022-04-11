@@ -21,44 +21,34 @@ package com.hedera.services.utils.accessors;
  */
 
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.sigs.order.LinkedRefs;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Defines a type that gives access to several commonly referenced
  * parts of a Hedera Services gRPC {@link Transaction}.
  */
 public interface TxnAccessor {
-	int sigMapSize();
+	/* --- Needed to complete transaction-specific logic ---*/
+	<T extends TxnAccessor> T castToSpecialized();
 
-	int numSigPairs();
-
-	SignatureMap getSigMap();
-
-	void setExpandedSigStatus(ResponseCodeEnum status);
-
-	ResponseCodeEnum getExpandedSigStatus();
-
-	PubKeyToSigBytes getPkToSigsFn();
-
+	/* --- Needed calculate and charge fee for any transaction ---*/
 	long getOfferedFee();
+
+	SubType getSubType();
 
 	AccountID getPayer();
 
@@ -66,41 +56,51 @@ public interface TxnAccessor {
 
 	HederaFunctionality getFunction();
 
-	SubType getSubType();
+	BaseTransactionMeta baseUsageMeta();
 
+	SigUsage usageGiven(int numPayerKeys);
+
+	/* --- Needed to process and validate any transaction ---*/
 	byte[] getMemoUtf8Bytes();
 
-	String getMemo();
-
 	boolean memoHasZeroByte();
-
-	byte[] getHash();
-
-	byte[] getTxnBytes();
-
-	byte[] getSignedTxnWrapperBytes();
-
-	Transaction getSignedTxnWrapper();
-
-	TransactionBody getTxn();
 
 	boolean canTriggerTxn();
 
 	boolean isTriggeredTxn();
 
-	ScheduleID getScheduleRef();
-
-	void setTriggered(boolean b);
-
-	void setScheduleRef(ScheduleID parent);
-
-	void setPayer(AccountID payer);
+	TransactionBody getTxn();
 
 	long getGasLimitForContractTx();
 
-	Map<String, Object> getSpanMap();
+	/* --- Needed to construct the record for any transaction ---*/
+	String getMemo();
 
-	ExpandHandleSpanMapAccessor getSpanMapAccessor();
+	byte[] getHash();
+
+	ScheduleID getScheduleRef();
+
+	void setScheduleRef(ScheduleID parent);
+
+	/* --- Needed to log failures for any transaction --- */
+	String toLoggableString();
+
+	void setTriggered(boolean b);
+
+	void setPayer(AccountID payer);
+
+	/* --- Used universally for transaction submission */
+	byte[] getSignedTxnWrapperBytes();
+
+	/* --- Used universally for logging --- */
+	Transaction getSignedTxnWrapper();
+
+	byte[] getTxnBytes();
+
+	/* --- Used only by specific transactions and will be moved to Custom accessors in future PR ---*/
+
+	// Used only for CryptoTransfer
+	CryptoTransferMeta availXferUsageMeta();
 
 	void setNumAutoCreations(int numAutoCreations);
 
@@ -110,17 +110,15 @@ public interface TxnAccessor {
 
 	void countAutoCreationsWith(AliasManager aliasManager);
 
-	void setLinkedRefs(LinkedRefs linkedRefs);
-
-	LinkedRefs getLinkedRefs();
-
-	Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn();
-
-	// TODO To Be deleted
-
-	BaseTransactionMeta baseUsageMeta();
-
-	CryptoTransferMeta availXferUsageMeta();
-
+	// Used only for SubmitMessage
 	SubmitMessageMeta availSubmitUsageMeta();
+
+	// Used only for ScheduleCreate/Sign, to find valid signatures that apply to a scheduled transaction
+	SignatureMap getSigMap();
+
+
+	/* ---- These both will be removed by using the fields in custom accessors in future PR ---*/
+	Map<String, Object> getSpanMap();
+
+	ExpandHandleSpanMapAccessor getSpanMapAccessor();
 }

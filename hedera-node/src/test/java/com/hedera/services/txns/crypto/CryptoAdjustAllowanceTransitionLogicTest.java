@@ -34,7 +34,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -80,7 +80,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 	@Mock
 	private AdjustAllowanceChecks adjustAllowanceChecks;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -110,7 +110,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 		addExistingAllowances();
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
@@ -148,7 +148,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 				).build();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 
 		subject.doStateTransition();
@@ -163,7 +163,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		addExistingAllowances();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
@@ -185,7 +185,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		addExistingAllowances();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
@@ -214,7 +214,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 
 		var exception = assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
@@ -243,7 +243,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 				).build();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 
@@ -262,7 +262,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		addExistingAllowances();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
@@ -293,7 +293,7 @@ class CryptoAdjustAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoAdjustAllowanceTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(ownerAcccount.getId())).willReturn(ownerAcccount);
 		given(dynamicProperties.maxAllowanceLimitPerAccount()).willReturn(100);
 

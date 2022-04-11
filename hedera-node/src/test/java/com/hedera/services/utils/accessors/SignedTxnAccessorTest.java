@@ -217,8 +217,8 @@ class SignedTxnAccessorTest {
 		assertArrayEquals("irst".getBytes(), accessor.getPkToSigsFn().sigBytesFor("f".getBytes()));
 		assertArrayEquals(zeroByteMemoUtf8Bytes, accessor.getMemoUtf8Bytes());
 		assertTrue(accessor.memoHasZeroByte());
-		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
-		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
+		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.usageGiven(1).numSigs());
+		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.usageGiven(1).sigsSize());
 		assertEquals(zeroByteMemo, accessor.getMemo());
 		assertEquals(false, accessor.isTriggeredTxn());
 		assertEquals(false, accessor.canTriggerTxn());
@@ -440,8 +440,8 @@ class SignedTxnAccessorTest {
 		assertEquals(expectedMap, accessor.getSigMap());
 		assertArrayEquals(memoUtf8Bytes, accessor.getMemoUtf8Bytes());
 		assertFalse(accessor.memoHasZeroByte());
-		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.numSigPairs());
-		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.sigMapSize());
+		assertEquals(FeeBuilder.getSignatureCount(accessor.getSignedTxnWrapper()), accessor.usageGiven(1).numSigs());
+		assertEquals(FeeBuilder.getSignatureSize(accessor.getSignedTxnWrapper()), accessor.usageGiven(1).sigsSize());
 		assertEquals(memo, accessor.getMemo());
 	}
 

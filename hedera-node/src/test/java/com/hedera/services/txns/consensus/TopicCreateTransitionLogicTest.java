@@ -32,6 +32,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -89,7 +90,7 @@ class TopicCreateTransitionLogicTest {
 	@Mock
 	private TransactionContext transactionContext;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private OptionValidator validator;
 	@Mock
@@ -142,7 +143,7 @@ class TopicCreateTransitionLogicTest {
 	void followsHappyPath() {
 		givenValidTransactionWithAllOptions();
 		given(validator.memoCheck(anyString())).willReturn(OK);
-		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
+		given(transactionContext.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(transactionBody);
 		given(accountStore.loadAccountOrFailWith(any(), any())).willReturn(autoRenew);
 		given(autoRenew.isSmartContract()).willReturn(false);
@@ -161,7 +162,7 @@ class TopicCreateTransitionLogicTest {
 	void memoTooLong() {
 		givenTransactionWithTooLongMemo();
 		given(validator.memoCheck(anyString())).willReturn(MEMO_TOO_LONG);
-		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
+		given(transactionContext.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(transactionBody);
 
 		assertFailsWith(() -> subject.doStateTransition(), MEMO_TOO_LONG);
@@ -172,7 +173,7 @@ class TopicCreateTransitionLogicTest {
 	@Test
 	void badSubmitKey() {
 		givenTransactionWithInvalidSubmitKey();
-		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
+		given(transactionContext.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(transactionBody);
 		given(validator.attemptDecodeOrThrow(any())).willThrow(new InvalidTransactionException(BAD_ENCODING));
 
@@ -185,7 +186,7 @@ class TopicCreateTransitionLogicTest {
 	void missingAutoRenewPeriod() {
 		givenTransactionWithMissingAutoRenewPeriod();
 		given(validator.memoCheck(anyString())).willReturn(OK);
-		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
+		given(transactionContext.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(transactionBody);
 
 		assertFailsWith(() -> subject.doStateTransition(), INVALID_RENEWAL_PERIOD);
@@ -197,7 +198,7 @@ class TopicCreateTransitionLogicTest {
 	void badAutoRenewPeriod() {
 		givenTransactionWithInvalidAutoRenewPeriod();
 		given(validator.memoCheck(anyString())).willReturn(OK);
-		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
+		given(transactionContext.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(transactionBody);
 
 		assertFailsWith(() -> subject.doStateTransition(), AUTORENEW_DURATION_NOT_IN_RANGE);
@@ -209,7 +210,7 @@ class TopicCreateTransitionLogicTest {
 	void invalidAutoRenewAccountId() {
 		givenTransactionWithInvalidAutoRenewAccountId();
 		given(validator.memoCheck(anyString())).willReturn(OK);
-		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
+		given(transactionContext.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(transactionBody);
 		given(accountStore.loadAccountOrFailWith(any(), any())).willThrow(
 				new InvalidTransactionException(INVALID_AUTORENEW_ACCOUNT));
@@ -225,7 +226,7 @@ class TopicCreateTransitionLogicTest {
 	void detachedAutoRenewAccountId() {
 		givenTransactionWithDetachedAutoRenewAccountId();
 		given(validator.memoCheck(anyString())).willReturn(OK);
-		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
+		given(transactionContext.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(transactionBody);
 		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
 				.willReturn(true);
@@ -241,7 +242,7 @@ class TopicCreateTransitionLogicTest {
 	void autoRenewAccountNotAllowed() {
 		givenTransactionWithAutoRenewAccountWithoutAdminKey();
 		given(validator.memoCheck(anyString())).willReturn(OK);
-		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
+		given(transactionContext.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(transactionBody);
 		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
 				.willReturn(true);

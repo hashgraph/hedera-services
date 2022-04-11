@@ -34,7 +34,6 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -74,8 +73,7 @@ class TokenWipeTransitionLogicTest {
 	private long totalAmount = 1000L;
 
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor platformAccessor;
-	private TokenWipeAccessor accessor;
+	private PlatformTxnAccessor accessor;
 	private MerkleToken merkleToken;
 	private Token token;
 
@@ -89,8 +87,7 @@ class TokenWipeTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		platformAccessor = mock(PlatformTxnAccessor.class);
-		accessor = mock(TokenWipeAccessor.class);
+		accessor = mock(PlatformTxnAccessor.class);
 		merkleToken = mock(MerkleToken.class);
 		token = mock(Token.class);
 		account = mock(Account.class);
@@ -273,8 +270,7 @@ class TokenWipeTransitionLogicTest {
 						.setAmount(wipeAmount))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenWipeTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(platformAccessor);
-		given(platformAccessor.getDelegate()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(merkleToken.totalSupply()).willReturn(totalAmount);
 		given(merkleToken.tokenType()).willReturn(TokenType.FUNGIBLE_COMMON);
 		given(typedTokenStore.loadToken(any())).willReturn(token);
@@ -291,8 +287,7 @@ class TokenWipeTransitionLogicTest {
 						.addAllSerialNumbers(List.of(1L, 2L, 3L)))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenWipeTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(platformAccessor);
-		given(platformAccessor.getDelegate()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(merkleToken.totalSupply()).willReturn(totalAmount);
 		given(merkleToken.tokenType()).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
 		given(typedTokenStore.loadToken(any())).willReturn(token);

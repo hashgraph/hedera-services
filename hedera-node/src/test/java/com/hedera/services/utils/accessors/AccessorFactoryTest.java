@@ -60,7 +60,7 @@ class AccessorFactoryTest {
 	}
 
 	@Test
-	void constructsCorrectly() throws InvalidProtocolBufferException {
+	void constructsCorrectly() {
 		SwirldTransaction platformTxn =
 				new SwirldTransaction(Transaction.newBuilder()
 						.setBodyBytes(someTxn.toByteString())
@@ -70,6 +70,6 @@ class AccessorFactoryTest {
 		SwirldTransaction wipeTxn = new SwirldTransaction(Transaction.newBuilder()
 				.setBodyBytes(tokenWipeTxn.toByteString())
 				.build().toByteArray());
-		assertTrue(subject.nonTriggeredTxn(wipeTxn.getContentsDirect()) instanceof TokenWipeAccessor);
+		assertTrue(subject.nonTriggeredTxn(wipeTxn.getContentsDirect()) instanceof SignedTxnAccessor);
 	}
 }

@@ -119,7 +119,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 			final Address activeContract,
 			final ContractAliases aliases
 	) {
-		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
+		final var pkToCryptoSigsFn = txnCtx.platformTxnAccessor().getRationalizedPkToCryptoSigFn();
 		return activationTest.test(
 				key,
 				pkToCryptoSigsFn,

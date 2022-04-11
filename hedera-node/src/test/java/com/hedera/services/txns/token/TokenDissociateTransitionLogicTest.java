@@ -23,6 +23,7 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -53,7 +54,7 @@ class TokenDissociateTransitionLogicTest {
 	@Mock
 	private DissociateLogic dissociateLogic;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 
 	private TokenDissociateTransitionLogic subject;
 
@@ -98,7 +99,7 @@ class TokenDissociateTransitionLogicTest {
 		final var accountId = new Id(1, 2, 3);
 
 		given(accessor.getTxn()).willReturn(validDissociateTxn());
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.doStateTransition();
 

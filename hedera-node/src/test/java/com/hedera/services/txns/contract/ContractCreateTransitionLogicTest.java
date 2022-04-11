@@ -40,7 +40,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.helpers.StorageExpiry;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -106,7 +106,7 @@ class ContractCreateTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private AccountStore accountStore;
 	@Mock
@@ -248,7 +248,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		final var result = TransactionProcessingResult.successful(
 				null,
 				1234L,
@@ -324,7 +324,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		final var result = TransactionProcessingResult.successful(
 				null,
 				1234L,
@@ -382,7 +382,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		var expiry = RequestBuilder.getExpirationTime(consensusTime,
 				Duration.newBuilder().setSeconds(customAutoRenewPeriod).build()).getSeconds();
@@ -419,7 +419,7 @@ class ContractCreateTransitionLogicTest {
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(bytecode);
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(worldState.persistProvisionalContractCreations()).willReturn(secondaryCreations);
 		final var result = TransactionProcessingResult.successful(
 				null,
@@ -473,7 +473,7 @@ class ContractCreateTransitionLogicTest {
 	void rejectsMissingBytecodeFile() {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(false);
 		// when:
@@ -487,7 +487,7 @@ class ContractCreateTransitionLogicTest {
 	void rejectsEmptyBytecodeFile() {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
 		given(hfs.exists(bytecodeSrc)).willReturn(true);
 		given(hfs.cat(bytecodeSrc)).willReturn(new byte[0]);
@@ -514,7 +514,7 @@ class ContractCreateTransitionLogicTest {
 				.setContractCreateInstance(op);
 		contractCreateTxn = txn.build();
 		given(accessor.getTxn()).willReturn(contractCreateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(validator.attemptToDecodeOrThrow(key, SERIALIZATION_FAILED)).willThrow(
 				new InvalidTransactionException(SERIALIZATION_FAILED));
 		// when:

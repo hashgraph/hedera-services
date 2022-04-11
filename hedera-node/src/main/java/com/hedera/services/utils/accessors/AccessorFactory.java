@@ -40,7 +40,7 @@ public class AccessorFactory {
 		this.aliasManager = aliasManager;
 	}
 
-	public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+	public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes) {
 		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
 		subtype.setTriggered(false);
 		subtype.setScheduleRef(null);
@@ -48,7 +48,7 @@ public class AccessorFactory {
 	}
 
 	public TxnAccessor triggeredTxn(byte[] signedTxnWrapperBytes, final AccountID payer,
-			ScheduleID parent) throws InvalidProtocolBufferException {
+			ScheduleID parent) {
 		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
 		subtype.setTriggered(true);
 		subtype.setScheduleRef(parent);
@@ -62,15 +62,9 @@ public class AccessorFactory {
 	 *
 	 * @param signedTxnWrapperBytes
 	 * @return
-	 * @throws InvalidProtocolBufferException
 	 */
-	private TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes)
-			throws InvalidProtocolBufferException {
-		final var body = extractTransactionBody(Transaction.parseFrom(signedTxnWrapperBytes));
-		final var function = MiscUtils.functionExtractor.apply(body);
-		if (function == TokenAccountWipe) {
-			return new TokenWipeAccessor(signedTxnWrapperBytes, aliasManager);
-		}
+	private TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes) {
+		// custom accessors will be defined here in future PR based on the function from functionExtractor
 		return SignedTxnAccessor.from(signedTxnWrapperBytes);
 	}
 }

@@ -25,10 +25,10 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -73,10 +73,9 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	@Override
 	public void doStateTransition() {
 		/* --- Translate from gRPC types --- */
-		final var accessor = txnCtx.platformTxnAccessor();
-		final var customAccessor = (TokenWipeAccessor) accessor.getDelegate();
-		final var targetTokenId = customAccessor.targetToken();
-		final var targetAccountId = customAccessor.accountToWipe();
+		final var op = txnCtx.accessor().getTxn().getTokenWipe();
+		final var targetTokenId = Id.fromGrpcToken(op.getToken());
+		final var targetAccountId = Id.fromGrpcAccount(op.getAccount());
 
 		/* --- Load the model objects --- */
 		final var token = tokenStore.loadToken(targetTokenId);
@@ -88,10 +87,10 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 
 		/* --- Do the business logic --- */
 		if (token.getType().equals(TokenType.FUNGIBLE_COMMON)) {
-			token.wipe(accountRel, customAccessor.amount());
+			token.wipe(accountRel, op.getAmount());
 		} else {
-			tokenStore.loadUniqueTokens(token, customAccessor.serialNums());
-			token.wipe(ownershipTracker, accountRel, customAccessor.serialNums());
+			tokenStore.loadUniqueTokens(token, op.getSerialNumbersList());
+			token.wipe(ownershipTracker, accountRel, op.getSerialNumbersList());
 		}
 		/* --- Persist the updated models --- */
 		tokenStore.commitToken(token);

@@ -28,6 +28,7 @@ import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
@@ -104,21 +105,18 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private byte[] signedTxnWrapperBytes;
 	private String memo;
 	private boolean memoHasZeroByte;
-	private LinkedRefs linkedRefs;
 	private Transaction signedTxnWrapper;
 	private SignatureMap sigMap;
 	private TransactionID txnId;
 	private TransactionBody txn;
-	private ResponseCodeEnum expandedSigStatus;
-	private PubKeyToSigBytes pubKeyToSigBytes;
 	private SubmitMessageMeta submitMessageMeta;
 	private CryptoTransferMeta xferUsageMeta;
 	private BaseTransactionMeta txnUsageMeta;
 	private HederaFunctionality function;
+	private PubKeyToSigBytes pubKeyToSigBytes;
 
 	private AccountID payer;
 	private ScheduleID scheduleRef;
-	private AliasManager aliasManager;
 	private boolean isTriggered;
 
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
@@ -167,36 +165,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 		getFunction();
 		setBaseUsageMeta();
-		setOpUsageMeta(); // TODO : delete when custom accessors are completed
+		setOpUsageMeta();
 	}
 
 	public SignedTxnAccessor(Transaction signedTxnWrapper) throws InvalidProtocolBufferException {
 		this(signedTxnWrapper.toByteArray());
-	}
-
-	@Override
-	public void setExpandedSigStatus(final ResponseCodeEnum expandedSigStatus) {
-		this.expandedSigStatus = expandedSigStatus;
-	}
-
-	@Override
-	public ResponseCodeEnum getExpandedSigStatus() {
-		return expandedSigStatus;
-	}
-
-	@Override
-	public LinkedRefs getLinkedRefs() {
-		return linkedRefs;
-	}
-
-	@Override
-	public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void setLinkedRefs(final LinkedRefs linkedRefs) {
-		this.linkedRefs = linkedRefs;
 	}
 
 	@Override
@@ -235,6 +208,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	@Override
+	public <T extends TxnAccessor> T castToSpecialized() {
+		// This will have all the custom accessor casts in future PR
+		return (T) this;
+	}
+
+	@Override
 	public long getOfferedFee() {
 		return txn.getTransactionFee();
 	}
@@ -242,6 +221,10 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public byte[] getTxnBytes() {
 		return txnBytes;
+	}
+
+	public PubKeyToSigBytes getPkToSigsFn() {
+		return pubKeyToSigBytes;
 	}
 
 	@Override
@@ -272,16 +255,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public byte[] getMemoUtf8Bytes() {
 		return utf8MemoBytes;
-	}
-
-	@Override
-	public int numSigPairs() {
-		return numSigPairs;
-	}
-
-	@Override
-	public int sigMapSize() {
-		return sigMapSize;
 	}
 
 	@Override
@@ -325,6 +298,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	@Override
+	public String toLoggableString() {
+		return null;
+	}
+
+	@Override
 	public void setPayer(final AccountID payer) {
 		this.payer = payer;
 	}
@@ -332,6 +310,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public BaseTransactionMeta baseUsageMeta() {
 		return txnUsageMeta;
+	}
+
+	@Override
+	public SigUsage usageGiven(final int numPayerKeys) {
+		return new SigUsage(numSigPairs, sigMapSize, numPayerKeys);
 	}
 
 	@Override
@@ -352,15 +335,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	@Override
-	public PubKeyToSigBytes getPkToSigsFn() {
-		return pubKeyToSigBytes;
-	}
-
-	@Override
 	public Map<String, Object> getSpanMap() {
 		return spanMap;
 	}
-
 	@Override
 	public ExpandHandleSpanMapAccessor getSpanMapAccessor() {
 		return SPAN_MAP_ACCESSOR;
@@ -380,14 +357,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 		} else {
 			txnUsageMeta = new BaseTransactionMeta(utf8MemoBytes.length, 0);
 		}
-	}
-
-	protected EntityNum unaliased(AccountID grpcId) {
-		return aliasManager.unaliased(grpcId);
-	}
-
-	protected EntityNum unaliased(ContractID grpcId) {
-		return EntityIdUtils.unaliased(grpcId, aliasManager);
 	}
 
 	/*------------- TODO : This section should be deleted after custom accessors are complete --------------*/

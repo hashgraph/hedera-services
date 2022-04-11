@@ -21,11 +21,14 @@ package com.hedera.services.utils.accessors;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.goterl.lazysodium.interfaces.Sign;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.order.LinkedRefs;
+import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
+import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.utils.RationalizedSigMeta;
@@ -34,6 +37,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -44,23 +48,27 @@ import com.swirlds.common.crypto.TransactionSignature;
 import java.util.Map;
 import java.util.function.Function;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
+
 /**
  * Encapsulates access to several commonly referenced parts of a {@link com.swirlds.common.SwirldTransaction}
  * whose contents is <i>supposed</i> to be a Hedera Services gRPC {@link Transaction}. (The constructor of this
  * class immediately tries to parse the {@code byte[]} contents of the txn, and propagates any protobuf
  * exceptions encountered.)
  */
-public class PlatformTxnAccessor implements TxnAccessor {
+public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	private final SwirldTransaction platformTxn;
 	private TxnAccessor delegate;
-
+	private LinkedRefs linkedRefs;
+	private ResponseCodeEnum expandedSigStatus;
+	private PubKeyToSigBytes pubKeyToSigBytes;
 	private RationalizedSigMeta sigMeta = null;
 
-	protected PlatformTxnAccessor(final TxnAccessor delegate,
-			SwirldTransaction platformTxn)
+	protected PlatformTxnAccessor(final TxnAccessor delegate, SwirldTransaction platformTxn)
 			throws InvalidProtocolBufferException {
 		this.platformTxn = platformTxn;
 		this.delegate = delegate;
+		pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(delegate.getSigMap());
 	}
 
 	public static PlatformTxnAccessor from(final TxnAccessor delegate, final SwirldTransaction platformTxn)
@@ -95,33 +103,33 @@ public class PlatformTxnAccessor implements TxnAccessor {
 	}
 
 	@Override
-	public int sigMapSize() {
-		return delegate.sigMapSize();
-	}
-
-	@Override
-	public int numSigPairs() {
-		return delegate.numSigPairs();
-	}
-
-	@Override
 	public SignatureMap getSigMap() {
 		return delegate.getSigMap();
 	}
 
 	@Override
 	public void setExpandedSigStatus(final ResponseCodeEnum status) {
-		delegate.setExpandedSigStatus(status);
+		this.expandedSigStatus = status;
 	}
 
 	@Override
 	public ResponseCodeEnum getExpandedSigStatus() {
-		return delegate.getExpandedSigStatus();
+		return expandedSigStatus;
+	}
+
+	@Override
+	public byte[] getTxnBytes() {
+		return delegate.getTxnBytes();
 	}
 
 	@Override
 	public PubKeyToSigBytes getPkToSigsFn() {
-		return delegate.getPkToSigsFn();
+		return pubKeyToSigBytes;
+	}
+
+	@Override
+	public <T extends TxnAccessor> T castToSpecialized() {
+		return delegate.castToSpecialized();
 	}
 
 	@Override
@@ -170,21 +178,6 @@ public class PlatformTxnAccessor implements TxnAccessor {
 	}
 
 	@Override
-	public byte[] getTxnBytes() {
-		return delegate.getTxnBytes();
-	}
-
-	@Override
-	public byte[] getSignedTxnWrapperBytes() {
-		return delegate.getSignedTxnWrapperBytes();
-	}
-
-	@Override
-	public Transaction getSignedTxnWrapper() {
-		return delegate.getSignedTxnWrapper();
-	}
-
-	@Override
 	public TransactionBody getTxn() {
 		return delegate.getTxn();
 	}
@@ -215,8 +208,23 @@ public class PlatformTxnAccessor implements TxnAccessor {
 	}
 
 	@Override
+	public String toLoggableString() {
+		return null;
+	}
+
+	@Override
 	public void setPayer(final AccountID payer) {
 		delegate.setPayer(payer);
+	}
+
+	@Override
+	public byte[] getSignedTxnWrapperBytes() {
+		return delegate.getSignedTxnWrapperBytes();
+	}
+
+	@Override
+	public Transaction getSignedTxnWrapper() {
+		return delegate.getSignedTxnWrapper();
 	}
 
 	@Override
@@ -256,12 +264,12 @@ public class PlatformTxnAccessor implements TxnAccessor {
 
 	@Override
 	public void setLinkedRefs(final LinkedRefs linkedRefs) {
-		delegate.setLinkedRefs(linkedRefs);
+		this.linkedRefs = linkedRefs;
 	}
 
 	@Override
 	public LinkedRefs getLinkedRefs() {
-		return delegate.getLinkedRefs();
+		return linkedRefs;
 	}
 
 	public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
@@ -276,6 +284,11 @@ public class PlatformTxnAccessor implements TxnAccessor {
 	@Override
 	public BaseTransactionMeta baseUsageMeta() {
 		return delegate.baseUsageMeta();
+	}
+
+	@Override
+	public SigUsage usageGiven(final int numPayerKeys) {
+		return null;
 	}
 
 	@Override

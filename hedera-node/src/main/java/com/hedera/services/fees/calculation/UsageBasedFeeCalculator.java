@@ -271,6 +271,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
-		return new SigValueObj(accessor.numSigPairs(), numSimpleKeys(payerKey), accessor.sigMapSize());
+		int numPayerKeys = numSimpleKeys(payerKey);
+		final var sigUsage = accessor.usageGiven(numPayerKeys);
+		return new SigValueObj(sigUsage.numSigs(), numPayerKeys, sigUsage.sigsSize());
 	}
 }
