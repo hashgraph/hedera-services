@@ -79,8 +79,8 @@ import static com.hedera.services.state.migration.ReleaseTwentySixMigration.make
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_024x_VERSION;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_025x_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_024X_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_025X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0260_VERSION;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
@@ -157,10 +157,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
-		if (deserializedVersionFromState < RELEASE_024x_VERSION) {
+		if (deserializedVersionFromState < RELEASE_024X_VERSION) {
 			stakeFundingMigrator.accept(this);
 		}
-		if (deserializedVersionFromState < RELEASE_025x_VERSION) {
+		if (deserializedVersionFromState < RELEASE_025X_VERSION) {
 			// add the links to the doubly linked list of MerkleTokenRelStatus map and
 			// update each account's last associated token entityNumPair
 			updateLinks();

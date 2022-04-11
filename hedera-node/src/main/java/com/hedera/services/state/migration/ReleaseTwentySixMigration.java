@@ -63,6 +63,7 @@ public class ReleaseTwentySixMigration {
 			log.info("Done in {}ms", watch.getTime(TimeUnit.MILLISECONDS));
 		} catch (InterruptedException e) {
 			log.error("Interrupted while making contract storage iterable", e);
+			Thread.currentThread().interrupt();
 			throw new IllegalStateException(e);
 		}
 		migrator.finish();
