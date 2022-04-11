@@ -34,7 +34,6 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -52,7 +51,6 @@ public class RecordStreaming implements Runnable {
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private MerkleNetworkContext curNetworkCtx;
 	private RecordsRunningHashLeaf curRunningHashLeaf;
-	private Instant lastConsensusTimestamp = null;
 
 	@Inject
 	public RecordStreaming(
@@ -102,22 +100,19 @@ public class RecordStreaming implements Runnable {
 		if (isInNewBlock(rso)) {
 			Hash computedHash = new Hash();
 			try {
-				computedHash = curRunningHashLeaf.getRunningHash().getFutureHash().get();
+				computedHash = curRunningHashLeaf.getLatestBlockHash();
 			} catch (final InterruptedException e) {
 				log.error("Error in computing hash for block #{}", curNetworkCtx.getBlockNo());
 				Thread.currentThread().interrupt();
-				throw new RuntimeException(String.format("Failed to calculate hash for block #%d", curNetworkCtx.getBlockNo()));
+				return;
 			}
 
-
-			curNetworkCtx.cachePreviousBlockHash(computedHash);
-			curNetworkCtx.incrementBlockNo();
-			curNetworkCtx.setFirstConsTimeOfCurrentBlock(rso.getTimestamp());
+			curNetworkCtx.finishCurrentBlock(computedHash, rso.getTimestamp());
 			log.info("Beginning block #{} @ {}", curNetworkCtx.getBlockNo(), rso.getTimestamp());
 		}
 
 		runningHashUpdate.accept(rso.getRunningHash());
-		lastConsensusTimestamp = rso.getTimestamp();
+		curNetworkCtx.setLatestConsTimeOfCurrentBlock(rso.getTimestamp());
 		while (!nonBlockingHandoff.offer(rso)) {
 			/* Cannot proceed until we have handed off the record. */
 		}
@@ -125,12 +120,13 @@ public class RecordStreaming implements Runnable {
 
 	public boolean isInNewBlock(final RecordStreamObject rso) {
 		final var firstBlockTime = curNetworkCtx.getFirstConsTimeOfCurrentBlock();
+		final var latestBlockTime = curNetworkCtx.getLatestConsTimeOfCurrentBlock();
 		final var consTime = rso.getTimestamp();
 		boolean result;
-		if (firstBlockTime == null || lastConsensusTimestamp == null) {
+		if (firstBlockTime == null || latestBlockTime == null) {
 			result = true;
 		} else {
-			final Duration duration = Duration.between(lastConsensusTimestamp, consTime);
+			final Duration duration = Duration.between(latestBlockTime, consTime);
 			result = getPeriod(consTime, BLOCK_PERIOD_MS) != getPeriod(firstBlockTime, BLOCK_PERIOD_MS) && duration.toNanos() >= MIN_TRANS_TIMESTAMP_INCR_NANOS;
 		}
 		return result;
