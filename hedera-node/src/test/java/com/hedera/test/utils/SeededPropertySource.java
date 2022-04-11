@@ -331,6 +331,7 @@ public class SeededPropertySource {
 		seeded.setPreparedUpdateFileHash(nextBytes(48));
 		seeded.setMigrationRecordsStreamed(nextBoolean());
 		seeded.setFirstConsTimeOfCurrentBlock(nextNullableInstant());
+		seeded.setLatestConsTimeOfCurrentBlock(nextNullableInstant());
 		seeded.setBlockNo(nextInRangeLong());
 		return seeded;
 	}

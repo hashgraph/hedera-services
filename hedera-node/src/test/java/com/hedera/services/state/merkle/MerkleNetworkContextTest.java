@@ -68,6 +68,7 @@ class MerkleNetworkContextTest {
 	private Instant lastMidnightBoundaryCheck;
 	private Instant consensusTimeOfLastHandledTxn;
 	private Instant firstConsTimeOfCurrentBlock;
+	private Instant latestConsTimeOfCurrentBlock;
 	private SequenceNumber seqNo;
 	private SequenceNumber seqNoCopy;
 	private ExchangeRates midnightRateSet;
@@ -95,6 +96,7 @@ class MerkleNetworkContextTest {
 
 		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
 		firstConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_567L, 13579L);
+		latestConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_589L, 25854L);
 		lastMidnightBoundaryCheck = consensusTimeOfLastHandledTxn.minusSeconds(123L);
 
 		seqNo = mock(SequenceNumber.class);
@@ -127,6 +129,7 @@ class MerkleNetworkContextTest {
 		subject.setPreparedUpdateFileHash(preparedUpdateFileHash);
 		subject.markMigrationRecordsStreamed();
 		subject.setFirstConsTimeOfCurrentBlock(firstConsTimeOfCurrentBlock);
+		subject.setLatestConsTimeOfCurrentBlock(latestConsTimeOfCurrentBlock);
 	}
 
 	@Test

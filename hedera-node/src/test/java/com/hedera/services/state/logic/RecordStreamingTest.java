@@ -44,9 +44,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
@@ -97,12 +97,11 @@ class RecordStreamingTest {
 
     @AfterEach
     void clear() {
-        merkleNetworkContext.clearBlockNo();
-        merkleNetworkContext.clearBlockCache();
+        merkleNetworkContext.clearBlockData();
     }
 
     @Test
-    void streamsChildRecordsAtExpectedTimes() {
+    void streamsChildRecordsAtExpectedTimes() throws InterruptedException {
         given(recordsHistorian.hasPrecedingChildRecords()).willReturn(true);
         given(recordsHistorian.getPrecedingChildRecords()).willReturn(List.of(
                 firstPrecedingChildRso));
@@ -112,7 +111,7 @@ class RecordStreamingTest {
         given(nonBlockingHandoff.offer(firstPrecedingChildRso)).willReturn(true);
         given(nonBlockingHandoff.offer(firstFollowingChildRso)).willReturn(true);
         given(nonBlockingHandoff.offer(secondFollowingChildRso)).willReturn(true);
-        given(recordsRunningHashLeaf.getRunningHash()).willReturn(runningHash);
+        given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
 
         subject.run();
 
@@ -131,7 +130,7 @@ class RecordStreamingTest {
     }
 
     @Test
-    void streamsWhenAvail() {
+    void streamsWhenAvail() throws InterruptedException {
         final var txn = Transaction.getDefaultInstance();
         final var lastRecord = ExpirableTxnRecord.newBuilder().build();
         final var expectedRso = new RecordStreamObject(lastRecord, txn, topLevelConsTime);
@@ -139,7 +138,7 @@ class RecordStreamingTest {
         given(accessor.getSignedTxnWrapper()).willReturn(txn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(topLevelConsTime);
-        given(recordsRunningHashLeaf.getRunningHash()).willReturn(runningHash);
+        given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(INITIAL_RANDOM_HASH);
         given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
         given(nonBlockingHandoff.offer(expectedRso))
                 .willReturn(false)
@@ -151,7 +150,7 @@ class RecordStreamingTest {
     }
 
     @Test
-    void checkNewBlockCreationWithNullConsTimeOfCurrentBlock() {
+    void checkNewBlockCreationWithNullConsTimeOfCurrentBlock() throws InterruptedException {
         final var txn = Transaction.getDefaultInstance();
         final var lastRecord = ExpirableTxnRecord.newBuilder().build();
         final var expectedRso = new RecordStreamObject(lastRecord, txn, topLevelConsTime);
@@ -159,7 +158,7 @@ class RecordStreamingTest {
         given(accessor.getSignedTxnWrapper()).willReturn(txn);
         given(txnCtx.accessor()).willReturn(accessor);
         given(txnCtx.consensusTime()).willReturn(topLevelConsTime);
-        given(recordsRunningHashLeaf.getRunningHash()).willReturn(runningHash);
+        given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(INITIAL_RANDOM_HASH);
         given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
         given(nonBlockingHandoff.offer(expectedRso))
                 .willReturn(false)
@@ -172,14 +171,14 @@ class RecordStreamingTest {
 
         assertEquals(1, merkleNetworkContext.getBlockHashCache().size());
         assertEquals(0L, merkleNetworkContext.getBlockHashCache().entrySet().stream().findFirst().get().getKey());
-        assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHashCache().entrySet().stream().findFirst().get().getValue());
-        assertEquals(INITIAL_RANDOM_HASH, merkleNetworkContext.getBlockHashCache(0));
+        assertEquals(MerkleNetworkContext.convertSwirldsHashToBesuHash(INITIAL_RANDOM_HASH), merkleNetworkContext.getBlockHashCache().entrySet().stream().findFirst().get().getValue());
+        assertEquals(MerkleNetworkContext.convertSwirldsHashToBesuHash(INITIAL_RANDOM_HASH), merkleNetworkContext.getBlockHashCache(0));
         assertEquals(1, merkleNetworkContext.getBlockNo());
     }
 
     @Test
-    void checkNewBlockCreationWithMinimumInterval() {
-        final Map<Long, Hash> blockNumberToHash = new LinkedHashMap<>();
+    void checkNewBlockCreationWithMinimumInterval() throws InterruptedException {
+        final Map<Long, org.hyperledger.besu.datatypes.Hash> blockNumberToHash = new TreeMap<>();
         final var numberOfTransactions = 3;
         final var numberOfBlocks = 3;
 
@@ -196,11 +195,11 @@ class RecordStreamingTest {
 
             if (i != 0) {
                 final var randomHash = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
-                blockNumberToHash.put((long) i, randomHash);
-                given(recordsRunningHashLeaf.getRunningHash()).willReturn(new RunningHash(randomHash));
+                blockNumberToHash.put((long) i, MerkleNetworkContext.convertSwirldsHashToBesuHash(randomHash));
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(randomHash);
             } else {
-                blockNumberToHash.put((long) i, EMPTY_HASH);
-                given(recordsRunningHashLeaf.getRunningHash()).willReturn(genesisRunningHash);
+                blockNumberToHash.put((long) i, MerkleNetworkContext.convertSwirldsHashToBesuHash(EMPTY_HASH));
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(EMPTY_HASH);
             }
 
             given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
@@ -220,8 +219,8 @@ class RecordStreamingTest {
     }
 
     @Test
-    void checkMaxBlockCacheLimit() {
-        final Map<Long, Hash> blockNumberToHash = new LinkedHashMap<>();
+    void checkMaxBlockCacheLimit() throws InterruptedException {
+        final Map<Long, org.hyperledger.besu.datatypes.Hash> blockNumberToHash = new TreeMap<>();
         final var numberOfTransactions = 256;
         final var numberOfBlocks = 256;
 
@@ -238,11 +237,11 @@ class RecordStreamingTest {
 
             if (i != 0) {
                 final var randomHash = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
-                blockNumberToHash.put((long) i, randomHash);
-                given(recordsRunningHashLeaf.getRunningHash()).willReturn(new RunningHash(randomHash));
+                blockNumberToHash.put((long) i, MerkleNetworkContext.convertSwirldsHashToBesuHash(randomHash));
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(randomHash);
             } else {
-                blockNumberToHash.put((long) i, EMPTY_HASH);
-                given(recordsRunningHashLeaf.getRunningHash()).willReturn(genesisRunningHash);
+                blockNumberToHash.put((long) i, MerkleNetworkContext.convertSwirldsHashToBesuHash(EMPTY_HASH));
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(EMPTY_HASH);
             }
 
             given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
@@ -262,8 +261,8 @@ class RecordStreamingTest {
     }
 
     @Test
-    void checkExceedingBlockCacheLimit() {
-        final Map<Long, Hash> blockNumberToHash = new LinkedHashMap<>();
+    void checkExceedingBlockCacheLimit() throws InterruptedException {
+        final Map<Long, org.hyperledger.besu.datatypes.Hash> blockNumberToHash = new TreeMap<>();
         final var maxBlockCacheSize = 256;
         final var numberOfTransactions = 800;
         final var numberOfBlocks = 800;
@@ -282,11 +281,11 @@ class RecordStreamingTest {
 
             if (i != 0) {
                 final var randomHash = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
-                blockNumberToHash.put((long) i, randomHash);
-                given(recordsRunningHashLeaf.getRunningHash()).willReturn(new RunningHash(randomHash));
+                blockNumberToHash.put((long) i, MerkleNetworkContext.convertSwirldsHashToBesuHash(randomHash));
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(randomHash);
             } else {
-                blockNumberToHash.put((long) i, EMPTY_HASH);
-                given(recordsRunningHashLeaf.getRunningHash()).willReturn(genesisRunningHash);
+                blockNumberToHash.put((long) i, MerkleNetworkContext.convertSwirldsHashToBesuHash(EMPTY_HASH));
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(EMPTY_HASH);
             }
 
             given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
@@ -309,18 +308,18 @@ class RecordStreamingTest {
     }
 
     @Test
-    void checkNewBlockCreationWithMinimumIntervalAndMinimumLastTxnNsPeriod() {
-        final Map<Long, Hash> blockNumberToHash = new LinkedHashMap<>();
+    void checkNewBlockCreationWithMinimumIntervalAndMinimumLastTxnNsPeriod() throws InterruptedException {
+        final Map<Long, org.hyperledger.besu.datatypes.Hash> blockNumberToHash = new TreeMap<>();
         final var numberOfTransactions = 6;
         final var numberOfBlocks = 3;
 
         var consTime = topLevelConsTime;
-        blockNumberToHash.put((long) 1, EMPTY_HASH);
+        blockNumberToHash.put((long) 1, MerkleNetworkContext.convertSwirldsHashToBesuHash(EMPTY_HASH));
         for (int i = 0, j = 0; i < numberOfTransactions; i++) {
             final var randomHash = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
             if (i % 2 == 0) {
                 consTime = consTime.plusSeconds(2);
-                blockNumberToHash.put((long) j, randomHash);
+                blockNumberToHash.put((long) j, MerkleNetworkContext.convertSwirldsHashToBesuHash(randomHash));
                 j++;
             } else {
                 consTime = consTime.plusNanos(10);
@@ -335,10 +334,10 @@ class RecordStreamingTest {
             given(txnCtx.consensusTime()).willReturn(consTime);
 
             if (i != 0 && i % 2 == 0) {
-                given(recordsRunningHashLeaf.getRunningHash()).willReturn(new RunningHash(randomHash));
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(randomHash);
             } else if (i == 0) {
-                blockNumberToHash.put((long) i, EMPTY_HASH);
-                given(recordsRunningHashLeaf.getRunningHash()).willReturn(genesisRunningHash);
+                blockNumberToHash.put((long) i, MerkleNetworkContext.convertSwirldsHashToBesuHash(EMPTY_HASH));
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(EMPTY_HASH);
             }
 
             given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
@@ -358,8 +357,8 @@ class RecordStreamingTest {
     }
 
     @Test
-    void checkNewBlockIsNotCreatedWhenMinimumLastTxnNsPeriodIsNotMet() {
-        final Map<Long, Hash> blockNumberToHash = new LinkedHashMap<>();
+    void checkNewBlockIsNotCreatedWhenMinimumLastTxnNsPeriodIsNotMet() throws InterruptedException {
+        final Map<Long, org.hyperledger.besu.datatypes.Hash> blockNumberToHash = new TreeMap<>();
         final var numberOfTransactions = 3;
         final var numberOfBlocks = 1;
 
@@ -376,10 +375,10 @@ class RecordStreamingTest {
 
 			if (i != 0) {
 				final var randomHash = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
-				blockNumberToHash.put((long) i, randomHash);
+				blockNumberToHash.put((long) i, MerkleNetworkContext.convertSwirldsHashToBesuHash(randomHash));
 			} else {
-				blockNumberToHash.put((long) i, EMPTY_HASH);
-				given(recordsRunningHashLeaf.getRunningHash()).willReturn(genesisRunningHash);
+				blockNumberToHash.put((long) i, MerkleNetworkContext.convertSwirldsHashToBesuHash(EMPTY_HASH));
+                given(recordsRunningHashLeaf.getLatestBlockHash()).willReturn(EMPTY_HASH);
 			}
 
             given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
@@ -396,5 +395,23 @@ class RecordStreamingTest {
         for (int i = 0; i < numberOfBlocks; i++) {
             assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashCache(i));
         }
+    }
+
+    @Test
+    void checkBlockIsNotCreatedWhenFutureHashGetsInterrupted() throws InterruptedException {
+        final var txn = Transaction.getDefaultInstance();
+        final var lastRecord = ExpirableTxnRecord.newBuilder().build();
+
+        given(accessor.getSignedTxnWrapper()).willReturn(txn);
+        given(txnCtx.accessor()).willReturn(accessor);
+        given(txnCtx.consensusTime()).willReturn(topLevelConsTime);
+        given(recordsRunningHashLeaf.getLatestBlockHash()).willThrow(InterruptedException.class);
+        given(recordsHistorian.lastCreatedTopLevelRecord()).willReturn(lastRecord);
+        merkleNetworkContext.setFirstConsTimeOfCurrentBlock(null);
+
+        subject.run();
+
+        assertEquals(0, merkleNetworkContext.getBlockHashCache().size());
+        assertEquals(0, merkleNetworkContext.getBlockNo());
     }
 }
