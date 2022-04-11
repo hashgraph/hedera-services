@@ -76,7 +76,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWN
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
-import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
@@ -84,7 +83,6 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.PREV_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
