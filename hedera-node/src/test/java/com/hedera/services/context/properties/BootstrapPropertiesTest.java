@@ -37,7 +37,6 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hedera.services.context.properties.EntityType.CONTRACT;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -154,7 +153,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
-			entry("autoRenew.targetTypes", EnumSet.of(CONTRACT)),
+			entry("autoRenew.targetTypes", EnumSet.noneOf(EntityType.class)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
 			entry("autorenew.gracePeriod", 604800L),
