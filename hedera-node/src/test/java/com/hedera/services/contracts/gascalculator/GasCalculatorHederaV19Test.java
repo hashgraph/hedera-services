@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.HederaBlockValues;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.ArrayDeque;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,16 +54,15 @@ class GasCalculatorHederaV19Test {
     GasCalculatorHederaV19 subject;
 
     @Mock
-    GlobalDynamicProperties globalDynamicProperties;
-
+    private GlobalDynamicProperties globalDynamicProperties;
     @Mock
-    UsagePricesProvider usagePricesProvider;
-
+    private UsagePricesProvider usagePricesProvider;
     @Mock
-    HbarCentExchange hbarCentExchange;
-
+    private HbarCentExchange hbarCentExchange;
     @Mock
-    MessageFrame messageFrame;
+    private MessageFrame messageFrame;
+    @Mock
+    private MerkleNetworkContext merkleNetworkContext;
 
     @BeforeEach
     void setUp() {
@@ -89,9 +90,11 @@ class GasCalculatorHederaV19Test {
         final var rbh = 20000L;
         final var feeComponents = FeeComponents.newBuilder().setRbh(rbh);
         final var feeData = FeeData.newBuilder().setServicedata(feeComponents).build();
+        final var blockConsTime =  Instant.ofEpochSecond(consensusTime);
 
+        given(merkleNetworkContext.getFirstConsTimeOfCurrentBlock()).willReturn(blockConsTime);
         given(messageFrame.getGasPrice()).willReturn(Wei.of(2000L));
-        given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, consensusTime));
+        given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, merkleNetworkContext));
         given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
         given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
 

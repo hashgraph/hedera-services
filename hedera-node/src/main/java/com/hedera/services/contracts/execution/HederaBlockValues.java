@@ -22,11 +22,13 @@ package com.hedera.services.contracts.execution;
  *
  */
 
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Hedera adapted {@link BlockValues}
@@ -34,11 +36,11 @@ import java.util.Optional;
 public class HederaBlockValues implements BlockValues {
 
 	protected final long gasLimit;
-	protected final long timestamp;
+	protected final MerkleNetworkContext merkleNetworkContext;
 
-	public HederaBlockValues(long gasLimit, long timestamp) {
+	public HederaBlockValues(long gasLimit, final MerkleNetworkContext merkleNetworkContext) {
 		this.gasLimit = gasLimit;
-		this.timestamp = timestamp;
+		this.merkleNetworkContext = merkleNetworkContext;
 	}
 
 	@Override
@@ -48,7 +50,7 @@ public class HederaBlockValues implements BlockValues {
 
 	@Override
 	public long getTimestamp() {
-		return timestamp;
+		return merkleNetworkContext.getFirstConsTimeOfCurrentBlock().getEpochSecond();
 	}
 
 	@Override
@@ -63,6 +65,6 @@ public class HederaBlockValues implements BlockValues {
 
 	@Override
 	public long getNumber() {
-		return timestamp;
+		return merkleNetworkContext.getBlockNo();
 	}
 }

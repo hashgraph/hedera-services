@@ -24,6 +24,7 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -55,6 +56,7 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -93,6 +95,8 @@ class CallLocalEvmTxProcessorTest {
 	private StorageExpiry storageExpiry;
 	@Mock
 	private StorageExpiry.Oracle oracle;
+	@Mock
+	private Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -107,7 +111,7 @@ class CallLocalEvmTxProcessorTest {
 
 		callLocalEvmTxProcessor = new CallLocalEvmTxProcessor(
 				codeCache, livePricesSource, globalDynamicProperties,
-				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry);
+				gasCalculator, operations, precompiledContractMap, aliasManager, storageExpiry, merkleNetworkContextSupplier);
 
 		callLocalEvmTxProcessor.setWorldState(worldState);
 	}

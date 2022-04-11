@@ -24,6 +24,7 @@ package com.hedera.services.contracts.execution;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
@@ -61,6 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -90,6 +92,8 @@ abstract class EvmTxProcessor {
 	private final LivePricesSource livePricesSource;
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
+	private final Supplier<MerkleNetworkContext> networkCtx;
+	private MerkleNetworkContext curNetworkCtx;
 	protected final GlobalDynamicProperties dynamicProperties;
 
 	protected EvmTxProcessor(
@@ -97,7 +101,8 @@ abstract class EvmTxProcessor {
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap
+			final Map<String, PrecompiledContract> precompiledContractMap,
+			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier
 	) {
 		this(
 				null,
@@ -105,7 +110,8 @@ abstract class EvmTxProcessor {
 				dynamicProperties,
 				gasCalculator,
 				hederaOperations,
-				precompiledContractMap);
+				precompiledContractMap,
+				merkleNetworkContextSupplier);
 	}
 
 	protected void setWorldState(HederaMutableWorldState worldState) {
@@ -118,12 +124,14 @@ abstract class EvmTxProcessor {
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final Set<Operation> hederaOperations,
-			final Map<String, PrecompiledContract> precompiledContractMap
+			final Map<String, PrecompiledContract> precompiledContractMap,
+			final Supplier<MerkleNetworkContext> merkleNetworkContextSupplier
 	) {
 		this.worldState = worldState;
 		this.livePricesSource = livePricesSource;
 		this.dynamicProperties = dynamicProperties;
 		this.gasCalculator = gasCalculator;
+		this.networkCtx = merkleNetworkContextSupplier;
 
 		var operationRegistry = new OperationRegistry();
 		registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(dynamicProperties.getChainId()));
@@ -199,8 +207,9 @@ abstract class EvmTxProcessor {
 			mutableSender.decrementBalance(gasCost);
 		}
 
+		curNetworkCtx = networkCtx.get();
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, consensusTime.getEpochSecond());
+		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, curNetworkCtx);
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
@@ -223,7 +232,7 @@ abstract class EvmTxProcessor {
 						})
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
-						.blockHashLookup(ALWAYS_UNAVAILABLE_BLOCK_HASH)
+						.blockHashLookup(blockNo -> curNetworkCtx.getBlockHashCache(blockNo))
 						.contextVariables(Map.of(
 								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
 								"HederaFunctionality", getFunctionType(),
