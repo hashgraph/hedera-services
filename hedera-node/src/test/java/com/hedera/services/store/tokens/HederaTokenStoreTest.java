@@ -710,7 +710,6 @@ class HederaTokenStoreTest {
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
 		assertEquals(OK, status);
-		verify(nftsLedger).set(aNft, SPENDER, MISSING_ENTITY_ID);
 		verify(accountsLedger).set(counterparty, NUM_ASSOCIATIONS, associatedTokensCount+1);
 		verify(accountsLedger).set(counterparty, NUM_POSITIVE_BALANCES, numPositiveBalances + 1);
 		verify(accountsLedger).set(counterparty, HEAD_TOKEN_NUM, aNft.num());
@@ -751,7 +750,6 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(tokenRelsLedger).set(sponsorNft, TOKEN_BALANCE, startSponsorANfts - 1);
 		verify(tokenRelsLedger).set(counterpartyNft, TOKEN_BALANCE, startCounterpartyANfts + 1);
-		verify(nftsLedger).set(aNft, SPENDER, MISSING_ENTITY_ID);
 		assertSoleTokenChangesAreForNftTransfer(aNft, sponsor, counterparty);
 	}
 
@@ -781,7 +779,6 @@ class HederaTokenStoreTest {
 
 		assertEquals(OK, status);
 		verify(nftsLedger).set(tNft, OWNER, MISSING_ENTITY_ID);
-		verify(nftsLedger).set(tNft, SPENDER, MISSING_ENTITY_ID);
 		verify(accountsLedger).set(primaryTreasury, NUM_NFTS_OWNED, startTreasuryNfts + 1);
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts - 1);
 		verify(tokenRelsLedger).set(treasuryNft, TOKEN_BALANCE, startTreasuryTNfts + 1);
@@ -816,7 +813,6 @@ class HederaTokenStoreTest {
 
 		assertEquals(OK, status);
 		verify(nftsLedger).set(tNft, OWNER, receiver);
-		verify(nftsLedger).set(tNft, SPENDER, MISSING_ENTITY_ID);
 		verify(accountsLedger).set(primaryTreasury, NUM_NFTS_OWNED, startTreasuryNfts - 1);
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);
 		verify(accountsLedger).set(counterparty, NUM_NFTS_OWNED, startCounterpartyNfts + 1);

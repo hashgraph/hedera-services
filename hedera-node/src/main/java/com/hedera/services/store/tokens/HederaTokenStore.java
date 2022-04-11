@@ -435,8 +435,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		accountsLedger.set(to, NUM_POSITIVE_BALANCES, updatedToNumPositiveBalances);
 		tokenRelsLedger.set(fromRel, TOKEN_BALANCE, fromThisNftsOwned - 1);
 		tokenRelsLedger.set(toRel, TOKEN_BALANCE, toThisNftsOwned + 1);
-		// wipe the allowance on this uniqueToken
-		nftsLedger.set(nftId, SPENDER, MISSING_ENTITY_ID);
 
 		sideEffectsTracker.trackNftOwnerChange(nftId, from, to);
 	}
