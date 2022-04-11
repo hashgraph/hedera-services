@@ -59,7 +59,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -248,7 +247,6 @@ class TransferLogicTest {
 
 		updateAllowanceMaps();
 		assertTrue(nftAllowances.contains(fungibleAllowanceId));
-		verify(nftsLedger).set(nftId, SPENDER, MISSING_ENTITY_ID);
 	}
 
 	private AccountAmount aliasedAa(final ByteString alias, final long amount) {
