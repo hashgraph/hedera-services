@@ -31,6 +31,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.Creation;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -52,8 +53,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 
-import static com.hedera.services.txns.token.TokenCreateTransitionLogic.MODEL_FACTORY;
-import static com.hedera.services.txns.token.TokenCreateTransitionLogic.RELS_LISTING;
+import static com.hedera.services.txns.token.CreateLogic.MODEL_FACTORY;
+import static com.hedera.services.txns.token.CreateLogic.RELS_LISTING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -117,13 +118,16 @@ class TokenCreateTransitionLogicTest {
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 
+	private CreateLogic createLogic;
+	private CreateChecks createChecks;
 	private TokenCreateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new TokenCreateTransitionLogic(
-				validator, tokenStore, accountStore,
-				txnCtx, dynamicProperties, ids, sigImpactHistorian, sideEffectsTracker);
+		createLogic = new CreateLogic(accountStore, tokenStore, dynamicProperties, sigImpactHistorian,
+				sideEffectsTracker, ids, validator);
+		createChecks = new CreateChecks(dynamicProperties, validator);
+		subject = new TokenCreateTransitionLogic(txnCtx, createLogic,  createChecks);
 	}
 
 	@Test
@@ -131,7 +135,8 @@ class TokenCreateTransitionLogicTest {
 		final List<FcTokenAssociation> mockAssociations = List.of(
 				new FcTokenAssociation(1L, 2L));
 		givenValidTxnCtx();
-		subject.setCreationFactory(creationFactory);
+
+		createLogic.setCreationFactory(creationFactory);
 
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
 		given(txnCtx.platformTxnAccessor()).willReturn(accessor);

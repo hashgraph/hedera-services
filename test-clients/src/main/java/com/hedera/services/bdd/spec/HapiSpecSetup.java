@@ -32,8 +32,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Random;
@@ -47,9 +45,7 @@ import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static java.util.stream.Collectors.toList;
 
 public class HapiSpecSetup {
-	private static final Logger log = LogManager.getLogger(HapiSpecSetup.class);
-
-	private Random r = new Random();
+	private final Random r = new Random();
 
 	private static final HapiPropertySource defaultNodeProps;
 	static {
@@ -112,17 +108,11 @@ public class HapiSpecSetup {
 	public String apiPermissionsFile() {
 		return props.get("api.permissions.name");
 	}
-	public String apiPermissionsDefaultsPath() {
-		return props.get("api.permissions.defaultsPath");
-	}
 	public FileID appPropertiesId() {
 		return props.getFile("app.properties.id");
 	}
 	public String appPropertiesFile() {
 		return props.get("app.properties.name");
-	}
-	public String appPropertiesDefaultsPath() {
-		return props.get("app.properties.defaultsPath");
 	}
 	public Boolean clientFeeScheduleFromDisk() {
 		return props.getBoolean("client.feeSchedule.fromDisk");
@@ -153,7 +143,6 @@ public class HapiSpecSetup {
 	public long defaultCallGas() {
 		return props.getLong("default.call.gas");
 	}
-	public AccountID defaultConsensusAutoRenewId() { return props.getAccount("default.consensus.autoRenewId"); }
 	public String defaultConsensusMessage() {
 		return props.get("default.consensus.message");
 	}
@@ -218,14 +207,14 @@ public class HapiSpecSetup {
 	public AccountID defaultPayer() {
 		return props.getAccount("default.payer");
 	}
+	public String defaultPayerKey() {
+		return props.get("default.payer.key");
+	}
 	public String defaultPayerName() {
 		return props.get("default.payer.name");
 	}
 	public AccountID defaultProxy() {
 		return props.getAccount("default.proxy");
-	}
-	public AccountID defaultProxyName() {
-		return props.getAccount("default.proxy.name");
 	}
 	public long defaultQueueSaturationMs() { return props.getLong("default.queueSaturation.ms"); }
 	public RealmID defaultRealm() {
@@ -233,12 +222,6 @@ public class HapiSpecSetup {
 	}
 	public boolean defaultReceiverSigRequired() {
 		return props.getBoolean("default.receiverSigRequired");
-	}
-	public long defaultReceiveThreshold() {
-		return props.getLong("default.receiveThreshold.tinyBars");
-	}
-	public long defaultSendThreshold() {
-		return props.getLong("default.sendThreshold.tinyBars");
 	}
 	public ShardID defaultShard() {
 		return props.getShard("default.shard");
@@ -313,26 +296,11 @@ public class HapiSpecSetup {
 	}
 	public String updateFeatureName() { return props.get("update.feature.name"); }
 
-	public FileID migrationFileID() { return props.getFile("migration.file.id"); }
-	public String migrationFileName() { return props.get("migration.file.name"); }
-	public AccountID migrationAccountAID() { return props.getAccount("migration.crypto.AccountA.id"); }
-	public String migrationAccountAName() { return props.get("migration.crypto.AccountA.name"); }
-	public AccountID migrationAccountBID() { return props.getAccount("migration.crypto.AccountB.id"); }
-	public String migrationAccountBName() { return props.get("migration.crypto.AccountB.name"); }
-	public ContractID migrationSmartContractID() { return props.getContract("migration.smartContract.id"); }
-	public String migrationSmartContractName() { return props.get("migration.smartContract.name"); }
-
 	public AccountID fundingAccount() { return props.getAccount("funding.account"); }
 	public String fundingAccountName() { return props.get("funding.account.name"); }
 	public AccountID genesisAccount() { return props.getAccount("genesis.account"); }
 	public String genesisAccountName() {
 		return props.get("genesis.account.name");
-	}
-	public String genesisStartupKey() {
-		return props.get("genesis.account.startupKey");
-	}
-	public long hbarFloat() {
-		return props.getLong("hbar.float");
 	}
 	public ContractID invalidContract() {
 		return props.getContract("invalid.contract");
@@ -372,15 +340,6 @@ public class HapiSpecSetup {
 	public Integer port() {
 		return props.getInteger("port");
 	}
-	public long recordTtlMs() {
-		return props.getLong("record.ttl.ms");
-	}
-	public String startupAccountsLiteral() {
-		return props.get("startupAccounts.literal");
-	}
-	public String startupAccountsPath() {
-		return props.get("startupAccounts.path");
-	}
 	public boolean statusDeferredResolvesDoAsync() {
 		return props.getBoolean("status.deferredResolves.doAsync");
 	}
@@ -416,7 +375,6 @@ public class HapiSpecSetup {
 		}
 		return useTls;
 	}
-
 	TxnProtoStructure txnProtoStructure() {
 		var protoStructure = props.getTxnConfig("txn.proto.structure");
 		if (TxnProtoStructure.ALTERNATE == protoStructure) {

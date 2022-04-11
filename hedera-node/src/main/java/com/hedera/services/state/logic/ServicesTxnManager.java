@@ -52,6 +52,7 @@ public class ServicesTxnManager {
 	private final TransactionContext txnCtx;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final AccountRecordsHistorian recordsHistorian;
+	private final MigrationRecordsManager migrationRecordsManager;
 
 	@Inject
 	public ServicesTxnManager(
@@ -62,7 +63,8 @@ public class ServicesTxnManager {
 			final HederaLedger ledger,
 			final TransactionContext txnCtx,
 			final SigImpactHistorian sigImpactHistorian,
-			final AccountRecordsHistorian recordsHistorian
+			final AccountRecordsHistorian recordsHistorian,
+			final MigrationRecordsManager migrationRecordsManager
 	) {
 		this.txnCtx = txnCtx;
 		this.ledger = ledger;
@@ -71,9 +73,11 @@ public class ServicesTxnManager {
 		this.scopedProcessing = scopedProcessing;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.scopedRecordStreaming = scopedRecordStreaming;
+		this.migrationRecordsManager = migrationRecordsManager;
 		this.scopedTriggeredProcessing = scopedTriggeredProcessing;
 	}
 
+	private boolean needToPublishMigrationRecords = true;
 	private boolean createdStreamableRecord;
 
 	public void process(TxnAccessor accessor, Instant consensusTime, long submittingMember) {
@@ -86,6 +90,12 @@ public class ServicesTxnManager {
 			recordsHistorian.clearHistory();
 			ledger.begin();
 
+			if (needToPublishMigrationRecords) {
+				// The manager will only publish migration records if the MerkleNetworkContext (in state)
+				// shows that it needs to do so; our responsibility here is just to give it the opportunity
+				migrationRecordsManager.publishMigrationRecords(consensusTime);
+				needToPublishMigrationRecords = false;
+			}
 			if (accessor.isTriggeredTxn()) {
 				scopedTriggeredProcessing.run();
 			} else {

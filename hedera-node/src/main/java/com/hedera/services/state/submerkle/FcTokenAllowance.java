@@ -51,10 +51,8 @@ public class FcTokenAllowance implements SelfSerializable {
 	static final int CURRENT_VERSION = RELEASE_023X_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xf65baa533950f139L;
 
-	static final List<Long> DEFAULT_SERIAL_NUMS = new ArrayList<>();
-
 	private boolean approvedForAll;
-	private List<Long> serialNumbers = DEFAULT_SERIAL_NUMS;
+	private List<Long> serialNumbers;
 
 	public FcTokenAllowance() {
 		/* RuntimeConstructable */
@@ -67,12 +65,12 @@ public class FcTokenAllowance implements SelfSerializable {
 
 	FcTokenAllowance(final boolean approvedForAll) {
 		this.approvedForAll = approvedForAll;
-		/* serialNums is null*/
+		this.serialNumbers = Collections.emptyList();
 	}
 
 	FcTokenAllowance(final List<Long> serialNumbers) {
 		this.serialNumbers = serialNumbers;
-		/* approvedForAll is false */
+		this.approvedForAll = false;
 	}
 
 	@Override

@@ -24,6 +24,7 @@ import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.token.meta.TokenBurnMeta;
@@ -56,6 +57,7 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 	private static final String CRYPTO_APPROVE_META_KEY = "cryptoApproveMeta";
 	private static final String CRYPTO_ADJUST_META_KEY = "cryptoAdjustMeta";
+	private static final String CRYPTO_DELETE_ALLOWANCE_META_KEY = "cryptoDeleteAllowanceMeta";
 
 	@Inject
 	public ExpandHandleSpanMapAccessor() {
@@ -164,5 +166,13 @@ public class ExpandHandleSpanMapAccessor {
 
 	public CryptoAdjustAllowanceMeta getCryptoAdjustMeta(TxnAccessor accessor) {
 		return (CryptoAdjustAllowanceMeta) accessor.getSpanMap().get(CRYPTO_ADJUST_META_KEY);
+	}
+
+	public void setCryptoDeleteAllowanceMeta(TxnAccessor accessor, CryptoDeleteAllowanceMeta cryptoDeleteAllowanceMeta) {
+		accessor.getSpanMap().put(CRYPTO_DELETE_ALLOWANCE_META_KEY, cryptoDeleteAllowanceMeta);
+	}
+
+	public CryptoDeleteAllowanceMeta getCryptoDeleteAllowanceMeta(TxnAccessor accessor) {
+		return (CryptoDeleteAllowanceMeta) accessor.getSpanMap().get(CRYPTO_DELETE_ALLOWANCE_META_KEY);
 	}
 }

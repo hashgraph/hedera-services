@@ -228,6 +228,35 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	@Test
+	void testsCryptoKeyIfPresent() {
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
+
+		final var verdict = subject.cryptoKeyIsActive(expectedKey);
+
+		assertTrue(verdict);
+	}
+
+	@Test
+	void testsCryptoKeyIfPresentButInvalid() {
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
+
+		final var verdict = subject.cryptoKeyIsActive(expectedKey);
+
+		assertFalse(verdict);
+	}
+
+	@Test
+	void testsNullCryptoKey() {
+		final var verdict = subject.cryptoKeyIsActive(null);
+
+		assertFalse(verdict);
+	}
+
+	@Test
 	void filtersContracts() {
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(ledgers.accounts()).willReturn(accountsLedger);

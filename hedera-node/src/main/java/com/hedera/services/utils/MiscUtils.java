@@ -81,6 +81,7 @@ import static com.hedera.services.grpc.controllers.CryptoController.ADD_LIVE_HAS
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_ADJUST_ALLOWANCE;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_APPROVE_ALLOWANCES;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_CREATE_METRIC;
+import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_DELETE_ALLOWANCE;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_DELETE_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_TRANSFER_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_UPDATE_METRIC;
@@ -125,6 +126,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
@@ -308,6 +310,7 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(CryptoDeleteLiveHash, DELETE_LIVE_HASH_METRIC);
 		BASE_STAT_NAMES.put(CryptoApproveAllowance, CRYPTO_APPROVE_ALLOWANCES);
 		BASE_STAT_NAMES.put(CryptoAdjustAllowance, CRYPTO_ADJUST_ALLOWANCE);
+		BASE_STAT_NAMES.put(CryptoDeleteAllowance, CRYPTO_DELETE_ALLOWANCE);
 		BASE_STAT_NAMES.put(FileCreate, CREATE_FILE_METRIC);
 		BASE_STAT_NAMES.put(FileUpdate, UPDATE_FILE_METRIC);
 		BASE_STAT_NAMES.put(FileDelete, DELETE_FILE_METRIC);
@@ -463,6 +466,10 @@ public final class MiscUtils {
 		}
 	}
 
+	public static Timestamp asSecondsTimestamp(final long now) {
+		return Timestamp.newBuilder().setSeconds(now).build();
+	}
+
 	public static Timestamp asTimestamp(final long packedTime) {
 		return Timestamp.newBuilder()
 				.setSeconds(unsignedHighOrder32From(packedTime))
@@ -572,6 +579,9 @@ public final class MiscUtils {
 		}
 		if (txn.hasCryptoAdjustAllowance()) {
 			return CryptoAdjustAllowance;
+		}
+		if (txn.hasCryptoDeleteAllowance()) {
+			return CryptoDeleteAllowance;
 		}
 		return NONE;
 	}
@@ -702,6 +712,9 @@ public final class MiscUtils {
 		}
 		if (txn.hasCryptoAdjustAllowance()) {
 			return CryptoAdjustAllowance;
+		}
+		if (txn.hasCryptoDeleteAllowance()) {
+			return CryptoDeleteAllowance;
 		}
 		throw new UnknownHederaFunctionality();
 	}

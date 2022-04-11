@@ -20,7 +20,9 @@ package com.hedera.services.txns.token.process;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -33,9 +35,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -60,12 +64,17 @@ class NewRelsTest {
 	private TokenRelationship treasuryRel;
 	@Mock
 	private TokenRelationship collectorRel;
+	@Mock
+	private TypedTokenStore tokenStore;
+	@Mock
+	private GlobalDynamicProperties dynamicProperties;
 
 	@Test
 	void associatesAsExpected() {
 		given(treasury.getId()).willReturn(treasuryId);
 		given(collector.getId()).willReturn(collectorId);
 		given(provisionalToken.getTreasury()).willReturn(treasury);
+		given(treasury.associateWith(anyList(), any(), anyBoolean(), anyBoolean(), any())).willReturn(List.of(treasuryRel, collectorRel));
 		given(feeCollectorAssociationRequired.requiresCollectorAutoAssociation()).willReturn(true);
 		given(feeCollectorAssociationRequired.getValidatedCollector()).willReturn(collector);
 		given(feeSameCollectorAssociationRequired.requiresCollectorAutoAssociation()).willReturn(true);
@@ -74,14 +83,11 @@ class NewRelsTest {
 				feeCollectorAssociationRequired,
 				feeNoCollectorAssociationRequired,
 				feeSameCollectorAssociationRequired));
-		given(provisionalToken.newEnabledRelationship(treasury)).willReturn(treasuryRel);
-		given(provisionalToken.newEnabledRelationship(collector)).willReturn(collectorRel);
 
-		final var ans = NewRels.listFrom(provisionalToken, MAX_PER_ACCOUNT);
+		final var ans = NewRels.listFrom(provisionalToken, tokenStore, dynamicProperties);
 
 		assertEquals(List.of(treasuryRel, collectorRel), ans);
-		verify(treasury).associateWith(List.of(provisionalToken), MAX_PER_ACCOUNT, false);
-		verify(collector).associateWith(List.of(provisionalToken), MAX_PER_ACCOUNT, false);
-		verify(provisionalToken, times(1)).newEnabledRelationship(collector);
+		verify(treasury).associateWith(List.of(provisionalToken), tokenStore, false, true, dynamicProperties);
+		verify(collector).associateWith(List.of(provisionalToken), tokenStore, false, true, dynamicProperties);
 	}
 }

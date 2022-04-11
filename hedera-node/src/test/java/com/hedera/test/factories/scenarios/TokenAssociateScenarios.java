@@ -24,6 +24,7 @@ import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
+import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND;
 import static com.hedera.test.factories.txns.TokenAssociateFactory.newSignedTokenAssociate;
 
 public enum TokenAssociateScenarios implements TxnHandlingScenario {
@@ -48,6 +49,17 @@ public enum TokenAssociateScenarios implements TxnHandlingScenario {
 							.targeting(DEFAULT_PAYER)
 							.associating(KNOWN_TOKEN_WITH_KYC)
 							.associating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
+							.get()
+			));
+		}
+	},
+	TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET {
+		@Override
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return new PlatformTxnAccessor(from(
+					newSignedTokenAssociate()
+							.targeting(STAKING_FUND)
+							.associating(KNOWN_TOKEN_WITH_KYC)
 							.get()
 			));
 		}

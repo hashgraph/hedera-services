@@ -113,6 +113,19 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 				isActiveInFrame(key, isDelegateCall, activeContract, worldLedgers.aliases())).orElse(true);
 	}
 
+	@Override
+	public boolean cryptoKeyIsActive(final JKey key) {
+		return key != null && isCryptoKeyActiveInFrame(key);
+	}
+
+	private boolean isCryptoKeyActiveInFrame(final JKey key) {
+		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
+		return activationTest.test(
+				key,
+				pkToCryptoSigsFn,
+				cryptoValidity);
+	}
+
 	private boolean isActiveInFrame(
 			final JKey key,
 			final boolean isDelegateCall,

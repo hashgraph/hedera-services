@@ -20,6 +20,8 @@ package com.hedera.services.txns.token.process;
  * ‍
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -30,18 +32,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class NewRels {
-	public static List<TokenRelationship> listFrom(Token provisionalToken, int maxTokensPerAccount) {
+public final class NewRels {
+	public static List<TokenRelationship> listFrom(
+			final Token provisionalToken,
+			final TypedTokenStore tokenStore,
+			final GlobalDynamicProperties dynamicProperties) {
 		final var treasury = provisionalToken.getTreasury();
 		final Set<Id> associatedSoFar = new HashSet<>();
 		final List<TokenRelationship> newRels = new ArrayList<>();
 
-		associateGiven(maxTokensPerAccount, provisionalToken, treasury, associatedSoFar, newRels);
+		associateGiven(provisionalToken, treasury, tokenStore, associatedSoFar, newRels, dynamicProperties);
 
 		for (final var customFee : provisionalToken.getCustomFees()) {
 			if (customFee.requiresCollectorAutoAssociation()) {
 				final var collector = customFee.getValidatedCollector();
-				associateGiven(maxTokensPerAccount, provisionalToken, collector, associatedSoFar, newRels);
+				associateGiven(provisionalToken, collector, tokenStore, associatedSoFar, newRels, dynamicProperties);
 			}
 		}
 
@@ -49,20 +54,19 @@ public class NewRels {
 	}
 
 	private static void associateGiven(
-			final int maxTokensPerAccount,
 			final Token provisionalToken,
 			final Account account,
+			final TypedTokenStore tokenStore,
 			final Set<Id> associatedSoFar,
-			final List<TokenRelationship> newRelations
+			final List<TokenRelationship> newRelations,
+			final GlobalDynamicProperties dynamicProperties
 	)  {
 		final var accountId = account.getId();
 		if (associatedSoFar.contains(accountId)) {
 			return;
 		}
 
-		final var newRel = provisionalToken.newEnabledRelationship(account);
-		account.associateWith(List.of(provisionalToken), maxTokensPerAccount, false);
-		newRelations.add(newRel);
+		newRelations.addAll(account.associateWith(List.of(provisionalToken), tokenStore, false, true, dynamicProperties));
 		associatedSoFar.add(accountId);
 	}
 

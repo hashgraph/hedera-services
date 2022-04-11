@@ -21,15 +21,19 @@ package com.hedera.services.state.merkle;
  */
 
 import com.google.common.base.MoreObjects;
+import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.serdes.DomainSerdes;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.serdes.IoUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
@@ -44,19 +48,20 @@ import java.util.Optional;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+import static com.hedera.services.state.serdes.IoUtils.readNullable;
+import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullable;
+import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 
 public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> {
-	static final int RELEASE_0120_VERSION = 2;
 	static final int RELEASE_0160_VERSION = 3;
 	static final int RELEASE_0180_VERSION = 4;
 	static final int RELEASE_0190_VERSION = 5;
 
 	static final int CURRENT_VERSION = RELEASE_0190_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xd23ce8814b35fc2fL;
-
-	static DomainSerdes serdes = new DomainSerdes();
 
 	private static final long UNUSED_AUTO_RENEW_PERIOD = -1L;
 	private static final int UPPER_BOUND_MEMO_UTF8_BYTES = 1024;
@@ -258,10 +263,15 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 	}
 
 	@Override
+	public int getMinimumSupportedVersion() {
+		return CURRENT_VERSION;
+	}
+
+	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		deleted = in.readBoolean();
 		expiry = in.readLong();
-		autoRenewAccount = serdes.readNullableSerializable(in);
+		autoRenewAccount = readNullableSerializable(in);
 		autoRenewPeriod = in.readLong();
 		symbol = in.readNormalisedString(UPPER_BOUND_SYMBOL_UTF8_BYTES);
 		name = in.readNormalisedString(UPPER_BOUND_TOKEN_NAME_UTF8_BYTES);
@@ -270,28 +280,25 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		decimals = in.readInt();
 		accountsFrozenByDefault = in.readBoolean();
 		accountsKycGrantedByDefault = in.readBoolean();
-		adminKey = serdes.readNullable(in, serdes::deserializeKey);
-		freezeKey = serdes.readNullable(in, serdes::deserializeKey);
-		kycKey = serdes.readNullable(in, serdes::deserializeKey);
-		supplyKey = serdes.readNullable(in, serdes::deserializeKey);
-		wipeKey = serdes.readNullable(in, serdes::deserializeKey);
+		adminKey = readNullable(in, JKeySerializer::deserialize);
+		freezeKey = readNullable(in, JKeySerializer::deserialize);
+		kycKey = readNullable(in, JKeySerializer::deserialize);
+		supplyKey = readNullable(in, JKeySerializer::deserialize);
+		wipeKey = readNullable(in, JKeySerializer::deserialize);
 		/* Memo present since 0.12.0 */
 		memo = in.readNormalisedString(UPPER_BOUND_MEMO_UTF8_BYTES);
-		if (version >= RELEASE_0160_VERSION) {
-			tokenType = TokenType.values()[in.readInt()];
-			supplyType = TokenSupplyType.values()[in.readInt()];
-			maxSupply = in.readLong();
-			lastUsedSerialNumber = in.readLong();
-			feeSchedule = unmodifiableList(in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
-			feeScheduleKey = serdes.readNullable(in, serdes::deserializeKey);
-		}
-		if (version >= RELEASE_0180_VERSION) {
-			number = in.readInt();
-		}
-		if (version >= RELEASE_0190_VERSION) {
-			pauseKey = serdes.readNullable(in, serdes::deserializeKey);
-			paused = in.readBoolean();
-		}
+		// Added in 0.16
+		tokenType = TokenType.values()[in.readInt()];
+		supplyType = TokenSupplyType.values()[in.readInt()];
+		maxSupply = in.readLong();
+		lastUsedSerialNumber = in.readLong();
+		feeSchedule = unmodifiableList(in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
+		feeScheduleKey = readNullable(in, JKeySerializer::deserialize);
+		// Added in 0.18
+		number = in.readInt();
+		// Added in 0.19
+		pauseKey = readNullable(in, JKeySerializer::deserialize);
+		paused = in.readBoolean();
 		if (tokenType == null) {
 			tokenType = TokenType.FUNGIBLE_COMMON;
 		}
@@ -301,10 +308,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		out.writeBoolean(deleted);
 		out.writeLong(expiry);
-		serdes.writeNullableSerializable(autoRenewAccount, out);
+		writeNullableSerializable(autoRenewAccount, out);
 		out.writeLong(autoRenewPeriod);
 		out.writeNormalisedString(symbol);
 		out.writeNormalisedString(name);
@@ -313,20 +320,20 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		out.writeInt(decimals);
 		out.writeBoolean(accountsFrozenByDefault);
 		out.writeBoolean(accountsKycGrantedByDefault);
-		serdes.writeNullable(adminKey, out, serdes::serializeKey);
-		serdes.writeNullable(freezeKey, out, serdes::serializeKey);
-		serdes.writeNullable(kycKey, out, serdes::serializeKey);
-		serdes.writeNullable(supplyKey, out, serdes::serializeKey);
-		serdes.writeNullable(wipeKey, out, serdes::serializeKey);
+		writeNullable(adminKey, out, IoUtils::serializeKey);
+		writeNullable(freezeKey, out, IoUtils::serializeKey);
+		writeNullable(kycKey, out, IoUtils::serializeKey);
+		writeNullable(supplyKey, out, IoUtils::serializeKey);
+		writeNullable(wipeKey, out, IoUtils::serializeKey);
 		out.writeNormalisedString(memo);
 		out.writeInt(tokenType.ordinal());
 		out.writeInt(supplyType.ordinal());
 		out.writeLong(maxSupply);
 		out.writeLong(lastUsedSerialNumber);
 		out.writeSerializableList(feeSchedule, true, true);
-		serdes.writeNullable(feeScheduleKey, out, serdes::serializeKey);
+		writeNullable(feeScheduleKey, out, IoUtils::serializeKey);
 		out.writeInt(number);
-		serdes.writeNullable(pauseKey, out, serdes::serializeKey);
+		writeNullable(pauseKey, out, IoUtils::serializeKey);
 		out.writeBoolean(paused);
 	}
 
@@ -576,6 +583,14 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 					amount, maxSupply));
 		}
 		totalSupply += amount;
+	}
+
+	public long entityNum() {
+		return BitPackUtils.numFromCode(number);
+	}
+
+	public TokenID grpcId() {
+		return StaticPropertiesHolder.STATIC_PROPERTIES.scopedTokenWith(entityNum());
 	}
 
 	public JKey getSupplyKey() {

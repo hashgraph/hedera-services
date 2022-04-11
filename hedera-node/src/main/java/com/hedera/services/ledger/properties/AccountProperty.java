@@ -24,13 +24,12 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.utils.EntityNum;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -162,17 +161,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getNftsOwned;
 		}
 	},
-	TOKENS {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.tokens().shareTokensOf((MerkleAccountTokens) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return a -> a.tokens().tmpNonMerkleCopy();
-		}
-	},
 	MAX_AUTOMATIC_ASSOCIATIONS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
@@ -184,15 +172,15 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getMaxAutomaticAssociations;
 		}
 	},
-	ALREADY_USED_AUTOMATIC_ASSOCIATIONS {
+	USED_AUTOMATIC_ASSOCIATIONS {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setAlreadyUsedAutomaticAssociations((int) t);
+			return (a, t) -> a.setUsedAutomaticAssociations((int) t);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getAlreadyUsedAutoAssociations;
+			return MerkleAccount::getUsedAutoAssociations;
 		}
 	},
 	NUM_CONTRACT_KV_PAIRS {
@@ -239,15 +227,48 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getFungibleTokenAllowancesUnsafe;
 		}
 	},
-	NFT_ALLOWANCES {
+	APPROVE_FOR_ALL_NFTS_ALLOWANCES  {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.setNftAllowancesUnsafe((Map<FcTokenAllowanceId, FcTokenAllowance>) t);
+			return (a, t) -> a.setApproveForAllNfts((Set<FcTokenAllowanceId>) t);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getNftAllowancesUnsafe;
+			return MerkleAccount::getApproveForAllNftsUnsafe;
+		}
+	},
+	NUM_ASSOCIATIONS {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setNumAssociations((int) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getNumAssociations;
+		}
+	},
+	NUM_POSITIVE_BALANCES {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setNumPositiveBalances((int) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getNumPositiveBalances;
+		}
+	},
+	HEAD_TOKEN_NUM {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.setHeadTokenId((long) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getHeadTokenId;
 		}
 	}
 }

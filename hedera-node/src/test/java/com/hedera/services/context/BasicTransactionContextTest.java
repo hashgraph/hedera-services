@@ -401,7 +401,7 @@ class BasicTransactionContextTest {
 		assertEquals(memo, record.getMemo());
 		assertArrayEquals(hash, record.asGrpc().getTransactionHash().toByteArray());
 		assertEquals(txnId, record.asGrpc().getTransactionID());
-		assertEquals(RichInstant.fromJava(now), record.getConsensusTimestamp());
+		assertEquals(RichInstant.fromJava(now), record.getConsensusTime());
 	}
 
 	@Test
@@ -647,7 +647,7 @@ class BasicTransactionContextTest {
 				.setConsensusTime(RichInstant.fromJava(consensusTime))
 				.setMemo(accessor.getTxn().getMemo())
 				.setFee(amount)
-				.setTransferList(transfers)
+				.setHbarAdjustments(transfers)
 				.setScheduleRef(accessor.isTriggeredTxn() ? fromGrpcScheduleId(accessor.getScheduleRef()) : null)
 				.setNewTokenAssociations(newTokenAssociations);
 

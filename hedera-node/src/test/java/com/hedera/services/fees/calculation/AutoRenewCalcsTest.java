@@ -76,6 +76,7 @@ class AutoRenewCalcsTest {
 			.setHbarEquiv(1)
 			.setCentEquiv(10)
 			.build();
+	private final int associatedTokensCount = 123;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -188,11 +189,11 @@ class AutoRenewCalcsTest {
 				.setCurrentKey(MiscUtils.asKeyUnchecked(expiredAccount.getAccountKey()))
 				.setCurrentlyHasProxy(true)
 				.setCurrentMemo(expiredAccount.getMemo())
-				.setCurrentNumTokenRels(expiredAccount.tokens().numAssociations())
+				.setCurrentNumTokenRels(associatedTokensCount)
 				.setCurrentMaxAutomaticAssociations(expiredAccount.getMaxAutomaticAssociations())
 				.setCurrentCryptoAllowances(getCryptoAllowancesList(expiredAccount))
 				.setCurrentTokenAllowances(getFungibleTokenAllowancesList(expiredAccount))
-				.setCurrentNftAllowances(getNftAllowancesList(expiredAccount))
+				.setCurrentApproveForAllNftAllowances(getNftAllowancesList(expiredAccount))
 				.build();
 
 		// expect:
@@ -256,6 +257,8 @@ class AutoRenewCalcsTest {
 				.tokens(asToken("1.2.3"), asToken("2.3.4"), asToken("3.4.5"))
 				.proxy(asAccount("0.0.12345"))
 				.memo("SHOCKED, I tell you!")
+				.associatedTokensCount(associatedTokensCount)
+				.lastAssociatedToken(5)
 				.get();
 	}
 

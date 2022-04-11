@@ -40,12 +40,9 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -90,7 +87,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
 		final int MONOGAMOUS_NETWORK = 1;
 		final int maxAutoAssociations = 100;
 		final int ADVENTUROUS_NETWORK = 1_000;
-		final String user = "user";
+		final String user1 = "user1";
+		final String user2 = "user2";
 		return defaultHapiSpec("MaxAutoAssociationSpec")
 				.given(
 						fileUpdate(APP_PROPERTIES)
@@ -99,19 +97,30 @@ public class CryptoCreateSuite extends HapiApiSuite {
 				)
 				.when()
 				.then(
-						cryptoCreate(user)
+						cryptoCreate(user1)
 								.balance(ONE_HBAR)
 								.maxAutomaticTokenAssociations(maxAutoAssociations)
 								.hasPrecheck(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("accounts.limitTokenAssociations", "false")),
+						cryptoCreate(user1)
+								.balance(ONE_HBAR)
+								.maxAutomaticTokenAssociations(maxAutoAssociations),
+						getAccountInfo(user1)
+								.hasMaxAutomaticAssociations(maxAutoAssociations),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
+								.overridingProps(Map.of("accounts.limitTokenAssociations", "true")),
+						fileUpdate(APP_PROPERTIES)
+								.payingWith(ADDRESS_BOOK_CONTROL)
 								.overridingProps(Map.of(
 										"tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK
 								)),
-						cryptoCreate(user)
+						cryptoCreate(user2)
 								.balance(ONE_HBAR)
 								.maxAutomaticTokenAssociations(maxAutoAssociations),
-						getAccountInfo(user)
+						getAccountInfo(user2)
 								.hasMaxAutomaticAssociations(maxAutoAssociations)
 				);
 	}

@@ -21,7 +21,10 @@ package com.hedera.services.store.models;
  */
 
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -48,4 +51,21 @@ class UniqueTokenTest {
 		assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
 	}
 
+	@Test
+	void toStringWorks() {
+		final var token1 = IdUtils.asModelId("0.0.12345");
+		final var owner1 = IdUtils.asModelId("0.0.12346");
+		final var spender1 = IdUtils.asModelId("0.0.12347");
+		final var meta1 = "aa".getBytes(StandardCharsets.UTF_8);
+		final var subject = new UniqueToken(token1, 1L);
+		subject.setOwner(owner1);
+		subject.setSpender(spender1);
+		subject.setMetadata(meta1);
+		subject.setCreationTime(RichInstant.MISSING_INSTANT);
+
+		final var expected = "UniqueToken{tokenID=0.0.12345, serialNum=1, metadata=[97, 97], " +
+				"creationTime=RichInstant{seconds=0, nanos=0}, owner=0.0.12346, spender=0.0.12347}";
+
+		assertEquals(expected, subject.toString());
+	}
 }

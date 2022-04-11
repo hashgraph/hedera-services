@@ -35,6 +35,7 @@ import com.hedera.services.fees.calculation.file.FileFeesModule;
 import com.hedera.services.fees.calculation.meta.FixedUsageEstimates;
 import com.hedera.services.fees.calculation.schedule.ScheduleFeesModule;
 import com.hedera.services.fees.calculation.token.TokenFeesModule;
+import com.hedera.services.files.HFileMetaSerde;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.grpc.marshalling.AdjustmentUtils;
 import com.hedera.services.keys.HederaKeyActivation;
@@ -52,13 +53,15 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
-import com.hedera.services.state.migration.ReleaseTwentyTwoMigration;
+import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
+import com.hedera.services.state.serdes.IoUtils;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.stats.StatsModule;
+import com.hedera.services.store.contracts.precompile.DescriptorUtils;
 import com.hedera.services.store.models.TopicConversion;
 import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
@@ -85,6 +88,9 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			HFileMetaSerde.class,
+			IoUtils.class,
+			DescriptorUtils.class,
 			TokenMetaUtils.class,
 			MiscCryptoUtils.class,
 			NewRels.class,
@@ -106,7 +112,7 @@ class UtilsConstructorTest {
 			MerkleAccount.ChildIndices.class,
 			BitPackUtils.class,
 			LegacyStateChildIndices.class,
-			ReleaseTwentyTwoMigration.class,
+			ReleaseTwentyFourMigration.class,
 			StateChildIndices.class,
 			StateVersions.class,
 			MiscRunningAvgs.Names.class,

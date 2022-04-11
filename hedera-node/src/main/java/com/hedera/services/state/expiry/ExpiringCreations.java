@@ -163,11 +163,10 @@ public class ExpiringCreations implements EntityCreator {
 		final var baseRecord = ExpirableTxnRecord.newBuilder()
 				.setReceiptBuilder(receiptBuilder)
 				.setMemo(memo)
-				.setTransferList(sideEffectsTracker.getNetTrackedHbarChanges())
+				.setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
 				.setAssessedCustomFees(customFeesCharged)
 				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations())
 				.setCryptoAllowances(sideEffectsTracker.getCryptoAllowances())
-				.setNftAllowances(sideEffectsTracker.getNftAllowances())
 				.setFungibleTokenAllowances(sideEffectsTracker.getFungibleTokenAllowances());
 
 		if (sideEffectsTracker.hasTrackedAutoCreation()) {

@@ -30,6 +30,7 @@ import com.swirlds.merkle.map.MerkleMap;
 
 import java.util.function.Supplier;
 
+import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
@@ -71,6 +72,10 @@ public class DefaultAccountLookup implements AccountSigMetaLookup {
 		if (account == null) {
 			return SafeLookupResult.failure(MISSING_ACCOUNT);
 		} else {
+			final var key = account.getAccountKey();
+			if (key != null && key.isEmpty()) {
+				return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
+			}
 			return new SafeLookupResult<>(
 					new AccountSigningMetadata(
 							account.getAccountKey(), account.isReceiverSigRequired()));

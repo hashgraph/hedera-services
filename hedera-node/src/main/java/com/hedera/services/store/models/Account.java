@@ -22,34 +22,38 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
+import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
@@ -73,7 +77,6 @@ public class Account {
 	private boolean deleted = false;
 	private boolean isSmartContract = false;
 	private boolean isReceiverSigRequired = false;
-	private CopyOnWriteIds associatedTokens;
 	private long ownedNfts;
 	private long autoRenewSecs;
 	private ByteString alias = ByteString.EMPTY;
@@ -83,14 +86,13 @@ public class Account {
 	private int autoAssociationMetadata;
 	private TreeMap<EntityNum, Long> cryptoAllowances;
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances;
+	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
+	private int numAssociations;
+	private int numPositiveBalances;
+	private long headTokenNum;
 
 	public Account(Id id) {
 		this.id = id;
-	}
-
-	public void setAssociatedTokens(CopyOnWriteIds associatedTokens) {
-		this.associatedTokens = associatedTokens;
 	}
 
 	public void setExpiry(long expiry) {
@@ -151,65 +153,202 @@ public class Account {
 		setAlreadyUsedAutomaticAssociations(++count);
 	}
 
-	public void decrementUsedAutomaticAssocitions() {
+	public void decrementUsedAutomaticAssociations() {
 		var count = getAlreadyUsedAutomaticAssociations();
 		setAlreadyUsedAutomaticAssociations(--count);
 	}
 
-	public void associateWith(List<Token> tokens, int maxAllowed, boolean automaticAssociation) {
-		final var alreadyAssociated = associatedTokens.size();
-		final var proposedNewAssociations = tokens.size() + alreadyAssociated;
-		validateTrue(proposedNewAssociations <= maxAllowed, TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+	public long getHeadTokenNum() {
+		return headTokenNum;
+	}
 
-		final Set<Id> uniqueIds = new HashSet<>();
+	public void setHeadTokenNum(final long headTokenNum) {
+		this.headTokenNum = headTokenNum;
+	}
+
+	public int getNumAssociations() {
+		return numAssociations;
+	}
+
+	public void setNumAssociations(final int numAssociations) {
+		if (numAssociations < 0) {
+			// not possible
+			this.numAssociations = 0;
+		} else {
+			this.numAssociations = numAssociations;
+		}
+	}
+
+	public int getNumPositiveBalances() {
+		return numPositiveBalances;
+	}
+
+	public void setNumPositiveBalances(final int numPositiveBalances) {
+		if (numPositiveBalances < 0) {
+			// not possible
+			this.numPositiveBalances = 0;
+		} else {
+			this.numPositiveBalances = numPositiveBalances;
+		}
+	}
+
+	/**
+	 * Associated the given list of Tokens to this account.
+	 *
+	 * @param tokens
+	 * 		List of tokens to be associated to the Account
+	 * @param tokenStore
+	 * 		TypedTokenStore to validate if existing relationship with the tokens to be associated with.
+	 * @param isAutomaticAssociation
+	 * 		boolean flag to denote if its an automaticAssociation.
+	 * @param shouldEnableRelationship
+	 * 		boolean flag to denote if the new relationships have to enabled by default without considering the KYC key and Freeze Key
+	 * @param dynamicProperties
+	 * 		GlobalDynamicProperties to fetch the token associations limit and enforce it.
+	 * @return A list of TokenRelationships [new and old] that are touched by associating the tokens to this account.
+	 */
+	public List<TokenRelationship> associateWith(
+			final List<Token> tokens,
+			final TypedTokenStore tokenStore,
+			final boolean isAutomaticAssociation,
+			final boolean shouldEnableRelationship,
+			final GlobalDynamicProperties dynamicProperties) {
+		List<TokenRelationship> tokenRelationshipsToPersist = new ArrayList<>();
+
+		final var proposedTotalAssociations = tokens.size() + numAssociations;
+		validateFalse(exceedsTokenAssociationLimit(dynamicProperties, proposedTotalAssociations),
+				TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED);
+
+		var currKey = headTokenNum;
+		TokenRelationship currRel = currKey == MISSING_ID.num() ?
+				null : tokenStore.getLatestTokenRelationship(this);
 		for (var token : tokens) {
-			final var tokenId = token.getId();
-			validateFalse(associatedTokens.contains(tokenId), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
-			if (automaticAssociation) {
+			validateFalse(tokenStore.hasAssociation(token, this), TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT);
+			if (isAutomaticAssociation) {
 				incrementUsedAutomaticAssocitions();
 			}
-			uniqueIds.add(tokenId);
-		}
 
-		associatedTokens.addAllIds(uniqueIds);
+			final var newRel = shouldEnableRelationship ?
+					token.newEnabledRelationship(this) :
+					token.newRelationshipWith(this, false);
+			final var newTokenNum = token.getId().num();
+			if (currRel != null) {
+				final var prevKey = currRel.getPrevKey();
+				newRel.setPrevKey(prevKey);
+				newRel.setNextKey(currKey);
+				currRel.setPrevKey(newTokenNum);
+				tokenRelationshipsToPersist.add(currRel);
+			}
+			numAssociations++;
+			currRel = newRel;
+			currKey = newTokenNum;
+		}
+		headTokenNum = currKey;
+		tokenRelationshipsToPersist.add(currRel);
+		return tokenRelationshipsToPersist;
 	}
 
 	/**
 	 * Applies the given list of {@link Dissociation}s, validating that this account is
 	 * indeed associated to each involved token.
-	 *
-	 * @param dissociations
+	 *  @param dissociations
 	 * 		the dissociations to perform.
+	 * @param tokenStore
+	 * 		tokenStore to load the prev and next tokenRelationships of the account
 	 * @param validator
-	 * 		the validator to use for each dissociation
+	 * 		validator to check if the dissociating token has expired.
+	 * @return A list of TokenRelationships that are touched by the dissociating tokens.
 	 */
-	public void dissociateUsing(List<Dissociation> dissociations, OptionValidator validator) {
-		final Set<Id> dissociatedTokenIds = new HashSet<>();
-		for (var dissociation : dissociations) {
+	public List<TokenRelationship> dissociateUsing(
+			final List<Dissociation> dissociations,
+			final TypedTokenStore tokenStore,
+			final OptionValidator validator
+	) {
+		final Map<EntityNumPair, TokenRelationship> unPersistedRelationships = new HashMap<>();
+		for (final var dissociation : dissociations) {
 			validateTrue(id.equals(dissociation.dissociatingAccountId()), FAIL_INVALID);
+
 			dissociation.updateModelRelsSubjectTo(validator);
-			dissociatedTokenIds.add(dissociation.dissociatedTokenId());
-			if (dissociation.dissociatingAccountRel().isAutomaticAssociation()) {
-				decrementUsedAutomaticAssocitions();
+			final var pastRel = dissociation.dissociatingAccountRel();
+			if (pastRel.isAutomaticAssociation()) {
+				decrementUsedAutomaticAssociations();
 			}
+			if (pastRel.getBalanceChange() != 0) {
+				numPositiveBalances--;
+			}
+
+			final var tokenId = dissociation.dissociatedTokenId();
+			final var relKey = EntityNumPair.fromLongs(id.num(),tokenId.num());
+			if (headTokenNum == tokenId.num()) {
+				// removing the latest associated token from the account
+				if (numAssociations == 1) {
+					headTokenNum = MISSING_ID.num();
+				} else {
+					updateLastAssociation(tokenStore, unPersistedRelationships, relKey);
+				}
+			} else {
+				/* get next, prev tokenRelationships and update the links by un-linking the dissociating relationship */
+				updateAssociationList(tokenStore, unPersistedRelationships, dissociation.dissociatingToken(), relKey);
+			}
+			numAssociations--;
 		}
-		associatedTokens.removeAllIds(dissociatedTokenIds);
+		return unPersistedRelationships.values().stream().toList();
+	}
+
+	private void updateAssociationList(
+			final TypedTokenStore tokenStore,
+			final Map<EntityNumPair, TokenRelationship> unPersistedRelationships,
+			final Token token,
+			final EntityNumPair relKey) {
+		final var dissociatingRel = unPersistedRelationships.computeIfAbsent(relKey,
+				ignore -> tokenStore.loadTokenRelationship(token, this));
+		final var prevKey = dissociatingRel.getPrevKey();
+		final var prevToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
+				STATIC_PROPERTIES.scopedIdWith(prevKey));
+		final var prevRelKey = EntityNumPair.fromLongs(id.num(), prevKey);
+		final var prevRel = unPersistedRelationships.computeIfAbsent(prevRelKey,
+				ignore -> tokenStore.loadTokenRelationship(prevToken, this));
+		// nextKey can be 0.
+		final var nextKey = dissociatingRel.getNextKey();
+		if (nextKey != MISSING_ID.num()) {
+			final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
+					STATIC_PROPERTIES.scopedIdWith(nextKey));
+			final var nextRelKey = EntityNumPair.fromLongs(id.num(), nextKey);
+			final var nextRel = unPersistedRelationships.computeIfAbsent(nextRelKey,
+					ignore -> tokenStore.loadTokenRelationship(nextToken, this));
+			nextRel.setPrevKey(prevKey);
+		}
+		prevRel.setNextKey(nextKey);
+	}
+
+	private void updateLastAssociation(
+			final TypedTokenStore tokenStore,
+			final Map<EntityNumPair, TokenRelationship> unPersistedRelationships,
+			final EntityNumPair relKey
+	) {
+		final var latestRel =  unPersistedRelationships.computeIfAbsent(relKey,
+				ignore -> tokenStore.getLatestTokenRelationship(this));
+		final var nextKey = latestRel.getNextKey();
+		final var nextToken = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(
+				STATIC_PROPERTIES.scopedIdWith(nextKey));
+		final var nextRelKey = EntityNumPair.fromLongs(id.num(), nextKey);
+		final var nextRel = unPersistedRelationships.computeIfAbsent(nextRelKey,
+				ignore -> tokenStore.loadTokenRelationship(nextToken, this));
+		headTokenNum = nextKey;
+		nextRel.setPrevKey(MISSING_ID.num());
 	}
 
 	public Id getId() {
 		return id;
 	}
 
-	public CopyOnWriteIds getAssociatedTokens() {
-		return associatedTokens;
-	}
-
-	public boolean isAssociatedWith(Id token) {
-		return associatedTokens.contains(token);
-	}
-
 	private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
 		return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
+	}
+
+	private boolean exceedsTokenAssociationLimit(GlobalDynamicProperties dynamicProperties, int totalAssociations) {
+		return dynamicProperties.areTokenAssociationsLimited() &&
+				totalAssociations > dynamicProperties.maxTokensPerAccount();
 	}
 
 	/* NOTE: The object methods below are only overridden to improve
@@ -228,22 +367,21 @@ public class Account {
 
 	@Override
 	public String toString() {
-		final var assocTokenRepr = Optional.ofNullable(associatedTokens)
-				.map(CopyOnWriteIds::toReadableIdList)
-				.orElse("<N/A>");
 		return MoreObjects.toStringHelper(Account.class)
 				.add("id", id)
 				.add("expiry", expiry)
 				.add("balance", balance)
 				.add("deleted", deleted)
-				.add("tokens", assocTokenRepr)
 				.add("ownedNfts", ownedNfts)
 				.add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
 				.add("maxAutoAssociations", getMaxAutomaticAssociations())
 				.add("alias", getAlias().toStringUtf8())
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
-				.add("nftAllowances", nftAllowances)
+				.add("approveForAllNfts", approveForAllNfts)
+				.add("numAssociations", numAssociations)
+				.add("numPositiveBalances", numPositiveBalances)
+				.add("headTokenNum", headTokenNum)
 				.toString();
 	}
 
@@ -350,25 +488,24 @@ public class Account {
 		this.fungibleTokenAllowances = new TreeMap<>(fungibleTokenAllowances);
 	}
 
-	public Map<FcTokenAllowanceId, FcTokenAllowance> getNftAllowances() {
-		return nftAllowances == null ? Collections.emptyMap() : nftAllowances;
+	public Set<FcTokenAllowanceId> getApprovedForAllNftsAllowances() {
+		return approveForAllNfts == null ? Collections.emptySet() : approveForAllNfts;
 	}
 
-	public SortedMap<FcTokenAllowanceId, FcTokenAllowance> getMutableNftAllowances() {
-		if (nftAllowances == null) {
-			nftAllowances = new TreeMap<>();
+	public SortedSet<FcTokenAllowanceId> getMutableApprovedForAllNfts() {
+		if (approveForAllNfts == null) {
+			approveForAllNfts = new TreeSet<>();
 		}
-		return nftAllowances;
+		return approveForAllNfts;
 	}
 
-	public void setNftAllowances(
-			final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances) {
-		this.nftAllowances = new TreeMap<>(nftAllowances);
+	public void setApproveForAllNfts(final Set<FcTokenAllowanceId> approveForAllNfts) {
+		this.approveForAllNfts = new TreeSet<>(approveForAllNfts);
 	}
 
 	public int getTotalAllowances() {
-		// each serial number of an NFT is considered as an allowance.
-		// So for Nft allowances aggregated amount is considered for limit calculation.
-		return cryptoAllowances.size() + fungibleTokenAllowances.size() + aggregateNftAllowances(nftAllowances);
+		return cryptoAllowances.size() +
+				fungibleTokenAllowances.size() +
+				approveForAllNfts.size();
 	}
 }

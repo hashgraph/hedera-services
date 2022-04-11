@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -107,9 +108,11 @@ class BootstrapPropertiesTest {
 			entry("contracts.redirectTokenCalls", true),
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),
 			entry("contracts.precompile.exportRecordResults", true),
+			entry("contracts.precompile.htsEnableTokenCreate", true),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),
+			entry("entities.systemDeletable", EnumSet.of(EntityType.FILE)),
 			entry("fees.percentCongestionMultipliers", CongestionMultipliers.from("90,10x,95,25x,99,100x")),
 			entry("fees.minCongestionPeriod", 60),
 			entry("files.addressBook", 101L),
@@ -124,7 +127,8 @@ class BootstrapPropertiesTest {
 			entry("grpc.tlsPort", 50212),
 			entry("hedera.accountsExportPath", "data/onboard/exportedAccount.txt"),
 			entry("hedera.exportAccountsOnStartup", false),
-			entry("hedera.numReservedSystemEntities", 1_000L),
+			entry("hedera.firstUserEntity", 1001L),
+			entry("hedera.numReservedSystemEntities", 750L),
 			entry("hedera.prefetch.queueCapacity", 10000),
 			entry("hedera.prefetch.threadPoolSize", 2),
 			entry("hedera.prefetch.codeCacheTtlSecs", 120),
@@ -172,6 +176,7 @@ class BootstrapPropertiesTest {
 			entry("netty.tlsCrt.path", "hedera.crt"),
 			entry("netty.tlsKey.path", "hedera.key"),
 			entry("queries.blob.lookupRetries", 3),
+			entry("tokens.maxRelsPerInfoQuery", 1_000),
 			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolUtf8Bytes", 100),
 			entry("tokens.maxTokenNameUtf8Bytes", 100),
@@ -207,7 +212,9 @@ class BootstrapPropertiesTest {
 			entry("tokens.nfts.mintThrottleScaleFactor", ThrottleReqOpsScaleFactor.from("5:2")),
 			entry("upgrade.artifacts.path", "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),
 			entry("hedera.allowances.maxTransactionLimit", 20),
-			entry("hedera.allowances.maxAccountLimit", 100)
+			entry("hedera.allowances.maxAccountLimit", 100),
+			entry("hedera.allowances.isEnabled", true),
+			entry("accounts.limitTokenAssociations", true)
 	);
 
 	@Test
@@ -272,6 +279,7 @@ class BootstrapPropertiesTest {
 
 		subject.ensureProps();
 
+		assertEquals(30, subject.getProperty("tokens.maxRelsPerInfoQuery"));
 		assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
 	}
 

@@ -183,6 +183,7 @@ public final class BootstrapProperties implements PropertySource {
 			"accounts.systemUndeleteAdmin",
 			"accounts.treasury",
 			"entities.maxLifetime",
+			"entities.systemDeletable",
 			"files.addressBook",
 			"files.networkProperties",
 			"files.exchangeRates",
@@ -191,6 +192,7 @@ public final class BootstrapProperties implements PropertySource {
 			"files.nodeDetails",
 			"files.softwareUpdateRange",
 			"files.throttleDefinitions",
+			"hedera.firstUserEntity",
 			"hedera.numReservedSystemEntities",
 			"hedera.realm",
 			"hedera.shard",
@@ -222,6 +224,7 @@ public final class BootstrapProperties implements PropertySource {
 			"contracts.redirectTokenCalls",
 			"contracts.precompile.htsDefaultGasCost",
 			"contracts.precompile.exportRecordResults",
+			"contracts.precompile.htsEnableTokenCreate",
 			"files.maxSizeKb",
 			"fees.minCongestionPeriod",
 			"fees.percentCongestionMultipliers",
@@ -250,6 +253,7 @@ public final class BootstrapProperties implements PropertySource {
 			"scheduling.whitelist",
 			"scheduling.triggerTxn.windBackNanos",
 			"sigs.expandFromLastSignedState",
+			"tokens.maxRelsPerInfoQuery",
 			"tokens.maxPerAccount",
 			"tokens.maxSymbolUtf8Bytes",
 			"tokens.maxTokenNameUtf8Bytes",
@@ -267,7 +271,9 @@ public final class BootstrapProperties implements PropertySource {
 			"consensus.message.maxBytesAllowed",
 			"upgrade.artifacts.path",
 			"hedera.allowances.maxTransactionLimit",
-			"hedera.allowances.maxAccountLimit"
+			"hedera.allowances.maxAccountLimit",
+			"hedera.allowances.isEnabled",
+			"accounts.limitTokenAssociations"
 	);
 
 	static final Set<String> NODE_PROPS = Set.of(
@@ -332,6 +338,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("dev.onlyDefaultNodeListens", AS_BOOLEAN),
 			entry("balances.exportTokenBalances", AS_BOOLEAN),
 			entry("entities.maxLifetime", AS_LONG),
+			entry("entities.systemDeletable", AS_ENTITY_TYPES),
 			entry("files.addressBook", AS_LONG),
 			entry("files.networkProperties", AS_LONG),
 			entry("files.exchangeRates", AS_LONG),
@@ -343,6 +350,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("grpc.port", AS_INT),
 			entry("grpc.tlsPort", AS_INT),
 			entry("hedera.exportAccountsOnStartup", AS_BOOLEAN),
+			entry("hedera.firstUserEntity", AS_LONG),
 			entry("hedera.numReservedSystemEntities", AS_LONG),
 			entry("hedera.prefetch.queueCapacity", AS_INT),
 			entry("hedera.prefetch.threadPoolSize", AS_INT),
@@ -400,6 +408,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("netty.prod.maxConnectionIdle", AS_LONG),
 			entry("netty.prod.keepAliveTime", AS_LONG),
 			entry("netty.prod.keepAliveTimeout", AS_LONG),
+			entry("tokens.maxRelsPerInfoQuery", AS_INT),
 			entry("tokens.maxPerAccount", AS_INT),
 			entry("tokens.maxCustomFeesAllowed", AS_INT),
 			entry("tokens.maxCustomFeeDepth", AS_INT),
@@ -427,6 +436,7 @@ public final class BootstrapProperties implements PropertySource {
 			entry("contracts.redirectTokenCalls", AS_BOOLEAN),
 			entry("contracts.precompile.htsDefaultGasCost", AS_LONG),
 			entry("contracts.precompile.exportRecordResults", AS_BOOLEAN),
+			entry("contracts.precompile.htsEnableTokenCreate", AS_BOOLEAN),
 			entry("contracts.throttle.throttleByGas", AS_BOOLEAN),
 			entry("rates.intradayChangeLimitPercent", AS_INT),
 			entry("rates.midnightCheckInterval", AS_LONG),
@@ -440,6 +450,8 @@ public final class BootstrapProperties implements PropertySource {
 			entry("tokens.nfts.areEnabled", AS_BOOLEAN),
 			entry("stats.executionTimesToTrack", AS_INT),
 			entry("hedera.allowances.maxTransactionLimit", AS_INT),
-			entry("hedera.allowances.maxAccountLimit", AS_INT)
+			entry("hedera.allowances.maxAccountLimit", AS_INT),
+			entry("hedera.allowances.isEnabled", AS_BOOLEAN),
+			entry("accounts.limitTokenAssociations", AS_BOOLEAN)
 	);
 }

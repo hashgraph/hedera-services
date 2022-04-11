@@ -26,7 +26,6 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
@@ -48,8 +47,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Set;
 
+import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_ACCOUNT_GRACE_PERIOD_OVER;
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
@@ -57,7 +56,7 @@ import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassificati
 import static com.hedera.services.state.expiry.renewal.ExpiredEntityClassification.OTHER;
 import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.adjustmentsFrom;
 import static com.hedera.services.state.expiry.renewal.RenewalRecordsHelperTest.tokensFrom;
-import static com.hedera.services.state.merkle.MerkleEntityAssociation.fromAccountTokenRel;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -118,12 +117,15 @@ class RenewalHelperTest {
 	private final TokenID deletedTokenGrpcId = deletedTokenId.toGrpcTokenId();
 	private final TokenID survivedTokenGrpcId = survivedTokenId.toGrpcTokenId();
 	private final TokenID missingTokenGrpcId = TokenID.newBuilder().setTokenNum(5678L).build();
+	private final EntityNumPair deletedAssociationId =
+			EntityNumPair.fromLongs(brokeExpiredAccountNum, deletedTokenNum);
+	private final EntityNumPair survivedAssociationId =
+			EntityNumPair.fromLongs(brokeExpiredAccountNum, survivedTokenNum);
+	private final EntityNumPair missingAssociationId =
+			EntityNumPair.fromLongs(brokeExpiredAccountNum, missingTokenGrpcId.getTokenNum());
 
 	{
 		deletedToken.setDeleted(true);
-		final var associations = new MerkleAccountTokens();
-		associations.associateAll(Set.of(deletedTokenGrpcId, survivedTokenGrpcId, missingTokenGrpcId));
-		expiredAccountZeroBalance.setTokens(associations);
 	}
 
 	@Mock
@@ -251,13 +253,27 @@ class RenewalHelperTest {
 	void shortCircuitsToJustRemovingRelIfZeroBalance() {
 		// setup:
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
-
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
+		expiredAccountZeroBalance.setKey(expiredKey);
+		expiredAccountZeroBalance.setHeadTokenId(deletedTokenNum);
+		expiredAccountZeroBalance.setNumPositiveBalances(0);
+		expiredAccountZeroBalance.setNumAssociations(3);
 		givenTokenPresent(deletedTokenId, deletedToken);
 		givenTokenPresent(survivedTokenId, longLivedToken);
-		givenRelPresent(expiredKey, deletedTokenId, 0);
-		givenRelPresent(expiredKey, survivedTokenId, 0);
-		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
+		final var missingTokenNum = EntityNum.fromTokenId(missingTokenGrpcId);
+		given(tokens.getOrDefault(missingTokenNum, REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
+		givenRelPresentWith(expiredKey, deletedTokenId, 0,
+				deletedAssociationId,
+				survivedAssociationId,
+				EntityNumPair.MISSING_NUM_PAIR);
+		givenRelPresentWith(expiredKey, survivedTokenId, 0,
+				survivedAssociationId,
+				missingAssociationId,
+				deletedAssociationId);
+		givenRelPresentWith(expiredKey, missingTokenNum, 0,
+				missingAssociationId,
+				EntityNumPair.MISSING_NUM_PAIR,
+				survivedAssociationId);
 
 		// when:
 		subject.classify(brokeExpiredAccountNum, now);
@@ -279,11 +295,27 @@ class RenewalHelperTest {
 		final var expiredKey = EntityNum.fromLong(brokeExpiredAccountNum);
 
 		givenPresent(brokeExpiredAccountNum, expiredAccountZeroBalance);
+		expiredAccountZeroBalance.setKey(expiredKey);
+		expiredAccountZeroBalance.setHeadTokenId(deletedTokenNum);
+		expiredAccountZeroBalance.setNumPositiveBalances(0);
+		expiredAccountZeroBalance.setNumAssociations(3);
 		givenTokenPresent(deletedTokenId, deletedToken);
 		givenTokenPresent(survivedTokenId, longLivedToken);
-		givenRelPresent(expiredKey, deletedTokenId, Long.MAX_VALUE);
-		givenRelPresent(expiredKey, survivedTokenId, tokenBalance);
-		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
+		final var missingTokenNum = EntityNum.fromTokenId(missingTokenGrpcId);
+		given(tokens.getOrDefault(missingTokenNum, REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
+
+		givenRelPresentWith(expiredKey, deletedTokenId, Long.MAX_VALUE,
+				deletedAssociationId,
+				survivedAssociationId,
+				EntityNumPair.MISSING_NUM_PAIR);
+		givenRelPresentWith(expiredKey, survivedTokenId, tokenBalance,
+				survivedAssociationId,
+				missingAssociationId,
+				deletedAssociationId);
+		givenRelPresentWith(expiredKey, missingTokenNum, 0,
+				missingAssociationId,
+				EntityNumPair.MISSING_NUM_PAIR,
+				survivedAssociationId);
 		givenModifiableRelPresent(EntityNum.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
 		given(accounts.get(expiredKey)).willReturn(expiredAccountZeroBalance);
 		given(aliasManager.forgetAliasIfPresent(expiredKey, accounts)).willReturn(true);
@@ -311,6 +343,9 @@ class RenewalHelperTest {
 		MerkleMap<EntityNum, MerkleAccount> accountsMap = new MerkleMap<>();
 		accountsMap.put(EntityNum.fromLong(nonExpiredAccountNum), nonExpiredAccount);
 		accountsMap.put(EntityNum.fromLong(brokeExpiredAccountNum), expiredAccountZeroBalance);
+		expiredAccountZeroBalance.setHeadTokenId(deletedTokenNum);
+		expiredAccountZeroBalance.setNumPositiveBalances(0);
+		expiredAccountZeroBalance.setNumAssociations(3);
 
 		final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
 		AliasManager liveAliasManager = new AliasManager(() -> aliases);
@@ -329,10 +364,20 @@ class RenewalHelperTest {
 
 		givenTokenPresent(deletedTokenId, deletedToken);
 		givenTokenPresent(survivedTokenId, longLivedToken);
-		givenRelPresent(expiredKey, deletedTokenId, Long.MAX_VALUE);
-		givenRelPresent(expiredKey, survivedTokenId, tokenBalance);
-		givenRelPresent(expiredKey, EntityNum.fromTokenId(missingTokenGrpcId), 0);
-		givenModifiableRelPresent(EntityNum.fromAccountId(treasuryGrpcId), survivedTokenId, 0L);
+		final var missingTokenNum = EntityNum.fromTokenId(missingTokenGrpcId);
+		given(tokens.getOrDefault(missingTokenNum, REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
+		givenRelPresentWith(expiredKey, deletedTokenId, 0,
+				deletedAssociationId,
+				survivedAssociationId,
+				EntityNumPair.MISSING_NUM_PAIR);
+		givenRelPresentWith(expiredKey, survivedTokenId, 0,
+				survivedAssociationId,
+				missingAssociationId,
+				deletedAssociationId);
+		givenRelPresentWith(expiredKey, missingTokenNum, 0,
+				missingAssociationId,
+				EntityNumPair.MISSING_NUM_PAIR,
+				survivedAssociationId);
 
 		assertTrue(liveAliasManager.contains(expiredAccountZeroBalance.getAlias()));
 		assertTrue(backingAccounts.contains(AccountID.newBuilder().setAccountNum(brokeExpiredAccountNum).build()));
@@ -394,13 +439,24 @@ class RenewalHelperTest {
 	}
 
 	private void givenTokenPresent(EntityNum id, MerkleToken token) {
-		given(tokens.containsKey(id)).willReturn(true);
-		given(tokens.get(id)).willReturn(token);
+		given(tokens.getOrDefault(id, REMOVED_TOKEN)).willReturn(token);
+		token.setKey(id);
 	}
 
-	private void givenRelPresent(EntityNum account, EntityNum token, long balance) {
-		var rel = assoc(account, token);
-		given(tokenRels.get(rel)).willReturn(new MerkleTokenRelStatus(balance, false, false, false));
+	private void givenRelPresentWith(
+			final EntityNum account,
+			final EntityNum token,
+			final long balance,
+			final EntityNumPair key,
+			final EntityNumPair nextKey,
+			final EntityNumPair prevKey
+	) {
+		final var rel = assoc(account, token);
+		final var asc  = new MerkleTokenRelStatus(balance, false, false, false);
+		asc.setKey(key);
+		asc.setPrev(prevKey.getLowOrderAsLong());
+		asc.setNext(nextKey.getLowOrderAsLong());
+		given(tokenRels.get(rel)).willReturn(asc);
 	}
 
 	private void givenModifiableRelPresent(EntityNum account, EntityNum token, long balance) {
