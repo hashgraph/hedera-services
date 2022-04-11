@@ -52,7 +52,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -71,7 +71,6 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -212,7 +211,7 @@ class TransferPrecompilesTest {
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private AdjustAllowanceChecks allowanceChecks;
+	private ApproveAllowanceChecks allowanceChecks;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock

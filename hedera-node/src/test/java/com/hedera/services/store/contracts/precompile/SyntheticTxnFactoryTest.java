@@ -168,36 +168,36 @@ class SyntheticTxnFactoryTest {
 		var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, BigInteger.ZERO, true);
 		allowances = allowances.withAdjustment(BigInteger.ONE);
 
-		final var result = subject.createAdjustAllowance(allowances);
+		final var result = subject.createApproveAllowance(allowances);
 		final var txnBody = result.build();
 
-		assertEquals(amount.longValue(), txnBody.getCryptoAdjustAllowance().getTokenAllowances(0).getAmount());
-		assertEquals(token, txnBody.getCryptoAdjustAllowance().getTokenAllowances(0).getTokenId());
-		assertEquals(receiver, txnBody.getCryptoAdjustAllowance().getTokenAllowances(0).getSpender());
+		assertEquals(amount.longValue(), txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getAmount());
+		assertEquals(token, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
+		assertEquals(receiver, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getSpender());
 	}
 
 	@Test
 	void createsExpectedAdjustAllowanceNFT() {
 		var allowances = new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, BigInteger.ZERO, false);
 
-		final var result = subject.createAdjustAllowance(allowances);
+		final var result = subject.createApproveAllowance(allowances);
 		final var txnBody = result.build();
 
-		assertEquals(token, txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getTokenId());
-		assertEquals(receiver, txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getSpender());
-		assertEquals(1L, txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getSerialNumbers(0));
+		assertEquals(token, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
+		assertEquals(receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
+		assertEquals(1L, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSerialNumbers(0));
 	}
 
 	@Test
 	void createsAdjustAllowanceForAllNFT() {
 		var allowances = new SetApprovalForAllWrapper(receiver, true);
 
-		final var result = subject.createAdjustAllowanceForAllNFT(allowances, token);
+		final var result = subject.createApproveAllowanceForAllNFT(allowances, token);
 		final var txnBody = result.build();
 
-		assertEquals(receiver, txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getSpender());
-		assertEquals(token, txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getTokenId());
-		assertEquals(BoolValue.of(true), txnBody.getCryptoAdjustAllowance().getNftAllowances(0).getApprovedForAll());
+		assertEquals(receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
+		assertEquals(token, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
+		assertEquals(BoolValue.of(true), txnBody.getCryptoApproveAllowance().getNftAllowances(0).getApprovedForAll());
 	}
 
 	@Test

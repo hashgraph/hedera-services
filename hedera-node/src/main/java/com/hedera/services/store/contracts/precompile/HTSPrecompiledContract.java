@@ -68,10 +68,10 @@ import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.txns.crypto.AdjustAllowanceLogic;
+import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
-import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
@@ -198,7 +198,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private BurnLogicFactory burnLogicFactory = BurnLogic::new;
 	private AssociateLogicFactory associateLogicFactory = AssociateLogic::new;
 	private DissociateLogicFactory dissociateLogicFactory = DissociateLogic::new;
-	private AdjustAllowanceLogicFactory adjustAllowanceLogicFactory = AdjustAllowanceLogic::new;
+	private ApproveAllowanceLogicFactory approveAllowanceLogicFactory = ApproveAllowanceLogic::new;
 	private DeleteAllowanceLogicFactory deleteAllowanceLogicFactory = DeleteAllowanceLogic::new;
 	private TransferLogicFactory transferLogicFactory = TransferLogic::new;
 	private TokenStoreFactory tokenStoreFactory = TypedTokenStore::new;
@@ -311,7 +311,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private Address senderAddress;
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
-	private AdjustAllowanceChecks allowanceChecks;
+	private ApproveAllowanceChecks allowanceChecks;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -333,7 +333,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final UsagePricesProvider resourceCosts,
 			final CreateChecks tokenCreateChecks,
 			final EntityIdSource entityIdSource,
-			final AdjustAllowanceChecks allowanceChecks
+			final ApproveAllowanceChecks allowanceChecks
 	) {
 		super("HTS", gasCalculator);
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -695,12 +695,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	}
 
 	@FunctionalInterface
-	interface AdjustAllowanceLogicFactory {
-		AdjustAllowanceLogic newAdjustAllowanceLogic(
+	interface ApproveAllowanceLogicFactory {
+		ApproveAllowanceLogic newApproveAllowanceLogic(
 				final AccountStore accountStore,
 				final TypedTokenStore tokenStore,
-				final GlobalDynamicProperties dynamicProperties,
-				final SideEffectsTracker sideEffectsTracker);
+				final GlobalDynamicProperties dynamicProperties);
 	}
 
 	@FunctionalInterface
@@ -1698,14 +1697,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						value = e.getValue();
 					}
 				}
-				return syntheticTxnFactory.createAdjustAllowance(approveOp.withAdjustment(approveOp.amount().subtract(BigInteger.valueOf(value))));
+				return syntheticTxnFactory.createApproveAllowance(approveOp.withAdjustment(approveOp.amount().subtract(BigInteger.valueOf(value))));
 			} else {
 				if (approveOp.spender().getAccountNum() == 0) {
 					var nftId = new NftId(token.getShardNum(), token.getRealmNum(), token.getTokenNum(), approveOp.serialNumber().longValue());
 					var owner = (EntityId) ledgers.nfts().get(nftId, OWNER);
 					return syntheticTxnFactory.createDeleteAllowance(approveOp, owner);
 				}
-				return syntheticTxnFactory.createAdjustAllowance(approveOp);
+				return syntheticTxnFactory.createApproveAllowance(approveOp);
 			}
 		}
 
@@ -1721,9 +1720,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var precompileAddress = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
 
 			if (isFungible) {
-				final var checkResponseCode = allowanceChecks.allowancesValidation(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
-						transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
-						transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
+				final var checkResponseCode = allowanceChecks.allowancesValidation(transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
+						transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
+						transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
 						payerAccount,
 						currentView);
 
@@ -1731,11 +1730,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					throw new InvalidTransactionException(checkResponseCode);
 				}
 
-				final var adjustAllowanceLogic = adjustAllowanceLogicFactory.newAdjustAllowanceLogic(
-						accountStore, tokenStore, dynamicProperties, sideEffectsTracker);
-				adjustAllowanceLogic.adjustAllowance(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
-						transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
-						transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
+				final var approveAllowanceLogic = approveAllowanceLogicFactory.newApproveAllowanceLogic(
+						accountStore, tokenStore, dynamicProperties);
+				approveAllowanceLogic.approveAllowance(transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
+						transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
+						transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
 						EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
 				frame.addLog(getLogForFungibleAdjustAllowance(precompileAddress));
 			} else {
@@ -1746,9 +1745,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							transactionBody.getCryptoDeleteAllowance().getNftAllowancesList(),
 							EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
 				} else {
-					final var checkResponseCode = allowanceChecks.allowancesValidation(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
-							transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
-							transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
+					final var checkResponseCode = allowanceChecks.allowancesValidation(transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
+							transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
+							transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
 							payerAccount,
 							currentView);
 
@@ -1756,11 +1755,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 						throw new InvalidTransactionException(checkResponseCode);
 					}
 
-					final var adjustAllowanceLogic = adjustAllowanceLogicFactory.newAdjustAllowanceLogic(
-							accountStore, tokenStore, dynamicProperties, sideEffectsTracker);
-					adjustAllowanceLogic.adjustAllowance(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
-							transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
-							transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
+					final var approveAllowanceLogic = approveAllowanceLogicFactory.newApproveAllowanceLogic(
+							accountStore, tokenStore, dynamicProperties);
+					approveAllowanceLogic.approveAllowance(transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
+							transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
+							transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
 							EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
 				}
 				frame.addLog(getLogForNftAdjustAllowance(precompileAddress));
@@ -1807,7 +1806,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var nestedInput = input.slice(24);
 			setApprovalForAllWrapper = decoder.decodeSetApprovalForAll(nestedInput, aliasResolver);
 
-			return syntheticTxnFactory.createAdjustAllowanceForAllNFT(setApprovalForAllWrapper, tokenId);
+			return syntheticTxnFactory.createApproveAllowanceForAllNFT(setApprovalForAllWrapper, tokenId);
 		}
 
 		@Override
@@ -1820,20 +1819,20 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)));
 
 			final var checkResponseCode = allowanceChecks.allowancesValidation(
-					transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
-					transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
-					transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
+					transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
+					transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
+					transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
 					payerAccount,
 					currentView);
 
 			validateTrue(OK.equals(checkResponseCode), checkResponseCode);
 
 			/* --- Execute the transaction and capture its results --- */
-			final var adjustAllowanceLogic = adjustAllowanceLogicFactory.newAdjustAllowanceLogic(
-					accountStore, tokenStore, dynamicProperties, sideEffectsTracker);
-			adjustAllowanceLogic.adjustAllowance(transactionBody.getCryptoAdjustAllowance().getCryptoAllowancesList(),
-					transactionBody.getCryptoAdjustAllowance().getTokenAllowancesList(),
-					transactionBody.getCryptoAdjustAllowance().getNftAllowancesList(),
+			final var approveAllowanceLogic = approveAllowanceLogicFactory.newApproveAllowanceLogic(
+					accountStore, tokenStore, dynamicProperties);
+			approveAllowanceLogic.approveAllowance(transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
+					transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
+					transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
 					EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
 
 

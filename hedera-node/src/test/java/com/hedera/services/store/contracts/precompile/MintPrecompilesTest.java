@@ -49,7 +49,7 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.token.MintLogic;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
@@ -62,8 +62,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -187,7 +187,7 @@ class MintPrecompilesTest {
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private AdjustAllowanceChecks allowanceChecks;
+	private ApproveAllowanceChecks allowanceChecks;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock

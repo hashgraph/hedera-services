@@ -21,7 +21,6 @@ package com.hedera.services.txns.crypto;
  */
 
 import com.google.protobuf.BoolValue;
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
@@ -81,8 +80,6 @@ class ApproveAllowanceLogicTest {
 	private TypedTokenStore tokenStore;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private StateView view;
 
 	private TransactionBody cryptoApproveAllowanceTxn;
 	private CryptoApproveAllowanceTransactionBody op;
@@ -129,7 +126,7 @@ class ApproveAllowanceLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ApproveAllowanceLogic(accountStore, tokenStore, dynamicProperties, view);
+		subject = new ApproveAllowanceLogic(accountStore, tokenStore, dynamicProperties);
 		nft1.setOwner(Id.fromGrpcAccount(ownerId));
 		nft2.setOwner(Id.fromGrpcAccount(ownerId));
 	}
@@ -145,7 +142,10 @@ class ApproveAllowanceLogicTest {
 		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
-		subject.approveAllowance(op, fromGrpcAccount(payerId).asGrpcAccount());
+		subject.approveAllowance(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(),
+				op.getNftAllowancesList(),
+				fromGrpcAccount(payerId).asGrpcAccount());
 
 		assertEquals(1, ownerAccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
@@ -169,7 +169,10 @@ class ApproveAllowanceLogicTest {
 		assertEquals(0, payerAccount.getFungibleTokenAllowances().size());
 		assertEquals(0, payerAccount.getApprovedForAllNftsAllowances().size());
 
-		subject.approveAllowance(op, fromGrpcAccount(payerId).asGrpcAccount());
+		subject.approveAllowance(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(),
+				op.getNftAllowancesList(),
+				fromGrpcAccount(payerId).asGrpcAccount());
 
 		assertEquals(1, payerAccount.getCryptoAllowances().size());
 		assertEquals(1, payerAccount.getFungibleTokenAllowances().size());
@@ -191,7 +194,10 @@ class ApproveAllowanceLogicTest {
 		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
-		subject.approveAllowance(op, fromGrpcAccount(payerId).asGrpcAccount());
+		subject.approveAllowance(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(),
+				op.getNftAllowancesList(),
+				fromGrpcAccount(payerId).asGrpcAccount());
 
 		assertEquals(1, ownerAccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
@@ -211,7 +217,10 @@ class ApproveAllowanceLogicTest {
 
 		givenValidTxnCtx();
 
-		Executable approveAllowance = () -> subject.approveAllowance(op, fromGrpcAccount(payerId).asGrpcAccount());
+		Executable approveAllowance = () -> subject.approveAllowance(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(),
+				op.getNftAllowancesList(),
+				fromGrpcAccount(payerId).asGrpcAccount());
 
 		var exception = assertThrows(InvalidTransactionException.class, approveAllowance);
 		assertEquals(MAX_ALLOWANCES_EXCEEDED, exception.getResponseCode());
@@ -233,7 +242,10 @@ class ApproveAllowanceLogicTest {
 		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
 		op = cryptoApproveAllowanceTxn.getCryptoApproveAllowance();
 
-		subject.approveAllowance(op, fromGrpcAccount(payerId).asGrpcAccount());
+		subject.approveAllowance(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(),
+				op.getNftAllowancesList(),
+				fromGrpcAccount(payerId).asGrpcAccount());
 
 		assertEquals(0, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
@@ -253,7 +265,10 @@ class ApproveAllowanceLogicTest {
 		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
-		subject.approveAllowance(op, fromGrpcAccount(payerId).asGrpcAccount());
+		subject.approveAllowance(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(),
+				op.getNftAllowancesList(),
+				fromGrpcAccount(payerId).asGrpcAccount());
 
 		assertEquals(0, ownerAccount.getCryptoAllowances().size());
 		assertEquals(0, ownerAccount.getFungibleTokenAllowances().size());
@@ -280,7 +295,10 @@ class ApproveAllowanceLogicTest {
 		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
-		subject.approveAllowance(op, fromGrpcAccount(payerId).asGrpcAccount());
+		subject.approveAllowance(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(),
+				op.getNftAllowancesList(),
+				fromGrpcAccount(payerId).asGrpcAccount());
 
 		assertEquals(1, ownerAccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
@@ -338,8 +356,6 @@ class ApproveAllowanceLogicTest {
 		assertTrue(ownerAccount.getApprovedForAllNftsAllowances()
 				.contains(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1))));
 
-//		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
-//		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
 		given(accountStore.loadAccountOrFailWith(ownerAccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAccount);
@@ -347,9 +363,10 @@ class ApproveAllowanceLogicTest {
 		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
-//		subject.doStateTransition();
-
-		subject.approveAllowance(op, fromGrpcAccount(payerId).asGrpcAccount());
+		subject.approveAllowance(op.getCryptoAllowancesList(),
+				op.getTokenAllowancesList(),
+				op.getNftAllowancesList(),
+				fromGrpcAccount(payerId).asGrpcAccount());
 
 		assertEquals(1, ownerAccount.getCryptoAllowances().size());
 		assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
@@ -364,7 +381,6 @@ class ApproveAllowanceLogicTest {
 				.contains(FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1))));
 
 		verify(accountStore).commitAccount(ownerAccount);
-//		verify(txnCtx).setStatus(ResponseCodeEnum.SUCCESS);
 	}
 
 	private void addExistingAllowances() {

@@ -38,7 +38,7 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -114,7 +114,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class HTSPrecompiledContractTest {
@@ -175,7 +174,7 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private EntityIdSource entityIdSource;
 	@Mock
-	private AdjustAllowanceChecks allowanceChecks;
+	private ApproveAllowanceChecks allowanceChecks;
 
 	private HTSPrecompiledContract subject;
 

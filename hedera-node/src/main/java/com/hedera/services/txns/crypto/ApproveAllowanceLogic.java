@@ -20,7 +20,6 @@ package com.hedera.services.txns.crypto;
  * ‍
  */
 
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
@@ -32,7 +31,7 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 
 import javax.inject.Inject;
@@ -50,13 +49,11 @@ public class ApproveAllowanceLogic extends BaseAllowancesTransitionLogic{
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Map<Long, Account> entitiesChanged;
 	private final Map<NftId, UniqueToken> nftsTouched;
-	private final StateView workingView;
 
 	@Inject
 	public ApproveAllowanceLogic(final AccountStore accountStore,
 								 final TypedTokenStore tokenStore,
-								 final GlobalDynamicProperties dynamicProperties,
-								 final StateView workingView
+								 final GlobalDynamicProperties dynamicProperties
 	) {
 		super(accountStore, tokenStore, dynamicProperties);
 		this.accountStore = accountStore;
@@ -64,10 +61,12 @@ public class ApproveAllowanceLogic extends BaseAllowancesTransitionLogic{
 		this.dynamicProperties = dynamicProperties;
 		this.entitiesChanged = new HashMap<>();
 		this.nftsTouched = new HashMap<>();
-		this.workingView = workingView;
 	}
 
-	public void approveAllowance(CryptoApproveAllowanceTransactionBody op, AccountID payer) {
+	public void approveAllowance(List<CryptoAllowance> cryptoAllowances,
+								 List<TokenAllowance> tokenAllowances,
+								 List<NftAllowance> nftAllowances,
+								 AccountID payer) {
 		entitiesChanged.clear();
 		nftsTouched.clear();
 
@@ -76,9 +75,9 @@ public class ApproveAllowanceLogic extends BaseAllowancesTransitionLogic{
 		final var payerAccount = accountStore.loadAccount(payerId);
 
 		/* --- Do the business logic --- */
-		applyCryptoAllowances(op.getCryptoAllowancesList(), payerAccount);
-		applyFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
-		applyNftAllowances(op.getNftAllowancesList(), payerAccount, entitiesChanged, nftsTouched);
+		applyCryptoAllowances(cryptoAllowances, payerAccount);
+		applyFungibleTokenAllowances(tokenAllowances, payerAccount);
+		applyNftAllowances(nftAllowances, payerAccount, entitiesChanged, nftsTouched);
 
 		/* --- Persist the entities --- */
 		for (final var nft : nftsTouched.values()) {

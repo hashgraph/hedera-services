@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -111,9 +111,9 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setTokenMint(builder);
 	}
 
-	public TransactionBody.Builder createAdjustAllowance(final ApproveWrapper approveWrapper) {
+	public TransactionBody.Builder createApproveAllowance(final ApproveWrapper approveWrapper) {
 
-		final var builder = CryptoAdjustAllowanceTransactionBody.newBuilder();
+		final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
 		if (approveWrapper.isFungible()) {
 			builder.addTokenAllowances(TokenAllowance.newBuilder()
@@ -129,7 +129,7 @@ public class SyntheticTxnFactory {
 					.addSerialNumbers(approveWrapper.serialNumber().longValue())
 					.build());
 		}
-		return TransactionBody.newBuilder().setCryptoAdjustAllowance(builder);
+		return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
 	}
 
 	public TransactionBody.Builder createDeleteAllowance(final ApproveWrapper approveWrapper, final EntityId owner) {
@@ -145,8 +145,8 @@ public class SyntheticTxnFactory {
 		return TransactionBody.newBuilder().setCryptoDeleteAllowance(builder);
 	}
 
-	public TransactionBody.Builder createAdjustAllowanceForAllNFT(final SetApprovalForAllWrapper setApprovalForAllWrapper, TokenID tokenID) {
-		final var builder = CryptoAdjustAllowanceTransactionBody.newBuilder();
+	public TransactionBody.Builder createApproveAllowanceForAllNFT(final SetApprovalForAllWrapper setApprovalForAllWrapper, TokenID tokenID) {
+		final var builder = CryptoApproveAllowanceTransactionBody.newBuilder();
 
 		builder.addNftAllowances(NftAllowance.newBuilder()
 				.setApprovedForAll(BoolValue.of(setApprovalForAllWrapper.approved()))
@@ -154,7 +154,7 @@ public class SyntheticTxnFactory {
 				.setSpender(setApprovalForAllWrapper.to())
 				.build());
 
-		return TransactionBody.newBuilder().setCryptoAdjustAllowance(builder);
+		return TransactionBody.newBuilder().setCryptoApproveAllowance(builder);
 	}
 
 	/**

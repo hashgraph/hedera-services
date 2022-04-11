@@ -54,8 +54,8 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.txns.crypto.AdjustAllowanceLogic;
-import com.hedera.services.txns.crypto.validators.AdjustAllowanceChecks;
+import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -205,9 +205,9 @@ class ERC721PrecompilesTest {
     @Mock
     private HTSPrecompiledContract.HederaTokenStoreFactory hederaTokenStoreFactory;
     @Mock
-    private HTSPrecompiledContract.AdjustAllowanceLogicFactory adjustAllowanceLogicFactory;
+    private HTSPrecompiledContract.ApproveAllowanceLogicFactory approveAllowanceLogicFactory;
     @Mock
-    private AdjustAllowanceLogic adjustAllowanceLogic;
+    private ApproveAllowanceLogic approveAllowanceLogic;
     @Mock
     private Bytes nestedPretendArguments;
     @Mock
@@ -221,7 +221,7 @@ class ERC721PrecompilesTest {
     @Mock
     private EntityIdSource entityIdSource;
     @Mock
-    private AdjustAllowanceChecks allowanceChecks;
+    private ApproveAllowanceChecks allowanceChecks;
     @Mock
     private AccountStore accountStore;
     @Mock
@@ -393,7 +393,7 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
 
-        given(syntheticTxnFactory.createAdjustAllowance(APPROVE_WRAPPER))
+        given(syntheticTxnFactory.createApproveAllowance(APPROVE_WRAPPER))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoAdjustAllowance()).willReturn(cryptoAdjustAllowanceTransactionBody);
 
@@ -444,7 +444,7 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee())
                 .willReturn(1L);
 
-        given(syntheticTxnFactory.createAdjustAllowanceForAllNFT(SET_APPROVAL_FOR_ALL_WRAPPER, token))
+        given(syntheticTxnFactory.createApproveAllowanceForAllNFT(SET_APPROVAL_FOR_ALL_WRAPPER, token))
                 .willReturn(mockSynthBodyBuilder);
         given(mockSynthBodyBuilder.getCryptoAdjustAllowance()).willReturn(cryptoAdjustAllowanceTransactionBody);
 
