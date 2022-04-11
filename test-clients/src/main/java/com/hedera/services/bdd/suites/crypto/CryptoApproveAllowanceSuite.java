@@ -264,7 +264,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.hasPrecheck(INVALID_TOKEN_NFT_SERIAL_NUMBER)
 				).then(
 						getAccountDetails(TOKEN_TREASURY)
-								.payingWith(DEFAULT_PAYER)
+								.payingWith(GENESIS)
 								.logged(),
 						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 1L)
 								.between(TOKEN_TREASURY, otherReceiver))

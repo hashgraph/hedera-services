@@ -1672,6 +1672,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.has(accountWith().balance(initialBalance - 3_000L)),
 						getAccountInfo("payeeSigReq").has(accountWith().balance(initialBalance + 1_000L)),
 						getAccountDetails("payeeNoSigReq")
+								.payingWith(GENESIS)
 								.has(AccountDetailsAsserts.accountWith().balance(initialBalance + 2_000L).noAllowances())
 				);
 	}
