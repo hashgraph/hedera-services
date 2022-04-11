@@ -112,6 +112,7 @@ public class GlobalDynamicProperties {
 	private boolean enableAllowances;
 	private boolean limitTokenAssociations;
 	private boolean enableHTSPrecompileCreate;
+	private int maxPurgedKvPairsPerTouch;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -204,6 +205,7 @@ public class GlobalDynamicProperties {
 		atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
 		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
+		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
 	}
 
 	public int maxTokensPerAccount() {
@@ -496,5 +498,9 @@ public class GlobalDynamicProperties {
 
 	public boolean isHTSPrecompileCreateEnabled() {
 		return enableHTSPrecompileCreate;
+	}
+
+	public int getMaxPurgedKvPairsPerTouch() {
+		return maxPurgedKvPairsPerTouch;
 	}
 }

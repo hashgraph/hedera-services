@@ -151,6 +151,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(53, subject.maxAggregateContractKvPairs());
 		assertEquals(54, subject.maxIndividualContractKvPairs());
 		assertEquals(55, subject.maxNumQueryableRecords());
+		assertEquals(63, subject.getMaxPurgedKvPairsPerTouch());
 	}
 
 	@Test
@@ -384,6 +385,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("accounts.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
 		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
 				.willReturn((i + 61) % 2 == 0);
+		given(properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch")).willReturn(i + 62);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

@@ -44,7 +44,6 @@ import static com.hedera.services.state.virtual.KeyPackingUtils.serializePackedB
  */
 @SuppressWarnings({ "PointlessBitwiseExpression", "unused" })
 public class ContractValue implements VirtualValue {
-	public static final int NON_ITERABLE_VERSION = 1;
 	public static final int ITERABLE_VERSION = 2;
 
 	public static final int NON_ITERABLE_SERIALIZED_SIZE = 32;
@@ -398,10 +397,7 @@ public class ContractValue implements VirtualValue {
 		}
 		final var lengthRead = in.read(this.uint256Value);
 		assert lengthRead == NON_ITERABLE_SERIALIZED_SIZE;
-
-		if (version == ITERABLE_VERSION) {
-			deserializeKeys(in, SerializableDataInputStream::readByte);
-		}
+		deserializeKeys(in, SerializableDataInputStream::readByte);
 	}
 
 	@Override
@@ -410,10 +406,7 @@ public class ContractValue implements VirtualValue {
 			throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
 		}
 		buffer.get(this.uint256Value);
-
-		if (version == ITERABLE_VERSION) {
-			deserializeKeys(buffer, ByteBuffer::get);
-		}
+		deserializeKeys(buffer, ByteBuffer::get);
 	}
 
 	// --- Internal helpers

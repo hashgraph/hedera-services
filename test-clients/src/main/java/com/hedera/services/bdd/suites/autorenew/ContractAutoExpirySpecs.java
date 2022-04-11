@@ -21,6 +21,7 @@ package com.hedera.services.bdd.suites.autorenew;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,17 +38,24 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.HIGH_SCAN_CYCLE_COUNT;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
 public class ContractAutoExpirySpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractAutoExpirySpecs.class);
+
+	private static final String defaultMaxKvPairsToPurge =
+			HapiSpecSetup.getDefaultNodeProps().get("autoRemove.maxPurgedKvPairsPerTouch");
 
 	public static void main(String... args) {
 		new ContractAutoExpirySpecs().runSuiteSync();
@@ -56,9 +64,46 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						renewsUsingContractFundsIfNoAutoRenewAccount(),
+//						renewsUsingContractFundsIfNoAutoRenewAccount(),
+						storageExpiryWorksAtTheExpectedInterval(),
 				}
 		);
+	}
+
+	private HapiApiSpec storageExpiryWorksAtTheExpectedInterval() {
+		final var initcode = "initcode";
+		final var contractToRemove = "contractToRemove";
+		final var minimalLifetime = 1;
+		final var creation = "creation";
+
+		return defaultHapiSpec("StorageExpiryWorksAtTheExpectedInterval")
+				.given(
+						overriding("autoRemove.maxPurgedKvPairsPerTouch", "20"),
+						cryptoCreate("civilian"),
+						createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
+						enableContractAutoRenewWith(
+								minimalLifetime, 0,
+								HIGH_SCAN_CYCLE_COUNT, 1),
+						contractCreate(contractToRemove, INSTANT_HOG_CONS_ABI, 63)
+								.gas(2_000_000)
+								.entityMemo("")
+								.bytecode(initcode)
+								.balance(0)
+								.autoRenewSecs(minimalLifetime)
+								.via(creation),
+						sleepFor(minimalLifetime * 1_000L + 500L)
+				).when(
+						// It will take 4 renewal cycles (<= 20 purged pairs per cycle) to fully expire the contract
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+						getContractInfo(contractToRemove).payingWith("civilian").nodePayment(42L)
+				).then(
+						// Let the above query payment reach consensus
+						sleepFor(2_000L),
+						getContractInfo(contractToRemove).hasCostAnswerPrecheck(INVALID_CONTRACT_ID),
+						overriding("autoRemove.maxPurgedKvPairsPerTouch", defaultMaxKvPairsToPurge)
+				);
 	}
 
 	private HapiApiSpec renewsUsingContractFundsIfNoAutoRenewAccount() {
@@ -101,7 +146,8 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 											.has(contractWith().expiry(expectedExpiryPostRenew.get()))
 											.logged();
 							allRunFor(spec, lookup);
-							final var balance = lookup.getResponse().getContractGetInfo().getContractInfo().getBalance();
+							final var balance =
+									lookup.getResponse().getContractGetInfo().getContractInfo().getBalance();
 							final var renewalFee = initBalance - balance;
 							final var canonicalUsdFee = 0.026;
 							assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);

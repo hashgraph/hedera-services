@@ -84,8 +84,6 @@ public class SizeLimitedStorage {
 
 	private long totalKvPairs;
 
-	private boolean touched5 = false;
-
 	@Inject
 	public SizeLimitedStorage(
 			final IterableStorageUpserter storageUpserter,
@@ -112,7 +110,6 @@ public class SizeLimitedStorage {
 		newFirstKeys.clear();
 		/* We will update this count as changes are buffered throughout the session. */
 		totalKvPairs = storage.get().size();
-		touched5 = false;
 	}
 
 	/**

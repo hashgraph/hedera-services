@@ -154,6 +154,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
+			entry("autoRemove.maxPurgedKvPairsPerTouch", 10),
 			entry("autoRenew.targetTypes", EnumSet.of(CONTRACT)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),

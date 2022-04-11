@@ -35,7 +35,6 @@ import java.nio.ByteBuffer;
 
 import static com.hedera.services.state.virtual.ContractValue.ITERABLE_VERSION;
 import static com.hedera.services.state.virtual.ContractValue.NON_ITERABLE_SERIALIZED_SIZE;
-import static com.hedera.services.state.virtual.ContractValue.NON_ITERABLE_VERSION;
 import static com.hedera.services.state.virtual.ContractValue.RUNTIME_CONSTRUCTABLE_ID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -276,7 +275,7 @@ class ContractValueTest {
 		})
 				.when(in).read(subject.getValue());
 
-		subject.deserialize(in, NON_ITERABLE_VERSION);
+		subject.deserialize(in, ITERABLE_VERSION);
 
 		assertEquals(bytesValue, subject.getValue());
 		verify(in).read(defaultEmpty);
@@ -356,7 +355,7 @@ class ContractValueTest {
 		final var in = mock(SerializableDataInputStream.class);
 		given(in.read()).willReturn(0);
 
-		assertThrows(AssertionError.class, () -> subject.deserialize(in, NON_ITERABLE_VERSION));
+		assertThrows(AssertionError.class, () -> subject.deserialize(in, ITERABLE_VERSION));
 	}
 
 	@Test
@@ -369,7 +368,7 @@ class ContractValueTest {
 		})
 				.when(byteBuffer).get(subject.getValue());
 
-		subject.deserialize(byteBuffer, NON_ITERABLE_VERSION);
+		subject.deserialize(byteBuffer, ITERABLE_VERSION);
 
 		assertEquals(bytesValue, subject.getValue());
 		verify(byteBuffer).get(defaultEmpty);
@@ -398,7 +397,7 @@ class ContractValueTest {
 			return NON_ITERABLE_SERIALIZED_SIZE;
 		}).when(in).read(subject.getValue());
 
-		assertThrows(IllegalStateException.class, () -> readOnly.deserialize(in, NON_ITERABLE_VERSION));
+		assertThrows(IllegalStateException.class, () -> readOnly.deserialize(in, ITERABLE_VERSION));
 
 		// and when
 		final var byteBuffer = mock(ByteBuffer.class);
@@ -407,6 +406,6 @@ class ContractValueTest {
 			return null;
 		}).when(byteBuffer).get(subject.getValue());
 
-		assertThrows(IllegalStateException.class, () -> readOnly.deserialize(byteBuffer, NON_ITERABLE_VERSION));
+		assertThrows(IllegalStateException.class, () -> readOnly.deserialize(byteBuffer, ITERABLE_VERSION));
 	}
 }
