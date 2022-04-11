@@ -22,7 +22,6 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -33,7 +32,6 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
-import org.hyperledger.besu.evm.operation.Operation;
 
 import javax.inject.Inject;
 import java.util.Optional;
