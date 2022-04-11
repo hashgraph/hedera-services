@@ -54,7 +54,6 @@ public class IterableStorageUtils {
 					.append(isFirstValue ? "" : ", ")
 					.append(nextKey)
 					.append(" -> ")
-					.append(" @").append(System.identityHashCode(value)).append(" ")
 					.append(CommonUtils.hex(value.getValue()));
 			isFirstValue = false;
 			nextKey = value.getNextKeyScopedTo(contractId);
