@@ -41,6 +41,12 @@ import java.util.List;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.TokenKeyWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.KeyValueWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FractionalFeeWrapper;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.RoyaltyFeeWrapper;
 
 @Singleton
 public class DecodingFacade {
@@ -135,6 +141,61 @@ public class DecodingFacade {
 			new Function("transferFrom(address,address,uint256)");
 	private static final Bytes ERC_TRANSFER_FROM_SELECTOR = Bytes.wrap(ERC_TRANSFER_FROM_FUNCTION.selector());
 	private static final ABIType<Tuple> ERC_TRANSFER_FROM_DECODER = TypeFactory.create("(bytes32,bytes32,uint256)");
+
+	/* --- Token Create Structs --- */
+	private static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
+	private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
+
+	private static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
+	private static final String TOKEN_KEY_DECODER = "(int32," + KEY_VALUE_DECODER + ")";
+
+	private static final String EXPIRY = "(uint32,address,uint32)";
+	private static final String EXPIRY_DECODER = "(int64,bytes32,int64)";
+
+	private static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
+	private static final String FIXED_FEE_DECODER = "(int64,bytes32,bool,bool,bytes32)";
+
+	private static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
+	private static final String FRACTIONAL_FEE_DECODER = "(int64,int64,int64,int64,bool,bytes32)";
+
+	private static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
+	private static final String ROYALTY_FEE_DECODER = "(int64,int64,int64,bytes32,bool,bytes32)";
+
+	private static final String TOKEN_CREATE_STRUCT = "(string,string,address,string,bool,uint32,bool,"
+			+ TOKEN_KEY + "[]," + EXPIRY + ")";
+	private static final String TOKEN_CREATE_STRUCT_DECODER =
+			"(string,string,bytes32,string,bool,int64,bool," + TOKEN_KEY_DECODER + "[]," + EXPIRY_DECODER + ")";
+
+	private static final Function TOKEN_CREATE_FUNGIBLE_FUNCTION =
+			new Function("createFungibleToken(" + TOKEN_CREATE_STRUCT + ",uint256,uint256)");
+	private static final Bytes TOKEN_CREATE_FUNGIBLE_SELECTOR = Bytes.wrap(TOKEN_CREATE_FUNGIBLE_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_DECODER =
+			TypeFactory.create("(" + TOKEN_CREATE_STRUCT_DECODER + ",uint256,uint256)");
+
+	private static final Function TOKEN_CREATE_NON_FUNGIBLE_FUNCTION =
+			new Function("createNonFungibleToken(" + TOKEN_CREATE_STRUCT + ")");
+	private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_SELECTOR =
+			Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_DECODER = TypeFactory.create("(" +
+			TOKEN_CREATE_STRUCT_DECODER + ")");
+
+	private static final Function TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION =
+			new Function("createFungibleTokenWithCustomFees(" + TOKEN_CREATE_STRUCT + ",uint256,uint256," +
+					FIXED_FEE + "[]," + FRACTIONAL_FEE + "[])");
+	private static final Bytes TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR =
+			Bytes.wrap(TOKEN_CREATE_FUNGIBLE_WITH_FEES_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER =
+			TypeFactory.create("(" + TOKEN_CREATE_STRUCT_DECODER + ",uint256,uint256," + FIXED_FEE_DECODER + "[],"
+					+ FRACTIONAL_FEE_DECODER + "[])");
+
+	private static final Function TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION =
+			new Function("createNonFungibleTokenWithCustomFees(" + TOKEN_CREATE_STRUCT + "," + FIXED_FEE + "[],"
+					+ ROYALTY_FEE + "[])");
+	private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR =
+			Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION.selector());
+	private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER =
+			TypeFactory.create("(" + TOKEN_CREATE_STRUCT_DECODER + "," + FIXED_FEE_DECODER + "[]," + ROYALTY_FEE_DECODER
+					+ "[])");
 
 	@Inject
 	public DecodingFacade() {
@@ -361,6 +422,179 @@ public class DecodingFacade {
 		final var tokenIDs = decodeTokenIDsFromBytesArray((byte[][]) decodedArguments.get(1));
 
 		return Dissociation.multiDissociation(accountID, tokenIDs);
+	}
+
+	public TokenCreateWrapper decodeFungibleCreate(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_CREATE_FUNGIBLE_SELECTOR,
+				TOKEN_CREATE_FUNGIBLE_DECODER);
+
+		return decodeTokenCreateWithoutFees(decodedArguments.get(0), true, decodedArguments.get(1),
+				decodedArguments.get(2), aliasResolver);
+	}
+
+	public TokenCreateWrapper decodeFungibleCreateWithFees(
+			final Bytes input,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
+		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_CREATE_FUNGIBLE_WITH_FEES_SELECTOR,
+				TOKEN_CREATE_FUNGIBLE_WITH_FEES_DECODER);
+
+		final var tokenCreateWrapper = decodeTokenCreateWithoutFees(decodedArguments.get(0), true,
+				decodedArguments.get(1), decodedArguments.get(2), aliasResolver);
+		final var fixedFees = decodeFixedFees(decodedArguments.get(3), aliasResolver);
+		final var fractionalFees = decodeFractionalFees(decodedArguments.get(4), aliasResolver);
+		tokenCreateWrapper.setFixedFees(fixedFees);
+		tokenCreateWrapper.setFractionalFees(fractionalFees);
+
+		return tokenCreateWrapper;
+	}
+
+	public TokenCreateWrapper decodeNonFungibleCreate(final Bytes input, final UnaryOperator<byte[]> aliasResolver
+	) {
+		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_CREATE_NON_FUNGIBLE_SELECTOR,
+				TOKEN_CREATE_NON_FUNGIBLE_DECODER);
+
+		return decodeTokenCreateWithoutFees(decodedArguments.get(0), false, BigInteger.ZERO, BigInteger.ZERO,
+				aliasResolver);
+	}
+
+	public TokenCreateWrapper decodeNonFungibleCreateWithFees(
+			final Bytes input,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
+		final Tuple decodedArguments = decodeFunctionCall(input, TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR,
+				TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
+
+		final var tokenCreateWrapper = decodeTokenCreateWithoutFees(decodedArguments.get(0), false,
+				BigInteger.ZERO, BigInteger.ZERO, aliasResolver);
+		final var fixedFees = decodeFixedFees(decodedArguments.get(1), aliasResolver);
+		final var royaltyFees = decodeRoyaltyFees(decodedArguments.get(2), aliasResolver);
+		tokenCreateWrapper.setFixedFees(fixedFees);
+		tokenCreateWrapper.setRoyaltyFees(royaltyFees);
+
+		return tokenCreateWrapper;
+	}
+
+	private TokenCreateWrapper decodeTokenCreateWithoutFees(
+			final Tuple tokenCreateStruct,
+			final boolean isFungible,
+			final BigInteger initSupply,
+			final BigInteger decimals,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
+		final var tokenName = (String) tokenCreateStruct.get(0);
+		final var tokenSymbol = (String) tokenCreateStruct.get(1);
+		final var tokenTreasury = convertLeftPaddedAddressToAccountId((byte[]) tokenCreateStruct.get(2),
+				aliasResolver);
+		final var memo = (String) tokenCreateStruct.get(3);
+		final var isSupplyTypeFinite = (Boolean) tokenCreateStruct.get(4);
+		final var maxSupply = (long) tokenCreateStruct.get(5);
+		final var isFreezeDefault = (Boolean) tokenCreateStruct.get(6);
+		final var tokenKeys = decodeTokenKeys(tokenCreateStruct.get(7), aliasResolver);
+		final var tokenExpiry = decodeTokenExpiry(tokenCreateStruct.get(8), aliasResolver);
+
+		return new TokenCreateWrapper(isFungible, tokenName, tokenSymbol, tokenTreasury.getAccountNum() != 0 ?
+				tokenTreasury : null, memo,	isSupplyTypeFinite, initSupply, decimals, maxSupply, isFreezeDefault,
+				tokenKeys, tokenExpiry);
+	}
+
+	private List<TokenKeyWrapper> decodeTokenKeys(
+			final Tuple[] tokenKeysTuples,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
+		final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
+		for (final var tokenKeyTuple: tokenKeysTuples) {
+			final var keyType = (int) tokenKeyTuple.get(0);
+			final Tuple keyValueTuple = tokenKeyTuple.get(1);
+			final var inheritAccountKey = (Boolean) keyValueTuple.get(0);
+			final var contractId = EntityIdUtils.asContract(
+					convertLeftPaddedAddressToAccountId((byte[]) keyValueTuple.get(1), aliasResolver));
+			final var ed25519 = (byte[]) keyValueTuple.get(2);
+			final var ecdsaSecp256K1 = (byte[]) keyValueTuple.get(3);
+			final var delegatableContractId = EntityIdUtils.asContract(
+					convertLeftPaddedAddressToAccountId((byte[]) keyValueTuple.get(4), aliasResolver));
+			tokenKeys.add(new TokenKeyWrapper(keyType, new KeyValueWrapper(inheritAccountKey,
+					contractId.getContractNum() != 0 ? contractId : null, ed25519,
+					ecdsaSecp256K1, delegatableContractId.getContractNum() != 0 ? delegatableContractId : null)));
+		}
+		return tokenKeys;
+	}
+
+	private TokenExpiryWrapper decodeTokenExpiry(final Tuple expiryTuple, final UnaryOperator<byte[]> aliasResolver) {
+		final var second = (long) expiryTuple.get(0);
+		final var autoRenewAccount = convertLeftPaddedAddressToAccountId((byte[]) expiryTuple.get(1), aliasResolver);
+		final var autoRenewPeriod = (long) expiryTuple.get(2);
+		return new TokenExpiryWrapper(second, autoRenewAccount.getAccountNum() == 0 ? null : autoRenewAccount,
+				autoRenewPeriod);
+	}
+
+	private List<FixedFeeWrapper> decodeFixedFees(
+			final Tuple[] fixedFeesTuples,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
+		final List<FixedFeeWrapper> fixedFees = new ArrayList<>(fixedFeesTuples.length);
+		for (final var fixedFeeTuple : fixedFeesTuples) {
+			final var amount = (long) fixedFeeTuple.get(0);
+			final var tokenId = convertAddressBytesToTokenID((byte[]) fixedFeeTuple.get(1));
+			final var useHbarsForPayment = (Boolean) fixedFeeTuple.get(2);
+			final var useCurrentTokenForPayment = (Boolean) fixedFeeTuple.get(3);
+			final var feeCollector = convertLeftPaddedAddressToAccountId((byte[]) fixedFeeTuple.get(4), aliasResolver);
+			fixedFees.add(new FixedFeeWrapper(amount, tokenId.getTokenNum() != 0 ? tokenId : null, useHbarsForPayment,
+					useCurrentTokenForPayment, feeCollector.getAccountNum() != 0 ? feeCollector : null));
+		}
+		return fixedFees;
+	}
+
+	private List<FractionalFeeWrapper> decodeFractionalFees(
+			final Tuple[] fractionalFeesTuples,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
+		final List<FractionalFeeWrapper> fractionalFees = new ArrayList<>(fractionalFeesTuples.length);
+		for (final var fractionalFeeTuple: fractionalFeesTuples) {
+			final var numerator = (long) fractionalFeeTuple.get(0);
+			final var denominator = (long) fractionalFeeTuple.get(1);
+			final var minimumAmount = (long) fractionalFeeTuple.get(2);
+			final var maximumAmount = (long) fractionalFeeTuple.get(3);
+			final var netOfTransfers = (Boolean) fractionalFeeTuple.get(4);
+			final var feeCollector = convertLeftPaddedAddressToAccountId(
+					(byte[]) fractionalFeeTuple.get(5), aliasResolver);
+			fractionalFees.add(new FractionalFeeWrapper(numerator, denominator, minimumAmount, maximumAmount,
+					netOfTransfers, feeCollector.getAccountNum() != 0 ? feeCollector : null));
+		}
+		return fractionalFees;
+	}
+
+	private List<RoyaltyFeeWrapper> decodeRoyaltyFees(
+			final Tuple[] royaltyFeesTuples,
+			final UnaryOperator<byte[]> aliasResolver
+	) {
+		final List<RoyaltyFeeWrapper> decodedRoyaltyFees = new ArrayList<>(royaltyFeesTuples.length);
+		for (final var royaltyFeeTuple : royaltyFeesTuples) {
+			final var numerator = (long) royaltyFeeTuple.get(0);
+			final var denominator = (long) royaltyFeeTuple.get(1);
+
+			// When at least 1 of the following 3 values is different from its default value,
+			// we treat it as though the user has tried to specify a fallbackFixedFee
+			final var fixedFeeAmount = (long) royaltyFeeTuple.get(2);
+			final var fixedFeeTokenId =
+					convertAddressBytesToTokenID((byte[]) royaltyFeeTuple.get(3));
+			final var fixedFeeUseHbars = (Boolean) royaltyFeeTuple.get(4);
+			FixedFeeWrapper fixedFee = null;
+			if (fixedFeeAmount != 0 || fixedFeeTokenId.getTokenNum() != 0 || Boolean.TRUE.equals(fixedFeeUseHbars)) {
+				fixedFee = new FixedFeeWrapper(
+						fixedFeeAmount,
+						fixedFeeTokenId.getTokenNum() != 0 ? fixedFeeTokenId : null,
+						fixedFeeUseHbars,
+						false,
+						null);
+			}
+
+			final var feeCollector =
+					convertLeftPaddedAddressToAccountId((byte[]) royaltyFeeTuple.get(5), aliasResolver);
+			decodedRoyaltyFees.add(new RoyaltyFeeWrapper(numerator, denominator, fixedFee,
+					feeCollector.getAccountNum() != 0 ? feeCollector : null));
+		}
+		return decodedRoyaltyFees;
 	}
 
 	private Tuple decodeFunctionCall(final Bytes input, final Bytes selector, final ABIType<Tuple> decoder) {

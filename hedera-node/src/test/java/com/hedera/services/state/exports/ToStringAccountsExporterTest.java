@@ -26,9 +26,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -46,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.TreeMap;
 
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -119,13 +118,15 @@ class ToStringAccountsExporterTest {
 		cryptoAllowances.put(EntityNum.fromLong(1L), 10L);
 		account1.setBalance(1L);
 		account1.setMaxAutomaticAssociations(10);
-		account1.setAlreadyUsedAutomaticAssociations(7);
+		account1.setUsedAutomaticAssociations(7);
 		account1.setCryptoAllowances(cryptoAllowances);
-		account1.setTokenAssociationMetadata(
-				new TokenAssociationMetadata(3, 0, EntityNumPair.MISSING_NUM_PAIR));
+		account1.setNumAssociations(3);
+		account1.setNumPositiveBalances(0);
+		account1.setHeadTokenId(MISSING_ID.num());
 		account2.setBalance(2L);
-		account2.setTokenAssociationMetadata(
-				new TokenAssociationMetadata(1, 0, EntityNumPair.MISSING_NUM_PAIR));
+		account2.setNumAssociations(1);
+		account2.setNumPositiveBalances(0);
+		account2.setHeadTokenId(MISSING_ID.num());
 		// and:
 		var desired = "0.0.1\n" +
 				"---\n" +
@@ -135,13 +136,13 @@ class ToStringAccountsExporterTest {
 				"proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, " +
 				"alreadyUsedAutoAssociations=7, maxAutoAssociations=10, alias=, " +
 				"cryptoAllowances={EntityNum{value=1}=10}, fungibleTokenAllowances={}, approveForAllNfts=[], " +
-				"numAssociations=3, numZeroBalances=0, lastAssociation=0<->(0.0.0, 0.0.0)}, # " +
+				"numAssociations=3, numPositiveBalances=0, headTokenId=0}, # " +
 				"records=0}\n\n0.0.2\n---\nMerkleAccount{state=MerkleAccountState{number=2 <-> 0.0.2, key=ed25519: " +
 				"\"second-fake\"\n, expiry=7654321, balance=2, autoRenewSecs=444444, memo=" +
 				"We said, and show us what we love, deleted=true, smartContract=false, numContractKvPairs=0, " +
 				"receiverSigRequired=false, proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, alreadyUsedAutoAssociations=0, " +
 				"maxAutoAssociations=0, alias=, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], " +
-				"numAssociations=1, numZeroBalances=0, lastAssociation=0<->(0.0.0, 0.0.0)}, # records=0}\n";
+				"numAssociations=1, numPositiveBalances=0, headTokenId=0}, # records=0}\n";
 
 		// given:
 		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();

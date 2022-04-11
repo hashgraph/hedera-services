@@ -23,7 +23,6 @@ package com.hedera.services.contracts.execution;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -35,7 +34,6 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -77,17 +75,12 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 			final MessageFrame frame,
 			final OperationTracer operationTracer
 	) {
-		// EVM value transfers are not allowed
-		if (!Objects.equals(Wei.ZERO, frame.getValue())) {
-			frame.setRevertReason(INVALID_TRANSFER);
-			frame.setState(REVERT);
-			return;
-		}
-
 		final Gas gasRequirement;
 		final Bytes output;
 		if (contract instanceof HTSPrecompiledContract htsPrecompile) {
 			final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
+			if (frame.getState() == REVERT)
+				return;
 			output = costedResult.getValue();
 			gasRequirement = costedResult.getKey();
 		} else {

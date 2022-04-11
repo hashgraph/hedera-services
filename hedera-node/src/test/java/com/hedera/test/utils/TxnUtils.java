@@ -24,11 +24,18 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -37,6 +44,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
@@ -46,12 +54,17 @@ import com.swirlds.common.io.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -293,4 +306,47 @@ public class TxnUtils {
 		return reconstruction;
 	}
 
+	public static ExpirableTxnRecord recordOne() {
+		return ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.newBuilder()
+						.setStatus(INVALID_ACCOUNT_ID.name())
+						.setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.3"))).build())
+				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(9_999_999_999L)).build()))
+				.setMemo("Alpha bravo charlie")
+				.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(9_999_999_999L)))
+				.setFee(555L)
+				.setHbarAdjustments(
+						CurrencyAdjustments.fromChanges(new long[] { -4L, 2L, 2L }, new long[] { 2L, 1001L, 1002L }))
+				.setContractCallResult(SerdeUtils.fromGrpc(ContractFunctionResult.newBuilder()
+						.setContractID(asContract("1.2.3"))
+						.setErrorMessage("Couldn't figure it out!")
+						.setGasUsed(55L)
+						.addLogInfo(ContractLoginfo.newBuilder()
+								.setData(ByteString.copyFrom("Nonsense!".getBytes()))).build()))
+				.build();
+	}
+
+	public static ExpirableTxnRecord recordTwo() {
+		return ExpirableTxnRecord.newBuilder()
+				.setReceipt(TxnReceipt.newBuilder()
+						.setStatus(INVALID_CONTRACT_ID.name())
+						.setAccountId(EntityId.fromGrpcAccountId(asAccount("0.0.4"))).build())
+				.setTxnId(TxnId.fromGrpc(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(7_777_777_777L)).build()))
+				.setMemo("Alpha bravo charlie")
+				.setConsensusTime(RichInstant.fromJava(Instant.ofEpochSecond(7_777_777_777L)))
+				.setFee(556L)
+				.setHbarAdjustments(
+						CurrencyAdjustments.fromChanges(new long[] { -6L, 3L, 3L }, new long[] { 2L, 1001L, 1002L }))
+				.setContractCallResult(SerdeUtils.fromGrpc(ContractFunctionResult.newBuilder()
+						.setContractID(asContract("4.3.2"))
+						.setErrorMessage("Couldn't figure it out immediately!")
+						.setGasUsed(55L)
+						.addLogInfo(ContractLoginfo.newBuilder()
+								.setData(ByteString.copyFrom("Nonsensical!".getBytes())))
+						.setGas(1_000_000L)
+						.setFunctionParameters(ByteString.copyFrom("Sensible!".getBytes())).build()))
+				.build();
+	}
 }

@@ -27,7 +27,6 @@ import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hedera.services.stream.proto.TokenUnitBalance;
@@ -68,9 +67,9 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
-import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -151,16 +150,15 @@ class SignedStateBalancesExporterTest {
 				.balance(secondNonNodeAccountBalance)
 				.tokens(theToken, theDeletedToken, theMissingToken)
 				.get();
-		secondNonNodeAccount.setTokenAssociationMetadata(new TokenAssociationMetadata(
-				0, 0, secondNonNodeTokenAssociationKey));
 		deletedAccount = MerkleAccountFactory.newAccount().deleted(true).get();
 
 		accounts.put(fromAccountId(thisNode), thisNodeAccount);
 		accounts.put(fromAccountId(anotherNode), anotherNodeAccount);
 		accounts.put(fromAccountId(firstNonNode), firstNonNodeAccount);
 		accounts.put(fromAccountId(secondNonNode), secondNonNodeAccount);
-		secondNonNodeAccount.setTokenAssociationMetadata(
-				new TokenAssociationMetadata(2, 0, secondNonNodeTokenAssociationKey));
+		secondNonNodeAccount.setNumPositiveBalances(0);
+		secondNonNodeAccount.setHeadTokenId(theToken.getTokenNum());
+		secondNonNodeAccount.setNumAssociations(2);
 		accounts.put(fromAccountId(deleted), deletedAccount);
 
 		token = mock(MerkleToken.class);
@@ -187,8 +185,8 @@ class SignedStateBalancesExporterTest {
 		final var secondNonNodeDelTokenAssociation = new MerkleTokenRelStatus(
 				secondNonNodeDeletedTokenBalance, false, true, false);
 		secondNonNodeDelTokenAssociation.setKey(secondNonNodeDelTokenAssociationKey);
-		secondNonNodeDelTokenAssociation.setPrevKey(secondNonNodeTokenAssociationKey);
-		secondNonNodeTokenAssociation.setNextKey(secondNonNodeDelTokenAssociationKey);
+		secondNonNodeDelTokenAssociation.setPrev(theToken.getTokenNum());
+		secondNonNodeTokenAssociation.setNext(theDeletedToken.getTokenNum());
 
 		tokenRels.put(secondNonNodeTokenAssociationKey, secondNonNodeTokenAssociation);
 		tokenRels.put(secondNonNodeDelTokenAssociationKey, secondNonNodeDelTokenAssociation);
