@@ -811,6 +811,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
 						getAccountDetails(owner)
+								.payingWith(GENESIS)
 								.has(AccountDetailsAsserts.accountWith().tokenAllowancesContaining(fungibleToken,
 										spender, 1450))
 								.hasToken(relationshipWith(fungibleToken).balance(950L)),

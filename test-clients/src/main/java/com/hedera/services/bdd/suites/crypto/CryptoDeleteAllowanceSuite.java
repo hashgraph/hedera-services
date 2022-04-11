@@ -411,7 +411,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 						cryptoDeleteAllowance()
 								.payingWith(owner)
 								.addNftDeleteAllowance(owner, nft, List.of(3L)),
-						getAccountDetails(owner).has(accountWith().noAllowances()),
+						getAccountDetails(owner).payingWith(GENESIS).has(accountWith().noAllowances()),
 
 						tokenUnpause(nft),
 						tokenFreeze(nft, owner),
