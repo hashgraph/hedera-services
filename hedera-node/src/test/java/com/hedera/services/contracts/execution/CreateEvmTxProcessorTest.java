@@ -120,11 +120,6 @@ class CreateEvmTxProcessorTest {
 	}
 
 	@Test
-	void blockHashAlwaysUnavailable() {
-		assertSame(EvmTxProcessor.UNAVAILABLE_BLOCK_HASH, EvmTxProcessor.ALWAYS_UNAVAILABLE_BLOCK_HASH.apply(1L));
-	}
-
-	@Test
 	void assertSuccessfulExecution() {
 		givenValidMock(true);
 		givenSenderWithBalance(350_000L);

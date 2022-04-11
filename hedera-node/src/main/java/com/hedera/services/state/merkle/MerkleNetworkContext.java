@@ -415,7 +415,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return blockNo;
 	}
 
-	public org.hyperledger.besu.datatypes.Hash getBlockHashCache(final long blockNumber) {
+	public org.hyperledger.besu.datatypes.Hash getBlockHashByNumber(final long blockNumber) {
 		return blockHashes.getOrDefault(blockNumber, convertSwirldsHashToBesuHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()])));
 	}
 

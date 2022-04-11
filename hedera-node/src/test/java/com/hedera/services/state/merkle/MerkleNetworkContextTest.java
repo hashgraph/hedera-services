@@ -35,9 +35,6 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.common.MutabilityException;
-import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.platform.state.DualStateImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -130,6 +127,7 @@ class MerkleNetworkContextTest {
 		subject.markMigrationRecordsStreamed();
 		subject.setFirstConsTimeOfCurrentBlock(firstConsTimeOfCurrentBlock);
 		subject.setLatestConsTimeOfCurrentBlock(latestConsTimeOfCurrentBlock);
+		subject.setBlockNo(0L);
 	}
 
 	@Test

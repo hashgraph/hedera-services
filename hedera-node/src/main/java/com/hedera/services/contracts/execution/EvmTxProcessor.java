@@ -81,9 +81,6 @@ abstract class EvmTxProcessor {
 	private static final List<ContractValidationRule> VALIDATION_RULES =
 			List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE), PrefixCodeRule.of());
 
-	static final Hash UNAVAILABLE_BLOCK_HASH = Hash.fromHexStringLenient("0x");
-	static final Function<Long, Hash> ALWAYS_UNAVAILABLE_BLOCK_HASH = n -> UNAVAILABLE_BLOCK_HASH;
-
 	public static final String SBH_CONTEXT_KEY = "sbh";
 	public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
 
@@ -232,7 +229,7 @@ abstract class EvmTxProcessor {
 						})
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
-						.blockHashLookup(blockNo -> curNetworkCtx.getBlockHashCache(blockNo))
+						.blockHashLookup(blockNo -> curNetworkCtx.getBlockHashByNumber(blockNo))
 						.contextVariables(Map.of(
 								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
 								"HederaFunctionality", getFunctionType(),

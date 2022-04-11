@@ -171,7 +171,7 @@ class RecordStreamingTest {
         assertEquals(1, merkleNetworkContext.getBlockHashCache().size());
         assertEquals(0L, merkleNetworkContext.getBlockHashCache().entrySet().stream().findFirst().get().getKey());
         assertEquals(MerkleNetworkContext.convertSwirldsHashToBesuHash(INITIAL_RANDOM_HASH), merkleNetworkContext.getBlockHashCache().entrySet().stream().findFirst().get().getValue());
-        assertEquals(MerkleNetworkContext.convertSwirldsHashToBesuHash(INITIAL_RANDOM_HASH), merkleNetworkContext.getBlockHashCache(0));
+        assertEquals(MerkleNetworkContext.convertSwirldsHashToBesuHash(INITIAL_RANDOM_HASH), merkleNetworkContext.getBlockHashByNumber(0));
         assertEquals(1, merkleNetworkContext.getBlockNo());
     }
 
@@ -213,7 +213,7 @@ class RecordStreamingTest {
         assertEquals(numberOfBlocks, merkleNetworkContext.getBlockNo());
 
         for (int i = 0; i < numberOfBlocks; i++) {
-            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashCache(i));
+            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashByNumber(i));
         }
     }
 
@@ -255,7 +255,7 @@ class RecordStreamingTest {
         assertEquals(numberOfBlocks, merkleNetworkContext.getBlockNo());
 
         for (int i = 0; i < numberOfBlocks; i++) {
-            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashCache(i));
+            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashByNumber(i));
         }
     }
 
@@ -302,7 +302,7 @@ class RecordStreamingTest {
         assertEquals(numberOfBlocks, merkleNetworkContext.getBlockNo());
 
         for (int i = startCacheBlockAfterStreaming; i < numberOfBlocks; i++) {
-            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashCache(i));
+            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashByNumber(i));
         }
     }
 
@@ -349,7 +349,7 @@ class RecordStreamingTest {
         assertEquals(numberOfBlocks, merkleNetworkContext.getBlockNo());
 
         for (int i = 0; i < numberOfBlocks; i++) {
-            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashCache(i));
+            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashByNumber(i));
         }
     }
 
@@ -390,7 +390,7 @@ class RecordStreamingTest {
         assertEquals(numberOfBlocks, merkleNetworkContext.getBlockNo());
 
         for (int i = 0; i < numberOfBlocks; i++) {
-            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashCache(i));
+            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashByNumber(i));
         }
     }
 
@@ -481,7 +481,7 @@ class RecordStreamingTest {
         assertEquals(numberOfBlocks, merkleNetworkContext.getBlockNo());
 
         for (int i = 0; i < numberOfBlocks; i++) {
-            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashCache(i));
+            assertEquals(blockNumberToHash.get((long) i), merkleNetworkContext.getBlockHashByNumber(i));
         }
     }
 }
