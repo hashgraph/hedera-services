@@ -83,8 +83,8 @@ public class RenewalProcess {
 		final var entityNum = EntityNum.fromLong(literalNum);
 		final var classification = helper.classify(entityNum, longNow);
 		return switch (classification) {
-			case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> expireIfTargeted(entityNum, false);
-			case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> expireIfTargeted(entityNum, true);
+			case DETACHED_ACCOUNT_GRACE_PERIOD_OVER -> removeIfTargeted(entityNum, false);
+			case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removeIfTargeted(entityNum, true);
 			case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewIfTargeted(entityNum, false);
 			case EXPIRED_CONTRACT_READY_TO_RENEW -> renewIfTargeted(entityNum, true);
 			default -> NOTHING_TO_DO;
@@ -106,7 +106,7 @@ public class RenewalProcess {
 		return DONE;
 	}
 
-	private EntityProcessResult expireIfTargeted(final EntityNum contractNum, final boolean isContract) {
+	private EntityProcessResult removeIfTargeted(final EntityNum contractNum, final boolean isContract) {
 		if (isNotTargeted(isContract)) {
 			return NOTHING_TO_DO;
 		}
