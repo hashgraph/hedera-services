@@ -98,6 +98,8 @@ class CreateEvmTxProcessorTest {
 	private StorageExpiry.Oracle oracle;
 	@Mock
 	private Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
+	@Mock
+	private MerkleNetworkContext merkleNetworkContext;
 
 	private CreateEvmTxProcessor createEvmTxProcessor;
 	private final Account sender = new Account(new Id(0, 0, 1002));
@@ -272,6 +274,7 @@ class CreateEvmTxProcessorTest {
 	}
 
 	private void givenValidMock(boolean expectedSuccess) {
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());

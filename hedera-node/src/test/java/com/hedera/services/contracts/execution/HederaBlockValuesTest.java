@@ -47,10 +47,8 @@ class HederaBlockValuesTest {
         final var gasLimit = 1L;
         final var blockNo = 10001L;
         final var consTime = Instant.ofEpochSecond(1_234_567L, 890);
-
-        when(merkleNetworkContext.getBlockNo()).thenReturn(blockNo);
-        when(merkleNetworkContext.getFirstConsTimeOfCurrentBlock()).thenReturn(consTime);
-        subject = new HederaBlockValues(gasLimit, merkleNetworkContext);
+        
+        subject = new HederaBlockValues(gasLimit, blockNo, consTime);
         Assertions.assertEquals(gasLimit, subject.getGasLimit());
         Assertions.assertEquals(consTime.getEpochSecond(), subject.getTimestamp());
         Assertions.assertEquals(Optional.of(0L), subject.getBaseFee());

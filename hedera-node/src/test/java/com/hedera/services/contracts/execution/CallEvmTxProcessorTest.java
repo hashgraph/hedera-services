@@ -106,6 +106,8 @@ class CallEvmTxProcessorTest {
 	private StorageExpiry.Oracle oracle;
 	@Mock
 	private Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
+	@Mock
+	private MerkleNetworkContext merkleNetworkContext;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -131,6 +133,7 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertSuccessExecution() {
 		givenValidMock();
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
@@ -144,6 +147,7 @@ class CallEvmTxProcessorTest {
 
 	@Test
 	void throwsWhenCodeCacheFailsLoading() {
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
@@ -167,6 +171,7 @@ class CallEvmTxProcessorTest {
 	@Test
 	void assertSuccessExecutionChargesCorrectMinimumGas() {
 		givenValidMock();
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(globalDynamicProperties.maxGasRefundPercentage()).willReturn(MAX_REFUND_PERCENT);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
@@ -335,6 +340,7 @@ class CallEvmTxProcessorTest {
 	}
 
 	private void givenValidMock() {
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());

@@ -97,6 +97,8 @@ class CallLocalEvmTxProcessorTest {
 	private StorageExpiry.Oracle oracle;
 	@Mock
 	private Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
+	@Mock
+	private MerkleNetworkContext merkleNetworkContext;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -131,6 +133,7 @@ class CallLocalEvmTxProcessorTest {
 
 	@Test
 	void throwsWhenCodeCacheFailsLoading() {
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(storageExpiry.hapiStaticCallOracle()).willReturn(oracle);
@@ -198,6 +201,7 @@ class CallLocalEvmTxProcessorTest {
 	}
 
 	private void givenValidMock() {
+		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
 		given(worldState.updater()).willReturn(updater);
 		given(worldState.updater().updater()).willReturn(updater);
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());

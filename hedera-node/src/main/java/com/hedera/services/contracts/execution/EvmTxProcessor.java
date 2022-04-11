@@ -90,7 +90,6 @@ abstract class EvmTxProcessor {
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
 	private final Supplier<MerkleNetworkContext> networkCtx;
-	private MerkleNetworkContext curNetworkCtx;
 	protected final GlobalDynamicProperties dynamicProperties;
 
 	protected EvmTxProcessor(
@@ -204,9 +203,9 @@ abstract class EvmTxProcessor {
 			mutableSender.decrementBalance(gasCost);
 		}
 
-		curNetworkCtx = networkCtx.get();
+		final MerkleNetworkContext curNetworkCtx = networkCtx.get();
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, curNetworkCtx);
+		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, curNetworkCtx.getBlockNo(), curNetworkCtx.getFirstConsTimeOfCurrentBlock());
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 

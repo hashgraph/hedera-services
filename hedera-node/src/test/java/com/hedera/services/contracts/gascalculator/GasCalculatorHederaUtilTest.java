@@ -108,10 +108,10 @@ class GasCalculatorHederaUtilTest {
 		final var feeComponents = FeeComponents.newBuilder().setRbh(rbh);
 		final var feeData = FeeData.newBuilder().setServicedata(feeComponents).build();
 		final var blockConsTime =  Instant.ofEpochSecond(consensusTime);
+		final var blockNo = 123L;
 
-		given(merkleNetworkContext.getFirstConsTimeOfCurrentBlock()).willReturn(blockConsTime);
 		given(messageFrame.getGasPrice()).willReturn(Wei.of(2000L));
-		given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, merkleNetworkContext));
+		given(messageFrame.getBlockValues()).willReturn(new HederaBlockValues(10L, blockNo, blockConsTime));
 		given(messageFrame.getContextVariable("HederaFunctionality")).willReturn(functionality);
 		given(messageFrame.getMessageFrameStack()).willReturn(returningDeque);
 
