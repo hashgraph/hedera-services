@@ -122,7 +122,7 @@
 			</snapshots>
 			<id>eth-tx-interop-protobuf</id>
 			<name>Interop Protobufs</name>
-			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1429</url>
+			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1435</url>
 		</repository>
 		<repository>
 			<snapshots>
