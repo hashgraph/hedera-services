@@ -148,8 +148,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 			final double allowedPercentDiff
 	) {
 		registerProvider((spec, o) -> {
-			var expectedTinyBarsToSubtract = expectedUsdToSubstract
-					* 100
+			var expectedTinyBarsToSubtract = expectedUsdToSubstract * 100
 					* spec.ratesProvider().rates().getHbarEquiv() / spec.ratesProvider().rates().getCentEquiv()
 					* ONE_HBAR;
 			var expected = amount - expectedTinyBarsToSubtract;
@@ -160,6 +159,19 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 					"Unexpected balance");
 		});
 		return this;
+	}
+
+	public static void assertTinybarAmountIsApproxUsd(
+			final HapiApiSpec spec,
+			final double expectedFractionalUsd,
+			final long actualTinybars,
+			final double allowedPercentDiff
+	) {
+		final var expectedTinybars = expectedFractionalUsd * 100
+				* spec.ratesProvider().rates().getHbarEquiv() / spec.ratesProvider().rates().getCentEquiv()
+				* ONE_HBAR;
+		final var allowedDiff = (allowedPercentDiff / 100.0) * expectedTinybars;
+		assertEquals(expectedTinybars, actualTinybars, allowedDiff, "Wrong balance");
 	}
 
 	public AccountInfoAsserts hasAlias() {

@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -133,6 +134,7 @@ public class ScheduleGenerator {
 
 	@SuppressWarnings("unchecked")
 	static final List<Pair<HederaFunctionality, List<SubType>>> SUPPORTED_FUNCTIONS = List.of(
+			Pair.of(ContractAutoRenew, List.of(DEFAULT)),
 			/* Crypto */
 			Pair.of(CryptoTransfer, List.of(
 					DEFAULT,

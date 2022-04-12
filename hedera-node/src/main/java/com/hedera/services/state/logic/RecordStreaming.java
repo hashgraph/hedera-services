@@ -21,7 +21,7 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
@@ -46,7 +46,7 @@ public class RecordStreaming implements Runnable {
 	private final TransactionContext txnCtx;
 	private final NonBlockingHandoff nonBlockingHandoff;
 	private final Consumer<RunningHash> runningHashUpdate;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeaf;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private MerkleNetworkContext curNetworkCtx;
@@ -57,7 +57,7 @@ public class RecordStreaming implements Runnable {
 			final TransactionContext txnCtx,
 			final NonBlockingHandoff nonBlockingHandoff,
 			final Consumer<RunningHash> runningHashUpdate,
-			final AccountRecordsHistorian recordsHistorian,
+			final RecordsHistorian recordsHistorian,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final Supplier<RecordsRunningHashLeaf> runningHashLeaf
 	) {

@@ -120,11 +120,13 @@ public class CryptoOpsUsage {
 				+ ctx.currentNumTokenRels() * CRYPTO_ENTITY_SIZES.bytesInTokenAssocRepr();
 	}
 
-	public void cryptoUpdateUsage(final SigUsage sigUsage,
+	public void cryptoUpdateUsage(
+			final SigUsage sigUsage,
 			final BaseTransactionMeta baseMeta,
 			final CryptoUpdateMeta cryptoUpdateMeta,
 			final ExtantCryptoContext ctx,
-			final UsageAccumulator accumulator) {
+			final UsageAccumulator accumulator
+	) {
 		accumulator.resetForTransaction(baseMeta, sigUsage);
 
 		accumulator.addBpt(cryptoUpdateMeta.getMsgBytesUsed());
