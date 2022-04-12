@@ -45,7 +45,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
@@ -65,6 +64,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetCont
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
@@ -129,7 +129,6 @@ public final class PermissionFileUtils {
 		permissionKeys.put(CryptoUpdate, "updateAccount");
 		permissionKeys.put(CryptoDelete, "cryptoDelete");
 		permissionKeys.put(CryptoApproveAllowance, "approveAllowances");
-		permissionKeys.put(CryptoAdjustAllowance, "adjustAllowances");
 		permissionKeys.put(CryptoDeleteAllowance, "deleteAllowances");
 		permissionKeys.put(CryptoAddLiveHash, "addLiveHash");
 		permissionKeys.put(CryptoDeleteLiveHash, "deleteLiveHash");
@@ -184,6 +183,7 @@ public final class PermissionFileUtils {
 		permissionKeys.put(TransactionGetRecord, "getTxRecordByTxID");
 		permissionKeys.put(GetVersionInfo, "getVersionInfo");
 		permissionKeys.put(NetworkGetExecutionTime, "networkGetExecutionTime");
+		permissionKeys.put(GetAccountDetails, "getAccountDetails");
 		permissionKeys.put(TokenGetInfo, "tokenGetInfo");
 		permissionKeys.put(ScheduleGetInfo, "scheduleGetInfo");
 		permissionKeys.put(TokenGetNftInfo, "tokenGetNftInfo");

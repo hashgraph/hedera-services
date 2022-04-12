@@ -21,9 +21,6 @@
   "CryptoApproveAllowance": {
 	"DEFAULT": 0.05
   },
-  "CryptoAdjustAllowance": {
-	"DEFAULT": 0.05
-  },
   "CryptoDeleteAllowance": {
 	"DEFAULT": 0.05
   },

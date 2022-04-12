@@ -325,10 +325,10 @@ public class SeededPropertySource {
 			builder.setParentConsensusTime(nextInstant());
 		}
 		if (nextBoolean()) {
-			builder.setCryptoAllowances(nextCryptoAllowances(1, 2, 4));
+			nextCryptoAllowances(1, 2, 4);
 		}
 		if (nextBoolean()) {
-			builder.setFungibleTokenAllowances(nextFungibleAllowances(1, 2, 4, 8));
+			nextFungibleAllowances(1, 2, 4, 8);
 		}
 		if (nextBoolean()) {
 			nextTokenAdjustmentsIn(builder);

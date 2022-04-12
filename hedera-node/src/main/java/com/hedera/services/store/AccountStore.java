@@ -213,7 +213,7 @@ public class AccountStore {
 	}
 
 	private boolean isExpired(long balance, long expiry) {
-		if (dynamicProperties.autoRenewEnabled() && balance == 0) {
+		if (dynamicProperties.shouldAutoRenewSomeEntityType() && balance == 0) {
 			return !validator.isAfterConsensusSecond(expiry);
 		} else {
 			return false;

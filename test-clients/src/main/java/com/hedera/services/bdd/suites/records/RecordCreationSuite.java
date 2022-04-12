@@ -48,13 +48,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.includingDeduction;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -208,18 +208,22 @@ public class RecordCreationSuite extends HapiApiSuite {
 									.payingWith(GENESIS)
 									.contents(serde.toValidatedRawFile(stylized121))
 					).when().then(
-							getAccountInfo("0.0.800").has(accountWith()
-									.expiry(33197904000L, 0)
-									.key(EMPTY_KEY)
-									.memo("")
-									.noAlias()
-									.noAllowances()),
-							getAccountInfo("0.0.801").has(accountWith()
-									.expiry(33197904000L, 0)
-									.key(EMPTY_KEY)
-									.memo("")
-									.noAlias()
-									.noAllowances())
+							getAccountDetails("0.0.800")
+									.payingWith(GENESIS)
+									.has(accountWith()
+											.expiry(33197904000L, 0)
+											.key(EMPTY_KEY)
+											.memo("")
+											.noAlias()
+											.noAllowances()),
+							getAccountDetails("0.0.801")
+									.payingWith(GENESIS)
+									.has(accountWith()
+											.expiry(33197904000L, 0)
+											.key(EMPTY_KEY)
+											.memo("")
+											.noAlias()
+											.noAllowances())
 					);
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);

@@ -57,6 +57,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
@@ -106,16 +107,18 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	@Override
 	public void init() {
 		usagePrices.loadPriceSchedules();
-		autoRenewCalcs.setCryptoAutoRenewPriceSeq(usagePrices.activePricingSequence(CryptoAccountAutoRenew));
+		autoRenewCalcs.setAccountRenewalPriceSeq(usagePrices.activePricingSequence(CryptoAccountAutoRenew));
+		autoRenewCalcs.setContractRenewalPriceSeq(usagePrices.activePricingSequence(ContractAutoRenew));
 	}
 
 	@Override
 	public RenewAssessment assessCryptoAutoRenewal(
-			MerkleAccount expiredAccount,
-			long requestedRenewal,
-			Instant now
+			final MerkleAccount expiredAccountOrContract,
+			final long requestedRenewal,
+			final Instant now
 	) {
-		return autoRenewCalcs.maxRenewalAndFeeFor(expiredAccount, requestedRenewal, now, exchange.activeRate(now));
+		return autoRenewCalcs.assessCryptoRenewal(
+				expiredAccountOrContract, requestedRenewal, now, exchange.activeRate(now));
 	}
 
 	@Override

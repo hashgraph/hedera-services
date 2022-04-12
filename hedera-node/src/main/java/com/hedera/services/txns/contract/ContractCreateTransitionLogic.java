@@ -50,7 +50,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.accounts.ContractCustomizer.fromHapiCreation;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
-import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODEBYTES;
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -199,8 +199,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	}
 
 	Bytes prepareCodeWithConstructorArguments(ContractCreateTransactionBody op) {
-		if (op.getInitcodeSourceCase() == INITCODEBYTES) {
-			return Bytes.wrap(op.getInitcodeBytes().toByteArray());
+		if (op.getInitcodeSourceCase() == INITCODE) {
+			return Bytes.wrap(op.getInitcode().toByteArray());
 		} else {
 			var bytecodeSrc = op.getFileID();
 			validateTrue(hfs.exists(bytecodeSrc), INVALID_FILE_ID);

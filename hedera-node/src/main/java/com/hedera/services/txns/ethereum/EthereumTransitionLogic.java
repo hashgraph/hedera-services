@@ -223,7 +223,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			var autoRenewPeriod = Duration.newBuilder().setSeconds(
 					java.time.Duration.ofDays(90).getSeconds()).build();
 			var synthOp = ContractCreateTransactionBody.newBuilder()
-					.setInitcodeBytes(ByteString.copyFrom(ethTxData.callData()))
+					.setInitcode(ByteString.copyFrom(ethTxData.callData()))
 					.setGas(ethTxData.gasLimit())
 					.setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
 					.setAutoRenewPeriod(autoRenewPeriod);

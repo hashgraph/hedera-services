@@ -23,7 +23,6 @@ package com.hedera.services.txns.span;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.txns.ethereum.EthTxData;
 import com.hedera.services.txns.ethereum.EthTxSigs;
-import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
@@ -59,7 +58,6 @@ public class ExpandHandleSpanMapAccessor {
 	private static final String CRYPTO_CREATE_META_KEY = "cryptoCreateMeta";
 	private static final String CRYPTO_UPDATE_META_KEY = "cryptoUpdateMeta";
 	private static final String CRYPTO_APPROVE_META_KEY = "cryptoApproveMeta";
-	private static final String CRYPTO_ADJUST_META_KEY = "cryptoAdjustMeta";
 	private static final String CRYPTO_DELETE_ALLOWANCE_META_KEY = "cryptoDeleteAllowanceMeta";
 	private static final String ETH_TX_DATA_META_KEY = "ethTxDataMeta";
 	private static final String ETH_TX_SIGS_META_KEY = "ethTxSigsMeta";
@@ -164,14 +162,6 @@ public class ExpandHandleSpanMapAccessor {
 
 	public CryptoApproveAllowanceMeta getCryptoApproveMeta(TxnAccessor accessor) {
 		return (CryptoApproveAllowanceMeta) accessor.getSpanMap().get(CRYPTO_APPROVE_META_KEY);
-	}
-
-	public void setCryptoAdjustMeta(TxnAccessor accessor, CryptoAdjustAllowanceMeta cryptoAdjustMeta) {
-		accessor.getSpanMap().put(CRYPTO_ADJUST_META_KEY, cryptoAdjustMeta);
-	}
-
-	public CryptoAdjustAllowanceMeta getCryptoAdjustMeta(TxnAccessor accessor) {
-		return (CryptoAdjustAllowanceMeta) accessor.getSpanMap().get(CRYPTO_ADJUST_META_KEY);
 	}
 
 	public void setCryptoDeleteAllowanceMeta(TxnAccessor accessor, CryptoDeleteAllowanceMeta cryptoDeleteAllowanceMeta) {

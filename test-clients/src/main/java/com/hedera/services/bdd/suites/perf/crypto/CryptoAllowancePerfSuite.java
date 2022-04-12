@@ -32,7 +32,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoAdjustAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -130,21 +129,6 @@ public class CryptoAllowancePerfSuite extends LoadTest {
 														.addCryptoAllowance("owner" + i, "spender" + i, 1L)
 														.addTokenAllowance("owner" + i, "token" + i, "spender" + i,
 																1L)
-								)
-						),
-						inParallel(
-								asOpArray(NUM_ALLOWANCES, i ->
-										(i == (NUM_ALLOWANCES - 1)) ?
-												cryptoAdjustAllowance()
-														.payingWith("owner" + i)
-														.addCryptoAllowance("owner" + i, "spender" + i, 2L)
-														.addTokenAllowance("owner" + i, "token" + i, "spender" + i,
-																2L) :
-												cryptoAdjustAllowance()
-														.payingWith("owner" + i)
-														.addCryptoAllowance("owner" + i, "spender" + i, 2L)
-														.addTokenAllowance("owner" + i, "token" + i, "spender" + i,
-																2L)
 								)
 						)
 				).then();
