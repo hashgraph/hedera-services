@@ -23,7 +23,7 @@ package com.hedera.services.state.migration;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -65,7 +65,7 @@ class MigrationRecordsManagerTest {
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private MerkleNetworkContext networkCtx;
 	@Mock

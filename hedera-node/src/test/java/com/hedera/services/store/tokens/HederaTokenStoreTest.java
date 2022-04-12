@@ -606,7 +606,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.exists(sponsor)).willReturn(true);
 		given(hederaLedger.isDetached(sponsor)).willReturn(true);
 
-		given(properties.autoRenewEnabled()).willReturn(true);
+		given(properties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		given(accountsLedger.get(any(), eq(IS_SMART_CONTRACT))).willReturn(false);
 		given(accountsLedger.get(any(), eq(BALANCE))).willReturn(0l);
 		given(accountsLedger.get(any(), eq(EXPIRY))).willReturn(100000000000000l);

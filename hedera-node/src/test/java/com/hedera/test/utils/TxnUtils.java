@@ -349,4 +349,26 @@ public class TxnUtils {
 						.setFunctionParameters(ByteString.copyFrom("Sensible!".getBytes())).build()))
 				.build();
 	}
+
+	public static TokenTransferList ttlOf(TokenID scope, AccountID src, AccountID dest, long amount) {
+		return TokenTransferList.newBuilder()
+				.setToken(scope)
+				.addTransfers(aaOf(src, -amount))
+				.addTransfers(aaOf(dest, +amount))
+				.build();
+	}
+
+	public static TokenTransferList asymmetricTtlOf(TokenID scope, AccountID src, long amount) {
+		return TokenTransferList.newBuilder()
+				.setToken(scope)
+				.addTransfers(aaOf(src, -amount))
+				.build();
+	}
+
+	public static AccountAmount aaOf(AccountID id, long amount) {
+		return AccountAmount.newBuilder()
+				.setAccountID(id)
+				.setAmount(amount)
+				.build();
+	}
 }
