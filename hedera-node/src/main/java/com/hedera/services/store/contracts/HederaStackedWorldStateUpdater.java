@@ -196,10 +196,7 @@ public class HederaStackedWorldStateUpdater
 
 	// --- Internal helpers
 	boolean isTokenRedirect(final Address address) {
-		if (!dynamicProperties.isRedirectTokenCallsEnabled()) {
-			return false;
-		}
-		return trackingLedgers().isTokenAddress(address);
+		return dynamicProperties.isRedirectTokenCallsEnabled() && trackingLedgers().isTokenAddress(address);
 	}
 
 	private boolean isMissingTarget(final Address alias) {
