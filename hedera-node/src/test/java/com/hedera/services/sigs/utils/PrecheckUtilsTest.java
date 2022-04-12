@@ -21,7 +21,6 @@ package com.hedera.services.sigs.utils;
  */
 
 import com.hedera.services.context.NodeInfo;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -49,8 +48,6 @@ class PrecheckUtilsTest {
 
 	@Mock
 	private NodeInfo nodeInfo;
-	@Mock
-	private AliasManager aliasManager;
 
 	private Predicate<TransactionBody> subject;
 

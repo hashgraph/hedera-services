@@ -22,7 +22,6 @@ package com.hedera.services.records;
 
 import com.google.common.cache.Cache;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.EntityId;
@@ -87,8 +86,6 @@ class RecordCacheTest {
 	private TxnIdRecentHistory recentHistory;
 	@Mock
 	private TxnIdRecentHistory recentChildHistory;
-	@Mock
-	private AliasManager aliasManager;
 	@Mock
 	private AccessorFactory factory;
 

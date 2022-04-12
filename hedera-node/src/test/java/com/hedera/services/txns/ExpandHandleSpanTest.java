@@ -51,6 +51,7 @@ class ExpandHandleSpanTest {
 	private SpanMapManager handleSpanMap;
 	@Mock
 	private AliasManager aliasManager;
+
 	private AccessorFactory accessorFactory = new AccessorFactory(aliasManager);
 
 	private final long duration = 20;

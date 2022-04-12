@@ -201,8 +201,7 @@ class ContractUpdateTransitionLogicTest {
 	void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
-		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts)).willReturn(
-				CONTRACT_DELETED);
+		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts)).willReturn(CONTRACT_DELETED);
 
 		// expect:
 		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractUpdateTxn));

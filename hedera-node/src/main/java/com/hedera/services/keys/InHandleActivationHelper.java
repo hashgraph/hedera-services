@@ -141,7 +141,7 @@ public class InHandleActivationHelper {
 	}
 
 	private void ensureUpToDate() {
-		var current = (PlatformTxnAccessor) accessorSource.get();
+		var current = accessorSource.get();
 		if (accessor != current) {
 			final var sigMeta = current.getSigMeta();
 			if (sigMeta.couldRationalizeOthers()) {

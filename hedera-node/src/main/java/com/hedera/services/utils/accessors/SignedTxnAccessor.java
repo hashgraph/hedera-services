@@ -21,10 +21,8 @@ package com.hedera.services.utils.accessors;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
@@ -40,9 +38,7 @@ import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -50,7 +46,6 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,7 +53,6 @@ import org.bouncycastle.util.Arrays;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
@@ -356,7 +350,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		}
 	}
 
-	/*------------- TODO : This section should be deleted after custom accessors are complete --------------*/
+	/*------------- This section should be deleted after custom accessors are complete --------------*/
 	private void setOpUsageMeta() {
 		if (function == CryptoTransfer) {
 			setXferUsageMeta();

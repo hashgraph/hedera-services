@@ -166,8 +166,7 @@ public final class HederaKeyActivation {
 			if (!xCoordsMatch) {
 				return false;
 			} else {
-				/* Two secp25681 public keys with the same x-coord can differ at most in the parity of their y-coords
-				. */
+				/* Two secp25681 public keys with the same x-coord can differ at most in the parity of their y-coords. */
 				return (sourceKey[0] & PARITY_MASK) == (sigKey[UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN - 1] & PARITY_MASK);
 			}
 		} else {

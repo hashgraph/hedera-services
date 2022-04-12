@@ -24,7 +24,6 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -235,10 +234,6 @@ public interface TxnHandlingScenario {
 				fi.getDeleted(),
 				JKey.mapKey(Key.newBuilder().setKeyList(fi.getKeys()).build()),
 				fi.getExpirationTime().getSeconds());
-	}
-
-	default AliasManager aliasManager() {
-		return mock(AliasManager.class);
 	}
 
 	default TokenStore tokenStore() {

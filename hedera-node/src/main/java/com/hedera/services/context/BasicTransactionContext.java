@@ -113,10 +113,15 @@ public class BasicTransactionContext implements TransactionContext {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
-	BasicTransactionContext(final NarratedCharging narratedCharging,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts, final NodeInfo nodeInfo,
-			final HbarCentExchange exchange, final EntityCreator creator, final SideEffectsTracker sideEffectsTracker,
-			final EntityIdSource ids) {
+	BasicTransactionContext(
+			final NarratedCharging narratedCharging,
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final NodeInfo nodeInfo,
+			final HbarCentExchange exchange,
+			final EntityCreator creator,
+			final SideEffectsTracker sideEffectsTracker,
+			final EntityIdSource ids
+	) {
 		this.ids = ids;
 		this.accounts = accounts;
 		this.narratedCharging = narratedCharging;
@@ -128,8 +133,8 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public void resetFor(final TxnAccessor accessor, final Instant consensusTime, final long submittingMember) {
-		if (accessor instanceof PlatformTxnAccessor) {
-			platformTxnAccessor = (PlatformTxnAccessor) accessor;
+		if (accessor instanceof PlatformTxnAccessor platformAccessor) {
+			platformTxnAccessor = platformAccessor;
 			this.accessor = (SignedTxnAccessor) platformTxnAccessor.getDelegate();
 		} else {
 			this.accessor = (SignedTxnAccessor) accessor;
@@ -162,8 +167,9 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public JKey activePayerKey() {
-		return isPayerSigKnownActive ? accounts.get().get(
-				fromAccountId(accessor.getPayer())).getAccountKey() : EMPTY_KEY;
+		return isPayerSigKnownActive
+				? accounts.get().get(fromAccountId(accessor.getPayer())).getAccountKey()
+				: EMPTY_KEY;
 	}
 
 	@Override
@@ -193,16 +199,23 @@ public class BasicTransactionContext implements TransactionContext {
 	public ExpirableTxnRecord.Builder recordSoFar() {
 		final var receiptBuilder = receiptSoFar();
 		final var totalFees = narratedCharging.totalFeesChargedToPayer() + otherNonThresholdFees;
-		recordSoFar = creator.createTopLevelRecord(totalFees, hash, accessor, consensusTime, receiptBuilder,
-				assessedCustomFees, sideEffectsTracker);
+		recordSoFar = creator.createTopLevelRecord(
+				totalFees,
+				hash,
+				accessor,
+				consensusTime,
+				receiptBuilder,
+				assessedCustomFees,
+				sideEffectsTracker);
 
 		recordConfig.accept(recordSoFar);
 		return recordSoFar;
 	}
 
 	TxnReceipt.Builder receiptSoFar() {
-		final var receipt = TxnReceipt.newBuilder().setExchangeRates(exchange.fcActiveRates()).setStatus(
-				statusSoFar.name());
+		final var receipt = TxnReceipt.newBuilder()
+				.setExchangeRates(exchange.fcActiveRates())
+				.setStatus(statusSoFar.name());
 		receiptConfig.accept(receipt);
 		return receipt;
 	}
@@ -264,8 +277,10 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public void setTopicRunningHash(final byte[] topicRunningHash, final long sequenceNumber) {
-		receiptConfig = receipt -> receipt.setTopicRunningHash(topicRunningHash).setTopicSequenceNumber(
-				sequenceNumber).setRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
+		receiptConfig = receipt -> receipt
+				.setTopicRunningHash(topicRunningHash)
+				.setTopicSequenceNumber(sequenceNumber)
+				.setRunningHashVersion(MerkleTopic.RUNNING_HASH_VERSION);
 	}
 
 	@Override
@@ -326,22 +341,5 @@ public class BasicTransactionContext implements TransactionContext {
 	@Override
 	public long getGasUsedForContractTxn() {
 		return evmFnResult.getGasUsed();
-	}
-
-	/* --- Used by unit tests --- */
-	List<FcAssessedCustomFee> getAssessedCustomFees() {
-		return assessedCustomFees;
-	}
-
-	ExpirableTxnRecord.Builder getRecordSoFar() {
-		return recordSoFar;
-	}
-
-	void setRecordSoFar(final ExpirableTxnRecord.Builder recordSoFar) {
-		this.recordSoFar = recordSoFar;
-	}
-
-	long getNonThresholdFeeChargedToPayer() {
-		return otherNonThresholdFees;
 	}
 }

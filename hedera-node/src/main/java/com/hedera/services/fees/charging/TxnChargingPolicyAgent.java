@@ -26,7 +26,6 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import javax.inject.Inject;

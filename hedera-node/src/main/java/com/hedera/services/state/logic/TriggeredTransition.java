@@ -41,10 +41,15 @@ public class TriggeredTransition implements Runnable {
 	private final NetworkUtilization networkUtilization;
 
 	@Inject
-	public TriggeredTransition(final StateView currentView, final FeeCalculator fees,
-			final FeeChargingPolicy chargingPolicy, final TransactionContext txnCtx,
-			final NetworkCtxManager networkCtxManager, final RequestedTransition requestedTransition,
-			final NetworkUtilization networkUtilization) {
+	public TriggeredTransition(
+			final StateView currentView,
+			final FeeCalculator fees,
+			final FeeChargingPolicy chargingPolicy,
+			final TransactionContext txnCtx,
+			final NetworkCtxManager networkCtxManager,
+			final RequestedTransition requestedTransition,
+			final NetworkUtilization networkUtilization
+	) {
 		this.currentView = currentView;
 		this.fees = fees;
 		this.chargingPolicy = chargingPolicy;
