@@ -31,23 +31,16 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
@@ -56,7 +49,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOW
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
@@ -147,15 +139,6 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 		if (cryptoAllowances.isEmpty()) {
 			return OK;
 		}
-		final List<EntityNumPair> entities = new ArrayList<>();
-		for (var allowance : cryptoAllowances) {
-			entities.add(buildEntityNumPairFrom(allowance.getOwner(), allowance.getSpender(),
-					payerAccount.getId().asEntityNum()));
-		}
-
-		if (hasRepeatedSpender(entities)) {
-			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
-		}
 
 		for (final var allowance : cryptoAllowances) {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
@@ -200,13 +183,6 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 			final ReadOnlyTokenStore tokenStore) {
 		if (tokenAllowances.isEmpty()) {
 			return OK;
-		}
-		final List<Pair<EntityNum, FcTokenAllowanceId>> tokenKeys = new ArrayList<>();
-		for (var allowance : tokenAllowances) {
-			tokenKeys.add(buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
-		}
-		if (hasRepeatedId(tokenKeys)) {
-			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 
 		for (final var allowance : tokenAllowances) {
@@ -256,14 +232,6 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
 			final ReadOnlyTokenStore tokenStore) {
 		if (nftAllowancesList.isEmpty()) {
 			return OK;
-		}
-
-		final List<Pair<EntityNum, FcTokenAllowanceId>> nftKeys = new ArrayList<>();
-		for (var allowance : nftAllowancesList) {
-			nftKeys.add(buildTokenAllowanceKey(allowance.getOwner(), allowance.getTokenId(), allowance.getSpender()));
-		}
-		if (hasRepeatedId(nftKeys)) {
-			return SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 		}
 
 		for (final var allowance : nftAllowancesList) {

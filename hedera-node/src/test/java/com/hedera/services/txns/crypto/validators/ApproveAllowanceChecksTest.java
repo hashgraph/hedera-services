@@ -71,10 +71,6 @@ import java.util.List;
 import java.util.Set;
 
 import static com.hedera.services.store.models.Id.MISSING_ID;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildEntityNumPairFrom;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.buildTokenAllowanceKey;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedId;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSpender;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
@@ -89,13 +85,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOW
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -228,7 +220,6 @@ class ApproveAllowanceChecksTest {
 	@Test
 	void failsIfAllowanceFeatureIsNotTurnedOn() {
 		given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
-		assertNoRepeated();
 
 		cryptoAllowances.add(cryptoAllowance2);
 		tokenAllowances.add(tokenAllowance2);
@@ -240,50 +231,6 @@ class ApproveAllowanceChecksTest {
 		assertEquals(NOT_SUPPORTED, validity);
 	}
 
-	@Test
-	void validatesDuplicateSpenders() {
-		given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
-		assertNoRepeated();
-
-		cryptoAllowances.add(cryptoAllowance2);
-		tokenAllowances.add(tokenAllowance2);
-		nftAllowances.add(nftAllowance2);
-
-		assertNoRepeated();
-
-		cryptoAllowances.add(cryptoAllowance1);
-		tokenAllowances.add(tokenAllowance1);
-		nftAllowances.add(nftAllowance1);
-		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-		given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-
-		final var validity = subject.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, owner,
-				view);
-
-		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES, validity);
-
-		assertRepeated();
-	}
-
-	private void assertRepeated() {
-		assertTrue(hasRepeatedSpender(cryptoAllowances.stream()
-				.map(a -> buildEntityNumPairFrom(a.getOwner(), a.getSpender(),
-						EntityNum.fromAccountId(payer))).toList()));
-		assertTrue(hasRepeatedId(tokenAllowances.stream()
-				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender())).toList()));
-		assertTrue(hasRepeatedId(nftAllowances.stream()
-				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender())).toList()));
-	}
-
-	private void assertNoRepeated() {
-		assertFalse(hasRepeatedSpender(cryptoAllowances.stream()
-				.map(a -> buildEntityNumPairFrom(a.getOwner(), a.getSpender(),
-						EntityNum.fromAccountId(payer))).toList()));
-		assertFalse(hasRepeatedId(tokenAllowances.stream()
-				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender())).toList()));
-		assertFalse(hasRepeatedId(nftAllowances.stream()
-				.map(a -> buildTokenAllowanceKey(a.getOwner(), a.getTokenId(), a.getSpender())).toList()));
-	}
 
 	@Test
 	void returnsValidationOnceFailed() {
@@ -405,20 +352,6 @@ class ApproveAllowanceChecksTest {
 		tokenAllowances.add(badTokenAllowance);
 		assertEquals(NEGATIVE_ALLOWANCE_AMOUNT,
 				subject.validateFungibleTokenAllowances(tokenAllowances, owner, accountStore, tokenStore));
-	}
-
-	@Test
-	void spenderRepeatedInAllowances() {
-		cryptoAllowances.add(cryptoAllowance1);
-		tokenAllowances.add(tokenAllowance1);
-		nftAllowances.add(nftAllowance1);
-		given(owner.getId()).willReturn(Id.fromGrpcAccount(ownerId1));
-		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
-				subject.validateCryptoAllowances(cryptoAllowances, owner, accountStore));
-		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
-				subject.validateFungibleTokenAllowances(tokenAllowances, owner, accountStore, tokenStore));
-		assertEquals(SPENDER_ACCOUNT_REPEATED_IN_ALLOWANCES,
-				subject.validateNftAllowances(nftAllowances, owner, accountStore, tokenStore));
 	}
 
 	@Test
@@ -654,7 +587,7 @@ class ApproveAllowanceChecksTest {
 	void validateRepeatedSerials() {
 		final var serials = List.of(1L, 10L, 1L);
 		var validity = subject.validateSerialNums(serials, token2Model, tokenStore);
-		assertEquals(REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES, validity);
+		assertEquals(OK, validity);
 	}
 
 	@Test

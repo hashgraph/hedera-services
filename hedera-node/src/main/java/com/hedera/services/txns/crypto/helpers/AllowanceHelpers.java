@@ -79,63 +79,12 @@ public class AllowanceHelpers {
 		return nftAllowancesTotal;
 	}
 
-	public static boolean hasRepeatedSpender(List<EntityNumPair> spenders) {
-		final int n = spenders.size();
-		if (n < 2) {
-			return false;
-		}
-		for (var i = 0; i < n - 1; i++) {
-			for (var j = i + 1; j < n; j++) {
-				if (spenders.get(i).equals(spenders.get(j))) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	public static boolean hasRepeatedSerials(List<Long> serials) {
-		final int n = serials.size();
-		if (n < 2) {
-			return false;
-		}
-		for (var i = 0; i < n - 1; i++) {
-			for (var j = i + 1; j < n; j++) {
-				if (absolute(serials.get(i)).equals(absolute(serials.get(j)))) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	public static boolean hasRepeatedId(List<Pair<EntityNum, FcTokenAllowanceId>> allowanceKeys) {
-		final int n = allowanceKeys.size();
-		if (n < 2) {
-			return false;
-		}
-		for (var i = 0; i < n - 1; i++) {
-			for (var j = i + 1; j < n; j++) {
-				final var a = allowanceKeys.get(i);
-				final var b = allowanceKeys.get(j);
-				if (a.getLeft().equals(b.getLeft()) && a.getRight().equals(b.getRight())) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
 	public static int countSerials(final List<NftAllowance> nftAllowancesList) {
 		int totalSerials = 0;
 		for (var allowance : nftAllowancesList) {
 			totalSerials += allowance.getSerialNumbersCount();
 		}
 		return totalSerials;
-	}
-
-	public static Long absolute(Long val) {
-		return val < 0 ? val * -1 : val;
 	}
 
 	public static Set<AllowanceId> getNftAllowancesList(final MerkleAccount account) {
@@ -245,7 +194,8 @@ public class AllowanceHelpers {
 		}
 
 		final var nfts = new ArrayList<UniqueToken>();
-		for (var serialNum : serialNums) {
+		final var serialsSet = new HashSet<>(serialNums);
+		for (var serialNum : serialsSet) {
 			final var nft = tokenStore.loadUniqueToken(tokenId, serialNum);
 			final var token = tokenStore.loadPossiblyPausedToken(tokenId);
 			validateTrue(validOwner(nft, ownerId, token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);

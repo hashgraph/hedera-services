@@ -31,15 +31,14 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.HashSet;
 import java.util.List;
 
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.hasRepeatedSerials;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
 
 /**
  * Validations for {@link com.hederahashgraph.api.proto.java.CryptoApproveAllowance} transaction allowances
@@ -83,11 +82,8 @@ public class AllowanceChecks {
 			final List<Long> serialNums,
 			final Token token,
 			final ReadOnlyTokenStore tokenStore) {
-		if (hasRepeatedSerials(serialNums)) {
-			return REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES;
-		}
-
-		for (var serial : serialNums) {
+		final var serialsSet = new HashSet<>(serialNums);
+		for (var serial : serialsSet) {
 			if (serial <= 0) {
 				return INVALID_TOKEN_NFT_SERIAL_NUMBER;
 			}

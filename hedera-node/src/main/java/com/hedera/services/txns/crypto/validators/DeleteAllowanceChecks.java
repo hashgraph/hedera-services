@@ -28,24 +28,17 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REPEATED_ALLOWANCES_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
 /**
@@ -127,9 +120,7 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 		if (nftAllowances.isEmpty()) {
 			return OK;
 		}
-		if (repeatedAllowances(nftAllowances)) {
-			return REPEATED_ALLOWANCES_TO_DELETE;
-		}
+
 		for (var allowance : nftAllowances) {
 			final var owner = Id.fromGrpcAccount(allowance.getOwner());
 			final var serialNums = allowance.getSerialNumbersList();
@@ -155,42 +146,6 @@ public class DeleteAllowanceChecks extends AllowanceChecks {
 		}
 
 		return OK;
-	}
-
-	/**
-	 * Checks if the nft allowances are repeated. Also validates if the serial numbers are repeated.
-	 *
-	 * @param nftAllowances
-	 * 		given nft allowance
-	 * @return true if repeated , false otherwise
-	 */
-	boolean repeatedAllowances(final List<NftRemoveAllowance> nftAllowances) {
-		Map<Pair<AccountID, TokenID>, List<Long>> seenNfts = new HashMap<>();
-		for (var allowance : nftAllowances) {
-			final var key = Pair.of(allowance.getOwner(), allowance.getTokenId());
-			if (seenNfts.containsKey(key)) {
-				if (serialsRepeated(seenNfts.get(key), allowance.getSerialNumbersList())) {
-					return true;
-				} else {
-					final var list = new ArrayList<Long>();
-					list.addAll(seenNfts.get(key));
-					list.addAll(allowance.getSerialNumbersList());
-					seenNfts.put(key, list);
-				}
-			} else {
-				seenNfts.put(key, allowance.getSerialNumbersList());
-			}
-		}
-		return false;
-	}
-
-	private boolean serialsRepeated(final List<Long> existingSerials, final List<Long> newSerials) {
-		for (var serial : newSerials) {
-			if (existingSerials.contains(serial)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	ResponseCodeEnum validateDeleteSerialNums(
