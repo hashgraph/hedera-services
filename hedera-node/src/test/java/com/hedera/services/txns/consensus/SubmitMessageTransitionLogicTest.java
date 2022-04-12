@@ -26,7 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -64,7 +64,7 @@ class SubmitMessageTransitionLogicTest {
 	private Instant consensusTime;
 	private TransactionBody transactionBody;
 	private TransactionContext transactionContext;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private OptionValidator validator;
 	private SubmitMessageTransitionLogic subject;
 	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
@@ -77,7 +77,7 @@ class SubmitMessageTransitionLogicTest {
 
 		transactionContext = mock(TransactionContext.class);
 		given(transactionContext.consensusTime()).willReturn(consensusTime);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		topics.clear();
 		globalDynamicProperties = mock(GlobalDynamicProperties.class);
@@ -246,7 +246,7 @@ class SubmitMessageTransitionLogicTest {
 				.setConsensusSubmitMessage(body.build())
 				.build();
 		given(accessor.getTxn()).willReturn(transactionBody);
-		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
+		given(transactionContext.accessor()).willReturn(accessor);
 	}
 
 	private void givenValidTransactionContext() {

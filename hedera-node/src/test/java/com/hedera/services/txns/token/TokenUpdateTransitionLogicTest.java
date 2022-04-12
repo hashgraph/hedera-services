@@ -32,7 +32,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -98,7 +98,7 @@ class TokenUpdateTransitionLogicTest {
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
 	private SigImpactHistorian sigImpactHistorian;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private Predicate<TokenUpdateTransactionBody> expiryOnlyCheck;
 
 	private TokenUpdateTransitionLogic subject;
@@ -108,7 +108,7 @@ class TokenUpdateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		store = mock(TokenStore.class);
 		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		token = mock(MerkleToken.class);
@@ -291,7 +291,7 @@ class TokenUpdateTransitionLogicTest {
 						.setExpiry(expiry));
 		tokenUpdateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(validator.isValidExpiry(expiry)).willReturn(false);
 
 		subject.doStateTransition();
@@ -556,7 +556,7 @@ class TokenUpdateTransitionLogicTest {
 		}
 		tokenUpdateTxn = builder.build();
 		given(accessor.getTxn()).willReturn(tokenUpdateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(ledger.exists(newTreasury)).willReturn(true);
 		given(ledger.exists(newAutoRenew)).willReturn(true);

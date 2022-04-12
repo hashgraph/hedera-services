@@ -28,7 +28,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -64,7 +64,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 class ScheduleSignTransitionLogicTest {
 	private ScheduleStore store;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private TransactionContext txnCtx;
 	final TransactionID scheduledTxnId = TransactionID.newBuilder()
 			.setAccountID(IdUtils.asAccount("0.0.2"))
@@ -89,7 +89,7 @@ class ScheduleSignTransitionLogicTest {
 	@BeforeEach
 	private void setup() throws InvalidProtocolBufferException {
 		store = mock(ScheduleStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		executor = mock(ScheduleExecutor.class);
 		activationHelper = mock(InHandleActivationHelper.class);
 		txnCtx = mock(TransactionContext.class);
@@ -260,6 +260,6 @@ class ScheduleSignTransitionLogicTest {
 		scheduleSignTxn = builder.build();
 
 		given(accessor.getTxn()).willReturn(scheduleSignTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 	}
 }

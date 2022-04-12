@@ -68,17 +68,17 @@ public class CryptoCreateSuite extends HapiApiSuite {
 
 	private List<HapiApiSpec> negativeTests() {
 		return List.of(
-//				createAnAccountEmptyThresholdKey(),
-//				createAnAccountEmptyKeyList(),
-//				createAnAccountEmptyNestedKey(),
-//				createAnAccountInvalidKeyList(),
-//				createAnAccountInvalidNestedKeyList(),
-//				createAnAccountInvalidThresholdKey(),
-//				createAnAccountInvalidNestedThresholdKey(),
-//				createAnAccountThresholdKeyWithInvalidThreshold(),
-//				createAnAccountInvalidED25519(),
-//				syntaxChecksAreAsExpected(),
-//				maxAutoAssociationSpec(),
+				createAnAccountEmptyThresholdKey(),
+				createAnAccountEmptyKeyList(),
+				createAnAccountEmptyNestedKey(),
+				createAnAccountInvalidKeyList(),
+				createAnAccountInvalidNestedKeyList(),
+				createAnAccountInvalidThresholdKey(),
+				createAnAccountInvalidNestedThresholdKey(),
+				createAnAccountThresholdKeyWithInvalidThreshold(),
+				createAnAccountInvalidED25519(),
+				syntaxChecksAreAsExpected(),
+				maxAutoAssociationSpec(),
 				usdFeeAsExpected()
 		);
 	}

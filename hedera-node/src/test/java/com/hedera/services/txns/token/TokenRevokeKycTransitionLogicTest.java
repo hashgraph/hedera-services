@@ -28,7 +28,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -65,7 +65,7 @@ class TokenRevokeKycTransitionLogicTest {
 	private TypedTokenStore tokenStore;
 	private AccountStore accountStore;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private TokenRelationship tokenRelationship;
 	private Token token;
 	private Account account;
@@ -77,7 +77,7 @@ class TokenRevokeKycTransitionLogicTest {
 	private void setup() {
 		accountStore = mock(AccountStore.class);
 		tokenStore = mock(TypedTokenStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		tokenRelationship = mock(TokenRelationship.class);
 		token = mock(Token.class);
 		account = mock(Account.class);
@@ -153,7 +153,7 @@ class TokenRevokeKycTransitionLogicTest {
 						.setToken(tokenID))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenRevokeKycTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(tokenStore.loadToken(tokenId)).willReturn(token);
 		given(accountStore.loadAccount(accountId)).willReturn(account);
 		given(tokenStore.loadTokenRelationship(token, account)).willReturn(tokenRelationship);

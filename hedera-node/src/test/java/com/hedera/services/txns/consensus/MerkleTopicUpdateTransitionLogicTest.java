@@ -32,7 +32,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
@@ -98,7 +98,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 	private TransactionBody transactionBody;
 	private TransactionContext transactionContext;
 	private HederaLedger ledger;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private SigImpactHistorian sigImpactHistorian;
 	private OptionValidator validator;
 	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
@@ -113,7 +113,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 
 		transactionContext = mock(TransactionContext.class);
 		given(transactionContext.consensusTime()).willReturn(consensusTime);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		given(validator.isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(VALID_AUTORENEW_PERIOD_SECONDS).build()))
 				.willReturn(true);
@@ -459,7 +459,7 @@ class MerkleTopicUpdateTransitionLogicTest {
 				.setConsensusUpdateTopic(body.build())
 				.build();
 		given(accessor.getTxn()).willReturn(transactionBody);
-		given(transactionContext.platformTxnAccessor()).willReturn(accessor);
+		given(transactionContext.accessor()).willReturn(accessor);
 	}
 
 	private ConsensusUpdateTopicTransactionBody.Builder getBasicValidTransactionBodyBuilder() {

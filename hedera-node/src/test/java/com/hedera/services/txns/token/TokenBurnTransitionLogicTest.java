@@ -25,7 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -65,7 +65,7 @@ class TokenBurnTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private TransactionBody transactionBody;
 	@Mock
@@ -198,7 +198,7 @@ class TokenBurnTransitionLogicTest {
 		var grpcId = IdUtils.asToken("0.0.1");
 		var amount = 4321L;
 		List<Long> serialNumbersList = List.of(1L, 2L, 3L);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(transactionBody);
 		given(transactionBody.getTokenBurn()).willReturn(burnTransactionBody);
 		given(burnTransactionBody.getToken()).willReturn(grpcId);

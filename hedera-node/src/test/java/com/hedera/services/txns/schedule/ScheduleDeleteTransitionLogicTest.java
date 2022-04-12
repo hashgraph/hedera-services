@@ -23,7 +23,7 @@ package com.hedera.services.txns.schedule;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -60,7 +60,7 @@ class ScheduleDeleteTransitionLogicTest {
 
 	private ScheduleStore store;
 	private SigImpactHistorian sigImpactHistorian;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private TransactionContext txnCtx;
 
 	private TransactionBody scheduleDeleteTxn;
@@ -74,7 +74,7 @@ class ScheduleDeleteTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		store = mock(ScheduleStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		subject = new ScheduleDeleteTransitionLogic(store, txnCtx, sigImpactHistorian);
@@ -155,7 +155,7 @@ class ScheduleDeleteTransitionLogicTest {
 
 		scheduleDeleteTxn = builder.build();
 		given(accessor.getTxn()).willReturn(scheduleDeleteTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 	}
 }

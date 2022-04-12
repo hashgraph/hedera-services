@@ -30,7 +30,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -91,7 +91,7 @@ class FileCreateTransitionLogicTest {
 
 	TransactionID txnId;
 	TransactionBody fileCreateTxn;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 
 	HederaFs hfs;
 	OptionValidator validator;
@@ -105,7 +105,7 @@ class FileCreateTransitionLogicTest {
 		hederaWacl = waclSkeleton.asJKey();
 		attr = new HFileMeta(false, hederaWacl, expiry);
 
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		hfs = mock(HederaFs.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
@@ -271,7 +271,7 @@ class FileCreateTransitionLogicTest {
 				.setFileCreate(op)
 				.build();
 		given(accessor.getTxn()).willReturn(fileCreateTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(genesis);
 	}
 }

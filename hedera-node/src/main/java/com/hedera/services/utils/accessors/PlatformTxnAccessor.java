@@ -288,7 +288,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 
 	@Override
 	public SigUsage usageGiven(final int numPayerKeys) {
-		return null;
+		return delegate.usageGiven(numPayerKeys);
 	}
 
 	@Override

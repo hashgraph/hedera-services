@@ -95,8 +95,7 @@ class PricedUsageCalculatorTest {
 		final var inHandleAccum = subject.getHandleScopedAccumulator();
 		final var su = new SigUsage(numSigPairs, sigMapSize, numSimpleKeys(payerKey));
 
-		given(accessor.usageGiven(su.numPayerKeys()).sigsSize()).willReturn(sigMapSize);
-		given(accessor.usageGiven(su.numPayerKeys()).numSigs()).willReturn(numSigPairs);
+		given(accessor.usageGiven(su.numPayerKeys())).willReturn(new SigUsage(numSigPairs, sigMapSize, 1));
 		given(feeMultiplierSource.currentMultiplier()).willReturn(multiplier);
 		given(calculator.fees(inHandleAccum, mockPrices, mockRate, multiplier)).willReturn(mockFees);
 
@@ -116,9 +115,7 @@ class PricedUsageCalculatorTest {
 
 		final var inHandleAccum = subject.getHandleScopedAccumulator();
 		final var su = new SigUsage(numSigPairs, sigMapSize, numSimpleKeys(payerKey));
-
-		given(accessor.usageGiven(su.numPayerKeys()).sigsSize()).willReturn(sigMapSize);
-		given(accessor.usageGiven(su.numPayerKeys()).numSigs()).willReturn(numSigPairs);
+		given(accessor.usageGiven(su.numPayerKeys())).willReturn(new SigUsage(numSigPairs, sigMapSize, 1));
 		given(feeMultiplierSource.currentMultiplier()).willReturn(multiplier);
 		given(calculator.fees(
 				feesCaptor.capture(),

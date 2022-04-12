@@ -29,7 +29,7 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -56,7 +56,7 @@ class DissociateLogicTest {
 	private final Id tokenId = new Id(2, 3, 4);
 
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
@@ -84,7 +84,7 @@ class DissociateLogicTest {
 	@Test
 	void performsExpectedLogic() {
 		given(accessor.getTxn()).willReturn(validDissociateTxn());
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(accountId)).willReturn(account);
 		// and:
 		given(relsFactory.loadFrom(tokenStore, account, tokenId)).willReturn(dissociation);

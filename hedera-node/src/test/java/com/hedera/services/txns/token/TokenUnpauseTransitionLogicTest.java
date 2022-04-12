@@ -25,7 +25,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -54,7 +54,7 @@ class TokenUnpauseTransitionLogicTest {
 
 	private TypedTokenStore tokenStore;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private Token token;
 
 	private TransactionBody tokenUnpauseTxn;
@@ -63,7 +63,7 @@ class TokenUnpauseTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		tokenStore = mock(TypedTokenStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		token = mock(Token.class);
 
 		txnCtx = mock(TransactionContext.class);
@@ -119,7 +119,7 @@ class TokenUnpauseTransitionLogicTest {
 				.setTokenUnpause(TokenUnpauseTransactionBody.newBuilder().setToken(tokenID))
 				.build();
 		given(accessor.getTxn()).willReturn(tokenUnpauseTxn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(tokenStore.loadPossiblyPausedToken(tokenId)).willReturn(token);
 	}
 
