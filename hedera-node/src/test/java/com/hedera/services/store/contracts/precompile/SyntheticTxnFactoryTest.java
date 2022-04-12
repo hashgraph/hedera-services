@@ -39,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 
@@ -50,8 +51,8 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.create
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fractionalFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
