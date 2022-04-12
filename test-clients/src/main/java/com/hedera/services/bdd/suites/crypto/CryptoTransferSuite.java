@@ -134,7 +134,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -757,7 +756,17 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 6).between(owner, receiver))
 								.payingWith(spender)
 								.signedBy(spender)
-								.hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
+								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 6).between(receiver, owner))
+								.payingWith(spender)
+								.signedBy(spender)
+								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
+						cryptoTransfer(movingUnique(nonFungibleToken, 6).between(receiver, owner)),
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 6).between(owner, receiver))
+								.payingWith(spender)
+								.signedBy(spender)
+								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
+						cryptoTransfer(movingUnique(nonFungibleToken, 6).between(owner, receiver)),
 						tokenAssociate(otherReceiver, fungibleToken),
 						grantTokenKyc(fungibleToken, otherReceiver),
 						cryptoTransfer(movingWithAllowance(1100, fungibleToken).between(owner, otherReceiver))

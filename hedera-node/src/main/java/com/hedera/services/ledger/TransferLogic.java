@@ -164,7 +164,8 @@ public class TransferLogic {
 				}
 			} else if (change.isApprovedAllowance() && change.isForFungibleToken()) {
 				adjustFungibleTokenAllowance(change, accountId);
-			} else if (change.isApprovedAllowance() && change.isForNft()) {
+			} else if (change.isForNft()) {
+				// wipe the allowance on this uniqueToken
 				nftsLedger.set(change.nftId(), SPENDER, MISSING_ENTITY_ID);
 			}
 		}
