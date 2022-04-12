@@ -35,7 +35,6 @@ import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
@@ -80,8 +79,7 @@ public class TransitionRunner {
 			TokenDelete,
 			Freeze,
 			FileDelete,
-			CryptoApproveAllowance,
-			CryptoAdjustAllowance
+			CryptoApproveAllowance
 	);
 
 	private final EntityIdSource ids;

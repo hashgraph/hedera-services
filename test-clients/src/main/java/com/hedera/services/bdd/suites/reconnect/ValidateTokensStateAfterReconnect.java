@@ -101,6 +101,7 @@ public class ValidateTokensStateAfterReconnect extends HapiApiSuite {
 						cryptoCreate(anotherAccount).balance(ONE_HUNDRED_HBARS).logging()
 				)
 				.when(
+						sleepFor(Duration.ofSeconds(25).toMillis()),
 						getAccountBalance(GENESIS)
 								.setNode(reconnectingNode)
 								.unavailableNode(),

@@ -22,7 +22,6 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -31,17 +30,13 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -60,7 +55,6 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
 	private final DeleteAllowanceChecks deleteAllowanceChecks;
-	private final Map<Long, Account> entitiesChanged;
 	private final List<UniqueToken> nftsTouched;
 	private final StateView workingView;
 
@@ -75,7 +69,6 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		this.accountStore = accountStore;
 		this.deleteAllowanceChecks = deleteAllowanceChecks;
 		this.tokenStore = tokenStore;
-		this.entitiesChanged = new HashMap<>();
 		this.nftsTouched = new ArrayList<>();
 		this.workingView = workingView;
 	}
@@ -86,7 +79,6 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		final TransactionBody cryptoDeleteAllowanceTxn = txnCtx.accessor().getTxn();
 		final AccountID payer = cryptoDeleteAllowanceTxn.getTransactionID().getAccountID();
 		final var op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
-		entitiesChanged.clear();
 		nftsTouched.clear();
 
 		/* --- Use models --- */
@@ -94,16 +86,11 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		final var payerAccount = accountStore.loadAccount(payerId);
 
 		/* --- Do the business logic --- */
-		deleteCryptoAllowances(op.getCryptoAllowancesList(), payerAccount);
-		deleteFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
 		deleteNftSerials(op.getNftAllowancesList(), payerAccount);
 
 		/* --- Persist the owner accounts and nfts --- */
 		for (final var nft : nftsTouched) {
 			tokenStore.persistNft(nft);
-		}
-		for (final var entry : entitiesChanged.entrySet()) {
-			accountStore.commitAccount(entry.getValue());
 		}
 
 		txnCtx.setStatus(SUCCESS);
@@ -115,7 +102,8 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 	 *
 	 * @param nftAllowances
 	 * 		given nftAllowances
-	 * @param payerAccount payer for the transaction
+	 * @param payerAccount
+	 * 		payer for the transaction
 	 */
 	private void deleteNftSerials(final List<NftRemoveAllowance> nftAllowances, final Account payerAccount) {
 		if (nftAllowances.isEmpty()) {
@@ -126,68 +114,17 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		for (var allowance : nftAllowances) {
 			final var serialNums = allowance.getSerialNumbersList();
 			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
-			final var accountToWipe = fetchOwnerAccount(allowance.getOwner(), payerAccount, accountStore,
-					entitiesChanged);
+			final var owner = fetchOwnerAccount(allowance.getOwner(), payerAccount, accountStore);
 			final var token = tokenStore.loadPossiblyPausedToken(tokenId);
 
 			for (var serial : serialNums) {
 				final var nft = tokenStore.loadUniqueToken(tokenId, serial);
-				validateTrue(validOwner(nft, accountToWipe.getId(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+				validateTrue(validOwner(nft, owner.getId(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
 				nft.clearSpender();
 				nfts.add(nft);
 			}
 			nftsTouched.addAll(nfts);
 			nfts.clear();
-		}
-	}
-
-	/**
-	 * For all given token allowance sto be deleted, deletes the token entry from the fungible token allowances
-	 * map on the owner account.If the owner is not provided in any allowance, considers payer of the transaction as
-	 * owner.
-	 *
-	 * @param tokenAllowances
-	 * 		given token allowances
-	 * @param payerAccount
-	 * 		payer for the transaction
-	 */
-	private void deleteFungibleTokenAllowances(final List<TokenRemoveAllowance> tokenAllowances,
-			final Account payerAccount) {
-		if (tokenAllowances.isEmpty()) {
-			return;
-		}
-		for (var allowance : tokenAllowances) {
-			final var owner = allowance.getOwner();
-			final var tokenId = allowance.getTokenId();
-			final var accountToWipe = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			final var tokensMap = accountToWipe.getMutableFungibleTokenAllowances();
-
-			for (Map.Entry<FcTokenAllowanceId, Long> e : tokensMap.entrySet()) {
-				if (e.getKey().getTokenNum().longValue() == tokenId.getTokenNum()) {
-					tokensMap.remove(e.getKey());
-				}
-			}
-			entitiesChanged.put(accountToWipe.getId().num(), accountToWipe);
-		}
-	}
-
-	/**
-	 * Deletes all the crypto allowances on given owner. If the owner is not provided in any allowance,
-	 * considers payer of the transaction as owner.
-	 *
-	 * @param cryptoAllowances given crypto allowances
-	 * @param payerAccount payer for the transaction
-	 */
-	private void deleteCryptoAllowances(final List<CryptoRemoveAllowance> cryptoAllowances,
-			final Account payerAccount) {
-		if (cryptoAllowances.isEmpty()) {
-			return;
-		}
-		for (final var allowance : cryptoAllowances) {
-			final var owner = allowance.getOwner();
-			final var accountToWipe = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
-			accountToWipe.getMutableCryptoAllowances().clear();
-			entitiesChanged.put(accountToWipe.getId().num(), accountToWipe);
 		}
 	}
 
@@ -207,8 +144,6 @@ public class CryptoDeleteAllowanceTransitionLogic implements TransitionLogic {
 		final var payerAccount = accountStore.loadAccount(Id.fromGrpcAccount(payer));
 
 		return deleteAllowanceChecks.deleteAllowancesValidation(
-				op.getCryptoAllowancesList(),
-				op.getTokenAllowancesList(),
 				op.getNftAllowancesList(),
 				payerAccount,
 				workingView);

@@ -37,7 +37,6 @@ import javax.inject.Singleton;
 import java.util.EnumSet;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
@@ -58,7 +57,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 public class AccessorBasedUsages {
 	private static final EnumSet<HederaFunctionality> supportedOps = EnumSet.of(
 			FileAppend,
-			CryptoTransfer, CryptoCreate, CryptoUpdate, CryptoApproveAllowance, CryptoAdjustAllowance, CryptoDeleteAllowance,
+			CryptoTransfer, CryptoCreate, CryptoUpdate, CryptoApproveAllowance, CryptoDeleteAllowance,
 			ConsensusSubmitMessage,
 			TokenFeeScheduleUpdate, TokenCreate, TokenBurn, TokenMint, TokenAccountWipe,
 			TokenFreezeAccount, TokenUnfreezeAccount, TokenPause, TokenUnpause
@@ -106,8 +105,6 @@ public class AccessorBasedUsages {
 			estimateCryptoUpdate(sigUsage, accessor, baseMeta, into);
 		} else if (function == CryptoApproveAllowance) {
 			estimateCryptoApproveAllowance(sigUsage, accessor, baseMeta, into);
-		} else if (function == CryptoAdjustAllowance) {
-			estimateCryptoAdjustAllowance(sigUsage, accessor, baseMeta, into);
 		}  else if (function == CryptoDeleteAllowance) {
 			estimateCryptoDeleteAllowance(sigUsage, accessor, baseMeta, into);
 		} else if (function == ConsensusSubmitMessage) {
@@ -194,13 +191,6 @@ public class AccessorBasedUsages {
 		final var cryptoApproveMeta = accessor.getSpanMapAccessor().getCryptoApproveMeta(accessor);
 		final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor.getTxn());
 		cryptoOpsUsage.cryptoApproveAllowanceUsage(sigUsage, baseMeta, cryptoApproveMeta, cryptoContext, into);
-	}
-
-	private void estimateCryptoAdjustAllowance(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,
-			UsageAccumulator into) {
-		final var cryptoAdjustMeta = accessor.getSpanMapAccessor().getCryptoAdjustMeta(accessor);
-		final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor.getTxn());
-		cryptoOpsUsage.cryptoAdjustAllowanceUsage(sigUsage, baseMeta, cryptoAdjustMeta, cryptoContext, into);
 	}
 
 	private void estimateCryptoDeleteAllowance(SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta,

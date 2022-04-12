@@ -165,9 +165,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setMemo(memo)
 				.setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
 				.setAssessedCustomFees(customFeesCharged)
-				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations())
-				.setCryptoAllowances(sideEffectsTracker.getCryptoAllowances())
-				.setFungibleTokenAllowances(sideEffectsTracker.getFungibleTokenAllowances());
+				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
 
 		if (sideEffectsTracker.hasTrackedAutoCreation()) {
 			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));

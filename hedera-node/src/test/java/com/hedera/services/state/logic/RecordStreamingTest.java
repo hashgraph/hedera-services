@@ -21,7 +21,7 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
@@ -54,7 +54,7 @@ class RecordStreamingTest {
 	@Mock
 	private Consumer<RunningHash> runningHashUpdate;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private SignedTxnAccessor accessor;
 	@Mock

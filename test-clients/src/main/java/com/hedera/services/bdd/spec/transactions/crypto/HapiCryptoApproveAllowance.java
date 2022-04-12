@@ -47,6 +47,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -114,9 +115,9 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 						.setCurrentKey(info.getKey())
 						.setCurrentlyHasProxy(info.hasProxyAccountID())
 						.setCurrentMaxAutomaticAssociations(info.getMaxAutomaticTokenAssociations())
-						.setCurrentCryptoAllowances(info.getGrantedCryptoAllowancesList())
-						.setCurrentTokenAllowances(info.getGrantedTokenAllowancesList())
-						.setCurrentApproveForAllNftAllowances(info.getGrantedNftAllowancesList())
+						.setCurrentCryptoAllowances(Collections.emptyMap())
+						.setCurrentTokenAllowances(Collections.emptyMap())
+						.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 						.build();
 				var baseMeta = new BaseTransactionMeta(_txn.getMemoBytes().size(), 0);
 				var opMeta = new CryptoApproveAllowanceMeta(_txn.getCryptoApproveAllowance(),
@@ -169,7 +170,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 			final var builder = CryptoAllowance.newBuilder()
 					.setSpender(asId(entry.spender(), spec))
 					.setAmount(entry.amount());
-			if(entry.owner() != MISSING_OWNER){
+			if (entry.owner() != MISSING_OWNER) {
 				builder.setOwner(asId(entry.owner(), spec));
 			}
 
@@ -181,7 +182,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 					.setTokenId(spec.registry().getTokenID(entry.token()))
 					.setSpender(spec.registry().getAccountID(entry.spender()))
 					.setAmount(entry.amount());
-			if(entry.owner() != MISSING_OWNER){
+			if (entry.owner() != MISSING_OWNER) {
 				builder.setOwner(spec.registry().getAccountID(entry.owner()));
 			}
 			tallowances.add(builder.build());
@@ -192,7 +193,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 					.setSpender(spec.registry().getAccountID(entry.spender()))
 					.setApprovedForAll(BoolValue.of(entry.approvedForAll()))
 					.addAllSerialNumbers(entry.serials());
-			if(entry.owner() != MISSING_OWNER){
+			if (entry.owner() != MISSING_OWNER) {
 				builder.setOwner(spec.registry().getAccountID(entry.owner()));
 			}
 			if (entry.delegatingSpender() != MISSING_DELEGATING_SPENDER) {
@@ -241,14 +242,16 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
 		}
 	}
 
-	private record NftAllowances(String owner, String token, String spender, String delegatingSpender, boolean approvedForAll,
+	private record NftAllowances(String owner, String token, String spender, String delegatingSpender,
+								 boolean approvedForAll,
 								 List<Long> serials) {
 		static NftAllowances from(String owner, String token, String spender, boolean approvedForAll,
 				List<Long> serials) {
 			return new NftAllowances(owner, token, spender, MISSING_DELEGATING_SPENDER, approvedForAll, serials);
 		}
 
-		static NftAllowances from(String owner, String token, String spender, String delegatingSpender, boolean approvedForAll,
+		static NftAllowances from(String owner, String token, String spender, String delegatingSpender,
+				boolean approvedForAll,
 				List<Long> serials) {
 			return new NftAllowances(owner, token, spender, delegatingSpender, approvedForAll, serials);
 		}

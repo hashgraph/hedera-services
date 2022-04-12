@@ -31,6 +31,7 @@ public enum EntityType {
 	public static Set<EntityType> csvTypeSet(final String propertyValue) {
 		return Arrays.stream(propertyValue.split(","))
 				.map(String::strip)
+				.filter(desc -> desc.length() > 0)
 				.map(EntityType::valueOf)
 				.collect(Collectors.toCollection(() -> EnumSet.noneOf(EntityType.class)));
 	}

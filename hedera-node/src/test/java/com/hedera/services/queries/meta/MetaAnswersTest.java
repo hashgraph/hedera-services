@@ -32,6 +32,7 @@ class MetaAnswersTest {
 	GetVersionInfoAnswer versionInfo;
 	GetFastTxnRecordAnswer fastTxnRecord;
 	MetaAnswers subject;
+	GetAccountDetailsAnswer accountDetails;
 
 	@Test
 	void hasExpectedAnswers() {
@@ -41,9 +42,10 @@ class MetaAnswersTest {
 		txnReceipt = mock(GetTxnReceiptAnswer.class);
 		versionInfo = mock(GetVersionInfoAnswer.class);
 		fastTxnRecord = mock(GetFastTxnRecordAnswer.class);
+		accountDetails = mock(GetAccountDetailsAnswer.class);
 
 		// given:
-		subject = new MetaAnswers(execTime, txnRecord, txnReceipt, versionInfo, fastTxnRecord);
+		subject = new MetaAnswers(execTime, txnRecord, txnReceipt, versionInfo, fastTxnRecord, accountDetails);
 
 		// then:
 		assertSame(txnRecord, subject.getTxnRecord());
@@ -51,5 +53,6 @@ class MetaAnswersTest {
 		assertSame(versionInfo, subject.getVersionInfo());
 		assertSame(fastTxnRecord, subject.getFastTxnRecord());
 		assertSame(execTime, subject.getExecTime());
+		assertSame(accountDetails, subject.getAccountDetails());
 	}
 }

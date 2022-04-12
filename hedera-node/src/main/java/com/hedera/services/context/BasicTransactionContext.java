@@ -342,4 +342,21 @@ public class BasicTransactionContext implements TransactionContext {
 	public long getGasUsedForContractTxn() {
 		return evmFnResult.getGasUsed();
 	}
+
+	/* --- Used by unit tests --- */
+	List<FcAssessedCustomFee> getAssessedCustomFees() {
+		return assessedCustomFees;
+	}
+
+	ExpirableTxnRecord.Builder getRecordSoFar() {
+		return recordSoFar;
+	}
+
+	void setRecordSoFar(final ExpirableTxnRecord.Builder recordSoFar) {
+		this.recordSoFar = recordSoFar;
+	}
+
+	long getNonThresholdFeeChargedToPayer() {
+		return otherNonThresholdFees;
+	}
 }

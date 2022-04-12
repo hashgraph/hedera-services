@@ -141,9 +141,9 @@ public class OpUsageCtxHelper {
 					.setCurrentlyHasProxy(false)
 					.setCurrentNumTokenRels(0)
 					.setCurrentMaxAutomaticAssociations(0)
-					.setCurrentCryptoAllowances(Collections.emptyList())
-					.setCurrentTokenAllowances(Collections.emptyList())
-					.setCurrentApproveForAllNftAllowances(Collections.emptyList())
+					.setCurrentCryptoAllowances(Collections.emptyMap())
+					.setCurrentTokenAllowances(Collections.emptyMap())
+					.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 					.build();
 		}
 		return cryptoContext;
@@ -176,9 +176,9 @@ public class OpUsageCtxHelper {
 					.setCurrentlyHasProxy(false)
 					.setCurrentNumTokenRels(0)
 					.setCurrentMaxAutomaticAssociations(0)
-					.setCurrentCryptoAllowances(Collections.emptyList())
-					.setCurrentTokenAllowances(Collections.emptyList())
-					.setCurrentApproveForAllNftAllowances(Collections.emptyList())
+					.setCurrentCryptoAllowances(Collections.emptyMap())
+					.setCurrentTokenAllowances(Collections.emptyMap())
+					.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 					.build();
 		}
 		return cryptoContext;
