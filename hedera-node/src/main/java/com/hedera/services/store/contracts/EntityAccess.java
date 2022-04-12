@@ -28,7 +28,6 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -65,8 +64,6 @@ public interface EntityAccess {
 	JKey getKey(AccountID id);
 
 	String getMemo(AccountID id);
-
-	EntityId getProxy(AccountID id);
 
 	boolean isDeleted(AccountID id);
 

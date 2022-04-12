@@ -238,7 +238,6 @@ class StaticEntityAccessTest {
 		assertEquals(someNonContractAccount.getExpiry(), subject.getExpiry(id));
 		assertEquals(someNonContractAccount.getAutoRenewSecs(), subject.getAutoRenew(id));
 		assertEquals(someNonContractAccount.getAccountKey(), subject.getKey(id));
-		assertEquals(someNonContractAccount.getProxy(), subject.getProxy(id));
 	}
 
 	@Test

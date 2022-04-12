@@ -37,7 +37,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -117,7 +116,7 @@ class AbstractStackedLedgerUpdaterTest {
 	@Test
 	void getForMutationWrapsParentMutable() {
 		final var account = worldState.new WorldStateAccount(
-				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew, EntityId.MISSING_ENTITY_ID);
+				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew);
 		given(worldState.get(aAddress)).willReturn(account);
 
 		final var mutableAccount = subject.getForMutation(aAddress);
@@ -166,7 +165,7 @@ class AbstractStackedLedgerUpdaterTest {
 	void commitsNewlyModifiedAccountAsExpected() {
 		final var mockCode = Bytes.ofUnsignedLong(1_234L);
 		final var account = worldState.new WorldStateAccount(
-				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew, EntityId.MISSING_ENTITY_ID);
+				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew);
 		given(worldState.get(aAddress)).willReturn(account);
 		ledgers.accounts().create(aAccount);
 		ledgers.accounts().set(aAccount, BALANCE, aBalance);

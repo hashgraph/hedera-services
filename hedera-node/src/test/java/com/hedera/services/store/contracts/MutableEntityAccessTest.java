@@ -364,20 +364,6 @@ class MutableEntityAccessTest {
 	}
 
 	@Test
-	void getsProxy() {
-		// given:
-		given(ledger.proxy(id)).willReturn(proxy);
-
-		// when:
-		final var result = subject.getProxy(id);
-
-		// then:
-		assertEquals(proxy, result);
-		// and:
-		verify(ledger).proxy(id);
-	}
-
-	@Test
 	void putsNonZeroContractStorageValue() {
 		subject.putStorage(id, contractStorageKey, contractStorageValue);
 

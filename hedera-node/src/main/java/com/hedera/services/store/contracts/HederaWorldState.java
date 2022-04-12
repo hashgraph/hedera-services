@@ -27,7 +27,6 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -181,7 +180,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		if (entityAccess.isTokenAccount(address) && dynamicProperties.isRedirectTokenCallsEnabled()) {
-			return new WorldStateTokenAccount(address, EntityId.fromAddress(address));
+			return new WorldStateTokenAccount(address);
 		}
 
 		final var accountId = accountIdFromEvmAddress(address);
@@ -194,8 +193,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		final long balance = entityAccess.getBalance(accountId);
 		final long autoRenewPeriod = entityAccess.getAutoRenew(accountId);
 
-		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod,
-				entityAccess.getProxy(accountId));
+		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod);
 	}
 
 	private boolean isGettable(final AccountID id) {
@@ -206,10 +204,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 		private final Wei balance;
 		private final AccountID account;
 		private final Address address;
-
 		private JKey key;
 		private String memo;
-		private EntityId proxyAccount;
 		private long expiry;
 		private long autoRenew;
 
@@ -217,14 +213,12 @@ public class HederaWorldState implements HederaMutableWorldState {
 				final Address address,
 				final Wei balance,
 				final long expiry,
-				final long autoRenew,
-				final EntityId proxyAccount
+				final long autoRenew
 		) {
 			this.expiry = expiry;
 			this.address = address;
 			this.balance = balance;
 			this.autoRenew = autoRenew;
-			this.proxyAccount = proxyAccount;
 			this.account = accountIdFromEvmAddress(address);
 		}
 
@@ -251,14 +245,6 @@ public class HederaWorldState implements HederaMutableWorldState {
 		@Override
 		public Bytes getCode() {
 			return getCodeInternal().getBytes();
-		}
-
-		public EntityId getProxyAccount() {
-			return proxyAccount;
-		}
-
-		public void setProxyAccount(EntityId proxyAccount) {
-			this.proxyAccount = proxyAccount;
 		}
 
 		@Override
@@ -340,9 +326,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 	public class WorldStateTokenAccount extends WorldStateAccount {
 		public static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;
 
-		public WorldStateTokenAccount(final Address address,
-									  final EntityId proxyAccount) {
-			super(address, Wei.of(0), 0, 0, proxyAccount);
+		public WorldStateTokenAccount(final Address address) {
+			super(address, Wei.of(0), 0, 0);
 		}
 
 		@Override

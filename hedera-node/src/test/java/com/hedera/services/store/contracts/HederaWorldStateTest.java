@@ -25,7 +25,6 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
@@ -230,7 +229,6 @@ class HederaWorldStateTest {
 		final var acc = subject.get(Address.RIPEMD160);
 		assertNotNull(acc);
 		assertEquals(Wei.of(balance), acc.getBalance());
-		assertEquals(1, acc.getProxyAccount().num());
 		assertEquals(100L, acc.getAutoRenew());
 
 		objectContractWorks(acc);
@@ -247,7 +245,6 @@ class HederaWorldStateTest {
 	}
 
 	private void givenWellKnownAccountWithCode(final AccountID account, final Bytes bytecode) {
-		given(entityAccess.getProxy(account)).willReturn(new EntityId(0, 0, 1));
 		given(entityAccess.getBalance(account)).willReturn(balance);
 		given(entityAccess.getAutoRenew(account)).willReturn(100L);
 		given(entityAccess.isExtant(any())).willReturn(true);
@@ -269,8 +266,6 @@ class HederaWorldStateTest {
 		assertEquals(Hash.EMPTY, acc.getCodeHash());
 		assertEquals(0, acc.getNonce());
 
-		acc.setProxyAccount(EntityId.MISSING_ENTITY_ID);
-		assertEquals(EntityId.MISSING_ENTITY_ID, acc.getProxyAccount());
 		acc.setMemo("otherMemo");
 		assertEquals("otherMemo", acc.getMemo());
 		acc.setAutoRenew(10L);
@@ -352,10 +347,9 @@ class HederaWorldStateTest {
 		// and:
 		given(entityAccess.isExtant(zeroAddress)).willReturn(true);
 		given(entityAccess.getBalance(zeroAddress)).willReturn(balance);
-		given(entityAccess.getProxy(zeroAddress)).willReturn(EntityId.MISSING_ENTITY_ID);
 		given(entityAccess.getAutoRenew(zeroAddress)).willReturn(123L);
 		// and:
-		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(balance), 0, 0, new EntityId());
+		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(balance), 0, 0);
 
 		// when:
 		final var result = updater.getHederaAccount(Address.ZERO);
@@ -363,12 +357,10 @@ class HederaWorldStateTest {
 		// then:
 		assertEquals(expected.getAddress(), result.getAddress());
 		assertEquals(expected.getBalance(), result.getBalance());
-		assertEquals(expected.getProxyAccount(), result.getProxyAccount());
 		assertEquals(expected.getExpiry(), result.getExpiry());
 		// and:
 		verify(entityAccess).isExtant(zeroAddress);
 		verify(entityAccess).getBalance(zeroAddress);
-		verify(entityAccess).getProxy(zeroAddress);
 		verify(entityAccess).getAutoRenew(zeroAddress);
 	}
 
@@ -382,7 +374,7 @@ class HederaWorldStateTest {
 		given(entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(zeroAddress))).willReturn(true);
 		given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
 		// and:
-		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(0), 0, 0, new EntityId());
+		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(0), 0, 0);
 
 		// when:
 		final var result = updater.getHederaAccount(Address.ZERO);
@@ -390,7 +382,6 @@ class HederaWorldStateTest {
 		// then:
 		assertEquals(expected.getAddress(), result.getAddress());
 		assertEquals(expected.getBalance(), result.getBalance());
-		assertEquals(expected.getProxyAccount(), result.getProxyAccount());
 		assertEquals(expected.getExpiry(), result.getExpiry());
 		assertEquals(-1, result.getNonce());
 		assertEquals(TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS, result.getCode());
@@ -511,7 +502,6 @@ class HederaWorldStateTest {
 		final var accountId = accountIdFromEvmAddress(someAddress);
 		given(entityAccess.isExtant(accountId)).willReturn(true);
 		given(entityAccess.getBalance(accountId)).willReturn(balance);
-		given(entityAccess.getProxy(accountId)).willReturn(EntityId.MISSING_ENTITY_ID);
 		given(entityAccess.getAutoRenew(accountId)).willReturn(123L);
 
 		actualSubject.getAccount(someAddress);

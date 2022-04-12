@@ -33,7 +33,6 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityIdUtils;
@@ -155,11 +154,6 @@ public class MutableEntityAccess implements EntityAccess {
 	@Override
 	public String getMemo(final AccountID id) {
 		return ledger.memo(id);
-	}
-
-	@Override
-	public EntityId getProxy(final AccountID id) {
-		return ledger.proxy(id);
 	}
 
 	@Override

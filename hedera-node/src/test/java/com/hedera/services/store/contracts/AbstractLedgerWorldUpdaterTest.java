@@ -168,10 +168,8 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void getDelegatesToWrappedIfNotDeletedAndNotMutable() {
-//		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 		final var wrappedAccount =
-				worldState.new WorldStateAccount(
-						aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID);
+				worldState.new WorldStateAccount(aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L);
 		given(worldState.get(aAddress)).willReturn(wrappedAccount);
 
 		final var actual = subject.get(aAddress);
@@ -254,7 +252,7 @@ class AbstractLedgerWorldUpdaterTest {
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
 
 		given(worldState.get(aAddress)).willReturn(worldState.new WorldStateAccount(
-				aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
+				aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L));
 
 		final var mutableResponse = subject.getAccount(aAddress);
 		final var getResponse = subject.get(aAddress);
@@ -502,9 +500,9 @@ class AbstractLedgerWorldUpdaterTest {
 		trackingAccounts.set(bAccount, BALANCE, bHbarBalance);
 
 		given(worldState.get(aAddress)).willReturn(worldState.new WorldStateAccount(
-				aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
+				aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L));
 		given(worldState.get(bAddress)).willReturn(worldState.new WorldStateAccount(
-				bAddress, Wei.of(bHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
+				bAddress, Wei.of(bHbarBalance), 1_234_567L, 7776000L));
 	}
 
 	private void setupWellKnownNfts() {
