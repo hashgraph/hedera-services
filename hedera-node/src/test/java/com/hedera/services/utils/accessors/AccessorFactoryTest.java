@@ -60,7 +60,7 @@ class AccessorFactoryTest {
 	}
 
 	@Test
-	void constructsCorrectly() {
+	void constructsCorrectly() throws InvalidProtocolBufferException {
 		SwirldTransaction platformTxn =
 				new SwirldTransaction(Transaction.newBuilder()
 						.setBodyBytes(someTxn.toByteString())

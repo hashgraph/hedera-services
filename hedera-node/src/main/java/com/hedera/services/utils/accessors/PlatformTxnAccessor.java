@@ -74,7 +74,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 		return new PlatformTxnAccessor(delegate, platformTxn);
 	}
 
-	public static PlatformTxnAccessor from(final SwirldTransaction platformTxn) {
+	public static PlatformTxnAccessor from(final SwirldTransaction platformTxn) throws InvalidProtocolBufferException {
 		return new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);
 	}
 

@@ -81,8 +81,8 @@ class ExpandHandleSpanTest {
 	void propagatesIpbe() {
 		final var accessor = mock(SignedTxnAccessor.class);
 		// expect:
-		assertThrows(IllegalStateException.class, () -> subject.track(invalidTxn));
-		assertThrows(IllegalStateException.class, () -> subject.accessorFor(invalidTxn));
+		assertThrows(InvalidProtocolBufferException.class, () -> subject.track(invalidTxn));
+		assertThrows(InvalidProtocolBufferException.class, () -> subject.accessorFor(invalidTxn));
 	}
 
 	@Test
@@ -92,7 +92,7 @@ class ExpandHandleSpanTest {
 	}
 
 	@Test
-	void reExpandsIfNotCached() {
+	void reExpandsIfNotCached() throws InvalidProtocolBufferException {
 		// when:
 		final var endAccessor = subject.accessorFor(validTxn);
 

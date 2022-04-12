@@ -20,6 +20,7 @@ package com.hedera.services.utils.accessors;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -34,7 +35,7 @@ public class AccessorFactory {
 		this.aliasManager = aliasManager;
 	}
 
-	public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes) {
+	public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
 		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
 		subtype.setTriggered(false);
 		subtype.setScheduleRef(null);
@@ -42,7 +43,7 @@ public class AccessorFactory {
 	}
 
 	public TxnAccessor triggeredTxn(byte[] signedTxnWrapperBytes, final AccountID payer,
-			ScheduleID parent) {
+			ScheduleID parent) throws InvalidProtocolBufferException {
 		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
 		subtype.setTriggered(true);
 		subtype.setScheduleRef(parent);
@@ -57,7 +58,7 @@ public class AccessorFactory {
 	 * @param signedTxnWrapperBytes
 	 * @return
 	 */
-	private TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes) {
+	private TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
 		// custom accessors will be defined here in future PR based on the function from functionExtractor
 		return SignedTxnAccessor.from(signedTxnWrapperBytes);
 	}

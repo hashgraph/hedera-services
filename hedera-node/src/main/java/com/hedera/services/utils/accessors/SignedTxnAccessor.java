@@ -122,20 +122,15 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
-			return new SignedTxnAccessor(validSignedTxn);
+			return SignedTxnAccessor.from(validSignedTxn.toByteArray());
 		} catch (Exception illegal) {
 			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
-			throw new IllegalStateException("Argument 'validSignedTxn' must be a valid signed txn");
+			throw new IllegalArgumentException("Argument 'validSignedTxn' must be a valid signed txn");
 		}
 	}
 
-	public static SignedTxnAccessor from(byte[] signedTxnWrapperBytes) {
-		try {
-			return new SignedTxnAccessor(signedTxnWrapperBytes);
-		} catch (Exception illegal) {
-			log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
-			throw new IllegalStateException("Argument 'validSignedTxn' must be a valid signed txn");
-		}
+	public static SignedTxnAccessor from(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+		return new SignedTxnAccessor(signedTxnWrapperBytes);
 	}
 
 	protected SignedTxnAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
@@ -339,6 +334,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	public Map<String, Object> getSpanMap() {
 		return spanMap;
 	}
+
 	@Override
 	public ExpandHandleSpanMapAccessor getSpanMapAccessor() {
 		return SPAN_MAP_ACCESSOR;

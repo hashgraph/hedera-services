@@ -71,13 +71,13 @@ public class ExpandHandleSpan {
 		this.factory = factory;
 	}
 
-	public PlatformTxnAccessor track(SwirldTransaction transaction) {
+	public PlatformTxnAccessor track(SwirldTransaction transaction) throws InvalidProtocolBufferException {
 		final var accessor = spanAccessorFor(transaction);
 		accessorCache.put(transaction, accessor);
 		return accessor;
 	}
 
-	public PlatformTxnAccessor accessorFor(SwirldTransaction transaction) {
+	public PlatformTxnAccessor accessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
 		final var cachedAccessor = accessorCache.getIfPresent(transaction);
 		if (cachedAccessor != null) {
 			spanMapManager.rationalizeSpan(cachedAccessor);
@@ -87,7 +87,7 @@ public class ExpandHandleSpan {
 		}
 	}
 
-	private PlatformTxnAccessor spanAccessorFor(SwirldTransaction transaction) {
+	private PlatformTxnAccessor spanAccessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
 		final var accessor = factory.nonTriggeredTxn(transaction.getContentsDirect());
 		spanMapManager.expandSpan(accessor);
 		return PlatformTxnAccessor.from(accessor, transaction);

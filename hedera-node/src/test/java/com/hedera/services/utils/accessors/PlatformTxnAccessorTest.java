@@ -66,7 +66,7 @@ class PlatformTxnAccessorTest {
 			.build();
 
 	@Test
-	void hasSpanMap() {
+	void hasSpanMap() throws InvalidProtocolBufferException {
 		// setup:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
@@ -83,7 +83,7 @@ class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	void sigMetaGetterSetterCheck() {
+	void sigMetaGetterSetterCheck() throws InvalidProtocolBufferException {
 		// setup:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
@@ -178,7 +178,7 @@ class PlatformTxnAccessorTest {
 	void failsWithIllegalStateOnUncheckedConstruction() {
 		final var txn = new SwirldTransaction(NONSENSE);
 		// expect:
-		assertThrows(IllegalStateException.class,
+		assertThrows(InvalidProtocolBufferException.class,
 				() -> PlatformTxnAccessor.from(SignedTxnAccessor.from(txn.getContentsDirect()),
 						txn));
 	}
@@ -189,7 +189,7 @@ class PlatformTxnAccessorTest {
 		SwirldTransaction platformTxn = new SwirldTransaction(NONSENSE);
 
 		// expect:
-		assertThrows(IllegalStateException.class,
+		assertThrows(InvalidProtocolBufferException.class,
 				() -> new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn));
 	}
 
@@ -204,11 +204,11 @@ class PlatformTxnAccessorTest {
 				new SwirldTransaction(signedNonsenseTxn.toByteArray());
 
 		// then:
-		assertThrows(IllegalStateException.class,() -> PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn));
+		assertThrows(InvalidProtocolBufferException.class,() -> PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn));
 	}
 
 	@Test
-	void usesBodyBytesCorrectly() {
+	void usesBodyBytesCorrectly() throws InvalidProtocolBufferException {
 		// given:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
