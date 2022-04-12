@@ -234,10 +234,6 @@ class StaticEntityAccessTest {
 		assertTrue(subject.isExtant(id));
 		assertFalse(subject.isExtant(nonExtantId));
 		assertTrue(subject.isTokenAccount(fungibleTokenAddr));
-		assertEquals(someNonContractAccount.getMemo(), subject.getMemo(id));
-		assertEquals(someNonContractAccount.getExpiry(), subject.getExpiry(id));
-		assertEquals(someNonContractAccount.getAutoRenewSecs(), subject.getAutoRenew(id));
-		assertEquals(someNonContractAccount.getAccountKey(), subject.getKey(id));
 	}
 
 	@Test

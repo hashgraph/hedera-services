@@ -35,8 +35,8 @@ import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.WorldStateAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
@@ -113,7 +113,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class HTSPrecompiledContractTest {
@@ -160,7 +159,7 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private HederaWorldState.WorldStateAccount worldStateAccount;
+	private WorldStateAccount worldStateAccount;
 	@Mock
 	private TransactionBody.Builder mockSynthBodyBuilder;
 	@Mock

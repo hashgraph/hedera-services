@@ -28,13 +28,13 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,13 +64,13 @@ class HederaStackedWorldStateUpdaterTest {
 	@Mock
 	private WorldLedgers trackingLedgers;
 	@Mock(extraInterfaces = { HederaWorldUpdater.class })
-	private AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount> updater;
+	private AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
 	private HederaMutableWorldState worldState;
 	@Mock
-	private HederaWorldState.WorldStateAccount account;
+	private WorldStateAccount account;
 	@Mock
 	private HederaStackedWorldStateUpdater.CustomizerFactory customizerFactory;
 	@Mock

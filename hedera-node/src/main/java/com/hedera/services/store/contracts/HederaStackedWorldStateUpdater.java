@@ -45,7 +45,7 @@ import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 
 public class HederaStackedWorldStateUpdater
-		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount>
+		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
 		implements HederaWorldUpdater {
 
 	private static CustomizerFactory customizerFactory = ContractCustomizer::fromSponsorContract;
@@ -59,7 +59,7 @@ public class HederaStackedWorldStateUpdater
 	private ContractCustomizer pendingCreationCustomizer = null;
 
 	public HederaStackedWorldStateUpdater(
-			final AbstractLedgerWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
+			final AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater,
 			final HederaMutableWorldState worldState,
 			final WorldLedgers trackingLedgers,
 			final GlobalDynamicProperties dynamicProperties
@@ -144,7 +144,7 @@ public class HederaStackedWorldStateUpdater
 		final var tokensLedger = trackingLedgers().tokens();
 		if (tokensLedger != null && dynamicProperties.isRedirectTokenCallsEnabled() && tokensLedger.contains(tokenIdFromEvmAddress(address))) {
 			final var hederaWorldState = getHederaWorldState();
-			return hederaWorldState.new WorldStateTokenAccount(address);
+			return new WorldStateTokenAccount(address);
 		}
 
 		return super.get(address);
@@ -156,7 +156,7 @@ public class HederaStackedWorldStateUpdater
 
 		final var tokensLedger = trackingLedgers().tokens();
 		if (tokensLedger != null && dynamicProperties.isRedirectTokenCallsEnabled() && tokensLedger.contains(tokenIdFromEvmAddress(address))) {
-			final var worldStateTokenAccount = getHederaWorldState().new WorldStateTokenAccount(address);
+			final var worldStateTokenAccount = new WorldStateTokenAccount(address);
 			final var newMutable =
 					new UpdateTrackingLedgerAccount<>(worldStateTokenAccount, trackingLedgers().accounts());
 			return new WrappedEvmAccount(newMutable);
@@ -200,7 +200,7 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
-	public HederaWorldState.WorldStateAccount getHederaAccount(final Address addressOrAlias) {
+	public Account getHederaAccount(final Address addressOrAlias) {
 		final var address = aliases().resolveForEvm(addressOrAlias);
 		return parentUpdater().map(u -> ((HederaWorldUpdater) u).getHederaAccount(address)).orElse(null);
 	}

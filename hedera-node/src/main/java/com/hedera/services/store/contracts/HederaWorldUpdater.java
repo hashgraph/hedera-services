@@ -24,6 +24,7 @@ package com.hedera.services.store.contracts;
 
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 /**
@@ -49,7 +50,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
 	 * 		the address of the account
 	 * @return the hedera world state account
 	 */
-	HederaWorldState.WorldStateAccount getHederaAccount(Address address);
+	Account getHederaAccount(Address address);
 
 	/**
 	 * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is refunded for the first

@@ -28,7 +28,6 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -39,6 +38,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,7 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
 
-import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,6 +83,8 @@ class HederaWorldStateTest {
 	@Mock
 	private ContractCustomizer customizer;
 
+	private CodeCache codeCache;
+
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
 	final Id contract = new Id(0, 0, 2);
@@ -95,7 +97,7 @@ class HederaWorldStateTest {
 
 	@BeforeEach
 	void setUp() {
-		CodeCache codeCache = new CodeCache(0, entityAccess);
+		codeCache = new CodeCache(0, entityAccess);
 	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, dynamicProperties);
 	}
 
@@ -229,9 +231,8 @@ class HederaWorldStateTest {
 		final var acc = subject.get(Address.RIPEMD160);
 		assertNotNull(acc);
 		assertEquals(Wei.of(balance), acc.getBalance());
-		assertEquals(100L, acc.getAutoRenew());
 
-		objectContractWorks(acc);
+		objectContractWorksForWorldState(acc);
 
 		/* non-existent accounts should resolve to null */
 		given(entityAccess.isExtant(any())).willReturn(false);
@@ -246,7 +247,6 @@ class HederaWorldStateTest {
 
 	private void givenWellKnownAccountWithCode(final AccountID account, final Bytes bytecode) {
 		given(entityAccess.getBalance(account)).willReturn(balance);
-		given(entityAccess.getAutoRenew(account)).willReturn(100L);
 		given(entityAccess.isExtant(any())).willReturn(true);
 		given(entityAccess.isDeleted(any())).willReturn(false);
 		if (bytecode != null) {
@@ -254,11 +254,7 @@ class HederaWorldStateTest {
 		}
 	}
 
-	/*
-		Object contract of HederaWorldState.WorldStateAccount tests
-		Please note that the said class **cannot** be instantiated, thus - the test fragment is here
-	*/
-	private void objectContractWorks(HederaWorldState.WorldStateAccount acc) {
+	private void objectContractWorksForWorldState(Account acc) {
 		assertNotNull(acc.getAddress());
 		assertNotNull(acc.getAddressHash());
 		assertFalse(acc.hasCode());
@@ -266,15 +262,6 @@ class HederaWorldStateTest {
 		assertEquals(Hash.EMPTY, acc.getCodeHash());
 		assertEquals(0, acc.getNonce());
 
-		acc.setMemo("otherMemo");
-		assertEquals("otherMemo", acc.getMemo());
-		acc.setAutoRenew(10L);
-		assertEquals(10L, acc.getAutoRenew());
-		acc.setExpiry(10L);
-		assertEquals(10L, acc.getExpiry());
-		var k = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
-		acc.setKey(k);
-		assertEquals(k, acc.getKey());
 		final var stringified = "AccountState" + "{" +
 				"address=" + Address.RIPEMD160 + ", " +
 				"nonce=" + 0 + ", " +
@@ -289,7 +276,6 @@ class HederaWorldStateTest {
 		);
 		assertThrows(UnsupportedOperationException.class,
 				() -> acc.storageEntriesFrom(null, 10));
-
 	}
 
 	@Test
@@ -347,9 +333,8 @@ class HederaWorldStateTest {
 		// and:
 		given(entityAccess.isExtant(zeroAddress)).willReturn(true);
 		given(entityAccess.getBalance(zeroAddress)).willReturn(balance);
-		given(entityAccess.getAutoRenew(zeroAddress)).willReturn(123L);
 		// and:
-		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(balance), 0, 0);
+		final var expected = new WorldStateAccount(Address.ZERO, Wei.of(balance), codeCache, entityAccess);
 
 		// when:
 		final var result = updater.getHederaAccount(Address.ZERO);
@@ -357,11 +342,9 @@ class HederaWorldStateTest {
 		// then:
 		assertEquals(expected.getAddress(), result.getAddress());
 		assertEquals(expected.getBalance(), result.getBalance());
-		assertEquals(expected.getExpiry(), result.getExpiry());
 		// and:
 		verify(entityAccess).isExtant(zeroAddress);
 		verify(entityAccess).getBalance(zeroAddress);
-		verify(entityAccess).getAutoRenew(zeroAddress);
 	}
 
 	@Test
@@ -374,7 +357,7 @@ class HederaWorldStateTest {
 		given(entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(zeroAddress))).willReturn(true);
 		given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
 		// and:
-		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(0), 0, 0);
+		final var expected = new WorldStateAccount(Address.ZERO, Wei.of(0), codeCache, entityAccess);
 
 		// when:
 		final var result = updater.getHederaAccount(Address.ZERO);
@@ -382,7 +365,6 @@ class HederaWorldStateTest {
 		// then:
 		assertEquals(expected.getAddress(), result.getAddress());
 		assertEquals(expected.getBalance(), result.getBalance());
-		assertEquals(expected.getExpiry(), result.getExpiry());
 		assertEquals(-1, result.getNonce());
 		assertEquals(TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS, result.getCode());
 	}
@@ -502,7 +484,6 @@ class HederaWorldStateTest {
 		final var accountId = accountIdFromEvmAddress(someAddress);
 		given(entityAccess.isExtant(accountId)).willReturn(true);
 		given(entityAccess.getBalance(accountId)).willReturn(balance);
-		given(entityAccess.getAutoRenew(accountId)).willReturn(123L);
 
 		actualSubject.getAccount(someAddress);
 		actualSubject.commit();

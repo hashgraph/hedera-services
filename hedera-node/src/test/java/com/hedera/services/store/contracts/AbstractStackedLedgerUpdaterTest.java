@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,6 +66,10 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class AbstractStackedLedgerUpdaterTest {
 	@Mock
+	private CodeCache codeCache;
+	@Mock
+	private EntityAccess entityAccess;
+	@Mock
 	private ContractAliases aliases;
 	@Mock
 	private HederaWorldState worldState;
@@ -74,7 +79,7 @@ class AbstractStackedLedgerUpdaterTest {
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater wrapped;
 
-	private AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> subject;
+	private AbstractStackedLedgerUpdater<HederaWorldState, Account> subject;
 
 	@BeforeEach
 	@SuppressWarnings("unchecked")
@@ -83,7 +88,7 @@ class AbstractStackedLedgerUpdaterTest {
 
 		wrapped = new MockLedgerWorldUpdater(worldState, ledgers.wrapped(), customizer);
 
-		subject = (AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount>) wrapped.updater();
+		subject = (AbstractStackedLedgerUpdater<HederaWorldState, Account>) wrapped.updater();
 	}
 
 	@Test
@@ -115,8 +120,7 @@ class AbstractStackedLedgerUpdaterTest {
 
 	@Test
 	void getForMutationWrapsParentMutable() {
-		final var account = worldState.new WorldStateAccount(
-				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew);
+		final var account = new WorldStateAccount(aAddress, Wei.of(aBalance), codeCache, entityAccess);
 		given(worldState.get(aAddress)).willReturn(account);
 
 		final var mutableAccount = subject.getForMutation(aAddress);
@@ -164,8 +168,7 @@ class AbstractStackedLedgerUpdaterTest {
 	@Test
 	void commitsNewlyModifiedAccountAsExpected() {
 		final var mockCode = Bytes.ofUnsignedLong(1_234L);
-		final var account = worldState.new WorldStateAccount(
-				aAddress, Wei.of(aBalance), aExpiry, aAutoRenew);
+		final var account = new WorldStateAccount(aAddress, Wei.of(aBalance), codeCache, entityAccess);
 		given(worldState.get(aAddress)).willReturn(account);
 		ledgers.accounts().create(aAccount);
 		ledgers.accounts().set(aAccount, BALANCE, aBalance);

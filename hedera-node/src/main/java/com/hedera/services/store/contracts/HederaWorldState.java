@@ -26,7 +26,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -38,10 +37,8 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
-import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import javax.annotation.Nullable;
@@ -52,13 +49,12 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.HederaLedger.CONTRACT_ID_COMPARATOR;
-import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
@@ -66,11 +62,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 @Singleton
 public class HederaWorldState implements HederaMutableWorldState {
-	private static final Code EMPTY_CODE = new Code(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
-	private static final String TOKEN_BYTECODE_PATTERN = "fefefefefefefefefefefefefefefefefefefefe";
-	private static final String TOKEN_CALL_REDIRECT_CONTRACT_BINARY =
-			"6080604052348015600f57600080fd5b506000610167905077618dc65efefefefefefefefefefefefefefefefefefefefe600052366000602037600080366018016008845af43d806000803e8160008114605857816000f35b816000fdfea2646970667358221220d8378feed472ba49a0005514ef7087017f707b45fb9bf56bb81bb93ff19a238b64736f6c634300080b0033";
-
 	private final EntityIdSource ids;
 	private final EntityAccess entityAccess;
 	private final SigImpactHistorian sigImpactHistorian;
@@ -174,176 +165,27 @@ public class HederaWorldState implements HederaMutableWorldState {
 	}
 
 	@Override
-	public WorldStateAccount get(final @Nullable Address address) {
+	public Account get(final @Nullable Address address) {
 		if (address == null) {
 			return null;
 		}
-
 		if (entityAccess.isTokenAccount(address) && dynamicProperties.isRedirectTokenCallsEnabled()) {
 			return new WorldStateTokenAccount(address);
 		}
-
 		final var accountId = accountIdFromEvmAddress(address);
-
 		if (!isGettable(accountId)) {
 			return null;
 		}
-
-		final long expiry = entityAccess.getExpiry(accountId);
 		final long balance = entityAccess.getBalance(accountId);
-		final long autoRenewPeriod = entityAccess.getAutoRenew(accountId);
-
-		return new WorldStateAccount(address, Wei.of(balance), expiry, autoRenewPeriod);
+		return new WorldStateAccount(address, Wei.of(balance), codeCache, entityAccess);
 	}
 
 	private boolean isGettable(final AccountID id) {
 		return entityAccess.isExtant(id) && !entityAccess.isDeleted(id) && !entityAccess.isDetached(id);
 	}
 
-	public class WorldStateAccount implements Account {
-		private final Wei balance;
-		private final AccountID account;
-		private final Address address;
-		private JKey key;
-		private String memo;
-		private long expiry;
-		private long autoRenew;
-
-		public WorldStateAccount(
-				final Address address,
-				final Wei balance,
-				final long expiry,
-				final long autoRenew
-		) {
-			this.expiry = expiry;
-			this.address = address;
-			this.balance = balance;
-			this.autoRenew = autoRenew;
-			this.account = accountIdFromEvmAddress(address);
-		}
-
-		@Override
-		public Address getAddress() {
-			return address;
-		}
-
-		@Override
-		public Hash getAddressHash() {
-			return Hash.EMPTY; // Not supported!
-		}
-
-		@Override
-		public long getNonce() {
-			return 0;
-		}
-
-		@Override
-		public Wei getBalance() {
-			return balance;
-		}
-
-		@Override
-		public Bytes getCode() {
-			return getCodeInternal().getBytes();
-		}
-
-		@Override
-		public boolean hasCode() {
-			return !getCode().isEmpty();
-		}
-
-		@Override
-		public Hash getCodeHash() {
-			return getCodeInternal().getCodeHash();
-		}
-
-		@Override
-		public UInt256 getStorageValue(final UInt256 key) {
-			return entityAccess.getStorage(account, key);
-		}
-
-		@Override
-		public UInt256 getOriginalStorageValue(final UInt256 key) {
-			return getStorageValue(key);
-		}
-
-		@Override
-		public NavigableMap<Bytes32, AccountStorageEntry> storageEntriesFrom(
-				final Bytes32 startKeyHash,
-				final int limit
-		) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public String toString() {
-			return "AccountState" + "{" +
-					"address=" + getAddress() + ", " +
-					"nonce=" + getNonce() + ", " +
-					"balance=" + getBalance() + ", " +
-					"codeHash=" + getCodeHash() + ", " +
-					"}";
-		}
-
-		public String getMemo() {
-			return memo;
-		}
-
-		public void setMemo(String memo) {
-			this.memo = memo;
-		}
-
-		public JKey getKey() {
-			return key;
-		}
-
-		public void setKey(JKey key) {
-			this.key = key;
-		}
-
-		public long getAutoRenew() {
-			return autoRenew;
-		}
-
-		public void setAutoRenew(final long autoRenew) {
-			this.autoRenew = autoRenew;
-		}
-
-		public long getExpiry() {
-			return expiry;
-		}
-
-		public void setExpiry(final long expiry) {
-			this.expiry = expiry;
-		}
-
-		private Code getCodeInternal() {
-			final var code = codeCache.getIfPresent(address);
-			return (code == null) ? EMPTY_CODE : code;
-		}
-	}
-
-	public class WorldStateTokenAccount extends WorldStateAccount {
-		public static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;
-
-		public WorldStateTokenAccount(final Address address) {
-			super(address, Wei.of(0), 0, 0);
-		}
-
-		@Override
-		public Bytes getCode() {
-			return Bytes.fromHexString(TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(TOKEN_BYTECODE_PATTERN,
-					getAddress().toUnprefixedHexString()));
-		}
-
-		@Override
-		public long getNonce() {
-			return TOKEN_PROXY_ACCOUNT_NONCE;
-		}
-	}
-
 	public static class Updater
-			extends AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount>
+			extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>
 			implements HederaWorldUpdater {
 
 		Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = new TreeMap<>(BytesComparator.INSTANCE);
@@ -352,7 +194,11 @@ public class HederaWorldState implements HederaMutableWorldState {
 		private int numAllocatedIds = 0;
 		private Gas sbhRefund = Gas.ZERO;
 
-		protected Updater(final HederaWorldState world, final WorldLedgers trackingLedgers, GlobalDynamicProperties dynamicProperties) {
+		protected Updater(
+				final HederaWorldState world,
+				final WorldLedgers trackingLedgers,
+				final GlobalDynamicProperties dynamicProperties
+		) {
 			super(world, trackingLedgers);
 			this.dynamicProperties = dynamicProperties;
 		}
@@ -373,7 +219,8 @@ public class HederaWorldState implements HederaMutableWorldState {
 				final var storageUpdates = uta.getUpdatedStorage().entrySet();
 				if (!storageUpdates.isEmpty()) {
 					final Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
-							stateChanges.computeIfAbsent(uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
+							stateChanges.computeIfAbsent(uta.getAddress(),
+									a -> new TreeMap<>(BytesComparator.INSTANCE));
 					for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
 						UInt256 key = entry.getKey();
 						UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
@@ -396,7 +243,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		@Override
-		protected WorldStateAccount getForMutation(final Address address) {
+		protected Account getForMutation(final Address address) {
 			final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
 			return wrapped.get(address);
 		}
@@ -498,7 +345,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 		}
 
 		@Override
-		public WorldStateAccount getHederaAccount(final Address address) {
+		public Account getHederaAccount(final Address address) {
 			return getForMutation(address);
 		}
 	}
