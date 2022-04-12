@@ -34,6 +34,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	private int minCongestionPeriod = 2;
 	private long gracePeriod = 604800;
 	private boolean useAutoRenew = true;
+	private boolean useContractAutoRenew = true;
 	private boolean exportBalances = true;
 	private CongestionMultipliers currentMultipliers = defaultMultipliers;
 	private boolean throttleByGas;
@@ -186,7 +187,7 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	}
 
 	@Override
-	public boolean autoRenewEnabled() {
+	public boolean shouldAutoRenewSomeEntityType() {
 		return useAutoRenew;
 	}
 
@@ -250,5 +251,19 @@ public class MockGlobalDynamicProps extends GlobalDynamicProperties {
 	@Override
 	public int maxNumQueryableRecords() {
 		return 1;
+	}
+
+	@Override
+	public boolean shouldAutoRenewContracts() {
+		return useContractAutoRenew;
+	}
+
+	public void disableContractAutoRenew() {
+		useContractAutoRenew = false;
+	}
+
+	@Override
+	public boolean shouldAutoRenewAccounts() {
+		return useAutoRenew;
 	}
 }

@@ -27,7 +27,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -44,12 +43,13 @@ import java.util.function.Predicate;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
+import static com.hedera.services.utils.MiscUtils.synthFromBody;
 
 /**
- * Provides a {@link AccountRecordsHistorian} using the natural collaborators.
+ * Provides a {@link RecordsHistorian} using the natural collaborators.
  */
 @Singleton
-public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
+public class TxnAwareRecordsHistorian implements RecordsHistorian {
 	public static final int DEFAULT_SOURCE_ID = 0;
 
 	private final RecordCache recordCache;
@@ -243,15 +243,6 @@ public class TxnAwareRecordsHistorian implements AccountRecordsHistorian {
 
 	private Transaction synthFrom(final TransactionBody.Builder txnBody, final ExpirableTxnRecord.Builder inProgress) {
 		return synthFromBody(txnBody.setTransactionID(inProgress.getTxnId().toGrpc()).build());
-	}
-
-	private Transaction synthFromBody(final TransactionBody txnBody) {
-		final var signedTxn = SignedTransaction.newBuilder()
-				.setBodyBytes(txnBody.toByteString())
-				.build();
-		return Transaction.newBuilder()
-				.setSignedTransactionBytes(signedTxn.toByteString())
-				.build();
 	}
 
 	private void save(

@@ -35,8 +35,10 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.AddressBook;
@@ -876,5 +878,14 @@ public final class MiscUtils {
 		} catch (InvalidProtocolBufferException ignore) {
 			return false;
 		}
+	}
+
+	public static Transaction synthFromBody(final TransactionBody txnBody) {
+		final var signedTxn = SignedTransaction.newBuilder()
+				.setBodyBytes(txnBody.toByteString())
+				.build();
+		return Transaction.newBuilder()
+				.setSignedTransactionBytes(signedTxn.toByteString())
+				.build();
 	}
 }

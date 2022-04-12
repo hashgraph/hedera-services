@@ -140,7 +140,7 @@ public class MerkleAccountScopedCheck implements LedgerCheck<MerkleAccount, Acco
 		}
 
 		final var balance = (long) getEffective(BALANCE, account, extantProps, changeSet);
-		final var isDetached = dynamicProperties.autoRenewEnabled() &&
+		final var isDetached = dynamicProperties.shouldAutoRenewSomeEntityType() &&
 				balance == 0L &&
 				!validator.isAfterConsensusSecond((long) getEffective(EXPIRY, account, extantProps, changeSet));
 		if (isDetached) {

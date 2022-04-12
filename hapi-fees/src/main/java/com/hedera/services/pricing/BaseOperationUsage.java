@@ -27,6 +27,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
+import com.hedera.services.usage.contract.ExtantContractContext;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
@@ -83,8 +84,10 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
  * adjusts only two ℏ accounts using one signature, the base TokenFeeScheduleUpdate
  * adds a single custom HTS fee to a token, etc.)
  */
-class BaseOperationUsage {
+public class BaseOperationUsage {
 	static final Logger log = LogManager.getLogger(BaseOperationUsage.class);
+	public static final int CANONICAL_NUM_CONTRACT_KV_PAIRS = 64;
+	public static final int CANONICAL_CONTRACT_BYTECODE_SIZE = 4096;
 	private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 	private static final ByteString CANONICAL_SIG = ByteString.copyFromUtf8(
 			"0123456789012345678901234567890123456789012345678901234567890123");
@@ -141,8 +144,13 @@ class BaseOperationUsage {
 	 * 		the type of interest
 	 * @return the total resource usage of the base configuration
 	 */
-	UsageAccumulator baseUsageFor(HederaFunctionality function, SubType type) {
+	UsageAccumulator baseUsageFor(final HederaFunctionality function, final SubType type) {
 		switch (function) {
+			case ContractAutoRenew:
+				if (type == DEFAULT) {
+					return contractAutoRenew();
+				}
+				break;
 			case FileAppend:
 				if (type == DEFAULT) {
 					return fileAppend();
@@ -236,6 +244,28 @@ class BaseOperationUsage {
 		}
 
 		throw new IllegalArgumentException("Canonical usage unknown");
+	}
+
+	UsageAccumulator contractAutoRenew() {
+		final var accountContext = ExtantCryptoContext.newBuilder()
+				.setCurrentExpiry(0)
+				.setCurrentMemo(BLANK_MEMO)
+				.setCurrentKey(A_KEY)
+				.setCurrentlyHasProxy(false)
+				.setCurrentNumTokenRels(0)
+				.setCurrentMaxAutomaticAssociations(0)
+				.setCurrentCryptoAllowances(Collections.emptyList())
+				.setCurrentTokenAllowances(Collections.emptyList())
+				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
+				.build();
+		final var contractContext = new ExtantContractContext(
+				CANONICAL_NUM_CONTRACT_KV_PAIRS,
+				CANONICAL_CONTRACT_BYTECODE_SIZE,
+				accountContext);
+		final var into = new UsageAccumulator();
+		into.addRbs(THREE_MONTHS_IN_SECONDS * contractContext.currentRb());
+		into.addSbs(THREE_MONTHS_IN_SECONDS * contractContext.currentSb());
+		return into;
 	}
 
 	UsageAccumulator cryptoCreate(int autoAssocSlots) {
@@ -336,7 +366,6 @@ class BaseOperationUsage {
 		FILE_OPS_USAGE.fileAppendUsage(SINGLE_SIG_USAGE, opMeta, NO_MEMO_AND_NO_EXPLICIT_XFERS, into);
 		return into;
 	}
-
 
 	UsageAccumulator tokenFreezeAccount() {
 		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();

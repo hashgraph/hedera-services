@@ -175,7 +175,8 @@ public class ExtantCryptoContext {
 		}
 
 		public ExtantCryptoContext.Builder setCurrentMaxAutomaticAssociations(
-				final int currentMaxAutomaticAssociations) {
+				final int currentMaxAutomaticAssociations
+		) {
 			this.currentMaxAutomaticAssociations = currentMaxAutomaticAssociations;
 			mask |= MAX_AUTO_ASSOCIATIONS_MASK;
 			return this;
