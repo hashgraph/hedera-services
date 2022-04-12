@@ -97,7 +97,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		doStateTransitionOperation(contractCallTxn, senderId, false);
 	}
 
-	public void doStateTransitionOperation(final TransactionBody contractCallTxn, final Id senderId, boolean isEthTx) {
+	public void doStateTransitionOperation(final TransactionBody contractCallTxn, final Id senderId, boolean incrementCounter) {
 		var op = contractCallTxn.getContractCall();
 		final var target = targetOf(op);
 		final var contractId = target.toId();
@@ -118,7 +118,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 				callData,
 				txnCtx.consensusTime());
 
-		if (isEthTx) {
+		if (incrementCounter) {
 			sender.incrementTransactionCounter();
 			accountStore.commitAccount(sender);
 		}
