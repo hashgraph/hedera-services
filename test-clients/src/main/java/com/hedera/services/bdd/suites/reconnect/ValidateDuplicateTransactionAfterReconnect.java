@@ -75,7 +75,7 @@ public class ValidateDuplicateTransactionAfterReconnect extends HapiApiSuite {
 				)
 				.then(
 						withLiveNode("0.0.8")
-								.within(60, TimeUnit.SECONDS)
+								.within(90, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(10)
 								.sleepingBetweenRetriesFor(5),
 						UtilVerbs.sleepFor(30 * 1000),
