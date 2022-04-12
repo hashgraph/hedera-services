@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.token;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,7 +49,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -95,7 +95,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(1, 0, 100, 10))
+								.overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0, 100, 10))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						newKeyNamed(supplyKey),
 						newKeyNamed(freezeKey),
@@ -185,7 +185,7 @@ public class Hip17UnhappyAccountsSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(1, 7776000, 100, 10))
+								.overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 7776000, 100, 10))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						newKeyNamed(supplyKey),
 						newKeyNamed(freezeKey),

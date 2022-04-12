@@ -44,7 +44,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
@@ -120,7 +120,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed("alias"),
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(briefAutoRenew, 20 * briefAutoRenew)),
+								.overridingProps(propsForAccountAutoRenewOnWith(briefAutoRenew, 20 * briefAutoRenew)),
 						cryptoCreate("randomPayer").balance(initialBalance * ONE_HBAR)
 				).when(
 						/* auto account is created */
@@ -190,7 +190,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed("alias"),
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(briefAutoRenew, 2 * briefAutoRenew)),
+								.overridingProps(propsForAccountAutoRenewOnWith(briefAutoRenew, 2 * briefAutoRenew)),
 						cryptoCreate("randomPayer").balance(initialBalance * ONE_HBAR)
 				).when(
 						cryptoTransfer(tinyBarsFromToWithAlias("randomPayer", "alias", ONE_HUNDRED_HBARS)).via(

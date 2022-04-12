@@ -35,10 +35,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
+import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
+import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
+import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
 class EntityAutoRenewalTest {
@@ -112,6 +118,7 @@ class EntityAutoRenewalTest {
 
 		givenWrapNum(aNum + numToScan);
 		givenLastScanned(aNum - 1);
+		given(renewalProcess.process(anyLong())).willReturn(NOTHING_TO_DO);
 
 		// when:
 		subject.execute(instantNow);
@@ -127,14 +134,55 @@ class EntityAutoRenewalTest {
 	}
 
 	@Test
+	void onlyAdvancesScanIfTouchedEntityIsDone() {
+		final var numToScan = 3L;
+
+		givenWrapNum(aNum + numToScan + 1);
+		givenLastScanned(aNum - 1);
+		given(renewalProcess.process(aNum))
+				.willReturn(STILL_MORE_TO_DO)
+				.willReturn(DONE);
+
+		// when:
+		subject.execute(instantNow);
+
+		// then:
+		verify(renewalProcess).beginRenewalCycle(instantNow);
+		verify(renewalProcess, times(2)).process(aNum);
+		verify(renewalProcess).endRenewalCycle();
+		verifyNoMoreInteractions(renewalProcess);
+		verify(networkCtx).updateLastScannedEntity(aNum);
+	}
+
+	@Test
+	void lastEntityScannedDoesntChangeIfTouchedEntityIsntDone() {
+		final var numToScan = 3L;
+
+		givenWrapNum(aNum + numToScan + 1);
+		givenLastScanned(aNum - 1);
+		given(renewalProcess.process(aNum))
+				.willReturn(STILL_MORE_TO_DO);
+
+		// when:
+		subject.execute(instantNow);
+
+		// then:
+		verify(renewalProcess).beginRenewalCycle(instantNow);
+		verify(renewalProcess, times(2)).process(aNum);
+		verify(renewalProcess).endRenewalCycle();
+		verifyNoMoreInteractions(renewalProcess);
+		verify(networkCtx).updateLastScannedEntity(aNum - 1);
+	}
+
+	@Test
 	void stopsEarlyWhenLotsToTouch() {
 		// setup:
 		long numToScan = properties.autoRenewNumberOfEntitiesToScan();
 
 		givenWrapNum(aNum + numToScan);
 		givenLastScanned(aNum - 1);
-		given(renewalProcess.process(aNum)).willReturn(true);
-		given(renewalProcess.process(bNum)).willReturn(true);
+		given(renewalProcess.process(aNum)).willReturn(DONE);
+		given(renewalProcess.process(bNum)).willReturn(DONE);
 
 		// when:
 		subject.execute(instantNow);
@@ -157,10 +205,10 @@ class EntityAutoRenewalTest {
 
 		givenWrapNum(aNum + numToScan);
 		givenLastScanned(aNum + numToScan - 2);
-		given(renewalProcess.process(aNum + numToScan - 1)).willReturn(false);
-		given(renewalProcess.process(aNum - 1)).willReturn(false);
-		given(renewalProcess.process(aNum)).willReturn(true);
-		given(renewalProcess.process(bNum)).willReturn(true);
+		given(renewalProcess.process(aNum + numToScan - 1)).willReturn(NOTHING_TO_DO);
+		given(renewalProcess.process(aNum - 1)).willReturn(NOTHING_TO_DO);
+		given(renewalProcess.process(aNum)).willReturn(DONE);
+		given(renewalProcess.process(bNum)).willReturn(DONE);
 
 		// when:
 		subject.execute(instantNow);

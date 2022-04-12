@@ -23,15 +23,8 @@ package com.hedera.test.serde;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.EvmFnResult;
-import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
 import com.swirlds.common.CommonUtils;
@@ -42,7 +35,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.function.Function;
 
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
@@ -53,10 +45,10 @@ public class SerializedForms {
 	private static final String FORM_TPL = "%s-v%d-sn%d.hex";
 
 	public static void main(String... args) {
-		saveAccountStates(MerkleAccountStateSerdeTest.MIN_TEST_CASES_PER_VERSION);
+//		saveAccountStates(MerkleAccountStateSerdeTest.MIN_TEST_CASES_PER_VERSION);
 //		saveTxnReceipts(2 * MIN_TEST_CASES_PER_VERSION);
 //		saveNetworkContexts(MerkleNetworkContextSerdeTest.MIN_TEST_CASES_PER_VERSION);
-//		saveRecords(ExpirableTxnRecordSerdeTest.NUM_TEST_CASES);
+		saveRecords(ExpirableTxnRecordSerdeTest.NUM_TEST_CASES);
 //		save024xRecords(ExpirableTxnRecordSerdeTest.MIN_TEST_CASES_PER_VERSION);
 //		saveSchedules(MerkleScheduleSerdeTest.NUM_TEST_CASES);
 //		saveTokens(MerkleTokenSerdeTest.NUM_TEST_CASES);
@@ -99,49 +91,12 @@ public class SerializedForms {
 		saveForCurrentVersion(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, n);
 	}
 
-	private static void saveAccountStates(final int n) {
-		saveForCurrentVersion(MerkleAccountState.class, SeededPropertySource::nextAccountState, n);
-	}
-
-	private static void saveTokens(final int n) {
-		saveForCurrentVersion(MerkleToken.class, SeededPropertySource::nextToken, n);
-	}
-
-	private static void saveLogs(final int n) {
-		saveForCurrentVersion(EvmLog.class, SeededPropertySource::nextEvmLog, n);
-	}
-
-	private static void saveTopics(final int n) {
-		saveForCurrentVersion(MerkleTopic.class, SeededPropertySource::nextTopic, n);
-	}
-
-	private static void saveEvmResults(final int n) {
-		saveForCurrentVersion(EvmFnResult.class, SeededPropertySource::nextEvmResult, n);
-	}
-
-	private static void saveTxnIds(final int n) {
-		saveForCurrentVersion(TxnId.class, SeededPropertySource::nextTxnId, n);
-	}
-
-	private static void saveNetworkContexts(final int n) {
-		saveForCurrentVersion(MerkleNetworkContext.class, SeededPropertySource::nextNetworkContext, n);
-	}
-
 	private static void saveRecords(final int n) {
 		saveForCurrentVersion(ExpirableTxnRecord.class, SeededPropertySource::nextRecord, n);
 	}
 
-	private static void save024xRecords(final int n) {
-		saveForCurrentVersion(ExpirableTxnRecord.class, propertySource -> {
-			final var seeded = propertySource.nextRecord();
-			seeded.setCryptoAllowances(Collections.emptyMap());
-			seeded.setFungibleTokenAllowances(Collections.emptyMap());
-			return seeded;
-		}, n);
-	}
-
-	private static void saveSchedules(final int n) {
-		saveForCurrentVersion(MerkleSchedule.class, SeededPropertySource::nextSchedule, n);
+	private static void saveAccountStates(final int n) {
+		saveForCurrentVersion(MerkleAccountState.class, SeededPropertySource::nextAccountState, n);
 	}
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(

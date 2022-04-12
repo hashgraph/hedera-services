@@ -42,13 +42,9 @@ import java.util.TreeSet;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 
 public class MerkleAccountFactory {
-	private boolean useNewStyleTokenIds = false;
-
 	private int numKvPairs = 0;
 	private KeyFactory keyFactory = KeyFactory.getDefaultInstance();
 	private Optional<Long> balance = Optional.empty();
-	private Optional<Long> receiverThreshold = Optional.empty();
-	private Optional<Long> senderThreshold = Optional.empty();
 	private Optional<Long> lastAssociatedToken = Optional.empty();
 	private Optional<Integer> associatedTokensCount = Optional.empty();
 	private Optional<Integer> numPositiveBalances = Optional.empty();
@@ -130,16 +126,6 @@ public class MerkleAccountFactory {
 
 	public MerkleAccountFactory tokens(final TokenID... tokens) {
 		associatedTokens.addAll(List.of(tokens));
-		return this;
-	}
-
-	public MerkleAccountFactory receiverThreshold(final long v) {
-		receiverThreshold = Optional.of(v);
-		return this;
-	}
-
-	public MerkleAccountFactory senderThreshold(final long v) {
-		senderThreshold = Optional.of(v);
 		return this;
 	}
 
