@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 
-public class EthTxDataTest {
+class EthTxDataTest {
 
 	static final String SIGNATURE_ADDRESS = "a94f5374fce5edbc8e2a8697c15331677e6ebf0b";
 	static final String SIGNATURE_PUBKEY = "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d";
@@ -26,7 +26,7 @@ public class EthTxDataTest {
 			"f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83";
 
 	@Test
-	public void extractFrontierSignature() {
+	void extractFrontierSignature() {
 		try {
 			var frontierTx = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
 			assertNotNull(frontierTx);
@@ -60,7 +60,7 @@ public class EthTxDataTest {
 	}
 
 	@Test
-	public void extractEIP155Signature() {
+	void extractEIP155Signature() {
 		var eip155Tx = EthTxData.populateEthTxData(Hex.decode(EIP155_DEMO));
 		assertNotNull(eip155Tx);
 		assertEquals(EIP155_DEMO, Hex.toHexString(eip155Tx.rawTx()));
@@ -89,7 +89,7 @@ public class EthTxDataTest {
 	}
 
 	@Test
-	public void extractLondonSignature() {
+	void extractLondonSignature() {
 		var londonTx = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_2));
 		assertNotNull(londonTx);
 		assertEquals(RAW_TX_TYPE_2, Hex.toHexString(londonTx.rawTx()));

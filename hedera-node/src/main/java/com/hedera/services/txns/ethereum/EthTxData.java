@@ -4,8 +4,11 @@ import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.rlp.RLPItem;
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.common.base.MoreObjects;
+import org.apache.commons.codec.binary.Hex;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -150,5 +153,75 @@ public record EthTxData(
 		LEGACY_ETHEREUM,
 		EIP2930,
 		EIP1559,
+	}
+
+	@Override
+	public boolean equals(final Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		final EthTxData ethTxData = (EthTxData) o;
+
+		if (nonce != ethTxData.nonce) return false;
+		if (gasLimit != ethTxData.gasLimit) return false;
+		if (recId != ethTxData.recId) return false;
+		if (!Arrays.equals(rawTx, ethTxData.rawTx)) return false;
+		if (type != ethTxData.type) return false;
+		if (!Arrays.equals(chainId, ethTxData.chainId)) return false;
+		if (!Arrays.equals(gasPrice, ethTxData.gasPrice)) return false;
+		if (!Arrays.equals(maxPriorityGas, ethTxData.maxPriorityGas)) return false;
+		if (!Arrays.equals(maxGas, ethTxData.maxGas)) return false;
+		if (!Arrays.equals(to, ethTxData.to)) return false;
+		if (value != null ? !value.equals(ethTxData.value) : ethTxData.value != null) return false;
+		if (!Arrays.equals(callData, ethTxData.callData)) return false;
+		if (!Arrays.equals(accessList, ethTxData.accessList)) return false;
+		if (!Arrays.equals(v, ethTxData.v)) return false;
+		if (!Arrays.equals(r, ethTxData.r)) return false;
+		if (!Arrays.equals(s, ethTxData.s)) return false;
+
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Arrays.hashCode(rawTx);
+		result = 31 * result + (type != null ? type.hashCode() : 0);
+		result = 31 * result + Arrays.hashCode(chainId);
+		result = 31 * result + (int) (nonce ^ (nonce >>> 32));
+		result = 31 * result + Arrays.hashCode(gasPrice);
+		result = 31 * result + Arrays.hashCode(maxPriorityGas);
+		result = 31 * result + Arrays.hashCode(maxGas);
+		result = 31 * result + (int) (gasLimit ^ (gasLimit >>> 32));
+		result = 31 * result + Arrays.hashCode(to);
+		result = 31 * result + (value != null ? value.hashCode() : 0);
+		result = 31 * result + Arrays.hashCode(callData);
+		result = 31 * result + Arrays.hashCode(accessList);
+		result = 31 * result + recId;
+		result = 31 * result + Arrays.hashCode(v);
+		result = 31 * result + Arrays.hashCode(r);
+		result = 31 * result + Arrays.hashCode(s);
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("rawTx", Hex.encodeHexString(rawTx))
+				.add("type", type)
+				.add("chainId", Hex.encodeHexString(chainId))
+				.add("nonce", nonce)
+				.add("gasPrice", Hex.encodeHexString(gasPrice))
+				.add("maxPriorityGas", Hex.encodeHexString(maxPriorityGas))
+				.add("maxGas", Hex.encodeHexString(maxGas))
+				.add("gasLimit", gasLimit)
+				.add("to", Hex.encodeHexString(to))
+				.add("value", value)
+				.add("callData", Hex.encodeHexString(callData))
+				.add("accessList", Hex.encodeHexString(accessList))
+				.add("recId", recId)
+				.add("v", Hex.encodeHexString(v))
+				.add("r", Hex.encodeHexString(r))
+				.add("s", Hex.encodeHexString(s))
+				.toString();
 	}
 }

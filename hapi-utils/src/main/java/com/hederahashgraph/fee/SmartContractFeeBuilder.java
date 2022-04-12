@@ -509,7 +509,7 @@ public final class SmartContractFeeBuilder extends FeeBuilder {
 		bpt = txBodySize + getEthereumTransactionBodyTxSize(txBody) + sigValObj.getSignatureSize();
 
 		// vpt - verifications per transactions, plus one for ECDSA public key recovery
-		vpt = sigValObj.getTotalSigCount() + 1;
+		vpt = sigValObj.getTotalSigCount() + 1L;
 
 		bpr = INT_SIZE;
 

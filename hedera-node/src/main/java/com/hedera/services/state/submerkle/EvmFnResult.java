@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -71,6 +72,34 @@ public class EvmFnResult implements SelfSerializable {
 	public static final int MAX_FUNCTION_PARAMETERS_BYTES = Integer.MAX_VALUE;
 
 	public record EvmFnCallContext(long gas, long amount, byte[] functionParameters) {
+		@Override
+		public boolean equals(final Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+
+			final EvmFnCallContext that = (EvmFnCallContext) o;
+
+			if (gas != that.gas) return false;
+			if (amount != that.amount) return false;
+			return Arrays.equals(functionParameters, that.functionParameters);
+		}
+
+		@Override
+		public int hashCode() {
+			int result = (int) (gas ^ (gas >>> 32));
+			result = 31 * result + (int) (amount ^ (amount >>> 32));
+			result = 31 * result + Arrays.hashCode(functionParameters);
+			return result;
+		}
+
+		@Override
+		public String toString() {
+			return MoreObjects.toStringHelper(this)
+					.add("gas", gas)
+					.add("amount", amount)
+					.add("functionParameters", Hex.encodeHexString(functionParameters))
+					.toString();
+		}
 	}
 
 	private long gasUsed;

@@ -42,4 +42,8 @@ public final class EthereumFeesModule {
 	) {
 		return List.of(ethereumTransactionResourceUsage);
 	}
+
+	private EthereumFeesModule() {
+		throw new UnsupportedOperationException("Dagger2 module");
+	}
 }

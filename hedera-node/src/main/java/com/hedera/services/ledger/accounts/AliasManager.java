@@ -60,6 +60,8 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	private static final Logger log = LogManager.getLogger(AliasManager.class);
 
 	private static final String NON_TRANSACTIONAL_MSG = "Base alias manager does not buffer changes";
+	
+	private static final ECCurve SECP256K1_CURVE = new SecP256K1Curve();
 
 	private final Supplier<Map<ByteString, EntityNum>> aliases;
 
@@ -188,8 +190,6 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 
 		return ByteString.copyFrom(hashedKey, 12, 20);
 	}
-
-	static ECCurve SECP256K1_CURVE = new SecP256K1Curve();
 
 	// Decompress a compressed public key (x co-ord and low-bit of y-co-ord).
 	protected static ECPoint decompressKey(final BigInteger xBN, final boolean yBit) {
