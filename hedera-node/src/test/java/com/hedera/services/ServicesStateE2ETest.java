@@ -25,7 +25,6 @@ import com.swirlds.platform.SignedStateFileManager;
 import com.swirlds.platform.state.SignedState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -40,8 +39,8 @@ public class ServicesStateE2ETest {
 	}
 
 	@Test
-	void testBasicState() throws IOException {
-		loadSignedState(signedStateDir + "basicTest/SignedState.swh");
+	void testNftsFromSignedStateV24() throws IOException {
+		loadSignedState(signedStateDir + "v0.24.2-nfts/SignedState.swh");
 	}
 
 	private static SignedState loadSignedState(String path) throws IOException {
