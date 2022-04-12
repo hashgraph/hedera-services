@@ -102,11 +102,15 @@ public class WorldStateTokenAccount implements Account {
 
 	private Code interpolatedCode() {
 		if (interpolatedCode == null) {
-			final var interpolatedBytecode = Bytes.fromHexString(
-					TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(
-							TOKEN_BYTECODE_PATTERN, getAddress().toUnprefixedHexString()));
+			final var interpolatedBytecode = proxyBytecodeFor(address);
 			interpolatedCode = new Code(interpolatedBytecode, Hash.hash(interpolatedBytecode));
 		}
 		return interpolatedCode;
+	}
+
+	public static Bytes proxyBytecodeFor(final Address address) {
+		return Bytes.fromHexString(
+				TOKEN_CALL_REDIRECT_CONTRACT_BINARY.replace(
+						TOKEN_BYTECODE_PATTERN, address.toUnprefixedHexString()));
 	}
 }

@@ -32,6 +32,7 @@ import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_B
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_CALL_REDIRECT_CONTRACT_BINARY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WorldStateTokenAccountTest {
@@ -42,8 +43,10 @@ class WorldStateTokenAccountTest {
 	@Test
 	void getsExpectedCode() {
 		final var expected = expectedCodeBytes();
-		final var actual = subject.getCode();
-		assertEquals(expected, actual);
+		final var firstActual = subject.getCode();
+		final var secondActual = subject.getCode();
+		assertEquals(expected, firstActual);
+		assertSame(firstActual, secondActual);
 	}
 
 	@Test
