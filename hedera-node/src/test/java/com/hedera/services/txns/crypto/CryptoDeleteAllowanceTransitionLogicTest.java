@@ -22,11 +22,8 @@ package com.hedera.services.txns.crypto;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -36,8 +33,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
@@ -67,7 +63,6 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -118,7 +113,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 		addExistingAllowances(ownerAccount);
 		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
 		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(
 				ownerAccount);
@@ -150,7 +145,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 		addExistingAllowances(ownerAccount);
 		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
 		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(ownerAccount);
 		token2Model.setTreasury(ownerAccount);
@@ -175,7 +170,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		givenValidTxnCtx();
 
 		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
 		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(
 				ownerAccount);
@@ -204,7 +199,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 				).build();
 
 		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 
 		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
 		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(
@@ -238,7 +233,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		addExistingAllowances(payerAccount);
 
 		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(payerAccount.getId())).willReturn(payerAccount);
 		given(tokenStore.loadUniqueToken(token2Model.getId(), 12L)).willReturn(uniqueToken1);
 		given(tokenStore.loadUniqueToken(token2Model.getId(), 10L)).willReturn(uniqueToken2);
@@ -269,7 +264,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 				).build();
 
 		given(accessor.getTxn()).willReturn(cryptoDeleteAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 
 		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
 

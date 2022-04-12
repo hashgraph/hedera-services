@@ -46,7 +46,7 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_UPDATE_IMMUTABLE_ACCOUNT_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedCryptoUpdate(STAKING_FUND_ID).get()
 			));
 		}

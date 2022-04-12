@@ -119,7 +119,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 	}
 
 	private boolean isCryptoKeyActiveInFrame(final JKey key) {
-		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
+		final var pkToCryptoSigsFn = txnCtx.platformTxnAccessor().getRationalizedPkToCryptoSigFn();
 		return activationTest.test(
 				key,
 				pkToCryptoSigsFn,

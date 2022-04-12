@@ -155,7 +155,7 @@ class CryptoApproveAllowanceTransitionLogicTest {
 				.contains(FcTokenAllowanceId.from(EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1))));
 
 		given(accessor.getTxn()).willReturn(cryptoApproveAllowanceTxn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
 		given(accountStore.loadAccount(payerAcccount.getId())).willReturn(payerAcccount);
 		given(accountStore.loadAccountOrFailWith(ownerAccount.getId(), INVALID_ALLOWANCE_OWNER_ID))
 				.willReturn(ownerAccount);

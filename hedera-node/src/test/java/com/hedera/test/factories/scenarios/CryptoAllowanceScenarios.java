@@ -42,7 +42,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_ALLOWANCE_USING_DELEGATING_SPENDER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceList)
 							.withNftAllowances(delegatingNftAllowanceList)
@@ -87,7 +87,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_DELEGATING_SPENDER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceList)
 							.withNftAllowances(delegatingNftAllowanceMissingOwnerList)
@@ -168,7 +168,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 
 	CRYPTO_DELETE_ALLOWANCE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedDeleteAllowance()
 							.withCryptoAllowances(cryptoDeleteAllowanceList)
 							.withNftAllowances(nftDeleteAllowanceList)
@@ -180,7 +180,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_DELETE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedDeleteAllowance()
 							.withCryptoAllowances(cryptoDeleteAllowanceList)
 							.withNftAllowances(nftDeleteAllowanceList)
@@ -191,7 +191,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_DELETE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedDeleteAllowance()
 							.withCryptoAllowances(cryptoDeleteAllowanceMissingOwnerList)
 							.withNftAllowances(nftDeleteAllowanceList)
@@ -202,7 +202,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedDeleteAllowance()
 							.withCryptoAllowances(cryptoDeleteAllowanceList)
 							.withNftAllowances(nftDeleteAllowanceMissingOwnerList)
@@ -213,7 +213,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_DELETE_ALLOWANCE_NO_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedDeleteAllowance()
 							.withCryptoAllowances(cryptoDeleteAllowanceNoOwnerList)
 							.withNftAllowances(nftDeleteAllowanceList)

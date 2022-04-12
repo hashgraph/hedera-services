@@ -68,7 +68,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedCryptoTransfer()
 							.nonPayerKts(DEFAULT_PAYER_KT)
 							.transfers(tinyBarsFromTo(FIRST_TOKEN_SENDER_ID, STAKING_FUND_ID, 1_000L))
@@ -78,7 +78,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedCryptoTransfer()
 							.nonPayerKts(DEFAULT_PAYER_KT)
 							.transfers(tinyBarsFromTo(STAKING_FUND_ID, NO_RECEIVER_SIG_ID, 1_000L))

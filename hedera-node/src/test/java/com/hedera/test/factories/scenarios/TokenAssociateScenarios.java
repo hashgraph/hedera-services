@@ -56,7 +56,7 @@ public enum TokenAssociateScenarios implements TxnHandlingScenario {
 	TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenAssociate()
 							.targeting(STAKING_FUND)
 							.associating(KNOWN_TOKEN_WITH_KYC)
