@@ -1245,7 +1245,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
 						cryptoApproveAllowance()
 								.payingWith(owner)
-								.addNftAllowance(owner, nft, spender, false, List.of(2L, 2L, 3L, 3L))
+								.addNftAllowance(owner, nft, spender, false, List.of(2L, 2L, 2L))
 								.fee(ONE_HUNDRED_HBARS)
 				)
 				.then();
