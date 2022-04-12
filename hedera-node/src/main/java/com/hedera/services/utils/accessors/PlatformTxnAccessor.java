@@ -64,30 +64,18 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	private PubKeyToSigBytes pubKeyToSigBytes;
 	private RationalizedSigMeta sigMeta = null;
 
-	protected PlatformTxnAccessor(final TxnAccessor delegate, SwirldTransaction platformTxn)
-			throws InvalidProtocolBufferException {
+	protected PlatformTxnAccessor(final TxnAccessor delegate, SwirldTransaction platformTxn) {
 		this.platformTxn = platformTxn;
 		this.delegate = delegate;
 		pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(delegate.getSigMap());
 	}
 
-	public static PlatformTxnAccessor from(final TxnAccessor delegate, final SwirldTransaction platformTxn)
-			throws InvalidProtocolBufferException {
-		try {
-			return new PlatformTxnAccessor(delegate, platformTxn);
-		} catch (InvalidProtocolBufferException ignore) {
-			throw new IllegalStateException("Accessor construction must get valid gRPC bytes!");
-		}
+	public static PlatformTxnAccessor from(final TxnAccessor delegate, final SwirldTransaction platformTxn) {
+		return new PlatformTxnAccessor(delegate, platformTxn);
 	}
 
-	public static PlatformTxnAccessor from(final SwirldTransaction platformTxn)
-			throws InvalidProtocolBufferException {
-		try {
-			return new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()),
-					platformTxn);
-		} catch (InvalidProtocolBufferException ignore) {
-			throw new IllegalStateException("Accessor construction must get valid gRPC bytes!");
-		}
+	public static PlatformTxnAccessor from(final SwirldTransaction platformTxn) {
+		return new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);
 	}
 
 	public SwirldTransaction getPlatformTxn() {

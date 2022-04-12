@@ -96,7 +96,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			doProcess(submittingMember, consensusTime, effectiveConsensusTime, accessor);
 
 			autoRenewal.execute(consensusTime);
-		} catch (InvalidProtocolBufferException e) {
+		} catch (IllegalStateException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		} catch (Exception internal) {
 			log.error("Unhandled internal process failure", internal);

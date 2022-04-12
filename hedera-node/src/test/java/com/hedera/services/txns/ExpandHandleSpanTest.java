@@ -25,6 +25,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
 import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -41,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,9 +79,10 @@ class ExpandHandleSpanTest {
 
 	@Test
 	void propagatesIpbe() {
+		final var accessor = mock(SignedTxnAccessor.class);
 		// expect:
-		assertThrows(InvalidProtocolBufferException.class, () -> subject.track(invalidTxn));
-		assertThrows(InvalidProtocolBufferException.class, () -> subject.accessorFor(invalidTxn));
+		assertThrows(IllegalStateException.class, () -> subject.track(invalidTxn));
+		assertThrows(IllegalStateException.class, () -> subject.accessorFor(invalidTxn));
 	}
 
 	@Test
@@ -89,7 +92,7 @@ class ExpandHandleSpanTest {
 	}
 
 	@Test
-	void reExpandsIfNotCached() throws InvalidProtocolBufferException {
+	void reExpandsIfNotCached() {
 		// when:
 		final var endAccessor = subject.accessorFor(validTxn);
 

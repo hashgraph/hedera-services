@@ -64,10 +64,9 @@ class PlatformTxnAccessorTest {
 			.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
 			.setMemo("Hi!")
 			.build();
-	private final AliasManager aliasManager = mock(AliasManager.class);
 
 	@Test
-	void hasSpanMap() throws InvalidProtocolBufferException {
+	void hasSpanMap() {
 		// setup:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
@@ -84,7 +83,7 @@ class PlatformTxnAccessorTest {
 	}
 
 	@Test
-	void sigMetaGetterSetterCheck() throws InvalidProtocolBufferException {
+	void sigMetaGetterSetterCheck() {
 		// setup:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())
@@ -204,11 +203,12 @@ class PlatformTxnAccessorTest {
 		SwirldTransaction platformTxn =
 				new SwirldTransaction(signedNonsenseTxn.toByteArray());
 
-		// expect:
+		// then:
+		assertThrows(IllegalStateException.class,() -> PlatformTxnAccessor.from(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn));
 	}
 
 	@Test
-	void usesBodyBytesCorrectly() throws Exception {
+	void usesBodyBytesCorrectly() {
 		// given:
 		Transaction signedTxnWithBody = Transaction.newBuilder()
 				.setBodyBytes(someTxn.toByteString())

@@ -28,6 +28,7 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -148,6 +149,8 @@ class TxnAwareRatesManagerTest {
 
 	@Test
 	void ingnoresPostUpdateForSomehowInvalidBytes() {
+		final var accessor = mock(SignedTxnAccessor.class);
+		given(txnCtx.accessor()).willReturn(accessor);
 		// when:
 		subject.postUpdate(exchangeRates, invalidBytes);
 

@@ -20,17 +20,11 @@ package com.hedera.services.utils.accessors;
  * ‍
  */
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.Transaction;
 
 import javax.inject.Inject;
-
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 
 public class AccessorFactory {
 	final AliasManager aliasManager;
