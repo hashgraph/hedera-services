@@ -115,7 +115,7 @@ class AccountStoreTest {
 	void failsLoadingDetached() throws NegativeAccountBalanceException {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		given(validator.isAfterConsensusSecond(expiry)).willReturn(false);
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		miscMerkleAccount.setBalance(0L);
 
 		assertMiscAccountLoadFailsWith(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
@@ -127,7 +127,7 @@ class AccountStoreTest {
 		miscMerkleAccount.setHeadTokenId(firstAssocTokenNum);
 		miscMerkleAccount.setNumAssociations(associatedTokensCount);
 		miscMerkleAccount.setNumPositiveBalances(numPositiveBalances);
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		miscAccount.setCryptoAllowances(Collections.emptyMap());
 		miscAccount.setFungibleTokenAllowances(Collections.emptyMap());
 		miscAccount.setApproveForAllNfts(Collections.emptySet());
@@ -191,7 +191,7 @@ class AccountStoreTest {
 
 		miscMerkleAccount.setDeleted(false);
 		given(validator.isAfterConsensusSecond(expiry)).willReturn(false);
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		miscMerkleAccount.setBalance(0L);
 
 		var ex2 = assertThrows(

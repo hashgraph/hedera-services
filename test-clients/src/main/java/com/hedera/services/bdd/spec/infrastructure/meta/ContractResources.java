@@ -131,7 +131,10 @@ public class ContractResources {
 	public static final String EMIT_BLOCKTIME_PATH = bytecodePath("EmitBlockTimestamp");
 	public static final String TOY_MAKER_PATH = bytecodePath("ToyMaker");
 	public static final String IMMEDIATE_CHILD_ASSOC_PATH = bytecodePath("ImmediateChildAssociation");
+	public static final String INSTANT_STORAGE_HOG_PATH = bytecodePath("InstantStorageHog");
 
+	public static final String INSTANT_HOG_CONS_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
+			"\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"constructor\"}";
 	public static final String IMMEDIATE_CHILD_ASSOC_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"tokenAddr\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
 	public static final String TOYMAKER_MAKE_ABI = "{\"inputs\":[],\"name\":\"make\"," +

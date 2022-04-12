@@ -146,14 +146,14 @@ public interface SigningOrderResultFactory<T> {
 	SigningOrderResult<T> forInvalidFeeCollector();
 
 	/**
-	 * Report an invalid owner provided in a CryptoApproveAllowance or CryptoAdjustAllowance
+	 * Report an invalid owner provided in a CryptoApproveAllowance
 	 *
 	 * @return the error summary
 	 */
 	SigningOrderResult<T> forInvalidAllowanceOwner();
 
 	/**
-	 * Report an invalid delegating Spender provided in a CryptoApproveAllowance or CryptoAdjustAllowance
+	 * Report an invalid delegating Spender provided in a CryptoApproveAllowance
 	 * for granting NFT Allowance
 	 *
 	 * @return the error summary

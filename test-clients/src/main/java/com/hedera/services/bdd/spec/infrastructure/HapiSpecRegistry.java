@@ -39,6 +39,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -239,7 +240,8 @@ public class HapiSpecRegistry {
 	public void removeTimestamp(String label) {
 		try {
 			remove(label, Timestamp.class);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
 
 	public void saveKey(String name, Key key) {
@@ -306,7 +308,9 @@ public class HapiSpecRegistry {
 		put(name + "Expiry", value, Long.class);
 	}
 
-	public void saveCreationTime(String name, Timestamp value) { put(name + "CreationTime", value, Timestamp.class); }
+	public void saveCreationTime(String name, Timestamp value) {
+		put(name + "CreationTime", value, Timestamp.class);
+	}
 
 	public void saveSupplyKey(String name, Key key) {
 		put(name + "Supply", key, Key.class);
@@ -400,9 +404,13 @@ public class HapiSpecRegistry {
 		return get(name + "Kyc", Key.class);
 	}
 
-	public Long getExpiry(String name) { return get(name + "Expiry", Long.class); }
+	public Long getExpiry(String name) {
+		return get(name + "Expiry", Long.class);
+	}
 
-	public Timestamp getCreationTime(String name) { return get(name + "CreationTime", Timestamp.class); }
+	public Timestamp getCreationTime(String name) {
+		return get(name + "CreationTime", Timestamp.class);
+	}
 
 	public boolean hasKey(String name) {
 		return hasVia(this::getKey, name);
@@ -411,7 +419,8 @@ public class HapiSpecRegistry {
 	public void removeKey(String name) {
 		try {
 			remove(name, Key.class);
-		} catch (Exception ignore) { }
+		} catch (Exception ignore) {
+		}
 	}
 
 	public void saveTopicMeta(String name, ConsensusCreateTopicTransactionBody meta, Long approxConsensusTime) {
@@ -574,7 +583,8 @@ public class HapiSpecRegistry {
 			var id = getTokenID(name);
 			remove(name, TokenID.class);
 			remove(asTokenString(id), String.class);
-		} catch (Throwable ignore) {}
+		} catch (Throwable ignore) {
+		}
 	}
 
 	public void saveTokenRel(String account, String token) {
@@ -658,7 +668,7 @@ public class HapiSpecRegistry {
 	}
 
 	public boolean hasAccountIdName(AccountID accountId) {
-		return registry.get(full(asAccountString(accountId), String.class))	!= null;
+		return registry.get(full(asAccountString(accountId), String.class)) != null;
 	}
 
 	public void removeAccount(String name) {
@@ -780,6 +790,10 @@ public class HapiSpecRegistry {
 		put(name, info);
 	}
 
+	public void saveAccountDetails(String name, GetAccountDetailsResponse.AccountDetails details) {
+		put(name, details);
+	}
+
 	public void removeAccountInfo(String name) {
 		try {
 			remove(name, CryptoGetInfoResponse.AccountInfo.class);
@@ -789,6 +803,10 @@ public class HapiSpecRegistry {
 
 	public CryptoGetInfoResponse.AccountInfo getAccountInfo(String name) {
 		return get(name, CryptoGetInfoResponse.AccountInfo.class);
+	}
+
+	public GetAccountDetailsResponse.AccountDetails getAccountDetails(String name) {
+		return get(name, GetAccountDetailsResponse.AccountDetails.class);
 	}
 
 	public <T> T getId(String name, Class<T> type) {

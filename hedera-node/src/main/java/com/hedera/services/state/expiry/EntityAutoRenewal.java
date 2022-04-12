@@ -34,6 +34,9 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
+import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
+
 @Singleton
 public class EntityAutoRenewal {
 	private static final Logger log = LogManager.getLogger(EntityAutoRenewal.class);
@@ -47,12 +50,12 @@ public class EntityAutoRenewal {
 
 	@Inject
 	public EntityAutoRenewal(
-			HederaNumbers hederaNumbers,
-			RenewalProcess renewalProcess,
-			GlobalDynamicProperties dynamicProps,
-			NetworkCtxManager networkCtxManager,
-			Supplier<MerkleNetworkContext> networkCtx,
-			Supplier<SequenceNumber> seqNo
+			final HederaNumbers hederaNumbers,
+			final RenewalProcess renewalProcess,
+			final GlobalDynamicProperties dynamicProps,
+			final NetworkCtxManager networkCtxManager,
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final Supplier<SequenceNumber> seqNo
 	) {
 		this.seqNo = seqNo;
 		this.networkCtx = networkCtx;
@@ -63,8 +66,8 @@ public class EntityAutoRenewal {
 		this.firstEntityToScan = hederaNumbers.numReservedSystemEntities() + 1;
 	}
 
-	public void execute(Instant instantNow) {
-		if (!dynamicProps.autoRenewEnabled()) {
+	public void execute(final Instant nextAvailConsTime) {
+		if (!dynamicProps.shouldAutoRenewSomeEntityType()) {
 			return;
 		}
 
@@ -80,33 +83,40 @@ public class EntityAutoRenewal {
 		if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
 			curNetworkCtx.clearAutoRenewSummaryCounts();
 		}
-
-		renewalProcess.beginRenewalCycle(instantNow);
+		renewalProcess.beginRenewalCycle(nextAvailConsTime);
 
 		int i = 1;
 		int entitiesTouched = 0;
 		long scanNum = curNetworkCtx.lastScannedEntity();
-
-		log.debug("Auto-renew scan beginning at {}, wrapping at {}", scanNum, wrapNum);
+		boolean advanceScan = true;
+		EntityProcessResult result;
+		log.debug("Auto-renew scan beginning from last DONE @ {}, wrapping at {}", scanNum, wrapNum);
 		for (; i <= maxEntitiesToScan; i++) {
-			scanNum++;
-			if (scanNum >= wrapNum) {
-				scanNum = firstEntityToScan;
+			if (advanceScan) {
+				scanNum = next(scanNum, wrapNum);
 			}
-			if (renewalProcess.process(scanNum)) {
+			if ((result = renewalProcess.process(scanNum)) != NOTHING_TO_DO) {
 				entitiesTouched++;
+				advanceScan = (result == DONE);
+			} else {
+				advanceScan = true;
 			}
 			if (entitiesTouched >= maxEntitiesToTouch) {
-				/* Allow consistent calculation of num scanned below. */
+				// Allow consistent calculation of num scanned below.
 				i++;
 				break;
 			}
 		}
+
 		renewalProcess.endRenewalCycle();
 		curNetworkCtx.updateAutoRenewSummaryCounts(i - 1, entitiesTouched);
-		curNetworkCtx.updateLastScannedEntity(scanNum);
+		curNetworkCtx.updateLastScannedEntity(advanceScan ? scanNum : scanNum - 1);
 		log.debug("Auto-renew scan finished at {} with {}/{} scanned/touched (Total this second: {}/{})",
 				scanNum, i - 1, entitiesTouched,
 				curNetworkCtx.getEntitiesScannedThisSecond(), curNetworkCtx.getEntitiesTouchedThisSecond());
+	}
+
+	private long next(long scanNum, final long wrapNum) {
+		return (++scanNum >= wrapNum) ? firstEntityToScan : scanNum;
 	}
 }

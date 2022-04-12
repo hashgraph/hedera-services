@@ -24,6 +24,7 @@ import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -31,7 +32,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -49,34 +50,41 @@ import java.util.stream.Collectors;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.services.utils.MiscUtils.synthFromBody;
+import static com.hedera.test.utils.TxnUtils.ttlOf;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RenewalRecordsHelperTest {
-	private long fee = 1_234L;
-	private long newExpiry = 1_234_567L + 7776000L;
+	private final long fee = 1_234L;
+	private final long newExpiry = 1_234_567L + 7776000L;
 	private final Instant instantNow = Instant.ofEpochSecond(1_234_567L);
 	private final AccountID removedId = IdUtils.asAccount("0.0.3");
 	private final AccountID funding = IdUtils.asAccount("0.0.98");
-	private final EntityNum keyId = EntityNum.fromAccountId(removedId);
+	private final EntityNum expiredNum = EntityNum.fromAccountId(removedId);
+	private final TransactionBody.Builder mockBody = TransactionBody.newBuilder()
+			.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.789")));
 
 	@Mock
 	private RecordStreaming recordStreaming;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
 
 	private RenewalRecordsHelper subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewalRecordsHelper(recordStreaming, new MockGlobalDynamicProps());
+		subject = new RenewalRecordsHelper(recordStreaming, syntheticTxnFactory, new MockGlobalDynamicProps());
 	}
 
 	@Test
 	void mustBeInCycleToStream() {
-		assertThrows(IllegalStateException.class, () -> subject.streamCryptoRenewal(keyId, 1L, 2L));
+		assertThrows(IllegalStateException.class, () -> subject.streamCryptoRenewal(expiredNum, 1L, 2L, false));
 	}
 
 	@Test
@@ -88,15 +96,17 @@ class RenewalRecordsHelperTest {
 		final var secondTo = AccountID.newBuilder().setAccountNum(4_567L).build();
 		final var aBalance = 100L;
 		final var bBalance = 200L;
-		final var removalTime = instantNow.plusNanos(1);
+		final var removalTime = instantNow.plusNanos(0);
 		final var displacements = List.of(
-				RenewalHelperTest.ttlOf(aToken, from, firstTo, aBalance),
-				RenewalHelperTest.ttlOf(bToken, from, secondTo, bBalance));
+				ttlOf(aToken, from, firstTo, aBalance),
+				ttlOf(bToken, from, secondTo, bBalance));
 		final var rso = expectedRso(
-				cryptoRemovalRecord(removedId, removalTime, removedId, displacements), 1);
+				cryptoRemovalRecord(removedId, removalTime, removedId, displacements), 0);
+
+		given(syntheticTxnFactory.synthAccountAutoRemove(expiredNum)).willReturn(mockBody);
 
 		subject.beginRenewalCycle(instantNow);
-		subject.streamCryptoRemoval(keyId, tokensFrom(displacements), adjustmentsFrom(displacements));
+		subject.streamCryptoRemoval(expiredNum, tokensFrom(displacements), adjustmentsFrom(displacements));
 
 		// then:
 		verify(recordStreaming).stream(rso);
@@ -107,13 +117,34 @@ class RenewalRecordsHelperTest {
 	}
 
 	@Test
-	void streamsExpectedRenewalRecord() {
-		final var renewalTime = instantNow.plusNanos(1);
+	void streamsExpectedAccountRenewalRecord() {
+		final var renewalTime = instantNow.plusNanos(0);
 		final var rso = expectedRso(
-				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding), 1);
+				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding, false),
+				0);
+		given(syntheticTxnFactory.synthAccountAutoRenew(expiredNum, newExpiry)).willReturn(mockBody);
 
 		subject.beginRenewalCycle(instantNow);
-		subject.streamCryptoRenewal(keyId, fee, newExpiry);
+		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false);
+
+		// then:
+		verify(recordStreaming).stream(rso);
+
+		subject.endRenewalCycle();
+		assertNull(subject.getCycleStart());
+		assertEquals(0, subject.getConsensusNanosIncr());
+	}
+
+	@Test
+	void streamsExpectedContractRenewalRecord() {
+		final var renewalTime = instantNow.plusNanos(0);
+		final var rso = expectedRso(
+				cryptoRenewalRecord(removedId, renewalTime, removedId, fee, newExpiry, funding, true),
+				0);
+		given(syntheticTxnFactory.synthContractAutoRenew(expiredNum, newExpiry)).willReturn(mockBody);
+
+		subject.beginRenewalCycle(instantNow);
+		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true);
 
 		// then:
 		verify(recordStreaming).stream(rso);
@@ -142,7 +173,7 @@ class RenewalRecordsHelperTest {
 	private RecordStreamObject expectedRso(final TransactionRecord record, final int nanosOffset) {
 		return new RecordStreamObject(
 				fromGprc(record),
-				Transaction.getDefaultInstance(),
+				synthFromBody(mockBody.build()),
 				instantNow.plusNanos(nanosOffset));
 	}
 
@@ -159,7 +190,7 @@ class RenewalRecordsHelperTest {
 				.setReceipt(receipt)
 				.setConsensusTimestamp(asTimestamp(removedAt))
 				.setTransactionID(transactionID)
-				.setMemo(String.format("Entity %s was automatically deleted.", asLiteralString(accountRemoved)))
+				.setMemo(String.format("Account %s was automatically deleted.", asLiteralString(accountRemoved)))
 				.setTransactionFee(0L)
 				.addAllTokenTransferLists(displacements)
 				.build();
@@ -171,11 +202,13 @@ class RenewalRecordsHelperTest {
 			final AccountID autoRenewAccount,
 			final long fee,
 			final long newExpirationTime,
-			final AccountID feeCollector
+			final AccountID feeCollector,
+			final boolean isContract
 	) {
 		final var receipt = TransactionReceipt.newBuilder().setAccountID(accountRenewed).build();
 		final var transactionID = TransactionID.newBuilder().setAccountID(autoRenewAccount).build();
-		final var memo = String.format("Entity %s was automatically renewed. New expiration time: %d.",
+		final var memo = String.format("%s %s was automatically renewed. New expiration time: %d.",
+				isContract ? "Contract" : "Account",
 				asLiteralString(accountRenewed),
 				newExpirationTime);
 		final var payerAmount = AccountAmount.newBuilder()
@@ -200,4 +233,5 @@ class RenewalRecordsHelperTest {
 				.setTransferList(transferList)
 				.build();
 	}
+
 }

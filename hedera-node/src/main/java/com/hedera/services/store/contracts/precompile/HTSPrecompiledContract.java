@@ -45,7 +45,7 @@ import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -165,8 +165,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON = "Invalid operation for ERC-721 token!";
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
-	private static final String UNKNOWN_FUNCTION_ID_ERROR_MESSAGE =
-			"%s precompile received unknown functionId=%x (via %s)";
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
@@ -197,7 +195,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final OptionValidator validator;
 	private final EvmSigsVerifier sigsVerifier;
 	private final SigImpactHistorian sigImpactHistorian;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final DissociationFactory dissociationFactory;
 	private final UsagePricesProvider resourceCosts;
@@ -286,7 +284,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final GlobalDynamicProperties dynamicProperties,
 			final GasCalculator gasCalculator,
 			final SigImpactHistorian sigImpactHistorian,
-			final AccountRecordsHistorian recordsHistorian,
+			final RecordsHistorian recordsHistorian,
 			final TxnAwareEvmSigsVerifier sigsVerifier,
 			final DecodingFacade decoder,
 			final EncodingFacade encoder,
@@ -645,7 +643,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				GlobalDynamicProperties dynamicProperties,
 				OptionValidator validator,
 				AutoCreationLogic autoCreationLogic,
-				AccountRecordsHistorian recordsHistorian);
+				RecordsHistorian recordsHistorian);
 	}
 
 	@FunctionalInterface
@@ -1100,8 +1098,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				case ABI_ID_TRANSFER_TOKEN -> decoder.decodeTransferToken(input, aliasResolver);
 				case ABI_ID_TRANSFER_NFTS -> decoder.decodeTransferNFTs(input, aliasResolver);
 				case ABI_ID_TRANSFER_NFT -> decoder.decodeTransferNFT(input, aliasResolver);
-				default -> throw new InvalidTransactionException(
-						String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE, "Transfer", functionId, input), FAIL_INVALID);
+				default -> null;
 			};
 			syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			extrapolateDetailsFromSyntheticTxn();
@@ -1374,9 +1371,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			super.transferOp = switch (nestedInput.getInt(0)) {
 				case ABI_ID_ERC_TRANSFER -> decoder.decodeErcTransfer(nestedInput, tokenID, callerAccountID,
 						aliasResolver);
-				default -> throw new InvalidTransactionException(
-						String.format(UNKNOWN_FUNCTION_ID_ERROR_MESSAGE, "Transfer", functionId, nestedInput),
-						FAIL_INVALID);
+				default -> null;
 			};
 			super.syntheticTxn = syntheticTxnFactory.createCryptoTransfer(transferOp);
 			super.extrapolateDetailsFromSyntheticTxn();

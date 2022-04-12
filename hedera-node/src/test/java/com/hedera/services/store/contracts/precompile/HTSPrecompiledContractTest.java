@@ -31,7 +31,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -133,7 +133,7 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private DecodingFacade decoder;
 	@Mock

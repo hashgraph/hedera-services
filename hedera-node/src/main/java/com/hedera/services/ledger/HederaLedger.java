@@ -32,7 +32,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -81,7 +81,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * of a rollback.
  * <p>
  * The ledger delegates history of each transaction to an injected
- * {@link AccountRecordsHistorian} by invoking its {@code addNewRecords}
+ * {@link RecordsHistorian} by invoking its {@code addNewRecords}
  * immediately before the final {@link TransactionalLedger#commit()}.
  * <p>
  * We should think of the ledger as using double-booked accounting,
@@ -112,7 +112,7 @@ public class HederaLedger {
 	private final OptionValidator validator;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final AccountRecordsHistorian historian;
+	private final RecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	private MutableEntityAccess mutableEntityAccess;
@@ -130,7 +130,7 @@ public class HederaLedger {
 			final EntityCreator creator,
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
-			final AccountRecordsHistorian historian,
+			final RecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransferLogic transferLogic,
@@ -397,10 +397,16 @@ public class HederaLedger {
 		return (boolean) accountsLedger.get(id, IS_DELETED);
 	}
 
-	public boolean isDetached(AccountID id) {
-		return dynamicProperties.autoRenewEnabled()
-				&& !(boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
-				&& (long) accountsLedger.get(id, BALANCE) == 0L
+	public boolean isDetached(final AccountID id) {
+		if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
+			return false;
+		}
+		final var shouldAutoRenewThisType = (boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
+				? dynamicProperties.shouldAutoRenewContracts() : dynamicProperties.shouldAutoRenewAccounts();
+		if (!shouldAutoRenewThisType) {
+			return false;
+		}
+		return (long) accountsLedger.get(id, BALANCE) == 0L
 				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
 	}
 
@@ -429,7 +435,7 @@ public class HederaLedger {
 		return (balance + adjustment >= 0);
 	}
 
-	private long computeNewBalance(AccountID id, long adjustment) {
+	private long computeNewBalance(final AccountID id, final long adjustment) {
 		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
 		}
