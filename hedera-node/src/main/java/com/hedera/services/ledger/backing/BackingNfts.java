@@ -30,6 +30,8 @@ import javax.inject.Singleton;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.hedera.services.state.virtual.UniqueTokenKey.fromNftId;
+
 @Singleton
 @SuppressWarnings("java:S6206")   // Unable to convert to record due to https://github.com/google/dagger/issues/2106
 public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
@@ -55,23 +57,23 @@ public class BackingNfts implements BackingStore<NftId, UniqueTokenValue> {
 
 	@Override
 	public UniqueTokenValue getImmutableRef(NftId id) {
-		return delegate.get().get(UniqueTokenKey.fromNftId(id));
+		return delegate.get().get(fromNftId(id));
 	}
 
 	@Override
 	public void put(NftId id, UniqueTokenValue nft) {
-		UniqueTokenKey key = UniqueTokenKey.fromNftId(id);
+		UniqueTokenKey key = fromNftId(id);
 		delegate.get().put(key, nft);
 	}
 
 	@Override
 	public void remove(NftId id) {
-		delegate.get().remove(UniqueTokenKey.fromNftId(id));
+		delegate.get().remove(fromNftId(id));
 	}
 
 	@Override
 	public boolean contains(NftId id) {
-		return delegate.get().containsKey(UniqueTokenKey.fromNftId(id));
+		return delegate.get().containsKey(fromNftId(id));
 	}
 
 	@Override
