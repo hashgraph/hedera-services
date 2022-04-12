@@ -4,7 +4,7 @@ package com.hedera.services.fees.calculation.crypto.queries;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,17 +31,16 @@ import com.hederahashgraph.api.proto.java.Query;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Collections;
 import java.util.Map;
 
 @Singleton
-public final class GetAccountInfoResourceUsage implements QueryResourceUsageEstimator {
+public final class GetAccountDetailsResourceUsage implements QueryResourceUsageEstimator {
 	private final CryptoOpsUsage cryptoOpsUsage;
 	private final AliasManager aliasManager;
 	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public GetAccountInfoResourceUsage(
+	public GetAccountDetailsResourceUsage(
 			final CryptoOpsUsage cryptoOpsUsage,
 			final AliasManager aliasManager,
 			final GlobalDynamicProperties dynamicProperties) {
@@ -52,34 +51,35 @@ public final class GetAccountInfoResourceUsage implements QueryResourceUsageEsti
 
 	@Override
 	public boolean applicableTo(final Query query) {
-		return query.hasCryptoGetInfo();
+		return query.hasAccountDetails();
 	}
 
 	@Override
 	public FeeData usageGiven(final Query query, final StateView view, final Map<String, Object> ignoreCtx) {
-		final var op = query.getCryptoGetInfo();
+		final var op = query.getAccountDetails();
 
-		final var account = op.getAccountID();
-		final var info = view.infoForAccount(account, aliasManager, dynamicProperties.maxTokensRelsPerInfoQuery());
-		/* Given the test in {@code GetAccountInfoAnswer.checkValidity}, this can only be empty
+		final var account = op.getAccountId();
+		final var accountDetails = view.accountDetails(account, aliasManager,
+				dynamicProperties.maxTokensRelsPerInfoQuery());
+		/* Given the test in {@code GetAccountDetailsAnswer.checkValidity}, this can only be empty
 		 * under the extraordinary circumstance that the desired account expired during the query
 		 * answer flow (which will now fail downstream with an appropriate status code); so
 		 * just return the default {@code FeeData} here. */
-		if (info.isEmpty()) {
+		if (accountDetails.isEmpty()) {
 			return FeeData.getDefaultInstance();
 		}
-		final var details = info.get();
+		final var details = accountDetails.get();
 		final var ctx = ExtantCryptoContext.newBuilder()
 				.setCurrentKey(details.getKey())
 				.setCurrentMemo(details.getMemo())
 				.setCurrentExpiry(details.getExpirationTime().getSeconds())
-				.setCurrentlyHasProxy(details.hasProxyAccountID())
+				.setCurrentlyHasProxy(details.hasProxyAccountId())
 				.setCurrentNumTokenRels(details.getTokenRelationshipsCount())
 				.setCurrentMaxAutomaticAssociations(details.getMaxAutomaticTokenAssociations())
-				.setCurrentCryptoAllowances(Collections.emptyMap())
-				.setCurrentTokenAllowances(Collections.emptyMap())
-				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
+				.setCurrentCryptoAllowances(details.getGrantedCryptoAllowancesList())
+				.setCurrentTokenAllowances(details.getGrantedTokenAllowancesList())
+				.setCurrentApproveForAllNftAllowances(details.getGrantedNftAllowancesList())
 				.build();
-		return cryptoOpsUsage.cryptoInfoUsage(query, ctx);
+		return cryptoOpsUsage.accountDetailsUsage(query, ctx);
 	}
 }

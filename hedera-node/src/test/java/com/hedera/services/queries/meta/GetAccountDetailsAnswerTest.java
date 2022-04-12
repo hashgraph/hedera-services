@@ -1,10 +1,10 @@
-package com.hedera.services.queries.crypto;
+package com.hedera.services.queries.meta;
 
 /*-
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -41,8 +40,9 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
+import com.hederahashgraph.api.proto.java.GetAccountDetailsQuery;
+import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
@@ -71,7 +71,6 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.tokenWith;
 import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -88,7 +87,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
-class GetAccountInfoAnswerTest {
+class GetAccountDetailsAnswerTest {
 	private StateView view;
 	@Mock
 	private ScheduleStore scheduleStore;
@@ -132,7 +131,12 @@ class GetAccountInfoAnswerTest {
 	private EntityNumPair firstRelKey = fromAccountTokenRel(payerId, firstToken);
 	private Transaction paymentTxn;
 
-	private GetAccountInfoAnswer subject;
+	TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap() {
+	};
+	TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap();
+	TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>();
+
+	private GetAccountDetailsAnswer subject;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -169,10 +173,6 @@ class GetAccountInfoAnswerTest {
 		tokenRels.put(missingRelKey, missingRel);
 
 		var tokenAllowanceKey = FcTokenAllowanceId.from(EntityNum.fromLong(1000L), EntityNum.fromLong(2000L));
-		var tokenAllowanceValue = FcTokenAllowance.from(false, List.of(1L, 2L));
-		TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap();
-		TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap();
-		TreeSet<FcTokenAllowanceId> nftAllowances = new TreeSet<>();
 
 		cryptoAllowances.put(EntityNum.fromLong(1L), 10L);
 		fungibleTokenAllowances.put(tokenAllowanceKey, 20L);
@@ -197,60 +197,52 @@ class GetAccountInfoAnswerTest {
 
 		view = new StateView(scheduleStore, children, networkInfo);
 
-		subject = new GetAccountInfoAnswer(optionValidator, aliasManager, dynamicProperties);
+		subject = new GetAccountDetailsAnswer(optionValidator, aliasManager, dynamicProperties);
 	}
 
 	@Test
 	void getsCostAnswerResponse() throws Throwable {
-		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
-		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
 
-		// then:
-		assertTrue(response.hasCryptoGetInfo());
-		assertEquals(OK, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(COST_ANSWER, response.getCryptoGetInfo().getHeader().getResponseType());
-		assertEquals(fee, response.getCryptoGetInfo().getHeader().getCost());
+		assertTrue(response.hasAccountDetails());
+		assertEquals(OK, response.getAccountDetails().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(COST_ANSWER, response.getAccountDetails().getHeader().getResponseType());
+		assertEquals(fee, response.getAccountDetails().getHeader().getCost());
 	}
 
 	@Test
 	void getsInvalidResponse() throws Throwable {
-		// setup:
 		Query query = validQuery(COST_ANSWER, fee, target);
 
-		// when:
 		Response response = subject.responseGiven(query, view, ACCOUNT_DELETED, fee);
 
-		// then:
-		assertTrue(response.hasCryptoGetInfo());
-		assertEquals(ACCOUNT_DELETED, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(COST_ANSWER, response.getCryptoGetInfo().getHeader().getResponseType());
-		assertEquals(fee, response.getCryptoGetInfo().getHeader().getCost());
+		assertTrue(response.hasAccountDetails());
+		assertEquals(ACCOUNT_DELETED, response.getAccountDetails().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(COST_ANSWER, response.getAccountDetails().getHeader().getResponseType());
+		assertEquals(fee, response.getAccountDetails().getHeader().getCost());
 	}
 
 	@Test
 	void identifiesFailInvalid() throws Throwable {
 		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		Query query = validQuery(ANSWER_ONLY, fee, target);
-		// and:
+
 		StateView view = mock(StateView.class);
 
-		given(view.infoForAccount(any(), any(), anyInt())).willReturn(Optional.empty());
+		given(view.accountDetails(any(), any(), anyInt())).willReturn(Optional.empty());
 
-		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
 
-		// then:
-		assertTrue(response.hasCryptoGetInfo());
-		assertEquals(FAIL_INVALID, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(ANSWER_ONLY, response.getCryptoGetInfo().getHeader().getResponseType());
+		assertTrue(response.hasAccountDetails());
+		assertEquals(FAIL_INVALID, response.getAccountDetails().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, response.getAccountDetails().getHeader().getResponseType());
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
-	void getsTheAccountInfo() throws Throwable {
+	void getsTheAccountDetails() throws Throwable {
 		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokensPerAccountInfo);
 		final MerkleMap<EntityNum, MerkleToken> tokens = mock(MerkleMap.class);
 		children.setTokens(tokens);
@@ -274,32 +266,46 @@ class GetAccountInfoAnswerTest {
 		given(accounts.get(EntityNum.fromAccountId(asAccount(target)))).willReturn(payerAccount);
 		given(networkInfo.ledgerId()).willReturn(ledgerId);
 
-		// setup:
 		Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		// when:
 		Response response = subject.responseGiven(query, view, OK, fee);
 
-		// then:
-		assertTrue(response.hasCryptoGetInfo());
-		assertTrue(response.getCryptoGetInfo().hasHeader(), "Missing response header!");
-		assertEquals(OK, response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(ANSWER_ONLY, response.getCryptoGetInfo().getHeader().getResponseType());
-		assertEquals(0, response.getCryptoGetInfo().getHeader().getCost());
-		// and:
-		CryptoGetInfoResponse.AccountInfo info = response.getCryptoGetInfo().getAccountInfo();
-		assertEquals(asAccount(payer), info.getAccountID());
-		String address = CommonUtils.hex(asEvmAddress(0, 0L, 12_345L));
-		assertEquals(address, info.getContractAccountID());
-		assertEquals(payerAccount.getBalance(), info.getBalance());
-		assertEquals(payerAccount.getAutoRenewSecs(), info.getAutoRenewPeriod().getSeconds());
-		assertEquals(payerAccount.getProxy(), EntityId.fromGrpcAccountId(info.getProxyAccountID()));
-		assertEquals(JKey.mapJKey(payerAccount.getAccountKey()), info.getKey());
-		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
-		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
-		assertEquals(memo, info.getMemo());
+		assertTrue(response.hasAccountDetails());
+		assertTrue(response.getAccountDetails().hasHeader(), "Missing response header!");
+		assertEquals(OK, response.getAccountDetails().getHeader().getNodeTransactionPrecheckCode());
+		assertEquals(ANSWER_ONLY, response.getAccountDetails().getHeader().getResponseType());
+		assertEquals(0, response.getAccountDetails().getHeader().getCost());
 
-		// and:
+		GetAccountDetailsResponse.AccountDetails details = response.getAccountDetails().getAccountDetails();
+		assertEquals(asAccount(payer), details.getAccountId());
+		String address = CommonUtils.hex(asEvmAddress(0, 0L, 12_345L));
+		assertEquals(address, details.getContractAccountId());
+		assertEquals(payerAccount.getBalance(), details.getBalance());
+		assertEquals(payerAccount.getAutoRenewSecs(), details.getAutoRenewPeriod().getSeconds());
+		assertEquals(payerAccount.getProxy(), EntityId.fromGrpcAccountId(details.getProxyAccountId()));
+		assertEquals(JKey.mapJKey(payerAccount.getAccountKey()), details.getKey());
+		assertEquals(payerAccount.isReceiverSigRequired(), details.getReceiverSigRequired());
+		assertEquals(payerAccount.getExpiry(), details.getExpirationTime().getSeconds());
+		assertEquals(memo, details.getMemo());
+		assertEquals(1, details.getGrantedCryptoAllowancesList().size());
+		assertEquals(1, details.getGrantedTokenAllowancesList().size());
+		assertEquals(1, details.getGrantedNftAllowancesList().size());
+
+		assertEquals(EntityNum.fromLong(1L).toGrpcAccountId(),
+				details.getGrantedCryptoAllowancesList().get(0).getSpender());
+		assertEquals(10L, details.getGrantedCryptoAllowancesList().get(0).getAmount());
+
+		assertEquals(EntityNum.fromLong(2000L).toGrpcAccountId(),
+				details.getGrantedTokenAllowancesList().get(0).getSpender());
+		assertEquals(20L, details.getGrantedTokenAllowancesList().get(0).getAmount());
+		assertEquals(EntityNum.fromLong(1000L).toGrpcTokenId(),
+				details.getGrantedTokenAllowancesList().get(0).getTokenId());
+
+		assertEquals(EntityNum.fromLong(2000L).toGrpcAccountId(),
+				details.getGrantedNftAllowancesList().get(0).getSpender());
+		assertEquals(EntityNum.fromLong(1000L).toGrpcTokenId(),
+				details.getGrantedNftAllowancesList().get(0).getTokenId());
+
 		assertEquals(
 				List.of(
 						new RawTokenRelationship(
@@ -322,7 +328,7 @@ class GetAccountInfoAnswerTest {
 								missingBalance, 0, 0,
 								missingToken.getTokenNum(), false, false, false
 						).asGrpcFor(REMOVED_TOKEN)),
-				info.getTokenRelationshipsList());
+				details.getTokenRelationshipsList());
 	}
 
 	@Test
@@ -380,8 +386,8 @@ class GetAccountInfoAnswerTest {
 	@Test
 	void getsValidity() {
 		// given:
-		Response response = Response.newBuilder().setCryptoGetInfo(
-				CryptoGetInfoResponse.newBuilder()
+		Response response = Response.newBuilder().setAccountDetails(
+				GetAccountDetailsResponse.newBuilder()
 						.setHeader(subject.answerOnlyHeader(RESULT_SIZE_LIMIT_EXCEEDED))).build();
 
 		// expect:
@@ -391,7 +397,7 @@ class GetAccountInfoAnswerTest {
 	@Test
 	void recognizesFunction() {
 		// expect:
-		assertEquals(CryptoGetInfo, subject.canonicalFunction());
+		assertEquals(HederaFunctionality.GetAccountDetails, subject.canonicalFunction());
 	}
 
 	private Query validQuery(ResponseType type, long payment, String idLit) throws Throwable {
@@ -399,10 +405,10 @@ class GetAccountInfoAnswerTest {
 		QueryHeader.Builder header = QueryHeader.newBuilder()
 				.setPayment(this.paymentTxn)
 				.setResponseType(type);
-		CryptoGetInfoQuery.Builder op = CryptoGetInfoQuery.newBuilder()
+		GetAccountDetailsQuery.Builder op = GetAccountDetailsQuery.newBuilder()
 				.setHeader(header)
-				.setAccountID(asAccount(idLit));
-		return Query.newBuilder().setCryptoGetInfo(op).build();
+				.setAccountId(asAccount(idLit));
+		return Query.newBuilder().setAccountDetails(op).build();
 	}
 
 	private Query validQueryWithAlias(ResponseType type, long payment, String alias) throws Throwable {
@@ -410,9 +416,9 @@ class GetAccountInfoAnswerTest {
 		QueryHeader.Builder header = QueryHeader.newBuilder()
 				.setPayment(this.paymentTxn)
 				.setResponseType(type);
-		CryptoGetInfoQuery.Builder op = CryptoGetInfoQuery.newBuilder()
+		GetAccountDetailsQuery.Builder op = GetAccountDetailsQuery.newBuilder()
 				.setHeader(header)
-				.setAccountID(asAccountWithAlias(alias));
-		return Query.newBuilder().setCryptoGetInfo(op).build();
+				.setAccountId(asAccountWithAlias(alias));
+		return Query.newBuilder().setAccountDetails(op).build();
 	}
 }
