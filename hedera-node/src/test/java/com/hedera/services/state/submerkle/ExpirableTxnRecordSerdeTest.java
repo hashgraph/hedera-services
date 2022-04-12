@@ -24,8 +24,6 @@ import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
 
-import java.util.Collections;
-
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0230_VERSION;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
@@ -51,8 +49,6 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextRecord();
 		if (version == RELEASE_0230_VERSION) {
 			// Always empty before 0.25
-			seeded.setCryptoAllowances(Collections.emptyMap());
-			seeded.setFungibleTokenAllowances(Collections.emptyMap());
 		}
 		return seeded;
 	}

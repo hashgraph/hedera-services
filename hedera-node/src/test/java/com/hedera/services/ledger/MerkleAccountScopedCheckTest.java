@@ -112,7 +112,7 @@ class MerkleAccountScopedCheckTest {
 
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(account.isDeleted()).thenReturn(false);
-		when(dynamicProperties.autoRenewEnabled()).thenReturn(true);
+		when(dynamicProperties.shouldAutoRenewSomeEntityType()).thenReturn(true);
 		when(account.getBalance()).thenReturn(0L);
 		when(account.getExpiry()).thenReturn(expiry);
 		when(validator.isAfterConsensusSecond(expiry)).thenReturn(false);
@@ -128,7 +128,7 @@ class MerkleAccountScopedCheckTest {
 	void failsAsExpectedWhenInsufficientBalance() {
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(account.isDeleted()).thenReturn(false);
-		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
+		when(dynamicProperties.shouldAutoRenewSomeEntityType()).thenReturn(false);
 
 		when(account.getBalance()).thenReturn(5L);
 		when(balanceChange.getAggregatedUnits()).thenReturn(-6L);
@@ -140,7 +140,7 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void failsAsExpectedWhenSpenderIsNotGrantedAllowance() {
 		when(account.isDeleted()).thenReturn(false);
-		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
+		when(dynamicProperties.shouldAutoRenewSomeEntityType()).thenReturn(false);
 		when(account.getBalance()).thenReturn(10L);
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(balanceChange.isApprovedAllowance()).thenReturn(true);
@@ -153,7 +153,7 @@ class MerkleAccountScopedCheckTest {
 	@Test
 	void failsAsExpectedWhenSpenderHasInsufficientAllowance() {
 		when(account.isDeleted()).thenReturn(false);
-		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
+		when(dynamicProperties.shouldAutoRenewSomeEntityType()).thenReturn(false);
 		when(account.getBalance()).thenReturn(110L);
 		when(balanceChange.getAllowanceUnits()).thenReturn(-105L);
 		when(balanceChange.isForHbar()).thenReturn(true);
@@ -236,7 +236,7 @@ class MerkleAccountScopedCheckTest {
 	void happyPath() {
 		when(balanceChange.isForHbar()).thenReturn(true);
 		when(account.isDeleted()).thenReturn(false);
-		when(dynamicProperties.autoRenewEnabled()).thenReturn(false);
+		when(dynamicProperties.shouldAutoRenewSomeEntityType()).thenReturn(false);
 		when(account.getBalance()).thenReturn(0L);
 		when(balanceChange.getAggregatedUnits()).thenReturn(5L);
 
