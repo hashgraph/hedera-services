@@ -31,9 +31,8 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
-public class ResetThrottleSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(
-			com.hedera.services.bdd.suites.throttling.ResetThrottleSuite.class);
+public final class ResetThrottleSuite extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(ResetThrottleSuite.class);
 
 	public static void main(String... args) {
 		new ResetThrottleSuite().runSuiteSync();
@@ -46,14 +45,14 @@ public class ResetThrottleSuite extends HapiApiSuite {
 		);
 	}
 
-	protected HapiApiSpec resetThrottle() {
-		var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-		return defaultHapiSpec("RunCryptoTransfersWithAutoAccounts")
+	private HapiApiSpec resetThrottle() {
+		final var devThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+		return defaultHapiSpec("ResetThrottle")
 				.given(
 				).when(
 						fileUpdate(THROTTLE_DEFS)
 								.payingWith(GENESIS)
-								.contents(defaultThrottles.toByteArray())
+								.contents(devThrottles.toByteArray())
 				).then(
 				);
 	}
@@ -63,5 +62,3 @@ public class ResetThrottleSuite extends HapiApiSuite {
 		return log;
 	}
 }
-
-

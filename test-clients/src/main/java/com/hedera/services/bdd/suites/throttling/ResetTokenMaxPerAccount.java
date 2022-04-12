@@ -31,9 +31,8 @@ import java.util.Map;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 
-public class ResetTokenMaxPerAccount extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(
-			ResetTokenMaxPerAccount.class);
+public final class ResetTokenMaxPerAccount extends HapiApiSuite {
+	private static final Logger log = LogManager.getLogger(ResetTokenMaxPerAccount.class);
 
 	public static void main(String... args) {
 		new ResetTokenMaxPerAccount().runSuiteSync();
@@ -46,8 +45,8 @@ public class ResetTokenMaxPerAccount extends HapiApiSuite {
 		);
 	}
 
-	protected HapiApiSpec resetTokenMaxPerAccount() {
-		return defaultHapiSpec("RunCryptoTransfersWithAutoAccounts")
+	private HapiApiSpec resetTokenMaxPerAccount() {
+		return defaultHapiSpec("ResetTokenMaxPerAccount")
 				.given(
 				).when(
 						fileUpdate(APP_PROPERTIES)
@@ -63,5 +62,3 @@ public class ResetTokenMaxPerAccount extends HapiApiSuite {
 		return log;
 	}
 }
-
-
