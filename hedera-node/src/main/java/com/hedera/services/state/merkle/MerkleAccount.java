@@ -225,7 +225,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setNumAssociations(final int numAssociations) {
-		throwIfImmutable("Cannot change this account's numAssociations if it;s immutable");
+		throwIfImmutable("Cannot change this account's numAssociations if it's immutable");
 		state().setNumAssociations(numAssociations);
 	}
 
@@ -234,7 +234,7 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setNumPositiveBalances(final int numPositiveBalances) {
-		throwIfImmutable("Cannot change this account's numPositiveBalances if it;s immutable");
+		throwIfImmutable("Cannot change this account's numPositiveBalances if it's immutable");
 		state().setNumPositiveBalances(numPositiveBalances);
 	}
 
@@ -243,8 +243,26 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	}
 
 	public void setHeadTokenId(final long headTokenId) {
-		throwIfImmutable("Cannot change this account's headTokenId if it;s immutable");
+		throwIfImmutable("Cannot change this account's headTokenId if it's immutable");
 		state().setHeadTokenId(headTokenId);
+	}
+
+	public long getHeadNftId() {
+		return state().getHeadNftId();
+	}
+
+	public void setHeadNftId(final long headNftId) {
+		throwIfImmutable("Cannot change this account's headNftId if it's immutable");
+		state().setHeadNftId(headNftId);
+	}
+
+	public long getHeadNftSerialNum() {
+		return state().getHeadNftSerialNum();
+	}
+
+	public void setHeadNftSerialNum(final long headNftSerialNum) {
+		throwIfImmutable("Cannot change this account's headNftSerialNum if it's immutable");
+		state().setHeadNftSerialNum(headNftSerialNum);
 	}
 
 	public EntityNumPair getLatestAssociation() {

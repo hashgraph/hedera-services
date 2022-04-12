@@ -90,6 +90,8 @@ public class Account {
 	private int numAssociations;
 	private int numPositiveBalances;
 	private long headTokenNum;
+	private long headNftId;
+	private long headNftSerialNum;
 
 	public Account(Id id) {
 		this.id = id;
@@ -382,6 +384,8 @@ public class Account {
 				.add("numAssociations", numAssociations)
 				.add("numPositiveBalances", numPositiveBalances)
 				.add("headTokenNum", headTokenNum)
+				.add("headNftId", headNftId)
+				.add("headNftSerialNum", headNftSerialNum)
 				.toString();
 	}
 
@@ -455,6 +459,22 @@ public class Account {
 
 	public void setAlias(final ByteString alias) {
 		this.alias = alias;
+	}
+
+	public long getHeadNftId() {
+		return headNftId;
+	}
+
+	public void setHeadNftId(final long headNftId) {
+		this.headNftId = headNftId;
+	}
+
+	public long getHeadNftSerialNum() {
+		return headNftSerialNum;
+	}
+
+	public void setHeadNftSerialNum(final long headNftSerialNum) {
+		this.headNftSerialNum = headNftSerialNum;
 	}
 
 	public Map<EntityNum, Long> getCryptoAllowances() {

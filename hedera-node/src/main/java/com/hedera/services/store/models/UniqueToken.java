@@ -22,6 +22,9 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.NftNumPair;
+
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 /**
  * Encapsulates the state and operations of a Hedera Unique token.
@@ -37,6 +40,10 @@ public class UniqueToken {
 	private Id spender;
 	private byte[] metadata;
 	private NftId nftId;
+	// the NFT the owner has acquired after this UniqueToken
+	private NftNumPair prev = MISSING_NFT_NUM_PAIR;
+	// the NFT the owner has acquired before this UniqueToken
+	private NftNumPair next = MISSING_NFT_NUM_PAIR;
 
 	public UniqueToken(Id tokenId, long serialNumber) {
 		this.tokenId = tokenId;
@@ -114,6 +121,21 @@ public class UniqueToken {
 		this.metadata = metadata;
 	}
 
+	public NftNumPair getPrev() {
+		return prev;
+	}
+
+	public void setPrev(final NftNumPair prev) {
+		this.prev = prev;
+	}
+
+	public NftNumPair getNext() {
+		return next;
+	}
+
+	public void setNext(final NftNumPair next) {
+		this.next = next;
+	}
 
 	public void clearSpender() {
 		this.spender = Id.DEFAULT;
@@ -127,6 +149,8 @@ public class UniqueToken {
 				.add("metadata", metadata)
 				.add("creationTime", creationTime)
 				.add("owner", owner)
-				.add("spender", spender).toString();
+				.add("spender", spender)
+				.add("prevNftOwned", prev)
+				.add("nextNftOwned", next).toString();
 	}
 }
