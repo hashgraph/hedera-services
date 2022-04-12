@@ -343,10 +343,5 @@ public class HederaWorldState implements HederaMutableWorldState {
 					trackingLedgers().wrapped(), dynamicProperties
 			);
 		}
-
-		@Override
-		public Account getHederaAccount(final Address address) {
-			return getForMutation(address);
-		}
 	}
 }

@@ -43,7 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -70,8 +70,6 @@ class HederaStackedWorldStateUpdaterTest {
 	@Mock
 	private HederaMutableWorldState worldState;
 	@Mock
-	private WorldStateAccount account;
-	@Mock
 	private HederaStackedWorldStateUpdater.CustomizerFactory customizerFactory;
 	@Mock
 	private ContractCustomizer customizer;
@@ -83,6 +81,18 @@ class HederaStackedWorldStateUpdaterTest {
 	@BeforeEach
 	void setUp() {
 		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers, globalDynamicProperties);
+	}
+
+	@Test
+	void understandsRedirectsIfDisabled() {
+		assertFalse(subject.isTokenRedirect(Address.ALTBN128_PAIRING));
+	}
+
+	@Test
+	void understandsRedirectsIfMissingTokens() {
+		given(globalDynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
+		given(trackingLedgers.isTokenAddress(Address.ALTBN128_PAIRING)).willReturn(true);
+		assertTrue(subject.isTokenRedirect(Address.ALTBN128_PAIRING));
 	}
 
 	@Test
@@ -239,34 +249,6 @@ class HederaStackedWorldStateUpdaterTest {
 	void updaterReturnsStacked() {
 		var updater = subject.updater();
 		assertEquals(HederaStackedWorldStateUpdater.class, updater.getClass());
-	}
-
-	@Test
-	void getHederaAccountReturnsNullIfNotPresentInParent() {
-		given(trackingLedgers.aliases()).willReturn(aliases);
-		given(aliases.resolveForEvm(address)).willReturn(address);
-		given(((HederaWorldUpdater) updater).getHederaAccount(address)).willReturn(null);
-
-		final var result = subject.getHederaAccount(address);
-
-		// then:
-		assertNull(result);
-		// and:
-		verify((HederaWorldUpdater) updater).getHederaAccount(address);
-	}
-
-	@Test
-	void getHederaAccountReturnsValueIfPresentInParent() {
-		given(trackingLedgers.aliases()).willReturn(aliases);
-		given(aliases.resolveForEvm(address)).willReturn(address);
-		given(((HederaWorldUpdater) updater).getHederaAccount(address)).willReturn(account);
-
-		final var result = subject.getHederaAccount(address);
-
-		// then:
-		assertEquals(account, result);
-		// and:
-		verify((HederaWorldUpdater) updater).getHederaAccount(address);
 	}
 
 	private void withMockCustomizerFactory(final Runnable spec) {

@@ -72,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -200,6 +201,11 @@ class AbstractLedgerWorldUpdaterTest {
 		assertNull(subject.getAccount(aAddress));
 		verify(trackingAliases).unlink(aAddress);
 		assertEquals(ByteString.EMPTY, trackingAccounts.get(aAccount, ALIAS));
+	}
+
+	@Test
+	void recognizesNonNullTokenLedgers() {
+		assertNotNull(subject.trackingTokens());
 	}
 
 	@Test

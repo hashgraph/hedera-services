@@ -26,11 +26,14 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.records.AccountRecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -293,6 +296,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() {
 		return trackingLedgers.accounts();
+	}
+
+	protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> trackingTokens() {
+		return trackingLedgers.tokens();
 	}
 
 	public ContractAliases aliases() {

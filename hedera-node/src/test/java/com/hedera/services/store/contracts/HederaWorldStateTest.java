@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -337,7 +338,7 @@ class HederaWorldStateTest {
 		final var expected = new WorldStateAccount(Address.ZERO, Wei.of(balance), codeCache, entityAccess);
 
 		// when:
-		final var result = updater.getHederaAccount(Address.ZERO);
+		final var result = updater.getAccount(Address.ZERO);
 
 		// then:
 		assertEquals(expected.getAddress(), result.getAddress());
@@ -360,13 +361,39 @@ class HederaWorldStateTest {
 		final var expected = new WorldStateAccount(Address.ZERO, Wei.of(0), codeCache, entityAccess);
 
 		// when:
-		final var result = updater.getHederaAccount(Address.ZERO);
+		final var result = updater.getAccount(Address.ZERO);
 
 		// then:
 		assertEquals(expected.getAddress(), result.getAddress());
 		assertEquals(expected.getBalance(), result.getBalance());
 		assertEquals(-1, result.getNonce());
 		assertEquals(TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS, result.getCode());
+	}
+
+	@Test
+	void stackedUpdaterGetsHederaTokenAccount() {
+		givenNonNullWorldLedgers();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		willAnswer(invocationOnMock -> invocationOnMock.getArguments()[0]).given(aliases).resolveForEvm(any());
+
+		final var zeroAddress = EntityIdUtils.accountIdFromEvmAddress(Address.ZERO.toArray());
+		final var updater = subject.updater().updater();
+		given(entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(zeroAddress))).willReturn(true);
+		given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
+		final var expected = new WorldStateTokenAccount(Address.ZERO);
+
+		final var result = updater.get(Address.ZERO);
+		final var evmResult = updater.getAccount(Address.ZERO);
+
+		assertEquals(expected.getAddress(), result.getAddress());
+		assertEquals(expected.getBalance(), result.getBalance());
+		assertEquals(-1, result.getNonce());
+		assertEquals(TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS, result.getCode());
+		// and:
+		assertEquals(expected.getAddress(), evmResult.getAddress());
+		assertEquals(expected.getBalance(), evmResult.getBalance());
+		assertEquals(-1, evmResult.getNonce());
+		assertEquals(TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS, evmResult.getCode());
 	}
 
 	@Test
