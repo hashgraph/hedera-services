@@ -30,6 +30,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.function.Function;
@@ -57,6 +58,7 @@ public interface PropertySource {
 	Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
 	Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
 	Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
+	Function<String, Object> AS_INSTANT = Instant::parse;
 
 	boolean containsProperty(String name);
 
@@ -109,6 +111,10 @@ public interface PropertySource {
 
 	default long getLongProperty(String name) {
 		return getTypedProperty(Long.class, name);
+	}
+
+	default Instant getInstantProperty(String name) {
+		return getTypedProperty(Instant.class, name);
 	}
 
 	default Profile getProfileProperty(String name) {

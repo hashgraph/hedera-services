@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.time.Instant;
 import java.util.Set;
 
 @Singleton
@@ -107,6 +108,8 @@ public class GlobalDynamicProperties {
 	private boolean enableAllowances;
 	private boolean limitTokenAssociations;
 	private boolean enableHTSPrecompileCreate;
+	private long bootstrapLastBlockNumber;
+	private Instant bootstrapLastBlockTimestamp;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -196,6 +199,8 @@ public class GlobalDynamicProperties {
 		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
 		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
+		bootstrapLastBlockNumber = properties.getLongProperty("blocks.lastBlockNumber");
+		bootstrapLastBlockTimestamp = properties.getInstantProperty("blocks.lastBlockTimestamp");
 	}
 
 	public int maxTokensPerAccount() {
@@ -479,5 +484,13 @@ public class GlobalDynamicProperties {
 
 	public boolean isHTSPrecompileCreateEnabled() {
 		return enableHTSPrecompileCreate;
+	}
+
+	public long bootstrapLastBlockNumber() {
+		return bootstrapLastBlockNumber;
+	}
+
+	public Instant bootstrapLastBlockTimestamp() {
+		return bootstrapLastBlockTimestamp;
 	}
 }

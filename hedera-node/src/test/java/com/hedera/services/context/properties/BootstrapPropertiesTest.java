@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -214,7 +215,9 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxTransactionLimit", 20),
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
-			entry("accounts.limitTokenAssociations", true)
+			entry("accounts.limitTokenAssociations", true),
+			entry("blocks.lastBlockTimestamp", Instant.parse("2022-04-01T00:00:00Z")),
+			entry("blocks.lastBlockNumber", 1L)
 	);
 
 	@Test
