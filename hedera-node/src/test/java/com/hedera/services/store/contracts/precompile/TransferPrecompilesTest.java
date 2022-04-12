@@ -39,7 +39,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -70,7 +70,6 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -152,7 +151,7 @@ class TransferPrecompilesTest {
 	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private DecodingFacade decoder;
 	@Mock

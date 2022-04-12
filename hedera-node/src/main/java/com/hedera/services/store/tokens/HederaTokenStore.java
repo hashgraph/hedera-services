@@ -174,7 +174,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return ACCOUNT_DELETED;
 		}
 
-		var detached = properties.autoRenewEnabled()
+		var detached = properties.shouldAutoRenewSomeEntityType()
 				&& !(boolean) accountsLedger.get(aId, IS_SMART_CONTRACT)
 				&& (long) accountsLedger.get(aId, BALANCE) == 0L
 				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(aId, EXPIRY));

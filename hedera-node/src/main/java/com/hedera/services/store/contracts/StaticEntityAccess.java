@@ -55,6 +55,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -164,7 +165,7 @@ public class StaticEntityAccess implements EntityAccess {
 
 	@Override
 	public boolean isDetached(AccountID id) {
-		if (!dynamicProperties.autoRenewEnabled()) {
+		if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
 			return false;
 		}
 		final var account = accounts.get(fromAccountId(id));
@@ -216,11 +217,20 @@ public class StaticEntityAccess implements EntityAccess {
 		return explicitCodeFetch(bytecode, id);
 	}
 
+	@Nullable
 	static Bytes explicitCodeFetch(
 			final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode,
 			final AccountID id
 	) {
-		final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(id.getAccountNum()));
+		return explicitCodeFetch(bytecode, id.getAccountNum());
+	}
+
+	@Nullable
+	public static Bytes explicitCodeFetch(
+			final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode,
+			final long contractNum
+	) {
+		final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(contractNum));
 		final var value = bytecode.get(key);
 		return (value != null) ? Bytes.of(value.getData()) : null;
 	}

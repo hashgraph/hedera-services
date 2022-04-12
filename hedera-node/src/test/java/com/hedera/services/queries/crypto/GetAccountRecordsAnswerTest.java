@@ -84,8 +84,6 @@ class GetAccountRecordsAnswerTest {
 		payerAccount = MerkleAccountFactory.newAccount()
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.proxy(asAccount("1.2.3"))
-				.senderThreshold(1_234L)
-				.receiverThreshold(4_321L)
 				.receiverSigRequired(true)
 				.balance(555L)
 				.autoRenewPeriod(1_000_000L)

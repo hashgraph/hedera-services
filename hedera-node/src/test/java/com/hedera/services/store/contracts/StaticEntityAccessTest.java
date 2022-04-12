@@ -175,14 +175,14 @@ class StaticEntityAccessTest {
 
 	@Test
 	void notDetachedIfSmartContract() {
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someContractAccount);
 		assertFalse(subject.isDetached(id));
 	}
 
 	@Test
 	void notDetachedIfNonZeroBalance() throws NegativeAccountBalanceException {
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
 		someNonContractAccount.setBalance(1L);
 		assertFalse(subject.isDetached(id));
@@ -190,7 +190,7 @@ class StaticEntityAccessTest {
 
 	@Test
 	void notDetachedIfNotExpired() throws NegativeAccountBalanceException {
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
 		someNonContractAccount.setBalance(0L);
 		given(validator.isAfterConsensusSecond(someNonContractAccount.getExpiry())).willReturn(true);
@@ -199,7 +199,7 @@ class StaticEntityAccessTest {
 
 	@Test
 	void detachedIfExpiredWithZeroBalance() throws NegativeAccountBalanceException {
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
 		someNonContractAccount.setBalance(0L);
 		assertTrue(subject.isDetached(id));

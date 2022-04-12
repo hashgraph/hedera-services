@@ -30,7 +30,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -118,7 +118,7 @@ class TransferLogicTest {
 	@Mock
 	private AutoCreationLogic autoCreationLogic;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private AccountsCommitInterceptor accountsCommitInterceptor;
 
@@ -256,35 +256,46 @@ class TransferLogicTest {
 	@Test
 	void happyPathNFTAllowance() {
 		setUpAccountWithAllowances();
-		final var nftId = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
+		final var nftId1 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
+		final var nftId2 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 2L);
 		final var change1 = BalanceChange.changingNftOwnership(
-				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 1L), payer);
-		final var nftId2 = NftId.withDefaultShardRealm(fungibleTokenID.getTokenNum(), 123L);
+				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, allowanceNftTransfer(owner, revokedSpender, 1L), payer);
 		final var change2 = BalanceChange.changingNftOwnership(
-				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, nftTransfer(owner, revokedSpender, 123L), payer);
+				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, allowanceNftTransfer(owner, revokedSpender, 123L), payer);
+		final var change3 = BalanceChange.changingNftOwnership(
+				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 2L), payer);
 
 		given(tokenStore.tryTokenChange(change1)).willReturn(OK);
 		given(tokenStore.tryTokenChange(change2)).willReturn(OK);
-		backingNfts.put(nftId,
+		given(tokenStore.tryTokenChange(change3)).willReturn(OK);
+		backingNfts.put(nftId1,
 				new UniqueTokenValue(
 						MISSING_ENTITY_ID.num(),
 						payer.getAccountNum(),
-						RichInstant.fromJava(Instant.ofEpochSecond(0, 0)),
+						RichInstant.MISSING_INSTANT,
 						new byte[] { 0x1 }));
 		backingNfts.put(nftId2,
 				new UniqueTokenValue(
 						MISSING_ENTITY_ID.num(),
 						payer.getAccountNum(),
-						RichInstant.fromJava(Instant.ofEpochSecond(0, 0)),
+						RichInstant.MISSING_INSTANT,
 						new byte[] { 0x2 }));
+		backingNfts.put(
+				NftId.withDefaultShardRealm(fungibleTokenID.getTokenNum(), 123L),
+				new UniqueTokenValue(
+						MISSING_ENTITY_ID.num(),
+						MISSING_ENTITY_ID.num(),
+						RichInstant.MISSING_INSTANT,
+						new byte[] { 0x3 }
+				));
 		accountsLedger.begin();
 		nftsLedger.begin();
 
-		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2)));
+		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2, change3)));
 
 		updateAllowanceMaps();
 		assertTrue(nftAllowances.contains(fungibleAllowanceId));
-		assertThat(nftsLedger.get(nftId, SPENDER)).isEqualTo(MISSING_ENTITY_ID);
+		assertThat(nftsLedger.get(nftId1, SPENDER)).isEqualTo(MISSING_ENTITY_ID);
 		assertThat(nftsLedger.get(nftId2, SPENDER)).isEqualTo(MISSING_ENTITY_ID);
 	}
 
@@ -303,9 +314,18 @@ class TransferLogicTest {
 				.build();
 	}
 
-	private NftTransfer nftTransfer(final AccountID sender, final AccountID receiver, final long serialNum) {
+	private NftTransfer allowanceNftTransfer(final AccountID sender, final AccountID receiver, final long serialNum) {
 		return NftTransfer.newBuilder()
 				.setIsApproval(true)
+				.setSenderAccountID(sender)
+				.setReceiverAccountID(receiver)
+				.setSerialNumber(serialNum)
+				.build();
+	}
+
+	private NftTransfer nftTransfer(final AccountID sender, final AccountID receiver, final long serialNum) {
+		return NftTransfer.newBuilder()
+				.setIsApproval(false)
 				.setSenderAccountID(sender)
 				.setReceiverAccountID(receiver)
 				.setSerialNumber(serialNum)

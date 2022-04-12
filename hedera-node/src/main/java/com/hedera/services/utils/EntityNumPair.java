@@ -43,6 +43,10 @@ public record EntityNumPair(long value) {
 		Objects.requireNonNull(value);
 	}
 
+	public static EntityNumPair fromNums(final EntityNum a, final EntityNum b) {
+		return fromLongs(a.longValue(), b.longValue());
+	}
+
 	public static EntityNumPair fromLongs(long hi, long lo) {
 		if (!isValidNum(hi) || !isValidNum(lo)) {
 			return MISSING_NUM_PAIR;

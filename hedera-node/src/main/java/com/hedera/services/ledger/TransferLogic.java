@@ -26,7 +26,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
@@ -72,7 +72,7 @@ public class TransferLogic {
 	private final TokenStore tokenStore;
 	private final AutoCreationLogic autoCreationLogic;
 	private final SideEffectsTracker sideEffectsTracker;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final MerkleAccountScopedCheck scopedCheck;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -89,7 +89,7 @@ public class TransferLogic {
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator,
 			final @Nullable AutoCreationLogic autoCreationLogic,
-			final AccountRecordsHistorian recordsHistorian
+			final RecordsHistorian recordsHistorian
 	) {
 		this.tokenStore = tokenStore;
 		this.nftsLedger = nftsLedger;
@@ -164,7 +164,8 @@ public class TransferLogic {
 				}
 			} else if (change.isApprovedAllowance() && change.isForFungibleToken()) {
 				adjustFungibleTokenAllowance(change, accountId);
-			} else if (change.isApprovedAllowance() && change.isForNft()) {
+			} else if (change.isForNft()) {
+				// wipe the allowance on this uniqueToken
 				nftsLedger.set(change.nftId(), SPENDER, MISSING_ENTITY_ID);
 			}
 		}

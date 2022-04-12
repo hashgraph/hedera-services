@@ -44,7 +44,7 @@ import java.util.function.Predicate;
  * of the active transaction, which is somewhat confusing and will be
  * addressed in a future refactor.
  */
-public interface AccountRecordsHistorian {
+public interface RecordsHistorian {
 	/**
 	 * For safety, a method to notify the historian that a new transaction is beginning
 	 * so any residual history can be cleared (e.g., in-progress child records).

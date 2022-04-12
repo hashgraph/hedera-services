@@ -88,6 +88,7 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			MapValueListUtils.class,
 			HFileMetaSerde.class,
 			IoUtils.class,
 			DescriptorUtils.class,

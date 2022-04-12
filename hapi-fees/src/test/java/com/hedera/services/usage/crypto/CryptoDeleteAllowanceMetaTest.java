@@ -23,9 +23,7 @@ package com.hedera.services.usage.crypto;
 import com.hedera.services.test.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
-import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,17 +32,12 @@ import java.util.List;
 
 import static com.hedera.services.test.IdUtils.asAccount;
 import static com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta.countNftDeleteSerials;
-import static com.hederahashgraph.fee.FeeBuilder.CRYPTO_DELETE_ALLOWANCE_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.TOKEN_DELETE_ALLOWANCE_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CryptoDeleteAllowanceMetaTest {
 	private final AccountID proxy = asAccount("0.0.1234");
-	private CryptoRemoveAllowance cryptoAllowances = CryptoRemoveAllowance.newBuilder().setOwner(proxy).build();
-	private TokenRemoveAllowance tokenAllowances = TokenRemoveAllowance.newBuilder()
-			.setOwner(proxy).setTokenId(IdUtils.asToken("0.0.1000")).build();
 	private NftRemoveAllowance nftAllowances = NftRemoveAllowance.newBuilder().setOwner(proxy)
 			.setTokenId(IdUtils.asToken("0.0.1000"))
 			.addAllSerialNumbers(List.of(1L, 2L, 3L))
@@ -72,8 +65,6 @@ class CryptoDeleteAllowanceMetaTest {
 	void calculatesBaseSizeAsExpected() {
 		final var op = CryptoDeleteAllowanceTransactionBody
 				.newBuilder()
-				.addAllCryptoAllowances(List.of(cryptoAllowances))
-				.addAllTokenAllowances(List.of(tokenAllowances))
 				.addAllNftAllowances(List.of(nftAllowances))
 				.build();
 		final var canonicalTxn = TransactionBody.newBuilder()
@@ -82,9 +73,7 @@ class CryptoDeleteAllowanceMetaTest {
 		var subject = new CryptoDeleteAllowanceMeta(op,
 				canonicalTxn.getTransactionID().getTransactionValidStart().getSeconds());
 
-		final var expectedMsgBytes = (op.getCryptoAllowancesCount() * CRYPTO_DELETE_ALLOWANCE_SIZE)
-				+ (op.getTokenAllowancesCount() * TOKEN_DELETE_ALLOWANCE_SIZE)
-				+ (op.getNftAllowancesCount() * NFT_DELETE_ALLOWANCE_SIZE) +
+		final var expectedMsgBytes = (op.getNftAllowancesCount() * NFT_DELETE_ALLOWANCE_SIZE) +
 				countNftDeleteSerials(op.getNftAllowancesList()) * LONG_SIZE;
 
 		assertEquals(expectedMsgBytes, subject.getMsgBytesUsed());

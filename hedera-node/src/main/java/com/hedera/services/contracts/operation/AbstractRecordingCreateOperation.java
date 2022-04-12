@@ -21,7 +21,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -59,7 +59,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
 	private final EntityCreator creator;
 	private final SyntheticTxnFactory syntheticTxnFactory;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 
 	protected AbstractRecordingCreateOperation(
 			final int opcode,
@@ -70,7 +70,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			final GasCalculator gasCalculator,
 			final EntityCreator creator,
 			final SyntheticTxnFactory syntheticTxnFactory,
-			final AccountRecordsHistorian recordsHistorian
+			final RecordsHistorian recordsHistorian
 	) {
 		super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator);
 		this.creator = creator;

@@ -25,6 +25,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.services.context.properties.StaticPropertiesHolder;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -273,6 +274,10 @@ public class EntityId implements SelfSerializable {
 				.setRealmNum(realm)
 				.setAccountNum(num)
 				.build();
+	}
+
+	public EntityNum asNum() {
+		return EntityNum.fromLong(num);
 	}
 
 	public Id asId() {

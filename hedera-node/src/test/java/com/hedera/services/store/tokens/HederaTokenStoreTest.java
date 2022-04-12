@@ -92,6 +92,8 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIAT
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
@@ -640,7 +642,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.exists(sponsor)).willReturn(true);
 		given(hederaLedger.isDetached(sponsor)).willReturn(true);
 
-		given(properties.autoRenewEnabled()).willReturn(true);
+		given(properties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		given(accountsLedger.get(any(), eq(IS_SMART_CONTRACT))).willReturn(false);
 		given(accountsLedger.get(any(), eq(BALANCE))).willReturn(0l);
 		given(accountsLedger.get(any(), eq(EXPIRY))).willReturn(100000000000000l);
@@ -775,9 +777,7 @@ class HederaTokenStoreTest {
 		final long startCounterpartyNfts = 8;
 		final long startSponsorANfts = 4;
 		final long startCounterpartyANfts = 1;
-		final var sender = EntityId.fromGrpcAccountId(sponsor);
 		final var receiver = EntityId.fromGrpcAccountId(counterparty);
-		final var muti = EntityNumPair.fromLongs(aNft.tokenId().getTokenNum(), aNft.serialNo());
 		given(accountsLedger.get(sponsor, NUM_NFTS_OWNED)).willReturn(startSponsorNfts);
 		given(accountsLedger.get(counterparty, NUM_NFTS_OWNED)).willReturn(startCounterpartyNfts);
 		given(tokenRelsLedger.get(sponsorNft, TOKEN_BALANCE)).willReturn(startSponsorANfts);

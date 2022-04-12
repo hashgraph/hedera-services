@@ -43,9 +43,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
-import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
-import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
-import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
@@ -185,8 +182,6 @@ class GetAccountInfoAnswerTest {
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.memo(memo)
 				.proxy(asAccount("1.2.3"))
-				.senderThreshold(1_234L)
-				.receiverThreshold(4_321L)
 				.receiverSigRequired(true)
 				.balance(555L)
 				.autoRenewPeriod(1_000_000L)
@@ -303,25 +298,6 @@ class GetAccountInfoAnswerTest {
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(memo, info.getMemo());
-		assertEquals(1, info.getGrantedCryptoAllowancesCount());
-		assertEquals(1, info.getGrantedTokenAllowancesCount());
-		assertEquals(1, info.getGrantedNftAllowancesCount());
-		assertEquals(GrantedCryptoAllowance.newBuilder()
-						.setAmount(10L)
-						.setSpender(EntityNum.fromLong(1L).toGrpcAccountId())
-						.build(),
-				info.getGrantedCryptoAllowances(0));
-		assertEquals(GrantedTokenAllowance.newBuilder()
-						.setAmount(20L)
-						.setSpender(EntityNum.fromLong(2000L).toGrpcAccountId())
-						.setTokenId(EntityNum.fromLong(1000L).toGrpcTokenId())
-						.build(),
-				info.getGrantedTokenAllowances(0));
-		assertEquals(GrantedNftAllowance.newBuilder()
-						.setSpender(EntityNum.fromLong(2000L).toGrpcAccountId())
-						.setTokenId(EntityNum.fromLong(1000L).toGrpcTokenId())
-						.build(),
-				info.getGrantedNftAllowances(0));
 
 		// and:
 		assertEquals(
