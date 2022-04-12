@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.7;
 
 contract EmitBlockTimestamp {
     event Time(uint now);
@@ -7,8 +7,8 @@ contract EmitBlockTimestamp {
 
     function logNow() public {
         emit Time(block.timestamp);
-        uint prevBlockNo = block.number - 1;
-        bytes32 prevHash = blockhash(prevBlockNo);
-        emit Hash(prevBlockNo, prevHash);
+        uint blockNo = block.number;
+        bytes32 prevHash = blockhash(blockNo);
+        emit Hash(blockNo, prevHash);
     }
 }

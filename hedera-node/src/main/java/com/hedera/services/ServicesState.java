@@ -407,7 +407,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				networkCtx().discardPreparedUpgradeMeta();
 				dualState.setFreezeTime(null);
 
-				networkCtx().startNewBlock();
+				networkCtx().startNewBlock(null);
 				log.info("First post-upgrade block is #{}", networkCtx().getBlockNo());
 			}
 			if (stateVersion < CURRENT_VERSION) {

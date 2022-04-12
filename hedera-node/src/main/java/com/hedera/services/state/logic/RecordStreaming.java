@@ -107,7 +107,8 @@ public class RecordStreaming implements Runnable {
 				return;
 			}
 
-			curNetworkCtx.finishCurrentBlock(computedHash, rso.getTimestamp());
+			curNetworkCtx.finishCurrentBlock(computedHash);
+			curNetworkCtx.startNewBlock(rso.getTimestamp());
 			log.info("Beginning block #{} @ {}", curNetworkCtx.getBlockNo(), rso.getTimestamp());
 		}
 
@@ -123,11 +124,15 @@ public class RecordStreaming implements Runnable {
 		final var latestBlockTime = curNetworkCtx.getLatestConsTimeOfCurrentBlock();
 		final var consTime = rso.getTimestamp();
 		boolean result;
-		if (firstBlockTime == null || latestBlockTime == null) {
+		if (firstBlockTime == null) {
 			result = true;
 		} else {
 			final Duration duration = Duration.between(latestBlockTime, consTime);
 			result = getPeriod(consTime, BLOCK_PERIOD_MS) != getPeriod(firstBlockTime, BLOCK_PERIOD_MS) && duration.toNanos() >= MIN_TRANS_TIMESTAMP_INCR_NANOS;
+			if(result) {
+				log.info("consTime is {}", consTime);
+				log.info("firstBlockTime is {}", firstBlockTime);
+			}
 		}
 		return result;
 	}
