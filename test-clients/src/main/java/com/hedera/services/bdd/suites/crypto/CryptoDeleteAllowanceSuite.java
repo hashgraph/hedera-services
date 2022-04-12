@@ -453,7 +453,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.fee(ONE_HUNDRED_HBARS)
 								.payingWith(EXCHANGE_RATE_CONTROL)
 								.overridingProps(Map.of(
-										"hedera.allowances.maxTransactionLimit", "2")
+										"hedera.allowances.maxTransactionLimit", "4")
 								),
 						cryptoCreate(owner)
 								.balance(ONE_HUNDRED_HBARS)
@@ -497,7 +497,19 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
 								.addNftAllowance(owner, nft, spender, false, List.of(1L, 2L)),
 						cryptoDeleteAllowance()
 								.payingWith(owner)
-								.addNftDeleteAllowance(owner, nft, List.of(1L, 2L, 3L))
+								.addNftDeleteAllowance(owner, nft, List.of(1L, 2L, 3L, 3L, 3L))
+								.hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
+						cryptoDeleteAllowance()
+								.payingWith(owner)
+								.addNftDeleteAllowance(owner, nft, List.of(1L, 1L, 1L, 1L, 1L))
+								.hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
+						cryptoDeleteAllowance()
+								.payingWith(owner)
+								.addNftDeleteAllowance(owner, nft, List.of(1L))
+								.addNftDeleteAllowance(owner, nft, List.of(2L))
+								.addNftDeleteAllowance(owner, nft, List.of(3L))
+								.addNftDeleteAllowance(owner, nft, List.of(1L))
+								.addNftDeleteAllowance(owner, nft, List.of(1L))
 								.hasPrecheck(MAX_ALLOWANCES_EXCEEDED)
 				)
 				.then(

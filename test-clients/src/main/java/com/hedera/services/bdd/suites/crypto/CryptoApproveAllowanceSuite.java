@@ -1040,8 +1040,27 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 								.addCryptoAllowance(owner, spender2, 100L)
 								.addTokenAllowance(owner, token, spender, 100L)
 								.addNftAllowance(owner, nft, spender, false, List.of(1L))
+								.hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addNftAllowance(owner, nft, spender, false, List.of(1L, 1L, 1L, 1L, 1L))
+								.hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addCryptoAllowance(owner, spender, 100L)
+								.addCryptoAllowance(owner, spender, 200L)
+								.addCryptoAllowance(owner, spender, 100L)
+								.addCryptoAllowance(owner, spender, 200L)
+								.addCryptoAllowance(owner, spender, 200L)
+								.hasPrecheck(MAX_ALLOWANCES_EXCEEDED),
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addTokenAllowance(owner, token, spender, 100L)
+								.addTokenAllowance(owner, token, spender, 100L)
+								.addTokenAllowance(owner, token, spender, 100L)
+								.addTokenAllowance(owner, token, spender, 100L)
+								.addTokenAllowance(owner, token, spender, 100L)
 								.hasPrecheck(MAX_ALLOWANCES_EXCEEDED)
-								.fee(ONE_HBAR)
 				)
 				.then(
 						// reset
