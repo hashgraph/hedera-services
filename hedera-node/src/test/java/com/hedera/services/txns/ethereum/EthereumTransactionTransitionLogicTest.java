@@ -334,6 +334,19 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void incorrectNonce() {
+		givenValidTxnCtx();
+		given(accessor.getExpandedSigStatus()).willReturn(OK);
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
+				senderAccount.getId().asEntityNum());
+		given(accountsLedger.get(any(), any())).willReturn(0L);
+
+		// expect:
+		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+	}
+
+	@Test
 	void expandedSignaturesInvalid() {
 		givenValidTxnCtx();
 		given(accessor.getExpandedSigStatus()).willReturn(OK);
