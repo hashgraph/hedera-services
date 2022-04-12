@@ -2,14 +2,17 @@ package com.hedera.services.txns.ethereum;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.common.base.MoreObjects;
 import com.hedera.services.txns.ethereum.EthTxData.EthTransactionType;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
+import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import static com.hedera.services.txns.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
 import static com.hedera.services.txns.ethereum.EthTxData.SECP256K1_EC_COMPRESSED;
@@ -171,5 +174,31 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
 		} else {
 			return newPubKey;
 		}
+	}
+
+	@Override
+	public boolean equals(final Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		final EthTxSigs ethTxSigs = (EthTxSigs) o;
+
+		if (!Arrays.equals(publicKey, ethTxSigs.publicKey)) return false;
+		return Arrays.equals(address, ethTxSigs.address);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Arrays.hashCode(publicKey);
+		result = 31 * result + Arrays.hashCode(address);
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("publicKey", Hex.encodeHexString(publicKey))
+				.add("address", Hex.encodeHexString(address))
+				.toString();
 	}
 }
