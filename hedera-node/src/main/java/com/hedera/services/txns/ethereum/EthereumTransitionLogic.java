@@ -25,15 +25,19 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.TxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -65,6 +69,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	private final AliasManager aliasManager;
 	private final HederaFs hfs;
 	private final byte[] chainId;
+	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	@Inject
 	public EthereumTransitionLogic(
@@ -75,7 +80,8 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			final TransactionRecordService recordService,
 			final HederaFs hfs,
 			GlobalDynamicProperties globalDynamicProperties,
-			AliasManager aliasManager) {
+			AliasManager aliasManager,
+			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		this.txnCtx = txnCtx;
 		this.spanMapAccessor = spanMapAccessor;
 		this.contractCallTransitionLogic = contractCallTransitionLogic;
@@ -84,6 +90,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		this.hfs = hfs;
 		this.chainId = Integers.toBytes(globalDynamicProperties.getChainId());
 		this.aliasManager = aliasManager;
+		this.accountsLedger = accountsLedger;
 	}
 
 	@Override
@@ -96,9 +103,9 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 
 		if (syntheticTxBody.hasContractCall()) {
-			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId());
+			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
 		} else if (syntheticTxBody.hasContractCreateInstance()) {
-			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId());
+			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
 		}
 		recordService.updateFromEvmCallContext(new EvmFnResult.EvmFnCallContext(ethTxData.gasLimit(),
 				ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact(), ethTxData.callData()));
@@ -144,7 +151,11 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			if (callingAccount == null) {
 				return ResponseCodeEnum.INVALID_ACCOUNT_ID; // FIXME new response code?
 			}
-			//TODO is the nonce valid?
+
+			var accountNonce = (long) accountsLedger.get(callingAccount.toGrpcAccountId(), AccountProperty.TRANSACTION_COUNTER);
+			if (ethTxData.nonce() != accountNonce) {
+				return ResponseCodeEnum.FAIL_INVALID; //FIXME ResponseCodeEnum.WRONG_NONCE
+			}
 		}
 
 		if (txBody.hasContractCall()) {

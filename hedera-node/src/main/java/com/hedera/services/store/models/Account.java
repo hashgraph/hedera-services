@@ -90,6 +90,7 @@ public class Account {
 	private int numAssociations;
 	private int numPositiveBalances;
 	private long headTokenNum;
+	private long transactionCounter;
 
 	public Account(Id id) {
 		this.id = id;
@@ -101,6 +102,18 @@ public class Account {
 
 	public void initBalance(long balance) {
 		this.balance = balance;
+	}
+
+	public void setTransactionCounter(long transactionCounter) {
+		this.transactionCounter = transactionCounter;
+	}
+
+	public void incrementTransactionCounter() {
+		this.transactionCounter++;
+	}
+
+	public long getTransactionCounter() {
+		return transactionCounter;
 	}
 
 	public long getOwnedNfts() {
@@ -382,6 +395,7 @@ public class Account {
 				.add("numAssociations", numAssociations)
 				.add("numPositiveBalances", numPositiveBalances)
 				.add("headTokenNum", headTokenNum)
+				.add("transactionCounter", transactionCounter)
 				.toString();
 	}
 

@@ -294,7 +294,8 @@ public class SeededPropertySource {
 				nextApprovedForAllAllowances(10),
 				numAssociations,
 				numPositiveBalanceAssociations,
-				nextInRangeLong());
+				nextInRangeLong(),
+				nextUnsignedLong());
 	}
 
 	public ExpirableTxnRecord nextRecord() {

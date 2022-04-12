@@ -91,6 +91,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
 	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
 	private Set<FcTokenAllowanceId> approveForAllNfts = Collections.emptySet();
+	private long transactionCounter;
 
 	public MerkleAccountState() {
 		// RuntimeConstructable
@@ -116,7 +117,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final Set<FcTokenAllowanceId> approveForAllNfts,
 			final int numAssociations,
 			final int numPositiveBalances,
-			final long headTokenId
+			final long headTokenId,
+			final long transactionCounter
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -132,6 +134,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.usedAutoAssociations = usedAutoAssociations;
 		this.alias = Optional.ofNullable(alias).orElse(DEFAULT_ALIAS);
 		this.numContractKvPairs = numContractKvPairs;
+		this.transactionCounter = transactionCounter;
 		this.cryptoAllowances = cryptoAllowances;
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 		this.approveForAllNfts = approveForAllNfts;
@@ -192,6 +195,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			numAssociations = in.readInt();
 			numPositiveBalances = in.readInt();
 			headTokenId = in.readLong();
+			transactionCounter = in.readLong();
 		}
 	}
 
@@ -218,6 +222,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(numAssociations);
 		out.writeInt(numPositiveBalances);
 		out.writeLong(headTokenId);
+		out.writeLong(transactionCounter);
 	}
 
 	/* --- Copyable --- */
@@ -243,7 +248,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				approveForAllNfts,
 				numAssociations,
 				numPositiveBalances,
-				headTokenId);
+				headTokenId,
+				transactionCounter);
 		copied.setNftsOwned(nftsOwned);
 		return copied;
 	}
@@ -270,6 +276,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Objects.equals(this.proxy, that.proxy) &&
 				this.nftsOwned == that.nftsOwned &&
 				this.numContractKvPairs == that.numContractKvPairs &&
+				this.transactionCounter == that.transactionCounter &&
 				this.maxAutoAssociations == that.maxAutoAssociations &&
 				this.usedAutoAssociations == that.usedAutoAssociations &&
 				equalUpToDecodability(this.key, that.key) &&
@@ -304,7 +311,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				approveForAllNfts,
 				numAssociations,
 				numPositiveBalances,
-				headTokenId);
+				headTokenId,
+				transactionCounter);
 	}
 
 	/* --- Bean --- */
@@ -326,6 +334,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("alreadyUsedAutoAssociations", usedAutoAssociations)
 				.add("maxAutoAssociations", maxAutoAssociations)
 				.add("alias", alias.toStringUtf8())
+				.add("transactionCounter", transactionCounter)
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("approveForAllNfts", approveForAllNfts)
@@ -383,6 +392,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return proxy;
 	}
 
+	public long transactionCounter() {
+		return transactionCounter;
+	}
+
 	public long nftsOwned() {
 		return nftsOwned;
 	}
@@ -414,6 +427,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setMemo(String memo) {
 		assertMutable("memo");
 		this.memo = memo;
+	}
+
+	public void setTransactionCounter(long transactionCounter) {
+		assertMutable("transactionCounter");
+		this.transactionCounter = transactionCounter;
 	}
 
 	public void setDeleted(boolean deleted) {

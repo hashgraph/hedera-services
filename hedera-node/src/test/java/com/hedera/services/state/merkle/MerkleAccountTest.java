@@ -55,6 +55,7 @@ class MerkleAccountTest {
 	private static final JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
 	private static final long expiry = 1_234_567L;
 	private static final long balance = 555_555L;
+	private static final long transactionCounter = 1L;
 	private static final long autoRenewSecs = 234_567L;
 	private static final String memo = "A memo";
 	private static final boolean deleted = true;
@@ -125,7 +126,8 @@ class MerkleAccountTest {
 				approveForAllNfts,
 				0,
 				0,
-				lastAssociatedTokenNum);
+				lastAssociatedTokenNum,
+				transactionCounter);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);

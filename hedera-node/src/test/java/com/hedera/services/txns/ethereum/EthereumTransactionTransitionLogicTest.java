@@ -28,8 +28,11 @@ import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaWorldState;
@@ -42,6 +45,7 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -124,6 +128,8 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private ExpandHandleSpanMapAccessor spanMapAccessor;
 	@Mock
+	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
 	private HederaFs hfs;
 	private TransactionBody ethTxTxn;
 	private EthTxData ethTxData;
@@ -138,7 +144,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(globalDynamicProperties.getChainId()).willReturn(0x128);
 		subject = new EthereumTransitionLogic(txnCtx, spanMapAccessor, contractCallTransitionLogic,
 				contractCreateTransitionLogic, recordService,
-				hfs, globalDynamicProperties, aliasManager);
+				hfs, globalDynamicProperties, aliasManager, accountsLedger);
 	}
 
 	@Test
@@ -321,9 +327,23 @@ class EthereumTransactionTransitionLogicTest {
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
+		given(accountsLedger.get(any(), any())).willReturn(1L);
 
 		// expect:
 		assertEquals(OK, subject.validateSemantics(accessor));
+	}
+
+	@Test
+	void incorrectNonce() {
+		givenValidTxnCtx();
+		given(accessor.getExpandedSigStatus()).willReturn(OK);
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
+				senderAccount.getId().asEntityNum());
+		given(accountsLedger.get(any(), any())).willReturn(0L);
+
+		// expect:
+		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
 	}
 
 	@Test

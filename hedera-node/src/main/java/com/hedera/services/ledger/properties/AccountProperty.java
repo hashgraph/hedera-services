@@ -205,6 +205,17 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getAlias;
 		}
 	},
+	TRANSACTION_COUNTER {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, v) -> a.setTransactionCounter((long) v);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getTransactionCounter;
+		}
+	},
 	CRYPTO_ALLOWANCES {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {

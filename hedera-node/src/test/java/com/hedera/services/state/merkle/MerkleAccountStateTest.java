@@ -48,6 +48,7 @@ class MerkleAccountStateTest {
 	private static final JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
 	private static final long expiry = 1_234_567L;
 	private static final long balance = 555_555L;
+	private static final long transactionCounter = 0L;
 	private static final long autoRenewSecs = 234_567L;
 	private static final long nftsOwned = 150L;
 	private static final String memo = "A memo";
@@ -122,7 +123,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 		subject.setNftsOwned(nftsOwned);
 	}
 
@@ -189,6 +191,7 @@ class MerkleAccountStateTest {
 						"alreadyUsedAutoAssociations=" + usedAutoAssociations + ", " +
 						"maxAutoAssociations=" + maxAutoAssociations + ", " +
 						"alias=" + alias.toStringUtf8() + ", " +
+						"transactionCounter=" + transactionCounter + ", " +
 						"cryptoAllowances=" + cryptoAllowances + ", " +
 						"fungibleTokenAllowances=" + fungibleTokenAllowances + ", " +
 						"approveForAllNfts=" + approveForAllNfts + ", " +
@@ -258,7 +261,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -281,7 +285,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -304,7 +309,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -327,7 +333,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -350,7 +357,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -373,7 +381,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -396,7 +405,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -419,7 +429,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -442,7 +453,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -465,7 +477,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -488,7 +501,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -511,7 +525,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -540,7 +555,9 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter
+				);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -571,7 +588,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -602,7 +620,8 @@ class MerkleAccountStateTest {
 				otherApproveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -625,7 +644,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances+1,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject, otherSubject);
 	}
@@ -656,7 +676,8 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 		identicalSubject.setNftsOwned(nftsOwned);
 
 		final var otherSubject = new MerkleAccountState(
@@ -675,7 +696,8 @@ class MerkleAccountStateTest {
 				otherApproveForAllNfts,
 				associatedTokensCount,
 				numPositiveBalances,
-				headTokenNum);
+				headTokenNum,
+				transactionCounter);
 
 		assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
 		assertNotEquals(subject.hashCode(), otherSubject.hashCode());
