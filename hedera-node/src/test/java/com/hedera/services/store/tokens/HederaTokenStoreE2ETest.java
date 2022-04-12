@@ -72,7 +72,7 @@ import static com.hedera.test.mocks.TestContextValidator.TEST_VALIDATOR;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-public class HederaTokenStoreE2ETest {
+class HederaTokenStoreE2ETest {
 	private static final int MAX_TOKENS_PER_ACCOUNT = 100;
 	private static final int MAX_TOKEN_SYMBOL_UTF8_BYTES = 10;
 	private static final int MAX_TOKEN_NAME_UTF8_BYTES = 100;
