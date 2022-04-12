@@ -24,6 +24,7 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 
@@ -69,6 +69,51 @@ class SyntheticTxnFactoryTest {
 	private ContractCustomizer customizer;
 
 	@Test
+	void synthesizesExpectedContractAutoRenew() {
+		final var result = subject.synthContractAutoRenew(contractNum, newExpiry);
+		final var synthBody = result.build();
+
+		assertTrue(result.hasContractUpdateInstance());
+		final var op = synthBody.getContractUpdateInstance();
+		assertEquals(contractNum.toGrpcContractID(), op.getContractID());
+		assertEquals(contractNum.toGrpcAccountId(), synthBody.getTransactionID().getAccountID());
+		assertEquals(newExpiry, op.getExpirationTime().getSeconds());
+	}
+
+	@Test
+	void synthesizesExpectedContractAutoRemove() {
+		final var result = subject.synthContractAutoRemove(contractNum);
+		final var synthBody = result.build();
+
+		assertTrue(result.hasContractDeleteInstance());
+		final var op = synthBody.getContractDeleteInstance();
+		assertEquals(contractNum.toGrpcContractID(), op.getContractID());
+	}
+
+	@Test
+	void synthesizesExpectedAccountAutoRemove() {
+		final var result = subject.synthAccountAutoRemove(accountNum);
+		final var synthBody = result.build();
+
+		assertTrue(result.hasCryptoDelete());
+		final var op = synthBody.getCryptoDelete();
+		assertEquals(accountNum.toGrpcAccountId(), op.getDeleteAccountID());
+	}
+
+	@Test
+	void synthesizesExpectedAccountAutoRenew() {
+		final var result = subject.synthAccountAutoRenew(accountNum, newExpiry);
+		final var synthBody = result.build();
+
+		assertTrue(result.hasCryptoUpdateAccount());
+		final var op = synthBody.getCryptoUpdateAccount();
+		final var grpcId = accountNum.toGrpcAccountId();
+		assertEquals(grpcId, op.getAccountIDToUpdate());
+		assertEquals(grpcId, synthBody.getTransactionID().getAccountID());
+		assertEquals(newExpiry, op.getExpirationTime().getSeconds());
+	}
+
+	@Test
 	void createsExpectedContractSkeleton() {
 		final var result = subject.contractCreation(customizer);
 		verify(customizer).customizeSynthetic(any());
@@ -82,7 +127,8 @@ class SyntheticTxnFactoryTest {
 
 		assertTrue(result.hasContractCall());
 		assertEquals(1, txnBody.getContractCall().getGas());
-		assertEquals(EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()),
+		assertEquals(EntityIdUtils.contractIdFromEvmAddress(
+						Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()),
 				txnBody.getContractCall().getContractID());
 		assertEquals(ByteString.copyFrom(Bytes.of(1).toArray()), txnBody.getContractCall().getFunctionParameters());
 	}
@@ -216,10 +262,10 @@ class SyntheticTxnFactoryTest {
 	void createsExpectedFungibleTokenCreate() {
 		// given
 		final var adminKey = new TokenCreateWrapper.KeyValueWrapper(
-				false, null, new byte[]{}, new byte[]{}, EntityIdUtils.contractIdFromEvmAddress(contractAddress)
+				false, null, new byte[] { }, new byte[] { }, EntityIdUtils.contractIdFromEvmAddress(contractAddress)
 		);
 		final var multiKey = new TokenCreateWrapper.KeyValueWrapper(
-				false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[]{}, new byte[]{}, null
+				false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[] { }, new byte[] { }, null
 		);
 		final var wrapper = createTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(254, multiKey),
@@ -270,7 +316,7 @@ class SyntheticTxnFactoryTest {
 	void createsExpectedNonFungibleTokenCreate() {
 		// given
 		final var multiKey = new TokenCreateWrapper.KeyValueWrapper(
-				false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[]{}, new byte[]{}, null
+				false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[] { }, new byte[] { }, null
 		);
 		final var wrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(112, multiKey))
@@ -493,6 +539,9 @@ class SyntheticTxnFactoryTest {
 
 	private static final long serialNo = 100;
 	private static final long secondAmount = 200;
+	private static final long newExpiry = 1_234_567L;
+	private final EntityNum contractNum = EntityNum.fromLong(666);
+	private final EntityNum accountNum = EntityNum.fromLong(1234);
 	private static final AccountID a = IdUtils.asAccount("0.0.2");
 	private static final AccountID b = IdUtils.asAccount("0.0.3");
 	private static final AccountID c = IdUtils.asAccount("0.0.4");

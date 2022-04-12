@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
@@ -50,6 +51,14 @@ class BaseOperationUsageTest {
 
 		mock.baseUsageFor(FileAppend, DEFAULT);
 		verify(mock).fileAppend();
+	}
+
+	@Test
+	void picksAppropriateContractOp() {
+		final var mock = Mockito.spy(new BaseOperationUsage());
+
+		mock.baseUsageFor(ContractAutoRenew, DEFAULT);
+		verify(mock).contractAutoRenew();
 	}
 
 	@Test

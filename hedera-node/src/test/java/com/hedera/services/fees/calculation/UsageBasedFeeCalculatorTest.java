@@ -73,6 +73,7 @@ import static com.hedera.test.factories.txns.TokenBurnFactory.newSignedTokenBurn
 import static com.hedera.test.factories.txns.TokenMintFactory.newSignedTokenMint;
 import static com.hedera.test.factories.txns.TokenWipeFactory.newSignedTokenWipe;
 import static com.hedera.test.utils.IdUtils.asAccountString;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
@@ -183,7 +184,7 @@ class UsageBasedFeeCalculatorTest {
 		// setup:
 		final var expected = new RenewAssessment(456L, 123L);
 
-		given(autoRenewCalcs.maxRenewalAndFeeFor(any(), anyLong(), any(), any())).willReturn(expected);
+		given(autoRenewCalcs.assessCryptoRenewal(any(), anyLong(), any(), any())).willReturn(expected);
 
 		// when:
 		var actual = subject.assessCryptoAutoRenewal(new MerkleAccount(), 1L, Instant.ofEpochSecond(2L));
@@ -288,18 +289,25 @@ class UsageBasedFeeCalculatorTest {
 
 	@Test
 	void loadPriceSchedulesOnInit() {
-		// setup:
-		final var seq = Triple.of(Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()), Instant.now(),
+		final var firstNow = Instant.ofEpochSecond(1_234_567L, 890);
+		final var secondNow = Instant.ofEpochSecond(1_234_567L, 911);
+		final var accountSeq = Triple.of(
+				Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()),
+				firstNow,
+				Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()));
+		final var contractSeq = Triple.of(
+				Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()),
+				secondNow,
 				Map.of(SubType.DEFAULT, FeeData.getDefaultInstance()));
 
-		given(usagePrices.activePricingSequence(CryptoAccountAutoRenew)).willReturn(seq);
+		given(usagePrices.activePricingSequence(CryptoAccountAutoRenew)).willReturn(accountSeq);
+		given(usagePrices.activePricingSequence(ContractAutoRenew)).willReturn(contractSeq);
 
-		// when:
 		subject.init();
 
-		// expect:
 		verify(usagePrices).loadPriceSchedules();
-		verify(autoRenewCalcs).setCryptoAutoRenewPriceSeq(seq);
+		verify(autoRenewCalcs).setAccountRenewalPriceSeq(accountSeq);
+		verify(autoRenewCalcs).setContractRenewalPriceSeq(contractSeq);
 	}
 
 	@Test

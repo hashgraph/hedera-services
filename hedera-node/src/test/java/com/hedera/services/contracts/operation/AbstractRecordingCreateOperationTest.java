@@ -23,7 +23,7 @@ package com.hedera.services.contracts.operation;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -94,7 +94,7 @@ class AbstractRecordingCreateOperationTest {
 	@Mock
 	private EntityCreator creator;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private ContractCustomizer contractCustomizer;
 
@@ -290,7 +290,7 @@ class AbstractRecordingCreateOperationTest {
 				final GasCalculator gasCalculator,
 				final EntityCreator creator,
 				final SyntheticTxnFactory syntheticTxnFactory,
-				final AccountRecordsHistorian recordsHistorian
+				final RecordsHistorian recordsHistorian
 		) {
 			super(
 					opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator,

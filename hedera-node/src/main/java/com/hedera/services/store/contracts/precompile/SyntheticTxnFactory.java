@@ -23,15 +23,21 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -49,6 +55,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.tuweni.bytes.Bytes;
 
 import javax.inject.Inject;
@@ -67,6 +74,43 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 public class SyntheticTxnFactory {
 	@Inject
 	public SyntheticTxnFactory() {
+		// For Dagger2
+	}
+
+	public TransactionBody.Builder synthContractAutoRemove(final EntityNum contractNum) {
+		final var op = ContractDeleteTransactionBody.newBuilder()
+				.setContractID(contractNum.toGrpcContractID());
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder().setAccountID(contractNum.toGrpcAccountId()))
+				.setContractDeleteInstance(op);
+	}
+
+	public TransactionBody.Builder synthAccountAutoRemove(final EntityNum accountNum) {
+		final var grpcId = accountNum.toGrpcAccountId();
+		final var op = CryptoDeleteTransactionBody.newBuilder()
+				.setDeleteAccountID(grpcId);
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder().setAccountID(grpcId))
+				.setCryptoDelete(op);
+	}
+
+	public TransactionBody.Builder synthContractAutoRenew(final EntityNum contractNum, final long newExpiry) {
+		final var op = ContractUpdateTransactionBody.newBuilder()
+				.setContractID(contractNum.toGrpcContractID())
+				.setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder().setAccountID(contractNum.toGrpcAccountId()))
+				.setContractUpdateInstance(op);
+	}
+
+	public TransactionBody.Builder synthAccountAutoRenew(final EntityNum accountNum, final long newExpiry) {
+		final var grpcId = accountNum.toGrpcAccountId();
+		final var op = CryptoUpdateTransactionBody.newBuilder()
+				.setAccountIDToUpdate(grpcId)
+				.setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder().setAccountID(grpcId))
+				.setCryptoUpdateAccount(op);
 	}
 
 	public TransactionBody.Builder contractCreation(final ContractCustomizer customizer) {

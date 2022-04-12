@@ -45,7 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
@@ -75,7 +75,7 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(1, 7776000L)),
+								.overridingProps(propsForAccountAutoRenewOnWith(1, 7776000L)),
 						newKeyNamed(adminKey),
 						contractCreate(tbd)
 								.balance(0L)
@@ -98,7 +98,7 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(1, 7776000L)),
+								.overridingProps(propsForAccountAutoRenewOnWith(1, 7776000L)),
 						cryptoCreate(tbd)
 								.balance(0L)
 								.autoRenewSecs(5),
@@ -129,7 +129,7 @@ public class AutoRemovalCasesSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(1, 0L)),
+								.overridingProps(propsForAccountAutoRenewOnWith(1, 0L)),
 						newKeyNamed(adminKey),
 						cryptoCreate(civilian).balance(0L),
 						tokenCreate(deletedToken)

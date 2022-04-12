@@ -21,7 +21,7 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
 import com.swirlds.common.crypto.RunningHash;
@@ -35,14 +35,14 @@ public class RecordStreaming implements Runnable {
 	private final TransactionContext txnCtx;
 	private final NonBlockingHandoff nonBlockingHandoff;
 	private final Consumer<RunningHash> runningHashUpdate;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 
 	@Inject
 	public RecordStreaming(
 			final TransactionContext txnCtx,
 			final NonBlockingHandoff nonBlockingHandoff,
 			final Consumer<RunningHash> runningHashUpdate,
-			final AccountRecordsHistorian recordsHistorian
+			final RecordsHistorian recordsHistorian
 	) {
 		this.txnCtx = txnCtx;
 		this.nonBlockingHandoff = nonBlockingHandoff;

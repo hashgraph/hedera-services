@@ -38,7 +38,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -157,7 +157,7 @@ class ERC20PrecompilesTest {
     @Mock
     private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock
-    private AccountRecordsHistorian recordsHistorian;
+    private RecordsHistorian recordsHistorian;
     @Mock
     private DecodingFacade decoder;
     @Mock
