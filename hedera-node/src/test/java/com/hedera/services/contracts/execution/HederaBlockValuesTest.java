@@ -33,8 +33,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Optional;
 
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class HederaBlockValuesTest {
     HederaBlockValues subject;
@@ -48,9 +46,7 @@ class HederaBlockValuesTest {
         final var blockNo = 10001L;
         final var consTime = Instant.ofEpochSecond(1_234_567L, 890);
 
-        when(merkleNetworkContext.getBlockNo()).thenReturn(blockNo);
-        when(merkleNetworkContext.getFirstConsTimeOfCurrentBlock()).thenReturn(consTime);
-        subject = new HederaBlockValues(gasLimit, merkleNetworkContext);
+        subject = new HederaBlockValues(gasLimit, blockNo, consTime);
         Assertions.assertEquals(gasLimit, subject.getGasLimit());
         Assertions.assertEquals(consTime.getEpochSecond(), subject.getTimestamp());
         Assertions.assertEquals(Optional.of(0L), subject.getBaseFee());

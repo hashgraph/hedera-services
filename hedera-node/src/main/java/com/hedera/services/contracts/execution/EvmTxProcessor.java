@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
@@ -56,12 +55,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
@@ -81,9 +75,6 @@ abstract class EvmTxProcessor {
 	private static final List<ContractValidationRule> VALIDATION_RULES =
 			List.of(MaxCodeSizeRule.of(MAX_CODE_SIZE), PrefixCodeRule.of());
 
-	static final Hash UNAVAILABLE_BLOCK_HASH = Hash.fromHexStringLenient("0x");
-	static final Function<Long, Hash> ALWAYS_UNAVAILABLE_BLOCK_HASH = n -> UNAVAILABLE_BLOCK_HASH;
-
 	public static final String SBH_CONTEXT_KEY = "sbh";
 	public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
 
@@ -93,7 +84,6 @@ abstract class EvmTxProcessor {
 	private final AbstractMessageProcessor messageCallProcessor;
 	private final AbstractMessageProcessor contractCreationProcessor;
 	private final Supplier<MerkleNetworkContext> networkCtx;
-	private MerkleNetworkContext curNetworkCtx;
 	protected final GlobalDynamicProperties dynamicProperties;
 
 	protected EvmTxProcessor(
@@ -207,9 +197,9 @@ abstract class EvmTxProcessor {
 			mutableSender.decrementBalance(gasCost);
 		}
 
-		curNetworkCtx = networkCtx.get();
+		final MerkleNetworkContext curNetworkCtx = networkCtx.get();
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, curNetworkCtx);
+		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, curNetworkCtx.getBlockNo(), curNetworkCtx.getFirstConsTimeOfCurrentBlock());
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
@@ -232,7 +222,7 @@ abstract class EvmTxProcessor {
 						})
 						.isStatic(isStatic)
 						.miningBeneficiary(coinbase)
-						.blockHashLookup(blockNo -> curNetworkCtx.getBlockHashCache(blockNo))
+						.blockHashLookup(curNetworkCtx::getBlockHashByNumber)
 						.contextVariables(Map.of(
 								"sbh", storageByteHoursTinyBarsGiven(consensusTime),
 								"HederaFunctionality", getFunctionType(),
