@@ -124,6 +124,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 		return linkedRefs;
 	}
 
+	@Override
 	public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
 		final var meta = getSigMeta();
 		if (!meta.couldRationalizeOthers()) {

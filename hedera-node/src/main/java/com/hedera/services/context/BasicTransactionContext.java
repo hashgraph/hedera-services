@@ -35,8 +35,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -93,8 +92,7 @@ public class BasicTransactionContext implements TransactionContext {
 	private byte[] hash;
 	private boolean isPayerSigKnownActive;
 	private Instant consensusTime;
-	private SignedTxnAccessor accessor;
-	private PlatformTxnAccessor platformTxnAccessor;
+	private TxnAccessor accessor;
 	private ResponseCodeEnum statusSoFar;
 	private List<ExpiringEntity> expiringEntities = new ArrayList<>();
 	private Consumer<TxnReceipt.Builder> receiptConfig = noopReceiptConfig;
@@ -133,12 +131,7 @@ public class BasicTransactionContext implements TransactionContext {
 
 	@Override
 	public void resetFor(final TxnAccessor accessor, final Instant consensusTime, final long submittingMember) {
-		if (accessor instanceof PlatformTxnAccessor platformAccessor) {
-			platformTxnAccessor = platformAccessor;
-			this.accessor = (SignedTxnAccessor) platformTxnAccessor.getDelegate();
-		} else {
-			this.accessor = (SignedTxnAccessor) accessor;
-		}
+		this.accessor = accessor;
 		this.consensusTime = consensusTime;
 		this.submittingMember = submittingMember;
 		this.triggeredTxn = null;
@@ -231,13 +224,17 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public SignedTxnAccessor accessor() {
+	public TxnAccessor accessor() {
 		return accessor;
 	}
 
 	@Override
-	public PlatformTxnAccessor platformTxnAccessor() {
-		return platformTxnAccessor;
+	public SwirldsTxnAccessor swirldsTxnAccessor() {
+		if (accessor instanceof SwirldsTxnAccessor swirldsTxnAccessor) {
+			return swirldsTxnAccessor;
+		} else {
+			throw new IllegalStateException("This context did not originate from a Swirlds transaction");
+		}
 	}
 
 	@Override

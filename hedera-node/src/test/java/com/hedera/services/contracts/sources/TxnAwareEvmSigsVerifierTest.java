@@ -148,7 +148,7 @@ class TxnAwareEvmSigsVerifierTest {
 
 	@Test
 	void testsSupplyKeyIfPresent() {
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(ledgers.tokens()).willReturn(tokensLedger);
 		given(tokensLedger.exists(token)).willReturn(true);
 		given(tokensLedger.get(token, TokenProperty.SUPPLY_KEY)).willReturn(expectedKey);
@@ -187,7 +187,7 @@ class TxnAwareEvmSigsVerifierTest {
 
 	@Test
 	void testsAccountKeyIfPresent() {
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.exists(account)).willReturn(true);
 		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(expectedKey);
@@ -202,7 +202,7 @@ class TxnAwareEvmSigsVerifierTest {
 
 	@Test
 	void testsAccountKeyIfPresentButInvalid() {
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.exists(account)).willReturn(true);
 		given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(expectedKey);
@@ -229,7 +229,7 @@ class TxnAwareEvmSigsVerifierTest {
 
 	@Test
 	void testsCryptoKeyIfPresent() {
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
@@ -240,7 +240,7 @@ class TxnAwareEvmSigsVerifierTest {
 
 	@Test
 	void testsCryptoKeyIfPresentButInvalid() {
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
 		given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(false);
 
@@ -407,7 +407,7 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	private void givenAccessorInCtx() {
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(payer);
 	}
 }

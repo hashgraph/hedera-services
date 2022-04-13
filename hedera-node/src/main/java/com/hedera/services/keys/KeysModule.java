@@ -34,7 +34,7 @@ public final class KeysModule {
 			final TransactionContext txnCtx,
 			final CharacteristicsFactory characteristicsFactory
 	) {
-		return new InHandleActivationHelper(characteristicsFactory, txnCtx::platformTxnAccessor);
+		return new InHandleActivationHelper(characteristicsFactory, txnCtx::swirldsTxnAccessor);
 	}
 
 	@Provides

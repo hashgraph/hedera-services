@@ -21,7 +21,7 @@ package com.hedera.services.keys;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -51,14 +51,14 @@ public class InHandleActivationHelper {
 	static Activation activation = HederaKeyActivation::isActive;
 
 	private final CharacteristicsFactory characteristics;
-	private final Supplier<PlatformTxnAccessor> accessorSource;
+	private final Supplier<SwirldsTxnAccessor> accessorSource;
 
 	private List<JKey> otherParties = NO_OTHER_PARTIES;
 	private TxnAccessor accessor = NO_LAST_ACCESSOR;
 	private Function<byte[], TransactionSignature> sigsFn = NO_LAST_SIGS_FN;
 
 	public InHandleActivationHelper(CharacteristicsFactory characteristics,
-			Supplier<PlatformTxnAccessor> accessorSource) {
+			Supplier<SwirldsTxnAccessor> accessorSource) {
 		this.characteristics = characteristics;
 		this.accessorSource = accessorSource;
 	}

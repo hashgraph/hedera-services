@@ -25,6 +25,9 @@ import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.crypto.TransactionSignature;
+
+import java.util.function.Function;
 
 public interface SwirldsTxnAccessor extends TxnAccessor {
 
@@ -50,4 +53,6 @@ public interface SwirldsTxnAccessor extends TxnAccessor {
 	void setSigMeta(RationalizedSigMeta sigMeta);
 
 	RationalizedSigMeta getSigMeta();
+
+	Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn();
 }

@@ -175,7 +175,7 @@ class HapiOpCountersTest {
 		final var accessor = mock(PlatformTxnAccessor.class);
 		given(txn.getSerializedSize()).willReturn(expectedSize);
 		given(accessor.getTxn()).willReturn(txn);
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 
 		subject.countReceived(ConsensusSubmitMessage);
 		subject.countSubmitted(ConsensusSubmitMessage);

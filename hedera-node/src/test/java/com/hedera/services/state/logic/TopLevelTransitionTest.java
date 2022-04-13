@@ -77,7 +77,7 @@ class TopLevelTransitionTest {
 
 	@Test
 	void switchesToStandinUtilizationAndAbortsWhenKeyActivationScreenFails() {
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(INVALID_SIGNATURE);
 
@@ -96,7 +96,7 @@ class TopLevelTransitionTest {
 				networkCtxManager, sigsAndPayerKeyScreen, chargingPolicyAgent,
 				networkUtilization, nonPayerKeysScreen, requestedTransition);
 
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
@@ -122,7 +122,7 @@ class TopLevelTransitionTest {
 				networkCtxManager, sigsAndPayerKeyScreen, chargingPolicyAgent,
 				nonPayerKeysScreen, txnCtx, networkUtilization);
 
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
@@ -142,7 +142,7 @@ class TopLevelTransitionTest {
 
 	@Test
 	void abortsWhenChargingPolicyAgentFails() {
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 
@@ -155,7 +155,7 @@ class TopLevelTransitionTest {
 
 	@Test
 	void abortsWhenKeyActivationScreenFails() {
-		given(txnCtx.platformTxnAccessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);

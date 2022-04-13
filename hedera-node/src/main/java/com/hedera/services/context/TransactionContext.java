@@ -27,6 +27,7 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -133,7 +134,7 @@ public interface TransactionContext {
 	 *
 	 * @return accessor for the current txn.
 	 */
-	SignedTxnAccessor accessor();
+	TxnAccessor accessor();
 
 	/**
 	 * Gets a platform transaction accessor to the defined type {@link PlatformTxnAccessor}
@@ -141,7 +142,7 @@ public interface TransactionContext {
 	 *
 	 * @return accessor for the current txn.
 	 */
-	PlatformTxnAccessor platformTxnAccessor();
+	SwirldsTxnAccessor swirldsTxnAccessor();
 
 	/**
 	 * Set a new status for the current txn's processing.

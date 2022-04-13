@@ -24,7 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.apache.logging.log4j.LogManager;
@@ -61,7 +61,7 @@ public class SigsAndPayerKeyScreen {
 		this.payerSigValidity = payerSigValidity;
 	}
 
-	public ResponseCodeEnum applyTo(PlatformTxnAccessor accessor) {
+	public ResponseCodeEnum applyTo(SwirldsTxnAccessor accessor) {
 		rationalization.performFor(accessor);
 
 		final var sigStatus = rationalization.finalStatus();
@@ -76,7 +76,7 @@ public class SigsAndPayerKeyScreen {
 		return sigStatus;
 	}
 
-	private boolean hasActivePayerSig(PlatformTxnAccessor accessor) {
+	private boolean hasActivePayerSig(SwirldsTxnAccessor accessor) {
 		try {
 			return payerSigValidity.test(accessor, validityTest);
 		} catch (Exception unknown) {

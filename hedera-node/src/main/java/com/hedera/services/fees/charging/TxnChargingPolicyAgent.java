@@ -25,7 +25,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionID;
 
 import javax.inject.Inject;
@@ -77,7 +77,7 @@ public class TxnChargingPolicyAgent {
 	 * @param accessor the transaction accessor.
 	 * @return whether or not handleTransaction can continue after policy application.
 	 */
-	public boolean applyPolicyFor(PlatformTxnAccessor accessor) {
+	public boolean applyPolicyFor(SwirldsTxnAccessor accessor) {
 		final var now = txnCtx.consensusTime();
 		final var fees = feeCalc.computeFee(accessor, txnCtx.activePayerKey(), currentView.get(), now);
 		final var recentHistory = txnHistories.get(accessor.getTxnId());

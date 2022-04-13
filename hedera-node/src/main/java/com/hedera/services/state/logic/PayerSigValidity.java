@@ -21,12 +21,12 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.util.function.BiPredicate;
 
 @FunctionalInterface
 public interface PayerSigValidity {
-	boolean test(PlatformTxnAccessor accessor, BiPredicate<JKey, TransactionSignature> test);
+	boolean test(SwirldsTxnAccessor accessor, BiPredicate<JKey, TransactionSignature> test);
 }
