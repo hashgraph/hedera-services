@@ -37,7 +37,6 @@ public class AccessorFactory {
 
 	public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
 		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
-		subtype.setTriggered(false);
 		subtype.setScheduleRef(null);
 		return subtype;
 	}
@@ -45,7 +44,6 @@ public class AccessorFactory {
 	public TxnAccessor triggeredTxn(byte[] signedTxnWrapperBytes, final AccountID payer,
 			ScheduleID parent) throws InvalidProtocolBufferException {
 		final var subtype = constructSpecializedAccessor(signedTxnWrapperBytes);
-		subtype.setTriggered(true);
 		subtype.setScheduleRef(parent);
 		subtype.setPayer(payer);
 		return subtype;

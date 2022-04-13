@@ -20,6 +20,7 @@ package com.hedera.services.utils.accessors;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.order.LinkedRefs;
@@ -42,6 +43,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import org.junit.platform.commons.util.ToStringBuilder;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -87,8 +89,15 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
-	public SignatureMap getSigMap() {
-		return delegate.getSigMap();
+	public String toLoggableString() {
+		return MoreObjects.toStringHelper(this)
+				.add("delegate", delegate.toLoggableString())
+				.add("platformTxn", platformTxn.toString())
+				.add("linkedRefs", linkedRefs)
+				.add("expandedSigStatus", expandedSigStatus)
+				.add("pubKeyToSigBytes", pubKeyToSigBytes.toString())
+				.add("sigMeta", sigMeta)
+				.toString();
 	}
 
 	@Override
@@ -102,19 +111,39 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
-	public byte[] getTxnBytes() {
-		return delegate.getTxnBytes();
-	}
-
-	@Override
 	public PubKeyToSigBytes getPkToSigsFn() {
 		return pubKeyToSigBytes;
 	}
 
 	@Override
-	public <T extends TxnAccessor> T castToSpecialized() {
-		return delegate.castToSpecialized();
+	public void setLinkedRefs(final LinkedRefs linkedRefs) {
+		this.linkedRefs = linkedRefs;
 	}
+
+	@Override
+	public LinkedRefs getLinkedRefs() {
+		return linkedRefs;
+	}
+
+	public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
+		final var meta = getSigMeta();
+		if (!meta.couldRationalizeOthers()) {
+			throw new IllegalStateException("Public-key-to-crypto-sig mapping is unusable after rationalization " +
+					"failed");
+		}
+		return meta.pkToVerifiedSigFn();
+	}
+
+
+	public TxnAccessor getDelegate() { return delegate; }
+
+	/* ---Delegates to SignedTxnAccessor --- */
+
+	@Override
+	public byte[] getTxnBytes() { return delegate.getTxnBytes(); }
+
+	@Override
+	public <T extends TxnAccessor> T castToSpecialized() { return delegate.castToSpecialized(); }
 
 	@Override
 	public long getOfferedFee() {
@@ -127,9 +156,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
-	public TransactionID getTxnId() {
-		return delegate.getTxnId();
-	}
+	public TransactionID getTxnId() { return delegate.getTxnId(); }
 
 	@Override
 	public HederaFunctionality getFunction() {
@@ -137,14 +164,10 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
-	public SubType getSubType() {
-		return delegate.getSubType();
-	}
+	public SubType getSubType() { return delegate.getSubType(); }
 
 	@Override
-	public byte[] getMemoUtf8Bytes() {
-		return delegate.getMemoUtf8Bytes();
-	}
+	public byte[] getMemoUtf8Bytes() { return delegate.getMemoUtf8Bytes(); }
 
 	@Override
 	public String getMemo() {
@@ -152,9 +175,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
-	public boolean memoHasZeroByte() {
-		return delegate.memoHasZeroByte();
-	}
+	public boolean memoHasZeroByte() { return delegate.memoHasZeroByte();}
 
 	@Override
 	public byte[] getHash() {
@@ -167,9 +188,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
-	public boolean canTriggerTxn() {
-		return delegate.canTriggerTxn();
-	}
+	public boolean canTriggerTxn() { return delegate.canTriggerTxn(); }
 
 	@Override
 	public boolean isTriggeredTxn() {
@@ -182,18 +201,8 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
-	public void setTriggered(final boolean isTriggered) {
-		delegate.setTriggered(isTriggered);
-	}
-
-	@Override
 	public void setScheduleRef(final ScheduleID parent) {
 		delegate.setScheduleRef(parent);
-	}
-
-	@Override
-	public String toLoggableString() {
-		return null;
 	}
 
 	@Override
@@ -247,23 +256,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	}
 
 	@Override
-	public void setLinkedRefs(final LinkedRefs linkedRefs) {
-		this.linkedRefs = linkedRefs;
-	}
-
-	@Override
-	public LinkedRefs getLinkedRefs() {
-		return linkedRefs;
-	}
-
-	public Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn() {
-		final var meta = getSigMeta();
-		if (!meta.couldRationalizeOthers()) {
-			throw new IllegalStateException("Public-key-to-crypto-sig mapping is unusable after rationalization " +
-					"failed");
-		}
-		return meta.pkToVerifiedSigFn();
-	}
+	public SignatureMap getSigMap() { return delegate.getSigMap(); }
 
 	@Override
 	public BaseTransactionMeta baseUsageMeta() {
@@ -283,9 +276,5 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 	@Override
 	public SubmitMessageMeta availSubmitUsageMeta() {
 		return delegate.availSubmitUsageMeta();
-	}
-
-	public TxnAccessor getDelegate() {
-		return delegate;
 	}
 }

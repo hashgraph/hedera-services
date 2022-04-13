@@ -73,6 +73,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
+import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
 import org.junit.jupiter.api.Test;
 
@@ -83,6 +84,7 @@ import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static java.util.stream.Collectors.toList;
@@ -621,6 +623,76 @@ class SignedTxnAccessorTest {
 		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
 
 		assertEquals(123456789L, subject.getGasLimitForContractTx());
+	}
+
+	@Test
+	void toLoggableStringWorks() throws InvalidProtocolBufferException {
+		TransactionBody someTxn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+				.setMemo("Hi!")
+				.setTransactionFee(10L)
+				.setConsensusSubmitMessage(
+						ConsensusSubmitMessageTransactionBody.newBuilder().setTopicID(asTopic("0.0.10")).build()
+				).build();
+		final ByteString canonicalSig = ByteString.copyFromUtf8(
+				"0123456789012345678901234567890123456789012345678901234567890123");
+		final SignatureMap onePairSigMap = SignatureMap.newBuilder()
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+						.setEd25519(canonicalSig))
+				.build();
+		Transaction signedTxnWithBody = Transaction.newBuilder()
+				.setBodyBytes(someTxn.toByteString())
+				.setSigMap(onePairSigMap)
+				.build();
+		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+
+		// when:
+		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContentsDirect());
+
+		final var expectedString = "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111, " +
+				"-123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, -55, -26, -18, " +
+				"-101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, 100, -52, -104, " +
+				"87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, 2," +
+				" 24, 10], utf8MemoBytes=[72, 105, 33], memo=Hi!, memoHasZeroByte=false, signedTxnWrapper=sigMap {\n" +
+				"  sigPair {\n" +
+				"    pubKeyPrefix: \"a\"\n" +
+				"    ed25519: \"0123456789012345678901234567890123456789012345678901234567890123\"\n" +
+				"  }\n" +
+				"}\n" +
+				"bodyBytes: \"\\n\\004\\022\\002\\030\\002\\030\\n2\\003Hi!\\332\\001\\004\\n\\002\\030\\n\"\n" +
+				", hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76, -82, -23, 43, 103, -21, 52, -31, -60, 98, " +
+				"-55, -26, -18, -101, -108, -51, 24, 49, 72, 18, -69, 21, -84, -68, -118, 31, -53, 91, -61, -71, -56, " +
+				"100, -52, -104, 87, -85, -33, -73, -124], txnBytes=[10, 4, 18, 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, " +
+				"-38, 1, 4, 10, 2, 24, 10], sigMap=sigPair {\n" +
+				"  pubKeyPrefix: \"a\"\n" +
+				"  ed25519: \"0123456789012345678901234567890123456789012345678901234567890123\"\n" +
+				"}\n" +
+				", txnId=accountID {\n" +
+				"  accountNum: 2\n" +
+				"}\n" +
+				", txn=transactionID {\n" +
+				"  accountID {\n" +
+				"    accountNum: 2\n" +
+				"  }\n" +
+				"}\n" +
+				"transactionFee: 10\n" +
+				"memo: \"Hi!\"\n" +
+				"consensusSubmitMessage {\n" +
+				"  topicID {\n" +
+				"    topicNum: 10\n" +
+				"  }\n" +
+				"}\n" +
+				", submitMessageMeta=SubmitMessageMeta[numMsgBytes=0], xferUsageMeta=null, " +
+				"txnUsageMeta=BaseTransactionMeta[memoUtf8Bytes=3, numExplicitTransfers=0], " +
+				"function=ConsensusSubmitMessage, pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap" +
+				"{keyTypes=[ED25519], rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, " +
+				"54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, " +
+				"49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, " +
+				"used=[false]}, payer=accountNum: 2\n" +
+				", scheduleRef=null}";
+
+		assertEquals(expectedString, subject.toLoggableString());
 	}
 
 	private Transaction signedCryptoCreateTxn() {

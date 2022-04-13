@@ -84,8 +84,6 @@ public interface TxnAccessor {
 	/* --- Used to log failures for any transaction --- */
 	String toLoggableString();
 
-	void setTriggered(boolean b);
-
 	void setPayer(AccountID payer);
 
 	/* --- Used universally for transaction submission */

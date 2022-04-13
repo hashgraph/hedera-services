@@ -20,6 +20,7 @@ package com.hedera.services.utils.accessors;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -110,7 +111,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	private AccountID payer;
 	private ScheduleID scheduleRef;
-	private boolean isTriggered;
 
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
@@ -197,7 +197,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public <T extends TxnAccessor> T castToSpecialized() {
-		// This will have all the custom accessor casts in future PR
+		// This will have all the custom accessor casts in future PR. Not currently used
 		return (T) this;
 	}
 
@@ -267,17 +267,12 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public boolean isTriggeredTxn() {
-		return isTriggered;
+		return scheduleRef != null;
 	}
 
 	@Override
 	public ScheduleID getScheduleRef() {
 		return scheduleRef;
-	}
-
-	@Override
-	public void setTriggered(final boolean isTriggered) {
-		this.isTriggered = isTriggered;
 	}
 
 	@Override
@@ -287,7 +282,29 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public String toLoggableString() {
-		return null;
+		return MoreObjects.toStringHelper(this)
+				.add("sigMapSize", sigMapSize)
+				.add("numSigPairs", numSigPairs)
+				.add("numAutoCreations", numAutoCreations)
+				.add("hash", hash)
+				.add("txnBytes", txnBytes)
+				.add("utf8MemoBytes", utf8MemoBytes)
+				.add("memo", memo)
+				.add("memoHasZeroByte", memoHasZeroByte)
+				.add("signedTxnWrapper", signedTxnWrapper)
+				.add("hash", hash)
+				.add("txnBytes", txnBytes)
+				.add("sigMap", sigMap)
+				.add("txnId", txnId)
+				.add("txn", txn)
+				.add("submitMessageMeta", submitMessageMeta)
+				.add("xferUsageMeta", xferUsageMeta)
+				.add("txnUsageMeta", txnUsageMeta)
+				.add("function", function)
+				.add("pubKeyToSigBytes", pubKeyToSigBytes)
+				.add("payer", payer)
+				.add("scheduleRef", scheduleRef)
+				.toString();
 	}
 
 	@Override
