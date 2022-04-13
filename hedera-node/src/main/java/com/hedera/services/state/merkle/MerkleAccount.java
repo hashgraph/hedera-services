@@ -191,6 +191,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setNftsOwned(nftsOwned);
 	}
 
+	public long getNumTreasuryTitles() {
+		return state().numTreasuryTitles();
+	}
+
+	public void setNumTreasuryTitles(final long nftsOwned) {
+		throwIfImmutable("Cannot change this account's owned NFTs if it's immutable.");
+		state().setNftsOwned(nftsOwned);
+	}
+
 	public String getMemo() {
 		return state().memo();
 	}
