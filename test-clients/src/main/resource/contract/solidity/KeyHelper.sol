@@ -34,26 +34,31 @@ contract KeyHelper is HederaTokenService {
         tokenKey =  IHederaTokenService.TokenKey (getKeyType(keyType), getKeyValueType(keyValueType, key));
     }
 
+    function getSingleKey(uint8 keyType, uint8 keyValueType, address key) internal view returns (IHederaTokenService.TokenKey memory tokenKey) {
+        tokenKey =  IHederaTokenService.TokenKey (getKeyType(keyType), getKeyValueType(keyValueType, key));
+    }
+
     function getSingleKey(uint8 firstType, uint8 secondType, uint8 keyValueType, bytes memory key) internal view returns (IHederaTokenService.TokenKey memory tokenKey) {
         tokenKey =  IHederaTokenService.TokenKey (getDuplexKeyType(firstType, secondType), getKeyValueType(keyValueType, key));
     }
 
     function getDuplexKeyType(uint8 firstType, uint8 secondType) internal pure returns (uint keyType) {
-        keyType.setBit(firstType);
-        keyType.setBit(secondType);
+        keyType = keyType.setBit(firstType);
+        keyType = keyType.setBit(secondType);
     }
 
     function getAllKeyTypes() internal pure returns (uint keyType) {
-        keyType.setBit(0);
-        keyType.setBit(1);
-        keyType.setBit(2);
-        keyType.setBit(3);
-        keyType.setBit(4);
-        keyType.setBit(5);
+        keyType = keyType.setBit(0);
+        keyType = keyType.setBit(1);
+        keyType = keyType.setBit(2);
+        keyType = keyType.setBit(3);
+        keyType = keyType.setBit(4);
+        keyType = keyType.setBit(5);
+        keyType = keyType.setBit(6);
     }
 
     function getKeyType(uint8 keyType) internal pure returns (uint) {
-        if(keyType == 0) {
+        if (keyType == 0) {
             return HederaTokenService.ADMIN_KEY_TYPE;
         } else if(keyType == 1) {
             return HederaTokenService.KYC_KEY_TYPE;
@@ -86,16 +91,9 @@ contract KeyHelper is HederaTokenService {
         }
     }
 
-    function getKeyValueType(uint8 keyValueType, address memory keyAddress) internal view returns (IHederaTokenService
-    .KeyValue memory keyValue) {
-        if(keyValueType == 1) {
-            keyValue.inheritAccountKey = true;
-        } else if(keyValueType == 2) {
+    function getKeyValueType(uint8 keyValueType, address keyAddress) internal view returns (IHederaTokenService.KeyValue memory keyValue) {
+        if (keyValueType == 2) {
             keyValue.contractId = keyAddress;
-        } else if(keyValueType == 3) {
-            keyValue.ed25519 = key;
-        } else if(keyValueType == 4) {
-            keyValue.ECDSA_secp256k1 = key;
         } else if(keyValueType == 5) {
             keyValue.delegatableContractId = keyAddress;
         }
