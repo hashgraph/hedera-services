@@ -141,7 +141,7 @@ public class HederaStackedWorldStateUpdater
 		if (isTokenRedirect(address)) {
 			return new WorldStateTokenAccount(address);
 		}
-		return super.get(address);
+		return super.get(addressOrAlias);
 	}
 
 	@Override

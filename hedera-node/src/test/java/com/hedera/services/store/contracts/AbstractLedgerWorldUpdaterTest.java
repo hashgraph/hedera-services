@@ -263,6 +263,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 		given(worldState.get(aAddress)).willReturn(
 				new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess));
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
 		final var mutableResponse = subject.getAccount(aAddress);
 		final var getResponse = subject.get(aAddress);
