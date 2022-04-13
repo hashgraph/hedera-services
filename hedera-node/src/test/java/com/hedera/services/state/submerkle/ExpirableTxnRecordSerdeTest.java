@@ -23,15 +23,8 @@ package com.hedera.services.state.submerkle;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
-import com.swirlds.common.io.SerializableDataInputStream;
-import org.bouncycastle.util.Arrays;
-import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0230_VERSION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
 	public static final int NUM_TEST_CASES = 4 * MIN_TEST_CASES_PER_VERSION;
