@@ -89,8 +89,7 @@ public class RenewableEntityClassifier {
 			if (gracePeriodEnd > now) {
 				return isContract ? DETACHED_CONTRACT : DETACHED_ACCOUNT;
 			}
-			final var grpcId = lastClassifiedNum.toGrpcAccountId();
-			if (tokenStore.isKnownTreasury(grpcId)) {
+			if (lastClassified.isTokenTreasury()) {
 				return DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 			}
 			return isContract ? DETACHED_CONTRACT_GRACE_PERIOD_OVER : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;

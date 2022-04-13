@@ -87,7 +87,6 @@ class TypedTokenStoreTest {
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private TokenStore legacyStore;
-
 	@Mock
 	private TokenStore tokenStore;
 
@@ -103,8 +102,6 @@ class TypedTokenStoreTest {
 				tokens,
 				uniqueTokens,
 				tokenRels,
-				tokenStore::addKnownTreasury,
-				legacyStore::removeKnownTreasuryForToken,
 				sideEffectsTracker);
 	}
 
@@ -241,6 +238,7 @@ class TypedTokenStoreTest {
 	@Test
 	void persistsDeletedTokenAsExpected() {
 		setupToken();
+		treasuryAccount.incrementNumTreasuryTitles();
 		givenModifiableToken(merkleTokenId, merkleToken);
 
 		token.setIsDeleted(true);
@@ -249,7 +247,7 @@ class TypedTokenStoreTest {
 		subject.commitToken(token);
 
 		assertTrue(merkleToken.isDeleted());
-		verify(legacyStore).removeKnownTreasuryForToken(any(), any());
+		assertEquals(0, treasuryAccount.getNumTreasuryTitles());
 	}
 
 	/* --- Token saving --- */
@@ -379,6 +377,7 @@ class TypedTokenStoreTest {
 		subject.persistNew(newToken);
 		verify(tokens).put(any(), any());
 		verify(sideEffectsTracker).trackTokenChanges(newToken);
+		assertEquals(treasuryAccount.getNumTreasuryTitles(), 1);
 	}
 
 	@Test

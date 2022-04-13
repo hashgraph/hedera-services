@@ -38,6 +38,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -179,6 +180,13 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setNftsOwned(0));
 		assertThrows(MutabilityException.class, () -> subject.setNumTreasuryTitles(1));
 		assertThrows(MutabilityException.class, () -> subject.setUsedAutomaticAssociations(usedAutoAssociations));
+	}
+
+	@Test
+	void reportsTreasuryStatus() {
+		assertTrue(subject.isTokenTreasury());
+		subject.setNumTreasuryTitles(0);
+		assertFalse(subject.isTokenTreasury());
 	}
 
 	@Test

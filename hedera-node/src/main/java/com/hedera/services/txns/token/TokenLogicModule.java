@@ -21,9 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.fees.annotations.FunctionKey;
-import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.token.process.DissociationFactory;
@@ -166,18 +164,6 @@ public final class TokenLogicModule {
 	@Singleton
 	public static Predicate<TokenUpdateTransactionBody> provideAffectsExpiryOnly() {
 		return HederaTokenStore::affectsExpiryAtMost;
-	}
-
-	@Provides
-	@Singleton
-	public static TypedTokenStore.LegacyTreasuryRemover provideLegacyTreasuryRemover(final TokenStore tokenStore) {
-		return tokenStore::removeKnownTreasuryForToken;
-	}
-
-	@Provides
-	@Singleton
-	public static TypedTokenStore.LegacyTreasuryAdder provideLegacyTreasuryAdder(final TokenStore tokenStore) {
-		return tokenStore::addKnownTreasury;
 	}
 
 	@Provides

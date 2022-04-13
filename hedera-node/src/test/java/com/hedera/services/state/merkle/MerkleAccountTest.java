@@ -231,6 +231,8 @@ class MerkleAccountTest {
 		assertEquals(state.getNumAssociations(), subject.getNumAssociations());
 		assertEquals(state.getNumPositiveBalances(), subject.getNumPositiveBalances());
 		assertEquals(state.getHeadTokenId(), subject.getHeadTokenId());
+		assertEquals(state.getNumTreasuryTitles(), subject.getNumTreasuryTitles());
+		assertEquals(state.isTokenTreasury(), subject.isTokenTreasury());
 	}
 
 	@Test
@@ -269,6 +271,7 @@ class MerkleAccountTest {
 		subject.setHeadTokenId(lastAssociatedTokenNum);
 		subject.setNumPositiveBalances(0);
 		subject.setNumAssociations(0);
+		subject.setNumTreasuryTitles(numTreasuryTitles);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -291,6 +294,7 @@ class MerkleAccountTest {
 		verify(delegate).setNumPositiveBalances(0);
 		verify(delegate).setNumAssociations(0);
 		verify(delegate).setHeadTokenId(lastAssociatedTokenNum);
+		verify(delegate).setNumTreasuryTitles(numTreasuryTitles);
 	}
 
 	@Test

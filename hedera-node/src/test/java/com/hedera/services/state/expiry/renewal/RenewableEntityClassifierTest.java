@@ -27,7 +27,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -130,7 +129,7 @@ class RenewableEntityClassifierTest {
 	@Test
 	void classifiesDetachedAccountAfterGracePeriodAsOtherIfTokenNotYetRemoved() {
 		givenPresent(brokeExpiredNum, expiredAccountZeroBalance);
-		given(tokenStore.isKnownTreasury(grpcIdWith(brokeExpiredNum))).willReturn(true);
+		expiredAccountZeroBalance.setNumTreasuryTitles(1);
 
 		// expect:
 		assertEquals(
@@ -207,11 +206,7 @@ class RenewableEntityClassifierTest {
 				() -> subject.renewLastClassifiedWith(nonZeroBalance, 3600L));
 	}
 
-	private AccountID grpcIdWith(long num) {
-		return AccountID.newBuilder().setAccountNum(num).build();
-	}
-
-	private void givenPresent(long num, MerkleAccount account) {
+	private void givenPresent(final long num, final MerkleAccount account) {
 		givenPresent(num, account, false);
 	}
 

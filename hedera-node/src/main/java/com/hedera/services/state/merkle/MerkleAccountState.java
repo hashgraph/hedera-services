@@ -529,7 +529,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.cryptoAllowances = cryptoAllowances;
 	}
 
-	public int numTreasuryTitles() {
+	public boolean isTokenTreasury() {
+		return numTreasuryTitles > 0;
+	}
+
+	public int getNumTreasuryTitles() {
 		return numTreasuryTitles;
 	}
 

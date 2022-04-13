@@ -65,6 +65,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIAT
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
@@ -75,7 +76,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willCallRealMethod;
 
 @ExtendWith(MockitoExtension.class)
-class MerkleAccountPropertyTest {
+class AccountPropertyTest {
 	@Mock
 	private MerkleAccount mockAccount;
 
@@ -104,6 +105,7 @@ class MerkleAccountPropertyTest {
 		final long origNumNfts = 123L;
 		final long origExpiry = 1L;
 		final int origMaxAutoAssociations = 10;
+		final int origNumTreasuryTitles = 11;
 		final int origAlreadyUsedAutoAssociations = 7;
 		final var origKey = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
 		final String origMemo = "a";
@@ -137,6 +139,7 @@ class MerkleAccountPropertyTest {
 		final int newAssociationCount = 12;
 		final int origNumPositiveBalances = 4;
 		final int newNumPositiveBalances = 7;
+		final int newNumTreasuryTitles = 77;
 		final AccountID payer = AccountID.newBuilder().setAccountNum(12345L).build();
 		final EntityNum payerNum = EntityNum.fromAccountId(payer);
 		final TokenID fungibleTokenID = TokenID.newBuilder().setTokenNum(1234L).build();
@@ -177,6 +180,7 @@ class MerkleAccountPropertyTest {
 		account.records().offer(origPayerRecords.get(1));
 		account.setMaxAutomaticAssociations(origMaxAutoAssociations);
 		account.setUsedAutomaticAssociations(origAlreadyUsedAutoAssociations);
+		account.setNumTreasuryTitles(origNumTreasuryTitles);
 
 		final var adminKey = TOKEN_ADMIN_KT.asJKeyUnchecked();
 		final var unfrozenToken = new MerkleToken(
@@ -212,6 +216,7 @@ class MerkleAccountPropertyTest {
 		NUM_ASSOCIATIONS.setter().accept(account, newAssociationCount);
 		HEAD_TOKEN_NUM.setter().accept(account, newLastAssociatedTokenNum);
 		NUM_POSITIVE_BALANCES.setter().accept(account, newNumPositiveBalances);
+		NUM_TREASURY_TITLES.setter().accept(account, newNumTreasuryTitles);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -233,6 +238,7 @@ class MerkleAccountPropertyTest {
 		assertEquals(newAssociationCount, NUM_ASSOCIATIONS.getter().apply(account));
 		assertEquals(newNumPositiveBalances, NUM_POSITIVE_BALANCES.getter().apply(account));
 		assertEquals(newLastAssociatedTokenNum, HEAD_TOKEN_NUM.getter().apply(account));
+		assertEquals(newNumTreasuryTitles, NUM_TREASURY_TITLES.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

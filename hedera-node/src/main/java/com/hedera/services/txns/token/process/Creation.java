@@ -84,10 +84,10 @@ public class Creation {
 	private final TokenCreateTransactionBody op;
 
 	public Creation(
-			AccountStore accountStore,
-			TypedTokenStore tokenStore,
-			GlobalDynamicProperties dynamicProperties,
-			TokenCreateTransactionBody op
+			final AccountStore accountStore,
+			final TypedTokenStore tokenStore,
+			final GlobalDynamicProperties dynamicProperties,
+			final TokenCreateTransactionBody op
 	) {
 		this.op = op;
 		this.tokenStore = tokenStore;
@@ -96,9 +96,9 @@ public class Creation {
 	}
 
 	public void loadModelsWith(
-			AccountID sponsor,
-			EntityIdSource ids,
-			OptionValidator validator
+			final AccountID sponsor,
+			final EntityIdSource ids,
+			final OptionValidator validator
 	) {
 		final var hasValidOrNoExplicitExpiry = !op.hasExpiry() || validator.isValidExpiry(op.getExpiry());
 		validateTrue(hasValidOrNoExplicitExpiry, INVALID_EXPIRATION_TIME);
@@ -114,7 +114,11 @@ public class Creation {
 		provisionalId = Id.fromGrpcToken(ids.newTokenId(sponsor));
 	}
 
-	public void doProvisionallyWith(long now, TokenModelFactory modelFactory, NewRelsListing listing) {
+	public void doProvisionallyWith(
+			final long now,
+			final TokenModelFactory modelFactory,
+			final NewRelsListing listing
+	) {
 		final var maxCustomFees = dynamicProperties.maxCustomFeesAllowed();
 		validateTrue(op.getCustomFeesCount() <= maxCustomFees, CUSTOM_FEES_LIST_TOO_LONG);
 
@@ -133,11 +137,14 @@ public class Creation {
 					true);
 		}
 		provisionalToken.getCustomFees().forEach(FcCustomFee::nullOutCollector);
+
+		treasury.incrementNumTreasuryTitles();
 	}
 
 	public void persist() {
 		tokenStore.persistNew(provisionalToken);
 		tokenStore.commitTokenRelationships(newAndUpdatedRels);
+		// The new token treasury is always included here, so its numTreasuryTitles will be incremented
 		newAndUpdatedRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
 	}
 
@@ -148,7 +155,6 @@ public class Creation {
 	public Id newTokenId() {
 		return provisionalId;
 	}
-
 
 	/* --- Only used by unit tests --- */
 	void setProvisionalId(Id provisionalId) {
