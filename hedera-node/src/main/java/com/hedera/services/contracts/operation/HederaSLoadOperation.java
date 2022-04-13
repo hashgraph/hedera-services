@@ -72,11 +72,6 @@ public class HederaSLoadOperation extends AbstractOperation {
 		try {
 			final var addressOrAlias = frame.getRecipientAddress();
 			final var worldUpdater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-			if (worldUpdater.isInconsistentMirrorAddress(addressOrAlias)) {
-				return new Operation.OperationResult(
-						coldCost,
-						Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-			}
 			final Account account = worldUpdater.get(addressOrAlias);
 			final Address address = account.getAddress();
 			final Bytes32 key = UInt256.fromBytes(frame.popStackItem());

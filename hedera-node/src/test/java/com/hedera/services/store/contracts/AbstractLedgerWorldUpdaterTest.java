@@ -156,17 +156,6 @@ class AbstractLedgerWorldUpdaterTest {
 	}
 
 	@Test
-	void isInconsistentAddressWorks() {
-		subject = new MockLedgerWorldUpdater(worldState, mockLedgers, customizer);
-
-		given(mockLedgers.aliases()).willReturn(aliases);
-		given(aliases.isMirror(aAddress)).willReturn(true);
-		given(mockLedgers.hasAlias(aAddress)).willReturn(true);
-
-		assertTrue(subject.isInconsistentMirrorAddress(aAddress));
-	}
-
-	@Test
 	void revertsSourceIdsIfCreated() {
 		final var sourceId = 123;
 		final var aRecord = ExpirableTxnRecord.newBuilder();

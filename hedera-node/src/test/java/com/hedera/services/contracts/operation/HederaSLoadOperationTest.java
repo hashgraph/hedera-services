@@ -148,8 +148,6 @@ class HederaSLoadOperationTest {
 
 	@Test
 	void executeHaltsForWrongAddressOfAliasedContract() {
-		given(worldUpdater.isInconsistentMirrorAddress(any())).willReturn(true);
-
 		final var expectedHaltResult = new Operation.OperationResult(Optional.of(Gas.of(20L)),
 				Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
 

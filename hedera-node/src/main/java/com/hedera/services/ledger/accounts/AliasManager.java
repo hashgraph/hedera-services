@@ -133,49 +133,10 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 				if (v.isSmartContract()) {
 					numCreate2Aliases.getAndIncrement();
 				}
-				try {
-					if (v.getAccountKey().hasECDSAsecp256k1Key()) {
-						byte[] rawCompressedKey = fromBytesInternal(v.getAlias().toByteArray());
-						var evmAddress = calculateEthAddress(rawCompressedKey);
-						workingAliases.put(evmAddress, k);
-					}
-				} catch (Exception e) {
-					e.printStackTrace(System.out);
-				}
 			}
 		});
 		log.info("Rebuild complete, re-mapped {} aliases ({} from CREATE2)",
 				workingAliases::size, numCreate2Aliases::get);
-	}
-
-	static byte[] fromBytesInternal(byte[] publicKey) {
-		System.out.println(Hex.toHexString(publicKey));
-		if (publicKey.length == 33) {
-			// compressed 33 byte raw form
-			return publicKey;
-		} else if (publicKey.length == 35 && publicKey[0]==58 && publicKey[1]==33) {
-			// compressed 33 byte raw form
-			byte[] key = new byte[33];
-			System.arraycopy(publicKey, 2, key, 0, 33);
-			return key;
-		} else if (publicKey.length == 65) {
-			// compress the 65 byte form
-			return SECP256K1_CURVE.decodePoint(publicKey).getEncoded(true);
-		} else {
-			// Assume a DER-encoded public key descriptor
-			return SubjectPublicKeyInfo.getInstance(publicKey).getPublicKeyData().getBytes();
-		}
-	}
-
-	static ByteString calculateEthAddress(byte[] rawCompressedKey) {
-		BigInteger x = new BigInteger(rawCompressedKey, 1, 32);
-		ECPoint ecPoint = decompressKey(x, (rawCompressedKey[0] & 0x1) == 0x1);
-		byte[] uncompressedKeyDer = ecPoint.getEncoded(false);
-		byte[] uncompressedKeyRaw = new byte[64];
-		System.arraycopy(uncompressedKeyDer, 1, uncompressedKeyRaw, 0, 64);
-		byte[] hashedKey = new Keccak.Digest256().digest(uncompressedKeyRaw);
-
-		return ByteString.copyFrom(hashedKey, 12, 20);
 	}
 
 	static ECCurve SECP256K1_CURVE = new SecP256K1Curve();

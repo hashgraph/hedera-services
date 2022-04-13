@@ -193,24 +193,6 @@ public class WorldLedgers {
 		}
 	}
 
-	public boolean hasAlias(final Address address) {
-		final var sourceId = accountIdFromEvmAddress(address);
-		final ByteString alias;
-		if (accountsLedger != null) {
-			if (!accountsLedger.exists(sourceId)) {
-				return false;
-			}
-			alias = (ByteString) accountsLedger.get(sourceId, ALIAS);
-		} else {
-			Objects.requireNonNull(staticEntityAccess, "Null ledgers must imply non-null static access");
-			if (!staticEntityAccess.isExtant(sourceId)) {
-				return false;
-			}
-			alias = staticEntityAccess.alias(sourceId);
-		}
-		return !alias.isEmpty();
-	}
-
 	public void commit() {
 		if (areMutable()) {
 			aliases.commit(null);

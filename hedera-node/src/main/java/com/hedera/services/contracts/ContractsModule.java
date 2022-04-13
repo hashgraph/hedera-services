@@ -241,11 +241,6 @@ public interface ContractsModule {
 				precompiledContractMap.keySet().stream()
 						.map(Address::fromHexString)
 						.collect(Collectors.toSet());
-		return (address, frame) -> {
-			final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-			return precompiles.contains(address) ||
-					(!updater.isInconsistentMirrorAddress(address) &&
-					updater.get(address) != null);
-		};
+		return (address, frame) -> precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
 	}
 }

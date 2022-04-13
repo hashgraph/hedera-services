@@ -177,34 +177,6 @@ class WorldLedgersTest {
 	}
 
 	@Test
-	void hasAlias() {
-		given(accountsLedger.exists(accountA)).willReturn(true);
-		given(accountsLedger.get(accountA, ALIAS)).willReturn(aliasBytes);
-		assertTrue(subject.hasAlias(address));
-	}
-
-	@Test
-	void hasAliasAccountDoesntExist() {
-		given(accountsLedger.exists(accountA)).willReturn(false);
-		assertFalse(subject.hasAlias(address));
-	}
-
-	@Test
-	void hasAliasAccountLedgerNull() {
-		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-		given(staticEntityAccess.isExtant(accountA)).willReturn(true);
-		given(staticEntityAccess.alias(accountA)).willReturn(aliasBytes);
-		assertTrue(subject.hasAlias(address));
-	}
-
-	@Test
-	void hasAliasAccountLedgerNullAndNotExtant() {
-		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
-		given(staticEntityAccess.isExtant(accountA)).willReturn(false);
-		assertFalse(subject.hasAlias(address));
-	}
-
-	@Test
 	void commitsAsExpectedNoHistorian() {
 		subject.commit();
 
