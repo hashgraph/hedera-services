@@ -1159,13 +1159,6 @@ workflows:
 
 
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
-    triggers:
-      - schedule:
-          cron: "40 7 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1598,6 +1591,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
+            cd regression; git checkout -b test-failed-service2 origin/test-failed-service2;  cd -;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
