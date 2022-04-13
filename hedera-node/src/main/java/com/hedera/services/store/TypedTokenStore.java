@@ -156,7 +156,9 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		if (token.hasRemovedUniqueTokens()) {
 			destroyRemoved(token.removedUniqueTokens());
 		}
-		token.getTreasury().decrementNumTreasuryTitles();
+		if (token.isDeleted()) {
+			token.getTreasury().decrementNumTreasuryTitles();
+		}
 		sideEffectsTracker.trackTokenChanges(token);
 	}
 

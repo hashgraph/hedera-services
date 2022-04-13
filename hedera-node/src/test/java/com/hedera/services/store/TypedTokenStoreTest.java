@@ -38,7 +38,6 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -85,10 +84,6 @@ class TypedTokenStoreTest {
 	private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
 	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
-	@Mock
-	private TokenStore legacyStore;
-	@Mock
-	private TokenStore tokenStore;
 
 	private TypedTokenStore subject;
 
@@ -321,6 +316,7 @@ class TypedTokenStoreTest {
 		modelToken.setAutoRenewPeriod(autoRenewPeriod);
 		modelToken.setCustomFees(List.of());
 		modelToken.setMemo(memo);
+		autoRenewAccount.incrementNumTreasuryTitles();
 		// and:
 		subject.commitToken(modelToken);
 
@@ -345,6 +341,7 @@ class TypedTokenStoreTest {
 		modelToken.setExpiry(expiry);
 		modelToken.removedUniqueTokens().add(burnedToken);
 		modelToken.setCustomFees(List.of());
+		treasuryAccount.incrementNumTreasuryTitles();
 		// and:
 		subject.commitToken(modelToken);
 
