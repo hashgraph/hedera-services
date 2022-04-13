@@ -110,6 +110,11 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 				: Bytes.EMPTY;
 
 		// --- Do the business logic ---
+		if (incrementCounter) {
+			sender.incrementEthereumNonce();
+			accountStore.commitAccount(sender);
+		}
+
 		final var result = evmTxProcessor.execute(
 				sender,
 				receiver.canonicalAddress(),
@@ -117,11 +122,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 				op.getAmount(),
 				callData,
 				txnCtx.consensusTime());
-
-		if (incrementCounter) {
-			sender.incrementTransactionCounter();
-			accountStore.commitAccount(sender);
-		}
 
 		// --- Persist changes into state ---
 		final var createdContracts = worldState.getCreatedContractIds();

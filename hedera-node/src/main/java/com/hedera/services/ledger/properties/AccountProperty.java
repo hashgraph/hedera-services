@@ -205,15 +205,15 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getAlias;
 		}
 	},
-	TRANSACTION_COUNTER {
+	ETHEREUM_NONCE {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, v) -> a.setTransactionCounter((long) v);
+			return (a, v) -> a.setEthereumNonce((long) v);
 		}
 
 		@Override
 		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getTransactionCounter;
+			return MerkleAccount::getEthereumNonce;
 		}
 	},
 	CRYPTO_ALLOWANCES {

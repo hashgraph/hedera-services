@@ -124,6 +124,11 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
 
 		// --- Do the business logic ---
+		if (incrementCounter) {
+			sender.incrementEthereumNonce();
+			accountStore.commitAccount(sender);
+		}
+
 		worldState.setHapiSenderCustomizer(fromHapiCreation(key, consensusTime, op));
 		TransactionProcessingResult result;
 		try {
@@ -137,11 +142,6 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 					expiry);
 		} finally {
 			worldState.resetHapiSenderCustomizer();
-		}
-
-		if (incrementCounter) {
-			sender.incrementTransactionCounter();
-			accountStore.commitAccount(sender);
 		}
 
 		// --- Persist changes into state ---
