@@ -1,14 +1,19 @@
 package com.hedera.services.txns.ethereum;
 
+import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
 class EthTxDataTest {
@@ -19,6 +24,8 @@ class EthTxDataTest {
 			"f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792";
 	static final String RAW_TX_TYPE_2 =
 			"02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
+	static final String RAW_TX_TYPE_2_ACCESS_LIST =
+			"02f8a10101648227108402625a0094000000000000000000000000000000000000c0de80a4693c61390000000000000000000000000000000000000000000000000000000000000000d7d694000000000000000000000000000000000000ba5ec080a0d5a3052a8cc387f35ffdebe832afdfdd45980cdcbb9b926dee7fb9b1d9a4ee08a06210d404eb6aecd05bc214b120959a71ede9fadcae4b769c96c58bffa216f205";
 
 	static final String EIP_155_DEMO_ADDRESS = "9d8a62f656a8d1615c1294fd71e9cfb3e4855a4f";
 	static final String EIP_155_DEMO_PUBKEY = "024bc2a31265153f07e70e0bab08724e6b85e217f8cd628ceb62974247bb493382";
@@ -133,7 +140,7 @@ class EthTxDataTest {
 
 		assertNotNull(tx155);
 		assertArrayEquals(expected, tx155.encodeTx());
-	}	
+	}
 
 	@Test
 	void roundTrip1559() {
@@ -142,5 +149,76 @@ class EthTxDataTest {
 
 		assertNotNull(tx1559);
 		assertArrayEquals(expected, tx1559.encodeTx());
-	}	
+	}
+
+	@Test
+	void whiteBoxDecodingErrors() {
+		var oneByte = new byte[] { 1 };
+		var size_13 = List.of(
+				oneByte, oneByte, oneByte, oneByte,
+				oneByte, oneByte, oneByte, oneByte,
+				oneByte, oneByte, oneByte, oneByte,
+				oneByte);
+
+		// legacy TX with too many RLP entries
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeAsList(size_13)));
+		// type 2 TX with too many RLP entries
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 }, size_13)));
+		// Unsupported Transaciton Type
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 127 }, size_13)));
+
+		// poorly wrapped typed transaction
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 }, oneByte, oneByte)));
+	}
+
+	@Test
+	void whiteBoxEncodingErrors() {
+		// type2 with access list
+		var oneByte = new byte[] { 1 };
+		assertThrows(IllegalStateException.class, () ->
+				new EthTxData(oneByte, EthTxData.EthTransactionType.EIP1559, oneByte, 1,
+						oneByte, oneByte, oneByte, 1, oneByte, BigInteger.ONE, oneByte, oneByte, 1,
+						oneByte, oneByte, oneByte).encodeTx());
+
+		//Type 1
+		assertThrows(IllegalStateException.class, () ->
+				new EthTxData(oneByte, EthTxData.EthTransactionType.EIP2930, oneByte, 1,
+						oneByte, oneByte, oneByte, 1, oneByte, BigInteger.ONE, oneByte, null, 1,
+						oneByte, oneByte, oneByte).encodeTx());
+	}
+
+	@Test
+	void roundTripTests() {
+		EthTxData parsed = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+		assertArrayEquals(Hex.decode(RAW_TX_TYPE_0), parsed.encodeTx());
+
+		parsed = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_2));
+		assertArrayEquals(Hex.decode(RAW_TX_TYPE_2), parsed.encodeTx());
+	}
+
+	@Test
+	void replaceCallData() {
+		var parsed = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_2));
+		var noCallData = parsed.replaceCallData(new byte[0]);
+		System.out.println(Hex.toHexString(noCallData.encodeTx()));
+		System.out.println(RAW_TX_TYPE_2.replace("83123456", "80"));
+		assertArrayEquals(Hex.decode(RAW_TX_TYPE_2
+						.replace("f870", "f86d") // tx is shorter
+						.replace("83123456", "80")), // calldata changed
+				noCallData.encodeTx());
+	}
+
+	@Test
+	void toStringHashAndEquals() {
+		var parsed = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_2));
+		var parsedAgain = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_2));
+		var parsed0 = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+		assertDoesNotThrow(() -> parsed.toString());
+		assertDoesNotThrow(() -> parsed0.toString());
+		assertDoesNotThrow(() -> parsed.hashCode());
+		assertDoesNotThrow(() -> parsed0.hashCode());
+		
+		assertEquals(parsed, parsedAgain);
+		assertNotEquals(parsed, parsed0);
+	}
 }

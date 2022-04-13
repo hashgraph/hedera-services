@@ -10,6 +10,7 @@ import org.apache.commons.codec.binary.Hex;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 
 public record EthTxData(
@@ -132,16 +133,13 @@ public record EthTxData(
 
 	public byte[] encodeTx() {
 		if (accessList != null && accessList.length > 0) {
-			throw new RuntimeException("Re-encoding access list is unsupported");
+			throw new IllegalStateException("Re-encoding access list is unsupported");
 		}
 		return switch (type) {
 			case LEGACY_ETHEREUM -> RLPEncoder.encodeAsList(
 					Integers.toBytes(nonce), gasPrice, Integers.toBytes(gasLimit), to, Integers.toBytesUnsigned(value),
 					callData, v, r, s);
-			case EIP2930 -> RLPEncoder.encodeSequentially(Integers.toBytes(0x01), List.of(
-					chainId, Integers.toBytes(nonce), gasPrice, Integers.toBytes(gasLimit), to,
-					Integers.toBytesUnsigned(value), callData, List.of(/*accessList*/), Integers.toBytes(recId), r, s
-			));
+			case EIP2930 -> throw new IllegalStateException("EIP2930 txes not supported");
 			case EIP1559 -> RLPEncoder.encodeSequentially(Integers.toBytes(0x02), List.of(
 					chainId, Integers.toBytes(nonce), maxPriorityGas, maxGas, Integers.toBytes(gasLimit), to,
 					Integers.toBytesUnsigned(value), callData, List.of(/*accessList*/), Integers.toBytes(recId), r, s
@@ -162,24 +160,22 @@ public record EthTxData(
 
 		final EthTxData ethTxData = (EthTxData) o;
 
-		if (nonce != ethTxData.nonce) return false;
-		if (gasLimit != ethTxData.gasLimit) return false;
-		if (recId != ethTxData.recId) return false;
-		if (!Arrays.equals(rawTx, ethTxData.rawTx)) return false;
-		if (type != ethTxData.type) return false;
-		if (!Arrays.equals(chainId, ethTxData.chainId)) return false;
-		if (!Arrays.equals(gasPrice, ethTxData.gasPrice)) return false;
-		if (!Arrays.equals(maxPriorityGas, ethTxData.maxPriorityGas)) return false;
-		if (!Arrays.equals(maxGas, ethTxData.maxGas)) return false;
-		if (!Arrays.equals(to, ethTxData.to)) return false;
-		if (value != null ? !value.equals(ethTxData.value) : ethTxData.value != null) return false;
-		if (!Arrays.equals(callData, ethTxData.callData)) return false;
-		if (!Arrays.equals(accessList, ethTxData.accessList)) return false;
-		if (!Arrays.equals(v, ethTxData.v)) return false;
-		if (!Arrays.equals(r, ethTxData.r)) return false;
-		if (!Arrays.equals(s, ethTxData.s)) return false;
-
-		return true;
+		return (nonce == ethTxData.nonce) &&
+			   (gasLimit == ethTxData.gasLimit) &&
+			   (recId == ethTxData.recId) &&
+			   (Arrays.equals(rawTx, ethTxData.rawTx)) &&
+			   (type == ethTxData.type) &&
+			   (Arrays.equals(chainId, ethTxData.chainId)) &&
+			   (Arrays.equals(gasPrice, ethTxData.gasPrice)) &&
+			   (Arrays.equals(maxPriorityGas, ethTxData.maxPriorityGas)) &&
+			   (Arrays.equals(maxGas, ethTxData.maxGas)) &&
+			   (Arrays.equals(to, ethTxData.to)) &&
+			   (Objects.equals(value, ethTxData.value)) &&
+			   (Arrays.equals(callData, ethTxData.callData)) &&
+			   (Arrays.equals(accessList, ethTxData.accessList)) &&
+			   (Arrays.equals(v, ethTxData.v)) &&
+			   (Arrays.equals(r, ethTxData.r)) &&
+			   (Arrays.equals(s, ethTxData.s));
 	}
 
 	@Override
@@ -206,20 +202,20 @@ public record EthTxData(
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("rawTx", Hex.encodeHexString(rawTx))
+				.add("rawTx", rawTx == null ? null : Hex.encodeHexString(rawTx))
 				.add("type", type)
 				.add("chainId", Hex.encodeHexString(chainId))
 				.add("nonce", nonce)
-				.add("gasPrice", Hex.encodeHexString(gasPrice))
-				.add("maxPriorityGas", Hex.encodeHexString(maxPriorityGas))
-				.add("maxGas", Hex.encodeHexString(maxGas))
+				.add("gasPrice", gasPrice == null ? null : Hex.encodeHexString(gasPrice))
+				.add("maxPriorityGas", maxPriorityGas == null ? null : Hex.encodeHexString(maxPriorityGas))
+				.add("maxGas", maxGas == null ? null : Hex.encodeHexString(maxGas))
 				.add("gasLimit", gasLimit)
-				.add("to", Hex.encodeHexString(to))
+				.add("to", to == null ? null : Hex.encodeHexString(to))
 				.add("value", value)
 				.add("callData", Hex.encodeHexString(callData))
-				.add("accessList", Hex.encodeHexString(accessList))
+				.add("accessList", accessList == null ? null : Hex.encodeHexString(accessList))
 				.add("recId", recId)
-				.add("v", Hex.encodeHexString(v))
+				.add("v", v == null ? null : Hex.encodeHexString(v))
 				.add("r", Hex.encodeHexString(r))
 				.add("s", Hex.encodeHexString(s))
 				.toString();

@@ -56,11 +56,10 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
 		BigInteger v;
 		if (ethTx.type() == LEGACY_ETHEREUM) {
 			if (ethTx.chainId() == null || ethTx.chainId().length == 0) {
-				v = BigInteger.valueOf(27 + recId.getValue());
+				v = BigInteger.valueOf(27L + recId.getValue());
 			} else {
-				v =
-						BigInteger.valueOf(35 + recId.getValue())
-								.add(new BigInteger(1, ethTx.chainId()).multiply(BigInteger.TWO));
+				v = BigInteger.valueOf(35L + recId.getValue())
+						.add(new BigInteger(1, ethTx.chainId()).multiply(BigInteger.TWO));
 			}
 		} else {
 			v = null;
@@ -127,7 +126,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
 							});
 
 		} else {
-			throw new RuntimeException("Unsupported transaction type " + ethTx.type());
+			throw new IllegalArgumentException("Unsupported transaction type " + ethTx.type());
 		}
 		return message;
 	}

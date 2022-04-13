@@ -20,7 +20,6 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.esaulpaugh.headlong.rlp.RLPOutputStream;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
@@ -29,7 +28,6 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.txns.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -52,7 +50,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 
 import javax.annotation.Nullable;
-import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
