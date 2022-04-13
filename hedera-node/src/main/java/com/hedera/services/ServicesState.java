@@ -36,7 +36,6 @@ import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -73,14 +72,13 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0240_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0250_VERSION;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 
 /**
  * The Merkle tree root of the Hedera Services world state.
@@ -357,26 +355,29 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		for (var accountId : accounts.keySet()) {
 			var merkleAccount = accounts.getForModify(accountId);
 			int numAssociations = 0;
-			int numZeroBalances = 0;
-			EntityNumPair prevListRootKey = MISSING_NUM_PAIR;
+			int numPositiveBalances = 0;
+			long headTokenNum = MISSING_ID.num();
+			MerkleTokenRelStatus prevAssociation = null;
 			for (var tokenId : merkleAccount.tokens().asTokenIds()) {
 				var newListRootKey = EntityNumPair.fromLongs(accountId.longValue(), tokenId.getTokenNum());
 				var association = tokenRels.getForModify(newListRootKey);
-				association.setNextKey(prevListRootKey);
+				association.setNext(headTokenNum);
 
-				if (prevListRootKey != MISSING_NUM_PAIR) {
-					var prevAssociation = tokenRels.getForModify(prevListRootKey);
-					prevAssociation.setPrevKey(newListRootKey);
+				if (prevAssociation != null) {
+					prevAssociation.setPrev(tokenId.getTokenNum());
 				}
 
-				if (association.getBalance() == 0) {
-					numZeroBalances++;
+				if (association.getBalance() > 0) {
+					numPositiveBalances++;
 				}
 				numAssociations++;
-				prevListRootKey = newListRootKey;
+
+				prevAssociation = association;
+				headTokenNum = tokenId.getTokenNum();
 			}
-			merkleAccount.setTokenAssociationMetadata(
-					new TokenAssociationMetadata(numAssociations, numZeroBalances, prevListRootKey));
+			merkleAccount.setNumAssociations(numAssociations);
+			merkleAccount.setNumPositiveBalances(numPositiveBalances);
+			merkleAccount.setHeadTokenId(headTokenNum);
 			merkleAccount.forgetAssociatedTokens();
 		}
 	}
@@ -474,7 +475,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	private MerkleNetworkContext genesisNetworkCtxWith(long seqStart) {
 		return new MerkleNetworkContext(
-				NULL_CONSENSUS_TIME,
+				null,
 				new SequenceNumber(seqStart),
 				seqStart - 1,
 				new ExchangeRates());

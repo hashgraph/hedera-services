@@ -26,7 +26,7 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -47,12 +47,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
-import static com.hedera.services.ledger.properties.AccountProperty.TOKEN_ASSOCIATION_METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -60,15 +62,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @Singleton
 public class TransferLogic {
 	public static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS = List.of(
-			TOKEN_ASSOCIATION_METADATA,
+			NUM_POSITIVE_BALANCES,
+			NUM_ASSOCIATIONS,
+			HEAD_TOKEN_NUM,
 			NUM_NFTS_OWNED,
-			ALREADY_USED_AUTOMATIC_ASSOCIATIONS
+			USED_AUTOMATIC_ASSOCIATIONS
 	);
 
 	private final TokenStore tokenStore;
 	private final AutoCreationLogic autoCreationLogic;
 	private final SideEffectsTracker sideEffectsTracker;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final MerkleAccountScopedCheck scopedCheck;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
@@ -85,7 +89,7 @@ public class TransferLogic {
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator,
 			final @Nullable AutoCreationLogic autoCreationLogic,
-			final AccountRecordsHistorian recordsHistorian
+			final RecordsHistorian recordsHistorian
 	) {
 		this.tokenStore = tokenStore;
 		this.nftsLedger = nftsLedger;
@@ -160,7 +164,8 @@ public class TransferLogic {
 				}
 			} else if (change.isApprovedAllowance() && change.isForFungibleToken()) {
 				adjustFungibleTokenAllowance(change, accountId);
-			} else if (change.isApprovedAllowance() && change.isForNft()) {
+			} else if (change.isForNft()) {
+				// wipe the allowance on this uniqueToken
 				nftsLedger.set(change.nftId(), SPENDER, MISSING_ENTITY_ID);
 			}
 		}

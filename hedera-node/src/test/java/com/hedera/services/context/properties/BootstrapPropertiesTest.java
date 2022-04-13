@@ -108,6 +108,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.redirectTokenCalls", true),
 			entry("contracts.precompile.htsDefaultGasCost", 10000L),
 			entry("contracts.precompile.exportRecordResults", true),
+			entry("contracts.precompile.htsEnableTokenCreate", true),
 			entry("dev.onlyDefaultNodeListens", true),
 			entry("dev.defaultListeningNodeAccount", "0.0.3"),
 			entry("entities.maxLifetime", 3153600000L),
@@ -152,7 +153,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
-			entry("autorenew.isEnabled", false),
+			entry("autoRenew.targetTypes", EnumSet.noneOf(EntityType.class)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
 			entry("autorenew.gracePeriod", 604800L),
@@ -176,6 +177,7 @@ class BootstrapPropertiesTest {
 			entry("netty.tlsKey.path", "hedera.key"),
 			entry("queries.blob.lookupRetries", 3),
 			entry("tokens.maxRelsPerInfoQuery", 1_000),
+			entry("tokens.maxPerAccount", 1_000),
 			entry("tokens.maxSymbolUtf8Bytes", 100),
 			entry("tokens.maxTokenNameUtf8Bytes", 100),
 			entry("tokens.maxCustomFeesAllowed", 10),
@@ -211,7 +213,8 @@ class BootstrapPropertiesTest {
 			entry("upgrade.artifacts.path", "/opt/hgcapp/services-hedera/HapiApp2.0/data/upgrade/current"),
 			entry("hedera.allowances.maxTransactionLimit", 20),
 			entry("hedera.allowances.maxAccountLimit", 100),
-			entry("hedera.allowances.isEnabled", true)
+			entry("hedera.allowances.isEnabled", true),
+			entry("accounts.limitTokenAssociations", true)
 	);
 
 	@Test
@@ -277,6 +280,7 @@ class BootstrapPropertiesTest {
 		subject.ensureProps();
 
 		assertEquals(30, subject.getProperty("tokens.maxRelsPerInfoQuery"));
+		assertEquals(30, subject.getProperty("tokens.maxPerAccount"));
 	}
 
 	@Test

@@ -43,7 +43,6 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -64,6 +63,7 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -96,6 +96,9 @@ import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.merkle.MerkleScheduleTest.scheduleCreateTxnWith;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -168,7 +171,6 @@ class StateViewTest {
 	private final String fileMemo = "Originally she thought";
 	private final ByteString create2Address = ByteString.copyFrom(unhex("aaaaaaaaaaaaaaaaaaaaaaaa9abcdefabcdefbbb"));
 	private final ByteString ledgerId = ByteString.copyFromUtf8("0x03");
-	private TokenAssociationMetadata tokenAssociationMetadata = new TokenAssociationMetadata(1, 0, tokenAssociationId);
 
 	private FileGetInfoResponse.FileInfo expected;
 	private FileGetInfoResponse.FileInfo expectedImmutable;
@@ -234,10 +236,13 @@ class StateViewTest {
 				.isSmartContract(false)
 				.tokens(tokenId)
 				.get();
+		tokenAccount.setKey(EntityNum.fromAccountId(tokenAccountId));
 		tokenAccount.setNftsOwned(10);
 		tokenAccount.setMaxAutomaticAssociations(123);
 		tokenAccount.setAlias(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey().getEd25519());
-		tokenAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
+		tokenAccount.setHeadTokenId(tokenId.getTokenNum());
+		tokenAccount.setNumAssociations(1);
+		tokenAccount.setNumPositiveBalances(0);
 		contract = MerkleAccountFactory.newAccount()
 				.alias(create2Address)
 				.memo("Stay cold...")
@@ -245,8 +250,6 @@ class StateViewTest {
 				.isSmartContract(true)
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.proxy(asAccount("0.0.3"))
-				.senderThreshold(1_234L)
-				.receiverThreshold(4_321L)
 				.receiverSigRequired(true)
 				.balance(555L)
 				.autoRenewPeriod(1_000_000L)
@@ -259,11 +262,11 @@ class StateViewTest {
 
 		tokenAccountRel = new MerkleTokenRelStatus(123L, false, true, true);
 		tokenAccountRel.setKey(tokenAssociationId);
-		tokenAccountRel.setNextKey(nftAssociationId);
+		tokenAccountRel.setNext(nftTokenId.getTokenNum());
 
 		nftAccountRel = new MerkleTokenRelStatus(2L, false, true, false);
 		tokenAccountRel.setKey(nftAssociationId);
-		tokenAccountRel.setPrevKey(tokenAssociationId);
+		tokenAccountRel.setPrev(tokenId.getTokenNum());
 
 		tokenRels = new MerkleMap<>();
 		tokenRels.put(tokenAssociationId, tokenAccountRel);
@@ -694,6 +697,39 @@ class StateViewTest {
 				.build();
 
 		final var actualResponse = subject.infoForAccount(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
+
+		assertEquals(expectedResponse, actualResponse.get());
+		mockedStatic.close();
+	}
+
+	@Test
+	void accountDetails() {
+		given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+
+		mockedStatic = mockStatic(StateView.class);
+		mockedStatic.when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+				.thenReturn(Collections.emptyList());
+		given(networkInfo.ledgerId()).willReturn(ledgerId);
+		final var expectedResponse = GetAccountDetailsResponse.AccountDetails.newBuilder()
+				.setLedgerId(ledgerId)
+				.setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+				.setAccountId(tokenAccountId)
+				.setAlias(tokenAccount.getAlias())
+				.setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+				.setDeleted(tokenAccount.isDeleted())
+				.setMemo(tokenAccount.getMemo())
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+				.setBalance(tokenAccount.getBalance())
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+				.setContractAccountId(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
+				.setOwnedNfts(tokenAccount.getNftsOwned())
+				.setMaxAutomaticTokenAssociations(tokenAccount.getMaxAutomaticAssociations())
+				.addAllGrantedCryptoAllowances(getCryptoGrantedAllowancesList(tokenAccount))
+				.addAllGrantedTokenAllowances(getFungibleGrantedTokenAllowancesList(tokenAccount))
+				.addAllGrantedNftAllowances(getNftGrantedAllowancesList(tokenAccount))
+				.build();
+
+		final var actualResponse = subject.accountDetails(tokenAccountId, aliasManager, maxTokensFprAccountInfo);
 
 		assertEquals(expectedResponse, actualResponse.get());
 		mockedStatic.close();

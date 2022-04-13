@@ -173,14 +173,14 @@ class StaticEntityAccessTest {
 
 	@Test
 	void notDetachedIfSmartContract() {
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someContractAccount);
 		assertFalse(subject.isDetached(id));
 	}
 
 	@Test
 	void notDetachedIfNonZeroBalance() throws NegativeAccountBalanceException {
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
 		someNonContractAccount.setBalance(1L);
 		assertFalse(subject.isDetached(id));
@@ -188,7 +188,7 @@ class StaticEntityAccessTest {
 
 	@Test
 	void notDetachedIfNotExpired() throws NegativeAccountBalanceException {
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
 		someNonContractAccount.setBalance(0L);
 		given(validator.isAfterConsensusSecond(someNonContractAccount.getExpiry())).willReturn(true);
@@ -197,7 +197,7 @@ class StaticEntityAccessTest {
 
 	@Test
 	void detachedIfExpiredWithZeroBalance() throws NegativeAccountBalanceException {
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 		given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
 		someNonContractAccount.setBalance(0L);
 		assertTrue(subject.isDetached(id));
@@ -234,11 +234,6 @@ class StaticEntityAccessTest {
 		assertTrue(subject.isExtant(id));
 		assertFalse(subject.isExtant(nonExtantId));
 		assertTrue(subject.isTokenAccount(fungibleTokenAddr));
-		assertEquals(someNonContractAccount.getMemo(), subject.getMemo(id));
-		assertEquals(someNonContractAccount.getExpiry(), subject.getExpiry(id));
-		assertEquals(someNonContractAccount.getAutoRenewSecs(), subject.getAutoRenew(id));
-		assertEquals(someNonContractAccount.getAccountKey(), subject.getKey(id));
-		assertEquals(someNonContractAccount.getProxy(), subject.getProxy(id));
 	}
 
 	@Test

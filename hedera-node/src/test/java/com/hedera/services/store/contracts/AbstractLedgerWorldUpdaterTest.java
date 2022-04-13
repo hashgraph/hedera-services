@@ -36,7 +36,7 @@ import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -72,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -102,9 +103,11 @@ class AbstractLedgerWorldUpdaterTest {
 	private static final long aNonce = 1L;
 
 	@Mock
+	private CodeCache codeCache;
+	@Mock
 	private HederaWorldState worldState;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private ContractAliases aliases;
 	@Mock
@@ -115,6 +118,8 @@ class AbstractLedgerWorldUpdaterTest {
 	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
 	@Mock
 	private ContractCustomizer customizer;
+	@Mock
+	private EntityAccess entityAccess;
 	@Mock
 	private StaticEntityAccess staticEntityAccess;
 	@Mock
@@ -170,10 +175,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void getDelegatesToWrappedIfNotDeletedAndNotMutable() {
-		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
-		final var wrappedAccount =
-				worldState.new WorldStateAccount(
-						aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID);
+		final var wrappedAccount = new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess);
 		given(worldState.get(aAddress)).willReturn(wrappedAccount);
 
 		final var actual = subject.get(aAddress);
@@ -201,6 +203,11 @@ class AbstractLedgerWorldUpdaterTest {
 		assertNull(subject.getAccount(aAddress));
 		verify(trackingAliases).unlink(aAddress);
 		assertEquals(ByteString.EMPTY, trackingAccounts.get(aAccount, ALIAS));
+	}
+
+	@Test
+	void recognizesNonNullTokenLedgers() {
+		assertNotNull(subject.trackingTokens());
 	}
 
 	@Test
@@ -250,13 +257,12 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void getReusesMutableIfPresent() {
-		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
 
-		given(worldState.get(aAddress)).willReturn(worldState.new WorldStateAccount(
-				aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
+		given(worldState.get(aAddress)).willReturn(
+				new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess));
 
 		final var mutableResponse = subject.getAccount(aAddress);
 		final var getResponse = subject.get(aAddress);
@@ -302,8 +308,6 @@ class AbstractLedgerWorldUpdaterTest {
 	void commitsToWrappedTrackingAccountsAreRespectedAndSyncedWithUpdatedAccounts() {
 		final var mockNftsOwned = 1_234_567L;
 		setupWellKnownAccounts();
-		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
-		given(aliases.resolveForEvm(bAddress)).willReturn(bAddress);
 
 		/* Make some pending changes to one of the well-known accounts */
 		subject.getAccount(aAddress).getMutable().setBalance(Wei.of(aHbarBalance + 1));
@@ -503,10 +507,10 @@ class AbstractLedgerWorldUpdaterTest {
 		trackingAccounts.create(bAccount);
 		trackingAccounts.set(bAccount, BALANCE, bHbarBalance);
 
-		given(worldState.get(aAddress)).willReturn(worldState.new WorldStateAccount(
-				aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
-		given(worldState.get(bAddress)).willReturn(worldState.new WorldStateAccount(
-				bAddress, Wei.of(bHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
+		given(worldState.get(aAddress)).willReturn(
+				new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess));
+		given(worldState.get(bAddress)).willReturn(
+				new WorldStateAccount(bAddress, Wei.of(bHbarBalance), codeCache, entityAccess));
 	}
 
 	private void setupWellKnownNfts() {

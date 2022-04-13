@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts;
  */
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -32,18 +33,22 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 
 public class HederaStackedWorldStateUpdater
-		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount>
+		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
 		implements HederaWorldUpdater {
 
 	private static CustomizerFactory customizerFactory = ContractCustomizer::fromSponsorContract;
 
 	private final HederaMutableWorldState worldState;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	private Gas sbhRefund = Gas.ZERO;
 	private int numAllocatedIds = 0;
@@ -51,12 +56,14 @@ public class HederaStackedWorldStateUpdater
 	private ContractCustomizer pendingCreationCustomizer = null;
 
 	public HederaStackedWorldStateUpdater(
-			final AbstractLedgerWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
+			final AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater,
 			final HederaMutableWorldState worldState,
-			final WorldLedgers trackingLedgers
+			final WorldLedgers trackingLedgers,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		super(updater, trackingLedgers);
 		this.worldState = worldState;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public boolean hasMutableLedgers() {
@@ -129,6 +136,26 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
+	public Account get(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+		if (isTokenRedirect(address)) {
+			return new WorldStateTokenAccount(address);
+		}
+		return super.get(address);
+	}
+
+	@Override
+	public EvmAccount getAccount(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+		if (isTokenRedirect(address)) {
+			final var proxyAccount = new WorldStateTokenAccount(address);
+			final var newMutable = new UpdateTrackingLedgerAccount<>(proxyAccount, trackingAccounts());
+			return new WrappedEvmAccount(newMutable);
+		}
+		return super.getAccount(address);
+	}
+
+	@Override
 	public Gas getSbhRefund() {
 		return sbhRefund;
 	}
@@ -161,26 +188,22 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
-	public HederaWorldState.WorldStateAccount getHederaAccount(final Address addressOrAlias) {
-		final var address = aliases().resolveForEvm(addressOrAlias);
-		return parentUpdater().map(u -> ((HederaWorldUpdater) u).getHederaAccount(address)).orElse(null);
-	}
-
-	@Override
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public WorldUpdater updater() {
 		return new HederaStackedWorldStateUpdater(
 				(AbstractLedgerWorldUpdater) this,
-				worldState,
-				trackingLedgers().wrapped());
+				worldState, trackingLedgers().wrapped(), dynamicProperties);
 	}
 
 	// --- Internal helpers
+	boolean isTokenRedirect(final Address address) {
+		return dynamicProperties.isRedirectTokenCallsEnabled() && trackingLedgers().isTokenAddress(address);
+	}
+
 	private boolean isMissingTarget(final Address alias) {
 		final var target = aliases().resolveForEvm(alias);
 		return !trackingAccounts().exists(accountIdFromEvmAddress(target));
 	}
-
 
 	@FunctionalInterface
 	interface CustomizerFactory {

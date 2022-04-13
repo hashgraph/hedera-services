@@ -34,7 +34,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
-import com.hedera.services.state.submerkle.TokenAssociationMetadata;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
@@ -44,9 +43,6 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
-import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
-import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
-import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
@@ -68,8 +64,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
-import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
@@ -114,8 +110,6 @@ class GetAccountInfoAnswerTest {
 	private AliasManager aliasManager;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private TokenAssociationMetadata tokenAssociationMetadata;
 
 	private final MutableStateChildren children = new MutableStateChildren();
 
@@ -159,14 +153,14 @@ class GetAccountInfoAnswerTest {
 		final var missingRelKey = fromAccountTokenRel(payerId, missingToken);
 		missingRel.setKey(missingRelKey);
 
-		firstRel.setNextKey(secondRelKey);
-		secondRel.setNextKey(thirdRelKey);
-		secondRel.setPrevKey(firstRelKey);
-		thirdRel.setPrevKey(secondRelKey);
-		thirdRel.setNextKey(fourthRelKey);
-		fourthRel.setPrevKey(thirdRelKey);
-		fourthRel.setNextKey(missingRelKey);
-		missingRel.setPrevKey(fourthRelKey);
+		firstRel.setNext(secondToken.getTokenNum());
+		secondRel.setNext(thirdToken.getTokenNum());
+		secondRel.setPrev(firstToken.getTokenNum());
+		thirdRel.setPrev(secondToken.getTokenNum());
+		thirdRel.setNext(fourthToken.getTokenNum());
+		fourthRel.setPrev(thirdToken.getTokenNum());
+		fourthRel.setNext(missingToken.getTokenNum());
+		missingRel.setPrev(fourthToken.getTokenNum());
 
 		tokenRels.put(firstRelKey, firstRel);
 		tokenRels.put(secondRelKey, secondRel);
@@ -188,8 +182,6 @@ class GetAccountInfoAnswerTest {
 				.accountKeys(COMPLEX_KEY_ACCOUNT_KT)
 				.memo(memo)
 				.proxy(asAccount("1.2.3"))
-				.senderThreshold(1_234L)
-				.receiverThreshold(4_321L)
 				.receiverSigRequired(true)
 				.balance(555L)
 				.autoRenewPeriod(1_000_000L)
@@ -274,8 +266,8 @@ class GetAccountInfoAnswerTest {
 		given(tokens.getOrDefault(EntityNum.fromTokenId(thirdToken), REMOVED_TOKEN)).willReturn(token);
 		given(tokens.getOrDefault(EntityNum.fromTokenId(fourthToken), REMOVED_TOKEN)).willReturn(deletedToken);
 		given(tokens.getOrDefault(EntityNum.fromTokenId(missingToken), REMOVED_TOKEN)).willReturn(REMOVED_TOKEN);
-		payerAccount.setTokenAssociationMetadata(tokenAssociationMetadata);
-		given(tokenAssociationMetadata.latestAssociation()).willReturn(firstRelKey);
+		payerAccount.setKey(EntityNum.fromAccountId(payerId));
+		payerAccount.setHeadTokenId(firstToken.getTokenNum());
 
 		given(token.symbol()).willReturn("HEYMA");
 		given(deletedToken.symbol()).willReturn("THEWAY");
@@ -306,25 +298,6 @@ class GetAccountInfoAnswerTest {
 		assertEquals(payerAccount.isReceiverSigRequired(), info.getReceiverSigRequired());
 		assertEquals(payerAccount.getExpiry(), info.getExpirationTime().getSeconds());
 		assertEquals(memo, info.getMemo());
-		assertEquals(1, info.getGrantedCryptoAllowancesCount());
-		assertEquals(1, info.getGrantedTokenAllowancesCount());
-		assertEquals(1, info.getGrantedNftAllowancesCount());
-		assertEquals(GrantedCryptoAllowance.newBuilder()
-						.setAmount(10L)
-						.setSpender(EntityNum.fromLong(1L).toGrpcAccountId())
-						.build(),
-				info.getGrantedCryptoAllowances(0));
-		assertEquals(GrantedTokenAllowance.newBuilder()
-						.setAmount(20L)
-						.setSpender(EntityNum.fromLong(2000L).toGrpcAccountId())
-						.setTokenId(EntityNum.fromLong(1000L).toGrpcTokenId())
-						.build(),
-				info.getGrantedTokenAllowances(0));
-		assertEquals(GrantedNftAllowance.newBuilder()
-						.setSpender(EntityNum.fromLong(2000L).toGrpcAccountId())
-						.setTokenId(EntityNum.fromLong(1000L).toGrpcTokenId())
-						.build(),
-				info.getGrantedNftAllowances(0));
 
 		// and:
 		assertEquals(

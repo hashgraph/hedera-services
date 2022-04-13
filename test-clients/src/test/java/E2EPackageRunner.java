@@ -64,6 +64,7 @@ import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
@@ -74,7 +75,6 @@ import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.contract.traceability.ContractTraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoAdjustAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -282,7 +282,8 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(ContractBurnHTSSuite::new),
 				extractSpecsFromSuite(ContractHTSSuite::new),
 				extractSpecsFromSuite(ContractKeysHTSSuite::new),
-				extractSpecsFromSuite(ContractMintHTSSuite::new)
+				extractSpecsFromSuite(ContractMintHTSSuite::new),
+				extractSpecsFromSuite(CreatePrecompileSuite::new)
 		);
 	}
 
@@ -372,7 +373,6 @@ class E2EPackageRunner {
 		return List.of(
 				extractSpecsFromSuite(AutoAccountCreationSuite::new),
 				extractSpecsFromSuite(AutoAccountUpdateSuite::new),
-				extractSpecsFromSuite(CryptoAdjustAllowanceSuite::new),
 				extractSpecsFromSuite(CryptoApproveAllowanceSuite::new),
 				extractSpecsFromSuite(CryptoCornerCasesSuite::new),
 				extractSpecsFromSuite(CryptoCreateSuite::new),

@@ -31,6 +31,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Set;
 
+import static com.hedera.services.context.properties.EntityType.ACCOUNT;
+import static com.hedera.services.context.properties.EntityType.CONTRACT;
+
 @Singleton
 public class GlobalDynamicProperties {
 	private final HederaNumbers hederaNums;
@@ -42,6 +45,7 @@ public class GlobalDynamicProperties {
 	private int maxNftTransfersLen;
 	private int maxBatchSizeWipe;
 	private long maxNftQueryRange;
+	private int maxTokensPerAccount;
 	private int maxTokenRelsPerInfoQuery;
 	private int maxCustomFeesAllowed;
 	private int maxTokenSymbolUtf8Bytes;
@@ -66,7 +70,9 @@ public class GlobalDynamicProperties {
 	private int chainId;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
-	private boolean autoRenewEnabled;
+	private boolean atLeastOneAutoRenewTargetType;
+	private boolean expireAccounts;
+	private boolean expireContracts;
 	private int autoRenewNumberOfEntitiesToScan;
 	private int autoRenewMaxNumberOfEntitiesToRenewOrDelete;
 	private long autoRenewGracePeriod;
@@ -104,6 +110,8 @@ public class GlobalDynamicProperties {
 	private boolean redirectTokenCalls;
 	private boolean enableTraceability;
 	private boolean enableAllowances;
+	private boolean limitTokenAssociations;
+	private boolean enableHTSPrecompileCreate;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -122,6 +130,7 @@ public class GlobalDynamicProperties {
 		maxBatchSizeMint = properties.getIntProperty("tokens.nfts.maxBatchSizeMint");
 		maxBatchSizeWipe = properties.getIntProperty("tokens.nfts.maxBatchSizeWipe");
 		maxNftQueryRange = properties.getLongProperty("tokens.nfts.maxQueryRange");
+		maxTokensPerAccount = properties.getIntProperty("tokens.maxPerAccount");
 		maxTokenRelsPerInfoQuery = properties.getIntProperty("tokens.maxRelsPerInfoQuery");
 		maxTokenSymbolUtf8Bytes = properties.getIntProperty("tokens.maxSymbolUtf8Bytes");
 		maxTokenNameUtf8Bytes = properties.getIntProperty("tokens.maxTokenNameUtf8Bytes");
@@ -150,7 +159,6 @@ public class GlobalDynamicProperties {
 		chainId = properties.getIntProperty("contracts.chainId");
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
-		autoRenewEnabled = properties.getBooleanProperty("autorenew.isEnabled");
 		autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
 		autoRenewMaxNumberOfEntitiesToRenewOrDelete =
 				properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete");
@@ -190,6 +198,16 @@ public class GlobalDynamicProperties {
 		redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
 		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
 		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
+		final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
+		expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
+		expireContracts = autoRenewTargetTypes.contains(CONTRACT);
+		atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
+		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
+		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
+	}
+
+	public int maxTokensPerAccount() {
+		return maxTokensPerAccount;
 	}
 
 	public int maxTokensRelsPerInfoQuery() {
@@ -312,8 +330,8 @@ public class GlobalDynamicProperties {
 		return feesTokenTransferUsageMultiplier;
 	}
 
-	public boolean autoRenewEnabled() {
-		return autoRenewEnabled;
+	public boolean shouldAutoRenewSomeEntityType() {
+		return atLeastOneAutoRenewTargetType;
 	}
 
 	public int autoRenewNumberOfEntitiesToScan() {
@@ -462,5 +480,21 @@ public class GlobalDynamicProperties {
 
 	public boolean areAllowancesEnabled() {
 		return enableAllowances;
+	}
+
+	public boolean shouldAutoRenewContracts() {
+		return expireContracts;
+	}
+
+	public boolean shouldAutoRenewAccounts() {
+		return expireAccounts;
+        }
+        
+	public boolean areTokenAssociationsLimited() {
+		return limitTokenAssociations;
+	}
+
+	public boolean isHTSPrecompileCreateEnabled() {
+		return enableHTSPrecompileCreate;
 	}
 }

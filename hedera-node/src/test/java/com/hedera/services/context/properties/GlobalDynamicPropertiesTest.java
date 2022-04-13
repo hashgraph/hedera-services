@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,7 +75,7 @@ class GlobalDynamicPropertiesTest {
 		// then:
 		assertTrue(subject.shouldExportBalances());
 		assertTrue(subject.shouldExportTokenBalances());
-		assertFalse(subject.autoRenewEnabled());
+		assertTrue(subject.shouldAutoRenewSomeEntityType());
 		assertTrue(subject.areNftsEnabled());
 		assertTrue(subject.shouldThrottleByGas());
 		assertFalse(subject.isAutoCreationEnabled());
@@ -83,6 +84,8 @@ class GlobalDynamicPropertiesTest {
 		assertFalse(subject.isCreate2Enabled());
 		assertTrue(subject.isRedirectTokenCallsEnabled());
 		assertFalse(subject.areAllowancesEnabled());
+		assertFalse(subject.areTokenAssociationsLimited());
+		assertTrue(subject.isHTSPrecompileCreateEnabled());
 	}
 
 	@Test
@@ -132,6 +135,7 @@ class GlobalDynamicPropertiesTest {
 
 		// then:
 		assertEquals(1, subject.maxTokensRelsPerInfoQuery());
+		assertEquals(1, subject.maxTokensPerAccount());
 		assertEquals(2, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(6, subject.maxFileSizeKb());
 		assertEquals(15, subject.maxTransferListSize());
@@ -195,7 +199,7 @@ class GlobalDynamicPropertiesTest {
 		// then:
 		assertFalse(subject.shouldExportBalances());
 		assertFalse(subject.shouldExportTokenBalances());
-		assertTrue(subject.autoRenewEnabled());
+		assertTrue(subject.shouldAutoRenewSomeEntityType());
 		assertFalse(subject.areNftsEnabled());
 		assertFalse(subject.shouldThrottleByGas());
 		assertTrue(subject.isAutoCreationEnabled());
@@ -204,6 +208,20 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.isCreate2Enabled());
 		assertFalse(subject.isRedirectTokenCallsEnabled());
 		assertTrue(subject.areAllowancesEnabled());
+		assertTrue(subject.shouldAutoRenewAccounts());
+		assertTrue(subject.shouldAutoRenewContracts());
+		assertTrue(subject.shouldAutoRenewSomeEntityType());
+		assertTrue(subject.areTokenAssociationsLimited());
+		assertFalse(subject.isHTSPrecompileCreateEnabled());
+	}
+
+	@Test
+	void knowsWhenNotToDoAnyAutoRenew() {
+		givenPropsWithSeed(3);
+
+		subject = new GlobalDynamicProperties(numbers, properties);
+
+		assertFalse(subject.shouldAutoRenewSomeEntityType());
 	}
 
 	@Test
@@ -215,6 +233,7 @@ class GlobalDynamicPropertiesTest {
 
 		// then:
 		assertEquals(2, subject.maxTokensRelsPerInfoQuery());
+		assertEquals(2, subject.maxTokensPerAccount());
 		assertEquals(3, subject.maxTokenSymbolUtf8Bytes());
 		assertEquals(7, subject.maxFileSizeKb());
 		assertEquals(9, subject.cacheRecordsTtl());
@@ -285,6 +304,7 @@ class GlobalDynamicPropertiesTest {
 
 	private void givenPropsWithSeed(int i) {
 		given(properties.getIntProperty("tokens.maxRelsPerInfoQuery")).willReturn(i);
+		given(properties.getIntProperty("tokens.maxPerAccount")).willReturn(i);
 		given(properties.getIntProperty("tokens.maxSymbolUtf8Bytes")).willReturn(i + 1);
 		given(properties.getBooleanProperty("ledger.keepRecordsInState")).willReturn((i % 2) == 0);
 		given(properties.getLongProperty("ledger.maxAccountNum")).willReturn((long) i + 2);
@@ -318,7 +338,6 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers"))
 				.willReturn(i % 2 == 0 ? evenCongestion : oddCongestion);
 		given(properties.getIntProperty("fees.minCongestionPeriod")).willReturn(i + 29);
-		given(properties.getBooleanProperty("autorenew.isEnabled")).willReturn(i % 2 == 0);
 		given(properties.getIntProperty("autorenew.numberOfEntitiesToScan")).willReturn(i + 31);
 		given(properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete")).willReturn(i + 32);
 		given(properties.getLongProperty("autorenew.gracePeriod")).willReturn(i + 33L);
@@ -361,6 +380,20 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("contracts.enableTraceability"))
 				.willReturn((i + 59) % 2 == 0);
 		given(properties.getBooleanProperty("hedera.allowances.isEnabled")).willReturn((i + 60) % 2 == 0);
+		given(properties.getTypesProperty("autoRenew.targetTypes")).willReturn(typesFor(i));
+		given(properties.getBooleanProperty("accounts.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
+		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
+				.willReturn((i + 61) % 2 == 0);
+	}
+
+	private Set<EntityType> typesFor(final int i) {
+		if (i == 3) {
+			return EnumSet.noneOf(EntityType.class);
+		} else {
+			return ((i + 61) % 2 == 0
+					? EnumSet.of(EntityType.TOKEN)
+					: EnumSet.of(EntityType.ACCOUNT, EntityType.CONTRACT));
+		}
 	}
 
 	private AccountID accountWith(long shard, long realm, long num) {

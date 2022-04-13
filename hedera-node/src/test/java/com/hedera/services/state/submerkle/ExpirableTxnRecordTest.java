@@ -22,11 +22,10 @@ package com.hedera.services.state.submerkle;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.serdes.DomainSerdes;
-import com.hedera.services.state.serdes.DomainSerdesTest;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -36,13 +35,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SerializableDataOutputStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -52,7 +47,6 @@ import java.util.TreeMap;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.MISSING_PARENT_CONSENSUS_TIMESTAMP;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.NO_CHILD_TRANSACTIONS;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.UNKNOWN_SUBMITTING_MEMBER;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.allToGrpc;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
@@ -64,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.times;
 
 class ExpirableTxnRecordTest {
 	private static final long expiry = 1_234_567L;
@@ -81,7 +74,7 @@ class ExpirableTxnRecordTest {
 	private static final AccountID beneficiary = IdUtils.asAccount("0.0.6");
 	private static final AccountID magician = IdUtils.asAccount("0.0.7");
 	private static final AccountID spender = IdUtils.asAccount("0.0.8");
-	private static final AccountID owner =  IdUtils.asAccount("0.0.9");
+	private static final AccountID owner = IdUtils.asAccount("0.0.9");
 	private static final EntityNum spenderNum = EntityNum.fromAccountId(spender);
 	private static final EntityNum ownerNum = EntityNum.fromAccountId(owner);
 	private static final List<TokenAssociation> newRelationships = List.of(new FcTokenAssociation(
@@ -136,27 +129,11 @@ class ExpirableTxnRecordTest {
 			.setTokenId(tokenA)
 			.build();
 
-	private DomainSerdes serdes;
 	private ExpirableTxnRecord subject;
 
 	@BeforeEach
 	void setup() {
 		subject = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
-
-		serdes = mock(DomainSerdes.class);
-
-		ExpirableTxnRecord.serdes = serdes;
-	}
-
-	private static ExpirableTxnRecord subjectRecordWithTokenTransfers() {
-		final var s = ExpirableTxnRecordTestHelper.fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
-						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
-						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
-						.build());
-		setNonGrpcDefaultsOn(s);
-		return s;
 	}
 
 	private static ExpirableTxnRecord subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
@@ -167,9 +144,9 @@ class ExpirableTxnRecordTest {
 	}
 
 	private static TransactionRecord grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations() {
-		return DomainSerdesTest.recordOne().asGrpc().toBuilder()
+		return TxnUtils.recordOne().asGrpc().toBuilder()
 				.setTransactionHash(ByteString.copyFrom(pretendHash))
-				.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+				.setContractCreateResult(TxnUtils.recordTwo().getContractCallResult().toGrpc())
 				.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers, nftTokenTransfers))
 				.setScheduleRef(scheduleID)
 				.addAssessedCustomFees(balanceChange.toGrpc())
@@ -180,9 +157,9 @@ class ExpirableTxnRecordTest {
 
 	private static ExpirableTxnRecord subjectRecordWithTokenTransfersAndScheduleRefCustomFees() {
 		final var s = fromGprc(
-				DomainSerdesTest.recordOne().asGrpc().toBuilder()
+				TxnUtils.recordOne().asGrpc().toBuilder()
 						.setTransactionHash(ByteString.copyFrom(pretendHash))
-						.setContractCreateResult(DomainSerdesTest.recordTwo().getContractCallResult().toGrpc())
+						.setContractCreateResult(TxnUtils.recordTwo().getContractCallResult().toGrpc())
 						.addAllTokenTransferLists(List.of(aTokenTransfers, bTokenTransfers))
 						.setScheduleRef(scheduleID)
 						.addAssessedCustomFees(balanceChange.toGrpc())
@@ -224,81 +201,8 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	void serializeWorksWithBothChildAndParentMetaAndAllowanceMaps() throws IOException {
-		final var fout = mock(SerializableDataOutputStream.class);
-		final var inOrder = Mockito.inOrder(serdes, fout);
-		subject.setCryptoAllowances(cryptoAllowances);
-		subject.setFungibleTokenAllowances(fungibleAllowances);
-
-		subject.serialize(fout);
-
-		inOrder.verify(serdes).writeNullableSerializable(subject.getReceipt(), fout);
-		inOrder.verify(fout).writeByteArray(subject.getTxnHash());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getTxnId(), fout);
-		inOrder.verify(serdes).writeNullableInstant(subject.getConsensusTime(), fout);
-		inOrder.verify(serdes).writeNullableString(subject.getMemo(), fout);
-		inOrder.verify(fout).writeLong(subject.getFee());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getHbarAdjustments(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCallResult(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCreateResult(), fout);
-		inOrder.verify(fout).writeLong(subject.getExpiry());
-		inOrder.verify(fout).writeLong(subject.getSubmittingMember());
-		inOrder.verify(fout).writeSerializableList(
-				subject.getTokens(), true, true);
-		inOrder.verify(fout).writeSerializableList(
-				subject.getTokenAdjustments(), true, true);
-		inOrder.verify(serdes).writeNullableSerializable(EntityId.fromGrpcScheduleId(scheduleID), fout);
-		inOrder.verify(fout).writeSerializableList(
-				subject.getNftTokenAdjustments(), true, true);
-		inOrder.verify(fout).writeSerializableList(subject.getCustomFeesCharged(), true, true);
-		inOrder.verify(fout).writeBoolean(true);
-		inOrder.verify(fout).writeShort(numChildRecords);
-		inOrder.verify(fout).writeBoolean(true);
-		inOrder.verify(fout).writeLong(packedParentConsTime);
-		inOrder.verify(fout).writeByteArray(subject.getAlias().toByteArray());
-		inOrder.verify(fout).writeInt(cryptoAllowances.size());
-		inOrder.verify(fout).writeLong(spenderNum.longValue());
-		inOrder.verify(fout).writeLong(initialAllowance);
-		inOrder.verify(fout).writeInt(fungibleAllowances.size());
-		inOrder.verify(fout).writeSerializable(fungibleAllowanceId, true);
-		inOrder.verify(fout).writeLong(initialAllowance);
-	}
-
-	@Test
-	void serializeWorksWithNeitherChildAndParentMeta() throws IOException {
-		final var fout = mock(SerializableDataOutputStream.class);
-		final var inOrder = Mockito.inOrder(serdes, fout);
-
-		subject.setNumChildRecords(NO_CHILD_TRANSACTIONS);
-		subject.setPackedParentConsensusTime(MISSING_PARENT_CONSENSUS_TIMESTAMP);
-		subject.serialize(fout);
-
-		inOrder.verify(serdes).writeNullableSerializable(subject.getReceipt(), fout);
-		inOrder.verify(fout).writeByteArray(subject.getTxnHash());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getTxnId(), fout);
-		inOrder.verify(serdes).writeNullableInstant(subject.getConsensusTime(), fout);
-		inOrder.verify(serdes).writeNullableString(subject.getMemo(), fout);
-		inOrder.verify(fout).writeLong(subject.getFee());
-		inOrder.verify(serdes).writeNullableSerializable(subject.getHbarAdjustments(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCallResult(), fout);
-		inOrder.verify(serdes).writeNullableSerializable(subject.getContractCreateResult(), fout);
-		inOrder.verify(fout).writeLong(subject.getExpiry());
-		inOrder.verify(fout).writeLong(subject.getSubmittingMember());
-		inOrder.verify(fout).writeSerializableList(
-				subject.getTokens(), true, true);
-		inOrder.verify(fout).writeSerializableList(
-				subject.getTokenAdjustments(), true, true);
-		inOrder.verify(serdes).writeNullableSerializable(EntityId.fromGrpcScheduleId(scheduleID), fout);
-		inOrder.verify(fout).writeSerializableList(
-				subject.getNftTokenAdjustments(), true, true);
-		inOrder.verify(fout).writeSerializableList(subject.getCustomFeesCharged(), true, true);
-		inOrder.verify(fout, times(2)).writeBoolean(false);
-		inOrder.verify(fout).writeByteArray(subject.getAlias().toByteArray());
-	}
-
-	@Test
 	void serializableDetWorks() {
-		assertEquals(ExpirableTxnRecord.MERKLE_VERSION, subject.getVersion());
+		assertEquals(ExpirableTxnRecord.CURRENT_VERSION, subject.getVersion());
 		assertEquals(ExpirableTxnRecord.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 
@@ -307,15 +211,11 @@ class ExpirableTxnRecordTest {
 		final var expected = grpcRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations()
 				.toBuilder()
 				.setParentConsensusTimestamp(MiscUtils.asTimestamp(packedParentConsTime))
-				.addCryptoAdjustments(cryptoAllowance)
-				.addTokenAdjustments(fungibleTokenAllowance)
 				.build();
 
 		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
 		subject.setExpiry(0L);
 		subject.setSubmittingMember(UNKNOWN_SUBMITTING_MEMBER);
-		subject.setFungibleTokenAllowances(fungibleAllowances);
-		subject.setCryptoAllowances(cryptoAllowances);
 
 		final var grpcSubject = subject.asGrpc();
 
@@ -481,24 +381,8 @@ class ExpirableTxnRecordTest {
 	}
 
 	@Test
-	void equalsDetectsDiffCryptoAllowances() {
-		final var a = new ExpirableTxnRecord();
-		final var b = ExpirableTxnRecord.newBuilder()
-				.setCryptoAllowances(Map.of()).build();
-		assertNotEquals(a, b);
-	}
-
-	@Test
-	void equalsDetectsDiffFungibleAllowances() {
-		final var a = new ExpirableTxnRecord();
-		final var b = ExpirableTxnRecord.newBuilder()
-				.setFungibleTokenAllowances(Map.of()).build();
-		assertNotEquals(a, b);
-	}
-
-	@Test
 	void objectContractWorks() {
-		final var two = DomainSerdesTest.recordOne();
+		final var two = TxnUtils.recordOne();
 		final var three = subjectRecordWithTokenTransfersAndScheduleRefCustomFees();
 
 		assertNotEquals(two, three);
@@ -553,41 +437,5 @@ class ExpirableTxnRecordTest {
 				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +
 				"(FcTokenAssociation{token=10, account=11})}";
 		assertEquals(desired, subject.toString());
-	}
-
-	@Test
-	void toStringWorksWithAllowanceMaps() {
-		subject = subjectRecordWithTokenTransfersScheduleRefCustomFeesAndTokenAssociations();
-		subject.setCryptoAllowances(cryptoAllowances);
-		subject.setFungibleTokenAllowances(fungibleAllowances);
-		final var expected = "ExpirableTxnRecord{numChildRecords=2, receipt=TxnReceipt{status=INVALID_ACCOUNT_ID, " +
-				"accountCreated=EntityId{shard=0, realm=0, num=3}, newTotalTokenSupply=0}, fee=555, " +
-				"txnHash=6e6f742d7265616c6c792d612d68617368, txnId=TxnId{payer=EntityId{shard=0, realm=0, num=0}, " +
-				"validStart=RichInstant{seconds=9999999999, nanos=0}, scheduled=false, nonce=0}, " +
-				"consensusTimestamp=RichInstant{seconds=9999999999, nanos=0}, expiry=1234567, submittingMember=1, " +
-				"memo=Alpha bravo charlie, contractCreation=EvmFnResult{gasUsed=55, bloom=, result=, error=null," +
-				" " +
-				"contractId=EntityId{shard=4, realm=3, num=2}, createdContractIds=[], " +
-				"logs=[EvmLog{data=4e6f6e73656e736963616c21, bloom=, contractId=null, topics=[]}], " +
-				"stateChanges={}, evmAddress=, gas=1000000, amount=0, functionParameters=53656e7369626c6521}, " +
-				"hbarAdjustments=CurrencyAdjustments{readable=[0.0.2 -> -4, 0.0.1001 <- +2, 0.0.1002 <- +2]}, " +
-				"scheduleRef=EntityId{shard=5, realm=6, num=7}, alias=test, parentConsensusTime=1970-01-15T06:56:07" +
-				".000000890Z, tokenAdjustments=0.0.3(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <-" +
-				" " +
-				"+1000]}), 0.0.4(CurrencyAdjustments{readable=[0.0.5 -> -1, 0.0.6 <- +1, 0.0.7 <- +1000]}), 0.0.2" +
-				"(NftAdjustments{readable=[1 0.0.5 0.0.6]}), assessedCustomFees=" +
-				"(FcAssessedCustomFee{token=EntityId{shard=1, realm=2, num=9}, account=EntityId{shard=1, realm=2, " +
-				"num=8}, units=123, effective payer accounts=[234]}), newTokenAssociations=" +
-				"(FcTokenAssociation{token=10, account=11}), " +
-				"cryptoAllowances=[{owner : EntityNum{value=9}, spender : EntityNum{value=8}, allowance : 100}], " +
-				"fungibleTokenAllowances=[{owner : EntityNum{value=9}, token : EntityNum{value=3}, " +
-				"spender : EntityNum{value=8}, allowance : 100}]}";
-
-		assertEquals(expected, subject.toString());
-	}
-
-	@AfterEach
-	void cleanup() {
-		ExpirableTxnRecord.serdes = new DomainSerdes();
 	}
 }

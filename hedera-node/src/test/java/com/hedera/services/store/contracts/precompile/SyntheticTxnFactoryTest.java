@@ -23,11 +23,14 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -39,6 +42,14 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fixedFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fractionalFee;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.royaltyFee;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,6 +66,51 @@ class SyntheticTxnFactoryTest {
 	private ContractCustomizer customizer;
 
 	@Test
+	void synthesizesExpectedContractAutoRenew() {
+		final var result = subject.synthContractAutoRenew(contractNum, newExpiry);
+		final var synthBody = result.build();
+
+		assertTrue(result.hasContractUpdateInstance());
+		final var op = synthBody.getContractUpdateInstance();
+		assertEquals(contractNum.toGrpcContractID(), op.getContractID());
+		assertEquals(contractNum.toGrpcAccountId(), synthBody.getTransactionID().getAccountID());
+		assertEquals(newExpiry, op.getExpirationTime().getSeconds());
+	}
+
+	@Test
+	void synthesizesExpectedContractAutoRemove() {
+		final var result = subject.synthContractAutoRemove(contractNum);
+		final var synthBody = result.build();
+
+		assertTrue(result.hasContractDeleteInstance());
+		final var op = synthBody.getContractDeleteInstance();
+		assertEquals(contractNum.toGrpcContractID(), op.getContractID());
+	}
+
+	@Test
+	void synthesizesExpectedAccountAutoRemove() {
+		final var result = subject.synthAccountAutoRemove(accountNum);
+		final var synthBody = result.build();
+
+		assertTrue(result.hasCryptoDelete());
+		final var op = synthBody.getCryptoDelete();
+		assertEquals(accountNum.toGrpcAccountId(), op.getDeleteAccountID());
+	}
+
+	@Test
+	void synthesizesExpectedAccountAutoRenew() {
+		final var result = subject.synthAccountAutoRenew(accountNum, newExpiry);
+		final var synthBody = result.build();
+
+		assertTrue(result.hasCryptoUpdateAccount());
+		final var op = synthBody.getCryptoUpdateAccount();
+		final var grpcId = accountNum.toGrpcAccountId();
+		assertEquals(grpcId, op.getAccountIDToUpdate());
+		assertEquals(grpcId, synthBody.getTransactionID().getAccountID());
+		assertEquals(newExpiry, op.getExpirationTime().getSeconds());
+	}
+
+	@Test
 	void createsExpectedContractSkeleton() {
 		final var result = subject.contractCreation(customizer);
 		verify(customizer).customizeSynthetic(any());
@@ -68,7 +124,8 @@ class SyntheticTxnFactoryTest {
 
 		assertTrue(result.hasContractCall());
 		assertEquals(1, txnBody.getContractCall().getGas());
-		assertEquals(EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()),
+		assertEquals(EntityIdUtils.contractIdFromEvmAddress(
+						Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()),
 				txnBody.getContractCall().getContractID());
 		assertEquals(ByteString.copyFrom(Bytes.of(1).toArray()), txnBody.getContractCall().getFunctionParameters());
 	}
@@ -158,6 +215,107 @@ class SyntheticTxnFactoryTest {
 
 		assertEquals(fungible, txnBody.getTokenBurn().getToken());
 		assertEquals(amount, txnBody.getTokenBurn().getAmount());
+	}
+
+	@Test
+	void createsExpectedFungibleTokenCreate() {
+		// given
+		final var adminKey = new TokenCreateWrapper.KeyValueWrapper(
+				false, null, new byte[] { }, new byte[] { }, EntityIdUtils.contractIdFromEvmAddress(contractAddress)
+		);
+		final var multiKey = new TokenCreateWrapper.KeyValueWrapper(
+				false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[] { }, new byte[] { }, null
+		);
+		final var wrapper = createTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(254, multiKey),
+				new TokenCreateWrapper.TokenKeyWrapper(1, adminKey))
+		);
+		wrapper.setFixedFees(List.of(fixedFee));
+		wrapper.setFractionalFees(List.of(fractionalFee));
+
+		// when
+		final var result = subject.createTokenCreate(wrapper);
+		final var txnBody = result.build().getTokenCreation();
+
+		// then
+		assertTrue(result.hasTokenCreation());
+
+		assertEquals(TokenType.FUNGIBLE_COMMON, txnBody.getTokenType());
+		assertEquals("token", txnBody.getName());
+		assertEquals("symbol", txnBody.getSymbol());
+		assertEquals(account, txnBody.getTreasury());
+		assertEquals("memo", txnBody.getMemo());
+		assertEquals(TokenSupplyType.INFINITE, txnBody.getSupplyType());
+		assertEquals(Long.MAX_VALUE, txnBody.getInitialSupply());
+		assertEquals(Integer.MAX_VALUE, txnBody.getDecimals());
+		assertEquals(5054L, txnBody.getMaxSupply());
+		assertFalse(txnBody.getFreezeDefault());
+		assertEquals(442L, txnBody.getExpiry().getSeconds());
+		assertEquals(555L, txnBody.getAutoRenewPeriod().getSeconds());
+		assertEquals(payer, txnBody.getAutoRenewAccount());
+
+		// keys assertions
+		assertTrue(txnBody.hasAdminKey());
+		assertEquals(adminKey.asGrpc(), txnBody.getAdminKey());
+		assertTrue(txnBody.hasKycKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getKycKey());
+		assertTrue(txnBody.hasFreezeKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getFreezeKey());
+		assertTrue(txnBody.hasWipeKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getWipeKey());
+
+
+		// assert custom fees
+		assertEquals(2, txnBody.getCustomFeesCount());
+		assertEquals(fixedFee.asGrpc(), txnBody.getCustomFees(0));
+		assertEquals(fractionalFee.asGrpc(), txnBody.getCustomFees(1));
+	}
+
+	@Test
+	void createsExpectedNonFungibleTokenCreate() {
+		// given
+		final var multiKey = new TokenCreateWrapper.KeyValueWrapper(
+				false, EntityIdUtils.contractIdFromEvmAddress(contractAddress), new byte[] { }, new byte[] { }, null
+		);
+		final var wrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
+				new TokenCreateWrapper.TokenKeyWrapper(112, multiKey))
+		);
+		wrapper.setFixedFees(List.of(fixedFee));
+		wrapper.setRoyaltyFees(List.of(royaltyFee));
+
+		// when
+		final var result = subject.createTokenCreate(wrapper);
+		final var txnBody = result.build().getTokenCreation();
+
+		// then
+		assertTrue(result.hasTokenCreation());
+
+		assertEquals(TokenType.NON_FUNGIBLE_UNIQUE, txnBody.getTokenType());
+		assertEquals("nft", txnBody.getName());
+		assertEquals("NFT", txnBody.getSymbol());
+		assertEquals(account, txnBody.getTreasury());
+		assertEquals("nftMemo", txnBody.getMemo());
+		assertEquals(TokenSupplyType.FINITE, txnBody.getSupplyType());
+		assertEquals(0L, txnBody.getInitialSupply());
+		assertEquals(0, txnBody.getDecimals());
+		assertEquals(5054L, txnBody.getMaxSupply());
+		assertTrue(txnBody.getFreezeDefault());
+		assertEquals(0, txnBody.getExpiry().getSeconds());
+		assertEquals(0, txnBody.getAutoRenewPeriod().getSeconds());
+		assertFalse(txnBody.hasAutoRenewAccount());
+
+		// keys assertions
+		assertTrue(txnBody.hasSupplyKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getSupplyKey());
+		assertTrue(txnBody.hasFeeScheduleKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getFeeScheduleKey());
+		assertTrue(txnBody.hasPauseKey());
+		assertEquals(multiKey.asGrpc(), txnBody.getPauseKey());
+
+		// assert custom fees
+		assertEquals(2, txnBody.getCustomFeesCount());
+		assertEquals(fixedFee.asGrpc(), txnBody.getCustomFees(0));
+		assertEquals(royaltyFee.asGrpc(), txnBody.getCustomFees(1));
 	}
 
 	@Test
@@ -340,6 +498,9 @@ class SyntheticTxnFactoryTest {
 
 	private static final long serialNo = 100;
 	private static final long secondAmount = 200;
+	private static final long newExpiry = 1_234_567L;
+	private final EntityNum contractNum = EntityNum.fromLong(666);
+	private final EntityNum accountNum = EntityNum.fromLong(1234);
 	private static final AccountID a = IdUtils.asAccount("0.0.2");
 	private static final AccountID b = IdUtils.asAccount("0.0.3");
 	private static final AccountID c = IdUtils.asAccount("0.0.4");

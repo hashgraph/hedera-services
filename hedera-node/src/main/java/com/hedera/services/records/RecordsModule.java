@@ -51,7 +51,7 @@ public interface RecordsModule {
 
 	@Binds
 	@Singleton
-	AccountRecordsHistorian bindRecordsHistorian(TxnAwareRecordsHistorian txnAwareRecordsHistorian);
+	RecordsHistorian bindRecordsHistorian(TxnAwareRecordsHistorian txnAwareRecordsHistorian);
 
 	@Provides
 	@Singleton

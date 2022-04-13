@@ -39,7 +39,6 @@ import org.mockito.quality.Strictness;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
-import static com.hedera.services.ledger.properties.AccountProperty.ALREADY_USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -49,7 +48,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
-import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -163,7 +162,7 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	void recognizesDetached() {
+	void recognizesDetachedAccount() {
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
@@ -174,10 +173,22 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
-	void recognizesCannotBeDetachedIfContract() {
+	void recognizesDetachedContract() {
 		validator = mock(OptionValidator.class);
 		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
 		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
+		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
+		subject = new HederaLedger(tokenStore, ids, creator, validator,
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
+
+		assertTrue(subject.isDetached(genesis));
+	}
+
+	@Test
+	void recognizesCannotBeDetachedWithBalance() {
+		validator = mock(OptionValidator.class);
+		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
+		given(accountsLedger.get(genesis, BALANCE)).willReturn(1L);
 		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
 		subject = new HederaLedger(tokenStore, ids, creator, validator,
 				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
@@ -198,6 +209,30 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	}
 
 	@Test
+	void recognizesCannotBeDetachedIfNotExpired() {
+		validator = mock(OptionValidator.class);
+		given(validator.isAfterConsensusSecond(anyLong())).willReturn(true);
+		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
+		subject = new HederaLedger(tokenStore, ids, creator, validator,
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
+
+		assertFalse(subject.isDetached(genesis));
+	}
+
+	@Test
+	void recognizesCannotBeDetachedContractIfAutoRenewSpecificallyDisabled() {
+		validator = mock(OptionValidator.class);
+		given(validator.isAfterConsensusSecond(anyLong())).willReturn(false);
+		given(accountsLedger.get(genesis, BALANCE)).willReturn(0L);
+		given(accountsLedger.get(genesis, IS_SMART_CONTRACT)).willReturn(true);
+		subject = new HederaLedger(tokenStore, ids, creator, validator,
+				new SideEffectsTracker(), historian, dynamicProps, accountsLedger, transferLogic, autoCreationLogic);
+		dynamicProps.disableContractAutoRenew();
+
+		assertFalse(subject.isDetached(genesis));
+	}
+
+	@Test
 	void delegatesToCorrectExpiryProperty() {
 		subject.expiry(genesis);
 
@@ -209,13 +244,6 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		subject.autoRenewPeriod(genesis);
 
 		verify(accountsLedger).get(genesis, AUTO_RENEW_PERIOD);
-	}
-
-	@Test
-	void delegatesToCorrectProxyProperty() {
-		subject.proxy(genesis);
-
-		verify(accountsLedger).get(genesis, PROXY);
 	}
 
 	@Test
@@ -258,10 +286,10 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	@Test
 	void delegatesToCorrectAlreadyUsedAutomaticAssociationProperty() {
 		subject.alreadyUsedAutomaticAssociations(genesis);
-		verify(accountsLedger).get(genesis, ALREADY_USED_AUTOMATIC_ASSOCIATIONS);
+		verify(accountsLedger).get(genesis, USED_AUTOMATIC_ASSOCIATIONS);
 
 		subject.setAlreadyUsedAutomaticAssociations(genesis, 7);
-		verify(accountsLedger).set(genesis, ALREADY_USED_AUTOMATIC_ASSOCIATIONS, 7);
+		verify(accountsLedger).set(genesis, USED_AUTOMATIC_ASSOCIATIONS, 7);
 	}
 
 	@Test
