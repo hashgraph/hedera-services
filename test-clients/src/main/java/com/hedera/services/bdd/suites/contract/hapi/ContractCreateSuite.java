@@ -690,8 +690,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractCreate(blockTimeLogger).bytecode(initcode)
 				).when(
 						contractCall(blockTimeLogger, ContractResources.EMIT_TIME_ABI)
-								.via(firstBlock),
-						UtilVerbs.sleepFor(3000),
+								.via(firstBlock).delayBy(5000),
 						contractCall(blockTimeLogger, ContractResources.EMIT_TIME_ABI)
 								.via(timeLoggingTxn)
 				).then(
@@ -720,7 +719,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 							final var secondBlockTimeLogData = secondBlockLogs.get(0).getData().toByteArray();
 							final var secondBlockTimestamp = Longs.fromByteArray(
 									Arrays.copyOfRange(secondBlockTimeLogData, 24, 32));
-							assertTrue(secondBlockTimestamp-firstBlockTimestamp >= 2, "Wrong block time");
+							assertTrue(firstBlockTimestamp != secondBlockTimestamp, "Wrong block time");
 
 							final var secondBlockHashLogData = secondBlockLogs.get(1).getData().toByteArray();
 							final var secondBlockNumber = Longs.fromByteArray(
