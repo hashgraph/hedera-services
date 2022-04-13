@@ -233,22 +233,28 @@ class TransferLogicTest {
 	@Test
 	void happyPathNFTAllowance() {
 		setUpAccountWithAllowances();
-		final var nftId = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
+		final var nftId1 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 1L);
+		final var nftId2 = NftId.withDefaultShardRealm(nonFungibleTokenID.getTokenNum(), 2L);
 		final var change1 = BalanceChange.changingNftOwnership(
-				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 1L), payer);
+				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, allowanceNftTransfer(owner, revokedSpender, 1L), payer);
 		final var change2 = BalanceChange.changingNftOwnership(
-				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, nftTransfer(owner, revokedSpender, 123L), payer);
+				Id.fromGrpcToken(fungibleTokenID), fungibleTokenID, allowanceNftTransfer(owner, revokedSpender, 123L), payer);
+		final var change3 = BalanceChange.changingNftOwnership(
+				Id.fromGrpcToken(nonFungibleTokenID), nonFungibleTokenID, nftTransfer(owner, revokedSpender, 2L), payer);
 
 		given(tokenStore.tryTokenChange(change1)).willReturn(OK);
 		given(tokenStore.tryTokenChange(change2)).willReturn(OK);
-		given(nftsLedger.get(nftId, SPENDER)).willReturn(EntityId.fromGrpcAccountId(payer));
+		given(tokenStore.tryTokenChange(change3)).willReturn(OK);
+		given(nftsLedger.get(nftId1, SPENDER)).willReturn(EntityId.fromGrpcAccountId(payer));
+
 
 		accountsLedger.begin();
-		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2)));
+		assertDoesNotThrow(() -> subject.doZeroSum(List.of(change1, change2, change3)));
 
 		updateAllowanceMaps();
 		assertTrue(nftAllowances.contains(fungibleAllowanceId));
-		verify(nftsLedger).set(nftId, SPENDER, MISSING_ENTITY_ID);
+		verify(nftsLedger).set(nftId1, SPENDER, MISSING_ENTITY_ID);
+		verify(nftsLedger).set(nftId2, SPENDER, MISSING_ENTITY_ID);
 	}
 
 	private AccountAmount aliasedAa(final ByteString alias, final long amount) {
@@ -266,9 +272,18 @@ class TransferLogicTest {
 				.build();
 	}
 
-	private NftTransfer nftTransfer(final AccountID sender, final AccountID receiver, final long serialNum) {
+	private NftTransfer allowanceNftTransfer(final AccountID sender, final AccountID receiver, final long serialNum) {
 		return NftTransfer.newBuilder()
 				.setIsApproval(true)
+				.setSenderAccountID(sender)
+				.setReceiverAccountID(receiver)
+				.setSerialNumber(serialNum)
+				.build();
+	}
+
+	private NftTransfer nftTransfer(final AccountID sender, final AccountID receiver, final long serialNum) {
+		return NftTransfer.newBuilder()
+				.setIsApproval(false)
 				.setSenderAccountID(sender)
 				.setReceiverAccountID(receiver)
 				.setSerialNumber(serialNum)

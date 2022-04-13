@@ -28,7 +28,6 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.contract.ExtantContractContext;
-import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
@@ -43,19 +42,17 @@ import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.ExtantFeeScheduleContext;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -190,11 +187,6 @@ public class BaseOperationUsage {
 					return cryptoApproveAllowance();
 				}
 				break;
-			case CryptoAdjustAllowance:
-				if (type == DEFAULT) {
-					return cryptoAdjustAllowance();
-				}
-				break;
 			case CryptoDeleteAllowance:
 				if (type == DEFAULT) {
 					return cryptoDeleteAllowance();
@@ -306,9 +298,9 @@ public class BaseOperationUsage {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentTokenAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 				.build();
 
 		final var cryptoApproveMeta = new CryptoApproveAllowanceMeta(canonicalTxn.getCryptoApproveAllowance(), now);
@@ -318,44 +310,18 @@ public class BaseOperationUsage {
 		return into;
 	}
 
-	UsageAccumulator cryptoAdjustAllowance() {
-		final var now = Instant.now().getEpochSecond();
-		final var canonicalTxn = TransactionBody.newBuilder()
-				.setCryptoAdjustAllowance(CryptoAdjustAllowanceTransactionBody
-						.newBuilder()
-						.addCryptoAllowances(CryptoAllowance.newBuilder()
-								.setSpender(AN_ACCOUNT)
-								.setAmount(2L)
-								.build()))
-				.build();
-		final var ctx = ExtantCryptoContext.newBuilder()
-				.setCurrentExpiry(now + THREE_MONTHS_IN_SECONDS)
-				.setCurrentMemo(BLANK_MEMO)
-				.setCurrentKey(A_KEY)
-				.setCurrentlyHasProxy(false)
-				.setCurrentNumTokenRels(0)
-				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowances(List.of(GrantedCryptoAllowance.newBuilder()
-						.setSpender(AN_ACCOUNT)
-						.setAmount(1L)
-						.build()))
-				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
-				.build();
-
-		final var cryptoAdjustMeta = new CryptoAdjustAllowanceMeta(canonicalTxn.getCryptoAdjustAllowance(), now);
-		final var into = new UsageAccumulator();
-		CRYPTO_OPS_USAGE.cryptoAdjustAllowanceUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, cryptoAdjustMeta,
-				ctx, into);
-		return into;
-	}
-
 	UsageAccumulator cryptoDeleteAllowance() {
 		final var now = Instant.now().getEpochSecond();
+		final var target = TokenID.newBuilder().setTokenNum(1_234).build();
+
 		final var canonicalTxn = TransactionBody.newBuilder()
 				.setCryptoDeleteAllowance(CryptoDeleteAllowanceTransactionBody
 						.newBuilder()
-						.addCryptoAllowances(CryptoRemoveAllowance.newBuilder().setOwner(AN_ACCOUNT).build()))
+						.addNftAllowances(NftRemoveAllowance.newBuilder()
+								.setOwner(AN_ACCOUNT)
+								.setTokenId(target)
+								.addAllSerialNumbers(SINGLE_SERIAL_NUM)
+								.build()))
 				.build();
 
 		final var cryptoDeleteAllowanceMeta = new CryptoDeleteAllowanceMeta(canonicalTxn.getCryptoDeleteAllowance(),
@@ -382,9 +348,9 @@ public class BaseOperationUsage {
 				.setCurrentlyHasProxy(false)
 				.setCurrentNumTokenRels(0)
 				.setCurrentMaxAutomaticAssociations(0)
-				.setCurrentCryptoAllowances(Collections.emptyList())
-				.setCurrentTokenAllowances(Collections.emptyList())
-				.setCurrentApproveForAllNftAllowances(Collections.emptyList())
+				.setCurrentCryptoAllowances(Collections.emptyMap())
+				.setCurrentTokenAllowances(Collections.emptyMap())
+				.setCurrentApproveForAllNftAllowances(Collections.emptySet())
 				.build();
 		final var cryptoUpdateMeta = new CryptoUpdateMeta(canonicalTxn.getCryptoUpdateAccount(), now);
 		final var into = new UsageAccumulator();

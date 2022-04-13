@@ -62,7 +62,7 @@ public class CryptoContextUtils {
 				new HashSet<>();
 		for (var a : allowances) {
 			approveForAllAllowances.add(new AllowanceId(a.getTokenId().getTokenNum(),
-							a.getSpender().getAccountNum()));
+					a.getSpender().getAccountNum()));
 		}
 		return approveForAllAllowances;
 	}
@@ -85,18 +85,16 @@ public class CryptoContextUtils {
 		return allowanceMap;
 	}
 
-	public static Map<AllowanceId, AllowanceDetails> convertToNftMap(
+	public static Set<AllowanceId> convertToNftMap(
 			final List<NftAllowance> allowances) {
-		Map<AllowanceId, AllowanceDetails> allowanceMap =
-				new HashMap<>();
+		Set<AllowanceId> allowanceMap = new HashSet<>();
 		for (var a : allowances) {
-			allowanceMap.put(new AllowanceId(a.getTokenId().getTokenNum(),
-							a.getSpender().getAccountNum()),
-					new AllowanceDetails(a.getApprovedForAll().getValue(),
-							a.getSerialNumbersList()));
+			allowanceMap.add(new AllowanceId(a.getTokenId().getTokenNum(),
+					a.getSpender().getAccountNum()));
 		}
 		return allowanceMap;
 	}
+
 
 	public static int countSerials(final List<NftAllowance> nftAllowancesList) {
 		int totalSerials = 0;
@@ -105,16 +103,6 @@ public class CryptoContextUtils {
 		}
 		return totalSerials;
 	}
-
-	static int getNewSerials(
-			final Map<AllowanceId, AllowanceDetails> newAllowances) {
-		int counter = 0;
-		for (var a : newAllowances.entrySet()) {
-			counter += a.getValue().serialNums().size();
-		}
-		return counter;
-	}
-
 
 	static int getChangedCryptoKeys(final Set<Long> newKeys, final Set<Long> existingKeys) {
 		int counter = 0;
