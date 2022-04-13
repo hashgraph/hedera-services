@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -48,7 +49,6 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeF
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_TOKEN_WITH_EMPTY_TOKEN_STRUCT_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC20_CREATE_QUERY_TRANSFER_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ERC721_CREATE_QUERY_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FUNGIBLE_TOKEN_CREATE_CONTRACT;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_CREATE_FUNGIBLE_WITHOUT_FEES_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_CREATE_FUNGIBLE_WITH_FEES_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.TOKEN_CREATE_NFT_WITHOUT_FEES_ABI;
@@ -64,6 +64,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -168,11 +169,14 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		final var createTokenNum = new AtomicLong();
 		final var ACCOUNT2 = "account2";
 		final var contractAdminKey = "contractAdminKey";
+		final var ACCOUNT_TO_ASSOCIATE = "account3";
+		final var ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
 		return defaultHapiSpec("fungibleTokenCreateHappyPath")
 				.given(
 						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ED25519KEY).shape(ED25519),
 						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+						newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
 						newKeyNamed(contractAdminKey),
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS)
@@ -180,8 +184,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT2)
 								.balance(ONE_HUNDRED_HBARS)
 								.key(ECDSA_KEY),
+						cryptoCreate(ACCOUNT_TO_ASSOCIATE)
+								.key(ACCOUNT_TO_ASSOCIATE_KEY),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER)
@@ -197,11 +203,14 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 														spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1().toByteArray(),
 														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
 														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
-														asAddress(spec.registry().getAccountID(ACCOUNT)), AUTO_RENEW_PERIOD)
+														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														AUTO_RENEW_PERIOD,
+														asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE)))
 														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
 														.sending(DEFAULT_AMOUNT_TO_SEND)
 														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(ACCOUNT_TO_ASSOCIATE_KEY)
 														.exposingResultTo(result -> {
 															log.info("Explicit create result is {}", result[0]);
 															final var res = (byte[])result[0];
@@ -220,7 +229,12 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
 						childRecordsCheck(FIRST_CREATE_TXN, ResponseCodeEnum.SUCCESS,
 								TransactionRecordAsserts.recordWith()
+										.status(ResponseCodeEnum.SUCCESS),
+								TransactionRecordAsserts.recordWith()
+										.status(ResponseCodeEnum.SUCCESS),
+								TransactionRecordAsserts.recordWith()
 										.status(ResponseCodeEnum.SUCCESS)),
+						sourcing(() -> getAccountInfo(ACCOUNT_TO_ASSOCIATE).logged().hasTokenRelationShipCount(1)),
 						sourcing(() -> getTokenInfo(asTokenString(
 								TokenID.newBuilder().setTokenNum(createTokenNum.get()).build()))
 									.logged()
@@ -228,7 +242,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									.hasSymbol(TOKEN_SYMBOL)
 									.hasName(TOKEN_NAME)
 									.hasDecimals(8)
-									.hasTotalSupply(200)
+									.hasTotalSupply(100)
 									.hasEntityMemo(MEMO)
 									.hasTreasury(ACCOUNT)
 									.hasAutoRenewAccount(ACCOUNT)
@@ -261,7 +275,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(feeCollector)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER),
@@ -338,7 +352,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								.balance(ONE_HUNDRED_HBARS)
 								.key(ED25519KEY),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT))
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -429,7 +443,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								.key(treasuryAndFeeCollectorKey)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER),
@@ -510,7 +524,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								.key(ED25519KEY)
 								.maxAutomaticTokenAssociations(1),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER)
@@ -583,7 +597,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER)
@@ -651,7 +665,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT))
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -697,7 +711,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER)
@@ -736,7 +750,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER)
@@ -777,7 +791,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER)
@@ -830,7 +844,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER)
@@ -884,7 +898,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								.key(treasuryAndFeeCollectorKey)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER)
@@ -936,7 +950,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								.balance(ONE_HUNDRED_HBARS)
 								.key(ED25519KEY),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER)
@@ -986,7 +1000,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						cryptoCreate(feeCollector)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER),
@@ -1036,7 +1050,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								.balance(ONE_HUNDRED_HBARS)
 								.key(ECDSA_KEY),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER),
@@ -1084,7 +1098,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								.key(ED25519KEY)
 								.balance(ONE_HUNDRED_HBARS),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT))
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT))
 				).when(
 						withOpContext(
 								(spec, opLog) ->
@@ -1142,7 +1156,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								.balance(ONE_HUNDRED_HBARS)
 								.key(ED25519KEY),
 						fileCreate(CONTRACT_NAME),
-						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(FUNGIBLE_TOKEN_CREATE_CONTRACT)),
+						updateLargeFile(GENESIS, CONTRACT_NAME, extractByteCode(ContractResources.TOKEN_CREATE_CONTRACT)),
 						contractCreate(TOKEN_CREATE_CONTRACT)
 								.bytecode(CONTRACT_NAME)
 								.gas(GAS_TO_OFFER)

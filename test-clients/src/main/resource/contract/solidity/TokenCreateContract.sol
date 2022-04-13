@@ -24,7 +24,8 @@ contract FungibleTokenCreate is FeeHelper {
         address contractID,
         address delegatableContractID,
         address autoRenewAccount,
-        uint32 autoRenewPeriod
+        uint32 autoRenewPeriod,
+        address toAssociateWith
     ) public payable returns (address createdTokenAddress) {
         IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
         keys[0] = getSingleKey(0, 1, 3, ed25519);
@@ -34,12 +35,22 @@ contract FungibleTokenCreate is FeeHelper {
         keys[4] = getSingleKey(6, 1, "");
 
         IHederaTokenService.HederaToken memory token =
-                createTokenWithExpiry(treasury, 0, autoRenewAccount, autoRenewPeriod, keys);
+        createTokenWithExpiry(treasury, 0, autoRenewAccount, autoRenewPeriod, keys);
 
         (int responseCode, address tokenAddress) =
-                HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
+        HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        responseCode = HederaTokenService.associateToken(toAssociateWith, tokenAddress);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        (int responseCode2, uint64 newTotalSupply) = HederaTokenService.burnToken(tokenAddress, 100, new int64[](0));
+        if (responseCode2 != HederaResponseCodes.SUCCESS) {
             revert ();
         }
 
