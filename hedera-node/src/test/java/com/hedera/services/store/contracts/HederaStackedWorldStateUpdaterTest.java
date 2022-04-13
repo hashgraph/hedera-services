@@ -28,13 +28,13 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +43,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -64,13 +64,11 @@ class HederaStackedWorldStateUpdaterTest {
 	@Mock
 	private WorldLedgers trackingLedgers;
 	@Mock(extraInterfaces = { HederaWorldUpdater.class })
-	private AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount> updater;
+	private AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
 	private HederaMutableWorldState worldState;
-	@Mock
-	private HederaWorldState.WorldStateAccount account;
 	@Mock
 	private HederaStackedWorldStateUpdater.CustomizerFactory customizerFactory;
 	@Mock
@@ -83,6 +81,18 @@ class HederaStackedWorldStateUpdaterTest {
 	@BeforeEach
 	void setUp() {
 		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers, globalDynamicProperties);
+	}
+
+	@Test
+	void understandsRedirectsIfDisabled() {
+		assertFalse(subject.isTokenRedirect(Address.ALTBN128_PAIRING));
+	}
+
+	@Test
+	void understandsRedirectsIfMissingTokens() {
+		given(globalDynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
+		given(trackingLedgers.isTokenAddress(Address.ALTBN128_PAIRING)).willReturn(true);
+		assertTrue(subject.isTokenRedirect(Address.ALTBN128_PAIRING));
 	}
 
 	@Test
@@ -239,34 +249,6 @@ class HederaStackedWorldStateUpdaterTest {
 	void updaterReturnsStacked() {
 		var updater = subject.updater();
 		assertEquals(HederaStackedWorldStateUpdater.class, updater.getClass());
-	}
-
-	@Test
-	void getHederaAccountReturnsNullIfNotPresentInParent() {
-		given(trackingLedgers.aliases()).willReturn(aliases);
-		given(aliases.resolveForEvm(address)).willReturn(address);
-		given(((HederaWorldUpdater) updater).getHederaAccount(address)).willReturn(null);
-
-		final var result = subject.getHederaAccount(address);
-
-		// then:
-		assertNull(result);
-		// and:
-		verify((HederaWorldUpdater) updater).getHederaAccount(address);
-	}
-
-	@Test
-	void getHederaAccountReturnsValueIfPresentInParent() {
-		given(trackingLedgers.aliases()).willReturn(aliases);
-		given(aliases.resolveForEvm(address)).willReturn(address);
-		given(((HederaWorldUpdater) updater).getHederaAccount(address)).willReturn(account);
-
-		final var result = subject.getHederaAccount(address);
-
-		// then:
-		assertEquals(account, result);
-		// and:
-		verify((HederaWorldUpdater) updater).getHederaAccount(address);
 	}
 
 	private void withMockCustomizerFactory(final Runnable spec) {

@@ -25,11 +25,9 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -40,6 +38,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,7 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
 
-import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -84,6 +84,8 @@ class HederaWorldStateTest {
 	@Mock
 	private ContractCustomizer customizer;
 
+	private CodeCache codeCache;
+
 	final long balance = 1_234L;
 	final Id sponsor = new Id(0, 0, 1);
 	final Id contract = new Id(0, 0, 2);
@@ -96,8 +98,8 @@ class HederaWorldStateTest {
 
 	@BeforeEach
 	void setUp() {
-		CodeCache codeCache = new CodeCache(0, entityAccess);
-	 	subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, dynamicProperties);
+		codeCache = new CodeCache(0, entityAccess);
+		subject = new HederaWorldState(ids, entityAccess, codeCache, sigImpactHistorian, dynamicProperties);
 	}
 
 	@Test
@@ -147,7 +149,7 @@ class HederaWorldStateTest {
 	void newContractAddress() {
 		final var sponsor = mock(Address.class);
 		given(sponsor.toArrayUnsafe())
-				.willReturn(new byte[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
+				.willReturn(new byte[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
 		given(ids.newContractId(any())).willReturn(ContractID.newBuilder().setContractNum(1).build());
 		var addr = subject.newContractAddress(sponsor);
 		assertNotEquals(addr, sponsor);
@@ -230,10 +232,8 @@ class HederaWorldStateTest {
 		final var acc = subject.get(Address.RIPEMD160);
 		assertNotNull(acc);
 		assertEquals(Wei.of(balance), acc.getBalance());
-		assertEquals(1, acc.getProxyAccount().num());
-		assertEquals(100L, acc.getAutoRenew());
 
-		objectContractWorks(acc);
+		objectContractWorksForWorldState(acc);
 
 		/* non-existent accounts should resolve to null */
 		given(entityAccess.isExtant(any())).willReturn(false);
@@ -247,9 +247,7 @@ class HederaWorldStateTest {
 	}
 
 	private void givenWellKnownAccountWithCode(final AccountID account, final Bytes bytecode) {
-		given(entityAccess.getProxy(account)).willReturn(new EntityId(0, 0, 1));
 		given(entityAccess.getBalance(account)).willReturn(balance);
-		given(entityAccess.getAutoRenew(account)).willReturn(100L);
 		given(entityAccess.isExtant(any())).willReturn(true);
 		given(entityAccess.isDeleted(any())).willReturn(false);
 		if (bytecode != null) {
@@ -257,11 +255,7 @@ class HederaWorldStateTest {
 		}
 	}
 
-	/*
-		Object contract of HederaWorldState.WorldStateAccount tests
-		Please note that the said class **cannot** be instantiated, thus - the test fragment is here
-	*/
-	private void objectContractWorks(HederaWorldState.WorldStateAccount acc) {
+	private void objectContractWorksForWorldState(Account acc) {
 		assertNotNull(acc.getAddress());
 		assertNotNull(acc.getAddressHash());
 		assertFalse(acc.hasCode());
@@ -269,17 +263,6 @@ class HederaWorldStateTest {
 		assertEquals(Hash.EMPTY, acc.getCodeHash());
 		assertEquals(0, acc.getNonce());
 
-		acc.setProxyAccount(EntityId.MISSING_ENTITY_ID);
-		assertEquals(EntityId.MISSING_ENTITY_ID, acc.getProxyAccount());
-		acc.setMemo("otherMemo");
-		assertEquals("otherMemo", acc.getMemo());
-		acc.setAutoRenew(10L);
-		assertEquals(10L, acc.getAutoRenew());
-		acc.setExpiry(10L);
-		assertEquals(10L, acc.getExpiry());
-		var k = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
-		acc.setKey(k);
-		assertEquals(k, acc.getKey());
 		final var stringified = "AccountState" + "{" +
 				"address=" + Address.RIPEMD160 + ", " +
 				"nonce=" + 0 + ", " +
@@ -294,7 +277,6 @@ class HederaWorldStateTest {
 		);
 		assertThrows(UnsupportedOperationException.class,
 				() -> acc.storageEntriesFrom(null, 10));
-
 	}
 
 	@Test
@@ -310,7 +292,7 @@ class HederaWorldStateTest {
 		var mockTbdAccount = mock(Address.class);
 		actualSubject.deleteAccount(tbdAddress);
 
-		assertFailsWith(actualSubject::commit,  ResponseCodeEnum.FAIL_INVALID);
+		assertFailsWith(actualSubject::commit, ResponseCodeEnum.FAIL_INVALID);
 	}
 
 	@Test
@@ -352,24 +334,18 @@ class HederaWorldStateTest {
 		// and:
 		given(entityAccess.isExtant(zeroAddress)).willReturn(true);
 		given(entityAccess.getBalance(zeroAddress)).willReturn(balance);
-		given(entityAccess.getProxy(zeroAddress)).willReturn(EntityId.MISSING_ENTITY_ID);
-		given(entityAccess.getAutoRenew(zeroAddress)).willReturn(123L);
 		// and:
-		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(balance), 0, 0, new EntityId());
+		final var expected = new WorldStateAccount(Address.ZERO, Wei.of(balance), codeCache, entityAccess);
 
 		// when:
-		final var result = updater.getHederaAccount(Address.ZERO);
+		final var result = updater.getAccount(Address.ZERO);
 
 		// then:
 		assertEquals(expected.getAddress(), result.getAddress());
 		assertEquals(expected.getBalance(), result.getBalance());
-		assertEquals(expected.getProxyAccount(), result.getProxyAccount());
-		assertEquals(expected.getExpiry(), result.getExpiry());
 		// and:
 		verify(entityAccess).isExtant(zeroAddress);
 		verify(entityAccess).getBalance(zeroAddress);
-		verify(entityAccess).getProxy(zeroAddress);
-		verify(entityAccess).getAutoRenew(zeroAddress);
 	}
 
 	@Test
@@ -382,18 +358,71 @@ class HederaWorldStateTest {
 		given(entityAccess.isTokenAccount(EntityIdUtils.asTypedEvmAddress(zeroAddress))).willReturn(true);
 		given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
 		// and:
-		final var expected = subject.new WorldStateAccount(Address.ZERO, Wei.of(0), 0, 0, new EntityId());
+		final var expected = new WorldStateAccount(Address.ZERO, Wei.of(0), codeCache, entityAccess);
 
 		// when:
-		final var result = updater.getHederaAccount(Address.ZERO);
+		final var result = updater.getAccount(Address.ZERO);
 
 		// then:
 		assertEquals(expected.getAddress(), result.getAddress());
 		assertEquals(expected.getBalance(), result.getBalance());
-		assertEquals(expected.getProxyAccount(), result.getProxyAccount());
-		assertEquals(expected.getExpiry(), result.getExpiry());
 		assertEquals(-1, result.getNonce());
 		assertEquals(TOKEN_CALL_REDIRECT_CONTRACT_BINARY_WITH_ZERO_ADDRESS, result.getCode());
+	}
+
+	@Test
+	void stackedUpdaterGetsTokenProxyAccountWhenRedirectEnabled() {
+		final var htsProxyAddress = Address.RIPEMD160;
+
+		givenNonNullWorldLedgers();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		given(worldLedgers.isTokenAddress(htsProxyAddress)).willReturn(true);
+		willAnswer(invocationOnMock -> invocationOnMock.getArguments()[0]).given(aliases).resolveForEvm(any());
+		given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
+
+		final var expected = new WorldStateTokenAccount(htsProxyAddress);
+
+		final var realSubject = subject.updater().updater();
+		final var result = realSubject.get(htsProxyAddress);
+		final var evmResult = realSubject.getAccount(htsProxyAddress);
+
+		assertEquals(expected.getAddress(), result.getAddress());
+		assertEquals(expected.getBalance(), result.getBalance());
+		assertEquals(-1, result.getNonce());
+		assertEquals(WorldStateTokenAccount.proxyBytecodeFor(htsProxyAddress), result.getCode());
+		// and:
+		assertEquals(expected.getAddress(), evmResult.getAddress());
+		assertEquals(expected.getBalance(), evmResult.getBalance());
+		assertEquals(-1, evmResult.getNonce());
+		assertEquals(WorldStateTokenAccount.proxyBytecodeFor(htsProxyAddress), evmResult.getCode());
+	}
+
+	@Test
+	void stackedUpdaterGetsNonProxyAccountWhenRedirectEnabled() {
+		final var htsProxyAddress = Address.RIPEMD160;
+
+		givenNonNullWorldLedgers();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		willAnswer(invocationOnMock -> invocationOnMock.getArguments()[0]).given(aliases).resolveForEvm(any());
+		given(dynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
+
+		final var realSubject = subject.updater().updater();
+		assertNull(realSubject.get(htsProxyAddress));
+		assertNull(realSubject.getAccount(htsProxyAddress));
+	}
+
+	@Test
+	void stackedUpdaterDoesntGetTokenProxyAccountWhenRedirectEnabled() {
+		final var htsProxyAddress = Address.RIPEMD160;
+
+		givenNonNullWorldLedgers();
+		given(worldLedgers.aliases()).willReturn(aliases);
+		willAnswer(invocationOnMock -> invocationOnMock.getArguments()[0]).given(aliases).resolveForEvm(any());
+
+		final var realSubject = subject.updater().updater();
+
+		assertNull(realSubject.get(htsProxyAddress));
+		assertNull(realSubject.getAccount(htsProxyAddress));
 	}
 
 	@Test
@@ -483,7 +512,8 @@ class HederaWorldStateTest {
 		final var updatedAccount = mock(UpdateTrackingLedgerAccount.class);
 		given(updatedAccount.getAddress()).willReturn(Address.fromHexString(contractAddress));
 		given(updatedAccount.getOriginalStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(oldSlotValue));
-		given(updatedAccount.getUpdatedStorage()).willReturn(Map.of(UInt256.valueOf(slot), UInt256.valueOf(newSlotValue)));
+		given(updatedAccount.getUpdatedStorage()).willReturn(
+				Map.of(UInt256.valueOf(slot), UInt256.valueOf(newSlotValue)));
 		given(updatedAccount.getStorageValue(UInt256.valueOf(slot))).willReturn(UInt256.valueOf(newSlotValue));
 
 		final var actualSubject = subject.updater();
@@ -502,17 +532,13 @@ class HederaWorldStateTest {
 	@Test
 	void onlyStoresCodeIfUpdated() {
 		givenNonNullWorldLedgers();
-//		given(worldLedgers.aliases()).willReturn(aliases);
 		final var someAddress = contract.asEvmAddress();
-//		given(aliases.resolveForEvm(someAddress)).willReturn(someAddress);
 
 		final var actualSubject = subject.updater();
 
 		final var accountId = accountIdFromEvmAddress(someAddress);
 		given(entityAccess.isExtant(accountId)).willReturn(true);
 		given(entityAccess.getBalance(accountId)).willReturn(balance);
-		given(entityAccess.getProxy(accountId)).willReturn(EntityId.MISSING_ENTITY_ID);
-		given(entityAccess.getAutoRenew(accountId)).willReturn(123L);
 
 		actualSubject.getAccount(someAddress);
 		actualSubject.commit();

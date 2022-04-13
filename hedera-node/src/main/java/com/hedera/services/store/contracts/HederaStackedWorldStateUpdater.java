@@ -24,15 +24,12 @@ package com.hedera.services.store.contracts;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
@@ -43,10 +40,9 @@ import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 
 public class HederaStackedWorldStateUpdater
-		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount>
+		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
 		implements HederaWorldUpdater {
 
 	private static CustomizerFactory customizerFactory = ContractCustomizer::fromSponsorContract;
@@ -60,7 +56,7 @@ public class HederaStackedWorldStateUpdater
 	private ContractCustomizer pendingCreationCustomizer = null;
 
 	public HederaStackedWorldStateUpdater(
-			final AbstractLedgerWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
+			final AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater,
 			final HederaMutableWorldState worldState,
 			final WorldLedgers trackingLedgers,
 			final GlobalDynamicProperties dynamicProperties
@@ -139,35 +135,24 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
-	public Account get(Address addressOrAlias) {
+	public Account get(final Address addressOrAlias) {
 		final var address = aliases().resolveForEvm(addressOrAlias);
-
-		final var tokensLedger = trackingLedgers().tokens();
-		if (tokensLedger != null && dynamicProperties.isRedirectTokenCallsEnabled() && tokensLedger.contains(tokenIdFromEvmAddress(address))) {
-			final var hederaWorldState = getHederaWorldState();
-			return hederaWorldState.new WorldStateTokenAccount(address, EntityId.fromAddress(address));
+		if (isTokenRedirect(address)) {
+			return new WorldStateTokenAccount(address);
 		}
-
 		return super.get(address);
 	}
 
 	@Override
-	public EvmAccount getAccount(Address addressOrAlias) {
+	public EvmAccount getAccount(final Address addressOrAlias) {
 		final var address = aliases().resolveForEvm(addressOrAlias);
-
-		final var tokensLedger = trackingLedgers().tokens();
-		if (tokensLedger != null && dynamicProperties.isRedirectTokenCallsEnabled() && tokensLedger.contains(tokenIdFromEvmAddress(address))) {
-			final var worldStateTokenAccount = getHederaWorldState().new WorldStateTokenAccount(address,
-					EntityId.fromAddress(address));
-			final var newMutable =
-					new UpdateTrackingLedgerAccount<>(worldStateTokenAccount, trackingLedgers().accounts());
+		if (isTokenRedirect(address)) {
+			final var proxyAccount = new WorldStateTokenAccount(address);
+			final var newMutable = new UpdateTrackingLedgerAccount<>(proxyAccount, trackingAccounts());
 			return new WrappedEvmAccount(newMutable);
 		}
-
 		return super.getAccount(address);
 	}
-
-
 
 	@Override
 	public Gas getSbhRefund() {
@@ -202,12 +187,6 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
-	public HederaWorldState.WorldStateAccount getHederaAccount(final Address addressOrAlias) {
-		final var address = aliases().resolveForEvm(addressOrAlias);
-		return parentUpdater().map(u -> ((HederaWorldUpdater) u).getHederaAccount(address)).orElse(null);
-	}
-
-	@Override
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public WorldUpdater updater() {
 		return new HederaStackedWorldStateUpdater(
@@ -216,24 +195,14 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	// --- Internal helpers
+	boolean isTokenRedirect(final Address address) {
+		return dynamicProperties.isRedirectTokenCallsEnabled() && trackingLedgers().isTokenAddress(address);
+	}
+
 	private boolean isMissingTarget(final Address alias) {
 		final var target = aliases().resolveForEvm(alias);
 		return !trackingAccounts().exists(accountIdFromEvmAddress(target));
 	}
-
-	private HederaWorldState getHederaWorldState() {
-		var parentUpdater = parentUpdater();
-		while (parentUpdater.isPresent() && parentUpdater.get().parentUpdater().isPresent()) {
-			parentUpdater = parentUpdater.get().parentUpdater();
-		}
-		if (parentUpdater.isEmpty()) {
-			throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
-		}
-
-		final var topLevelUpdater = (HederaWorldState.Updater) parentUpdater.get();
-		return (HederaWorldState) topLevelUpdater.wrappedWorldView();
-	}
-
 
 	@FunctionalInterface
 	interface CustomizerFactory {
