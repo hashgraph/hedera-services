@@ -38,14 +38,13 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Map;
 
 /**
- * Defines a type that gives access to several commonly referenced
- * parts of a Hedera Services gRPC {@link Transaction}.
+ * Defines a type that gives access to several commonly referenced parts of a Hedera Services gRPC {@link Transaction}.
  */
 public interface TxnAccessor {
-	/* --- Needed to complete transaction-specific logic ---*/
+	/* --- Used to complete transaction-specific logic ---*/
 	<T extends TxnAccessor> T castToSpecialized();
 
-	/* --- Needed calculate and charge fee for any transaction ---*/
+	/* --- Used to calculate and charge fee for any transaction ---*/
 	long getOfferedFee();
 
 	SubType getSubType();
@@ -60,7 +59,7 @@ public interface TxnAccessor {
 
 	SigUsage usageGiven(int numPayerKeys);
 
-	/* --- Needed to process and validate any transaction ---*/
+	/* --- Used to process and validate any transaction ---*/
 	byte[] getMemoUtf8Bytes();
 
 	boolean memoHasZeroByte();
@@ -73,7 +72,7 @@ public interface TxnAccessor {
 
 	long getGasLimitForContractTx();
 
-	/* --- Needed to construct the record for any transaction ---*/
+	/* --- Used to construct the record for any transaction ---*/
 	String getMemo();
 
 	byte[] getHash();
@@ -82,7 +81,7 @@ public interface TxnAccessor {
 
 	void setScheduleRef(ScheduleID parent);
 
-	/* --- Needed to log failures for any transaction --- */
+	/* --- Used to log failures for any transaction --- */
 	String toLoggableString();
 
 	void setTriggered(boolean b);

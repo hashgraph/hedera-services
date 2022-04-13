@@ -36,17 +36,17 @@ public interface SwirldsTxnAccessor extends TxnAccessor {
 
 	SwirldTransaction getPlatformTxn();
 
-	/* --- Needed to track entities with keys linked to a transaction --- */
+	/* --- Used to track entities with keys linked to a transaction --- */
 	void setLinkedRefs(LinkedRefs linkedRefs);
 
 	LinkedRefs getLinkedRefs();
 
-	/* --- Needed to track the results of creating signatures for all linked keys --- */
+	/* --- Used to track the results of creating signatures for all linked keys --- */
 	void setExpandedSigStatus(ResponseCodeEnum status);
 
 	ResponseCodeEnum getExpandedSigStatus();
 
-	/* --- Needed to track the results of validating derived signatures --- */
+	/* --- Used to track the results of validating derived signatures --- */
 	void setSigMeta(RationalizedSigMeta sigMeta);
 
 	RationalizedSigMeta getSigMeta();
