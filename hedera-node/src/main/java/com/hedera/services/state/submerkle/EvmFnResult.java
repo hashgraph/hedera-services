@@ -71,35 +71,11 @@ public class EvmFnResult implements SelfSerializable {
 	public static final int MAX_ADDRESS_BYTES = 20;
 	public static final int MAX_FUNCTION_PARAMETERS_BYTES = Integer.MAX_VALUE;
 
-	public record EvmFnCallContext(long gas, long amount, byte[] functionParameters) {
-		@Override
-		public boolean equals(final Object o) {
-			if (this == o) return true;
-			if (o == null || getClass() != o.getClass()) return false;
-
-			final EvmFnCallContext that = (EvmFnCallContext) o;
-
-			if (gas != that.gas) return false;
-			if (amount != that.amount) return false;
-			return Arrays.equals(functionParameters, that.functionParameters);
-		}
-
-		@Override
-		public int hashCode() {
-			int result = (int) (gas ^ (gas >>> 32));
-			result = 31 * result + (int) (amount ^ (amount >>> 32));
-			result = 31 * result + Arrays.hashCode(functionParameters);
-			return result;
-		}
-
-		@Override
-		public String toString() {
-			return MoreObjects.toStringHelper(this)
-					.add("gas", gas)
-					.add("amount", amount)
-					.add("functionParameters", Hex.encodeHexString(functionParameters))
-					.toString();
-		}
+	public interface EvmFnCallContext {
+		long gasLimit();
+		long getAmount();
+		byte[] callData();
+		byte[] getEthereumHash();
 	}
 
 	private long gasUsed;
@@ -384,9 +360,9 @@ public class EvmFnResult implements SelfSerializable {
 	}
 
 	public void updateFromEvmCallContext(EvmFnCallContext callContext) {
-		setGas(callContext.gas);
-		setAmount(callContext.amount);
-		setFunctionParameters(callContext.functionParameters);
+		setGas(callContext.gasLimit());
+		setAmount(callContext.getAmount());
+		setFunctionParameters(callContext.callData());
 	}
 
 	public ContractFunctionResult toGrpc() {

@@ -5,7 +5,9 @@ import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.rlp.RLPItem;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.base.MoreObjects;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import org.apache.commons.codec.binary.Hex;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -29,7 +31,9 @@ public record EthTxData(
 		int recId,
 		byte[] v,
 		byte[] r,
-		byte[] s) {
+		byte[] s) implements EvmFnResult.EvmFnCallContext {
+
+	private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
 	// TODO constants should be in besu-native
 	static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
@@ -145,6 +149,16 @@ public record EthTxData(
 					Integers.toBytesUnsigned(value), callData, List.of(/*accessList*/), Integers.toBytes(recId), r, s
 			));
 		};
+	}
+
+	@Override
+	public long getAmount() {
+		return value.divide(WEIBARS_TO_TINYBARS).longValueExact();
+	}
+
+	@Override
+	public byte[] getEthereumHash() {
+		return new Keccak.Digest256().digest(rawTx == null ? encodeTx() : rawTx);
 	}
 
 	public enum EthTransactionType {
