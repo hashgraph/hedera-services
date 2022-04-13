@@ -1159,6 +1159,13 @@ workflows:
 
 
   GCP-Daily-Services-Global-3NReconnect-15N-4C:
+    triggers:
+      - schedule:
+          cron: "40 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1383,13 +1390,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
-    triggers:
-      - schedule:
-          cron: "25 8 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
