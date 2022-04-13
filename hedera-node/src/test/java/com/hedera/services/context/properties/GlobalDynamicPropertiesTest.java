@@ -398,16 +398,6 @@ class GlobalDynamicPropertiesTest {
 		}
 	}
 
-	private Set<EntityType> typesFor(final int i) {
-		if (i == 3) {
-			return EnumSet.noneOf(EntityType.class);
-		} else {
-			return ((i + 61) % 2 == 0
-					? EnumSet.of(EntityType.TOKEN)
-					: EnumSet.of(EntityType.ACCOUNT, EntityType.CONTRACT));
-		}
-	}
-
 	private AccountID accountWith(long shard, long realm, long num) {
 		return AccountID.newBuilder()
 				.setShardNum(shard)

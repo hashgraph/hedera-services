@@ -298,7 +298,9 @@ public class SeededPropertySource {
 				0,
 				numAssociations,
 				numPositiveBalanceAssociations,
-				nextInRangeLong());
+				nextInRangeLong(),
+				0,
+				0);
 	}
 
 	public MerkleAccountState nextAccountState() {
@@ -332,6 +334,8 @@ public class SeededPropertySource {
 				nextUnsignedInt(),
 				numAssociations,
 				numPositiveBalanceAssociations,
+				nextInRangeLong(),
+				nextInRangeLong(),
 				nextInRangeLong());
 	}
 

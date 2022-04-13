@@ -23,12 +23,12 @@ package com.hedera.test.serde;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.utility.CommonUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

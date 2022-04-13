@@ -82,6 +82,8 @@ class MerkleAccountTest {
 	private static final long otherBalance = 666_666L;
 	private static final long otherAutoRenewSecs = 432_765L;
 	private static final long lastAssociatedTokenNum = 456;
+	private static final long lastAssociatedNftNum = 4587;
+	private static final long lastAssociatedNftSerial = 2;
 	private static final String otherMemo = "Another memo";
 	private static final boolean otherDeleted = false;
 	private static final boolean otherSmartContract = false;
@@ -136,7 +138,9 @@ class MerkleAccountTest {
 				nftsOwned,
 				0,
 				0,
-				lastAssociatedTokenNum);
+				lastAssociatedTokenNum,
+				lastAssociatedNftNum,
+				lastAssociatedNftSerial);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);

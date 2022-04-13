@@ -36,6 +36,7 @@ import com.hedera.services.state.migration.KvPairIterationMigrator;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.virtual.ContractKey;
@@ -46,6 +47,7 @@ import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -163,7 +165,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		if (deserializedVersionFromState < RELEASE_025X_VERSION) {
 			// add the links to the doubly linked list of MerkleTokenRelStatus map and
 			// update each account's last associated token entityNumPair
-			updateLinks();
+			buildAccountTokenAssociationsLinkedList();
 		}
 		if (deserializedVersionFromState < RELEASE_0260_VERSION) {
 			makeStorageIterable(
@@ -171,6 +173,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					KvPairIterationMigrator::new,
 					VirtualMapMigration::extractVirtualMapData,
 					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
+			buildAccountNftsOwnedLinkedList();
 		}
 	}
 
@@ -360,11 +363,11 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.CONTRACT_STORAGE);
 	}
 
-	private void updateLinks() {
+	private void buildAccountTokenAssociationsLinkedList() {
 		final var accounts = accounts();
 		final var tokenRels = tokenAssociations();
 
-		for (var accountId : accounts.keySet()) {
+		for (final var accountId : accounts.keySet()) {
 			var merkleAccount = accounts.getForModify(accountId);
 			int numAssociations = 0;
 			int numPositiveBalances = 0;
@@ -391,6 +394,34 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			merkleAccount.setNumPositiveBalances(numPositiveBalances);
 			merkleAccount.setHeadTokenId(headTokenNum);
 			merkleAccount.forgetAssociatedTokens();
+		}
+	}
+
+	private void buildAccountNftsOwnedLinkedList() {
+		final var nfts = uniqueTokens();
+		final var accounts = accounts();
+
+		for (final var nftId : nfts.keySet()) {
+			var nft = nfts.getForModify(nftId);
+			final var owner = nft.getOwner();
+			final var tokenNum = nftId.getHiOrderAsLong();
+			final var serialNum = nftId.getLowOrderAsLong();
+
+			if (!owner.equals(EntityId.MISSING_ENTITY_ID)) {
+				var merkleAccount = accounts.getForModify(owner.asNum());
+
+				if (merkleAccount.getHeadNftId() != MISSING_ID.num()) {
+					var currHeadNftNum = merkleAccount.getHeadNftId();
+					var currHeadNftSerialNum = merkleAccount.getHeadNftSerialNum();
+					var currHeadNftId = EntityNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum);
+					var currHeadNft = nfts.getForModify(currHeadNftId);
+
+					currHeadNft.setPrev(NftNumPair.fromNums(tokenNum, serialNum));
+					nft.setNext(NftNumPair.fromNums(currHeadNftNum, currHeadNftSerialNum));
+				}
+				merkleAccount.setHeadNftId(tokenNum);
+				merkleAccount.setHeadNftSerialNum(serialNum);
+			}
 		}
 	}
 
