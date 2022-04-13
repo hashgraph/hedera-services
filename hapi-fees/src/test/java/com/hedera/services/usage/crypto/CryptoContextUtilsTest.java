@@ -4,7 +4,7 @@ package com.hedera.services.usage.crypto;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,24 +23,11 @@ package com.hedera.services.usage.crypto;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CryptoContextUtilsTest {
-	@Test
-	void getsNewSerials() {
-		Map<AllowanceId, AllowanceDetails> newMap = new HashMap<>();
-
-		newMap.put(new AllowanceId(1L, 2L),
-				new AllowanceDetails(true, List.of(3L, 4L)));
-		newMap.put(new AllowanceId(1L, 3L),
-				new AllowanceDetails(false, List.of(1L, 2L, 3L, 100L)));
-
-		assertEquals(6, CryptoContextUtils.getNewSerials(newMap));
-	}
-
 	@Test
 	void getsChangedKeys() {
 		Map<Long, Long> newMap = new HashMap<>();

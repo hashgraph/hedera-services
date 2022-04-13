@@ -20,6 +20,7 @@ package com.hedera.services.bdd.suites.autorenew;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;

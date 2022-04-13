@@ -30,6 +30,7 @@ public class MetaAnswers {
 	private final GetTxnReceiptAnswer txnReceipt;
 	private final GetVersionInfoAnswer versionInfo;
 	private final GetFastTxnRecordAnswer fastTxnRecord;
+	private final GetAccountDetailsAnswer accountDetails;
 
 	@Inject
 	public MetaAnswers(
@@ -37,13 +38,15 @@ public class MetaAnswers {
 			GetTxnRecordAnswer txnRecord,
 			GetTxnReceiptAnswer txnReceipt,
 			GetVersionInfoAnswer versionInfo,
-			GetFastTxnRecordAnswer fastTxnRecord
+			GetFastTxnRecordAnswer fastTxnRecord,
+			GetAccountDetailsAnswer accountDetails
 	) {
 		this.execTime = execTime;
 		this.txnRecord = txnRecord;
 		this.txnReceipt = txnReceipt;
 		this.versionInfo = versionInfo;
 		this.fastTxnRecord = fastTxnRecord;
+		this.accountDetails = accountDetails;
 	}
 
 	public GetVersionInfoAnswer getVersionInfo() {
@@ -64,5 +67,9 @@ public class MetaAnswers {
 
 	public GetExecTimeAnswer getExecTime() {
 		return execTime;
+	}
+
+	public GetAccountDetailsAnswer getAccountDetails() {
+		return accountDetails;
 	}
 }

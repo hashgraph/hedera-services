@@ -79,7 +79,6 @@ import static com.hedera.services.grpc.controllers.ContractController.GET_SOLIDI
 import static com.hedera.services.grpc.controllers.ContractController.LOCALCALL_CONTRACT_METRIC;
 import static com.hedera.services.grpc.controllers.ContractController.UPDATE_CONTRACT_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.ADD_LIVE_HASH_METRIC;
-import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_ADJUST_ALLOWANCE;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_APPROVE_ALLOWANCES;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_CREATE_METRIC;
 import static com.hedera.services.grpc.controllers.CryptoController.CRYPTO_DELETE_ALLOWANCE;
@@ -100,6 +99,7 @@ import static com.hedera.services.grpc.controllers.FileController.GET_FILE_CONTE
 import static com.hedera.services.grpc.controllers.FileController.GET_FILE_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.FileController.UPDATE_FILE_METRIC;
 import static com.hedera.services.grpc.controllers.FreezeController.FREEZE_METRIC;
+import static com.hedera.services.grpc.controllers.NetworkController.GET_ACCOUNT_DETAILS_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.GET_EXECUTION_TIME_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
@@ -123,7 +123,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetRecords;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
@@ -142,6 +141,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetCont
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileGetInfo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetByKey;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidityID;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionInfo;
@@ -175,6 +175,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
+import static com.hederahashgraph.api.proto.java.Query.QueryCase.ACCOUNTDETAILS;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONSENSUSGETTOPICINFO;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTCALLLOCAL;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.CONTRACTGETBYTECODE;
@@ -229,7 +230,8 @@ public final class MiscUtils {
 			TokenGetNftInfo,
 			TokenGetNftInfos,
 			TokenGetAccountNftInfos,
-			NetworkGetExecutionTime
+			NetworkGetExecutionTime,
+			GetAccountDetails
 	);
 
 	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
@@ -289,6 +291,7 @@ public final class MiscUtils {
 		queryFunctions.put(TOKENGETACCOUNTNFTINFOS, TokenGetAccountNftInfos);
 		queryFunctions.put(SCHEDULEGETINFO, ScheduleGetInfo);
 		queryFunctions.put(NETWORKGETEXECUTIONTIME, NetworkGetExecutionTime);
+		queryFunctions.put(ACCOUNTDETAILS, GetAccountDetails);
 	}
 
 	private static final Map<HederaFunctionality, String> BASE_STAT_NAMES = new EnumMap<>(HederaFunctionality.class);
@@ -302,7 +305,6 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(CryptoAddLiveHash, ADD_LIVE_HASH_METRIC);
 		BASE_STAT_NAMES.put(CryptoDeleteLiveHash, DELETE_LIVE_HASH_METRIC);
 		BASE_STAT_NAMES.put(CryptoApproveAllowance, CRYPTO_APPROVE_ALLOWANCES);
-		BASE_STAT_NAMES.put(CryptoAdjustAllowance, CRYPTO_ADJUST_ALLOWANCE);
 		BASE_STAT_NAMES.put(CryptoDeleteAllowance, CRYPTO_DELETE_ALLOWANCE);
 		BASE_STAT_NAMES.put(FileCreate, CREATE_FILE_METRIC);
 		BASE_STAT_NAMES.put(FileUpdate, UPDATE_FILE_METRIC);
@@ -360,6 +362,7 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(TokenGetAccountNftInfos, TOKEN_GET_ACCOUNT_NFT_INFOS_METRIC);
 		BASE_STAT_NAMES.put(TokenFeeScheduleUpdate, TOKEN_FEE_SCHEDULE_UPDATE_METRIC);
 		BASE_STAT_NAMES.put(NetworkGetExecutionTime, GET_EXECUTION_TIME_METRIC);
+		BASE_STAT_NAMES.put(GetAccountDetails, GET_ACCOUNT_DETAILS_METRIC);
 	}
 
 	public static String baseStatNameOf(final HederaFunctionality function) {
@@ -529,6 +532,8 @@ public final class MiscUtils {
 				return Optional.of(query.getNetworkGetVersionInfo().getHeader());
 			case NETWORKGETEXECUTIONTIME:
 				return Optional.of(query.getNetworkGetExecutionTime().getHeader());
+			case ACCOUNTDETAILS:
+				return Optional.of(query.getAccountDetails().getHeader());
 			default:
 				return Optional.empty();
 		}
@@ -569,9 +574,6 @@ public final class MiscUtils {
 		}
 		if (txn.hasCryptoApproveAllowance()) {
 			return CryptoApproveAllowance;
-		}
-		if (txn.hasCryptoAdjustAllowance()) {
-			return CryptoAdjustAllowance;
 		}
 		if (txn.hasCryptoDeleteAllowance()) {
 			return CryptoDeleteAllowance;
@@ -702,9 +704,6 @@ public final class MiscUtils {
 		}
 		if (txn.hasCryptoApproveAllowance()) {
 			return CryptoApproveAllowance;
-		}
-		if (txn.hasCryptoAdjustAllowance()) {
-			return CryptoAdjustAllowance;
 		}
 		if (txn.hasCryptoDeleteAllowance()) {
 			return CryptoDeleteAllowance;
