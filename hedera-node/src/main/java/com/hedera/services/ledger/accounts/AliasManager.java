@@ -139,18 +139,6 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 				workingAliases::size, numCreate2Aliases::get);
 	}
 
-	static ECCurve SECP256K1_CURVE = new SecP256K1Curve();
-
-	// Decompress a compressed public key (x co-ord and low-bit of y-co-ord).
-	protected static ECPoint decompressKey(final BigInteger xBN, final boolean yBit) {
-		final X9IntegerConverter x9 = new X9IntegerConverter();
-		final byte[] compEnc = x9.integerToBytes(xBN, 1 + x9.getByteLength(SECP256K1_CURVE));
-		compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
-		// TODO: Find a better way to handle an invalid point compression here.
-		// Currently ECCurve#decodePoint throws an IllegalArgumentException.
-		return SECP256K1_CURVE.decodePoint(compEnc);
-	}
-
 	/**
 	 * Ensures an alias is no longer in use, returning whether it previously was.
 	 *
