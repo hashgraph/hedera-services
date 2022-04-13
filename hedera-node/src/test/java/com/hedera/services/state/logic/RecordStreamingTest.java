@@ -21,7 +21,7 @@ package com.hedera.services.state.logic;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -61,24 +61,24 @@ class RecordStreamingTest {
     private static final Instant topLevelConsTime = Instant.ofEpochSecond(1_234_567L, 890);
     private static final Hash INITIAL_RANDOM_HASH = new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength()));
 
-    @Mock
-    private TransactionContext txnCtx;
-    @Mock
-    private NonBlockingHandoff nonBlockingHandoff;
-    @Mock
-    private Consumer<RunningHash> runningHashUpdate;
-    @Mock
-    private AccountRecordsHistorian recordsHistorian;
-    @Mock
-    private TxnAccessor accessor;
-    @Mock
-    private RecordStreamObject firstFollowingChildRso;
-    @Mock
-    private RecordStreamObject secondFollowingChildRso;
-    @Mock
-    private RecordStreamObject firstPrecedingChildRso;
-    @Mock
-    private RecordsRunningHashLeaf recordsRunningHashLeaf;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private NonBlockingHandoff nonBlockingHandoff;
+	@Mock
+	private Consumer<RunningHash> runningHashUpdate;
+	@Mock
+	private RecordsHistorian recordsHistorian;
+	@Mock
+	private TxnAccessor accessor;
+	@Mock
+	private RecordStreamObject firstFollowingChildRso;
+	@Mock
+	private RecordStreamObject secondFollowingChildRso;
+	@Mock
+	private RecordStreamObject firstPrecedingChildRso;
+	@Mock
+	private RecordsRunningHashLeaf recordsRunningHashLeaf;
 
     private static final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext(
             NULL_CONSENSUS_TIME,

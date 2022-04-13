@@ -71,8 +71,8 @@ public class FeeSchedules {
 	}
 
 	private Map<ResourceProvider, Map<UsableResource, Long>> canonicalPricesGiven(
-			BigDecimal normalizingFactor,
-			Map<ResourceProvider, Map<UsableResource, BigDecimal>> genericPrices
+			final BigDecimal normalizingFactor,
+			final Map<ResourceProvider, Map<UsableResource, BigDecimal>> genericPrices
 	) {
 		final Map<ResourceProvider, Map<UsableResource, Long>> canonicalPrices = new EnumMap<>(ResourceProvider.class);
 		for (var provider : ResourceProvider.class.getEnumConstants()) {

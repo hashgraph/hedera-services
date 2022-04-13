@@ -30,11 +30,9 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoRemoveAllowance;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
-import com.hederahashgraph.api.proto.java.TokenRemoveAllowance;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -54,8 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowance> {
 	static final Logger log = LogManager.getLogger(HapiCryptoDeleteAllowance.class);
 
-	private List<CryptoAllowances> cryptoAllowances = new ArrayList<>();
-	private List<TokenAllowances> tokenAllowances = new ArrayList<>();
 	private List<NftAllowances> nftAllowances = new ArrayList<>();
 
 	public HapiCryptoDeleteAllowance() {
@@ -68,16 +64,6 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 
 	@Override
 	protected HapiCryptoDeleteAllowance self() {
-		return this;
-	}
-
-	public HapiCryptoDeleteAllowance addCryptoDeleteAllowance(String owner) {
-		cryptoAllowances.add(CryptoAllowances.from(owner));
-		return this;
-	}
-
-	public HapiCryptoDeleteAllowance addTokenDeleteAllowance(String owner, String token) {
-		tokenAllowances.add(TokenAllowances.from(owner, token));
 		return this;
 	}
 
@@ -106,42 +92,19 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 
 	@Override
 	protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-		List<CryptoRemoveAllowance> callowances = new ArrayList<>();
-		List<TokenRemoveAllowance> tallowances = new ArrayList<>();
 		List<NftRemoveAllowance> nftallowances = new ArrayList<>();
-		calculateAllowances(spec, callowances, tallowances, nftallowances);
+		calculateAllowances(spec, nftallowances);
 		CryptoDeleteAllowanceTransactionBody opBody = spec
 				.txns()
 				.<CryptoDeleteAllowanceTransactionBody, CryptoDeleteAllowanceTransactionBody.Builder>
 						body(CryptoDeleteAllowanceTransactionBody.class, b -> {
-							b.addAllTokenAllowances(tallowances);
-							b.addAllCryptoAllowances(callowances);
-							b.addAllNftAllowances(nftallowances);
-						});
+					b.addAllNftAllowances(nftallowances);
+				});
 		return b -> b.setCryptoDeleteAllowance(opBody);
 	}
 
 	private void calculateAllowances(final HapiApiSpec spec,
-			final List<CryptoRemoveAllowance> callowances,
-			final List<TokenRemoveAllowance> tallowances,
 			final List<NftRemoveAllowance> nftallowances) {
-		for (var entry : cryptoAllowances) {
-			final var builder = CryptoRemoveAllowance.newBuilder();
-			if (entry.owner() != MISSING_OWNER) {
-				builder.setOwner(spec.registry().getAccountID(entry.owner()));
-			}
-
-			callowances.add(builder.build());
-		}
-
-		for (var entry : tokenAllowances) {
-			final var builder = TokenRemoveAllowance.newBuilder()
-					.setTokenId(spec.registry().getTokenID(entry.token()));
-			if (entry.owner() != MISSING_OWNER) {
-				builder.setOwner(spec.registry().getAccountID(entry.owner()));
-			}
-			tallowances.add(builder.build());
-		}
 		for (var entry : nftAllowances) {
 			final var builder = NftRemoveAllowance.newBuilder()
 					.setTokenId(spec.registry().getTokenID(entry.token()))
@@ -174,22 +137,8 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
 	@Override
 	protected MoreObjects.ToStringHelper toStringHelper() {
 		MoreObjects.ToStringHelper helper = super.toStringHelper()
-				.add("cryptoDeleteAllowances", cryptoAllowances)
-				.add("tokenDeleteAllowances", tokenAllowances)
 				.add("nftDeleteAllowances", nftAllowances);
 		return helper;
-	}
-
-	private record CryptoAllowances(String owner) {
-		static CryptoAllowances from(String owner) {
-			return new CryptoAllowances(owner);
-		}
-	}
-
-	private record TokenAllowances(String owner, String token) {
-		static TokenAllowances from(String owner, String token) {
-			return new TokenAllowances(owner, token);
-		}
 	}
 
 	private record NftAllowances(String owner, String token, List<Long> serials) {

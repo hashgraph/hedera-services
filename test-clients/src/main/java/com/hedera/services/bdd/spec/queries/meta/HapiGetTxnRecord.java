@@ -104,8 +104,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private List<AssessedNftTransfer> assessedNftTransfersToValidate = new ArrayList<>();
 	private List<Triple<String, String, Long>> assessedCustomFeesToValidate = new ArrayList<>();
 	private List<Pair<String, String>> newTokenAssociations = new ArrayList<>();
-	private List<ExpectedCryptoAllowance> expectedCryptoAllowances = new ArrayList<>();
-	private List<ExpectedTokenAllowance> expectedTokenAllowances = new ArrayList<>();
 	private OptionalInt assessedCustomFeesSize = OptionalInt.empty();
 	private Optional<TransactionID> explicitTxnId = Optional.empty();
 	private Optional<TransactionRecordAsserts> priorityExpectations = Optional.empty();
@@ -122,8 +120,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 	private Optional<ErroringAssertsProvider<List<TransactionRecord>>> duplicateExpectations = Optional.empty();
 	private Optional<Integer> childRecordsCount = Optional.empty();
 	private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
-	private Optional<Integer> cryptoAllowanceCount = Optional.empty();
-	private Optional<Integer> tokenAllowanceCount = Optional.empty();
 
 	private Consumer<List<?>> eventDataObserver;
 	private Predicate<Abi.Event> eventMatcher;
@@ -137,11 +133,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return ByteString.copyFrom(noThrowSha384HashOf(transaction.getSignedTransactionBytes().toByteArray()));
 	}
 
-	private record ExpectedChildInfo(String aliasingKey) {}
-	private record ExpectedCryptoAllowance(String owner, String spender, Long allowance) {}
-	private record ExpectedTokenAllowance(String owner, String token, String spender, Long allowance) {}
+	private record ExpectedChildInfo(String aliasingKey) {
+	}
 
-	private Map<Integer, ExpectedChildInfo>	childExpectations = new HashMap<>();
+	private Map<Integer, ExpectedChildInfo> childExpectations = new HashMap<>();
 
 	public HapiGetTxnRecord(String txn) {
 		this.txn = txn;
@@ -227,16 +222,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasCryptoAllowance(final String owner, final String spender, final long allowance) {
-		expectedCryptoAllowances.add(new ExpectedCryptoAllowance(owner, spender, allowance));
-		return this;
-	}
-
-	public HapiGetTxnRecord hasTokenAllowance(final String owner, final String token, final String spender, final long allowance) {
-		expectedTokenAllowances.add(new ExpectedTokenAllowance(owner, token, spender, allowance));
-		return this;
-	}
-
 	public HapiGetTxnRecord assertingNothing() {
 		assertNothing = true;
 		return this;
@@ -282,7 +267,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts ...providers) {
+	public HapiGetTxnRecord hasChildRecords(TransactionRecordAsserts... providers) {
 		childRecordsExpectations = Optional.of(Arrays.asList(providers));
 		return this;
 	}
@@ -343,16 +328,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		return this;
 	}
 
-	public HapiGetTxnRecord hasCryptoAllowanceCount(final int cryptoAllowanceCount) {
-		this.cryptoAllowanceCount = Optional.of(cryptoAllowanceCount);
-		return this;
-	}
-
-	public HapiGetTxnRecord hasTokenAllowanceCount(final int tokenAllowanceCount) {
-		this.tokenAllowanceCount = Optional.of(tokenAllowanceCount);
-		return this;
-	}
-
 	public TransactionRecord getResponseRecord() {
 		return response.getTransactionGetRecord().getTransactionRecord();
 	}
@@ -374,7 +349,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 		if (childRecordsExpectations.isPresent()) {
 			final var expectedChildRecords = childRecordsExpectations.get();
 
-			assertEquals(expectedChildRecords.size(), actualRecords.size(), String.format("Expected %d child records, got %d", expectedChildRecords.size(), actualRecords.size()));
+			assertEquals(expectedChildRecords.size(), actualRecords.size(),
+					String.format("Expected %d child records, got %d", expectedChildRecords.size(),
+							actualRecords.size()));
 			for (int i = 0; i < actualRecords.size(); i++) {
 				final var expectedChildRecord = expectedChildRecords.get(i);
 				final var actualChildRecord = actualRecords.get(i);
@@ -521,46 +498,6 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 					assertEquals(literalKey.toByteString().toStringUtf8(), childRecord.getAlias().toStringUtf8());
 				}
 			}
-		}
-		cryptoAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getCryptoAdjustmentsCount(),
-				"expected cryptoAllowanceCount was : " + n + " but is : " + actualRecord.getCryptoAdjustmentsCount()));
-		for (var expectedCryptoAllowance : expectedCryptoAllowances) {
-			final var ownerId = spec.registry().getAccountID(expectedCryptoAllowance.owner());
-			final var spenderId = spec.registry().getAccountID(expectedCryptoAllowance.spender());
-			final var allowance = expectedCryptoAllowance.allowance();
-			boolean found = false;
-			for (var actualAllowance : actualRecord.getCryptoAdjustmentsList()) {
-				if (
-						actualAllowance.getOwner().equals(ownerId) &&
-						actualAllowance.getSpender().equals(spenderId) &&
-						actualAllowance.getAmount() == allowance
-				) {
-					found = true;
-				}
-			}
-			assertTrue(found, "Couldn't find crypto allowance with ->" +
-					" owner : " + ownerId + " spender : " + spenderId + " allowance : " + allowance);
-		}
-		tokenAllowanceCount.ifPresent(n -> assertEquals(n, actualRecord.getTokenAdjustmentsCount(),
-				"expected tokenAllowanceCount was : " + n + " but is : " + actualRecord.getTokenAdjustmentsCount()));
-		for (var expectedTokenAllowance : expectedTokenAllowances) {
-			final var ownerId = spec.registry().getAccountID(expectedTokenAllowance.owner());
-			final var tokenId = spec.registry().getTokenID(expectedTokenAllowance.token());
-			final var spenderId = spec.registry().getAccountID(expectedTokenAllowance.spender());
-			final var allowance = expectedTokenAllowance.allowance();
-			boolean found = false;
-			for (var actualAllowance : actualRecord.getTokenAdjustmentsList()) {
-				if (
-						actualAllowance.getOwner().equals(ownerId) &&
-						actualAllowance.getTokenId().equals(tokenId) &&
-						actualAllowance.getSpender().equals(spenderId) &&
-						actualAllowance.getAmount() == allowance
-				) {
-					found = true;
-				}
-			}
-			assertTrue(found, "Couldn't find token allowance with ->" +
-					" owner : " + ownerId + " token : " + tokenId + " spender : " + spenderId + " allowance : " + allowance);
 		}
 	}
 

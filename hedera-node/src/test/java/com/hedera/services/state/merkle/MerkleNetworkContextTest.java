@@ -511,7 +511,7 @@ class MerkleNetworkContextTest {
 
 		subject.setBlockNo(10);
 		subject.setFirstConsTimeOfCurrentBlock(consTime);
-		subject.startNewBlock();
+		subject.startNewBlock(null);
 
 		// then:
 		assertEquals(11, subject.getBlockNo());

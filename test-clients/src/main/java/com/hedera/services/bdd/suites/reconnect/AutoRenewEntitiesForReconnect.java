@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,7 +42,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
@@ -66,7 +66,8 @@ public class AutoRenewEntitiesForReconnect extends HapiApiSuite {
 		return defaultHapiSpec("AutoRenewAccountGetsDeletedOnReconnectingNodeAsWell")
 				.given(
 						fileUpdate(APP_PROPERTIES).payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(autoRenewSecs, 0, 100, 2))
+								.overridingProps(
+										AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(autoRenewSecs, 0, 100, 2))
 								.erasingProps(Set.of("minimumAutoRenewDuration")),
 						cryptoCreate(autoDeleteAccount).autoRenewSecs(autoRenewSecs).balance(0L)
 				)

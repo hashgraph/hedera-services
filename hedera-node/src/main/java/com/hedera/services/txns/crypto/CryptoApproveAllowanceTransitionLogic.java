@@ -35,6 +35,7 @@ import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -47,6 +48,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
+import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.validateAllowanceLimitsOn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -55,7 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
  * Implements the {@link TransitionLogic} for a HAPI CryptoApproveAllowance transaction,
  * and the conditions under which such logic is syntactically correct.
  */
-public class CryptoApproveAllowanceTransitionLogic extends BaseAllowancesTransitionLogic implements TransitionLogic {
+public class CryptoApproveAllowanceTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
@@ -73,7 +75,6 @@ public class CryptoApproveAllowanceTransitionLogic extends BaseAllowancesTransit
 			final ApproveAllowanceChecks allowanceChecks,
 			final GlobalDynamicProperties dynamicProperties,
 			final StateView workingView) {
-		super(accountStore, tokenStore, dynamicProperties);
 		this.txnCtx = txnCtx;
 		this.accountStore = accountStore;
 		this.tokenStore = tokenStore;
@@ -100,7 +101,7 @@ public class CryptoApproveAllowanceTransitionLogic extends BaseAllowancesTransit
 		/* --- Do the business logic --- */
 		applyCryptoAllowances(op.getCryptoAllowancesList(), payerAccount);
 		applyFungibleTokenAllowances(op.getTokenAllowancesList(), payerAccount);
-		applyNftAllowances(op.getNftAllowancesList(), payerAccount, entitiesChanged, nftsTouched);
+		applyNftAllowances(op.getNftAllowancesList(), payerAccount);
 
 		/* --- Persist the entities --- */
 		for (final var nft : nftsTouched.values()) {
@@ -158,22 +159,55 @@ public class CryptoApproveAllowanceTransitionLogic extends BaseAllowancesTransit
 			final var amount = allowance.getAmount();
 
 			if (cryptoMap.containsKey(spender.asEntityNum()) && amount == 0) {
-				removeEntity(cryptoMap, spender, accountToApprove);
+				cryptoMap.remove(spender.asEntityNum());
 			}
 			if (amount > 0) {
 				cryptoMap.put(spender.asEntityNum(), amount);
 				validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
-				entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 			}
+			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 		}
 	}
 
-	private void removeEntity(final Map<EntityNum, Long> cryptoMap,
-			final Id spender,
-			final Account accountToApprove) {
-		cryptoMap.remove(spender.asEntityNum());
-		accountToApprove.setCryptoAllowances(cryptoMap);
-		entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
+	/**
+	 * Applies all changes needed for NFT allowances from the transaction. If the key{tokenNum, spenderNum} doesn't
+	 * exist in the map the allowance will be inserted. If the key exists, existing allowance values will be
+	 * replaced with new allowances given in operation
+	 *
+	 * @param nftAllowances
+	 * @param payerAccount
+	 */
+	protected void applyNftAllowances(final List<NftAllowance> nftAllowances, final Account payerAccount) {
+		if (nftAllowances.isEmpty()) {
+			return;
+		}
+		for (var allowance : nftAllowances) {
+			final var owner = allowance.getOwner();
+			final var accountToApprove = fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+			final var approveForAllNfts = accountToApprove.getMutableApprovedForAllNfts();
+
+			final var spenderId = Id.fromGrpcAccount(allowance.getSpender());
+			accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
+
+			final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
+			if (allowance.hasApprovedForAll()) {
+				final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
+				if (allowance.getApprovedForAll().getValue()) {
+					approveForAllNfts.add(key);
+				} else {
+					approveForAllNfts.remove(key);
+				}
+			}
+
+			validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
+
+			final var nfts = updateSpender(tokenStore, accountToApprove.getId(), spenderId, tokenId,
+					allowance.getSerialNumbersList());
+			for (var nft : nfts) {
+				nftsTouched.put(nft.getNftId(), nft);
+			}
+			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
+		}
 	}
 
 	/**
@@ -201,21 +235,13 @@ public class CryptoApproveAllowanceTransitionLogic extends BaseAllowancesTransit
 			final var key = FcTokenAllowanceId.from(EntityNum.fromTokenId(tokenId),
 					spender.asEntityNum());
 			if (tokensMap.containsKey(key) && amount == 0) {
-				removeTokenEntity(key, tokensMap, accountToApprove);
+				tokensMap.remove(key);
 			}
 			if (amount > 0) {
 				tokensMap.put(key, amount);
 				validateAllowanceLimitsOn(accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
-				entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 			}
+			entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 		}
-	}
-
-	private void removeTokenEntity(final FcTokenAllowanceId key,
-			final Map<FcTokenAllowanceId, Long> tokensMap,
-			final Account accountToApprove) {
-		tokensMap.remove(key);
-		accountToApprove.setFungibleTokenAllowances(tokensMap);
-		entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
 	}
 }

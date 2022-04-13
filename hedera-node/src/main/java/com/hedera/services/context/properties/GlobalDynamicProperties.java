@@ -32,6 +32,9 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Set;
 
+import static com.hedera.services.context.properties.EntityType.ACCOUNT;
+import static com.hedera.services.context.properties.EntityType.CONTRACT;
+
 @Singleton
 public class GlobalDynamicProperties {
 	private final HederaNumbers hederaNums;
@@ -68,7 +71,9 @@ public class GlobalDynamicProperties {
 	private int chainId;
 	private long defaultContractLifetime;
 	private int feesTokenTransferUsageMultiplier;
-	private boolean autoRenewEnabled;
+	private boolean atLeastOneAutoRenewTargetType;
+	private boolean expireAccounts;
+	private boolean expireContracts;
 	private int autoRenewNumberOfEntitiesToScan;
 	private int autoRenewMaxNumberOfEntitiesToRenewOrDelete;
 	private long autoRenewGracePeriod;
@@ -157,7 +162,6 @@ public class GlobalDynamicProperties {
 		chainId = properties.getIntProperty("contracts.chainId");
 		defaultContractLifetime = properties.getLongProperty("contracts.defaultLifetime");
 		feesTokenTransferUsageMultiplier = properties.getIntProperty("fees.tokenTransferUsageMultiplier");
-		autoRenewEnabled = properties.getBooleanProperty("autorenew.isEnabled");
 		autoRenewNumberOfEntitiesToScan = properties.getIntProperty("autorenew.numberOfEntitiesToScan");
 		autoRenewMaxNumberOfEntitiesToRenewOrDelete =
 				properties.getIntProperty("autorenew.maxNumberOfEntitiesToRenewOrDelete");
@@ -197,6 +201,10 @@ public class GlobalDynamicProperties {
 		redirectTokenCalls = properties.getBooleanProperty("contracts.redirectTokenCalls");
 		enableTraceability = properties.getBooleanProperty("contracts.enableTraceability");
 		enableAllowances = properties.getBooleanProperty("hedera.allowances.isEnabled");
+		final var autoRenewTargetTypes = properties.getTypesProperty("autoRenew.targetTypes");
+		expireAccounts = autoRenewTargetTypes.contains(ACCOUNT);
+		expireContracts = autoRenewTargetTypes.contains(CONTRACT);
+		atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
 		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
 		bootstrapLastBlockNumber = properties.getLongProperty("blocks.lastBlockNumber");
@@ -206,6 +214,7 @@ public class GlobalDynamicProperties {
 	public int maxTokensPerAccount() {
 		return maxTokensPerAccount;
 	}
+
 	public int maxTokensRelsPerInfoQuery() {
 		return maxTokenRelsPerInfoQuery;
 	}
@@ -326,8 +335,8 @@ public class GlobalDynamicProperties {
 		return feesTokenTransferUsageMultiplier;
 	}
 
-	public boolean autoRenewEnabled() {
-		return autoRenewEnabled;
+	public boolean shouldAutoRenewSomeEntityType() {
+		return atLeastOneAutoRenewTargetType;
 	}
 
 	public int autoRenewNumberOfEntitiesToScan() {
@@ -478,6 +487,14 @@ public class GlobalDynamicProperties {
 		return enableAllowances;
 	}
 
+	public boolean shouldAutoRenewContracts() {
+		return expireContracts;
+	}
+
+	public boolean shouldAutoRenewAccounts() {
+		return expireAccounts;
+        }
+        
 	public boolean areTokenAssociationsLimited() {
 		return limitTokenAssociations;
 	}

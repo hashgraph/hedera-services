@@ -20,9 +20,14 @@ package com.hedera.services.bdd.suites.autorenew;
  * ‍
  */
 
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 
 import java.util.Map;
+
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 
 public class AutoRenewConfigChoices {
 	static final int DEFAULT_HIGH_TOUCH_COUNT = 10_000;
@@ -35,23 +40,48 @@ public class AutoRenewConfigChoices {
 	static final String defaultNumToScan =
 			HapiSpecSetup.getDefaultNodeProps().get("autorenew.numberOfEntitiesToScan");
 
-	public static Map<String, String> enablingAutoRenewWith(long minAutoRenewPeriod, long gracePeriod) {
-		return enablingAutoRenewWith(
+	public static HapiSpecOperation enableContractAutoRenewWith(
+			final long minAutoRenewPeriod,
+			final long gracePeriod
+	) {
+		return fileUpdate(APP_PROPERTIES)
+				.payingWith(GENESIS)
+				.overridingProps(propsForAutoRenewOnWith(
+						minAutoRenewPeriod, gracePeriod,
+						DEFAULT_HIGH_SPIN_SCAN_COUNT, DEFAULT_HIGH_TOUCH_COUNT,
+						"CONTRACT"));
+	}
+
+	public static Map<String, String> propsForAccountAutoRenewOnWith(
+			final long minAutoRenewPeriod,
+			final long gracePeriod
+	) {
+		return propsForAccountAutoRenewOnWith(
 				minAutoRenewPeriod,
 				gracePeriod,
 				DEFAULT_HIGH_SPIN_SCAN_COUNT,
 				DEFAULT_HIGH_TOUCH_COUNT);
 	}
 
-	public static Map<String, String> enablingAutoRenewWith(
-			long minAutoRenew,
-			long gracePeriod,
-			int maxScan,
-			int maxTouch
+	public static Map<String, String> propsForAccountAutoRenewOnWith(
+			final long minAutoRenew,
+			final long gracePeriod,
+			final int maxScan,
+			final int maxTouch
+	) {
+		return propsForAutoRenewOnWith(minAutoRenew, gracePeriod, maxScan, maxTouch, "ACCOUNT");
+	}
+
+	public static Map<String, String> propsForAutoRenewOnWith(
+			final long minAutoRenew,
+			final long gracePeriod,
+			final int maxScan,
+			final int maxTouch,
+			final String targetTypes
 	) {
 		return Map.of(
 				"ledger.autoRenewPeriod.minDuration", "" + minAutoRenew,
-				"autorenew.isEnabled", "true",
+				"autoRenew.targetTypes", targetTypes,
 				"autorenew.gracePeriod", "" + gracePeriod,
 				"autorenew.numberOfEntitiesToScan", "" + maxScan,
 				"autorenew.maxNumberOfEntitiesToRenewOrDelete", "" + maxTouch
@@ -68,7 +98,7 @@ public class AutoRenewConfigChoices {
 	public static Map<String, String> disablingAutoRenewWithDefaults() {
 		return Map.of(
 				"ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod,
-				"autorenew.isEnabled", "false",
+				"autoRenew.targetTypes", "",
 				"autorenew.gracePeriod", defaultGracePeriod,
 				"autorenew.numberOfEntitiesToScan", defaultNumToScan
 		);
@@ -77,7 +107,7 @@ public class AutoRenewConfigChoices {
 	public static Map<String, String> disablingAutoRenewWith(long minAutoRenew) {
 		return Map.of(
 				"ledger.autoRenewPeriod.minDuration", "" + minAutoRenew,
-				"autorenew.isEnabled", "false",
+				"autoRenew.targetTypes", "",
 				"autorenew.gracePeriod", defaultGracePeriod,
 				"autorenew.numberOfEntitiesToScan", defaultNumToScan
 		);

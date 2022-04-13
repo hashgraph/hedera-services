@@ -78,6 +78,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
 	public static final Instant NULL_CONSENSUS_TIME = null;
+	private static final org.hyperledger.besu.datatypes.Hash UNAVAILABLE_BLOCK_HASH =
+			convertSwirldsHashToBesuHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
@@ -229,18 +231,16 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
 	}
 
-	public void startNewBlock() {
+	public void startNewBlock(final Instant firstBlockTime) {
 		blockNo++;
-		firstConsTimeOfCurrentBlock = null;
+		firstConsTimeOfCurrentBlock = firstBlockTime;
 	}
 
-	public void finishCurrentBlock(final Hash hash, final Instant firstBlockTime) {
+	public void finishCurrentBlock(final Hash hash) {
 		if(blockHashes.size() > 255) {
 			blockHashes.remove(blockHashes.firstKey());
 		}
 		blockHashes.put(blockNo, convertSwirldsHashToBesuHash(hash));
-		blockNo++;
-		firstConsTimeOfCurrentBlock = firstBlockTime;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -416,7 +416,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public org.hyperledger.besu.datatypes.Hash getBlockHashByNumber(final long blockNumber) {
-		return blockHashes.getOrDefault(blockNumber, convertSwirldsHashToBesuHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()])));
+		return blockHashes.getOrDefault(blockNumber, UNAVAILABLE_BLOCK_HASH);
 	}
 
 	public Instant getFirstConsTimeOfCurrentBlock() {
