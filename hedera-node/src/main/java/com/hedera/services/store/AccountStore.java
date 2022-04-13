@@ -135,16 +135,17 @@ public class AccountStore {
 	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode,
 			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
 		final var merkleAccount = accounts.getImmutableRef(id.asGrpcAccount());
-
 		validateUsable(merkleAccount, explicitResponseCode, nonExistingCode, deletedCode);
+		return loadMerkleAccount(merkleAccount, id);
+	}
 
+	private Account loadMerkleAccount(final MerkleAccount merkleAccount, final Id id) {
 		final var account = new Account(id);
 		account.setExpiry(merkleAccount.getExpiry());
 		account.initBalance(merkleAccount.getBalance());
-		account.setAssociatedTokens(merkleAccount.tokens().getIds().copy());
 		account.setOwnedNfts(merkleAccount.getNftsOwned());
 		account.setMaxAutomaticAssociations(merkleAccount.getMaxAutomaticAssociations());
-		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getAlreadyUsedAutoAssociations());
+		account.setAlreadyUsedAutomaticAssociations(merkleAccount.getUsedAutoAssociations());
 		if (merkleAccount.getProxy() != null) {
 			account.setProxy(merkleAccount.getProxy().asId());
 		}
@@ -157,7 +158,10 @@ public class AccountStore {
 		account.setAlias(merkleAccount.getAlias());
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
-		account.setNftAllowances(merkleAccount.getNftAllowances());
+		account.setApproveForAllNfts(merkleAccount.getApproveForAllNfts());
+		account.setHeadTokenNum(merkleAccount.getHeadTokenId());
+		account.setNumAssociations(merkleAccount.getNumAssociations());
+		account.setNumPositiveBalances(merkleAccount.getNumPositiveBalances());
 
 		return account;
 	}
@@ -173,7 +177,6 @@ public class AccountStore {
 		final var grpcId = id.asGrpcAccount();
 		final var mutableAccount = accounts.getRef(grpcId);
 		mapModelToMutable(account, mutableAccount);
-		mutableAccount.tokens().updateAssociationsFrom(account.getAssociatedTokens());
 		accounts.put(grpcId, mutableAccount);
 	}
 
@@ -185,7 +188,7 @@ public class AccountStore {
 		mutableAccount.setBalanceUnchecked(model.getBalance());
 		mutableAccount.setNftsOwned(model.getOwnedNfts());
 		mutableAccount.setMaxAutomaticAssociations(model.getMaxAutomaticAssociations());
-		mutableAccount.setAlreadyUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
+		mutableAccount.setUsedAutomaticAssociations(model.getAlreadyUsedAutomaticAssociations());
 		mutableAccount.state().setAccountKey(model.getKey());
 		mutableAccount.setReceiverSigRequired(model.isReceiverSigRequired());
 		mutableAccount.setDeleted(model.isDeleted());
@@ -193,7 +196,10 @@ public class AccountStore {
 		mutableAccount.setSmartContract(model.isSmartContract());
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
-		mutableAccount.setNftAllowances(model.getMutableNftAllowances());
+		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNfts());
+		mutableAccount.setHeadTokenId(model.getHeadTokenNum());
+		mutableAccount.setNumPositiveBalances(model.getNumPositiveBalances());
+		mutableAccount.setNumAssociations(model.getNumAssociations());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,
@@ -205,7 +211,7 @@ public class AccountStore {
 	}
 
 	private boolean isExpired(long balance, long expiry) {
-		if (dynamicProperties.autoRenewEnabled() && balance == 0) {
+		if (dynamicProperties.shouldAutoRenewSomeEntityType() && balance == 0) {
 			return !validator.isAfterConsensusSecond(expiry);
 		} else {
 			return false;

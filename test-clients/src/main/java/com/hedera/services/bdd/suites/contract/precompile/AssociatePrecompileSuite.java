@@ -60,10 +60,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetAppPropertiesT
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -416,20 +413,19 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 										allRunFor(
 												spec,
 												UtilVerbs.overriding("tokens.maxPerAccount", "1"),
+												contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
 												newKeyNamed(DELEGATE_KEY).shape(
 														DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
 												cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
 												contractCall(THE_CONTRACT, "tokenAssociate",
-														asAddress(accountID.get()), asAddress(vanillaTokenID.get())
-												)
+														asAddress(accountID.get()), asAddress(vanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("vanillaTokenAssociateTxn")
 														.gas(GAS_TO_OFFER)
 														.hasKnownStatus(SUCCESS),
 												contractCall(THE_CONTRACT, "tokenAssociate",
 														asAddress(accountID.get()),
-														asAddress(secondVanillaTokenID.get())
-												)
+														asAddress(secondVanillaTokenID.get()))
 														.payingWith(GENESIS)
 														.via("secondVanillaTokenAssociateFailsTxn")
 														.gas(GAS_TO_OFFER)

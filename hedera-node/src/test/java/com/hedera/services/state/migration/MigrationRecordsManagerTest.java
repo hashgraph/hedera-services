@@ -23,7 +23,7 @@ package com.hedera.services.state.migration;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -65,7 +65,7 @@ class MigrationRecordsManagerTest {
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private MerkleNetworkContext networkCtx;
 	@Mock
@@ -75,12 +75,14 @@ class MigrationRecordsManagerTest {
 	@Mock
 	private EntityCreator creator;
 
-	private AtomicLong nextTracker = new AtomicLong();
+	private final AtomicLong nextTracker = new AtomicLong();
+
 	private MigrationRecordsManager subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new MigrationRecordsManager(creator, sigImpactHistorian, recordsHistorian, () -> networkCtx);
+
 		subject.setSideEffectsFactory(() -> nextTracker.getAndIncrement() == 0 ? tracker800 : tracker801);
 	}
 
@@ -109,6 +111,16 @@ class MigrationRecordsManagerTest {
 	@Test
 	void doesNothingIfRecordsAlreadyStreamed() {
 		given(networkCtx.areMigrationRecordsStreamed()).willReturn(true);
+
+		subject.publishMigrationRecords(now);
+
+		verifyNoInteractions(sigImpactHistorian);
+		verifyNoInteractions(recordsHistorian);
+	}
+
+	@Test
+	void doesntStreamRewardAccountCreationIfNotGenesis() {
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(Instant.MAX);
 
 		subject.publishMigrationRecords(now);
 

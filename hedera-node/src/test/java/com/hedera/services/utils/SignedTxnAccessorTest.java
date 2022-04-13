@@ -29,7 +29,6 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.usage.crypto.CryptoContextUtils;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -37,10 +36,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -48,6 +47,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -78,9 +78,6 @@ import java.util.function.Function;
 
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
-import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
@@ -104,6 +101,7 @@ class SignedTxnAccessorTest {
 	private static final byte[] zeroByteMemoUtf8Bytes = zeroByteMemo.getBytes();
 
 	private static final AccountID spender1 = asAccount("0.0.1000");
+	private static final AccountID owner = asAccount("0.0.1001");
 	private static final TokenID token1 = asToken("0.0.2000");
 	private static final TokenID token2 = asToken("0.0.3000");
 	private static final CryptoAllowance cryptoAllowance1 = CryptoAllowance.newBuilder().setSpender(spender1).setAmount(
@@ -112,6 +110,9 @@ class SignedTxnAccessorTest {
 			10L).setTokenId(token1).build();
 	private static final NftAllowance nftAllowance1 = NftAllowance.newBuilder().setSpender(spender1)
 			.setTokenId(token2).setApprovedForAll(BoolValue.of(false)).addAllSerialNumbers(List.of(1L, 10L)).build();
+
+	private static final NftRemoveAllowance nftRemoveAllowance = NftRemoveAllowance.newBuilder().setOwner(owner)
+			.setTokenId(token2).addAllSerialNumbers(List.of(1L, 10L)).build();
 
 
 	private static final SignatureMap expectedMap = SignatureMap.newBuilder()
@@ -597,22 +598,18 @@ class SignedTxnAccessorTest {
 
 		assertEquals(128, expandedMeta.getMsgBytesUsed());
 		assertEquals(now, expandedMeta.getEffectiveNow());
-		assertEquals(2, expandedMeta.getAggregatedNftAllowancesWithSerials());
 	}
 
 	@Test
-	void setCryptoAdjustUsageMetaWorks() {
-		final var txn = signedCryptoAdjustTxn();
+	void setCryptoDeleteAllowanceUsageMetaWorks() {
+		final var txn = signedCryptoDeleteAllowanceTxn();
 		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
 		final var spanMapAccessor = accessor.getSpanMapAccessor();
 
-		final var expandedMeta = spanMapAccessor.getCryptoAdjustMeta(accessor);
+		final var expandedMeta = spanMapAccessor.getCryptoDeleteAllowanceMeta(accessor);
 
-		assertEquals(128, expandedMeta.getMsgBytesUsed());
+		assertEquals(64, expandedMeta.getMsgBytesUsed());
 		assertEquals(now, expandedMeta.getEffectiveNow());
-		assertEquals(CryptoContextUtils.convertToCryptoMap(List.of(cryptoAllowance1)), expandedMeta.getCryptoAllowances());
-		assertEquals(CryptoContextUtils.convertToTokenMap(List.of(tokenAllowance1)), expandedMeta.getTokenAllowances());
-		assertEquals(CryptoContextUtils.convertToNftMap(List.of(nftAllowance1)), expandedMeta.getNftAllowances());
 	}
 
 
@@ -656,8 +653,8 @@ class SignedTxnAccessorTest {
 		return buildTransactionFrom(cryptoApproveOp());
 	}
 
-	private Transaction signedCryptoAdjustTxn() {
-		return buildTransactionFrom(cryptoAdjustOp());
+	private Transaction signedCryptoDeleteAllowanceTxn() {
+		return buildTransactionFrom(cryptoDeleteAllowanceOp());
 	}
 
 	private TransactionBody cryptoCreateOp() {
@@ -703,17 +700,15 @@ class SignedTxnAccessorTest {
 				.build();
 	}
 
-	private TransactionBody cryptoAdjustOp() {
-		final var op = CryptoAdjustAllowanceTransactionBody.newBuilder()
-				.addAllCryptoAllowances(List.of(cryptoAllowance1))
-				.addAllTokenAllowances(List.of(tokenAllowance1))
-				.addAllNftAllowances(List.of(nftAllowance1))
+	private TransactionBody cryptoDeleteAllowanceOp() {
+		final var op = CryptoDeleteAllowanceTransactionBody.newBuilder()
+				.addAllNftAllowances(List.of(nftRemoveAllowance))
 				.build();
 		return TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder()
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
-				.setCryptoAdjustAllowance(op)
+				.setCryptoDeleteAllowance(op)
 				.build();
 	}
 

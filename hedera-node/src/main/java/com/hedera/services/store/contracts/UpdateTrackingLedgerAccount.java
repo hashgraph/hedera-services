@@ -44,7 +44,7 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAccount, EvmAccount {
 	private final Hash addressHash;

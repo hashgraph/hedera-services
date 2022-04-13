@@ -27,6 +27,7 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.TokenTypesMapper;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -277,6 +278,11 @@ public class Token {
 		final var newTotalSupply = totalSupply - amount;
 		final var newAccBalance = accountRel.getBalance() - amount;
 
+		if (newAccBalance == 0) {
+			final var currentNumPositiveBalances = accountRel.getAccount().getNumPositiveBalances();
+			accountRel.getAccount().setNumPositiveBalances(currentNumPositiveBalances - 1);
+		}
+
 		accountRel.setBalance(newAccBalance);
 		setTotalSupply(newTotalSupply);
 	}
@@ -312,6 +318,11 @@ public class Token {
 			removedUniqueTokens.add(new UniqueToken(id, serialNum, account.getId()));
 		}
 
+		if (newAccountBalance == 0) {
+			final var currentNumPositiveBalances = account.getNumPositiveBalances();
+			account.setNumPositiveBalances(currentNumPositiveBalances - 1);
+		}
+
 		account.setOwnedNfts(account.getOwnedNfts() - serialNumbers.size());
 		accountRel.setBalance(newAccountBalance);
 		setTotalSupply(newTotalSupply);
@@ -339,6 +350,7 @@ public class Token {
 		}
 		newRel.setKycGranted(!hasKycKey());
 		newRel.setAutomaticAssociation(automaticAssociation);
+		newRel.setKey(EntityNumPair.fromLongs(account.getId().num(), id.num()));
 		return newRel;
 	}
 
@@ -354,6 +366,7 @@ public class Token {
 		final var rel = new TokenRelationship(this, account);
 		rel.setKycGranted(true);
 		rel.setFrozen(false);
+		rel.setKey(EntityNumPair.fromLongs(account.getId().num(), id.num()));
 		return rel;
 	}
 
@@ -376,10 +389,16 @@ public class Token {
 			validateTrue(maxSupply >= newTotalSupply, TOKEN_MAX_SUPPLY_REACHED,
 					"Cannot mint new supply (" + amount + "). Max supply (" + maxSupply + ") reached");
 		}
-
+		final var treasuryAccount = treasuryRel.getAccount();
 		final long newTreasuryBalance = treasuryRel.getBalance() + amount;
 		validateTrue(newTreasuryBalance >= 0, INSUFFICIENT_TOKEN_BALANCE);
-
+		if (treasuryRel.getBalance() == 0 && amount > 0) {
+			// for mint op
+			treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() + 1);
+		} else if (newTreasuryBalance == 0 && amount < 0) {
+			// for burn op
+			treasuryAccount.setNumPositiveBalances(treasuryAccount.getNumPositiveBalances() - 1);
+		}
 		setTotalSupply(newTotalSupply);
 		treasuryRel.setBalance(newTreasuryBalance);
 	}

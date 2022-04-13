@@ -96,6 +96,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						fridayThe13thSpec(),
 						updateDoesNotChangeBytecode(),
 						eip1014AddressAlwaysHasPriority(),
+						immutableContractKeyFormIsStandard(),
 				}
 		);
 	}
@@ -240,6 +241,19 @@ public class ContractUpdateSuite extends HapiApiSuite {
 								.has(contractWith()
 										.adminKey(NEW_ADMIN_KEY)
 										.memo("some new memo"))
+				);
+	}
+
+	// https://github.com/hashgraph/hedera-services/issues/3037
+	private HapiApiSpec immutableContractKeyFormIsStandard() {
+		final var immutableContract = "immutable";
+
+		return defaultHapiSpec("ImmutableContractKeyFormIsStandard")
+				.given(
+						contractCreate(immutableContract).immutable()
+				).when( ).then(
+						getContractInfo(immutableContract)
+								.has(contractWith().immutableContractKey(immutableContract))
 				);
 	}
 

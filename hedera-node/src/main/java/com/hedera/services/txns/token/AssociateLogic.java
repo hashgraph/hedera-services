@@ -37,9 +37,10 @@ public class AssociateLogic {
 	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
-	public AssociateLogic(final TypedTokenStore tokenStore,
-						  final AccountStore accountStore,
-						  final GlobalDynamicProperties dynamicProperties) {
+	public AssociateLogic(
+			final TypedTokenStore tokenStore,
+			final AccountStore accountStore,
+			final GlobalDynamicProperties dynamicProperties) {
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
 		this.dynamicProperties = dynamicProperties;
@@ -53,11 +54,10 @@ public class AssociateLogic {
 		final var tokens = tokenIds.stream().map(tokenStore::loadToken).toList();
 
 		/* Associate and commit the changes */
-		account.associateWith(tokens, dynamicProperties.maxTokensPerAccount(), false);
+		final var modifiedTokenRelationships = account.associateWith(
+				tokens, tokenStore, false, false, dynamicProperties);
 
 		accountStore.commitAccount(account);
-
-		tokens.forEach(token -> tokenStore
-				.commitTokenRelationships(List.of(token.newRelationshipWith(account, false))));
+		tokenStore.commitTokenRelationships(modifiedTokenRelationships);
 	}
 }

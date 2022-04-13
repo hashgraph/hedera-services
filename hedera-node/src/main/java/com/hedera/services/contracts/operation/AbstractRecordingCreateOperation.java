@@ -21,7 +21,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -59,7 +59,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 
 	private final EntityCreator creator;
 	private final SyntheticTxnFactory syntheticTxnFactory;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 
 	protected AbstractRecordingCreateOperation(
 			final int opcode,
@@ -70,7 +70,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			final GasCalculator gasCalculator,
 			final EntityCreator creator,
 			final SyntheticTxnFactory syntheticTxnFactory,
-			final AccountRecordsHistorian recordsHistorian
+			final RecordsHistorian recordsHistorian
 	) {
 		super(opcode, name, stackItemsConsumed, stackItemsProduced, opSize, gasCalculator);
 		this.creator = creator;
@@ -196,16 +196,18 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 			frame.mergeWarmedUpFields(childFrame);
 			frame.pushStackItem(Words.fromAddress(childFrame.getContractAddress()));
 
-			/* https://github.com/hashgraph/hedera-services/issues/2807
-			* Add an in-progress record so that if everything succeeds, we can externalize the newly
-			* created contract in the record stream with both its 0.0.X id and its EVM address. */
+			// Add an in-progress record so that if everything succeeds, we can externalize the newly
+			// created contract in the record stream with both its 0.0.X id and its EVM address.
+			// C.f. https://github.com/hashgraph/hedera-services/issues/2807
 			final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 			final var sideEffects = new SideEffectsTracker();
 			sideEffects.trackNewContract(updater.idOfLastNewAddress(), childFrame.getContractAddress());
 			final var childRecord = creator.createSuccessfulSyntheticRecord(
 					NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 			childRecord.onlyExternalizeIfSuccessful();
-			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticTxnFactory.createContractSkeleton());
+			final var opCustomizer = updater.customizerForPendingCreation();
+			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
+			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp);
 		} else {
 			frame.setReturnData(childFrame.getOutputData());
 			frame.pushStackItem(UInt256.ZERO);

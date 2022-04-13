@@ -27,6 +27,7 @@ import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -71,13 +72,17 @@ import static org.mockito.Mockito.verify;
 
 class TokenTest {
 	private final JKey someKey = TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKeyUnchecked();
+	private final int numAssociations = 2;
+	private final int numPositiveBalances = 1;
 	private final long initialSupply = 1_000L;
 	private final long initialTreasuryBalance = 500L;
-	private final Id id = new Id(1, 2, 3);
+	private final Id tokenId = new Id(1, 2, 3);
 	private final Id treasuryId = new Id(0, 0, 0);
 	private final Id nonTreasuryId = new Id(3, 2, 3);
 	private final Account treasuryAccount = new Account(treasuryId);
 	private final Account nonTreasuryAccount = new Account(nonTreasuryId);
+	private final EntityNumPair treasuryAssociationKey = EntityNumPair.fromLongs(treasuryId.num(), tokenId.num());
+	private final EntityNumPair nonTreasuryAssociationKey = EntityNumPair.fromLongs(nonTreasuryId.num(), tokenId.num());
 
 	private Token subject;
 	private TokenRelationship treasuryRel;
@@ -85,14 +90,21 @@ class TokenTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new Token(id);
+		subject = new Token(tokenId);
 		subject.initTotalSupply(initialSupply);
 		subject.setTreasury(treasuryAccount);
+
+		treasuryAccount.setNumPositiveBalances(numPositiveBalances);
+		treasuryAccount.setNumAssociations(numAssociations);
+		nonTreasuryAccount.setNumPositiveBalances(numPositiveBalances);
+		nonTreasuryAccount.setNumAssociations(numAssociations);
 
 		treasuryRel = new TokenRelationship(subject, treasuryAccount);
 		treasuryRel.initBalance(initialTreasuryBalance);
 		treasuryRel.setAutomaticAssociation(true);
+		treasuryRel.setKey(treasuryAssociationKey);
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
+		nonTreasuryRel.setKey(nonTreasuryAssociationKey);
 	}
 
 	@Test
@@ -168,7 +180,7 @@ class TokenTest {
 						.build())
 				.build();
 
-		subject = Token.fromGrpcOpAndMeta(id, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
+		subject = Token.fromGrpcOpAndMeta(tokenId, op.getTokenCreation(), treasuryAccount, nonTreasuryAccount, 123);
 
 		assertEquals("bitcoin", subject.getName());
 		assertEquals(123L, subject.getExpiry());
@@ -188,6 +200,7 @@ class TokenTest {
 		assertNotNull(rel);
 		assertFalse(rel.isFrozen());
 		assertTrue(rel.isKycGranted());
+		assertEquals(treasuryAssociationKey, rel.getKey());
 	}
 
 	@Test
@@ -331,6 +344,7 @@ class TokenTest {
 
 	@Test
 	void burnsUniqueAsExpected() {
+		treasuryRel.initBalance(2);
 		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 		subject.initSupplyConstraints(TokenSupplyType.FINITE, 20000L);
 		subject.setSupplyKey(someKey);
@@ -353,10 +367,12 @@ class TokenTest {
 		assertEquals(2, removedUniqueTokens.size());
 		assertEquals(serialNumber0, removedUniqueTokens.get(0).getSerialNumber());
 		assertEquals(serialNumber1, removedUniqueTokens.get(1).getSerialNumber());
+		assertEquals(numPositiveBalances - 1, treasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
 	void mintsUniqueAsExpected() {
+		treasuryRel.initBalance(0);
 		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 		subject.initSupplyConstraints(TokenSupplyType.FINITE, 20000L);
 		subject.setSupplyKey(someKey);
@@ -371,6 +387,7 @@ class TokenTest {
 		assertEquals(1, subject.mintedUniqueTokens().get(0).getSerialNumber());
 		assertEquals(1, subject.getLastUsedSerialNumber());
 		assertEquals(TokenType.NON_FUNGIBLE_UNIQUE, subject.getType());
+		assertEquals(numPositiveBalances + 1, treasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
@@ -401,6 +418,14 @@ class TokenTest {
 		subject.wipe(nonTreasuryRel, 10);
 		assertEquals(initialSupply - 10, subject.getTotalSupply());
 		assertEquals(90, nonTreasuryRel.getBalance());
+		assertEquals(numPositiveBalances, nonTreasuryAccount.getNumPositiveBalances());
+
+		nonTreasuryRel.setBalance(30);
+
+		subject.wipe(nonTreasuryRel, 30);
+		assertEquals(initialSupply - 40, subject.getTotalSupply());
+		assertEquals(0, nonTreasuryRel.getBalance());
+		assertEquals(numPositiveBalances - 1, nonTreasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
@@ -457,6 +482,19 @@ class TokenTest {
 		assertEquals(1, subject.removedUniqueTokens().get(0).getSerialNumber());
 		assertTrue(subject.hasChangedSupply());
 		assertEquals(100000, subject.getMaxSupply());
+		assertEquals(numPositiveBalances, nonTreasuryAccount.getNumPositiveBalances());
+
+		nonTreasuryRel.setBalance(2);
+
+		subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L, 2L));
+
+		assertEquals(initialSupply - 3, subject.getTotalSupply());
+		assertEquals(0, nonTreasuryRel.getBalanceChange());
+		assertEquals(0, nonTreasuryRel.getBalance());
+		assertTrue(subject.hasRemovedUniqueTokens());
+		assertTrue(subject.hasChangedSupply());
+		assertEquals(100000, subject.getMaxSupply());
+		assertEquals(numPositiveBalances - 1, nonTreasuryAccount.getNumPositiveBalances());
 	}
 
 	@Test
@@ -466,8 +504,6 @@ class TokenTest {
 		subject.setSupplyKey(someKey);
 
 		final Map<Long, UniqueToken> loadedUniqueTokensMap = new HashMap<>();
-		final var owner = nonTreasuryAccount.getId();
-		final var uniqueToken = new UniqueToken(id, 1L, owner);
 		subject.setLoadedUniqueTokens(loadedUniqueTokensMap);
 
 		final var ownershipTracker = mock(OwnershipTracker.class);
@@ -602,12 +638,12 @@ class TokenTest {
 
 	@Test
 	void toStringWorks() {
-		final var desired = "Token{id=Id[shard=1, realm=2, num=3], type=null, deleted=false, autoRemoved=false, " +
-				"treasury=Account{id=Id[shard=0, realm=0, num=0], expiry=0, balance=0, deleted=false, tokens=<N/A>, " +
+		final var desired = "Token{id=1.2.3, type=null, deleted=false, autoRemoved=false, " +
+				"treasury=Account{id=0.0.0, expiry=0, balance=0, deleted=false, " +
 				"ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=, cryptoAllowances=null, " +
-				"fungibleTokenAllowances=null, nftAllowances=null}, autoRenewAccount=null, " +
-				"kycKey=<N/A>, freezeKey=<N/A>, frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, " +
-				"pauseKey=<N/A>, paused=false}";
+				"fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=2, numPositiveBalances=1, " +
+				"headTokenNum=0}, autoRenewAccount=null, kycKey=<N/A>, freezeKey=<N/A>, " +
+				"frozenByDefault=false, supplyKey=<N/A>, currentSerialNumber=0, pauseKey=<N/A>, paused=false}";
 
 		assertEquals(desired, subject.toString());
 	}

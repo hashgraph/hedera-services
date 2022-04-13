@@ -33,10 +33,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAddLiveHash;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAdjustAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
@@ -220,11 +220,11 @@ class CryptoControllerTest {
 	}
 
 	@Test
-	void forwardsAdjustAsExpected() {
+	void forwardsDeleteAllowanceAsExpected() {
 		// when:
-		subject.adjustAllowance(txn, txnObserver);
+		subject.deleteAllowances(txn, txnObserver);
 
 		// expect:
-		verify(txnResponseHelper).submit(txn, txnObserver, CryptoAdjustAllowance);
+		verify(txnResponseHelper).submit(txn, txnObserver, CryptoDeleteAllowance);
 	}
 }

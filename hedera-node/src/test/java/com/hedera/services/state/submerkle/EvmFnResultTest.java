@@ -24,52 +24,41 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.state.serdes.DomainSerdes;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.CommonUtils;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.log.LogsBloomFilter;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.booleanThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
-import static org.mockito.BDDMockito.intThat;
 import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 class EvmFnResultTest {
 	private static final long gasUsed = 1_234;
+	private static final long gas = 5_000;
+	private static final long amount = 1_000_000;
 	private static final EntityNum cNum = EntityNum.fromLong(1_234_567_890L);
 	private static final Address realContract = cNum.toEvmAddress();
-	private static final byte[] contract = realContract.toArray();
 	private static final byte[] slot = "slot".getBytes();
 	private static final byte[] left = "left".getBytes();
 	private static final byte[] right = "right".getBytes();
@@ -77,6 +66,7 @@ class EvmFnResultTest {
 	private static final byte[] otherResult = "hgfedcba".getBytes();
 	private static final byte[] bloom = "ijklmnopqrstuvwxyz".getBytes();
 	private static final byte[] evmAddress = Address.BLAKE2B_F_COMPRESSION.toArray();
+	private static final byte[] functionParameters = "functionParameters".getBytes();
 	private static final String error = "Oops!";
 	private static final EntityId contractId = new EntityId(0L, 0L, 3L);
 	private static final Address recipient = EntityNum.fromLong(3L).toEvmAddress();
@@ -95,13 +85,10 @@ class EvmFnResultTest {
 			Map.of(realContract,
 					Map.of(Bytes.of(slot), Pair.of(Bytes.of(left), Bytes.of(right))));
 
-	private DomainSerdes serdes;
 	private EvmFnResult subject;
 
 	@BeforeEach
 	void setup() {
-		serdes = mock(DomainSerdes.class);
-
 		subject = new EvmFnResult(
 				contractId,
 				result,
@@ -111,14 +98,10 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-				stateChanges);
-
-		EvmFnResult.serdes = serdes;
-	}
-
-	@AfterEach
-	void cleanup() {
-		EvmFnResult.serdes = new DomainSerdes();
+				stateChanges,
+				gas,
+				amount,
+				functionParameters);
 	}
 
 	@Test
@@ -149,7 +132,10 @@ class EvmFnResultTest {
 		assertEquals(createdContractIds, subject.getCreatedContractIds());
 		assertEquals(stateChanges, subject.getStateChanges());
 		assertEquals(0x2055c5c03ff84eb4L, subject.getClassId());
-		assertEquals(3, subject.getVersion());
+		assertEquals(4, subject.getVersion());
+		assertEquals(gas, subject.getGas());
+		assertEquals(amount, subject.getAmount());
+		assertEquals(functionParameters, subject.getFunctionParameters());
 	}
 
 	@Test
@@ -164,7 +150,10 @@ class EvmFnResultTest {
 				Collections.emptyList(),
 				Collections.emptyList(),
 				new byte[0],
-				stateChanges);
+				stateChanges,
+				0L,
+				0L,
+				new byte[0]);
 
 		final var input = TransactionProcessingResult.failed(
 				gasUsed, 0, 0,
@@ -188,7 +177,10 @@ class EvmFnResultTest {
 				EvmLog.fromBesu(besuLogs),
 				createdContractIds,
 				new byte[0],
-				stateChanges);
+				stateChanges,
+				0L,
+				0L,
+				new byte[0]);
 
 		final var input = TransactionProcessingResult.successful(
 				besuLogs,
@@ -223,7 +215,10 @@ class EvmFnResultTest {
 				EvmLog.fromBesu(besuLogs),
 				createdContractIds,
 				evmAddress,
-				stateChanges);
+				stateChanges,
+				0L,
+				0L,
+				new byte[0]);
 
 		final var input = TransactionProcessingResult.successful(
 				besuLogs,
@@ -250,7 +245,10 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-				stateChanges);
+				stateChanges,
+				gas,
+				amount,
+				functionParameters);
 		final var three = new EvmFnResult(
 				contractId,
 				result,
@@ -260,7 +258,10 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-				stateChanges);
+				stateChanges,
+				gas,
+				amount,
+				functionParameters);
 		final var four = new EvmFnResult(
 				contractId,
 				result,
@@ -270,12 +271,85 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				Address.ZERO.toArray(),
-				stateChanges);
+				stateChanges,
+				gas,
+				amount,
+				functionParameters);
+		final var five = new EvmFnResult(
+				contractId,
+				result,
+				"AnotherError",
+				bloom,
+				gasUsed,
+				logs,
+				createdContractIds,
+				evmAddress,
+				stateChanges,
+				gas,
+				amount,
+				functionParameters);
+		final var six = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				List.of(logFrom(1)),
+				createdContractIds,
+				evmAddress,
+				stateChanges,
+				gas,
+				amount,
+				functionParameters);
+		final var seven = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				logs,
+				List.of(new EntityId(1L, 1L, 42L)),
+				evmAddress,
+				stateChanges,
+				gas,
+				amount,
+				functionParameters);
+		final var eight = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				logs,
+				createdContractIds,
+				evmAddress,
+				Collections.emptyMap(),
+				gas,
+				amount,
+				functionParameters);
+		final var nine = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				logs,
+				createdContractIds,
+				evmAddress,
+				stateChanges,
+				gas,
+				amount,
+				"randomParameters".getBytes());
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
 		assertNotEquals(one, two);
 		assertNotEquals(one, four);
+		assertNotEquals(one, five);
+		assertNotEquals(one, six);
+		assertNotEquals(one, seven);
+		assertNotEquals(one, eight);
+		assertNotEquals(one, nine);
 		assertEquals(one, three);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
@@ -294,7 +368,10 @@ class EvmFnResultTest {
 						subject.getLogs(),
 						subject.getCreatedContractIds(),
 						subject.getEvmAddress(),
-						subject.getStateChanges()),
+						subject.getStateChanges(),
+						subject.getGas(),
+						subject.getAmount(),
+						subject.getFunctionParameters()),
 				subject
 		);
 	}
@@ -312,7 +389,10 @@ class EvmFnResultTest {
 						"logs=" + logs +
 						", stateChanges={0x0000000000000000000000000000000000000006={0x07=(0x08,null)}, " +
 						"0x0000000000000000000000000000000000000009={0x0a=(0x0b,0x0c)}}" +
-						", evmAddress=0000000000000000000000000000000000000009}",
+						", evmAddress=0000000000000000000000000000000000000009, " +
+						"gas=" + gas + ", " +
+						"amount=" + amount + ", " +
+						"functionParameters=" + CommonUtils.hex(functionParameters) + "}",
 				subject.toString());
 	}
 
@@ -334,7 +414,10 @@ class EvmFnResultTest {
 				logs,
 				createdContractIds,
 				evmAddress,
-				specialStateChanges);
+				specialStateChanges,
+				gas,
+				amount,
+				functionParameters);
 
 		final var grpc = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
@@ -353,6 +436,9 @@ class EvmFnResultTest {
 								.build())
 						.build())
 				.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
+				.setGas(gas)
+				.setAmount(amount)
+				.setFunctionParameters(ByteString.copyFrom(functionParameters))
 				.build();
 
 		assertEquals(grpc, subject.toGrpc());
@@ -369,7 +455,10 @@ class EvmFnResultTest {
 				Collections.emptyList(),
 				Collections.emptyList(),
 				EvmFnResult.EMPTY,
-				specialStateChanges);
+				specialStateChanges,
+				gas,
+				0L,
+				functionParameters);
 
 		final var grpc = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
@@ -383,6 +472,8 @@ class EvmFnResultTest {
 								.setValueWritten(BytesValue.newBuilder().setValue(ByteString.copyFrom(right)).build())
 								.build())
 						.build())
+				.setGas(gas)
+				.setFunctionParameters(ByteString.copyFrom(functionParameters))
 				.build();
 
 		assertEquals(grpc, subject.toGrpc());
@@ -402,150 +493,17 @@ class EvmFnResultTest {
 				.addStateChanges(actual.getStateChanges(0))
 				.addStateChanges(actual.getStateChanges(1))
 				.setEvmAddress(BytesValue.newBuilder().setValue(ByteString.copyFrom(evmAddress)))
+				.setGas(gas)
+				.setAmount(amount)
+				.setFunctionParameters(ByteString.copyFrom(functionParameters))
 				.build();
 
 		assertEquals(expected, actual);
 	}
 
 	@Test
-	void deserializeWorksPre0230() throws IOException {
-		final var in = mock(SerializableDataInputStream.class);
-		subject.setEvmAddress(new byte[0]);
-		final var readSubject = new EvmFnResult();
-		given(in.readLong()).willReturn(gasUsed);
-		given(in.readByteArray(EvmLog.MAX_BLOOM_BYTES)).willReturn(bloom);
-		given(in.readByteArray(EvmFnResult.MAX_RESULT_BYTES)).willReturn(result);
-		given(serdes.readNullableString(in, EvmFnResult.MAX_ERROR_BYTES)).willReturn(error);
-		given(serdes.readNullableSerializable(in)).willReturn(contractId);
-		given(in.readSerializableList(
-				intThat(i -> i == EvmFnResult.MAX_LOGS),
-				booleanThat(b -> b),
-				any(Supplier.class))).willReturn(logs);
-		given(in.readSerializableList(
-				intThat(i -> i == EvmFnResult.MAX_CREATED_IDS),
-				booleanThat(b -> b),
-				any(Supplier.class))).willReturn(createdContractIds);
-
-		readSubject.deserialize(in, EvmFnResult.PRE_RELEASE_0230_VERSION);
-
-		subject.setStateChanges(Collections.emptyMap());
-		assertEquals(subject, readSubject);
-	}
-
-	@Test
-	void deserializeWorksPost0240() throws IOException {
-		final var in = mock(SerializableDataInputStream.class);
-		final var readSubject = new EvmFnResult();
-		given(in.readLong()).willReturn(gasUsed);
-		given(in.readByteArray(EvmLog.MAX_BLOOM_BYTES)).willReturn(bloom);
-		given(in.readByteArray(EvmFnResult.MAX_RESULT_BYTES)).willReturn(result);
-		given(in.readByteArray(EvmFnResult.MAX_ADDRESS_BYTES)).willReturn(evmAddress);
-		given(serdes.readNullableString(in, EvmFnResult.MAX_ERROR_BYTES)).willReturn(error);
-		given(serdes.readNullableSerializable(in)).willReturn(contractId);
-		given(in.readSerializableList(
-				intThat(i -> i == EvmFnResult.MAX_LOGS),
-				booleanThat(b -> b),
-				any(Supplier.class))).willReturn(logs);
-		given(in.readSerializableList(
-				intThat(i -> i == EvmFnResult.MAX_CREATED_IDS),
-				booleanThat(b -> b),
-				any(Supplier.class))).willReturn(createdContractIds);
-
-		readSubject.deserialize(in, EvmFnResult.RELEASE_0240_VERSION);
-
-		subject.setStateChanges(Collections.emptyMap());
-		assertEquals(subject, readSubject);
-		verify(in).readInt();
-	}
-
-	@Test
-	void deserializeWorksFor0230() throws IOException {
-		final var in = mock(SerializableDataInputStream.class);
-		final var readSubject = new EvmFnResult();
-		given(in.readLong()).willReturn(gasUsed);
-		given(in.readByteArray(EvmLog.MAX_BLOOM_BYTES)).willReturn(bloom);
-		given(in.readByteArray(EvmFnResult.MAX_RESULT_BYTES)).willReturn(result);
-		given(in.readByteArray(EvmFnResult.MAX_ADDRESS_BYTES)).willReturn(evmAddress);
-		given(serdes.readNullableString(in, EvmFnResult.MAX_ERROR_BYTES)).willReturn(error);
-		given(serdes.readNullableSerializable(in)).willReturn(contractId);
-		given(in.readSerializableList(
-				intThat(i -> i == EvmFnResult.MAX_LOGS),
-				booleanThat(b -> b),
-				any(Supplier.class))).willReturn(logs);
-		given(in.readSerializableList(
-				intThat(i -> i == EvmFnResult.MAX_CREATED_IDS),
-				booleanThat(b -> b),
-				any(Supplier.class))).willReturn(createdContractIds);
-
-		readSubject.deserialize(in, EvmFnResult.RELEASE_0230_VERSION);
-
-		subject.setStateChanges(Collections.emptyMap());
-		assertEquals(subject, readSubject);
-		verify(in, never()).readInt();
-	}
-
-	@Test
-	void deserializeVersion22Works() throws IOException {
-		subject = new EvmFnResult(
-				contractId,
-				result,
-				error,
-				bloom,
-				gasUsed,
-				logs,
-				createdContractIds,
-				new byte[0],
-				Collections.emptyMap());
-
-		final var in = mock(SerializableDataInputStream.class);
-		final var readSubject = new EvmFnResult();
-		given(in.readLong()).willReturn(gasUsed);
-		given(in.readByteArray(EvmLog.MAX_BLOOM_BYTES)).willReturn(bloom);
-		given(in.readByteArray(EvmFnResult.MAX_RESULT_BYTES)).willReturn(result);
-		given(serdes.readNullableString(in, EvmFnResult.MAX_ERROR_BYTES)).willReturn(error);
-		given(serdes.readNullableSerializable(in)).willReturn(contractId);
-		given(in.readSerializableList(
-				intThat(i -> i == EvmFnResult.MAX_LOGS),
-				booleanThat(b -> b),
-				any(Supplier.class))).willReturn(logs);
-		given(in.readSerializableList(
-				intThat(i -> i == EvmFnResult.MAX_CREATED_IDS),
-				booleanThat(b -> b),
-				any(Supplier.class))).willReturn(createdContractIds);
-		given(in.readInt()).willReturn(1);
-		given(in.readInt()).willReturn(1);
-		given(in.readByteArray(32))
-				.willReturn(contract)
-				.willReturn(slot)
-				.willReturn(left)
-				.willReturn(right);
-		given(in.readBoolean()).willReturn(true);
-
-		readSubject.deserialize(in, EvmFnResult.PRE_RELEASE_0230_VERSION);
-
-		assertEquals(subject, readSubject);
-	}
-
-	@Test
-	void serializeWorks() throws IOException {
-		final var out = mock(SerializableDataOutputStream.class);
-		final var inOrder = inOrder(serdes, out);
-
-		subject.serialize(out);
-
-		inOrder.verify(out).writeLong(gasUsed);
-		inOrder.verify(out).writeByteArray(bloom);
-		inOrder.verify(out).writeByteArray(result);
-		inOrder.verify(serdes).writeNullableString(error, out);
-		inOrder.verify(serdes).writeNullableSerializable(contractId, out);
-		inOrder.verify(out).writeSerializableList(logs, true, true);
-		inOrder.verify(out).writeSerializableList(createdContractIds, true, true);
-		inOrder.verify(out).writeByteArray(evmAddress);
-	}
-
-	@Test
 	void serializableDetWorks() {
-		assertEquals(EvmFnResult.RELEASE_0240_VERSION, subject.getVersion());
+		assertEquals(EvmFnResult.RELEASE_0250_VERSION, subject.getVersion());
 		assertEquals(EvmFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 

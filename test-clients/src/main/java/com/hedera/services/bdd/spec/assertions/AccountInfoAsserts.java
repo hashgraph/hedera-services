@@ -24,9 +24,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
-import com.hederahashgraph.api.proto.java.GrantedNftAllowance;
-import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
 import org.junit.jupiter.api.Assertions;
 
@@ -128,13 +125,6 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		return this;
 	}
 
-	public AccountInfoAsserts isDeleted(Boolean isDead) {
-		registerProvider((spec, o) -> {
-			assertEquals(isDead, ((AccountInfo) o).getDeleted(), "Bad deletion status!");
-		});
-		return this;
-	}
-
 	public AccountInfoAsserts balance(long amount) {
 		registerProvider((spec, o) -> {
 			assertEquals(amount, ((AccountInfo) o).getBalance(), "Bad balance!");
@@ -148,8 +138,7 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 			final double allowedPercentDiff
 	) {
 		registerProvider((spec, o) -> {
-			var expectedTinyBarsToSubtract = expectedUsdToSubstract
-					* 100
+			var expectedTinyBarsToSubtract = expectedUsdToSubstract * 100
 					* spec.ratesProvider().rates().getHbarEquiv() / spec.ratesProvider().rates().getCentEquiv()
 					* ONE_HBAR;
 			var expected = amount - expectedTinyBarsToSubtract;
@@ -160,6 +149,19 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 					"Unexpected balance");
 		});
 		return this;
+	}
+
+	public static void assertTinybarAmountIsApproxUsd(
+			final HapiApiSpec spec,
+			final double expectedFractionalUsd,
+			final long actualTinybars,
+			final double allowedPercentDiff
+	) {
+		final var expectedTinybars = expectedFractionalUsd * 100
+				* spec.ratesProvider().rates().getHbarEquiv() / spec.ratesProvider().rates().getCentEquiv()
+				* ONE_HBAR;
+		final var allowedDiff = (allowedPercentDiff / 100.0) * expectedTinybars;
+		assertEquals(expectedTinybars, actualTinybars, allowedDiff, "Wrong balance");
 	}
 
 	public AccountInfoAsserts hasAlias() {
@@ -179,15 +181,6 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 	public AccountInfoAsserts noAlias() {
 		registerProvider((spec, o) -> {
 			assertTrue(((AccountInfo) o).getAlias().isEmpty(), "Bad Alias!");
-		});
-		return this;
-	}
-
-	public AccountInfoAsserts noAllowances() {
-		registerProvider((spec, o) -> {
-			assertEquals(((AccountInfo) o).getGrantedCryptoAllowancesCount(), 0, "Bad CryptoAllowances count!");
-			assertEquals(((AccountInfo) o).getGrantedTokenAllowancesCount(), 0, "Bad TokenAllowances count!");
-			assertEquals(((AccountInfo) o).getGrantedNftAllowancesCount(), 0, "Bad NftAllowances count!");
 		});
 		return this;
 	}
@@ -300,67 +293,4 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
 		});
 		return this;
 	}
-
-	public AccountInfoAsserts cryptoAllowancesContaining(String spender, long allowance) {
-
-		registerProvider((spec, o) -> {
-			var cryptoAllowance = GrantedCryptoAllowance.newBuilder().setAmount(allowance)
-					.setSpender(spec.registry().getAccountID(spender)).build();
-			assertTrue(((AccountInfo) o).getGrantedCryptoAllowancesList().contains(cryptoAllowance),
-					"Bad CryptoAllowances!");
-		});
-		return this;
-	}
-
-	public AccountInfoAsserts tokenAllowancesContaining(String token, String spender, long allowance) {
-		registerProvider((spec, o) -> {
-			var tokenAllowance = GrantedTokenAllowance.newBuilder()
-					.setAmount(allowance)
-					.setTokenId(spec.registry().getTokenID(token))
-					.setSpender(spec.registry().getAccountID(spender)).build();
-			assertTrue(((AccountInfo) o).getGrantedTokenAllowancesList().contains(tokenAllowance),
-					"Bad TokenAllowances!");
-		});
-		return this;
-	}
-
-	public AccountInfoAsserts nftAllowancesContaining(String token, String spender, boolean approvedForAll,
-			List<Long> serials) {
-		registerProvider((spec, o) -> {
-			var nftAllowance = GrantedNftAllowance.newBuilder()
-					.setApprovedForAll(approvedForAll)
-					.setTokenId(spec.registry().getTokenID(token))
-					.setSpender(spec.registry().getAccountID(spender))
-					.addAllSerialNumbers(serials)
-					.build();
-			assertTrue(((AccountInfo) o).getGrantedNftAllowancesList().contains(nftAllowance),
-					"Bad NftAllowances!");
-		});
-		return this;
-	}
-
-	public AccountInfoAsserts cryptoAllowancesCount(int count) {
-		registerProvider((spec, o) -> {
-			assertEquals(count, ((AccountInfo) o).getGrantedCryptoAllowancesCount(),
-					"Bad CryptoAllowances!");
-		});
-		return this;
-	}
-
-	public AccountInfoAsserts tokenAllowancesCount(int count) {
-		registerProvider((spec, o) -> {
-			assertEquals(count, ((AccountInfo) o).getGrantedTokenAllowancesCount(),
-					"Bad TokenAllowances!");
-		});
-		return this;
-	}
-
-	public AccountInfoAsserts nftAllowancesCount(int count) {
-		registerProvider((spec, o) -> {
-			assertEquals(count, ((AccountInfo) o).getGrantedNftAllowancesCount(),
-					"Bad NFTAllowances!");
-		});
-		return this;
-	}
-
 }

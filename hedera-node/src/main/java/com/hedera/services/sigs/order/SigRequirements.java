@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -69,10 +70,10 @@ import java.util.function.Predicate;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_ACCOUNT;
+import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.NONE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
@@ -254,12 +255,12 @@ public class SigRequirements {
 			return cryptoDelete(payer, txn.getCryptoDelete(), factory, linkedRefs);
 		} else if (txn.hasCryptoApproveAllowance()) {
 			final var approveTxn = txn.getCryptoApproveAllowance();
-			return cryptoAllowance(payer, approveTxn.getCryptoAllowancesList(), approveTxn.getTokenAllowancesList(),
+			return cryptoApproveAllowance(payer, approveTxn.getCryptoAllowancesList(),
+					approveTxn.getTokenAllowancesList(),
 					approveTxn.getNftAllowancesList(), factory, linkedRefs);
-		} else if (txn.hasCryptoAdjustAllowance()) {
-			final var adjustTxn = txn.getCryptoAdjustAllowance();
-			return cryptoAllowance(payer, adjustTxn.getCryptoAllowancesList(), adjustTxn.getTokenAllowancesList(),
-					adjustTxn.getNftAllowancesList(), factory, linkedRefs);
+		} else if (txn.hasCryptoDeleteAllowance()) {
+			final var deleteAllowanceTxn = txn.getCryptoDeleteAllowance();
+			return cryptoDeleteAllowance(payer, deleteAllowanceTxn.getNftAllowancesList(), factory, linkedRefs);
 		} else {
 			return null;
 		}
@@ -522,7 +523,7 @@ public class SigRequirements {
 				: SigningOrderResult.noKnownKeys();
 	}
 
-	private <T> SigningOrderResult<T> cryptoAllowance(
+	private <T> SigningOrderResult<T> cryptoApproveAllowance(
 			final AccountID payer,
 			final List<CryptoAllowance> cryptoAllowancesList,
 			final List<TokenAllowance> tokenAllowancesList,
@@ -543,6 +544,31 @@ public class SigRequirements {
 				return factory.forInvalidAllowanceOwner();
 			}
 		}
+		for (final var allowance : nftAllowancesList) {
+			final var owner = allowance.getOwner();
+			var delegatingEntity = allowance.hasDelegatingSpender() ?
+					allowance.getDelegatingSpender() : owner;
+			// ApproveForAll allowance grant can only be granted by the owner.
+			delegatingEntity = allowance.getApprovedForAll().getValue() ? owner : delegatingEntity;
+
+			if ((includeOwnerIfNecessary(payer, delegatingEntity, requiredKeys, linkedRefs)) != NONE) {
+				if (delegatingEntity == owner) {
+					return factory.forInvalidAllowanceOwner();
+				} else {
+					return factory.forInvalidDelegatingSpender();
+				}
+			}
+		}
+
+		return factory.forValidOrder(requiredKeys);
+	}
+
+	private <T> SigningOrderResult<T> cryptoDeleteAllowance(
+			final AccountID payer,
+			final List<NftRemoveAllowance> nftAllowancesList,
+			final SigningOrderResultFactory<T> factory,
+			final @Nullable LinkedRefs linkedRefs) {
+		List<JKey> requiredKeys = new ArrayList<>();
 		for (final var allowance : nftAllowancesList) {
 			final var owner = allowance.getOwner();
 			if ((includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)) != NONE) {

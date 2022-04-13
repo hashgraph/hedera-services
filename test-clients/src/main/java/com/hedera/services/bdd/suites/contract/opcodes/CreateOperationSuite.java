@@ -70,18 +70,18 @@ public class CreateOperationSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
+		return List.of(new HapiApiSpec[] {
 				simpleFactoryWorks(),
 				stackedFactoryWorks(),
 				resetOnFactoryFailureWorks(),
 				resetOnFactoryFailureAfterDeploymentWorks(),
 				resetOnStackedFactoryFailureWorks(),
 				inheritanceOfNestedCreatedContracts(),
-				factoryAndSelfDestructInConstructorContract(),
-				factoryQuickSelfDestructContract(),
+//				factoryAndSelfDestructInConstructorContract(),
+//				factoryQuickSelfDestructContract(),
 				contractCreateWithNewOpInConstructor(),
 				childContractStorageWorks()
-		);
+		});
 	}
 
 	private HapiApiSpec factoryAndSelfDestructInConstructorContract() {

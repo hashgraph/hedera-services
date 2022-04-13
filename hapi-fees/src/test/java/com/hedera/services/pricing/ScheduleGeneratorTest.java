@@ -71,7 +71,6 @@ class ScheduleGeneratorTest {
 		assertEquals(expected, actual);
 	}
 
-	@SuppressWarnings("unchecked")
 	private static final List<Pair<HederaFunctionality, List<SubType>>> MISC_TEST_FUNCTIONS = List.of(
 			/* Crypto */
 			Pair.of(CryptoTransfer, List.of(

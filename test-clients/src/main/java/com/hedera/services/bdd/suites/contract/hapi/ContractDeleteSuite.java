@@ -40,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractU
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 public class ContractDeleteSuite extends HapiApiSuite {
@@ -60,7 +61,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[]{
 						rejectsWithoutProperSig(),
-						systemCanUndelete(),
+						systemCannotDeleteOrUndeleteContracts(),
 						deleteWorksWithMutableContract(),
 						deleteFailsWithImmutableContract(),
 						deleteTransfersToAccount(),
@@ -81,15 +82,18 @@ public class ContractDeleteSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec systemCanUndelete() {
-		return defaultHapiSpec("SystemCanUndelete")
+	private HapiApiSpec systemCannotDeleteOrUndeleteContracts() {
+		return defaultHapiSpec("SystemCannotDeleteOrUndeleteContracts")
 				.given(
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)
-				).when(
-						systemContractDelete(CONTRACT).payingWith(SYSTEM_DELETE_ADMIN)
-				).then(
-						systemContractUndelete(CONTRACT).payingWith(SYSTEM_UNDELETE_ADMIN).fee(0L),
+				).when( ).then(
+						systemContractDelete(CONTRACT)
+								.payingWith(SYSTEM_DELETE_ADMIN)
+								.hasPrecheck(NOT_SUPPORTED),
+						systemContractUndelete(CONTRACT)
+								.payingWith(SYSTEM_UNDELETE_ADMIN)
+								.hasPrecheck(NOT_SUPPORTED),
 						getContractInfo(CONTRACT).hasAnswerOnlyPrecheck(OK)
 				);
 	}

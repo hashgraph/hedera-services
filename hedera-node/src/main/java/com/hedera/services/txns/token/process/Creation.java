@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -68,14 +69,14 @@ public class Creation {
 
 	@FunctionalInterface
 	public interface NewRelsListing {
-		List<TokenRelationship> listFrom(Token provisionalToken, int maxTokensPerAccount);
+		List<TokenRelationship> listFrom(Token provisionalToken, TypedTokenStore tokenStore, GlobalDynamicProperties dynamicProperties);
 	}
 
 	private Id provisionalId;
 	private Token provisionalToken;
 	private Account treasury;
 	private Account autoRenew;
-	private List<TokenRelationship> newRels;
+	private List<TokenRelationship> newAndUpdatedRels;
 
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
@@ -120,21 +121,28 @@ public class Creation {
 		provisionalToken = modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now);
 		provisionalToken.getCustomFees().forEach(fee ->
 				fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore));
-		newRels = listing.listFrom(provisionalToken, dynamicProperties.maxTokensPerAccount());
+		final var hasExistingAssociations = treasury.getHeadTokenNum() != MISSING_ID.num();
+		newAndUpdatedRels = listing.listFrom(provisionalToken, tokenStore, dynamicProperties);
 		if (op.getInitialSupply() > 0) {
-			provisionalToken.mint(newRels.get(0), op.getInitialSupply(), true);
+			// When we created the new relationship for a treasury that already had a last-added relationship,
+			// we had to _first_ update the prev pointer on that relationship; so it will come first in the list of
+			// newAndUpdatedRels --- and the new relationship with this token will come second
+			provisionalToken.mint(
+					hasExistingAssociations ? newAndUpdatedRels.get(1) : newAndUpdatedRels.get(0),
+					op.getInitialSupply(),
+					true);
 		}
 		provisionalToken.getCustomFees().forEach(FcCustomFee::nullOutCollector);
 	}
 
 	public void persist() {
 		tokenStore.persistNew(provisionalToken);
-		tokenStore.commitTokenRelationships(newRels);
-		newRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
+		tokenStore.commitTokenRelationships(newAndUpdatedRels);
+		newAndUpdatedRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
 	}
 
 	public List<FcTokenAssociation> newAssociations() {
-		return newRels.stream().map(TokenRelationship::asAutoAssociation).toList();
+		return newAndUpdatedRels.stream().map(TokenRelationship::asAutoAssociation).toList();
 	}
 
 	public Id newTokenId() {
@@ -159,8 +167,8 @@ public class Creation {
 		this.autoRenew = autoRenew;
 	}
 
-	void setNewRels(List<TokenRelationship> newRels) {
-		this.newRels = newRels;
+	void setNewAndUpdatedRels(List<TokenRelationship> newAndUpdatedRels) {
+		this.newAndUpdatedRels = newAndUpdatedRels;
 	}
 
 	Account getTreasury() {

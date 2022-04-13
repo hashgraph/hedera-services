@@ -23,8 +23,8 @@ package com.hedera.services.txns.crypto;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InsufficientFundsException;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.HederaLedger;
+import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -94,8 +94,8 @@ class CryptoCreateTransitionLogicTest {
 	private SigImpactHistorian sigImpactHistorian;
 	private TransactionContext txnCtx;
 	private PlatformTxnAccessor accessor;
-	private CryptoCreateTransitionLogic subject;
 	private GlobalDynamicProperties dynamicProperties;
+	private CryptoCreateTransitionLogic subject;
 
 	@BeforeEach
 	private void setup() {
@@ -106,7 +106,6 @@ class CryptoCreateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
 		withRubberstampingValidator();
 
 		subject = new CryptoCreateTransitionLogic(ledger, validator, sigImpactHistorian, txnCtx, dynamicProperties);
@@ -189,6 +188,8 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void acceptsValidTxn() {
 		givenValidTxnCtx();
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
+		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
 
 		assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
 	}
@@ -196,6 +197,8 @@ class CryptoCreateTransitionLogicTest {
 	@Test
 	void rejectsInvalidMaxAutomaticAssociations() {
 		givenInvalidMaxAutoAssociations();
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
+		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
 
 		assertEquals(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT,
 				subject.semanticCheck().apply(cryptoCreateTxn));

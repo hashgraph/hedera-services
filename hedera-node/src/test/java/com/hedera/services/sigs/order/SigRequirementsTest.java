@@ -118,16 +118,15 @@ import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRA
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_PROXY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_WITH_NEW_ADMIN_KEY;
-import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_ALLOWANCE_NO_OWNER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_ADJUST_ALLOWANCE_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_USING_DELEGATING_SPENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_DELEGATING_SPENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_ALLOWANCE_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO;
@@ -137,6 +136,7 @@ import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_D
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_TARGET_RECEIVER_SIG_RECEIVER_PAID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_TARGET_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoDeleteScenarios.CRYPTO_DELETE_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO;
@@ -145,7 +145,6 @@ import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER;
@@ -268,6 +267,7 @@ import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WI
 import static com.hedera.test.factories.scenarios.TokenUpdateScenarios.UPDATE_WITH_WIPE_KEYED_TOKEN;
 import static com.hedera.test.factories.scenarios.TokenWipeScenarios.VALID_WIPE_WITH_EXTANT_TOKEN;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.CURRENTLY_UNUSED_ALIAS;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.DELEGATING_SPENDER_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_ALIAS;
@@ -290,6 +290,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -777,6 +778,17 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getsCryptoApproveAllowanceUsingDelegatingSpender() throws Throwable {
+		setupFor(CRYPTO_APPROVE_ALLOWANCE_USING_DELEGATING_SPENDER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertThat(
+				sanityRestored(summary.getOrderedKeys()),
+				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), DELEGATING_SPENDER_KT.asKey()));
+	}
+
+	@Test
 	void getsCryptoApproveAllowanceWithSomeSpecificOwners() throws Throwable {
 		setupFor(CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO);
 
@@ -818,50 +830,29 @@ class SigRequirementsTest {
 	}
 
 	@Test
-	void getsCryptoAdjustAllowanceVanilla() throws Throwable {
-		setupFor(CRYPTO_ADJUST_ALLOWANCE_SCENARIO);
+	void getsCryptoApproveAllowanceMissingDelegatingSpenderInNftAllowance() throws Throwable {
+		setupFor(CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_DELEGATING_SPENDER_SCENARIO);
+
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		assertTrue(summary.getOrderedKeys().isEmpty());
+		assertEquals(INVALID_DELEGATING_SPENDER, summary.getErrorReport());
+	}
+
+	@Test
+	void getsCryptoDeleteAllowanceVanilla() throws Throwable {
+		setupFor(CRYPTO_DELETE_ALLOWANCE_SCENARIO);
 
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		assertThat(
 				sanityRestored(summary.getOrderedKeys()),
-				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
+				contains(OWNER_ACCOUNT_KT.asKey()));
 	}
 
 	@Test
-	void getsCryptoAdjustAllowanceWithSomeSpecificOwners() throws Throwable {
-		setupFor(CRYPTO_ADJUST_ALLOWANCE_NO_OWNER_SCENARIO);
-
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		assertThat(
-				sanityRestored(summary.getOrderedKeys()),
-				contains(OWNER_ACCOUNT_KT.asKey(), OWNER_ACCOUNT_KT.asKey()));
-	}
-
-	@Test
-	void getsCryptoAdjustAllowanceMissingOwnerInFungibleTokenAllowance() throws Throwable {
-		setupFor(CRYPTO_ADJUST_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO);
-
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
-	}
-
-	@Test
-	void getsCryptoAdjustAllowanceMissingOwnerInCryptoAllowance() throws Throwable {
-		setupFor(CRYPTO_ADJUST_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO);
-
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
-
-		assertTrue(summary.getOrderedKeys().isEmpty());
-		assertEquals(INVALID_ALLOWANCE_OWNER_ID, summary.getErrorReport());
-	}
-
-	@Test
-	void getsCryptoAdjustAllowanceMissingOwnerInNftAllowance() throws Throwable {
-		setupFor(CRYPTO_ADJUST_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO);
+	void getsCryptoDeleteAllowanceMissingOwnerInNftAllowance() throws Throwable {
+		setupFor(CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO);
 
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);
 
@@ -905,7 +896,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertThat(sanityRestored(
-				summary.getOrderedKeys()),
+						summary.getOrderedKeys()),
 				contains(SYS_ACCOUNT_KT.asKey(), NEW_ACCOUNT_KT.asKey()));
 	}
 
@@ -1241,7 +1232,7 @@ class SigRequirementsTest {
 
 		// then:
 		assertThat(sanityRestored(
-				summary.getOrderedKeys()),
+						summary.getOrderedKeys()),
 				contains(MISC_FILE_WACL_KT.asKey()));
 	}
 
@@ -1807,7 +1798,8 @@ class SigRequirementsTest {
 	@Test
 	void getsConsensusUpdateTopicNewAdminKey() throws Throwable {
 		// given:
-		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO, hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
+		setupForNonStdLookup(CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO,
+				hcsMetadataLookup(MISC_TOPIC_ADMIN_KT.asJKey(), null));
 
 		// when:
 		final var summary = subject.keysForOtherParties(txn, summaryFactory);

@@ -24,7 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.EntityNum;
@@ -51,11 +51,10 @@ import static com.hedera.services.state.initialization.BackedSystemAccountsCreat
  * Responsible for externalizing any state changes that happened during migration via child records,
  * and then marking the work done via {@link MerkleNetworkContext#markMigrationRecordsStreamed()}.
  *
- * For example, in the v0.24.1 tag we are materializing two new accounts {@code 0.0.800} and {@code 0.0.801}
- * that will receive staking funds. Without two synthetic {@code CryptoCreate}s in the record stream, mirror nodes
- * won't know about these new staking accounts.
- *
- * Note that most upgrades will not include any such state changes; so no records will need to be streamed.
+ * For example, in release v0.24.1 we created two new accounts {@code 0.0.800} and {@code 0.0.801} to
+ * receive staking reward funds. Without synthetic {@code CryptoCreate} records in the record stream,
+ * mirror nodes wouldn't know about these new staking accounts. (Note on a network reset, we will <i>also</i>
+ * stream these two synthetic creations for mirror node consumption.)
  */
 @Singleton
 public class MigrationRecordsManager {
@@ -66,7 +65,7 @@ public class MigrationRecordsManager {
 
 	private final EntityCreator creator;
 	private final SigImpactHistorian sigImpactHistorian;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
@@ -75,7 +74,7 @@ public class MigrationRecordsManager {
 	public MigrationRecordsManager(
 			final EntityCreator creator,
 			final SigImpactHistorian sigImpactHistorian,
-			final AccountRecordsHistorian recordsHistorian,
+			final RecordsHistorian recordsHistorian,
 			final Supplier<MerkleNetworkContext> networkCtx
 	) {
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -87,7 +86,8 @@ public class MigrationRecordsManager {
 	/**
 	 * If appropriate, publish the migration records for this upgrade. Only needs to be called
 	 * once per restart, but that call must be made from {@code handleTransaction} inside an
-	 * active {@link com.hedera.services.context.TransactionContext}.
+	 * active {@link com.hedera.services.context.TransactionContext} (because the record running
+	 * hash is in state).
 	 */
 	public void publishMigrationRecords(final Instant now) {
 		final var curNetworkCtx = networkCtx.get();
@@ -95,8 +95,11 @@ public class MigrationRecordsManager {
 			return;
 		}
 
-		final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
-		STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
+		// After release 0.24.1, we publish creation records for 0.0.800 and 0.0.801 _only_ on a network reset
+		if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
+			final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
+			STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
+		}
 
 		curNetworkCtx.markMigrationRecordsStreamed();
 	}

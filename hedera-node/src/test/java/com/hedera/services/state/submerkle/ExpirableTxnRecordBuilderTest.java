@@ -104,11 +104,11 @@ class ExpirableTxnRecordBuilderTest {
 
 		final var someAdjusts = new CurrencyAdjustments(new long[] { +1, -1
 		}, new long[] { 1L, 2L });
-		subject.setTransferList(someAdjusts);
+		subject.setHbarAdjustments(someAdjusts);
 
 		subject.excludeHbarChangesFrom(that);
 
-		assertSame(someAdjusts, subject.getTransferList());
+		assertSame(someAdjusts, subject.getHbarAdjustments());
 	}
 
 	@Test
@@ -127,16 +127,16 @@ class ExpirableTxnRecordBuilderTest {
 		}, new long[] { firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num(), thirdInBoth.num() });
 
 		final var that = ExpirableTxnRecord.newBuilder();
-		that.setTransferList(thatAdjusts);
+		that.setHbarAdjustments(thatAdjusts);
 
-		subject.setTransferList(thisAdjusts);
+		subject.setHbarAdjustments(thisAdjusts);
 		subject.excludeHbarChangesFrom(that);
 
 		final var expectedChanges = new long[] { -10, +8, +7, -5 };
 		final var expectedAccounts = new long[] {
 				inThisButNotThat.num(), firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num() };
-		assertArrayEquals(expectedChanges, subject.getTransferList().hbars);
-		assertArrayEquals(expectedAccounts, subject.getTransferList().accountNums);
+		assertArrayEquals(expectedChanges, subject.getHbarAdjustments().hbars);
+		assertArrayEquals(expectedAccounts, subject.getHbarAdjustments().accountNums);
 	}
 
 	@Test
@@ -153,17 +153,17 @@ class ExpirableTxnRecordBuilderTest {
 		}, new long[] { firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num() });
 
 		final var that = ExpirableTxnRecord.newBuilder();
-		that.setTransferList(thatAdjusts);
+		that.setHbarAdjustments(thatAdjusts);
 
-		subject.setTransferList(thisAdjusts);
+		subject.setHbarAdjustments(thisAdjusts);
 		subject.excludeHbarChangesFrom(that);
 
 		final var expectedChanges = new long[] { +8, +7, -5 };
 		final var expectedAccounts = new long[] {
 				firstInBoth.num(), secondInBoth.num(), inThatButNotThis.num()
 		};
-		assertArrayEquals(expectedChanges, subject.getTransferList().hbars);
-		assertArrayEquals(expectedAccounts, subject.getTransferList().accountNums);
+		assertArrayEquals(expectedChanges, subject.getHbarAdjustments().hbars);
+		assertArrayEquals(expectedAccounts, subject.getHbarAdjustments().accountNums);
 	}
 
 	@Test
@@ -183,22 +183,22 @@ class ExpirableTxnRecordBuilderTest {
 		}, new long[] { firstInBoth.num(), secondInBoth.num() });
 
 		final var that = ExpirableTxnRecord.newBuilder();
-		that.setTransferList(thatAdjusts);
+		that.setHbarAdjustments(thatAdjusts);
 
-		subject.setTransferList(thisAdjusts);
+		subject.setHbarAdjustments(thisAdjusts);
 		subject.excludeHbarChangesFrom(that);
 
 		final var expectedChanges = new long[] { +10, +4, -1, -19 };
 		final var expectedAccounts = new long[] {
 				firstInThisButNotThat.num(), firstInBoth.num(), secondInBoth.num(), secondInThisButNotThat.num() };
-		assertArrayEquals(expectedChanges, subject.getTransferList().hbars);
-		assertArrayEquals(expectedAccounts, subject.getTransferList().accountNums);
+		assertArrayEquals(expectedChanges, subject.getHbarAdjustments().hbars);
+		assertArrayEquals(expectedAccounts, subject.getHbarAdjustments().accountNums);
 	}
 
 	@Test
 	void revertClearsAllSideEffects() {
 		subject.setTokens(List.of(MISSING_ENTITY_ID));
-		subject.setTransferList(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() }));
+		subject.setHbarAdjustments(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() }));
 		subject.setReceiptBuilder(receiptBuilder);
 		subject.setTokenAdjustments(
 				List.of(new CurrencyAdjustments(new long[] { 1 }, new long[] { MISSING_ENTITY_ID.num() })));
@@ -215,7 +215,7 @@ class ExpirableTxnRecordBuilderTest {
 
 		assertNull(subject.getTokens());
 		assertNull(subject.getScheduleRef());
-		assertNull(subject.getTransferList());
+		assertNull(subject.getHbarAdjustments());
 		assertNull(subject.getTokenAdjustments());
 		assertNotNull(subject.getContractCallResult());
 		assertNull(subject.getNftTokenAdjustments());

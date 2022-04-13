@@ -34,6 +34,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -47,13 +48,27 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Objects;
+import java.util.function.BiFunction;
 
+import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
+import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
+import static com.hedera.services.ledger.properties.TokenProperty.NAME;
+import static com.hedera.services.ledger.properties.TokenProperty.SYMBOL;
+import static com.hedera.services.ledger.properties.TokenProperty.TOKEN_TYPE;
+import static com.hedera.services.ledger.properties.TokenProperty.TOTAL_SUPPLY;
 import static com.hedera.services.ledger.properties.TokenProperty.TREASURY;
+import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
 public class WorldLedgers {
 	private final ContractAliases aliases;
@@ -96,15 +111,65 @@ public class WorldLedgers {
 		this.staticEntityAccess = staticEntityAccess;
 	}
 
+	public boolean isTokenAddress(final Address address) {
+		if (staticEntityAccess != null)	{
+			return staticEntityAccess.isTokenAccount(address);
+		} else {
+			return tokensLedger.contains(tokenIdFromEvmAddress(address));
+		}
+	}
+
+	public String nameOf(final TokenID tokenId) {
+		return propertyOf(tokenId, NAME, StaticEntityAccess::nameOf);
+	}
+
+	public String symbolOf(final TokenID tokenId) {
+		return propertyOf(tokenId, SYMBOL, StaticEntityAccess::symbolOf);
+	}
+
+	public long totalSupplyOf(final TokenID tokenId) {
+		return propertyOf(tokenId, TOTAL_SUPPLY, StaticEntityAccess::supplyOf);
+	}
+
+	public int decimalsOf(final TokenID tokenId) {
+		return propertyOf(tokenId, DECIMALS, StaticEntityAccess::decimalsOf);
+	}
+
+	public TokenType typeOf(final TokenID tokenId) {
+		return propertyOf(tokenId, TOKEN_TYPE, StaticEntityAccess::typeOf);
+	}
+
+	public long balanceOf(final AccountID accountId, final TokenID tokenId) {
+		if (staticEntityAccess != null) {
+			return staticEntityAccess.balanceOf(accountId, tokenId);
+		} else {
+			validateTrue(tokensLedger.exists(tokenId), INVALID_TOKEN_ID);
+			validateTrue(accountsLedger.exists(accountId), INVALID_ACCOUNT_ID);
+			final var balanceKey = Pair.of(accountId, tokenId);
+			return tokenRelsLedger.exists(balanceKey)
+					? (long) tokenRelsLedger.get(balanceKey, TOKEN_BALANCE) : 0;
+		}
+	}
+
 	public Address ownerOf(final NftId nft) {
 		if (!areMutable()) {
-			throw new IllegalStateException("Cannot look up owner from unavailable ledgers");
+			return staticEntityAccess.ownerOf(nft);
 		}
 		var owner = (EntityId) nftsLedger.get(nft, OWNER);
+		validateTrue(owner != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
 		if (MISSING_ENTITY_ID.equals(owner)) {
 			owner = (EntityId) tokensLedger.get(nft.tokenId(), TREASURY);
 		}
 		return owner.toEvmAddress();
+	}
+
+	public String metadataOf(final NftId nftId) {
+		if (!areMutable()) {
+			return staticEntityAccess.metadataOf(nftId);
+		}
+		return nftsLedger.exists(nftId)
+				? new String((byte[]) nftsLedger.get(nftId, METADATA))
+				: URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 	}
 
 	public Address canonicalAddress(final Address addressOrAlias) {
@@ -236,5 +301,24 @@ public class WorldLedgers {
 
 	public TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens() {
 		return tokensLedger;
+	}
+
+	// --- Internal helpers
+	private <T> T propertyOf(
+			final TokenID tokenId,
+			final TokenProperty property,
+			final BiFunction<StaticEntityAccess, TokenID, T> staticGetter
+	) {
+		if (staticEntityAccess != null)	{
+			return staticGetter.apply(staticEntityAccess, tokenId);
+		} else {
+			return getTokenMeta(tokenId, property);
+		}
+	}
+
+	private <T> T getTokenMeta(final TokenID tokenId, final TokenProperty property) {
+		final var value = (T) tokensLedger.get(tokenId, property);
+		validateTrue(value != null, INVALID_TOKEN_ID);
+		return value;
 	}
 }

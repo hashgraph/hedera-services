@@ -23,11 +23,8 @@ package com.hedera.test.factories.accounts;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -40,15 +37,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
+
+import static com.hedera.services.store.models.Id.MISSING_ID;
 
 public class MerkleAccountFactory {
-	private boolean useNewStyleTokenIds = false;
-
 	private int numKvPairs = 0;
 	private KeyFactory keyFactory = KeyFactory.getDefaultInstance();
 	private Optional<Long> balance = Optional.empty();
-	private Optional<Long> receiverThreshold = Optional.empty();
-	private Optional<Long> senderThreshold = Optional.empty();
+	private Optional<Long> lastAssociatedToken = Optional.empty();
+	private Optional<Integer> associatedTokensCount = Optional.empty();
+	private Optional<Integer> numPositiveBalances = Optional.empty();
 	private Optional<Boolean> receiverSigRequired = Optional.empty();
 	private Optional<JKey> accountKeys = Optional.empty();
 	private Optional<Long> autoRenewPeriod = Optional.empty();
@@ -61,10 +60,9 @@ public class MerkleAccountFactory {
 	private Optional<Integer> maxAutoAssociations = Optional.empty();
 	private Optional<ByteString> alias = Optional.empty();
 	private Set<TokenID> associatedTokens = new HashSet<>();
-	private Set<Id> assocTokens = new HashSet<>();
 	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>();
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
-	private TreeMap<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
+	private TreeSet<FcTokenAllowanceId> approveForAllNftsAllowances = new TreeSet<>();
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
@@ -84,18 +82,14 @@ public class MerkleAccountFactory {
 		isSmartContract.ifPresent(value::setSmartContract);
 		receiverSigRequired.ifPresent(value::setReceiverSigRequired);
 		maxAutoAssociations.ifPresent(value::setMaxAutomaticAssociations);
-		alreadyUsedAutoAssociations.ifPresent(value::setAlreadyUsedAutomaticAssociations);
-		var tokens = new MerkleAccountTokens();
-		if (useNewStyleTokenIds) {
-			tokens.associate(assocTokens);
-		} else {
-			tokens.associateAll(associatedTokens);
-		}
-		value.setTokens(tokens);
+		alreadyUsedAutoAssociations.ifPresent(value::setUsedAutomaticAssociations);
 		value.setNumContractKvPairs(numKvPairs);
 		value.setCryptoAllowances(cryptoAllowances);
 		value.setFungibleTokenAllowances(fungibleTokenAllowances);
-		value.setNftAllowances(nftAllowances);
+		value.setApproveForAllNfts(approveForAllNftsAllowances);
+		value.setNumAssociations(associatedTokensCount.orElse(0));
+		value.setNumPositiveBalances(numPositiveBalances.orElse(0));
+		value.setHeadTokenId(lastAssociatedToken.orElse(MISSING_ID.num()));
 		return value;
 	}
 
@@ -130,24 +124,8 @@ public class MerkleAccountFactory {
 		return this;
 	}
 
-	public MerkleAccountFactory assocTokens(final Id... tokens) {
-		useNewStyleTokenIds = true;
-		assocTokens.addAll(List.of(tokens));
-		return this;
-	}
-
 	public MerkleAccountFactory tokens(final TokenID... tokens) {
 		associatedTokens.addAll(List.of(tokens));
-		return this;
-	}
-
-	public MerkleAccountFactory receiverThreshold(final long v) {
-		receiverThreshold = Optional.of(v);
-		return this;
-	}
-
-	public MerkleAccountFactory senderThreshold(final long v) {
-		senderThreshold = Optional.of(v);
 		return this;
 	}
 
@@ -219,8 +197,18 @@ public class MerkleAccountFactory {
 		return this;
 	}
 
-	public MerkleAccountFactory nftAllowances(final TreeMap<FcTokenAllowanceId, FcTokenAllowance> allowances) {
-		nftAllowances = allowances;
+	public MerkleAccountFactory explicitNftAllowances(final TreeSet<FcTokenAllowanceId> allowances) {
+		approveForAllNftsAllowances = allowances;
+		return this;
+	}
+
+	public MerkleAccountFactory lastAssociatedToken(final long lastAssociatedToken) {
+		this.lastAssociatedToken = Optional.of(lastAssociatedToken);
+		return this;
+	}
+
+	public MerkleAccountFactory associatedTokensCount(final int associatedTokensCount) {
+		this.associatedTokensCount = Optional.of(associatedTokensCount);
 		return this;
 	}
 }
