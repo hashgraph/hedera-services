@@ -109,6 +109,24 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		return this;
 	}
 
+	public ContractInfoAsserts balanceLessThan(long amount) {
+		registerProvider((spec, o) -> {
+			long actual = object2ContractInfo(o).getBalance();
+			String errorMessage = String.format("Bad balance! %s is not less than %s", actual, amount);
+			assertTrue(actual < amount, errorMessage);
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts balanceGreaterThan(long amount) {
+		registerProvider((spec, o) -> {
+			long actual = object2ContractInfo(o).getBalance();
+			String errorMessage = String.format("Bad balance! %s is not less than %s", actual, amount);
+			assertTrue(actual > amount, errorMessage);
+		});
+		return this;
+	}
+
 	public ContractInfoAsserts expiry(long expectedExpiry) {
 		registerProvider((spec, o) -> {
 			assertEquals(expectedExpiry, object2ContractInfo(o).getExpirationTime().getSeconds(),

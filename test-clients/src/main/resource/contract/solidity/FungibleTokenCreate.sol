@@ -5,6 +5,8 @@ pragma experimental ABIEncoderV2;
 import "./FeeHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 contract FungibleTokenCreate is FeeHelper {
 
@@ -18,9 +20,138 @@ contract FungibleTokenCreate is FeeHelper {
         createdTokenAddress = createFrozenToken(super.getDefaultKeys());
     }
 
-    function createTokenWithDefaultKeys() public returns (address createdTokenAddress) {
+    function createTokenWithDefaultKeys() public payable returns (address createdTokenAddress) {
         createdTokenAddress = createToken(super.getDefaultKeys());
     }
+
+    function createTokenWithKeysAndExpiry(
+        address treasury,
+        bytes memory ed25519,
+        bytes memory ecdsa,
+        address contractID,
+        address delegatableContractID,
+        address autoRenewAccount,
+        uint32 autoRenewPeriod
+    ) public payable returns (address createdTokenAddress) {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
+        keys[0] = getSingleKey(0, 1, 3, ed25519);
+        keys[1] = getSingleKey(2, 3, 4, ecdsa);
+        keys[2] = getSingleKey(4, 2, contractID);
+        keys[3] = getSingleKey(5, 5, delegatableContractID);
+        keys[4] = getSingleKey(6, 1, "");
+
+        IHederaTokenService.HederaToken memory token =
+        createTokenWithExpiry(treasury, 0, autoRenewAccount, autoRenewPeriod, keys);
+
+        (int responseCode, address tokenAddress) =
+        HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        createdTokenAddress = tokenAddress;
+    }
+
+
+    // NEGATIVE SOLIDITY SCENARIOS
+    function createTokenWithEmptyKeysArray(
+        address autoRenewAccount,
+        uint32 autoRenewPeriod
+    ) public payable returns (address createdTokenAddress) {
+
+        // create the invalid key
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        IHederaTokenService.TokenKey memory invalidKey;
+        invalidKey.keyType = 4;
+        IHederaTokenService.KeyValue memory invalidKeyValue;
+        invalidKeyValue.contractId = address(this);
+        invalidKeyValue.inheritAccountKey = true;
+        invalidKey.key = invalidKeyValue;
+        keys[0] = invalidKey;
+
+        IHederaTokenService.HederaToken memory token =
+        createTokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod, keys);
+
+        (int responseCode, address tokenAddress) =
+        HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        createdTokenAddress = tokenAddress;
+    }
+
+    function createTokenWithKeyWithMultipleValues(
+        address autoRenewAccount,
+        uint32 autoRenewPeriod
+    ) public payable returns (address createdTokenAddress) {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
+
+        IHederaTokenService.HederaToken memory token =
+        createTokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod, keys);
+
+        (int responseCode, address tokenAddress) =
+        HederaTokenService.createFungibleToken(token, initialTotalSupply, decimals);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        createdTokenAddress = tokenAddress;
+    }
+
+    function createTokenWithInvalidFixedFee(
+        bytes memory ecdsaAdminKey,
+        address feeCollector,
+        address autoRenewAccount,
+        uint32 autoRenewPeriod
+    ) public payable returns (address createdTokenAddress) {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        keys[0] = getSingleKey(0, 4, ecdsaAdminKey);
+
+        IHederaTokenService.HederaToken memory token =
+        createTokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod, keys);
+
+        IHederaTokenService.FixedFee memory fixedFee =
+        createFixedFeeWithInvalidFlags(1, feeCollector);
+        IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](1);
+        fixedFees[0] = fixedFee;
+
+        (int responseCode, address tokenAddress) =
+        HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals,
+            fixedFees,
+            new IHederaTokenService.FractionalFee[](0));
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        createdTokenAddress = tokenAddress;
+    }
+
+    function createTokenWithExpiry(
+        address treasury,
+        uint32 second,
+        address autoRenewAccount,
+        uint32 autoRenewPeriod,
+        IHederaTokenService.TokenKey[] memory keys
+    ) internal returns (IHederaTokenService.HederaToken memory token) {
+
+        IHederaTokenService.Expiry memory expiry;
+        expiry.second = second;
+        expiry.autoRenewAccount = autoRenewAccount;
+        expiry.autoRenewPeriod = autoRenewPeriod;
+
+        token.name = name;
+        token.symbol = symbol;
+        token.treasury = treasury;
+        token.tokenKeys = keys;
+        token.expiry = expiry;
+        token.memo = memo;
+    }
+
 
     function createTokenWithDefaultKeysViaDelegateCall() external returns (address createdTokenAddress) {
         createdTokenAddress = createTokenViaDelegateCall(super.getDefaultKeys());
@@ -148,26 +279,68 @@ contract FungibleTokenCreate is FeeHelper {
         createdTokenAddress = tokenAddress;
     }
 
-    function createTokenWithExpiry(
-        address treasury,
-        uint32 second,
+    function createTokenWithAllCustomFeesAvailable(
+        bytes memory ecdsaAdminKey,
+        address feeCollector,
+        address existingTokenAddress,
         address autoRenewAccount,
-        uint32 autoRenewPeriod,
-        IHederaTokenService.TokenKey[] memory keys
-    ) internal returns (IHederaTokenService.HederaToken memory token) {
+        uint32 autoRenewPeriod
+    ) public payable returns (address createdTokenAddress) {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        keys[0] = getSingleKey(0, 4, ecdsaAdminKey);
 
-        IHederaTokenService.Expiry memory expiry;
-        expiry.second = second;
-        expiry.autoRenewAccount = autoRenewAccount;
-        expiry.autoRenewPeriod = autoRenewPeriod;
+        IHederaTokenService.HederaToken memory token =
+        createTokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod, keys);
 
-        token.name = name;
-        token.symbol = symbol;
-        token.treasury = treasury;
-        token.tokenKeys = keys;
-        token.expiry = expiry;
-        token.memo = memo;
+        IHederaTokenService.FixedFee[] memory fixedFees =
+        createFixedFeesWithAllTypes(1, existingTokenAddress, feeCollector);
+        IHederaTokenService.FractionalFee[] memory fractionalFees =
+        createSingleFractionalFeeWithLimits(4, 5, 10, 30, true, feeCollector);
+
+        (int responseCode, address tokenAddress) =
+        HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals,
+            fixedFees,
+            fractionalFees);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        createdTokenAddress = tokenAddress;
     }
+
+
+    function createNonFungibleTokenWithCustomFees(
+        address contractIdKey,
+        address feeCollectorAndTreasury,
+        address existingTokenAddress,
+        address autoRenewAccount,
+        uint32 autoRenewPeriod
+    )
+    public payable returns (address createdTokenAddress) {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](1);
+        keys[0] = getSingleKey(0, 2, contractIdKey);
+
+        IHederaTokenService.HederaToken memory token =
+        createTokenWithExpiry(feeCollectorAndTreasury, 0, autoRenewAccount, autoRenewPeriod,
+            keys);
+        token.tokenSupplyType = true;
+        token.maxSupply = 400;
+
+
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees =
+        createRoyaltyFeesWithAllTypes(4, 5, 10, existingTokenAddress, feeCollectorAndTreasury);
+
+        (int responseCode, address tokenAddress) =
+        HederaTokenService.createNonFungibleTokenWithCustomFees(token, new IHederaTokenService.FixedFee[](0), royaltyFees);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        createdTokenAddress = tokenAddress;
+    }
+
 
     function createTokenThenQueryAndTransfer(
         bytes memory ed25519AdminKey,
@@ -209,6 +382,43 @@ contract FungibleTokenCreate is FeeHelper {
     }
 
 
+    function createNonFungibleTokenThenQuery(
+        address contractIdAndFeeCollector,
+        address autoRenewAccount,
+        uint32 autoRenewPeriod
+    ) public payable returns (address createdTokenAddress) {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](2);
+        keys[0] = getSingleKey(0, 2, contractIdAndFeeCollector);
+        keys[1] = getSingleKey(4, 2, contractIdAndFeeCollector);
+
+        IHederaTokenService.HederaToken memory token =
+        createTokenWithExpiry(address(this), 0, autoRenewAccount, autoRenewPeriod,
+            keys);
+
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees =
+        createSingleRoyaltyFee(4, 5, contractIdAndFeeCollector);
+
+
+        (int responseCode, address tokenAddress) =
+        HederaTokenService.createNonFungibleTokenWithCustomFees(token, new IHederaTokenService.FixedFee[](0), royaltyFees);
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        createdTokenAddress = tokenAddress;
+
+        string memory actualName = IERC721Metadata(tokenAddress).name();
+        if (keccak256(bytes(actualName)) != keccak256(bytes(name))) {
+            revert ("Name is not correct");
+        }
+
+        string memory actualSymbol = IERC721Metadata(tokenAddress).symbol();
+        if (keccak256(bytes(actualSymbol)) != keccak256(bytes(symbol))) {
+            revert ("Symbol is not correct");
+        }
+    }
+
+
 
     function createTokenWithCustomFees(IHederaTokenService.TokenKey[] memory keys,
         IHederaTokenService.FixedFee[] memory fixedFees, IHederaTokenService.FractionalFee[] memory fractionalFees) internal returns (address createdTokenAddress) {
@@ -219,7 +429,9 @@ contract FungibleTokenCreate is FeeHelper {
         token.tokenKeys = keys;
 
         (int responseCode, address tokenAddress) =
-        HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals, fixedFees, fractionalFees);
+        HederaTokenService.createFungibleTokenWithCustomFees(token, initialTotalSupply, decimals,
+            fixedFees,
+            fractionalFees);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
             revert ();

@@ -85,6 +85,21 @@ contract KeyHelper is HederaTokenService {
             keyValue.delegatableContractId = supplyContract;
         }
     }
+
+    function getKeyValueType(uint8 keyValueType, address memory keyAddress) internal view returns (IHederaTokenService
+    .KeyValue memory keyValue) {
+        if(keyValueType == 1) {
+            keyValue.inheritAccountKey = true;
+        } else if(keyValueType == 2) {
+            keyValue.contractId = keyAddress;
+        } else if(keyValueType == 3) {
+            keyValue.ed25519 = key;
+        } else if(keyValueType == 4) {
+            keyValue.ECDSA_secp256k1 = key;
+        } else if(keyValueType == 5) {
+            keyValue.delegatableContractId = keyAddress;
+        }
+    }
 }
 
 library Bits {
