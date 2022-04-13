@@ -109,7 +109,7 @@ public class RecordStreaming implements Runnable {
 
 			curNetworkCtx.finishCurrentBlock(computedHash);
 			curNetworkCtx.startNewBlock(rso.getTimestamp());
-			log.debug("Beginning block #{} @ {}", curNetworkCtx.getBlockNo(), rso.getTimestamp());
+			log.debug("Beginning block #{} with cons timestamp @ {}", curNetworkCtx.getBlockNo(), rso.getTimestamp());
 		}
 
 		runningHashUpdate.accept(rso.getRunningHash());
