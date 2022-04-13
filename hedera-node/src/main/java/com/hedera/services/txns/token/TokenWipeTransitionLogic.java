@@ -91,6 +91,7 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 		} else {
 			tokenStore.loadUniqueTokens(token, op.getSerialNumbersList());
 			token.wipe(ownershipTracker, accountRel, op.getSerialNumbersList());
+			tokenStore.updateNftLinkedList(account, targetTokenId, op.getSerialNumbersList());
 		}
 		/* --- Persist the updated models --- */
 		tokenStore.commitToken(token);

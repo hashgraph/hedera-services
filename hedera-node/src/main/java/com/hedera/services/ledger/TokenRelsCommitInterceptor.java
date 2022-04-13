@@ -27,14 +27,26 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
+
 public class TokenRelsCommitInterceptor implements CommitInterceptor<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty> {
 
 	// The tracker this interceptor should use for previewing changes. The interceptor is NOT
 	// responsible for calling reset() on the tracker, as that will be done by the client code.
 //	private SideEffectsTracker sideEffectsTracker;
+//	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+//	private final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger;
 
-	public TokenRelsCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
+
+	@Inject
+	public TokenRelsCommitInterceptor(
+			final SideEffectsTracker sideEffectsTracker
+//			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger
+//			final TransactionalLedger<NftId, NftProperty, MerkleUniqueToken> nftsLedger
+	) {
 //		this.sideEffectsTracker = sideEffectsTracker;
+//		this.accountsLedger = accountsLedger;
+//		this.nftsLedger = nftsLedger;
 	}
 
 	/**

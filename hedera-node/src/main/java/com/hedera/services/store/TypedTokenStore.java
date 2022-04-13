@@ -28,6 +28,8 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
@@ -35,12 +37,14 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
@@ -266,6 +270,47 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		mutableNft.setPackedCreationTime(packedTime(creationTime.getSeconds(), creationTime.getNanos()));
 		mutableNft.setPrev(nft.getPrev());
 		mutableNft.setNext(nft.getNext());
+	}
+
+	public void updateNftLinkedList(
+			final Account account, final Id targetTokenId, final List<Long> serialNumbers) {
+		List<UniqueToken> touchedUniqueTokens = new ArrayList<>();
+		for (long serialNum : serialNumbers) {
+			final var nft = loadUniqueToken(targetTokenId, serialNum);
+			final var currHeadNftNum = account.getHeadNftId();
+			final var currHeadNftSerialNum = account.getHeadNftSerialNum();
+
+			if (currHeadNftNum == targetTokenId.num() && currHeadNftSerialNum == serialNum) {
+				final var nextNftId = nft.getNext();
+				if (!nextNftId.equals(NftNumPair.MISSING_NFT_NUM_PAIR)) {
+					final var nextNft = loadUniqueToken(
+							Id.fromGrpcToken(nextNftId.tokenId()), nextNftId.serialNum());
+					nextNft.setPrev(NftNumPair.MISSING_NFT_NUM_PAIR);
+					touchedUniqueTokens.add(nextNft);
+				}
+				account.setHeadNftId(nextNftId.tokenNum());
+				account.setHeadNftSerialNum(nextNftId.serialNum());
+			} else {
+				final var nextNftId = nft.getNext() ;
+				final var prevNftId = nft.getPrev();
+
+				if (!nextNftId.equals(NftNumPair.MISSING_NFT_NUM_PAIR)) {
+					final var nextNft = loadUniqueToken(
+							Id.fromGrpcToken(nextNftId.tokenId()), nextNftId.serialNum());
+					nextNft.setPrev(prevNftId);
+					touchedUniqueTokens.add(nextNft);
+				}
+
+				final var prevNft = loadUniqueToken(
+						Id.fromGrpcToken(prevNftId.tokenId()), prevNftId.serialNum());
+				prevNft.setNext(nextNftId);
+				touchedUniqueTokens.add(prevNft);
+			}
+		}
+
+		for (var nft : touchedUniqueTokens) {
+			persistNft(nft);
+		}
 	}
 
 	@FunctionalInterface

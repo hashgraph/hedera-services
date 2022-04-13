@@ -74,6 +74,8 @@ import java.util.function.Consumer;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.HEAD_NFT_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.HEAD_NFT_SERIAL_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
@@ -82,8 +84,8 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIAT
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.NftProperty.NEXT;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
-import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
 import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
@@ -91,6 +93,7 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.PREV_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
@@ -706,6 +709,11 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(counterparty, NUM_ASSOCIATIONS)).willReturn(associatedTokensCount);
 		given(accountsLedger.get(counterparty, HEAD_TOKEN_NUM)).willReturn(MISSING_ID.num());
 		given(accountsLedger.get(counterparty, NUM_POSITIVE_BALANCES)).willReturn(numPositiveBalances);
+		given(accountsLedger.get(sponsor, HEAD_NFT_ID)).willReturn(aNft.num());
+		given(accountsLedger.get(sponsor, HEAD_NFT_SERIAL_NUM)).willReturn(aNft.serialNo());
+		given(accountsLedger.get(counterparty, HEAD_NFT_ID)).willReturn(0L);
+		given(accountsLedger.get(counterparty, HEAD_NFT_SERIAL_NUM)).willReturn(0L);
+		given(nftsLedger.get(aNft, NEXT)).willReturn(MISSING_NFT_NUM_PAIR);
 
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
@@ -713,6 +721,10 @@ class HederaTokenStoreTest {
 		verify(accountsLedger).set(counterparty, NUM_ASSOCIATIONS, associatedTokensCount+1);
 		verify(accountsLedger).set(counterparty, NUM_POSITIVE_BALANCES, numPositiveBalances + 1);
 		verify(accountsLedger).set(counterparty, HEAD_TOKEN_NUM, aNft.num());
+		verify(accountsLedger).set(sponsor, HEAD_NFT_ID, 0L);
+		verify(accountsLedger).set(sponsor, HEAD_NFT_SERIAL_NUM, 0L);
+		verify(accountsLedger).set(counterparty, HEAD_NFT_ID, aNft.num());
+		verify(accountsLedger).set(counterparty, HEAD_NFT_SERIAL_NUM, aNft.serialNo());
 	}
 
 	@Test

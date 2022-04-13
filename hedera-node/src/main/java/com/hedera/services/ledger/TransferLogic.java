@@ -47,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static com.hedera.services.ledger.properties.AccountProperty.HEAD_NFT_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.HEAD_NFT_SERIAL_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
@@ -66,7 +68,9 @@ public class TransferLogic {
 			NUM_ASSOCIATIONS,
 			HEAD_TOKEN_NUM,
 			NUM_NFTS_OWNED,
-			USED_AUTOMATIC_ASSOCIATIONS
+			USED_AUTOMATIC_ASSOCIATIONS,
+			HEAD_NFT_ID,
+			HEAD_NFT_SERIAL_NUM
 	);
 
 	private final TokenStore tokenStore;

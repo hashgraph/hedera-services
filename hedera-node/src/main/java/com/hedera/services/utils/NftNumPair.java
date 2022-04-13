@@ -1,5 +1,6 @@
 package com.hedera.services.utils;
 
+import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -13,6 +14,10 @@ public record NftNumPair(long tokenNum, long serialNum) {
 				.setRealmNum(STATIC_PROPERTIES.getRealm())
 				.setTokenNum(tokenNum)
 				.build();
+	}
+
+	public NftId nftId() {
+		return NftId.withDefaultShardRealm(tokenNum, serialNum);
 	}
 
 	public static NftNumPair fromNums(final long tokenNum, final long serialNum) {
