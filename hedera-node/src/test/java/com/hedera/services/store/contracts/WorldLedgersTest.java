@@ -41,11 +41,9 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fchashmap.FCHashMap;
@@ -56,8 +54,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.nio.charset.StandardCharsets;
 
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
@@ -350,6 +346,27 @@ class WorldLedgersTest {
 		assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
 		final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
 		assertSame(liveAliases, stackedAliases.wrappedAliases());
+	}
+
+	@Test
+	void mutableLedgersCheckForToken() {
+		final var htsProxy = Address.ALTBN128_PAIRING;
+		final var htsId = EntityIdUtils.tokenIdFromEvmAddress(htsProxy);
+
+		given(tokensLedger.contains(htsId)).willReturn(true);
+
+		assertTrue(subject.isTokenAddress(htsProxy));
+	}
+
+	@Test
+	void staticLedgersUseEntityAccessForTokenTest() {
+		final var htsProxy = Address.ALTBN128_PAIRING;
+
+		given(staticEntityAccess.isTokenAccount(htsProxy)).willReturn(true);
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+
+		assertTrue(subject.isTokenAddress(htsProxy));
 	}
 
 	@Test

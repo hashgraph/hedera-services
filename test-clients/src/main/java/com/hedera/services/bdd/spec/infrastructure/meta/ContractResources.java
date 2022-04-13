@@ -92,6 +92,7 @@ public class ContractResources {
 	public static final String MUSICAL_CHAIRS_CONTRACT = bytecodePath("MusicalChairs");
 	public static final String ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("AssociateDissociateContract");
 	public static final String TOKEN_CREATE_CONTRACT = bytecodePath("TokenCreateContract");
+	public static final String FUNGIBLE_TOKEN_CREATE_CONTRACT = bytecodePath("FungibleTokenCreate");
 	public static final String SAFE_OPERATIONS_CONTRACT = bytecodePath("SafeOperationsContract");
 	public static final String NESTED_ASSOCIATE_DISSOCIATE_CONTRACT = bytecodePath("NestedAssociateDissociateContract");
 	public static final String MINT_CONTRACT = bytecodePath("MintContract");
@@ -1081,6 +1082,8 @@ public class ContractResources {
 			"\"sender\", \"type\": \"address\" }, { \"internalType\": \"address\", \"name\": \"tokenAddress\", " +
 			"\"type\": \"address\" } ], \"name\": \"tokenAssociate\", \"outputs\": [], \"stateMutability\": " +
 			"\"nonpayable\", \"type\": \"function\" }";
+
+	public static final String CREATE_FUNGIBLE_SCENARIO_5 = "{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"ed25519AdminKey\",\"type\":\"bytes\"},{\"internalType\":\"address\",\"name\":\"autoRenewAccount\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"autoRenewPeriod\",\"type\":\"uint32\"}],\"name\":\"createTokenThenQueryAndTransfer\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"createdTokenAddress\",\"type\":\"address\"}],\"stateMutability\":\"payable\",\"type\":\"function\"}";
 
 	public static final String CREATE_FUNGIBLE_ABI = "{ \"inputs\": [ { \"internalType\": \"address\", " +
 			"\"name\": \"contractKey\", \"type\": \"address\" } ], \"name\": \"createFungible\", " +

@@ -30,10 +30,8 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.EntityIdUtils;
@@ -133,33 +131,8 @@ public class MutableEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public long getAutoRenew(final AccountID id) {
-		return ledger.autoRenewPeriod(id);
-	}
-
-	@Override
 	public long getBalance(final AccountID id) {
 		return ledger.getBalance(id);
-	}
-
-	@Override
-	public long getExpiry(final AccountID id) {
-		return ledger.expiry(id);
-	}
-
-	@Override
-	public JKey getKey(final AccountID id) {
-		return ledger.key(id);
-	}
-
-	@Override
-	public String getMemo(final AccountID id) {
-		return ledger.memo(id);
-	}
-
-	@Override
-	public EntityId getProxy(final AccountID id) {
-		return ledger.proxy(id);
 	}
 
 	@Override

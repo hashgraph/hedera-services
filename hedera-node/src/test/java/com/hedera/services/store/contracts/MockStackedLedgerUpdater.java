@@ -22,14 +22,15 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class MockStackedLedgerUpdater
-		extends AbstractStackedLedgerUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> {
+		extends AbstractStackedLedgerUpdater<HederaWorldState, Account> {
 	private final ContractCustomizer customizer;
 
 	public MockStackedLedgerUpdater(
-			final AbstractLedgerWorldUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> world,
+			final AbstractLedgerWorldUpdater<HederaWorldState, Account> world,
 			final WorldLedgers trackingLedgers,
 			final ContractCustomizer customizer
 	) {
