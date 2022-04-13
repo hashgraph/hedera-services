@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
@@ -54,15 +53,13 @@ class RenewableEntityClassifierTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private TokenStore tokenStore;
-	@Mock
 	private AliasManager aliasManager;
 
 	private RenewableEntityClassifier subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new RenewableEntityClassifier(tokenStore, dynamicProps, () -> accounts);
+		subject = new RenewableEntityClassifier(dynamicProps, () -> accounts);
 	}
 
 	@Test

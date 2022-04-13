@@ -374,7 +374,7 @@ class TypedTokenStoreTest {
 		subject.persistNew(newToken);
 		verify(tokens).put(any(), any());
 		verify(sideEffectsTracker).trackTokenChanges(newToken);
-		assertEquals(treasuryAccount.getNumTreasuryTitles(), 1);
+		assertEquals(1, treasuryAccount.getNumTreasuryTitles());
 	}
 
 	@Test
