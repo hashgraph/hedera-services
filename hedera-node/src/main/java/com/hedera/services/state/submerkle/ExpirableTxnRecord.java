@@ -353,7 +353,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 
 	private void deserializeAllowanceMaps(SerializableDataInputStream in, final int version) throws IOException {
 		if (version < RELEASE_0250_VERSION) {
-			// In release 0.24.x three _always-empty_ map sizes were serialized here
+			// In release 0.24.x and 0.23.0 three _always-empty_ map sizes were serialized here
 			in.readInt();
 			in.readInt();
 			in.readInt();

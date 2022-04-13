@@ -21,9 +21,17 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.serde.SelfSerializableDataTest;
+import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
+import com.swirlds.common.io.SerializableDataInputStream;
+import org.bouncycastle.util.Arrays;
+import org.junit.jupiter.api.Test;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0230_VERSION;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
 	public static final int NUM_TEST_CASES = 4 * MIN_TEST_CASES_PER_VERSION;
@@ -39,7 +47,32 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 	}
 
 	@Override
+	protected byte[] getSerializedForm(final int version, final int testCaseNo) {
+		return SerializedForms.loadForm(ExpirableTxnRecord.class, version, testCaseNo);
+	}
+
+	@Override
+	protected ExpirableTxnRecord getExpectedObject(final int version, final int testCaseNo) {
+		return SeededPropertySource.forSerdeTest(version, testCaseNo).nextRecord();
+	}
+
+	@Override
 	protected ExpirableTxnRecord getExpectedObject(final SeededPropertySource propertySource) {
 		return propertySource.nextRecord();
+	}
+
+	@Test
+	void testDeserializingMultipleExpirableTxnRecords() throws IOException {
+		byte[] objectBytes = getSerializedForm(RELEASE_0230_VERSION, 1);
+		byte[] bytes = Arrays.concatenate(objectBytes, objectBytes);
+		SerializableDataInputStream inputStream = new SerializableDataInputStream(new ByteArrayInputStream(bytes));
+		ExpirableTxnRecord record1 = new ExpirableTxnRecord();
+		ExpirableTxnRecord record2 = new ExpirableTxnRecord();
+		record1.deserialize(inputStream, RELEASE_0230_VERSION);
+		record2.deserialize(inputStream, RELEASE_0230_VERSION);
+
+		ExpirableTxnRecord expected = getExpectedObject(RELEASE_0230_VERSION, 1);
+		assertEquals(expected, record1);
+		assertEquals(expected, record2);
 	}
 }
