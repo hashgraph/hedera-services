@@ -22,19 +22,23 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.utils.RationalizedSigMeta;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.SwirldTransaction;
+import org.apache.commons.codec.binary.StringUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -43,7 +47,10 @@ import java.util.function.Function;
 
 import static com.hedera.services.utils.MiscUtils.functionExtractor;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -52,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.times;
@@ -297,5 +305,86 @@ class PlatformTxnAccessorTest {
 
 		// then:
 		assertEquals(payer, subject.getPayer());
+	}
+
+	@Test
+	void delegatesToSignedTxnAccessor() throws InvalidProtocolBufferException {
+		AccountID payer = asAccount("0.0.2");
+		TransactionBody someTxn = TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+				.setMemo("Hi!")
+				.setConsensusSubmitMessage(
+						ConsensusSubmitMessageTransactionBody.newBuilder().setTopicID(asTopic("0.0.10")).build()
+				).build();
+		final ByteString canonicalSig = ByteString.copyFromUtf8("0123456789012345678901234567890123456789012345678901234567890123");
+		final SignatureMap onePairSigMap = SignatureMap.newBuilder()
+				.addSigPair(SignaturePair.newBuilder()
+						.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+						.setEd25519(canonicalSig))
+				.build();
+		Transaction signedTxnWithBody = Transaction.newBuilder()
+				.setBodyBytes(someTxn.toByteString())
+				.setSigMap(onePairSigMap)
+				.build();
+		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+
+		// when:
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);
+		final var delegate = subject.getDelegate();
+
+		// then:
+		assertEquals(onePairSigMap, subject.getSigMap());
+		assertEquals(delegate.getSigMap(), subject.getSigMap());
+
+		assertEquals(ConsensusSubmitMessage, subject.getFunction());
+		assertEquals(delegate.getFunction(), subject.getFunction());
+
+		assertEquals(delegate.getOfferedFee(), subject.getOfferedFee());
+
+		assertEquals(SubType.DEFAULT, subject.getSubType());
+		assertEquals(delegate.getSubType(), subject.getSubType());
+
+		assertEquals("Hi!", subject.getMemo());
+		assertEquals(delegate.getMemo(), subject.getMemo());
+
+		assertArrayEquals(StringUtils.getBytesUtf8("Hi!"), subject.getMemoUtf8Bytes());
+		assertArrayEquals(delegate.getMemoUtf8Bytes(), subject.getMemoUtf8Bytes());
+
+		assertEquals(false, subject.memoHasZeroByte());
+		assertEquals(delegate.memoHasZeroByte(), subject.memoHasZeroByte());
+
+		final var sigMeta = mock(RationalizedSigMeta.class);
+		final var refs = mock(LinkedRefs.class);
+		final var scheduleRef = IdUtils.asSchedule("0.0.123");
+		final var payerId = asAccount("0.0.2");
+
+		subject.setTriggered(true);
+		subject.setExpandedSigStatus(OK);
+		subject.setScheduleRef(scheduleRef);
+		subject.setNumAutoCreations(2);
+		subject.setPayer(payerId);
+		subject.setLinkedRefs(refs);
+		subject.setSigMeta(sigMeta);
+
+
+		assertTrue(delegate.isTriggeredTxn());
+		assertEquals(OK, subject.getExpandedSigStatus());
+		assertEquals(2, subject.getNumAutoCreations());
+		assertEquals(scheduleRef, subject.getScheduleRef());
+		assertEquals(payerId, subject.getPayer());
+		assertEquals(refs, subject.getLinkedRefs());
+		assertEquals(sigMeta, subject.getSigMeta());
+		assertEquals(false, subject.canTriggerTxn());
+		assertEquals(delegate.canTriggerTxn(), subject.canTriggerTxn());
+		assertEquals(delegate.getScheduleRef(), subject.getScheduleRef());
+
+		assertEquals(delegate.usageGiven(2), subject.usageGiven(2));
+		assertEquals(1, subject.usageGiven(2).numSigs());
+
+		assertEquals(delegate.baseUsageMeta(), subject.baseUsageMeta());
+		assertEquals(delegate.getMemoUtf8Bytes().length, subject.baseUsageMeta().memoUtf8Bytes());
+
+		assertEquals(delegate.availSubmitUsageMeta(), subject.availSubmitUsageMeta());
+		assertEquals(someTxn.getConsensusSubmitMessage().getMessage().size(), subject.availSubmitUsageMeta().numMsgBytes());
 	}
 }
