@@ -60,19 +60,4 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 	protected ExpirableTxnRecord getExpectedObject(final SeededPropertySource propertySource) {
 		return propertySource.nextRecord();
 	}
-
-	@Test
-	void testDeserializingMultipleExpirableTxnRecords() throws IOException {
-		byte[] objectBytes = getSerializedForm(RELEASE_0230_VERSION, 1);
-		byte[] bytes = Arrays.concatenate(objectBytes, objectBytes);
-		SerializableDataInputStream inputStream = new SerializableDataInputStream(new ByteArrayInputStream(bytes));
-		ExpirableTxnRecord record1 = new ExpirableTxnRecord();
-		ExpirableTxnRecord record2 = new ExpirableTxnRecord();
-		record1.deserialize(inputStream, RELEASE_0230_VERSION);
-		record2.deserialize(inputStream, RELEASE_0230_VERSION);
-
-		ExpirableTxnRecord expected = getExpectedObject(RELEASE_0230_VERSION, 1);
-		assertEquals(expected, record1);
-		assertEquals(expected, record2);
-	}
 }

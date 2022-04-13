@@ -122,15 +122,13 @@ public class SerdeUtils {
 				grpc.getData().isEmpty() ? EvmLog.MISSING_BYTES : grpc.getData().toByteArray());
 	}
 
-	public static <T extends SelfSerializable> T deserializeFromBytes(
+	public static <T extends SelfSerializable> T deserializeFromInputStream(
 			final Supplier<T> factory,
 			final int version,
-			final byte[] serializedForm
+			final InputStream inputStream
 	) {
 		final var reconstruction = factory.get();
-
-		final var bais = new ByteArrayInputStream(serializedForm);
-		final var in = new SerializableDataInputStream(bais);
+		final var in = new SerializableDataInputStream(inputStream);
 		try {
 			reconstruction.deserialize(in, version);
 		} catch (IOException e) {

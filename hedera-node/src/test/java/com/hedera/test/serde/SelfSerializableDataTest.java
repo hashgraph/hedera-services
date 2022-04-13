@@ -20,13 +20,14 @@ package com.hedera.test.serde;
  * ‍
  */
 
-import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.ClassLoaderHelper;
+import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.Versioned;
+import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -35,6 +36,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import java.io.ByteArrayInputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -44,7 +46,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
-import static com.hedera.test.utils.SerdeUtils.deserializeFromBytes;
+import static com.hedera.test.utils.SerdeUtils.deserializeFromInputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
@@ -153,14 +155,19 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	@ParameterizedTest
 	@ArgumentsSource(SupportedVersionsArgumentsProvider.class)
 	void deserializationWorksForAllSupportedVersions(final int version, final int testCaseNo) {
+		// Because tests need to ensure if all bytes are properly consumed, these tests will concatenate two copies
+		// of each serialized form and try to deserialize two of the same objects. They should match exactly.
 		final var serializedForm = getSerializedForm(version, testCaseNo);
 		final var expectedObject = getExpectedObject(version, testCaseNo);
+		final var twoSerializedObjects = Arrays.concatenate(serializedForm, serializedForm);
+		final var inputStream = new ByteArrayInputStream(twoSerializedObjects);
 
-		final T actualObject = deserializeFromBytes(() -> instantiate(getType()), version, serializedForm);
-
-		customAssertEquals().ifPresentOrElse(
-				customAssert -> customAssert.accept(expectedObject, actualObject),
-				() -> assertEquals(expectedObject, actualObject));
+		for (int i = 0; i < 2; i++) {
+			final T actualObject = deserializeFromInputStream(() -> instantiate(getType()), version, inputStream);
+			customAssertEquals().ifPresentOrElse(
+					customAssert -> customAssert.accept(expectedObject, actualObject),
+					() -> assertEquals(expectedObject, actualObject));
+		}
 	}
 
 	@ParameterizedTest
