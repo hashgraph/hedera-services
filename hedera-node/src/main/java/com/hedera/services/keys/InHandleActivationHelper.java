@@ -21,7 +21,8 @@ package com.hedera.services.keys;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 
@@ -50,13 +51,14 @@ public class InHandleActivationHelper {
 	static Activation activation = HederaKeyActivation::isActive;
 
 	private final CharacteristicsFactory characteristics;
-	private final Supplier<TxnAccessor> accessorSource;
+	private final Supplier<SwirldsTxnAccessor> accessorSource;
 
 	private List<JKey> otherParties = NO_OTHER_PARTIES;
 	private TxnAccessor accessor = NO_LAST_ACCESSOR;
 	private Function<byte[], TransactionSignature> sigsFn = NO_LAST_SIGS_FN;
 
-	public InHandleActivationHelper(CharacteristicsFactory characteristics, Supplier<TxnAccessor> accessorSource) {
+	public InHandleActivationHelper(CharacteristicsFactory characteristics,
+			Supplier<SwirldsTxnAccessor> accessorSource) {
 		this.characteristics = characteristics;
 		this.accessorSource = accessorSource;
 	}
@@ -66,7 +68,8 @@ public class InHandleActivationHelper {
 	 * suffice to meet the signing requirements of all Hedera keys prerequisite
 	 * to the active transaction.
 	 *
-	 * @param tests the predicate(s) to use for testing if an primitive key has signed
+	 * @param tests
+	 * 		the predicate(s) to use for testing if an primitive key has signed
 	 * @return whether or not the given set of keys are sufficient for signing the active transaction
 	 */
 	public boolean areOtherPartiesActive(BiPredicate<JKey, TransactionSignature> tests) {
@@ -79,8 +82,10 @@ public class InHandleActivationHelper {
 	 * suffice to meet the signing requirements of all Hedera keys prerequisite
 	 * to the schedule referenced by the active transaction.
 	 *
-	 * @param scheduledTxn the scheduled transaction
-	 * @param tests the predicate(s) to use for testing if a primitive key has signed
+	 * @param scheduledTxn
+	 * 		the scheduled transaction
+	 * @param tests
+	 * 		the predicate(s) to use for testing if a primitive key has signed
 	 * @return whether or not the given set of keys are sufficient for signing the schedule
 	 * 		referenced by the active transaction
 	 */
@@ -97,7 +102,8 @@ public class InHandleActivationHelper {
 	 * that constitute the Hedera keys prerequisite to the schedule referenced by
 	 * the active transaction.
 	 *
-	 * @param visitor the consumer to give the tour to
+	 * @param visitor
+	 * 		the consumer to give the tour to
 	 */
 	public void visitScheduledCryptoSigs(BiConsumer<JKey, TransactionSignature> visitor) {
 		ensureUpToDate();

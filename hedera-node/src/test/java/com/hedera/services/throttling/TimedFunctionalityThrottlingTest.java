@@ -20,7 +20,7 @@ package com.hedera.services.throttling;
  * ‍
  */
 
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.Query;
 import org.junit.jupiter.api.Test;
 

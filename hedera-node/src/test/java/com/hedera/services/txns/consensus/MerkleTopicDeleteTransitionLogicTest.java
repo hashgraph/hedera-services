@@ -23,9 +23,9 @@ package com.hedera.services.txns.consensus;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -61,7 +61,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 	private Instant consensusTime;
 	private TransactionBody transactionBody;
 	private TransactionContext transactionContext;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private MerkleMap<EntityNum, MerkleTopic> topics = new MerkleMap<>();
 	private OptionValidator validator;
 	private TopicDeleteTransitionLogic subject;
@@ -76,7 +76,7 @@ class MerkleTopicDeleteTransitionLogicTest {
 
 		transactionContext = mock(TransactionContext.class);
 		given(transactionContext.consensusTime()).willReturn(consensusTime);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		validator = mock(OptionValidator.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		topics.clear();

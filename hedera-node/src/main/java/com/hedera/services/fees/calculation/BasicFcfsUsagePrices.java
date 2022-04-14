@@ -24,7 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.pricing.RequiredPriceTypes;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;

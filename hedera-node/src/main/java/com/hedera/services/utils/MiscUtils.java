@@ -61,6 +61,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -239,6 +240,14 @@ public final class MiscUtils {
 			ContractCall,
 			ContractCreate
 	);
+
+	public static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
+		try {
+			return functionOf(trans);
+		} catch (UnknownHederaFunctionality ignore) {
+			return NONE;
+		}
+	};
 
 	static final String TOKEN_MINT_METRIC = "mintToken";
 	static final String TOKEN_BURN_METRIC = "burnToken";

@@ -24,7 +24,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

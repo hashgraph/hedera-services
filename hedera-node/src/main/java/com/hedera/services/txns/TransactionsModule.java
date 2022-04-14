@@ -40,6 +40,7 @@ import com.hedera.services.txns.submission.BasicSubmissionFlow;
 import com.hedera.services.txns.token.TokenLogicModule;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -76,8 +77,8 @@ public interface TransactionsModule {
 
 	@Provides
 	@Singleton
-	static ExpandHandleSpan provideExpandHandleSpan(SpanMapManager spanMapManager) {
-		return new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager);
+	static ExpandHandleSpan provideExpandHandleSpan(SpanMapManager spanMapManager, AccessorFactory factory) {
+		return new ExpandHandleSpan(10, TimeUnit.SECONDS, spanMapManager, factory);
 	}
 
 	@Provides

@@ -36,7 +36,7 @@ import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;

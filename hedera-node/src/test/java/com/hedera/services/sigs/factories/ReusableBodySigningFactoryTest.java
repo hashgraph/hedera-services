@@ -21,7 +21,7 @@ package com.hedera.services.sigs.factories;
  */
 
 import com.hedera.services.sigs.utils.MiscCryptoUtils;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;

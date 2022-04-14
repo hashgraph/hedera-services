@@ -22,7 +22,7 @@ package com.hedera.services.txns.submission;
 
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.SubmissionFlow;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -48,7 +48,8 @@ public final class TxnResponseHelper {
 	private final HapiOpCounters opCounters;
 
 	@Inject
-	public TxnResponseHelper(final SubmissionFlow submissionFlow, final HapiOpCounters opCounters) {
+	public TxnResponseHelper(final SubmissionFlow submissionFlow,
+			final HapiOpCounters opCounters) {
 		this.opCounters = opCounters;
 		this.submissionFlow = submissionFlow;
 	}
