@@ -30,11 +30,16 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FilePartTest {
 	private static final byte[] SOME_DATA = "abcdefgh".getBytes(StandardCharsets.UTF_8);
@@ -84,5 +89,32 @@ class FilePartTest {
 		newSubject.deserialize(din, 1);
 
 		assertArrayEquals(subject.getData(), newSubject.getData());
+	}
+
+	@Test
+	void checkEqualityComparisonWorks() {
+		subject = new FilePart(SOME_DATA);
+		assertTrue(subject.equals(subject));
+		assertFalse(subject.equals(null));
+		assertFalse(subject.equals(new Object()));
+		assertTrue(subject.equals(new FilePart(SOME_DATA)));
+		assertFalse(subject.equals(new FilePart("DIFFERENT DATA".getBytes())));
+	}
+
+	@Test
+	void checkHashCodeDiverse() {
+		Set<Integer> hashCodes = new HashSet<>();
+		hashCodes.add(new FilePart("DATA1".getBytes()).hashCode());
+		hashCodes.add(new FilePart("DATA2".getBytes()).hashCode());
+		hashCodes.add(new FilePart("dATA1".getBytes()).hashCode());
+		hashCodes.add(new FilePart(new byte[] {}).hashCode());
+		assertTrue(hashCodes.size() >= 3);
+	}
+
+	@Test
+	void stringContainsBytes() {
+		assertTrue(new FilePart(new byte[] {10, 20, 30}).toString().contains("10"));
+		assertTrue(new FilePart(new byte[] {10, 20, 30}).toString().contains("20"));
+		assertTrue(new FilePart(new byte[] {10, 20, 30}).toString().contains("30"));
 	}
 }

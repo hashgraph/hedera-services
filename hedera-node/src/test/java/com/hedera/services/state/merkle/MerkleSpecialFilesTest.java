@@ -41,6 +41,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -274,5 +276,48 @@ class MerkleSpecialFilesTest {
 		newSubject.deserialize(din, MerkleSpecialFiles.CURRENT_VERSION);
 
 		assertTrue(newSubject.getFileContents().isEmpty(), "Deserialized instance should be empty");
+	}
+
+	@Test
+	void checkHashCodesDiverse() {
+		Set<Integer> hashCodes = new HashSet<>();
+		hashCodes.add(subject.hashCode());
+		subject.append(fid, "hello".getBytes());
+		hashCodes.add(subject.hashCode());
+		subject.append(secondFid, "hello".getBytes());
+		hashCodes.add(subject.hashCode());
+		subject.append(fid, " ".getBytes());
+		hashCodes.add(subject.hashCode());
+		assertTrue(hashCodes.size() >= 3);
+	}
+
+	@Test
+	void checkStringContainsContents() {
+		subject.append(fid, new byte[] {123});
+		assertTrue(subject.toString().contains(String.valueOf(fid.getFileNum())));
+		subject.append(secondFid, new byte[] {111});
+		assertTrue(subject.toString().contains(String.valueOf(secondFid.getFileNum())), subject.toString());
+	}
+
+	@Test
+	void checkEqualityWorks() {
+		assertTrue(subject.equals(subject));
+		assertFalse(subject.equals(null));
+		assertFalse(subject.equals(new Object()));
+
+		// Matching initial contents
+		assertTrue(new MerkleSpecialFiles().equals(new MerkleSpecialFiles()));
+		// Matching added contents
+		var msf1 = new MerkleSpecialFiles();
+		var msf2 = new MerkleSpecialFiles();
+		msf1.append(fid, "hello".getBytes());
+		msf2.append(fid, "hello".getBytes());
+		assertTrue(msf2.equals(msf1));
+		assertTrue(msf1.equals(msf2));
+
+		// Mismatching contents
+		msf2.append(fid, " ".getBytes());
+		assertFalse(msf2.equals(msf1));
+		assertFalse(msf1.equals(msf2));
 	}
 }
