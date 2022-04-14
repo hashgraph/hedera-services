@@ -33,7 +33,7 @@ import com.hedera.services.sigs.metadata.StateChildrenSigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenMetaUtils;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.Platform;
 import com.swirlds.common.SwirldTransaction;
 
@@ -52,7 +52,7 @@ import java.util.function.Function;
  *
  * We prefer to lookup the Hedera keys from the latest signed state, since if the entities with those keys
  * are unchanged between {@code expandSignatures} and {@code handleTransaction}, we can skip the otherwise
- * necessary step of re-expanding signatures in {@link Rationalization#performFor(PlatformTxnAccessor)}.
+ * necessary step of re-expanding signatures in {@link Rationalization#performFor(SwirldsTxnAccessor)}.
  *
  * This class is <b>NOT</b> thread-safe.
  */
@@ -103,7 +103,7 @@ public class SigReqsManager {
 	 * @param accessor
 	 * 		a transaction that needs linked signatures expanded
 	 */
-	public void expandSigsInto(final PlatformTxnAccessor accessor) {
+	public void expandSigsInto(final SwirldsTxnAccessor accessor) {
 		if (dynamicProperties.expandSigsFromLastSignedState() && tryExpandFromSignedState(accessor)) {
 			return;
 		}
@@ -116,7 +116,7 @@ public class SigReqsManager {
 	 * @param accessor
 	 * 		the transaction to expand signatures for
 	 */
-	private void expandFromWorkingState(final PlatformTxnAccessor accessor) {
+	private void expandFromWorkingState(final SwirldsTxnAccessor accessor) {
 		ensureWorkingStateSigReqsIsConstructed();
 		expansionHelper.expandIn(accessor, workingSigReqs, accessor.getPkToSigsFn());
 	}
@@ -129,7 +129,7 @@ public class SigReqsManager {
 	 * 		the transaction to expand signatures for
 	 * @return whether the expansion attempt succeeded
 	 */
-	private boolean tryExpandFromSignedState(final PlatformTxnAccessor accessor) {
+	private boolean tryExpandFromSignedState(final SwirldsTxnAccessor accessor) {
 		/* Update our children (e.g., MerkleMaps and VirtualMaps) from the current signed state.
 		 * Because event intake is single-threaded, there's no risk of another thread getting
 		 * inconsistent results while we are doing this. Also, note that MutableStateChildren
@@ -155,7 +155,7 @@ public class SigReqsManager {
 	 *
 	 * @param accessor
 	 */
-	private void expandFromSignedState(final PlatformTxnAccessor accessor) {
+	private void expandFromSignedState(final SwirldsTxnAccessor accessor) {
 		ensureSignedStateSigReqsIsConstructed();
 		expansionHelper.expandIn(accessor, signedSigReqs, accessor.getPkToSigsFn());
 	}

@@ -24,7 +24,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.SwirldDualState;
@@ -81,7 +81,7 @@ public final class HederaToPlatformSigOps {
 	 * 		source of crypto sigs for the simple keys in the Hedera key leaves
 	 */
 	public static void expandIn(
-			final PlatformTxnAccessor txnAccessor,
+			final SwirldsTxnAccessor txnAccessor,
 			final SigRequirements sigReqs,
 			final PubKeyToSigBytes pkToSigFn
 	) {

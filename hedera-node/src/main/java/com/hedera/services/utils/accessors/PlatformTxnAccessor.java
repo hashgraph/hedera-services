@@ -75,14 +75,17 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 		return new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);
 	}
 
+	@Override
 	public SwirldTransaction getPlatformTxn() {
 		return platformTxn;
 	}
 
+	@Override
 	public void setSigMeta(RationalizedSigMeta sigMeta) {
 		this.sigMeta = sigMeta;
 	}
 
+	@Override
 	public RationalizedSigMeta getSigMeta() {
 		return sigMeta;
 	}
@@ -134,7 +137,7 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
 		return meta.pkToVerifiedSigFn();
 	}
 
-
+	@Override
 	public TxnAccessor getDelegate() { return delegate; }
 
 	/* ---Delegates to SignedTxnAccessor --- */

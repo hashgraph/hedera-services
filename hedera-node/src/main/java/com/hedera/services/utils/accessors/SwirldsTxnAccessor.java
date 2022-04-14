@@ -55,4 +55,6 @@ public interface SwirldsTxnAccessor extends TxnAccessor {
 	RationalizedSigMeta getSigMeta();
 
 	Function<byte[], TransactionSignature> getRationalizedPkToCryptoSigFn();
+
+	TxnAccessor getDelegate();
 }

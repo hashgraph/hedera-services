@@ -25,6 +25,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.SwirldDualState;
 import com.swirlds.common.SwirldTransaction;
 
@@ -55,7 +56,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExpandHandleSpan {
 	private final SpanMapManager spanMapManager;
-	private final Cache<SwirldTransaction, PlatformTxnAccessor> accessorCache;
+	private final Cache<SwirldTransaction, SwirldsTxnAccessor> accessorCache;
 	private final AccessorFactory factory;
 
 	public ExpandHandleSpan(
@@ -71,13 +72,13 @@ public class ExpandHandleSpan {
 		this.factory = factory;
 	}
 
-	public PlatformTxnAccessor track(SwirldTransaction transaction) throws InvalidProtocolBufferException {
+	public SwirldsTxnAccessor track(SwirldTransaction transaction) throws InvalidProtocolBufferException {
 		final var accessor = spanAccessorFor(transaction);
 		accessorCache.put(transaction, accessor);
 		return accessor;
 	}
 
-	public PlatformTxnAccessor accessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
+	public SwirldsTxnAccessor accessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
 		final var cachedAccessor = accessorCache.getIfPresent(transaction);
 		if (cachedAccessor != null) {
 			spanMapManager.rationalizeSpan(cachedAccessor);
@@ -87,7 +88,7 @@ public class ExpandHandleSpan {
 		}
 	}
 
-	private PlatformTxnAccessor spanAccessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
+	private SwirldsTxnAccessor spanAccessorFor(SwirldTransaction transaction) throws InvalidProtocolBufferException {
 		final var accessor = factory.nonTriggeredTxn(transaction.getContentsDirect());
 		spanMapManager.expandSpan(accessor);
 		return PlatformTxnAccessor.from(accessor, transaction);

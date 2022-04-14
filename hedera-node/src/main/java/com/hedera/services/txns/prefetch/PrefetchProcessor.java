@@ -24,7 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -93,7 +93,7 @@ public class PrefetchProcessor {
      *
      * @param accessor the transaction accessor
      */
-    public void submit(PlatformTxnAccessor accessor) {
+    public void submit(SwirldsTxnAccessor accessor) {
         final var opt = lookup.lookupFor(accessor.getFunction(), accessor.getTxn());
 
         if (opt.isPresent()) {

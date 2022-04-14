@@ -25,7 +25,6 @@ import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
@@ -137,7 +136,7 @@ public interface TransactionContext {
 	TxnAccessor accessor();
 
 	/**
-	 * Gets a platform transaction accessor to the defined type {@link PlatformTxnAccessor}
+	 * Gets a platform transaction accessor to the defined type {@link SwirldsTxnAccessor}
 	 * currently being processed.
 	 *
 	 * @return accessor for the current txn.
