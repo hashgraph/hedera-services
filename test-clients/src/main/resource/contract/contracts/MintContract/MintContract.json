@@ -1,0 +1,125 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": true,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "totalSupply",
+        "type": "uint64"
+      },
+      {
+        "indexed": true,
+        "internalType": "int256",
+        "name": "firstSerialNumber",
+        "type": "int256"
+      }
+    ],
+    "name": "MintedTokenInfo",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "amount",
+        "type": "uint64"
+      }
+    ],
+    "name": "mintFungibleToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "amount",
+        "type": "uint64"
+      }
+    ],
+    "name": "mintFungibleTokenWithEvent",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes[]",
+        "name": "metadata",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "mintNonFungibleToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "metadata",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "mintNonFungibleTokenWithAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes[]",
+        "name": "metadata",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "mintNonFungibleTokenWithEvent",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "internalType": "int64",
+        "name": "amount",
+        "type": "int64"
+      }
+    ],
+    "name": "revertMintAfterFailedMint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
