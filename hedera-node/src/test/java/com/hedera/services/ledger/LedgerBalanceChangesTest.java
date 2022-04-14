@@ -57,7 +57,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -323,15 +322,6 @@ class LedgerBalanceChangesTest {
 		assertEquals(
 				bYetAnotherTokenBalance + bYetAnotherTokenChange,
 				backingRels.getImmutableRef(rel(bModel, yetAnotherToken)).getBalance());
-	}
-
-	@Test
-	void understandsTreasuries() {
-		givenInitialBalancesAndOwnership();
-
-		// expect:
-		assertTrue(subject.isKnownTreasury(aModel));
-		Assertions.assertFalse(subject.isKnownTreasury(cModel));
 	}
 
 	@Test

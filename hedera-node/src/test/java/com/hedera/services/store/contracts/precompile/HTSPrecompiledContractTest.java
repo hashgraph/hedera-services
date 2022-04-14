@@ -197,14 +197,6 @@ class HTSPrecompiledContractTest {
 	}
 
 	@Test
-	void noopTreasuryManagersDoNothing() {
-		assertDoesNotThrow(() ->
-				HTSPrecompiledContract.NOOP_TREASURY_ADDER.perform(null, null));
-		assertDoesNotThrow(() ->
-				HTSPrecompiledContract.NOOP_TREASURY_REMOVER.removeKnownTreasuryForToken(null, null));
-	}
-
-	@Test
 	void gasRequirementReturnsCorrectValueForInvalidInput() {
 		// when
 		var gas = subject.gasRequirement(input);

@@ -170,12 +170,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
 	public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
 
-	/* Precompiles cannot change treasury accounts */
-	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
-	};
-	public static final TypedTokenStore.LegacyTreasuryRemover NOOP_TREASURY_REMOVER = (aId, tId) -> {
-	};
-
 	private CreateLogicFactory createLogicFactory = CreateLogic::new;
 	private MintLogicFactory mintLogicFactory = MintLogic::new;
 	private BurnLogicFactory burnLogicFactory = BurnLogic::new;
@@ -511,7 +505,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return tokenStoreFactory.newTokenStore(
 				accountStore,
 				ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
-				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
 				sideEffects);
 	}
 
@@ -661,8 +654,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				BackingStore<TokenID, MerkleToken> tokens,
 				BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
 				BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-				TypedTokenStore.LegacyTreasuryAdder treasuryAdder,
-				TypedTokenStore.LegacyTreasuryRemover treasuryRemover,
 				SideEffectsTracker sideEffectsTracker);
 	}
 

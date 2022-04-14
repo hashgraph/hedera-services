@@ -121,6 +121,19 @@ class AccountTest {
 	}
 
 	@Test
+	void canManipulateTreasuryTitles() {
+		subject.setNumTreasuryTitles(3);
+		assertEquals(3, subject.getNumTreasuryTitles());
+		subject.incrementNumTreasuryTitles();
+		assertEquals(4, subject.getNumTreasuryTitles());
+		subject.decrementNumTreasuryTitles();
+		assertEquals(3, subject.getNumTreasuryTitles());
+
+		subject.setNumTreasuryTitles(0);
+		assertFailsWith(() -> subject.decrementNumTreasuryTitles(), FAIL_INVALID);
+	}
+
+	@Test
 	void canonicalAddressIsMirrorWithEmptyAlias() {
 		assertEquals(EntityNum.fromModel(subjectId).toEvmAddress(), subject.canonicalAddress());
 	}

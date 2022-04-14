@@ -57,10 +57,11 @@ contract FeeHelper is KeyHelper {
     }
 
     function createFixedFeesWithAllTypes(uint32 amount, address tokenId, address feeCollector) internal pure returns (IHederaTokenService.FixedFee[] memory fixedFees) {
+        fixedFees = new IHederaTokenService.FixedFee[](3);
         IHederaTokenService.FixedFee memory fixedFeeForToken = createFixedFeeForToken(amount, tokenId, feeCollector);
         IHederaTokenService.FixedFee memory fixedFeeForHbars = createFixedFeeForHbars(amount*2, feeCollector);
         IHederaTokenService.FixedFee memory fixedFeeForCurrentToken = createFixedFeeForCurrentToken(amount*4, feeCollector);
-        fixedFees[1] = fixedFeeForToken;
+        fixedFees[0] = fixedFeeForToken;
         fixedFees[1] = fixedFeeForHbars;
         fixedFees[2] = fixedFeeForCurrentToken;
     }
@@ -174,6 +175,22 @@ contract FeeHelper is KeyHelper {
 
         IHederaTokenService.RoyaltyFee memory royaltyFee = createRoyaltyFeeWithFallbackFee(numerator, denominator, amount, tokenId, useHbarsForPayment, feeCollector);
         royaltyFees[0] = royaltyFee;
+    }
+
+    function createRoyaltyFeesWithAllTypes(
+        uint32 numerator,
+        uint32 denominator,
+        uint32 amount,
+        address tokenId,
+        address feeCollector)
+    internal pure returns (IHederaTokenService.RoyaltyFee[] memory royaltyFees) {
+        royaltyFees = new IHederaTokenService.RoyaltyFee[](3);
+        IHederaTokenService.RoyaltyFee memory royaltyFeeWithoutFallback = createRoyaltyFee(numerator, denominator, feeCollector);
+        IHederaTokenService.RoyaltyFee memory royaltyFeeWithFallbackHbar = createRoyaltyFeeWithFallbackFee(numerator, denominator, amount, address(0x0), true, feeCollector);
+        IHederaTokenService.RoyaltyFee memory royaltyFeeWithFallbackToken = createRoyaltyFeeWithFallbackFee(numerator, denominator, amount, tokenId, false, feeCollector);
+        royaltyFees[0] = royaltyFeeWithoutFallback;
+        royaltyFees[1] = royaltyFeeWithFallbackHbar;
+        royaltyFees[2] = royaltyFeeWithFallbackToken;
     }
 
     function createRoyaltyFee(uint32 numerator, uint32 denominator, address feeCollector) internal pure returns (IHederaTokenService.RoyaltyFee memory royaltyFee) {
