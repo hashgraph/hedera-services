@@ -48,7 +48,9 @@ import static org.mockito.BDDMockito.given;
 class HederaSelfDestructOperationTest {
 	private static final EntityNum beneficiary = EntityNum.fromLong(2_345);
 	private static final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
+	private static final String anotherEthAddress = "0xc257274276a4e539741ca11b590b9447b26a8052";
 	private static final Address eip1014Address = Address.fromHexString(ethAddress);
+	private static final Address anotherEip1014Address = Address.fromHexString(anotherEthAddress);
 
 	@Mock
 	private HederaStackedWorldStateUpdater worldUpdater;
@@ -114,7 +116,7 @@ class HederaSelfDestructOperationTest {
 
 		final var beneficiaryMirror = beneficiary.toEvmAddress();
 		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
-		given(worldUpdater.priorityAddress(beneficiaryMirror)).willReturn(eip1014Address);
+		given(worldUpdater.priorityAddress(beneficiaryMirror)).willReturn(anotherEip1014Address);
 		given(frame.getRecipientAddress()).willReturn(eip1014Address);
 		given(worldUpdater.contractIsTokenTreasury(eip1014Address)).willReturn(true);
 
@@ -130,7 +132,7 @@ class HederaSelfDestructOperationTest {
 
 		final var beneficiaryMirror = beneficiary.toEvmAddress();
 		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
-		given(worldUpdater.priorityAddress(beneficiaryMirror)).willReturn(eip1014Address);
+		given(worldUpdater.priorityAddress(beneficiaryMirror)).willReturn(anotherEip1014Address);
 		given(frame.getRecipientAddress()).willReturn(eip1014Address);
 		given(worldUpdater.contractHasAnyBalance(eip1014Address)).willReturn(true);
 
@@ -146,7 +148,7 @@ class HederaSelfDestructOperationTest {
 
 		final var beneficiaryMirror = beneficiary.toEvmAddress();
 		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
-		given(worldUpdater.priorityAddress(beneficiaryMirror)).willReturn(eip1014Address);
+		given(worldUpdater.priorityAddress(beneficiaryMirror)).willReturn(anotherEip1014Address);
 		given(frame.getRecipientAddress()).willReturn(eip1014Address);
 		given(worldUpdater.contractOwnsNfts(eip1014Address)).willReturn(true);
 
