@@ -22,6 +22,7 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.utils.RationalizedSigMeta;
@@ -328,6 +329,7 @@ class PlatformTxnAccessorTest {
 				.setSigMap(onePairSigMap)
 				.build();
 		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var aliasManager = mock(AliasManager.class);
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);
@@ -393,6 +395,11 @@ class PlatformTxnAccessorTest {
 
 		assertEquals(delegate.availSubmitUsageMeta(), subject.availSubmitUsageMeta());
 		assertEquals(someTxn.getConsensusSubmitMessage().getMessage().size(), subject.availSubmitUsageMeta().numMsgBytes());
+
+		assertEquals(delegate, subject.castToSpecialized());
+
+		subject.countAutoCreationsWith(aliasManager);
+
 	}
 
 	@Test

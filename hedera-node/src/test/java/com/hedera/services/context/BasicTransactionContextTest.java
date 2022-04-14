@@ -39,6 +39,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -146,6 +147,8 @@ class BasicTransactionContextTest {
 	private NarratedCharging narratedCharging;
 	@Mock
 	private SignedTxnAccessor accessor;
+	@Mock
+	private SwirldsTxnAccessor swirldsTxnAccessor;
 	@Mock
 	private TransactionBody txn;
 	@Mock
@@ -624,6 +627,19 @@ class BasicTransactionContextTest {
 		given(result.getGasUsed()).willReturn(gasUsed);
 		subject.setCallResult(result);
 		assertEquals(gasUsed, subject.getGasUsedForContractTxn());
+	}
+
+	@Test
+	void throwsIfNotSwirldsTxnAccessor(){
+		assertThrows(IllegalStateException.class, () -> subject.swirldsTxnAccessor());
+
+		subject = new BasicTransactionContext(
+				narratedCharging, () -> accounts, nodeInfo, exchange, creator, sideEffectsTracker, ids);
+
+		subject.resetFor(swirldsTxnAccessor, now, memberId);
+		verify(narratedCharging).resetForTxn(swirldsTxnAccessor, memberId);
+
+		assertEquals(swirldsTxnAccessor, subject.swirldsTxnAccessor());
 	}
 
 	private ExpirableTxnRecord.Builder buildExpectedRecord(
