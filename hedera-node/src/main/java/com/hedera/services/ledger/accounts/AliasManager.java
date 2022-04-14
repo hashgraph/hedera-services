@@ -30,14 +30,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.asn1.x9.X9IntegerConverter;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
-import org.bouncycastle.math.ec.ECCurve;
-import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
-import org.spongycastle.util.encoders.Hex;
-import java.math.BigInteger;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

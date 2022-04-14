@@ -49,7 +49,6 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.StoresModule;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
