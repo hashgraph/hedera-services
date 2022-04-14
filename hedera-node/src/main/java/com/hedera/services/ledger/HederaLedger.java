@@ -66,6 +66,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -269,8 +270,21 @@ public class HederaLedger {
 		return positiveBalances == 0;
 	}
 
-	public boolean isKnownTreasury(AccountID aId) {
-		return tokenStore.isKnownTreasury(aId);
+	public void incrementNumTreasuryTitles(final AccountID aId) {
+		changeNumTreasuryTitles(aId, +1);
+	}
+
+	public void decrementNumTreasuryTitles(final AccountID aId) {
+		changeNumTreasuryTitles(aId, -1);
+	}
+
+	private void changeNumTreasuryTitles(final AccountID aId, final int delta) {
+		final var numTreasuryTitles = (int) accountsLedger.get(aId, NUM_TREASURY_TITLES);
+		accountsLedger.set(aId, NUM_TREASURY_TITLES, numTreasuryTitles + delta);
+	}
+
+	public boolean isKnownTreasury(final AccountID aId) {
+		return (int) accountsLedger.get(aId, NUM_TREASURY_TITLES) > 0;
 	}
 
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {

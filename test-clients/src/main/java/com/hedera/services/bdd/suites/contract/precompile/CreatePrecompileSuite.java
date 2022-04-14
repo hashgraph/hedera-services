@@ -86,28 +86,28 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				fungibleTokenCreateHappyPath(),
-				fungibleTokenCreateWithFeesHappyPath(),
-				nonFungibleTokenCreateHappyPath(),
-				nonFungibleTokenCreateWithFeesHappyPath(),
-				fungibleTokenCreateThenQueryAndTransfer(),
-				nonFungibleTokenCreateThenQuery()
+				fungibleTokenCreateHappyPath()
+//				fungibleTokenCreateWithFeesHappyPath(),
+//				nonFungibleTokenCreateHappyPath(),
+//				nonFungibleTokenCreateWithFeesHappyPath(),
+//				fungibleTokenCreateThenQueryAndTransfer(),
+//				nonFungibleTokenCreateThenQuery()
 		);
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
-				tokenCreateWithEmptyKeysReverts(),
-				tokenCreateWithKeyWithMultipleKeyValuesReverts(),
-				tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
-				createTokenWithEmptyTokenStruct(),
-				createTokenWithInvalidExpiry(),
-				createTokenWithInvalidRoyaltyFee(),
-				createTokenWithInvalidTreasury(),
-				createTokenWithInvalidFixedFeeWithERC721Denomination(),
-				createTokenWithInvalidFeeCollector(),
-				createTokenWithInsufficientValueSent(),
-				delegateCallTokenCreateFails()
+//				tokenCreateWithEmptyKeysReverts(),
+//				tokenCreateWithKeyWithMultipleKeyValuesReverts(),
+//				tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
+//				createTokenWithEmptyTokenStruct(),
+//				createTokenWithInvalidExpiry(),
+//				createTokenWithInvalidRoyaltyFee(),
+//				createTokenWithInvalidTreasury(),
+//				createTokenWithInvalidFixedFeeWithERC721Denomination(),
+//				createTokenWithInvalidFeeCollector(),
+//				createTokenWithInsufficientValueSent(),
+//				delegateCallTokenCreateFails()
 		);
 	}
 
@@ -203,6 +203,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 									.hasFeeScheduleKey(tokenCreateContractAsKeyDelegate)
 									.hasPauseKey(contractAdminKey)
 									.hasPauseStatus(TokenPauseStatus.Unpaused)),
+						cryptoDelete(ACCOUNT).hasKnownStatus(ACCOUNT_IS_TREASURY),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}

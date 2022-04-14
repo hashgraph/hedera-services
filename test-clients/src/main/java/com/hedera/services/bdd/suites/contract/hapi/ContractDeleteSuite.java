@@ -31,17 +31,9 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractUndelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 public class ContractDeleteSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
@@ -65,9 +57,49 @@ public class ContractDeleteSuite extends HapiApiSuite {
 						deleteWorksWithMutableContract(),
 						deleteFailsWithImmutableContract(),
 						deleteTransfersToAccount(),
-						deleteTransfersToContract()
+						deleteTransfersToContract(),
+						cannotDeleteOrSelfDestructTokenTreasury()
 				}
 		);
+	}
+
+	HapiApiSpec cannotDeleteOrSelfDestructTokenTreasury() {
+		final var firstContractTreasury = "contract1";
+		final var secondContractTreasury = "contract2";
+		final var someToken = "someToken";
+		final var selfDestructCallable = "SelfDestructCallable";
+		final var selfDestructCallable2 = "SelfDestructCallable";
+		final var multiKey = "multi";
+		final var escapeRoute = "civilian";
+
+		return defaultHapiSpec("CannotDeleteOrSelfDestructTokenTreasury")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(escapeRoute),
+
+						uploadInitCode(selfDestructCallable),
+						contractCustomCreate(selfDestructCallable, "1")
+								.adminKey(multiKey)
+								.balance(123),
+						contractCustomCreate(selfDestructCallable, "2")
+								.adminKey(multiKey)
+								.balance(321),
+						tokenCreate(someToken)
+								.adminKey(multiKey)
+								.treasury(selfDestructCallable + "1")
+				).when(
+						contractDelete(selfDestructCallable + "1")
+								.hasKnownStatus(ACCOUNT_IS_TREASURY),
+						tokenAssociate(selfDestructCallable + "2", someToken),
+						tokenUpdate(someToken).treasury(selfDestructCallable + "2"),
+						contractDelete(selfDestructCallable + "1"),
+						contractCall(selfDestructCallable + "2", "destroy")
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+						tokenAssociate(escapeRoute, someToken),
+						tokenUpdate(someToken).treasury(escapeRoute)
+				).then(
+						contractCall(selfDestructCallable + "2", "destroy")
+				);
 	}
 
 	HapiApiSpec rejectsWithoutProperSig() {

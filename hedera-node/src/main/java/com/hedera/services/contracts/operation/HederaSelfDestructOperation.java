@@ -28,11 +28,11 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
-import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.util.Optional;
@@ -49,12 +49,13 @@ import java.util.function.BiPredicate;
  * beneficiary address is the same as the address being destructed
  */
 public class HederaSelfDestructOperation extends SelfDestructOperation {
-
 	private final BiPredicate<Address, MessageFrame> addressValidator;
 
 	@Inject
-	public HederaSelfDestructOperation(final GasCalculator gasCalculator,
-									   final BiPredicate<Address, MessageFrame> addressValidator) {
+	public HederaSelfDestructOperation(
+			final GasCalculator gasCalculator,
+			final BiPredicate<Address, MessageFrame> addressValidator
+	) {
 		super(gasCalculator);
 		this.addressValidator = addressValidator;
 	}
@@ -65,25 +66,21 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 		final var beneficiaryAddressOrAlias = Words.toAddress(frame.getStackItem(0));
 		final var beneficiaryAddress = updater.priorityAddress(beneficiaryAddressOrAlias);
 		if (!addressValidator.test(beneficiaryAddress, frame)) {
-			return new OperationResult(errorGasCost(null),
-					Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+			return reversionWith(null, HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
 		}
-
-		// This address is already the EIP-1014 address if applicable; so we can compare it directly to
-		// the "priority" address we computed above for the beneficiary
 		final var address = frame.getRecipientAddress();
+		if (updater.contractIsTokenTreasury(address)) {
+			return reversionWith(updater.get(beneficiaryAddress), HederaExceptionalHaltReason.CONTRACT_IS_TREASURY);
+		}
 		if (address.equals(beneficiaryAddress)) {
-			final var account = frame.getWorldUpdater().get(beneficiaryAddress);
-			return new OperationResult(errorGasCost(account),
-					Optional.of(HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
+			return reversionWith(updater.get(beneficiaryAddress), HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
 		} else {
 			return super.execute(frame, evm);
 		}
 	}
 
-	@NotNull
-	private Optional<Gas> errorGasCost(final Account account) {
-		final Gas cost = gasCalculator().selfDestructOperationGasCost(account, Wei.ONE);
-		return Optional.of(cost);
+	private OperationResult reversionWith(final Account beneficiary, final ExceptionalHaltReason reason) {
+		final Gas cost = gasCalculator().selfDestructOperationGasCost(beneficiary, Wei.ONE);
+		return new OperationResult(Optional.of(cost), Optional.of(reason));
 	}
 }

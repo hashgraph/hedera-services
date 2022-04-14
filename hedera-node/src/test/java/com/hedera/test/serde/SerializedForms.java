@@ -58,7 +58,6 @@ public class SerializedForms {
 //		saveEvmResults(EvmFnResultSerdeTest.MIN_TEST_CASES_PER_VERSION);
 	}
 
-
 	public static <T extends SelfSerializable> byte[] loadForm(
 			final Class<T> type,
 			final int version,

@@ -132,8 +132,12 @@ public class AccountStore {
 	 * 		The {@link ResponseCodeEnum} to be used in the case of the entity being deleted
 	 * @return usable model of the entity if available
 	 */
-	private Account loadEntityOrFailWith(Id id, @Nullable ResponseCodeEnum explicitResponseCode,
-			ResponseCodeEnum nonExistingCode, ResponseCodeEnum deletedCode) {
+	private Account loadEntityOrFailWith(
+			final Id id,
+			final @Nullable ResponseCodeEnum explicitResponseCode,
+			final ResponseCodeEnum nonExistingCode,
+			final ResponseCodeEnum deletedCode
+	) {
 		final var merkleAccount = accounts.getImmutableRef(id.asGrpcAccount());
 		validateUsable(merkleAccount, explicitResponseCode, nonExistingCode, deletedCode);
 		return loadMerkleAccount(merkleAccount, id);
@@ -162,6 +166,7 @@ public class AccountStore {
 		account.setHeadTokenNum(merkleAccount.getHeadTokenId());
 		account.setNumAssociations(merkleAccount.getNumAssociations());
 		account.setNumPositiveBalances(merkleAccount.getNumPositiveBalances());
+		account.setNumTreasuryTitles(merkleAccount.getNumTreasuryTitles());
 
 		return account;
 	}
@@ -200,6 +205,7 @@ public class AccountStore {
 		mutableAccount.setHeadTokenId(model.getHeadTokenNum());
 		mutableAccount.setNumPositiveBalances(model.getNumPositiveBalances());
 		mutableAccount.setNumAssociations(model.getNumAssociations());
+		mutableAccount.setNumTreasuryTitles(model.getNumTreasuryTitles());
 	}
 
 	private void validateUsable(MerkleAccount merkleAccount, @Nullable ResponseCodeEnum explicitResponse,

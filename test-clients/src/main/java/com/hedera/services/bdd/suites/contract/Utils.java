@@ -141,7 +141,8 @@ public class Utils {
 	 * @param resourceName the name of the contract
 	 * @param extension the type of the desired contract resource (.bin or .json)
 	 */
-	public static String getResourcePath(final String resourceName, final String extension) {
+	public static String getResourcePath(String resourceName, final String extension) {
+		resourceName = resourceName.replaceAll("\\d*$", "");
 		final var path = String.format(RESOURCE_PATH + extension, resourceName);
 		final var file = new File(path);
 		if (!file.exists()) {
