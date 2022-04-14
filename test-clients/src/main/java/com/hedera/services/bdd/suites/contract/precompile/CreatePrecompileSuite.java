@@ -76,6 +76,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 		return false;
 	}
 
+	//TODO: Fix contract name in TokenCreateContract.sol
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return allOf(
@@ -395,7 +396,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithKeysAndExpiry",
+												contractCall(TOKEN_CREATE_CONTRACT, "createNonFungibleTokenWithCustomFees",
 														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
 														asAddress(spec.registry().getAccountID(feeCollector)),
 														asAddress(spec.registry().getTokenID(EXISTING_TOKEN)),
