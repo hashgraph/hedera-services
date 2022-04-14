@@ -66,8 +66,8 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private static final byte[] MISSING_TXN_HASH = new byte[0];
 
 	static final int RELEASE_0230_VERSION = 7;
-	static final int RELEASE_0250_VERSION = 8;
-	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	static final int RELEASE_0260_VERSION = 9;
+	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 
 	static final int MAX_MEMO_BYTES = 32 * 1_024;
 	static final int MAX_TXN_HASH_BYTES = 1_024;
@@ -75,7 +75,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 	public static final ByteString MISSING_ALIAS = ByteString.EMPTY;
-	public static final ByteString MISSING_ETHEREUM_HASH = ByteString.EMPTY;
+	public static final byte[] MISSING_ETHEREUM_HASH = new byte[0];;
 
 	private long expiry;
 	private long submittingMember = UNKNOWN_SUBMITTING_MEMBER;
@@ -105,7 +105,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 	private List<FcAssessedCustomFee> assessedCustomFees = NO_CUSTOM_FEES;
 	private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 	private ByteString alias = MISSING_ALIAS;
-	private ByteString ethereumHash = MISSING_ETHEREUM_HASH;
+	private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
 
 	@Override
 	public void release() {
@@ -157,7 +157,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				.add("hbarAdjustments", hbarAdjustments)
 				.add("scheduleRef", scheduleRef)
 				.add("alias", alias.toStringUtf8())
-				.add("ethereumHash", ethereumHash);
+				.add("ethereumHash", CommonUtils.hex(ethereumHash));
 
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			helper.add("parentConsensusTime", Instant.ofEpochSecond(
@@ -229,7 +229,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 				Objects.equals(this.assessedCustomFees, that.assessedCustomFees) &&
 				Objects.equals(this.newTokenAssociations, that.newTokenAssociations) &&
 				Objects.equals(this.alias, that.alias) &&
-				Objects.equals(this.ethereumHash, that.ethereumHash);
+				Arrays.equals(this.ethereumHash, that.ethereumHash);
 	}
 
 	@Override
@@ -316,8 +316,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			out.writeBoolean(false);
 		}
 		out.writeByteArray(alias.toByteArray());
-		// check version?
-		out.writeByteArray(ethereumHash.toByteArray());
+		out.writeByteArray(ethereumHash);
 	}
 
 	@Override
@@ -356,8 +355,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		// Added in 0.21
 		alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
 		// Added in 0.26
-		// check version?
-		ethereumHash = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
+		if (version >= RELEASE_0260_VERSION) {
+			ethereumHash = in.readByteArray(Integer.MAX_VALUE);
+		}
 	}
 
 
@@ -476,8 +476,12 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		return alias;
 	}
 	
-	public ByteString getEthereumHash() {
+	public byte[] getEthereumHash() {
 		return ethereumHash;
+	}
+	
+	public void setEthereumHash(byte[] ethereumHash) {
+		this.ethereumHash = ethereumHash;
 	}
 
 	/* --- FastCopyable --- */
@@ -543,7 +547,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			grpc.setAlias(alias);
 		}
 		if (ethereumHash != MISSING_ETHEREUM_HASH) {
-			grpc.setEthereumHash(ethereumHash);
+			grpc.setEthereumHash(ByteString.copyFrom(ethereumHash));
 		}
 		if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
 			grpc.setParentConsensusTimestamp(asTimestamp(packedParentConsensusTime));
@@ -593,7 +597,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		private List<FcAssessedCustomFee> assessedCustomFees;
 		private List<FcTokenAssociation> newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
 		private ByteString alias = MISSING_ALIAS;
-		private ByteString ethereumHash = MISSING_ETHEREUM_HASH;
+		private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
 
 		private boolean onlyExternalizedIfSuccessful = false;
 
@@ -692,7 +696,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return this;
 		}
 		
-		public Builder setEthereumHash(ByteString ethereumHash) {
+		public Builder setEthereumHash(byte[] ethereumHash) {
 			this.ethereumHash = ethereumHash;
 			return this;
 		}
@@ -841,7 +845,7 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return alias;
 		}
 		
-		public ByteString getEthereumHash() {
+		public byte[] getEthereumHash() {
 			return ethereumHash;
 		}
 

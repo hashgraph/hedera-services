@@ -141,7 +141,7 @@ public class ExpiringCreations implements EntityCreator {
 		}
 		if (accessor.getFunction() == HederaFunctionality.EthereumTransaction) {
 			expiringRecord.setEthereumHash(
-					ByteString.copyFrom(accessor.getSpanMapAccessor().getEthTxDataMeta(accessor).getEthereumHash()));
+					accessor.getSpanMapAccessor().getEthTxDataMeta(accessor).getEthereumHash());
 		}
 
 		return expiringRecord;

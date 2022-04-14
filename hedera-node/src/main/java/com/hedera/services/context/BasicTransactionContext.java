@@ -288,7 +288,7 @@ public class BasicTransactionContext implements TransactionContext {
 		var wrappedRecordConfig = recordConfig;
 		recordConfig = expiringRecord -> {
 			wrappedRecordConfig.accept(expiringRecord);
-			expiringRecord.setEthereumHash(ByteString.copyFrom(callContext.getEthereumHash()));
+			expiringRecord.setEthereumHash(callContext.getEthereumHash());
 		};
 	}
 
