@@ -97,7 +97,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						getAccountBalance(DEFAULT_PAYER).logged(),
 						stdMgmtOf(duration, unit, maxOpsPerSec),
 						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
+								.payingWith(GENESIS)
 								.overridingProps(Map.of("balances.exportPeriodSecs", "300",
 										"balances.exportDir.path", "data/accountBalances/")
 								)
