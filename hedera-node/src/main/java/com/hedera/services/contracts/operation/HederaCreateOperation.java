@@ -23,7 +23,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.gascalculator.StorageGasCalculator;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -49,7 +49,7 @@ public class HederaCreateOperation extends AbstractRecordingCreateOperation {
 			final GasCalculator gasCalculator,
 			final EntityCreator creator,
 			final SyntheticTxnFactory syntheticTxnFactory,
-			final AccountRecordsHistorian recordsHistorian,
+			final RecordsHistorian recordsHistorian,
 			final StorageGasCalculator storageGasCalculator
 	) {
 		super(

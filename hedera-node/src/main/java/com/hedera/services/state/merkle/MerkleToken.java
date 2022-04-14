@@ -538,6 +538,10 @@ public class MerkleToken extends AbstractMerkleLeaf implements Keyed<EntityNum> 
 		return treasury;
 	}
 
+	public EntityNum treasuryNum() {
+		return treasury.asNum();
+	}
+
 	public long expiry() {
 		return expiry;
 	}

@@ -35,6 +35,11 @@ class EntityTypeTest {
 	}
 
 	@Test
+	void worksWithEmptyString() {
+		assertTrue(EntityType.csvTypeSet("").isEmpty());
+	}
+
+	@Test
 	void throwsOnInvalidSpec() {
 		assertThrows(IllegalArgumentException.class, () -> EntityType.csvTypeSet("ACCOUNT,CONTRACTUALLY_SPEAKING"));
 	}

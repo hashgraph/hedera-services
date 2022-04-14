@@ -29,13 +29,11 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -54,6 +52,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -122,33 +121,8 @@ public class StaticEntityAccess implements EntityAccess {
 	}
 
 	@Override
-	public long getAutoRenew(AccountID id) {
-		return accounts.get(fromAccountId(id)).getAutoRenewSecs();
-	}
-
-	@Override
 	public long getBalance(AccountID id) {
 		return accounts.get(fromAccountId(id)).getBalance();
-	}
-
-	@Override
-	public long getExpiry(AccountID id) {
-		return accounts.get(fromAccountId(id)).getExpiry();
-	}
-
-	@Override
-	public JKey getKey(AccountID id) {
-		return accounts.get(fromAccountId(id)).getAccountKey();
-	}
-
-	@Override
-	public String getMemo(AccountID id) {
-		return accounts.get(fromAccountId(id)).getMemo();
-	}
-
-	@Override
-	public EntityId getProxy(AccountID id) {
-		return accounts.get(fromAccountId(id)).getProxy();
 	}
 
 	@Override
@@ -163,7 +137,7 @@ public class StaticEntityAccess implements EntityAccess {
 
 	@Override
 	public boolean isDetached(AccountID id) {
-		if (!dynamicProperties.autoRenewEnabled()) {
+		if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
 			return false;
 		}
 		final var account = accounts.get(fromAccountId(id));
@@ -215,11 +189,20 @@ public class StaticEntityAccess implements EntityAccess {
 		return explicitCodeFetch(bytecode, id);
 	}
 
+	@Nullable
 	static Bytes explicitCodeFetch(
 			final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode,
 			final AccountID id
 	) {
-		final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(id.getAccountNum()));
+		return explicitCodeFetch(bytecode, id.getAccountNum());
+	}
+
+	@Nullable
+	public static Bytes explicitCodeFetch(
+			final VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode,
+			final long contractNum
+	) {
+		final var key = new VirtualBlobKey(VirtualBlobKey.Type.CONTRACT_BYTECODE, codeFromNum(contractNum));
 		final var value = bytecode.get(key);
 		return (value != null) ? Bytes.of(value.getData()) : null;
 	}

@@ -32,13 +32,12 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
@@ -46,7 +45,6 @@ import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -67,8 +65,9 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -84,7 +83,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * of a rollback.
  * <p>
  * The ledger delegates history of each transaction to an injected
- * {@link AccountRecordsHistorian} by invoking its {@code addNewRecords}
+ * {@link RecordsHistorian} by invoking its {@code addNewRecords}
  * immediately before the final {@link TransactionalLedger#commit()}.
  * <p>
  * We should think of the ledger as using double-booked accounting,
@@ -104,10 +103,6 @@ public class HederaLedger {
 			.comparingLong(TokenID::getTokenNum)
 			.thenComparingLong(TokenID::getRealmNum)
 			.thenComparingLong(TokenID::getShardNum);
-	public static final Comparator<FileID> FILE_ID_COMPARATOR = Comparator
-			.comparingLong(FileID::getFileNum)
-			.thenComparingLong(FileID::getShardNum)
-			.thenComparingLong(FileID::getRealmNum);
 	public static final Comparator<ContractID> CONTRACT_ID_COMPARATOR = Comparator
 			.comparingLong(ContractID::getContractNum)
 			.thenComparingLong(ContractID::getShardNum)
@@ -119,7 +114,7 @@ public class HederaLedger {
 	private final OptionValidator validator;
 	private final SideEffectsTracker sideEffectsTracker;
 	private final GlobalDynamicProperties dynamicProperties;
-	private final AccountRecordsHistorian historian;
+	private final RecordsHistorian historian;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 
 	private MutableEntityAccess mutableEntityAccess;
@@ -137,7 +132,7 @@ public class HederaLedger {
 			final EntityCreator creator,
 			final OptionValidator validator,
 			final SideEffectsTracker sideEffectsTracker,
-			final AccountRecordsHistorian historian,
+			final RecordsHistorian historian,
 			final GlobalDynamicProperties dynamicProperties,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger,
 			final TransferLogic transferLogic,
@@ -276,8 +271,29 @@ public class HederaLedger {
 		return positiveBalances == 0;
 	}
 
-	public boolean isKnownTreasury(AccountID aId) {
-		return tokenStore.isKnownTreasury(aId);
+	public void incrementNumTreasuryTitles(final AccountID aId) {
+		changeNumTreasuryTitles(aId, +1);
+	}
+
+	public void decrementNumTreasuryTitles(final AccountID aId) {
+		changeNumTreasuryTitles(aId, -1);
+	}
+
+	private void changeNumTreasuryTitles(final AccountID aId, final int delta) {
+		final var numTreasuryTitles = (int) accountsLedger.get(aId, NUM_TREASURY_TITLES);
+		accountsLedger.set(aId, NUM_TREASURY_TITLES, numTreasuryTitles + delta);
+	}
+
+	public boolean isKnownTreasury(final AccountID aId) {
+		return (int) accountsLedger.get(aId, NUM_TREASURY_TITLES) > 0;
+	}
+
+	public boolean hasAnyFungibleTokenBalance(final AccountID aId) {
+		return (int) accountsLedger.get(aId, NUM_POSITIVE_BALANCES) > 0;
+	}
+
+	public boolean hasAnyNfts(final AccountID aId) {
+		return (long) accountsLedger.get(aId, NUM_NFTS_OWNED) > 0L;
 	}
 
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
@@ -376,10 +392,6 @@ public class HederaLedger {
 		return (long) accountsLedger.get(id, AUTO_RENEW_PERIOD);
 	}
 
-	public EntityId proxy(AccountID id) {
-		return (EntityId) accountsLedger.get(id, PROXY);
-	}
-
 	public boolean isSmartContract(AccountID id) {
 		return (boolean) accountsLedger.get(id, IS_SMART_CONTRACT);
 	}
@@ -408,10 +420,16 @@ public class HederaLedger {
 		return (boolean) accountsLedger.get(id, IS_DELETED);
 	}
 
-	public boolean isDetached(AccountID id) {
-		return dynamicProperties.autoRenewEnabled()
-				&& !(boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
-				&& (long) accountsLedger.get(id, BALANCE) == 0L
+	public boolean isDetached(final AccountID id) {
+		if (!dynamicProperties.shouldAutoRenewSomeEntityType()) {
+			return false;
+		}
+		final var shouldAutoRenewThisType = (boolean) accountsLedger.get(id, IS_SMART_CONTRACT)
+				? dynamicProperties.shouldAutoRenewContracts() : dynamicProperties.shouldAutoRenewAccounts();
+		if (!shouldAutoRenewThisType) {
+			return false;
+		}
+		return (long) accountsLedger.get(id, BALANCE) == 0L
 				&& !validator.isAfterConsensusSecond((long) accountsLedger.get(id, EXPIRY));
 	}
 
@@ -440,7 +458,7 @@ public class HederaLedger {
 		return (balance + adjustment >= 0);
 	}
 
-	private long computeNewBalance(AccountID id, long adjustment) {
+	private long computeNewBalance(final AccountID id, final long adjustment) {
 		if ((boolean) accountsLedger.get(id, IS_DELETED)) {
 			throw new DeletedAccountException(id);
 		}

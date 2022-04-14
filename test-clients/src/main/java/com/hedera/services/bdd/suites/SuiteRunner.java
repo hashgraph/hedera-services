@@ -66,11 +66,11 @@ import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoAdjustAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateForSuiteRunner;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoDeleteAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoGetInfoRegression;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
@@ -179,6 +179,8 @@ import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.streaming.RecordStreamValidation;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
+import com.hedera.services.bdd.suites.throttling.ResetThrottleSuite;
+import com.hedera.services.bdd.suites.throttling.ResetTokenMaxPerAccount;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
 import com.hedera.services.bdd.suites.token.Hip17UnhappyTokensSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
@@ -463,6 +465,8 @@ public class SuiteRunner {
 		put("CannotDeleteSystemEntitiesSuite", aof(CannotDeleteSystemEntitiesSuite::new));
 		/* Throttling */
 		put("ThrottleDefValidationSuite", aof(ThrottleDefValidationSuite::new));
+		put("ResetThrottleSuite", aof(ResetThrottleSuite::new));
+		put("ResetTokenMaxPerAccount", aof(ResetTokenMaxPerAccount::new));
 		put("CongestionPricingSuite", aof(CongestionPricingSuite::new));
 		put("SteadyStateThrottlingCheck", aof(SteadyStateThrottlingCheck::new));
 		/* Network metadata. */
@@ -496,7 +500,7 @@ public class SuiteRunner {
 		put("MemoValidation", aof(MemoValidation::new));
 		/* Approval and Allowance */
 		put("CryptoApproveAllowanceSuite", aof(CryptoApproveAllowanceSuite::new));
-		put("CryptoAdjustAllowanceSuite", aof(CryptoAdjustAllowanceSuite::new));
+		put("CryptoDeleteAllowanceSuite", aof(CryptoDeleteAllowanceSuite::new));
 	}};
 
 	static boolean runAsync;

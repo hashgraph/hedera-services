@@ -34,7 +34,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -57,7 +57,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -108,7 +107,7 @@ class LedgerBalanceChangesTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private AccountRecordsHistorian historian;
+	private RecordsHistorian historian;
 	@Mock
 	private MutableEntityAccess mutableEntityAccess;
 	@Mock
@@ -201,7 +200,7 @@ class LedgerBalanceChangesTest {
 	@Test
 	void rejectsDetachedAccount() {
 		givenInitialBalancesAndOwnership();
-		given(dynamicProperties.autoRenewEnabled()).willReturn(true);
+		given(dynamicProperties.shouldAutoRenewSomeEntityType()).willReturn(true);
 
 		// when:
 		subject.begin();
@@ -323,15 +322,6 @@ class LedgerBalanceChangesTest {
 		assertEquals(
 				bYetAnotherTokenBalance + bYetAnotherTokenChange,
 				backingRels.getImmutableRef(rel(bModel, yetAnotherToken)).getBalance());
-	}
-
-	@Test
-	void understandsTreasuries() {
-		givenInitialBalancesAndOwnership();
-
-		// expect:
-		assertTrue(subject.isKnownTreasury(aModel));
-		Assertions.assertFalse(subject.isKnownTreasury(cModel));
 	}
 
 	@Test

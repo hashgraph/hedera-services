@@ -26,11 +26,14 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -91,7 +94,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	private final WorldLedgers trackingLedgers;
 
 	private int thisRecordSourceId = UNKNOWN_RECORD_SOURCE_ID;
-	private AccountRecordsHistorian recordsHistorian = null;
+	private RecordsHistorian recordsHistorian = null;
 
 	protected Set<Address> deletedAccounts = new HashSet<>();
 	protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
@@ -144,9 +147,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public Account get(final Address addressOrAlias) {
-		final var address = aliases().resolveForEvm(addressOrAlias);
-
+	public Account get(final Address address) {
 		final var extantMutable = this.updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return extantMutable;
@@ -156,9 +157,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	@Override
-	public EvmAccount getAccount(final Address addressOrAlias) {
-		final var address = aliases().resolveForEvm(addressOrAlias);
-
+	public EvmAccount getAccount(final Address address) {
 		final var extantMutable = updatedAccounts.get(address);
 		if (extantMutable != null) {
 			return new WrappedEvmAccount(extantMutable);
@@ -223,7 +222,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 	}
 
 	public void manageInProgressRecord(
-			final AccountRecordsHistorian recordsHistorian,
+			final RecordsHistorian recordsHistorian,
 			final ExpirableTxnRecord.Builder recordSoFar,
 			final TransactionBody.Builder syntheticBody
 	) {
@@ -297,6 +296,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
 	protected TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts() {
 		return trackingLedgers.accounts();
+	}
+
+	protected TransactionalLedger<TokenID, TokenProperty, MerkleToken> trackingTokens() {
+		return trackingLedgers.tokens();
 	}
 
 	public ContractAliases aliases() {

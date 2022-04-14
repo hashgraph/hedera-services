@@ -180,7 +180,7 @@ public class QueryFeeCheck {
 			return OK;
 		} else {
 			final var isDetached = balance == 0
-					&& dynamicProperties.autoRenewEnabled()
+					&& dynamicProperties.shouldAutoRenewSomeEntityType()
 					&& !validator.isAfterConsensusSecond(payingAccount.getExpiry());
 			return isDetached ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : INSUFFICIENT_PAYER_BALANCE;
 		}

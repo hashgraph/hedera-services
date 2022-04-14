@@ -22,10 +22,11 @@ package com.hedera.services.store.contracts;
 
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 public class MockLedgerWorldUpdater
-		extends AbstractLedgerWorldUpdater<HederaWorldState, HederaWorldState.WorldStateAccount> {
+		extends AbstractLedgerWorldUpdater<HederaWorldState, Account> {
 
 	private final ContractCustomizer customizer;
 
@@ -44,7 +45,7 @@ public class MockLedgerWorldUpdater
 	}
 
 	@Override
-	protected HederaWorldState.WorldStateAccount getForMutation(Address address) {
+	protected Account getForMutation(Address address) {
 		return wrappedWorldView().get(address);
 	}
 

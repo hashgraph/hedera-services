@@ -75,7 +75,6 @@ import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.contract.traceability.ContractTraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoAdjustAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCornerCasesSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
@@ -374,7 +373,6 @@ class E2EPackageRunner {
 		return List.of(
 				extractSpecsFromSuite(AutoAccountCreationSuite::new),
 				extractSpecsFromSuite(AutoAccountUpdateSuite::new),
-				extractSpecsFromSuite(CryptoAdjustAllowanceSuite::new),
 				extractSpecsFromSuite(CryptoApproveAllowanceSuite::new),
 				extractSpecsFromSuite(CryptoCornerCasesSuite::new),
 				extractSpecsFromSuite(CryptoCreateSuite::new),
