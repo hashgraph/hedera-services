@@ -1,0 +1,51 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "transferrerContractAddress",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_tokenReceiver",
+        "type": "address"
+      },
+      {
+        "internalType": "address payable",
+        "name": "_hbarReceiver",
+        "type": "address"
+      },
+      {
+        "internalType": "int64",
+        "name": "_tokenAmount",
+        "type": "int64"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_hbarAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "feeDistributionAfterTransfer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
