@@ -408,6 +408,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				dualState.getFreezeTime(),
 				dualState.getLastFrozenTime());
 
+		networkCtx().setBlockNo(bootstrapProps.getLongProperty("blocks.lastBlockNumber"));
+		networkCtx().setLatestConsTimeOfCurrentBlock(bootstrapProps.getInstantProperty("blocks.lastBlockTimestamp"));
+
 		final var stateVersion = networkCtx().getStateVersion();
 		if (stateVersion > CURRENT_VERSION) {
 			log.error("Fatal error, network state version {} > node software version {}",
