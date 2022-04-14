@@ -287,6 +287,10 @@ public class HederaLedger {
 		return (int) accountsLedger.get(aId, NUM_TREASURY_TITLES) > 0;
 	}
 
+	public boolean hasAnyBalance(final AccountID aId) {
+		return (int) accountsLedger.get(aId, NUM_POSITIVE_BALANCES) > 0;
+	}
+
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
 		return tokenStore.adjustBalance(aId, tId, adjustment);
 	}

@@ -53,6 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class ContractDeleteSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
@@ -75,7 +76,8 @@ public class ContractDeleteSuite extends HapiApiSuite {
 						deleteFailsWithImmutableContract(),
 						deleteTransfersToAccount(),
 						deleteTransfersToContract(),
-						cannotDeleteOrSelfDestructTokenTreasury()
+						cannotDeleteOrSelfDestructTokenTreasury(),
+						cannotDeleteOrSelfDestructContractWithNonZeroBalance()
 				}
 		);
 	}
@@ -126,12 +128,10 @@ public class ContractDeleteSuite extends HapiApiSuite {
 		final var someToken = "someToken";
 		final var initcode = "initcode";
 		final var multiKey = "multi";
-		final var escapeRoute = "civilian";
 
-		return defaultHapiSpec("CannotDeleteOrSelfDestructTokenTreasury")
+		return defaultHapiSpec("CannotDeleteOrSelfDestructContractWithNonZeroBalance")
 				.given(
 						newKeyNamed(multiKey),
-						cryptoCreate(escapeRoute),
 						fileCreate(initcode)
 								.path(ContractResources.SELF_DESTRUCT_CALLABLE),
 						contractCreate(firstContractTreasury)
@@ -149,12 +149,12 @@ public class ContractDeleteSuite extends HapiApiSuite {
 				).when(
 						tokenAssociate(nonZeroBalanceContract, someToken),
 						cryptoTransfer(TokenMovement.moving(5, someToken)
-								.between(firstContractTreasury, nonZeroBalanceContract)),
+								.between(firstContractTreasury, nonZeroBalanceContract))
+				).then(
 						contractDelete(nonZeroBalanceContract)
-								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
 						contractCall(nonZeroBalanceContract, SELF_DESTRUCT_CALL_ABI)
 								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
-				).then(
 				);
 	}
 

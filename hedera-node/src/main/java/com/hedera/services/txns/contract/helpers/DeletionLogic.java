@@ -43,6 +43,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TRE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class DeletionLogic {
 	private final HederaLedger ledger;
@@ -75,6 +76,7 @@ public class DeletionLogic {
 		final var id = unaliased(op.getContractID(), aliasManager);
 		final var tbd = id.toGrpcAccountId();
 		validateFalse(ledger.isKnownTreasury(tbd), ACCOUNT_IS_TREASURY);
+		validateFalse(ledger.hasAnyBalance(tbd), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 
 		final var obtainer = obtainerOf(op);
 		validateFalse(tbd.equals(obtainer), OBTAINER_SAME_CONTRACT_ID);
