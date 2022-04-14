@@ -33,6 +33,7 @@ import com.hedera.services.usage.token.meta.TokenWipeMeta;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.function.Function;
@@ -141,15 +142,12 @@ public enum TokenOpsUsageUtils {
 		return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenBurnMeta::new);
 	}
 
-	public TokenWipeMeta tokenWipeUsageFrom(final TransactionBody txn) {
-		var op = txn.getTokenWipe();
+	public TokenWipeMeta tokenWipeUsageFrom(final TokenWipeAccountTransactionBody op) {
 		final var subType = op.getSerialNumbersCount() > 0 ? TOKEN_NON_FUNGIBLE_UNIQUE : TOKEN_FUNGIBLE_COMMON;
-		return tokenWipeUsageFrom(txn, subType);
+		return tokenWipeUsageFrom(op, subType);
 	}
 
-	public TokenWipeMeta tokenWipeUsageFrom(final TransactionBody txn, final SubType subType) {
-		var op = txn.getTokenWipe();
-
+	public TokenWipeMeta tokenWipeUsageFrom(final TokenWipeAccountTransactionBody op, final SubType subType) {
 		return retrieveRawDataFrom(subType, op::getSerialNumbersCount, TokenWipeMeta::new);
 	}
 

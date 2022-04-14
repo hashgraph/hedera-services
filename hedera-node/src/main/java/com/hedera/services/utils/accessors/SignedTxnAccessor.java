@@ -21,6 +21,8 @@ package com.hedera.services.utils.accessors;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.grpc.marshalling.AliasResolver;
@@ -38,7 +40,9 @@ import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -57,6 +61,7 @@ import java.util.Map;
 
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.functionExtractor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
@@ -87,7 +92,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private static final String ACCESSOR_LITERAL = " accessor";
 
 	private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
-	private static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
+	protected static final ExpandHandleSpanMapAccessor SPAN_MAP_ACCESSOR = new ExpandHandleSpanMapAccessor();
 
 	private final Map<String, Object> spanMap = new HashMap<>();
 
@@ -112,7 +117,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	private AccountID payer;
 	private ScheduleID scheduleRef;
-	private StateView view = null;
+	private StateView view;
 
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
@@ -356,6 +361,17 @@ public class SignedTxnAccessor implements TxnAccessor {
 		this.view = view;
 	}
 
+	protected EntityNum lookUpAlias(ByteString alias) {
+		return view.aliases().get(alias);
+	}
+
+	protected EntityNum unaliased(final AccountID idOrAlias) {
+		if (isAlias(idOrAlias)) {
+			return lookUpAlias(idOrAlias.getAlias());
+		}
+		return EntityNum.fromAccountId(idOrAlias);
+	}
+
 	@Override
 	public long getGasLimitForContractTx() {
 		return getFunction() == ContractCreate ? getTxn().getContractCreateInstance().getGas() :
@@ -384,8 +400,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 			setTokenCreateUsageMeta();
 		} else if (function == TokenBurn) {
 			setTokenBurnUsageMeta();
-		} else if (function == TokenAccountWipe) {
-			setTokenWipeUsageMeta();
 		} else if (function == TokenFreezeAccount) {
 			setTokenFreezeUsageMeta();
 		} else if (function == TokenUnfreezeAccount) {
@@ -441,10 +455,6 @@ public class SignedTxnAccessor implements TxnAccessor {
 		SPAN_MAP_ACCESSOR.setTokenBurnMeta(this, tokenBurnMeta);
 	}
 
-	private void setTokenWipeUsageMeta() {
-		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn);
-		SPAN_MAP_ACCESSOR.setTokenWipeMeta(this, tokenWipeMeta);
-	}
 
 	private void setTokenFreezeUsageMeta() {
 		final var tokenFreezeMeta = TOKEN_OPS_USAGE_UTILS.tokenFreezeUsageFrom();

@@ -734,4 +734,8 @@ public class StateView {
 	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
 	}
+
+	public Map<ByteString, EntityNum> aliases() {
+		return stateChildren.aliases();
+	}
 }

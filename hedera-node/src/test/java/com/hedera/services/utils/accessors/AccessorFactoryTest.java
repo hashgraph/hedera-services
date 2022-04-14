@@ -62,7 +62,7 @@ class AccessorFactoryTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new AccessorFactory(aliasManager,properties, validator);
+		subject = new AccessorFactory(properties, validator);
 	}
 
 	@Test

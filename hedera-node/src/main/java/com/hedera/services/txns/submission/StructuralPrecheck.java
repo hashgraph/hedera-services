@@ -97,8 +97,8 @@ public final class StructuralPrecheck {
 		}
 
 		try {
-			final var accessor = new SignedTxnAccessor(signedTxn);
 			// get latest signed state to be used for precheck
+			final var accessor = new SignedTxnAccessor(signedTxn);
 			accessor.setStateView(stateViewFactory.getLatestSignedStateView().get());
 
 			if (hasTooManyLayers(signedTxn) || hasTooManyLayers(accessor.getTxn())) {

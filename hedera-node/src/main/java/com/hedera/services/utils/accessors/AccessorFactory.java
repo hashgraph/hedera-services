@@ -35,15 +35,13 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransact
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 
 public class AccessorFactory {
-	final AliasManager aliasManager;
 	final GlobalDynamicProperties dynamicProperties;
 	final OptionValidator validator;
 
 	@Inject
-	public AccessorFactory(final AliasManager aliasManager,
+	public AccessorFactory(
 			final GlobalDynamicProperties dynamicProperties,
 			final OptionValidator validator) {
-		this.aliasManager = aliasManager;
 		this.dynamicProperties = dynamicProperties;
 		this.validator = validator;
 	}
@@ -74,7 +72,7 @@ public class AccessorFactory {
 		final var body = extractTransactionBody(Transaction.parseFrom(signedTxnWrapperBytes));
 		final var function = MiscUtils.functionExtractor.apply(body);
 		if (function == TokenAccountWipe) {
-			return new TokenWipeAccessor(signedTxnWrapperBytes, aliasManager, dynamicProperties, validator);
+			return new TokenWipeAccessor(signedTxnWrapperBytes, dynamicProperties, validator);
 		}
 		return SignedTxnAccessor.from(signedTxnWrapperBytes);
 	}

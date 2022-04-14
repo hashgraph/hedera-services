@@ -58,7 +58,7 @@ class ExpandHandleSpanTest {
 	@Mock
 	private GlobalDynamicProperties properties;
 
-	private AccessorFactory accessorFactory = new AccessorFactory(aliasManager, properties, validator);
+	private AccessorFactory accessorFactory = new AccessorFactory(properties, validator);
 
 	private final long duration = 20;
 	private final TimeUnit testUnit = TimeUnit.MILLISECONDS;

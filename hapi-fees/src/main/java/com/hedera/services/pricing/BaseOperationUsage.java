@@ -465,7 +465,7 @@ public class BaseOperationUsage {
 						.addAllSerialNumbers(SINGLE_SERIAL_NUM))
 				.build();
 
-		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(canonicalTxn);
+		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(canonicalTxn.getTokenWipe());
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenWipeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenWipeMeta, into);
 		return into;
@@ -481,7 +481,7 @@ public class BaseOperationUsage {
 						.setAmount(100))
 				.build();
 
-		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(canonicalTxn);
+		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(canonicalTxn.getTokenWipe());
 		final var into = new UsageAccumulator();
 		TOKEN_OPS_USAGE.tokenWipeUsage(SINGLE_SIG_USAGE, NO_MEMO_AND_NO_EXPLICIT_XFERS, tokenWipeMeta, into);
 		return into;

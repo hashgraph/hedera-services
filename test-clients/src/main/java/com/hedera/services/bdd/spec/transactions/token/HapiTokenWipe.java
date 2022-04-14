@@ -90,7 +90,7 @@ public class HapiTokenWipe extends HapiTxnOp<HapiTokenWipe> {
 
 	private FeeData usageEstimate(TransactionBody txn, SigValueObj svo) {
 		UsageAccumulator accumulator = new UsageAccumulator();
-		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn, subType);
+		final var tokenWipeMeta = TOKEN_OPS_USAGE_UTILS.tokenWipeUsageFrom(txn.getTokenWipe(), subType);
 		final var baseTransactionMeta = new BaseTransactionMeta(txn.getMemoBytes().size(), 0);
 		TokenOpsUsage tokenOpsUsage = new TokenOpsUsage();
 		tokenOpsUsage.tokenWipeUsage(suFrom(svo), baseTransactionMeta, tokenWipeMeta, accumulator );
