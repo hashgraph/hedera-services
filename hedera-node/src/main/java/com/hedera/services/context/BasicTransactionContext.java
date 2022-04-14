@@ -20,7 +20,6 @@ package com.hedera.services.context;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.ids.EntityIdSource;

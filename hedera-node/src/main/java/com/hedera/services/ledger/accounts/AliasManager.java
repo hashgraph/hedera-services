@@ -22,12 +22,15 @@ package com.hedera.services.ledger.accounts;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.merkle.map.MerkleMap;
+import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -43,6 +46,7 @@ import org.spongycastle.util.encoders.Hex;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
+import java.security.PublicKey;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -123,8 +127,6 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 			if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
 				var evmAddress = calculateEthAddress(rawCompressedKey);
 				link(evmAddress, num);
-				//FIXME System out
-				System.out.printf(" %s <- 0x%s%n", num, Hex.toHexString(evmAddress.toByteArray()));
 				return true;
 			}
 		}
@@ -152,8 +154,14 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 				if (v.isSmartContract()) {
 					numCreate2Aliases.getAndIncrement();
 				}
-				if (maybeLinkEvmAddress(v.getAccountKey(), v.getKey())) {
-					numEOAliases.incrementAndGet();
+				try {
+					Key key = Key.parseFrom(v.getAlias());
+					JKey jKey = JKey.mapKey(key);
+					if (maybeLinkEvmAddress(jKey, v.getKey())) {
+						numEOAliases.incrementAndGet();
+					}
+				} catch (InvalidProtocolBufferException | DecoderException | IllegalArgumentException e) {
+					// any expected exception means no eth mapping
 				}
 			}
 		});
@@ -162,7 +170,6 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	}
 
 	static byte[] fromBytesInternal(byte[] publicKey) {
-		System.out.println(Hex.toHexString(publicKey));
 		if (publicKey.length == 33) {
 			// compressed 33 byte raw form
 			return publicKey;
@@ -196,8 +203,6 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 		final X9IntegerConverter x9 = new X9IntegerConverter();
 		final byte[] compEnc = x9.integerToBytes(xBN, 1 + x9.getByteLength(SECP256K1_CURVE));
 		compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
-		// TODO: Find a better way to handle an invalid point compression here.
-		// Currently ECCurve#decodePoint throws an IllegalArgumentException.
 		return SECP256K1_CURVE.decodePoint(compEnc);
 	}
 	
@@ -214,14 +219,22 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 		return curAliases().remove(alias) != null;
 	}
 
-	/**
-	 * Returns if there is an account linked the given alias.
-	 *
-	 * @param alias the alias of interest
-	 * @return whether there is a linked account
-	 */
-	public boolean contains(final ByteString alias) {
-		return curAliases().containsKey(alias);
+	public boolean forgetEvmAddress(final ByteString alias) {
+		try {
+			var key = Key.parseFrom(alias);
+			var jKey = JKey.mapKey(key);
+			if (jKey.hasECDSAsecp256k1Key()) {
+				byte[] rawCompressedKey = fromBytesInternal(jKey.getECDSASecp256k1Key());
+				if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
+					var evmAddress = calculateEthAddress(rawCompressedKey);
+					return curAliases().remove(evmAddress) != null;
+				}
+			}
+		} catch (InvalidProtocolBufferException | DecoderException internal) {
+			// any parse error means it's not a evm address
+		}
+		
+		return false;
 	}
 
 	/**

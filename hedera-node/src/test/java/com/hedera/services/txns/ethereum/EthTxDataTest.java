@@ -173,18 +173,22 @@ class EthTxDataTest {
 
 	@Test
 	void whiteBoxEncodingErrors() {
-		// type2 with access list
 		var oneByte = new byte[] { 1 };
-		assertThrows(IllegalStateException.class, () ->
+
+		EthTxData ethTxDataWithAccessList =
 				new EthTxData(oneByte, EthTxData.EthTransactionType.EIP1559, oneByte, 1,
-						oneByte, oneByte, oneByte, 1, oneByte, BigInteger.ONE, oneByte, oneByte, 1,
-						oneByte, oneByte, oneByte).encodeTx());
+						oneByte, oneByte, oneByte, 1,
+						oneByte, BigInteger.ONE, oneByte, oneByte, 1,
+						oneByte, oneByte, oneByte);
+		assertThrows(IllegalStateException.class, ethTxDataWithAccessList::encodeTx);
 
 		//Type 1
-		assertThrows(IllegalStateException.class, () ->
+		EthTxData ethTsDataEIP2930 =
 				new EthTxData(oneByte, EthTxData.EthTransactionType.EIP2930, oneByte, 1,
-						oneByte, oneByte, oneByte, 1, oneByte, BigInteger.ONE, oneByte, null, 1,
-						oneByte, oneByte, oneByte).encodeTx());
+						oneByte, oneByte, oneByte, 1,
+						oneByte, BigInteger.ONE, oneByte, null, 1,
+						oneByte, oneByte, oneByte);
+		assertThrows(IllegalStateException.class, ethTsDataEIP2930::encodeTx);
 	}
 
 	@Test
