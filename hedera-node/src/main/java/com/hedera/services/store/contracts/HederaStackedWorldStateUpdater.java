@@ -88,7 +88,7 @@ public class HederaStackedWorldStateUpdater
 	public boolean contractOwnsNfts(final Address addressOrAlias) {
 		final var address = aliases().resolveForEvm(addressOrAlias);
 		final var accountId = accountIdFromEvmAddress(address);
-		return (int) trackingAccounts().get(accountId, NUM_NFTS_OWNED) > 0;
+		return (long) trackingAccounts().get(accountId, NUM_NFTS_OWNED) > 0;
 	}
 
 	public byte[] unaliased(final byte[] evmAddress) {
