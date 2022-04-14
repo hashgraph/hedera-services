@@ -20,8 +20,12 @@ package com.hedera.services.bdd.suites.contract.hapi;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -51,24 +55,22 @@ public class ContractDeleteSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
+		return List.of(new HapiApiSpec[] {
 						rejectsWithoutProperSig(),
 						systemCannotDeleteOrUndeleteContracts(),
 						deleteWorksWithMutableContract(),
 						deleteFailsWithImmutableContract(),
 						deleteTransfersToAccount(),
 						deleteTransfersToContract(),
-						cannotDeleteOrSelfDestructTokenTreasury()
+						cannotDeleteOrSelfDestructTokenTreasury(),
+						cannotDeleteOrSelfDestructContractWithNonZeroBalance()
 				}
 		);
 	}
 
 	HapiApiSpec cannotDeleteOrSelfDestructTokenTreasury() {
-		final var firstContractTreasury = "contract1";
-		final var secondContractTreasury = "contract2";
 		final var someToken = "someToken";
 		final var selfDestructCallable = "SelfDestructCallable";
-		final var selfDestructCallable2 = "SelfDestructCallable";
 		final var multiKey = "multi";
 		final var escapeRoute = "civilian";
 
@@ -102,6 +104,42 @@ public class ContractDeleteSuite extends HapiApiSuite {
 				);
 	}
 
+	HapiApiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
+		final var someToken = "someToken";
+		final var multiKey = "multi";
+		final var selfDestructableContract = "SelfDestructCallable";
+		final var otherMiscContract = "PayReceivable";
+
+		return defaultHapiSpec("CannotDeleteOrSelfDestructContractWithNonZeroBalance")
+				.given(
+						newKeyNamed(multiKey),
+						uploadInitCode(selfDestructableContract),
+						contractCreate(selfDestructableContract)
+								.adminKey(multiKey)
+								.balance(123),
+						uploadInitCode(otherMiscContract),
+						contractCreate(otherMiscContract),
+						tokenCreate(someToken)
+								.initialSupply(0L)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.treasury(selfDestructableContract)
+								.supplyType(TokenSupplyType.INFINITE)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+				).when(
+						mintToken(someToken, List.of(ByteString.copyFromUtf8("somemetadata"))),
+						tokenAssociate(otherMiscContract, someToken),
+						cryptoTransfer(TokenMovement.movingUnique(someToken, 1)
+								.between(selfDestructableContract, otherMiscContract))
+				).then(
+						contractDelete(otherMiscContract)
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+						contractCall(selfDestructableContract, "destroy")
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
+				);
+
+	}
+
 	HapiApiSpec rejectsWithoutProperSig() {
 		return defaultHapiSpec("ScDelete")
 				.given(
@@ -119,7 +157,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
 				.given(
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)
-				).when( ).then(
+				).when().then(
 						systemContractDelete(CONTRACT)
 								.payingWith(SYSTEM_DELETE_ADMIN)
 								.hasPrecheck(NOT_SUPPORTED),
