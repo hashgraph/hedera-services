@@ -125,6 +125,22 @@ class HederaSelfDestructOperationTest {
 	}
 
 	@Test
+	void rejectsSelfDestructIfContractHasAnyBalance() {
+		givenRubberstampValidator();
+
+		final var beneficiaryMirror = beneficiary.toEvmAddress();
+		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
+		given(worldUpdater.priorityAddress(beneficiaryMirror)).willReturn(eip1014Address);
+		given(frame.getRecipientAddress()).willReturn(eip1014Address);
+		given(worldUpdater.contractHasAnyBalance(eip1014Address)).willReturn(true);
+
+		final var opResult = subject.execute(frame, evm);
+
+		assertEquals(Optional.of(HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES), opResult.getHaltReason());
+		assertEquals(Optional.of(Gas.of(2L)), opResult.getGasCost());
+	}
+
+	@Test
 	void executeInvalidSolidityAddress() {
 		givenRejectingValidator();
 

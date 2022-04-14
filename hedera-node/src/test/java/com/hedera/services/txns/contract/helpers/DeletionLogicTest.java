@@ -45,6 +45,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -167,6 +168,13 @@ class DeletionLogicTest {
 		final var op = opWithAccountObtainer(mirrorId, obtainer);
 		given(ledger.isKnownTreasury(target)).willReturn(true);
 		assertFailsWith(() -> subject.performFor(op), ACCOUNT_IS_TREASURY);
+	}
+
+	@Test
+	void rejectsPositiveBalanceContract() {
+		final var op = opWithAccountObtainer(mirrorId, obtainer);
+		given(ledger.hasAnyBalance(target)).willReturn(true);
+		assertFailsWith(() -> subject.performFor(op), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 	}
 
 	@Test
