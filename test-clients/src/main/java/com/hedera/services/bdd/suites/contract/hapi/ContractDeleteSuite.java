@@ -20,9 +20,13 @@ package com.hedera.services.bdd.suites.contract.hapi;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +42,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractUndelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -51,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class ContractDeleteSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
@@ -73,7 +80,9 @@ public class ContractDeleteSuite extends HapiApiSuite {
 						deleteFailsWithImmutableContract(),
 						deleteTransfersToAccount(),
 						deleteTransfersToContract(),
-						cannotDeleteOrSelfDestructTokenTreasury()
+						cannotDeleteOrSelfDestructTokenTreasury(),
+						cannotDeleteOrSelfDestructContractWithNonZeroTokenBalance(),
+						cannotDeleteOrSelfDestructContractWhoOwnsNfts()
 				}
 		);
 	}
@@ -115,6 +124,82 @@ public class ContractDeleteSuite extends HapiApiSuite {
 						tokenUpdate(someToken).treasury(escapeRoute)
 				).then(
 						contractCall(secondContractTreasury, SELF_DESTRUCT_CALL_ABI)
+				);
+	}
+
+	HapiApiSpec cannotDeleteOrSelfDestructContractWithNonZeroTokenBalance() {
+		final var firstContractTreasury = "contract1";
+		final var nonZeroBalanceContract = "contract2";
+		final var someToken = "someToken";
+		final var initcode = "initcode";
+		final var multiKey = "multi";
+
+		return defaultHapiSpec("CannotDeleteOrSelfDestructContractWithNonZeroTokenBalance")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(initcode)
+								.path(ContractResources.SELF_DESTRUCT_CALLABLE),
+						contractCreate(firstContractTreasury)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(123),
+						contractCreate(nonZeroBalanceContract)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(321),
+						tokenCreate(someToken)
+								.initialSupply(10)
+								.adminKey(multiKey)
+								.treasury(firstContractTreasury)
+				).when(
+						tokenAssociate(nonZeroBalanceContract, someToken),
+						cryptoTransfer(TokenMovement.moving(5, someToken)
+								.between(firstContractTreasury, nonZeroBalanceContract))
+				).then(
+						contractDelete(nonZeroBalanceContract)
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+						contractCall(nonZeroBalanceContract, SELF_DESTRUCT_CALL_ABI)
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
+				);
+	}
+
+	HapiApiSpec cannotDeleteOrSelfDestructContractWhoOwnsNfts() {
+		final var firstContractTreasury = "contract1";
+		final var nonZeroBalanceContract = "contract2";
+		final var someToken = "someToken";
+		final var initcode = "initcode";
+		final var multiKey = "multi";
+
+		return defaultHapiSpec("CannotDeleteOrSelfDestructContractWhoOwnsNfts")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(initcode)
+								.path(ContractResources.SELF_DESTRUCT_CALLABLE),
+						contractCreate(firstContractTreasury)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(123),
+						contractCreate(nonZeroBalanceContract)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(321),
+						tokenCreate(someToken)
+								.initialSupply(0L)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.treasury(firstContractTreasury)
+								.supplyType(TokenSupplyType.INFINITE)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+				).when(
+						mintToken(someToken, List.of(ByteString.copyFromUtf8("somemetadata"))),
+						tokenAssociate(nonZeroBalanceContract, someToken),
+						cryptoTransfer(TokenMovement.movingUnique(someToken, 1)
+								.between(firstContractTreasury, nonZeroBalanceContract))
+				).then(
+						contractDelete(nonZeroBalanceContract)
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+						contractCall(nonZeroBalanceContract, SELF_DESTRUCT_CALL_ABI)
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
 				);
 	}
 

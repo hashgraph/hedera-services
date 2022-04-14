@@ -68,15 +68,26 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 		if (!addressValidator.test(beneficiaryAddress, frame)) {
 			return reversionWith(null, HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
 		}
-		final var address = frame.getRecipientAddress();
-		if (updater.contractIsTokenTreasury(address)) {
-			return reversionWith(updater.get(beneficiaryAddress), HederaExceptionalHaltReason.CONTRACT_IS_TREASURY);
+		final var toBeDeleted = frame.getRecipientAddress();
+		final var beneficiary = updater.get(beneficiaryAddress);
+
+		if (toBeDeleted.equals(beneficiaryAddress)) {
+			return reversionWith(beneficiary,
+					HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
 		}
-		if (address.equals(beneficiaryAddress)) {
-			return reversionWith(updater.get(beneficiaryAddress), HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
-		} else {
-			return super.execute(frame, evm);
+		if (updater.contractIsTokenTreasury(toBeDeleted)) {
+			return reversionWith(beneficiary,
+					HederaExceptionalHaltReason.CONTRACT_IS_TREASURY);
 		}
+		if (updater.contractHasAnyBalance(toBeDeleted)) {
+			return reversionWith(beneficiary,
+					HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+		}
+		if (updater.contractOwnsNfts(toBeDeleted)) {
+			return reversionWith(beneficiary,
+					HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS);
+		}
+		return super.execute(frame, evm);
 	}
 
 	private OperationResult reversionWith(final Account beneficiary, final ExceptionalHaltReason reason) {

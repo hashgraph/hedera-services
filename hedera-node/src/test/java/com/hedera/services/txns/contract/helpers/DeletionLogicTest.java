@@ -41,10 +41,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -167,6 +169,20 @@ class DeletionLogicTest {
 		final var op = opWithAccountObtainer(mirrorId, obtainer);
 		given(ledger.isKnownTreasury(target)).willReturn(true);
 		assertFailsWith(() -> subject.performFor(op), ACCOUNT_IS_TREASURY);
+	}
+
+	@Test
+	void rejectsPositiveBalanceContract() {
+		final var op = opWithAccountObtainer(mirrorId, obtainer);
+		given(ledger.hasAnyFungibleTokenBalance(target)).willReturn(true);
+		assertFailsWith(() -> subject.performFor(op), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+	}
+
+	@Test
+	void rejectsContractWhoOwnsNfts() {
+		final var op = opWithAccountObtainer(mirrorId, obtainer);
+		given(ledger.hasAnyNfts(target)).willReturn(true);
+		assertFailsWith(() -> subject.performFor(op), ACCOUNT_STILL_OWNS_NFTS);
 	}
 
 	@Test
