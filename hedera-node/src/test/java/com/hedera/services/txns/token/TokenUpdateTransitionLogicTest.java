@@ -348,6 +348,8 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(ledger).decrementNumTreasuryTitles(oldTreasury);
+		verify(ledger).incrementNumTreasuryTitles(newTreasury);
 		verify(sigImpactHistorian).markEntityChanged(target.getTokenNum());
 	}
 

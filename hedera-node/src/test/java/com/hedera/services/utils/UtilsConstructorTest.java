@@ -53,6 +53,7 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -88,6 +89,7 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			ReleaseTwentyFiveMigration.class,
 			MapValueListUtils.class,
 			HFileMetaSerde.class,
 			IoUtils.class,

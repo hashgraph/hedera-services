@@ -48,6 +48,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,6 +75,32 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 	private void setup() {
 		commonSetup();
 		setupWithMockLedger();
+	}
+
+	@Test
+	void understandsTreasuryStatus() {
+		given(accountsLedger.get(misc, NUM_TREASURY_TITLES)).willReturn(0);
+		assertFalse(subject.isKnownTreasury(misc));
+		given(accountsLedger.get(misc, NUM_TREASURY_TITLES)).willReturn(1);
+		assertTrue(subject.isKnownTreasury(misc));
+	}
+
+	@Test
+	void canIncrementTreasuryTitles() {
+		given(accountsLedger.get(misc, NUM_TREASURY_TITLES)).willReturn(1);
+
+		subject.incrementNumTreasuryTitles(misc);
+
+		verify(accountsLedger).set(misc, NUM_TREASURY_TITLES, 2);
+	}
+
+	@Test
+	void canDecrementTreasuryTitles() {
+		given(accountsLedger.get(misc, NUM_TREASURY_TITLES)).willReturn(1);
+
+		subject.decrementNumTreasuryTitles(misc);
+
+		verify(accountsLedger).set(misc, NUM_TREASURY_TITLES, 0);
 	}
 
 	@Test

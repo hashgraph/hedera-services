@@ -270,5 +270,16 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::getHeadTokenId;
 		}
-	}
+	},
+	NUM_TREASURY_TITLES {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.state().setNumTreasuryTitles((int) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getNumTreasuryTitles;
+		}
+	},
 }

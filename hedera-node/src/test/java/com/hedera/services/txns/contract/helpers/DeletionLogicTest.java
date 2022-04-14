@@ -40,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
@@ -159,6 +160,13 @@ class DeletionLogicTest {
 		given(ledger.exists(obtainer)).willReturn(true);
 		given(ledger.isDeleted(obtainer)).willReturn(true);
 		assertFailsWith(() -> subject.performFor(op), OBTAINER_DOES_NOT_EXIST);
+	}
+
+	@Test
+	void rejectsTreasuryContract() {
+		final var op = opWithAccountObtainer(mirrorId, obtainer);
+		given(ledger.isKnownTreasury(target)).willReturn(true);
+		assertFailsWith(() -> subject.performFor(op), ACCOUNT_IS_TREASURY);
 	}
 
 	@Test
