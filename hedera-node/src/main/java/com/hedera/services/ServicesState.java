@@ -177,6 +177,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var seqStart = bootstrapProps.getLongProperty("hedera.firstUserEntity");
 		createGenesisChildren(addressBook, seqStart);
 
+		networkCtx().setBlockNo(bootstrapProps.getLongProperty("blocks.lastBlockNumber"));
+		networkCtx().setLatestConsTimeOfCurrentBlock(bootstrapProps.getInstantProperty("blocks.lastBlockTimestamp"));
+
 		internalInit(platform, bootstrapProps, dualState);
 	}
 
@@ -407,9 +410,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		log.info("Dual state includes freeze time={} and last frozen={}",
 				dualState.getFreezeTime(),
 				dualState.getLastFrozenTime());
-
-		networkCtx().setBlockNo(bootstrapProps.getLongProperty("blocks.lastBlockNumber"));
-		networkCtx().setLatestConsTimeOfCurrentBlock(bootstrapProps.getInstantProperty("blocks.lastBlockTimestamp"));
 
 		final var stateVersion = networkCtx().getStateVersion();
 		if (stateVersion > CURRENT_VERSION) {
