@@ -52,7 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 public class CreatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreatePrecompileSuite.class);
 
-	private static final long GAS_TO_OFFER = 5_000_000L;
+	private static final long GAS_TO_OFFER = 4_000_000L;
 	private static final long AUTO_RENEW_PERIOD = 8_000_000L;
 	private static final String TOKEN_SYMBOL = "tokenSymbol";
 	private static final String TOKEN_NAME = "tokenName";
@@ -86,28 +86,28 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				fungibleTokenCreateHappyPath()
-//				fungibleTokenCreateWithFeesHappyPath(),
-//				nonFungibleTokenCreateHappyPath(),
-//				nonFungibleTokenCreateWithFeesHappyPath(),
-//				fungibleTokenCreateThenQueryAndTransfer(),
-//				nonFungibleTokenCreateThenQuery()
+				fungibleTokenCreateHappyPath(),
+				fungibleTokenCreateWithFeesHappyPath(),
+				nonFungibleTokenCreateHappyPath(),
+				nonFungibleTokenCreateWithFeesHappyPath(),
+				fungibleTokenCreateThenQueryAndTransfer(),
+				nonFungibleTokenCreateThenQuery()
 		);
 	}
 
 	List<HapiApiSpec> negativeSpecs() {
 		return List.of(
-//				tokenCreateWithEmptyKeysReverts(),
-//				tokenCreateWithKeyWithMultipleKeyValuesReverts(),
-//				tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
-//				createTokenWithEmptyTokenStruct(),
-//				createTokenWithInvalidExpiry(),
-//				createTokenWithInvalidRoyaltyFee(),
-//				createTokenWithInvalidTreasury(),
-//				createTokenWithInvalidFixedFeeWithERC721Denomination(),
-//				createTokenWithInvalidFeeCollector(),
-//				createTokenWithInsufficientValueSent(),
-//				delegateCallTokenCreateFails()
+				tokenCreateWithEmptyKeysReverts(),
+				tokenCreateWithKeyWithMultipleKeyValuesReverts(),
+				tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
+				createTokenWithEmptyTokenStruct(),
+				createTokenWithInvalidExpiry(),
+				createTokenWithInvalidRoyaltyFee(),
+				createTokenWithInvalidTreasury(),
+				createTokenWithInvalidFixedFeeWithERC721Denomination(),
+				createTokenWithInvalidFeeCollector(),
+				createTokenWithInsufficientValueSent(),
+				delegateCallTokenCreateFails()
 		);
 	}
 
