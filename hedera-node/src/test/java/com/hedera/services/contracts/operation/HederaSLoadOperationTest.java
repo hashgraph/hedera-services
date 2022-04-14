@@ -147,18 +147,6 @@ class HederaSLoadOperationTest {
 	}
 
 	@Test
-	void executeHaltsForWrongAddressOfAliasedContract() {
-		final var expectedHaltResult = new Operation.OperationResult(Optional.of(Gas.of(20L)),
-				Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-
-		final var haltResult = subject.execute(messageFrame, evm);
-
-		assertEquals(expectedHaltResult.getGasCost(), haltResult.getGasCost());
-		assertEquals(expectedHaltResult.getHaltReason(), haltResult.getHaltReason());
-		assertEquals(expectedHaltResult.getPcIncrement(), haltResult.getPcIncrement());
-	}
-
-	@Test
 	void executeWithUnderFlowException() {
 		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.popStackItem()).willThrow(new FixedStack.UnderflowException());

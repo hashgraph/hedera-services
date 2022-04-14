@@ -177,6 +177,7 @@ class AbstractLedgerWorldUpdaterTest {
 	void getDelegatesToWrappedIfNotDeletedAndNotMutable() {
 		final var wrappedAccount = new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess);
 		given(worldState.get(aAddress)).willReturn(wrappedAccount);
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
 		final var actual = subject.get(aAddress);
 		assertSame(wrappedAccount, actual);
