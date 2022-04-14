@@ -183,7 +183,6 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 				modelToken.getTreasury().getId().asEntityId());
 		mapModelChanges(modelToken, newToken);
 		tokens.put(newTokenNum.toGrpcTokenId(), newToken);
-
 		modelToken.getTreasury().incrementNumTreasuryTitles();
 		sideEffectsTracker.trackTokenChanges(modelToken);
 	}

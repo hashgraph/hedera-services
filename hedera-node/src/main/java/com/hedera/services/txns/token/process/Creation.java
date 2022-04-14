@@ -137,8 +137,6 @@ public class Creation {
 					true);
 		}
 		provisionalToken.getCustomFees().forEach(FcCustomFee::nullOutCollector);
-
-		treasury.incrementNumTreasuryTitles();
 	}
 
 	public void persist() {

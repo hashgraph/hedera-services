@@ -188,7 +188,6 @@ class CreationTest {
 		verify(customFee).validateAndFinalizeWith(provisionalToken, accountStore, tokenStore);
 		verify(customFee).nullOutCollector();
 		verify(provisionalToken).mint(newRel, initialSupply, true);
-		verify(treasury).incrementNumTreasuryTitles();
 	}
 
 	@Test
