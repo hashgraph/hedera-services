@@ -45,13 +45,18 @@ public class HederaExceptionalHaltReason {
 	 * has {@link MerkleAccount#isReceiverSigRequired()} enabled and the account receives HBars
 	 */
 	public static final ExceptionalHaltReason INVALID_SIGNATURE = HederaExceptionalHalt.INVALID_SIGNATURE;
+	/**
+	 * Used when the target of a {@code selfdestruct} is a token treasury.
+	 */
+	public static final ExceptionalHaltReason CONTRACT_IS_TREASURY = HederaExceptionalHalt.CONTRACT_IS_TREASURY;
 
 	enum HederaExceptionalHalt implements ExceptionalHaltReason {
 		INVALID_SOLIDITY_ADDRESS("Invalid account reference"),
 		SELF_DESTRUCT_TO_SELF("Self destruct to the same address"),
+		CONTRACT_IS_TREASURY("Token treasuries cannot be deleted"),
 		INVALID_SIGNATURE("Invalid signature");
 
-		String description;
+		final String description;
 
 		HederaExceptionalHalt(final String description) {
 			this.description = description;

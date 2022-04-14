@@ -38,6 +38,7 @@ import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 
@@ -68,6 +69,12 @@ public class HederaStackedWorldStateUpdater
 
 	public boolean hasMutableLedgers() {
 		return trackingLedgers().areMutable();
+	}
+
+	public boolean contractIsTokenTreasury(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+		final var accountId = accountIdFromEvmAddress(address);
+		return (int) trackingAccounts().get(accountId, NUM_TREASURY_TITLES) > 0;
 	}
 
 	public byte[] unaliased(final byte[] evmAddress) {

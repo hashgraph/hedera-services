@@ -41,6 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -81,6 +82,19 @@ class HederaStackedWorldStateUpdaterTest {
 	@BeforeEach
 	void setUp() {
 		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers, globalDynamicProperties);
+	}
+
+	@Test
+	void recognizesTreasuryAccount() {
+		final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
+		final var treasuryAddressId = EntityIdUtils.accountIdFromEvmAddress(treasuryAddress);
+		given(aliases.resolveForEvm(treasuryAddress)).willReturn(treasuryAddress);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(accountsLedger.get(treasuryAddressId, NUM_TREASURY_TITLES)).willReturn(1);
+		assertTrue(subject.contractIsTokenTreasury(treasuryAddress));
+		given(accountsLedger.get(treasuryAddressId, NUM_TREASURY_TITLES)).willReturn(0);
+		assertFalse(subject.contractIsTokenTreasury(treasuryAddress));
 	}
 
 	@Test
