@@ -20,10 +20,10 @@ public class TestingConstants {
 
 	static final byte[] CHAINID_TESTNET = unhex("0128");
 
-	static BigInteger WEIBARS_IN_TINYBAR = BigInteger.valueOf(10_000_000_000L);
+	static final BigInteger WEIBARS_IN_TINYBAR = BigInteger.valueOf(10_000_000_000L);
 
-	static byte[] TINYBARS_57_IN_WEIBARS = BigInteger.valueOf(57).multiply(WEIBARS_IN_TINYBAR).toByteArray();
-	static byte[] TINYBARS_2_IN_WEIBARS = BigInteger.valueOf(2).multiply(WEIBARS_IN_TINYBAR).toByteArray();
+	static final byte[] TINYBARS_57_IN_WEIBARS = BigInteger.valueOf(57).multiply(WEIBARS_IN_TINYBAR).toByteArray();
+	static final byte[] TINYBARS_2_IN_WEIBARS = BigInteger.valueOf(2).multiply(WEIBARS_IN_TINYBAR).toByteArray();
 
 	private TestingConstants() {
 		// utility class

@@ -3,7 +3,6 @@ package com.hedera.services.txns.ethereum;
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.base.MoreObjects;
-import com.hedera.services.txns.ethereum.EthTxData.EthTransactionType;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
 import org.apache.commons.codec.binary.Hex;
@@ -85,50 +84,40 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
 	}
 
 	static byte[] calculateSingableMessage(EthTxData ethTx) {
-		byte[] message;
-		if (ethTx.type() == LEGACY_ETHEREUM) {
-			if (ethTx.chainId() != null) {
-				message =
-						RLPEncoder.encodeAsList(
-								Integers.toBytes(ethTx.nonce()),
-								ethTx.gasPrice(),
-								Integers.toBytes(ethTx.gasLimit()),
-								ethTx.to(),
-								Integers.toBytesUnsigned(ethTx.value()),
-								ethTx.callData(),
-								ethTx.chainId(),
-								Integers.toBytes(0),
-								Integers.toBytes(0));
-			} else {
-				message =
-						RLPEncoder.encodeAsList(
-								Integers.toBytes(ethTx.nonce()),
-								ethTx.gasPrice(),
-								Integers.toBytes(ethTx.gasLimit()),
-								ethTx.to(),
-								Integers.toBytesUnsigned(ethTx.value()),
-								ethTx.callData());
-			}
-		} else if (ethTx.type() == EthTransactionType.EIP1559) {
-			message =
-					RLPEncoder.encodeSequentially(
-							Integers.toBytes(2),
-							new Object[] {
-									ethTx.chainId(),
-									Integers.toBytes(ethTx.nonce()),
-									ethTx.maxPriorityGas(),
-									ethTx.maxGas(),
-									Integers.toBytes(ethTx.gasLimit()),
-									ethTx.to(),
-									Integers.toBytesUnsigned(ethTx.value()),
-									ethTx.callData(),
-									new Object[0]
-							});
-
-		} else {
-			throw new IllegalArgumentException("Unsupported transaction type " + ethTx.type());
-		}
-		return message;
+		return switch (ethTx.type()) {
+			case LEGACY_ETHEREUM -> (ethTx.chainId() != null && ethTx.chainId().length > 0)
+					? RLPEncoder.encodeAsList(
+							Integers.toBytes(ethTx.nonce()),
+							ethTx.gasPrice(),
+							Integers.toBytes(ethTx.gasLimit()),
+							ethTx.to(),
+							Integers.toBytesUnsigned(ethTx.value()),
+							ethTx.callData(),
+							ethTx.chainId(),
+							Integers.toBytes(0),
+							Integers.toBytes(0))
+					: RLPEncoder.encodeAsList(
+							Integers.toBytes(ethTx.nonce()),
+							ethTx.gasPrice(),
+							Integers.toBytes(ethTx.gasLimit()),
+							ethTx.to(),
+							Integers.toBytesUnsigned(ethTx.value()),
+							ethTx.callData());
+			case EIP1559 -> RLPEncoder.encodeSequentially(
+					Integers.toBytes(2),
+					new Object[] {
+							ethTx.chainId(),
+							Integers.toBytes(ethTx.nonce()),
+							ethTx.maxPriorityGas(),
+							ethTx.maxGas(),
+							Integers.toBytes(ethTx.gasLimit()),
+							ethTx.to(),
+							Integers.toBytesUnsigned(ethTx.value()),
+							ethTx.callData(),
+							new Object[0]
+					});
+			case EIP2930 -> throw new IllegalArgumentException("Unsupported transaction type " + ethTx.type());
+		};
 	}
 
 	static byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {

@@ -204,7 +204,7 @@ public record EthTxData(
 		return MoreObjects.toStringHelper(this)
 				.add("rawTx", rawTx == null ? null : Hex.encodeHexString(rawTx))
 				.add("type", type)
-				.add("chainId", Hex.encodeHexString(chainId))
+				.add("chainId", chainId == null ? null : Hex.encodeHexString(chainId))
 				.add("nonce", nonce)
 				.add("gasPrice", gasPrice == null ? null : Hex.encodeHexString(gasPrice))
 				.add("maxPriorityGas", maxPriorityGas == null ? null : Hex.encodeHexString(maxPriorityGas))
