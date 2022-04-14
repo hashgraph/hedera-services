@@ -49,7 +49,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class CreatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(CreatePrecompileSuite.class);
 
-	private static final long GAS_TO_OFFER = 4_000_000L;
+	private static final long GAS_TO_OFFER = 5_000_000L;
 	private static final long AUTO_RENEW_PERIOD = 8_000_000L;
 	private static final String TOKEN_SYMBOL = "tokenSymbol";
 	private static final String TOKEN_NAME = "tokenName";
@@ -79,11 +79,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
 	List<HapiApiSpec> positiveSpecs() {
 		return List.of(
-				//TODO: update TokenCreateContract.sol
 //				fungibleTokenCreateAndQueryAndTransferScenario5()
-				fungibleTokenCreateHappyPath(),
-				fungibleWithFeesTokenCreateHappyPath(),
-				nonFungibleWithFeesTokenCreateHappyPath()
+//				fungibleTokenCreateHappyPath()
+//				fungibleWithFeesTokenCreateHappyPath(),
+//				nonFungibleWithFeesTokenCreateHappyPath()
 		);
 	}
 
@@ -108,7 +107,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCall(TOKEN_CREATE_CONTRACT, "createFungible",
+												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithKeysAndExpiry",
 														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)))
 														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
