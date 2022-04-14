@@ -72,6 +72,9 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 		if (updater.contractIsTokenTreasury(address)) {
 			return reversionWith(updater.get(beneficiaryAddress), HederaExceptionalHaltReason.CONTRACT_IS_TREASURY);
 		}
+		if (updater.contractHasAnyBalance(address)) {
+			return reversionWith(updater.get(beneficiaryAddress), HederaExceptionalHaltReason.CONTRACT_IS_TREASURY);
+		}
 		if (address.equals(beneficiaryAddress)) {
 			return reversionWith(updater.get(beneficiaryAddress), HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
 		} else {

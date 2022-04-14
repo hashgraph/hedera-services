@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractUndelete;
@@ -115,6 +117,44 @@ public class ContractDeleteSuite extends HapiApiSuite {
 						tokenUpdate(someToken).treasury(escapeRoute)
 				).then(
 						contractCall(secondContractTreasury, SELF_DESTRUCT_CALL_ABI)
+				);
+	}
+
+	HapiApiSpec cannotDeleteOrSelfDestructContractWithNonZeroBalance() {
+		final var firstContractTreasury = "contract1";
+		final var nonZeroBalanceContract = "contract2";
+		final var someToken = "someToken";
+		final var initcode = "initcode";
+		final var multiKey = "multi";
+		final var escapeRoute = "civilian";
+
+		return defaultHapiSpec("CannotDeleteOrSelfDestructTokenTreasury")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(escapeRoute),
+						fileCreate(initcode)
+								.path(ContractResources.SELF_DESTRUCT_CALLABLE),
+						contractCreate(firstContractTreasury)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(123),
+						contractCreate(nonZeroBalanceContract)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(321),
+						tokenCreate(someToken)
+								.initialSupply(10)
+								.adminKey(multiKey)
+								.treasury(firstContractTreasury)
+				).when(
+						tokenAssociate(nonZeroBalanceContract, someToken),
+						cryptoTransfer(TokenMovement.moving(5, someToken)
+								.between(firstContractTreasury, nonZeroBalanceContract)),
+						contractDelete(nonZeroBalanceContract)
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+						contractCall(nonZeroBalanceContract, SELF_DESTRUCT_CALL_ABI)
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
+				).then(
 				);
 	}
 
