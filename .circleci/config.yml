@@ -1135,13 +1135,6 @@ workflows:
 
 
   GCP-Daily-Services-Reconnect-6N-4C:
-    triggers:
-      - schedule:
-          cron: "40 5 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
