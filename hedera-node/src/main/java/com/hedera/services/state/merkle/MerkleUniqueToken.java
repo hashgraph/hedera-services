@@ -119,6 +119,11 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 
 	/* Object */
 	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0250_VERSION;
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
@@ -133,8 +138,8 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 				this.spenderCode == that.spenderCode &&
 				this.packedCreationTime == that.packedCreationTime &&
 				Objects.deepEquals(this.metadata, that.metadata) &&
-				this.prev == that.prev &&
-				this.next == that.next;
+				this.prev.equals(that.prev) &&
+				this.next.equals(that.next);
 	}
 
 	@Override
@@ -181,12 +186,10 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		ownerCode = in.readInt();
 		packedCreationTime = in.readLong();
 		metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
-		if (version >= RELEASE_0180_VERSION) {
-			numbers = in.readLong();
-		}
-		if (version >= RELEASE_0250_VERSION) {
-			spenderCode = in.readInt();
-		}
+		// added in 18
+		numbers = in.readLong();
+		// added in 25
+		spenderCode = in.readInt();
 		if (version >= RELEASE_0260_VERSION) {
 			prev = NftNumPair.fromNums(in.readLong(), in.readLong());
 			next = NftNumPair.fromNums(in.readLong(), in.readLong());

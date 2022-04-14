@@ -37,6 +37,7 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -56,6 +57,7 @@ import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -75,6 +77,7 @@ import java.util.TreeSet;
 import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 
@@ -268,6 +271,22 @@ public class SeededPropertySource {
 		seeded.setNumContractKvPairs(kvPairs);
 
 		return seeded;
+	}
+
+	public MerkleUniqueToken nextUniqueToken() {
+		final var ownerCode = SEEDED_RANDOM.nextInt(1234);
+		final var spenderCode = SEEDED_RANDOM.nextInt(1234);
+		final var packedCreationTime = packedTime(nextInRangeLong(), nextInt());
+		final var metadata = nextBytes(10);
+		final var numbers = SEEDED_RANDOM.nextLong(1234);
+		final var prev = NftNumPair.fromNums(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
+		final var next = NftNumPair.fromNums(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
+
+		final var subject = new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
+		subject.setSpender(new EntityId(0,0, spenderCode));
+		subject.setPrev(prev);
+		subject.setNext(next);
+		return subject;
 	}
 
 	public MerkleAccountState next0251AccountState() {

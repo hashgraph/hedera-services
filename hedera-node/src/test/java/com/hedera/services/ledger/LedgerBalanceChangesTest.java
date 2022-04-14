@@ -497,7 +497,7 @@ class LedgerBalanceChangesTest {
 				tokenChange(yetAnotherToken, bModel, bYetAnotherTokenChange),
 				changingNftOwnership(aNft, aNft.asGrpcToken(), nftXfer(aModel, bModel, aSerialNo), payer),
 				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(bModel, cModel, aSerialNo), payer),
-				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, bSerialNo), payer));
+				changingNftOwnership(bNft, bNft.asGrpcToken(), nftXfer(cModel, aModel, aSerialNo), payer));
 	}
 
 	private Pair<AccountID, TokenID> rel(AccountID account, Id token) {

@@ -21,6 +21,7 @@ package com.hedera.services.store.models;
  */
 
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.NftNumPair;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.Test;
 
@@ -57,14 +58,17 @@ class UniqueTokenTest {
 		final var owner1 = IdUtils.asModelId("0.0.12346");
 		final var spender1 = IdUtils.asModelId("0.0.12347");
 		final var meta1 = "aa".getBytes(StandardCharsets.UTF_8);
+		final var next = NftNumPair.fromNums(token1.num(), 2);
 		final var subject = new UniqueToken(token1, 1L);
 		subject.setOwner(owner1);
 		subject.setSpender(spender1);
 		subject.setMetadata(meta1);
 		subject.setCreationTime(RichInstant.MISSING_INSTANT);
+		subject.setNext(next);
 
 		final var expected = "UniqueToken{tokenID=0.0.12345, serialNum=1, metadata=[97, 97], " +
-				"creationTime=RichInstant{seconds=0, nanos=0}, owner=0.0.12346, spender=0.0.12347}";
+				"creationTime=RichInstant{seconds=0, nanos=0}, owner=0.0.12346, spender=0.0.12347, " +
+				"prevNftOwned=0.0.0.0, nextNftOwned=0.0.12345.2}";
 
 		assertEquals(expected, subject.toString());
 	}
