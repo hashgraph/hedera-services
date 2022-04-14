@@ -293,7 +293,7 @@ public class HederaLedger {
 	}
 
 	public boolean hasAnyNfts(final AccountID aId) {
-		return (long) accountsLedger.get(aId, NUM_NFTS_OWNED) > 0;
+		return (long) accountsLedger.get(aId, NUM_NFTS_OWNED) > 0L;
 	}
 
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {

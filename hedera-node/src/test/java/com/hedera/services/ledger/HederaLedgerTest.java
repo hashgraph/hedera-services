@@ -93,9 +93,9 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 		assertFalse(subject.hasAnyFungibleTokenBalance(misc));
 		given(accountsLedger.get(misc, NUM_POSITIVE_BALANCES)).willReturn(1);
 		assertTrue(subject.hasAnyFungibleTokenBalance(misc));
-		given(accountsLedger.get(misc, NUM_NFTS_OWNED)).willReturn(0);
+		given(accountsLedger.get(misc, NUM_NFTS_OWNED)).willReturn(0L);
 		assertFalse(subject.hasAnyNfts(misc));
-		given(accountsLedger.get(misc, NUM_NFTS_OWNED)).willReturn(1);
+		given(accountsLedger.get(misc, NUM_NFTS_OWNED)).willReturn(1L);
 		assertTrue(subject.hasAnyNfts(misc));
 	}
 

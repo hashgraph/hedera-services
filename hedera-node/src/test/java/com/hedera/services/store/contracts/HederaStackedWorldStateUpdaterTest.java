@@ -119,9 +119,9 @@ class HederaStackedWorldStateUpdaterTest {
 		given(aliases.resolveForEvm(treasuryAddress)).willReturn(treasuryAddress);
 		given(trackingLedgers.accounts()).willReturn(accountsLedger);
 		given(trackingLedgers.aliases()).willReturn(aliases);
-		given(accountsLedger.get(positiveBalanceId, NUM_NFTS_OWNED)).willReturn(1);
+		given(accountsLedger.get(positiveBalanceId, NUM_NFTS_OWNED)).willReturn(1L);
 		assertTrue(subject.contractOwnsNfts(treasuryAddress));
-		given(accountsLedger.get(positiveBalanceId, NUM_NFTS_OWNED)).willReturn(0);
+		given(accountsLedger.get(positiveBalanceId, NUM_NFTS_OWNED)).willReturn(0L);
 		assertFalse(subject.contractOwnsNfts(treasuryAddress));
 	}
 
