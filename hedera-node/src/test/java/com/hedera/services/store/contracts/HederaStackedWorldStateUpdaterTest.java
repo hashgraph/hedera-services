@@ -41,6 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -99,7 +100,7 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
-	void recognizesNonZeroBalanceAccount() {
+	void recognizesNonZeroTokenBalanceAccount() {
 		final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
 		final var positiveBalanceId = EntityIdUtils.accountIdFromEvmAddress(treasuryAddress);
 		given(aliases.resolveForEvm(treasuryAddress)).willReturn(treasuryAddress);
@@ -109,6 +110,19 @@ class HederaStackedWorldStateUpdaterTest {
 		assertTrue(subject.contractHasAnyBalance(treasuryAddress));
 		given(accountsLedger.get(positiveBalanceId, NUM_POSITIVE_BALANCES)).willReturn(0);
 		assertFalse(subject.contractHasAnyBalance(treasuryAddress));
+	}
+
+	@Test
+	void recognizesAccountWhoStillOwnsNfts() {
+		final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
+		final var positiveBalanceId = EntityIdUtils.accountIdFromEvmAddress(treasuryAddress);
+		given(aliases.resolveForEvm(treasuryAddress)).willReturn(treasuryAddress);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(accountsLedger.get(positiveBalanceId, NUM_NFTS_OWNED)).willReturn(1);
+		assertTrue(subject.contractOwnsNfts(treasuryAddress));
+		given(accountsLedger.get(positiveBalanceId, NUM_NFTS_OWNED)).willReturn(0);
+		assertFalse(subject.contractOwnsNfts(treasuryAddress));
 	}
 
 	@Test

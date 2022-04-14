@@ -65,6 +65,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
@@ -287,8 +288,12 @@ public class HederaLedger {
 		return (int) accountsLedger.get(aId, NUM_TREASURY_TITLES) > 0;
 	}
 
-	public boolean hasAnyBalance(final AccountID aId) {
+	public boolean hasAnyFungibleTokenBalance(final AccountID aId) {
 		return (int) accountsLedger.get(aId, NUM_POSITIVE_BALANCES) > 0;
+	}
+
+	public boolean hasAnyNfts(final AccountID aId) {
+		return (int) accountsLedger.get(aId, NUM_NFTS_OWNED) > 0;
 	}
 
 	public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {

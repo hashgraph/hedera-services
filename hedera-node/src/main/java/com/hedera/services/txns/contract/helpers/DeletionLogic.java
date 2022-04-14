@@ -40,6 +40,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
@@ -76,7 +77,8 @@ public class DeletionLogic {
 		final var id = unaliased(op.getContractID(), aliasManager);
 		final var tbd = id.toGrpcAccountId();
 		validateFalse(ledger.isKnownTreasury(tbd), ACCOUNT_IS_TREASURY);
-		validateFalse(ledger.hasAnyBalance(tbd), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+		validateFalse(ledger.hasAnyFungibleTokenBalance(tbd), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+		validateFalse(ledger.hasAnyNfts(tbd), ACCOUNT_STILL_OWNS_NFTS);
 
 		final var obtainer = obtainerOf(op);
 		validateFalse(tbd.equals(obtainer), OBTAINER_SAME_CONTRACT_ID);
