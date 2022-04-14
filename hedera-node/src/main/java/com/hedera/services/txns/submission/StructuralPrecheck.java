@@ -23,6 +23,7 @@ package com.hedera.services.txns.submission;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.services.txns.submission.annotations.MaxSignedTxnSize;
@@ -57,16 +58,19 @@ public final class StructuralPrecheck {
 	private final int maxSignedTxnSize;
 	private final int maxProtoMessageDepth;
 	private HapiOpCounters opCounters;
+	private final SignedStateViewFactory stateViewFactory;
 
 	@Inject
 	public StructuralPrecheck(
 			@MaxSignedTxnSize final int maxSignedTxnSize,
 			@MaxProtoMsgDepth final int maxProtoMessageDepth,
-			final HapiOpCounters counters
+			final HapiOpCounters counters,
+			final SignedStateViewFactory stateViewFactory
 	) {
 		this.maxSignedTxnSize = maxSignedTxnSize;
 		this.maxProtoMessageDepth = maxProtoMessageDepth;
 		this.opCounters = counters;
+		this.stateViewFactory = stateViewFactory;
 	}
 
 	public Pair<TxnValidityAndFeeReq, SignedTxnAccessor> assess(final Transaction signedTxn) {
@@ -94,6 +98,9 @@ public final class StructuralPrecheck {
 
 		try {
 			final var accessor = new SignedTxnAccessor(signedTxn);
+			// get latest signed state to be used for precheck
+			accessor.setStateView(stateViewFactory.getLatestSignedStateView().get());
+
 			if (hasTooManyLayers(signedTxn) || hasTooManyLayers(accessor.getTxn())) {
 				return WELL_KNOWN_FLAWS.get(TRANSACTION_TOO_MANY_LAYERS);
 			}

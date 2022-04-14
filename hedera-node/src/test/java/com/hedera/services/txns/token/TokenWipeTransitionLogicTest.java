@@ -98,7 +98,7 @@ class TokenWipeTransitionLogicTest {
 		accountStore = mock(AccountStore.class);
 		validator = mock(ContextOptionValidator.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
-		subject = new TokenWipeTransitionLogic(validator, typedTokenStore, accountStore, txnCtx, dynamicProperties);
+		subject = new TokenWipeTransitionLogic(typedTokenStore, accountStore, txnCtx);
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
 

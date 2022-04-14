@@ -20,6 +20,7 @@ package com.hedera.services.utils.accessors;
  * ‍
  */
 
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
@@ -28,6 +29,7 @@ import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -118,4 +120,15 @@ public interface TxnAccessor {
 	Map<String, Object> getSpanMap();
 
 	ExpandHandleSpanMapAccessor getSpanMapAccessor();
+
+	/* --- Used for delegating precheck to custom accessors --- */
+	default boolean supportsPrecheck() {
+		return false;
+	}
+
+	default ResponseCodeEnum doPrecheck() {
+		throw new UnsupportedOperationException();
+	}
+
+	void setStateView(StateView view);
 }

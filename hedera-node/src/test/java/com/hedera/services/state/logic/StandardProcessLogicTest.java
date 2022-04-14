@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.RecordsHistorian;
@@ -88,6 +89,8 @@ class StandardProcessLogicTest {
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private RecordsHistorian recordsHistorian;
+	@Mock
+	private StateView workingView;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -99,7 +102,7 @@ class StandardProcessLogicTest {
 		subject = new StandardProcessLogic(
 				expiries, invariantChecks,
 				expandHandleSpan, recordsHistorian, autoRenewal, txnManager,
-				sigImpactHistorian, txnCtx, executionTimeTracker, dynamicProperties);
+				sigImpactHistorian, txnCtx, executionTimeTracker, dynamicProperties, workingView);
 	}
 
 	@Test

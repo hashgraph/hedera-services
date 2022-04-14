@@ -21,9 +21,11 @@ package com.hedera.services.txns;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.txns.span.SpanMapManager;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -51,8 +53,12 @@ class ExpandHandleSpanTest {
 	private SpanMapManager handleSpanMap;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private GlobalDynamicProperties properties;
 
-	private AccessorFactory accessorFactory = new AccessorFactory(aliasManager);
+	private AccessorFactory accessorFactory = new AccessorFactory(aliasManager, properties, validator);
 
 	private final long duration = 20;
 	private final TimeUnit testUnit = TimeUnit.MILLISECONDS;

@@ -21,18 +21,31 @@ package com.hedera.services.utils.accessors;
  */
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.Transaction;
 
 import javax.inject.Inject;
 
+import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+
 public class AccessorFactory {
 	final AliasManager aliasManager;
+	final GlobalDynamicProperties dynamicProperties;
+	final OptionValidator validator;
 
 	@Inject
-	public AccessorFactory(final AliasManager aliasManager) {
+	public AccessorFactory(final AliasManager aliasManager,
+			final GlobalDynamicProperties dynamicProperties,
+			final OptionValidator validator) {
 		this.aliasManager = aliasManager;
+		this.dynamicProperties = dynamicProperties;
+		this.validator = validator;
 	}
 
 	public TxnAccessor nonTriggeredTxn(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
@@ -56,8 +69,13 @@ public class AccessorFactory {
 	 * @param signedTxnWrapperBytes
 	 * @return
 	 */
-	private TxnAccessor constructSpecializedAccessor(byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
-		// custom accessors will be defined here in future PR based on the function from functionExtractor
+	private TxnAccessor constructSpecializedAccessor(
+			byte[] signedTxnWrapperBytes) throws InvalidProtocolBufferException {
+		final var body = extractTransactionBody(Transaction.parseFrom(signedTxnWrapperBytes));
+		final var function = MiscUtils.functionExtractor.apply(body);
+		if (function == TokenAccountWipe) {
+			return new TokenWipeAccessor(signedTxnWrapperBytes, aliasManager, dynamicProperties, validator);
+		}
 		return SignedTxnAccessor.from(signedTxnWrapperBytes);
 	}
 }

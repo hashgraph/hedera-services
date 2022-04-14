@@ -25,6 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.forEach;
 
@@ -174,5 +176,12 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	@VisibleForTesting
 	Map<ByteString, EntityNum> getAliases() {
 		return curAliases();
+	}
+
+	public EntityNum unaliased(final AccountID grpcId) {
+		if (isAlias(grpcId)) {
+			return lookupIdBy(grpcId.getAlias());
+		}
+		return EntityNum.fromAccountId(grpcId);
 	}
 }

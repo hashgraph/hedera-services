@@ -22,7 +22,9 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.goterl.lazysodium.interfaces.Sign;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -41,6 +43,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AccessorFactoryTest {
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private OptionValidator validator;
+	@Mock
+	private GlobalDynamicProperties properties;
 
 	AccessorFactory subject;
 
@@ -56,7 +62,7 @@ class AccessorFactoryTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new AccessorFactory(aliasManager);
+		subject = new AccessorFactory(aliasManager,properties, validator);
 	}
 
 	@Test

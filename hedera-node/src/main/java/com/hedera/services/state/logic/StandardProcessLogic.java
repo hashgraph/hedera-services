@@ -22,6 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.RecordsHistorian;
@@ -53,6 +54,7 @@ public class StandardProcessLogic implements ProcessLogic {
 	private final TransactionContext txnCtx;
 	private final ExecutionTimeTracker executionTimeTracker;
 	private final GlobalDynamicProperties dynamicProperties;
+	private final StateView workingView;
 
 	@Inject
 	public StandardProcessLogic(
@@ -65,7 +67,8 @@ public class StandardProcessLogic implements ProcessLogic {
 			final SigImpactHistorian sigImpactHistorian,
 			final TransactionContext txnCtx,
 			final ExecutionTimeTracker executionTimeTracker,
-			final GlobalDynamicProperties dynamicProperties
+			final GlobalDynamicProperties dynamicProperties,
+			final StateView workingView
 	) {
 		this.expiries = expiries;
 		this.invariantChecks = invariantChecks;
@@ -77,12 +80,15 @@ public class StandardProcessLogic implements ProcessLogic {
 		this.txnCtx = txnCtx;
 		this.dynamicProperties = dynamicProperties;
 		this.sigImpactHistorian = sigImpactHistorian;
+		this.workingView = workingView;
 	}
 
 	@Override
 	public void incorporateConsensusTxn(SwirldTransaction platformTxn, Instant consensusTime, long submittingMember) {
 		try {
 			final var accessor = expandHandleSpan.accessorFor(platformTxn);
+			// get the working view to be used in handleTransaction
+			accessor.setStateView(workingView);
 			Instant effectiveConsensusTime = consensusTime;
 			if (accessor.canTriggerTxn()) {
 				final var offset = dynamicProperties.triggerTxnWindBackNanos();

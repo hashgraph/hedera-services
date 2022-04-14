@@ -29,6 +29,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -36,7 +37,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
@@ -52,22 +52,16 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	private final TransactionContext txnCtx;
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
-	private final OptionValidator validator;
-	private final GlobalDynamicProperties dynamicProperties;
 
 	@Inject
 	public TokenWipeTransitionLogic(
-			final OptionValidator validator,
 			final TypedTokenStore tokenStore,
 			final AccountStore accountStore,
-			final TransactionContext txnCtx,
-			final GlobalDynamicProperties dynamicProperties
+			final TransactionContext txnCtx
 	) {
 		this.txnCtx = txnCtx;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
-		this.validator = validator;
-		this.dynamicProperties = dynamicProperties;
 	}
 
 	@Override
@@ -102,30 +96,5 @@ public class TokenWipeTransitionLogic implements TransitionLogic {
 	@Override
 	public Predicate<TransactionBody> applicability() {
 		return TransactionBody::hasTokenWipe;
-	}
-
-	@Override
-	public Function<TransactionBody, ResponseCodeEnum> semanticCheck() {
-		return this::validate;
-	}
-
-	public ResponseCodeEnum validate(TransactionBody txnBody) {
-		TokenWipeAccountTransactionBody op = txnBody.getTokenWipe();
-
-		if (!op.hasToken()) {
-			return INVALID_TOKEN_ID;
-		}
-
-		if (!op.hasAccount()) {
-			return INVALID_ACCOUNT_ID;
-		}
-		return validateTokenOpsWith(
-				op.getSerialNumbersCount(),
-				op.getAmount(),
-				dynamicProperties.areNftsEnabled(),
-				INVALID_WIPING_AMOUNT,
-				op.getSerialNumbersList(),
-				validator::maxBatchSizeWipeCheck
-		);
 	}
 }

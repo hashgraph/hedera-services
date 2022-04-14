@@ -22,6 +22,7 @@ package com.hedera.services.utils.accessors;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
@@ -111,6 +112,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	private AccountID payer;
 	private ScheduleID scheduleRef;
+	private StateView view = null;
 
 	public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
 		try {
@@ -347,6 +349,11 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public ExpandHandleSpanMapAccessor getSpanMapAccessor() {
 		return SPAN_MAP_ACCESSOR;
+	}
+
+	@Override
+	public void setStateView(final StateView view) {
+		this.view = view;
 	}
 
 	@Override
