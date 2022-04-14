@@ -52,7 +52,7 @@ public final class ResetTokenMaxPerAccount extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(
-										Map.of("tokens.maxPerAccount", "10000"))
+										Map.of("tokens.maxPerAccount", "100000"))
 				).then(
 				);
 	}
