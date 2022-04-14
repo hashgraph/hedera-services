@@ -3250,7 +3250,6 @@
 	  },
 	  {
 		"transactionFeeSchedule": {
-		  "transactionFeeSchedule": {
 			"hederaFunctionality": "CryptoDeleteAllowance",
 			"fees": [
 			  {
@@ -3294,7 +3293,6 @@
 			  }
 			]
 		  }
-		}
 	  },
 	  {
 		"transactionFeeSchedule": {
