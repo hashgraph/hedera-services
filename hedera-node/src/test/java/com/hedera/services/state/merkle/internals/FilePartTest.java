@@ -91,10 +91,12 @@ class FilePartTest {
 	}
 
 	@Test
+	@SuppressWarnings({"RSPEC-3415"})
 	void checkEqualityComparisonWorks() {
 		subject = new FilePart(SOME_DATA);
 		assertEquals(subject, subject);
-		assertNotEquals(null, subject);
+		// Note: suppressed warning here because check needs to cover null code-path of equals method.
+		assertNotEquals(subject, null);
 		assertNotEquals(subject, new Object());
 		assertEquals(subject, new FilePart(SOME_DATA));
 		assertNotEquals(subject, new FilePart("DIFFERENT DATA".getBytes()));
