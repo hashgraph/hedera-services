@@ -301,7 +301,7 @@ class MerkleSpecialFilesTest {
 	}
 
 	@Test
-	@SuppressWarnings({"RSPEC-3415"})
+	@SuppressWarnings("java:S3415")
 	void checkEqualityWorks() {
 		assertEquals(subject, subject);
 		// Note: suppressed warning here because check needs to cover null code-path of equals method.

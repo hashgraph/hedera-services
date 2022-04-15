@@ -91,7 +91,7 @@ class FilePartTest {
 	}
 
 	@Test
-	@SuppressWarnings({"RSPEC-3415"})
+	@SuppressWarnings("java:S3415")
 	void checkEqualityComparisonWorks() {
 		subject = new FilePart(SOME_DATA);
 		assertEquals(subject, subject);
