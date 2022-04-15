@@ -163,7 +163,7 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 					txnCtx.setStatus(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 					return;
 				}
-				outcome = prepNewTreasury(id, token, newTreasury);
+				outcome = prepTreasuryChange(id, token, newTreasury, existingTreasury);
 				if (outcome != OK) {
 					abortWith(outcome);
 					return;
@@ -270,13 +270,22 @@ public class TokenUpdateTransitionLogic implements TransitionLogic {
 		return OK;
 	}
 
-	private ResponseCodeEnum prepNewTreasury(TokenID id, MerkleToken token, AccountID newTreasury) {
+	private ResponseCodeEnum prepTreasuryChange(
+			final TokenID id,
+			final MerkleToken token,
+			final AccountID newTreasury,
+			final AccountID oldTreasury
+	) {
 		var status = OK;
 		if (token.hasFreezeKey()) {
 			status = ledger.unfreeze(newTreasury, id);
 		}
 		if (status == OK && token.hasKycKey()) {
 			status = ledger.grantKyc(newTreasury, id);
+		}
+		if (status == OK) {
+			ledger.decrementNumTreasuryTitles(oldTreasury);
+			ledger.incrementNumTreasuryTitles(newTreasury);
 		}
 		return status;
 	}

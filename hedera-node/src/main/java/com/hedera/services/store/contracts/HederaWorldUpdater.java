@@ -42,16 +42,6 @@ public interface HederaWorldUpdater extends WorldUpdater {
 	Address newContractAddress(Address sponsor);
 
 	/**
-	 * Returns the account with hedera information either from the in-process world state update or from the base world
-	 * state.
-	 *
-	 * @param address
-	 * 		the address of the account
-	 * @return the hedera world state account
-	 */
-	HederaWorldState.WorldStateAccount getHederaAccount(Address address);
-
-	/**
 	 * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is refunded for the first
 	 * allocation of new contract storage in order to prevent double charging the client.
 	 *

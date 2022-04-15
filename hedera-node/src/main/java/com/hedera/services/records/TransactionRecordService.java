@@ -87,4 +87,8 @@ public class TransactionRecordService {
 		txnCtx.setCallResult(EvmFnResult.fromCall(result));
 		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
 	}
+
+	public void updateFromEvmCallContext(EvmFnResult.EvmFnCallContext callContext) {
+		txnCtx.updateFromEvmCallContext(callContext);
+	}
 }

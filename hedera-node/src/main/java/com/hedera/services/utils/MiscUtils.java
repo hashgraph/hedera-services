@@ -61,6 +61,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -134,6 +135,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetIn
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
@@ -239,6 +241,14 @@ public final class MiscUtils {
 			ContractCall,
 			ContractCreate
 	);
+
+	public static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
+		try {
+			return functionOf(trans);
+		} catch (UnknownHederaFunctionality ignore) {
+			return NONE;
+		}
+	};
 
 	static final String TOKEN_MINT_METRIC = "mintToken";
 	static final String TOKEN_BURN_METRIC = "burnToken";
@@ -707,6 +717,9 @@ public final class MiscUtils {
 		}
 		if (txn.hasCryptoDeleteAllowance()) {
 			return CryptoDeleteAllowance;
+		}
+		if (txn.hasEthereumTransaction()) {
+			return EthereumTransaction;
 		}
 		throw new UnknownHederaFunctionality();
 	}

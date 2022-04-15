@@ -20,9 +20,10 @@ package com.hedera.services.txns.submission;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.SubmissionFlow;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

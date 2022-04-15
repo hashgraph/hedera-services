@@ -31,19 +31,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.assertTinybarAmountIsApproxUsd;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.INSTANT_HOG_CONS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.literalInitcodeFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
 
 public class ContractAutoExpirySpecs extends HapiApiSuite {
@@ -63,7 +57,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 
 	private HapiApiSpec renewsUsingContractFundsIfNoAutoRenewAccount() {
 		final var initcode = "initcode";
-		final var contractToRenew = "contractToRenew";
+		final var contractToRenew = "InstantStorageHog";
 		final var initBalance = ONE_HBAR;
 		final var minimalLifetime = 3;
 		final var standardLifetime = 7776000L;
@@ -74,7 +68,8 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 				.given(
 						createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
 						enableContractAutoRenewWith(minimalLifetime, 0),
-						contractCreate(contractToRenew, INSTANT_HOG_CONS_ABI, 63)
+						uploadInitCode(contractToRenew),
+						contractCreate(contractToRenew, 63)
 								.gas(2_000_000)
 								.entityMemo("")
 								.bytecode(initcode)

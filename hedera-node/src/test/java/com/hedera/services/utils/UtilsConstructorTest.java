@@ -53,6 +53,7 @@ import com.hedera.services.sigs.utils.PrecheckUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
@@ -67,6 +68,7 @@ import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
 import com.hedera.services.txns.crypto.CryptoLogicModule;
+import com.hedera.services.txns.ethereum.EthereumLogicModule;
 import com.hedera.services.txns.file.FileLogicModule;
 import com.hedera.services.txns.network.NetworkLogicModule;
 import com.hedera.services.txns.schedule.ScheduleLogicModule;
@@ -88,6 +90,7 @@ import java.util.Set;
 
 class UtilsConstructorTest {
 	private static final Set<Class<?>> toBeTested = new HashSet<>(Arrays.asList(
+			ReleaseTwentyFiveMigration.class,
 			MapValueListUtils.class,
 			HFileMetaSerde.class,
 			IoUtils.class,
@@ -154,7 +157,8 @@ class UtilsConstructorTest {
 			CallLocalExecutor.class,
 			HederaOperationUtil.class,
 			GasCalculatorHederaUtil.class,
-			SerializationUtils.class
+			SerializationUtils.class,
+			EthereumLogicModule.class
 	));
 
 	@Test

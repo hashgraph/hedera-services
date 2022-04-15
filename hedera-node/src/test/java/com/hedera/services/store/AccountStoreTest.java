@@ -81,7 +81,6 @@ class AccountStoreTest {
 	}
 
 	/* --- Account loading --- */
-
 	@Test
 	void loadsContractAsExpected() {
 		miscMerkleAccount.setSmartContract(true);
@@ -89,6 +88,15 @@ class AccountStoreTest {
 		Account account = subject.loadContract(miscId);
 
 		assertEquals(Id.fromGrpcAccount(miscMerkleId.toGrpcAccountId()), account.getId());
+	}
+
+	@Test
+	void loadsTreasuryTitles() {
+		miscMerkleAccount.setNumTreasuryTitles(34);
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		Account account = subject.loadAccount(miscId);
+
+		assertEquals(34, account.getNumTreasuryTitles());
 	}
 
 	@Test
@@ -140,6 +148,18 @@ class AccountStoreTest {
 
 		final var actualAccount2 = subject.loadAccountOrFailWith(miscId, FAIL_INVALID);
 		assertEquals(miscAccount, actualAccount2);
+	}
+
+	@Test
+	void commitIncludesTreasuryTitlesCount() {
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		setupWithMutableAccount(miscMerkleId, miscMerkleAccount);
+
+		final var model = subject.loadAccount(miscId);
+		model.setNumTreasuryTitles(34);
+		subject.commitAccount(model);
+
+		assertEquals(34, miscMerkleAccount.getNumTreasuryTitles());
 	}
 
 	@Test

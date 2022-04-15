@@ -61,7 +61,6 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CreationTest {
-	private final int maxTokensPerAccount = 1_000;
 	private final long now = 1_234_567L;
 	private final long initialSupply = 777L;
 	private final Id provisionalId = new Id(0, 0, 666);

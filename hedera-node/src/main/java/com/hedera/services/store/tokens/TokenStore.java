@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -46,17 +45,7 @@ public interface TokenStore extends Store<TokenID, MerkleToken> {
 	TokenID MISSING_TOKEN = TokenID.getDefaultInstance();
 	Consumer<MerkleToken> DELETION = token -> token.setDeleted(true);
 
-	boolean isKnownTreasury(AccountID id);
-
-	void addKnownTreasury(AccountID aId, TokenID tId);
-
-	void removeKnownTreasuryForToken(AccountID aId, TokenID tId);
-
 	boolean associationExists(AccountID aId, TokenID tId);
-
-	boolean isTreasuryForToken(AccountID aId, TokenID tId);
-
-	List<TokenID> listOfTokensServed(AccountID treasury);
 
 	ResponseCodeEnum freeze(AccountID aId, TokenID tId);
 

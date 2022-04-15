@@ -89,7 +89,9 @@ public class Account {
 	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
 	private int numAssociations;
 	private int numPositiveBalances;
+	private int numTreasuryTitles;
 	private long headTokenNum;
+	private long ethereumNonce;
 
 	public Account(Id id) {
 		this.id = id;
@@ -101,6 +103,18 @@ public class Account {
 
 	public void initBalance(long balance) {
 		this.balance = balance;
+	}
+
+	public void setEthereumNonce(long ethereumNonce) {
+		this.ethereumNonce = ethereumNonce;
+	}
+
+	public void incrementEthereumNonce() {
+		this.ethereumNonce++;
+	}
+
+	public long getEthereumNonce() {
+		return ethereumNonce;
 	}
 
 	public long getOwnedNfts() {
@@ -117,6 +131,23 @@ public class Account {
 
 	public void setAutoAssociationMetadata(int autoAssociationMetadata) {
 		this.autoAssociationMetadata = autoAssociationMetadata;
+	}
+
+	public int getNumTreasuryTitles() {
+		return numTreasuryTitles;
+	}
+
+	public void setNumTreasuryTitles(int numTreasuryTitles) {
+		this.numTreasuryTitles = numTreasuryTitles;
+	}
+
+	public void incrementNumTreasuryTitles() {
+		numTreasuryTitles++;
+	}
+
+	public void decrementNumTreasuryTitles() {
+		validateTrue(numTreasuryTitles > 0, FAIL_INVALID);
+		numTreasuryTitles--;
 	}
 
 	public Address canonicalAddress() {
@@ -382,6 +413,7 @@ public class Account {
 				.add("numAssociations", numAssociations)
 				.add("numPositiveBalances", numPositiveBalances)
 				.add("headTokenNum", headTokenNum)
+				.add("ethereumNonce", ethereumNonce)
 				.toString();
 	}
 

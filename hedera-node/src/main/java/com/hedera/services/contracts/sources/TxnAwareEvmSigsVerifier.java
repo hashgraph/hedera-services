@@ -119,7 +119,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 	}
 
 	private boolean isCryptoKeyActiveInFrame(final JKey key) {
-		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
+		final var pkToCryptoSigsFn = txnCtx.swirldsTxnAccessor().getRationalizedPkToCryptoSigFn();
 		return activationTest.test(
 				key,
 				pkToCryptoSigsFn,
@@ -132,7 +132,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 			final Address activeContract,
 			final ContractAliases aliases
 	) {
-		final var pkToCryptoSigsFn = txnCtx.accessor().getRationalizedPkToCryptoSigFn();
+		final var pkToCryptoSigsFn = txnCtx.swirldsTxnAccessor().getRationalizedPkToCryptoSigFn();
 		return activationTest.test(
 				key,
 				pkToCryptoSigsFn,

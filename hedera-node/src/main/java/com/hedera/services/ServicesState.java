@@ -67,6 +67,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.state.migration.ReleaseTwentyFiveMigration.initTreasuryTitleCounts;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
@@ -154,6 +155,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			// add the links to the doubly linked list of MerkleTokenRelStatus map and
 			// update each account's last associated token entityNumPair
 			updateLinks();
+			initTreasuryTitleCounts(this);
 		}
 	}
 

@@ -29,7 +29,7 @@ import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
@@ -70,7 +70,7 @@ class RecordStreamingTest {
 	@Mock
 	private RecordsHistorian recordsHistorian;
 	@Mock
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private RecordStreamObject firstFollowingChildRso;
 	@Mock

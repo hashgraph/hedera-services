@@ -72,24 +72,16 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 public class TypedTokenStore extends ReadOnlyTokenStore {
 	private final SideEffectsTracker sideEffectsTracker;
 
-	/* Only needed for interoperability with legacy HTS during refactor */
-	private final LegacyTreasuryRemover delegate;
-	private final LegacyTreasuryAdder addKnownTreasury;
-
 	@Inject
 	public TypedTokenStore(
 			final AccountStore accountStore,
 			final BackingStore<TokenID, MerkleToken> tokens,
 			final BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
 			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-			final LegacyTreasuryAdder legacyStoreDelegate,
-			final LegacyTreasuryRemover delegate,
 			final SideEffectsTracker sideEffectsTracker
 	) {
 		super(accountStore, tokens, uniqueTokens, tokenRels);
-		this.delegate = delegate;
 		this.sideEffectsTracker = sideEffectsTracker;
-		this.addKnownTreasury = legacyStoreDelegate;
 	}
 
 	/**
@@ -153,7 +145,7 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 	 * @param token
 	 * 		the token to save
 	 */
-	public void commitToken(Token token) {
+	public void commitToken(final Token token) {
 		final var mutableToken = tokens.getRef(token.getId().asGrpcToken());
 		mapModelChanges(token, mutableToken);
 		tokens.put(token.getId().asGrpcToken(), mutableToken);
@@ -164,13 +156,8 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		if (token.hasRemovedUniqueTokens()) {
 			destroyRemoved(token.removedUniqueTokens());
 		}
-
-		/* Only needed during HTS refactor. Will be removed once all operations that
-		 * refer to the knownTreasuries in-memory structure are refactored */
 		if (token.isDeleted()) {
-			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
-			final TokenID mutatedToken = token.getId().asGrpcToken();
-			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
+			token.getTreasury().decrementNumTreasuryTitles();
 		}
 		sideEffectsTracker.trackTokenChanges(token);
 	}
@@ -180,30 +167,24 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 	 * Maps the properties between the mutable and immutable token, and later puts the immutable one in state.
 	 * Adds the token's treasury to the known treasuries map.
 	 *
-	 * @param token
-	 * 		- the model of the token to be persisted in state.
+	 * @param modelToken
+	 * 		the model of the token to be persisted in state.
 	 */
-	public void persistNew(Token token) {
-		/* create new merkle token */
-		final var newMerkleTokenId = EntityNum.fromLong(token.getId().num());
-		final var newMerkleToken = new MerkleToken(
-				token.getExpiry(),
-				token.getTotalSupply(),
-				token.getDecimals(),
-				token.getSymbol(),
-				token.getName(),
-				token.isFrozenByDefault(),
-				!token.hasKycKey(),
-				token.getTreasury().getId().asEntityId()
-		);
-
-		/* map changes */
-		mapModelChanges(token, newMerkleToken);
-		tokens.put(newMerkleTokenId.toGrpcTokenId(), newMerkleToken);
-
-		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
-
-		sideEffectsTracker.trackTokenChanges(token);
+	public void persistNew(final Token modelToken) {
+		final var newTokenNum = EntityNum.fromModel(modelToken.getId());
+		final var newToken = new MerkleToken(
+				modelToken.getExpiry(),
+				modelToken.getTotalSupply(),
+				modelToken.getDecimals(),
+				modelToken.getSymbol(),
+				modelToken.getName(),
+				modelToken.isFrozenByDefault(),
+				!modelToken.hasKycKey(),
+				modelToken.getTreasury().getId().asEntityId());
+		mapModelChanges(modelToken, newToken);
+		tokens.put(newTokenNum.toGrpcTokenId(), newToken);
+		modelToken.getTreasury().incrementNumTreasuryTitles();
+		sideEffectsTracker.trackTokenChanges(modelToken);
 	}
 
 	public void persistNft(UniqueToken nft) {
@@ -264,15 +245,5 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		mutableNft.setMetadata(nft.getMetadata());
 		final var creationTime = nft.getCreationTime();
 		mutableNft.setPackedCreationTime(packedTime(creationTime.getSeconds(), creationTime.getNanos()));
-	}
-
-	@FunctionalInterface
-	public interface LegacyTreasuryAdder {
-		void perform(final AccountID aId, final TokenID tId);
-	}
-
-	@FunctionalInterface
-	public interface LegacyTreasuryRemover {
-		void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
 	}
 }

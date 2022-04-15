@@ -21,7 +21,7 @@ package com.hedera.services.txns.auth;
  */
 
 import com.hedera.services.config.EntityNumbers;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

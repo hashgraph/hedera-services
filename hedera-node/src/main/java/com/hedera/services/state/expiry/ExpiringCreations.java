@@ -36,8 +36,9 @@ import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.merkle.map.MerkleMap;
@@ -136,6 +137,10 @@ public class ExpiringCreations implements EntityCreator {
 
 		if (accessor.isTriggeredTxn()) {
 			expiringRecord.setScheduleRef(fromGrpcScheduleId(accessor.getScheduleRef()));
+		}
+		if (accessor.getFunction() == HederaFunctionality.EthereumTransaction) {
+			expiringRecord.setEthereumHash(
+					accessor.getSpanMapAccessor().getEthTxDataMeta(accessor).getEthereumHash());
 		}
 
 		return expiringRecord;

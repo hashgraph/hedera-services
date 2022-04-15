@@ -9,9 +9,9 @@ package com.hedera.services.context;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,9 @@ import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -49,9 +51,12 @@ public interface TransactionContext {
 	/**
 	 * Clear the context and processing history, initialize for a new consensus txn.
 	 *
-	 * @param accessor the consensus platform txn to manage context of.
-	 * @param consensusTime when the txn reached consensus.
-	 * @param submittingMember the member that submitted the txn to the network.
+	 * @param accessor
+	 * 		the consensus platform txn to manage context of.
+	 * @param consensusTime
+	 * 		when the txn reached consensus.
+	 * @param submittingMember
+	 * 		the member that submitted the txn to the network.
 	 */
 	void resetFor(TxnAccessor accessor, Instant consensusTime, long submittingMember);
 
@@ -81,8 +86,9 @@ public interface TransactionContext {
 	/**
 	 * Returns the Hedera account id paying for the current txn
 	 *
-	 * @throws IllegalStateException if there is no active txn
 	 * @return the ad
+	 * @throws IllegalStateException
+	 * 		if there is no active txn
 	 */
 	AccountID activePayer();
 
@@ -122,7 +128,7 @@ public interface TransactionContext {
 	ExpirableTxnRecord.Builder recordSoFar();
 
 	/**
-	 * Gets an accessor to the defined type {@link TxnAccessor}
+	 * Gets an accessor to the defined type {@link SignedTxnAccessor}
 	 * currently being processed.
 	 *
 	 * @return accessor for the current txn.
@@ -130,51 +136,66 @@ public interface TransactionContext {
 	TxnAccessor accessor();
 
 	/**
+	 * Gets a platform transaction accessor to the defined type {@link SwirldsTxnAccessor}
+	 * currently being processed.
+	 *
+	 * @return accessor for the current txn.
+	 */
+	SwirldsTxnAccessor swirldsTxnAccessor();
+
+	/**
 	 * Set a new status for the current txn's processing.
 	 *
-	 * @param status the new status of processing the current txn.
+	 * @param status
+	 * 		the new status of processing the current txn.
 	 */
 	void setStatus(ResponseCodeEnum status);
 
 	/**
 	 * Record that the current transaction created a file.
 	 *
-	 * @param id the created file.
+	 * @param id
+	 * 		the created file.
 	 */
 	void setCreated(FileID id);
 
 	/**
 	 * Record that the current transaction created a crypto account.
 	 *
-	 * @param id the created account.
+	 * @param id
+	 * 		the created account.
 	 */
 	void setCreated(AccountID id);
 
 	/**
 	 * Record that the current transaction targeted a smart contract.
 	 *
-	 * @param id the targeted contract.
+	 * @param id
+	 * 		the targeted contract.
 	 */
 	void setTargetedContract(ContractID id);
 
 	/**
 	 * Record that the current transaction created a consensus topic.
 	 *
-	 * @param id the created topic.
+	 * @param id
+	 * 		the created topic.
 	 */
 	void setCreated(TopicID id);
 
 	/**
 	 * Record that the current transaction created a scheduled transaction.
 	 *
-	 * @param id the created scheduled transaction
+	 * @param id
+	 * 		the created scheduled transaction
 	 */
 	void setCreated(ScheduleID id);
 
 	/**
 	 * Record that the current transaction references a particular scheduled transaction.
 	 *
-	 * @param txnId the id of the referenced scheduled transaction
+	 * @param txnId
+	 * 		the id of the referenced scheduled transaction
 	 */
 	void setScheduledTxnId(TransactionID txnId);
 
@@ -182,15 +203,25 @@ public interface TransactionContext {
 	 * Record that the current transaction called a smart contract with
 	 * a specified result.
 	 *
-	 * @param result the result of the contract call
+	 * @param result
+	 * 		the result of the contract call
 	 */
 	void setCallResult(EvmFnResult result);
+
+	/**
+	 * Add call context information to an already set call result
+	 *
+	 * @param callContext
+	 * 		the context to add to the call result
+	 */
+	void updateFromEvmCallContext(EvmFnResult.EvmFnCallContext callContext);
 
 	/**
 	 * Record that the current transaction created a smart contract with
 	 * a specified result.
 	 *
-	 * @param result the result of the contract creation.
+	 * @param result
+	 * 		the result of the contract creation.
 	 */
 	void setCreateResult(EvmFnResult result);
 
@@ -198,7 +229,8 @@ public interface TransactionContext {
 	 * Record that an additional fee was deducted from the payer of the
 	 * current txn.
 	 *
-	 * @param amount the extra amount deducted from the current txn's payer.
+	 * @param amount
+	 * 		the extra amount deducted from the current txn's payer.
 	 */
 	void addNonThresholdFeeChargedToPayer(long amount);
 
@@ -211,32 +243,41 @@ public interface TransactionContext {
 
 	/**
 	 * Update the topic's running hash and sequence number.
-	 * @param runningHash the running hash of the topic.
-	 * @param sequenceNumber the sequence number of the topic.
+	 *
+	 * @param runningHash
+	 * 		the running hash of the topic.
+	 * @param sequenceNumber
+	 * 		the sequence number of the topic.
 	 */
 	void setTopicRunningHash(byte[] runningHash, long sequenceNumber);
 
 	/**
 	 * Sets a triggered TxnAccessor for execution
-	 * @param accessor the accessor which will be triggered
+	 *
+	 * @param accessor
+	 * 		the accessor which will be triggered
 	 */
 	void trigger(TxnAccessor accessor);
 
 	/**
 	 * Returns a triggered TxnAccessor
+	 *
 	 * @return a triggered TxnAccessor
 	 */
 	TxnAccessor triggeredTxn();
 
 	/**
 	 * Adds a collection of {@link ExpiringEntity} to be later tracked for purging when expired
-	 * @param expiringEntities the information about entities which will be tracked for future purge
+	 *
+	 * @param expiringEntities
+	 * 		the information about entities which will be tracked for future purge
 	 */
 	void addExpiringEntities(Collection<ExpiringEntity> expiringEntities);
 
 	/**
 	 * Gets all expiring entities to the defined type {@link ExpiringEntity}
 	 * currently being processed.
+	 *
 	 * @return {@code List<ExpiringEntity>} for the current expiring entities.
 	 */
 	List<ExpiringEntity> expiringEntities();
@@ -244,18 +285,21 @@ public interface TransactionContext {
 	/**
 	 * Set the assessed custom fees as a result of the active transaction. It is used for {@link ExpirableTxnRecord}.
 	 *
-	 * @param assessedCustomFees the assessed custom fees
+	 * @param assessedCustomFees
+	 * 		the assessed custom fees
 	 */
 	void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees);
 
 	/**
 	 * Verifies if the transaction context for the currently executing transaction has a contract result
+	 *
 	 * @return true if there is a ContractCall or ContractCreate result attached to the context
 	 */
 	boolean hasContractResult();
 
 	/**
 	 * Extracts the amount of gas used by the currently executing transaction.
+	 *
 	 * @return long - the amount of gas used for the TX execution
 	 */
 	long getGasUsedForContractTxn();
