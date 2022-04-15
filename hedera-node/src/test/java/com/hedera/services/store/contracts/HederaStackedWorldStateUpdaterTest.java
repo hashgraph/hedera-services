@@ -141,6 +141,7 @@ class HederaStackedWorldStateUpdaterTest {
 	void usesAliasesForDecodingHelp() {
 		given(aliases.resolveForEvm(alias)).willReturn(sponsor);
 		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(trackingLedgers.canonicalAddress(alias)).willReturn(alias);
 
 		final var resolved = subject.unaliased(alias.toArrayUnsafe());
 		assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
