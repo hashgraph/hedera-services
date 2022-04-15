@@ -152,6 +152,9 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 												.setNode(reconnectingNode))
 										.toArray(HapiSpecOperation[]::new)
 						),
+						// disconnected node become ACTIVE, then immidately enter BEHIND mode and started reconnection
+						// session, need to wait reconnection session to finish
+						sleepFor(30000),
 						contractCall(oneContract)
 								.payingWith(civilianAccount)
 								.fee(ONE_HUNDRED_HBARS)
