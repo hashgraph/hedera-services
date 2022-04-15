@@ -22,7 +22,6 @@ package com.hedera.services.utils.accessors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

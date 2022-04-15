@@ -49,6 +49,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal.fromDetails;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 public class QueryVerbs {
 	public static HapiGetReceipt getReceipt(final String txn) {
@@ -115,11 +117,29 @@ public class QueryVerbs {
 		return new HapiGetContractRecords(contract);
 	}
 
+	/** This method allows the developer to invoke a contract function by the name of the called contract and the name
+	 * of the desired function
+	 * @param contract the name of the contract
+	 * @param functionName the name of the function
+	 * @param params the arguments (if any) passed to the contract's function
+	 */
 	public static HapiContractCallLocal contractCallLocal(
 			final String contract,
-			final String abi,
-			final Object... params
-	) {
+			final String functionName,
+			final Object... params) {
+		final var abi = getABIFor(FUNCTION, functionName, contract);
+		return new HapiContractCallLocal(abi, contract, params);
+	}
+
+	/** This method provides for the proper execution of specs, which execute contract local calls with a function ABI instead of
+	 * function name
+	 * @param contract the name of the contract
+	 * @param abi the contract's function ABI
+	 * @param params the arguments (if any) passed to the contract's function
+	 */
+	public static HapiContractCallLocal contractCallLocalWithFunctionAbi(final String contract,
+																		 final String abi,
+																		 final Object... params) {
 		return new HapiContractCallLocal(abi, contract, params);
 	}
 
@@ -128,8 +148,9 @@ public class QueryVerbs {
 	}
 
 	public static HapiContractCallLocal contractCallLocal(
-			final String contract, final String abi, final Function<HapiApiSpec, Object[]> fn
+			final String contract, final String functionName, final Function<HapiApiSpec, Object[]> fn
 	) {
+		final var abi = getABIFor(FUNCTION, functionName, contract);
 		return new HapiContractCallLocal(abi, contract, fn);
 	}
 

@@ -23,7 +23,9 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -53,7 +55,9 @@ class TokenDeleteTransitionLogicTest {
 	private TransactionContext txnCtx;
 	private SignedTxnAccessor accessor;
 	private TypedTokenStore typedTokenStore;
+	private AccountStore accountStore;
 	private Token token;
+	private Account treasury = new Account(new Id(0, 0, 1234));
 
 	private TransactionBody tokenDeleteTxn;
 	private SigImpactHistorian sigImpactHistorian;
@@ -64,8 +68,9 @@ class TokenDeleteTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		accessor = mock(SignedTxnAccessor.class);
 		typedTokenStore = mock(TypedTokenStore.class);
+		accountStore = mock(AccountStore.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
-		subject = new TokenDeleteTransitionLogic(txnCtx, typedTokenStore, sigImpactHistorian);
+		subject = new TokenDeleteTransitionLogic(txnCtx, accountStore, typedTokenStore, sigImpactHistorian);
 		token = mock(Token.class);
 	}
 
@@ -76,11 +81,13 @@ class TokenDeleteTransitionLogicTest {
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.isDeleted()).willReturn(false);
 		given(token.isBelievedToHaveBeenAutoRemoved()).willReturn(false);
+		given(token.getTreasury()).willReturn(treasury);
 
 		subject.doStateTransition();
 
 		verify(token).delete();
 		verify(typedTokenStore).commitToken(token);
+		verify(accountStore).commitAccount(treasury);
 		verify(sigImpactHistorian).markEntityChanged(tokenId.num());
 	}
 

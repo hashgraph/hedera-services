@@ -39,9 +39,12 @@ import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class DeletionLogic {
 	private final HederaLedger ledger;
@@ -73,8 +76,11 @@ public class DeletionLogic {
 	public ContractID performFor(final ContractDeleteTransactionBody op) {
 		final var id = unaliased(op.getContractID(), aliasManager);
 		final var tbd = id.toGrpcAccountId();
-		final var obtainer = obtainerOf(op);
+		validateFalse(ledger.isKnownTreasury(tbd), ACCOUNT_IS_TREASURY);
+		validateFalse(ledger.hasAnyFungibleTokenBalance(tbd), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
+		validateFalse(ledger.hasAnyNfts(tbd), ACCOUNT_STILL_OWNS_NFTS);
 
+		final var obtainer = obtainerOf(op);
 		validateFalse(tbd.equals(obtainer), OBTAINER_SAME_CONTRACT_ID);
 		validateTrue(ledger.exists(obtainer), OBTAINER_DOES_NOT_EXIST);
 		validateFalse(ledger.isDeleted(obtainer), OBTAINER_DOES_NOT_EXIST);
@@ -95,7 +101,8 @@ public class DeletionLogic {
 		validateTrue(op.hasTransferAccountID() || op.hasTransferContractID(), OBTAINER_REQUIRED);
 		if (op.hasTransferAccountID()) {
 			final var obtainer = op.getTransferAccountID();
-			validateFalse(ledger.exists(obtainer) && ledger.isDetached(obtainer), ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
+			final var obtainerExpired = ledger.exists(obtainer) && ledger.isDetached(obtainer);
+			validateFalse(obtainerExpired, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
 			return op.getTransferAccountID();
 		} else {
 			return unaliased(op.getTransferContractID(), aliasManager).toGrpcAccountId();

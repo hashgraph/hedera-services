@@ -82,27 +82,12 @@ class FcBlobsBytesStoreTest {
 	}
 
 	@Test
-	void delegatesPutUsingGetForModifyIfExtantBlob() {
-		given(pathedBlobs.containsKey(pathAKey)).willReturn(true);
-		given(pathedBlobs.getForModify(pathAKey)).willReturn(blobA);
-
-		final var oldBytes = subject.put(dataPath, aData);
-
-		verify(pathedBlobs).containsKey(pathAKey);
-		verify(pathedBlobs).getForModify(pathAKey);
-
-		assertNull(oldBytes);
-	}
-
-	@Test
 	void delegatesPutUsingGetAndFactoryIfNewBlob() {
 		final var keyCaptor = ArgumentCaptor.forClass(VirtualBlobKey.class);
 		final var valueCaptor = ArgumentCaptor.forClass(VirtualBlobValue.class);
-		given(pathedBlobs.containsKey(pathAKey)).willReturn(false);
 
 		final var oldBytes = subject.put(dataPath, aData);
 
-		verify(pathedBlobs).containsKey(pathAKey);
 		verify(pathedBlobs).put(keyCaptor.capture(), valueCaptor.capture());
 
 		assertEquals(pathAKey, keyCaptor.getValue());
