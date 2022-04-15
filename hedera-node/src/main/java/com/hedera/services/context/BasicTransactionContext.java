@@ -292,6 +292,16 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
+	public void updateFromEvmCallContext(final EvmFnResult.EvmFnCallContext callContext) {
+		this.evmFnResult.updateFromEvmCallContext(callContext);
+		var wrappedRecordConfig = recordConfig;
+		recordConfig = expiringRecord -> {
+			wrappedRecordConfig.accept(expiringRecord);
+			expiringRecord.setEthereumHash(callContext.getEthereumHash());
+		};
+	}
+
+	@Override
 	public void setCreateResult(final EvmFnResult result) {
 		this.evmFnResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCreateResult(result);

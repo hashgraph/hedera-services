@@ -34,6 +34,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -93,9 +94,13 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	public void doStateTransition() {
 		// --- Translate from gRPC types ---
 		var contractCallTxn = txnCtx.accessor().getTxn();
+		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
+		doStateTransitionOperation(contractCallTxn, senderId, false);
+	}
+
+	public void doStateTransitionOperation(final TransactionBody contractCallTxn, final Id senderId, boolean incrementCounter) {
 		var op = contractCallTxn.getContractCall();
 		final var target = targetOf(op);
-		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
 		final var contractId = target.toId();
 
 		// --- Load the model objects ---
@@ -106,6 +111,11 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 				: Bytes.EMPTY;
 
 		// --- Do the business logic ---
+		if (incrementCounter) {
+			sender.incrementEthereumNonce();
+			accountStore.commitAccount(sender);
+		}
+
 		final var result = evmTxProcessor.execute(
 				sender,
 				receiver.canonicalAddress(),
@@ -152,8 +162,12 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	}
 
 	@Override
-	public void preFetch(final TxnAccessor accessor) {
+	public void preFetch(final SwirldsTxnAccessor accessor) {
 		final var op = accessor.getTxn().getContractCall();
+		preFetchOperation(op);
+	}
+
+	public void preFetchOperation(final ContractCallTransactionBody op) {
 		final var id = targetOf(op);
 		final var address = id.toEvmAddress();
 

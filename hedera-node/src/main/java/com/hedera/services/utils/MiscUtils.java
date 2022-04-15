@@ -135,6 +135,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetIn
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
@@ -716,6 +717,9 @@ public final class MiscUtils {
 		}
 		if (txn.hasCryptoDeleteAllowance()) {
 			return CryptoDeleteAllowance;
+		}
+		if (txn.hasEthereumTransaction()) {
+			return EthereumTransaction;
 		}
 		throw new UnknownHederaFunctionality();
 	}

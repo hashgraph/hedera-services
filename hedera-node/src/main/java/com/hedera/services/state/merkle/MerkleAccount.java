@@ -232,6 +232,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setAlias(alias);
 	}
 
+	public long getEthereumNonce() {
+		return state().ethereumNonce();
+	}
+
+	public void setEthereumNonce(final long ethereumNonce) {
+		throwIfImmutable("Cannot change this account's ethereumNonce if it's immutable.");
+		state().setEthereumNonce(ethereumNonce);
+	}
+
 	public int getNumAssociations() {
 		return state().getNumAssociations();
 	}

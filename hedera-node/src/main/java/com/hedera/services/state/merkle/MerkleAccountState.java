@@ -93,6 +93,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private Map<EntityNum, Long> cryptoAllowances = Collections.emptyMap();
 	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
 	private Set<FcTokenAllowanceId> approveForAllNfts = Collections.emptySet();
+	private long ethereumNonce;
 
 	public MerkleAccountState() {
 		// RuntimeConstructable
@@ -145,7 +146,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final int numPositiveBalances,
 			final long headTokenId,
 			final long nftsOwned,
-			final int numTreasuryTitles
+			final int numTreasuryTitles,
+			final long ethereumNonce
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -161,6 +163,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.usedAutoAssociations = usedAutoAssociations;
 		this.alias = Optional.ofNullable(alias).orElse(DEFAULT_ALIAS);
 		this.numContractKvPairs = numContractKvPairs;
+		this.ethereumNonce = ethereumNonce;
 		this.cryptoAllowances = cryptoAllowances;
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 		this.approveForAllNfts = approveForAllNfts;
@@ -223,6 +226,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			numAssociations = in.readInt();
 			numPositiveBalances = in.readInt();
 			headTokenId = in.readLong();
+			ethereumNonce = in.readLong();
 		}
 		if (version >= RELEASE_0250_VERSION) {
 			numTreasuryTitles = in.readInt();
@@ -253,6 +257,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(numPositiveBalances);
 		out.writeLong(headTokenId);
 		out.writeInt(numTreasuryTitles);
+		out.writeLong(ethereumNonce);
 	}
 
 	/* --- Copyable --- */
@@ -276,20 +281,21 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.expiry == that.expiry &&
 				this.hbarBalance == that.hbarBalance &&
 				this.autoRenewSecs == that.autoRenewSecs &&
-				Objects.equals(this.memo, that.memo) &&
+			   Objects.equals(this.memo, that.memo) &&
 				this.deleted == that.deleted &&
 				this.smartContract == that.smartContract &&
 				this.receiverSigRequired == that.receiverSigRequired &&
-				Objects.equals(this.proxy, that.proxy) &&
+			   Objects.equals(this.proxy, that.proxy) &&
 				this.nftsOwned == that.nftsOwned &&
 				this.numContractKvPairs == that.numContractKvPairs &&
+			   this.ethereumNonce == that.ethereumNonce &&
 				this.maxAutoAssociations == that.maxAutoAssociations &&
 				this.usedAutoAssociations == that.usedAutoAssociations &&
-				equalUpToDecodability(this.key, that.key) &&
-				Objects.equals(this.alias, that.alias) &&
-				Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
-				Objects.equals(this.fungibleTokenAllowances, that.fungibleTokenAllowances) &&
-				Objects.equals(this.approveForAllNfts, that.approveForAllNfts) &&
+			   equalUpToDecodability(this.key, that.key) &&
+			   Objects.equals(this.alias, that.alias) &&
+			   Objects.equals(this.cryptoAllowances, that.cryptoAllowances) &&
+			   Objects.equals(this.fungibleTokenAllowances, that.fungibleTokenAllowances) &&
+			   Objects.equals(this.approveForAllNfts, that.approveForAllNfts) &&
 				this.numAssociations == that.numAssociations &&
 				this.numPositiveBalances == that.numPositiveBalances &&
 				this.headTokenId == that.headTokenId &&
@@ -319,7 +325,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				numAssociations,
 				numPositiveBalances,
 				headTokenId,
-				numTreasuryTitles);
+				numTreasuryTitles,
+				ethereumNonce);
 	}
 
 	/* --- Bean --- */
@@ -341,6 +348,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("alreadyUsedAutoAssociations", usedAutoAssociations)
 				.add("maxAutoAssociations", maxAutoAssociations)
 				.add("alias", alias.toStringUtf8())
+				.add("ethereumNonce", ethereumNonce)
 				.add("cryptoAllowances", cryptoAllowances)
 				.add("fungibleTokenAllowances", fungibleTokenAllowances)
 				.add("approveForAllNfts", approveForAllNfts)
@@ -399,6 +407,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return proxy;
 	}
 
+	public long ethereumNonce() {
+		return ethereumNonce;
+	}
+
 	public long nftsOwned() {
 		return nftsOwned;
 	}
@@ -430,6 +442,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setMemo(String memo) {
 		assertMutable("memo");
 		this.memo = memo;
+	}
+
+	public void setEthereumNonce(long ethereumNonce) {
+		assertMutable("ethereumNonce");
+		this.ethereumNonce = ethereumNonce;
 	}
 
 	public void setDeleted(boolean deleted) {

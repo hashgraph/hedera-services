@@ -20,8 +20,8 @@ package com.hedera.services.txns;
  * ‍
  */
 
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 
 public interface PreFetchableTransition extends TransitionLogic {
-    void preFetch(TxnAccessor accessor);
+    void preFetch(SwirldsTxnAccessor accessor);
 }

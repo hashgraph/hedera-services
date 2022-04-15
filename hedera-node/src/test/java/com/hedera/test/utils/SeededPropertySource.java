@@ -296,7 +296,8 @@ public class SeededPropertySource {
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
 				nextUnsignedLong(),
-				nextUnsignedInt());
+				nextUnsignedInt(),
+				nextUnsignedLong());
 	}
 
 	public ExpirableTxnRecord nextRecord() {
@@ -340,9 +341,14 @@ public class SeededPropertySource {
 		if (nextBoolean()) {
 			builder.setNewTokenAssociations(nextTokenAssociationsList());
 		}
+		var submittingMember = nextUnsignedLong();
+		var expiry = nextUnsignedLong();
+		if (nextBoolean()) {
+			builder.setEthereumHash(nextBytes(32));
+		}
 		final var seeded = builder.build();
-		seeded.setSubmittingMember(nextUnsignedLong());
-		seeded.setExpiry(nextUnsignedLong());
+		seeded.setSubmittingMember(submittingMember);
+		seeded.setExpiry(expiry);
 		return seeded;
 	}
 

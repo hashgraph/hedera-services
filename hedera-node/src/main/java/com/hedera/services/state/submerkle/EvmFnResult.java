@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.StorageChange;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -69,6 +70,13 @@ public class EvmFnResult implements SelfSerializable {
 	public static final int MAX_RESULT_BYTES = Integer.MAX_VALUE;
 	public static final int MAX_ADDRESS_BYTES = 20;
 	public static final int MAX_FUNCTION_PARAMETERS_BYTES = Integer.MAX_VALUE;
+
+	public interface EvmFnCallContext {
+		long gasLimit();
+		long getAmount();
+		byte[] callData();
+		byte[] getEthereumHash();
+	}
 
 	private long gasUsed;
 	private byte[] bloom = EMPTY;
@@ -349,6 +357,12 @@ public class EvmFnResult implements SelfSerializable {
 
 	public void setFunctionParameters(final byte[] functionParameters) {
 		this.functionParameters = functionParameters;
+	}
+
+	public void updateFromEvmCallContext(EvmFnCallContext callContext) {
+		setGas(callContext.gasLimit());
+		setAmount(callContext.getAmount());
+		setFunctionParameters(callContext.callData());
 	}
 
 	public ContractFunctionResult toGrpc() {

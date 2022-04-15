@@ -48,6 +48,7 @@ class MerkleAccountStateTest {
 	private static final JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
 	private static final long expiry = 1_234_567L;
 	private static final long balance = 555_555L;
+	private static final long ethereumNonce = 0L;
 	private static final long autoRenewSecs = 234_567L;
 	private static final long nftsOwned = 150L;
 	private static final long otherNftsOwned = 151L;
@@ -128,7 +129,8 @@ class MerkleAccountStateTest {
 				numPositiveBalances,
 				headTokenNum,
 				nftsOwned,
-				numTreasuryTitles);
+				numTreasuryTitles,
+				ethereumNonce);
 	}
 
 	@Test
@@ -153,7 +155,8 @@ class MerkleAccountStateTest {
 						"numAssociations=" + associatedTokensCount + ", " +
 						"numPositiveBalances=" + numPositiveBalances + ", " +
 						"headTokenId=" + headTokenNum + ", " +
-						"numTreasuryTitles=" + numTreasuryTitles + "}",
+						"numTreasuryTitles=" + numTreasuryTitles +
+						"ethereumNonce=" + ethereumNonce + "}",
 				subject.toString());
 	}
 
