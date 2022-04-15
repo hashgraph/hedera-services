@@ -29,8 +29,10 @@ import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
@@ -57,6 +59,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 @ExtendWith(MockitoExtension.class)
 class HederaStackedWorldStateUpdaterTest {
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
+	private static final Address alias2 = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbc");
 	private static final Address sponsor = Address.fromHexString("0xcba");
 	private static final Address address = Address.fromHexString("0xabc");
 	private static final Address otherAddress = Address.fromHexString("0xdef");
@@ -145,6 +148,13 @@ class HederaStackedWorldStateUpdaterTest {
 
 		final var resolved = subject.unaliased(alias.toArrayUnsafe());
 		assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
+	}
+
+	@Test
+	void unaliasingFailsWhenNotUsingCanonicalAddress() {
+		given(trackingLedgers.canonicalAddress(alias)).willReturn(alias2);
+
+		TxnUtils.assertFailsWith(() -> subject.unaliased(alias.toArrayUnsafe()), ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
 	}
 
 	@Test

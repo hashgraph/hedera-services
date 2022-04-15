@@ -96,7 +96,7 @@ public class HederaStackedWorldStateUpdater
 	public byte[] unaliased(final byte[] evmAddress) {
 		final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
 		if (!addressOrAlias.equals(trackingLedgers().canonicalAddress(addressOrAlias))) {
-			throw new InvalidTransactionException(ResponseCodeEnum.INVALID_SOLIDITY_ID);
+			throw new InvalidTransactionException(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
 		}
 		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
 	}
