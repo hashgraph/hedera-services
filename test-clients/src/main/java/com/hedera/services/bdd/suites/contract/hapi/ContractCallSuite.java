@@ -221,14 +221,14 @@ public class ContractCallSuite extends HapiApiSuite {
 								1, 0,
 								"setup", creationTxn, childMirror, childEip1014),
 						withOpContext((spec, op) -> allRunFor(spec,
-								contractCall(WHITELISTER, ADD_TO_WHITELIST_ABI, childEip1014.get())
+								contractCall(WHITELISTER, "addToWhitelist", childEip1014.get())
 										.payingWith(DEFAULT_PAYER),
-								contractCall(asContractString(
+								contractCallWithFunctionAbi(asContractString(
 												contractIdFromHexedMirrorAddress(childMirror.get())), IS_WHITELISTED_ABI,
 										getNestedContractAddress(WHITELISTER, spec))
 										.payingWith(DEFAULT_PAYER)
 										.via(mirrorWhitelistCheckTxn),
-								contractCall(CREATOR, IS_WHITELISTED_ABI,
+								contractCall(CREATOR, "isWhitelisted",
 										getNestedContractAddress(WHITELISTER, spec))
 										.payingWith(DEFAULT_PAYER)
 										.via(evmWhitelistCheckTxn)
@@ -275,10 +275,10 @@ public class ContractCallSuite extends HapiApiSuite {
 								final var create2address = childEip1014.get();
 								final var mirrorAddress = childMirror.get();
 								allRunFor(spec,
-										contractCall(ASSOCIATOR, ASSOCIATOR_ASSOCIATE_ABI, create2address,
+										contractCall(ASSOCIATOR, "associate", create2address,
 												asAddress(tokenID.get()))
 												.gas(GAS_TO_OFFER),
-										contractCall(ASSOCIATOR, ASSOCIATOR_ASSOCIATE_ABI, mirrorAddress,
+										contractCall(ASSOCIATOR, "associate", mirrorAddress,
 												asAddress(tokenID.get()))
 												.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
 												.gas(GAS_TO_OFFER)
