@@ -28,7 +28,6 @@ import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Objects;
 
 public class FilePart implements FCQueueElement {
 	private static final int CURRENT_VERSION = 1;
@@ -111,6 +110,6 @@ public class FilePart implements FCQueueElement {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.data);
+		return Arrays.hashCode(this.data);
 	}
 }

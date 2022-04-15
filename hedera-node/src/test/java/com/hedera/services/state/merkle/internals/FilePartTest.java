@@ -30,14 +30,13 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInput;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -94,11 +93,11 @@ class FilePartTest {
 	@Test
 	void checkEqualityComparisonWorks() {
 		subject = new FilePart(SOME_DATA);
-		assertTrue(subject.equals(subject));
-		assertFalse(subject.equals(null));
-		assertFalse(subject.equals(new Object()));
-		assertTrue(subject.equals(new FilePart(SOME_DATA)));
-		assertFalse(subject.equals(new FilePart("DIFFERENT DATA".getBytes())));
+		assertEquals(subject, subject);
+		assertNotEquals(subject, null);
+		assertNotEquals(subject, new Object());
+		assertEquals(subject, new FilePart(SOME_DATA));
+		assertNotEquals(subject, new FilePart("DIFFERENT DATA".getBytes()));
 	}
 
 	@Test

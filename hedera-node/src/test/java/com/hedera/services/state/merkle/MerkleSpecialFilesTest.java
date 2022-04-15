@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -301,23 +302,23 @@ class MerkleSpecialFilesTest {
 
 	@Test
 	void checkEqualityWorks() {
-		assertTrue(subject.equals(subject));
-		assertFalse(subject.equals(null));
-		assertFalse(subject.equals(new Object()));
+		assertEquals(subject, subject);
+		assertNotEquals(subject, null);
+		assertNotEquals(subject, new Object());
 
 		// Matching initial contents
-		assertTrue(new MerkleSpecialFiles().equals(new MerkleSpecialFiles()));
+		assertEquals(new MerkleSpecialFiles(), new MerkleSpecialFiles());
 		// Matching added contents
 		var msf1 = new MerkleSpecialFiles();
 		var msf2 = new MerkleSpecialFiles();
 		msf1.append(fid, "hello".getBytes());
 		msf2.append(fid, "hello".getBytes());
-		assertTrue(msf2.equals(msf1));
-		assertTrue(msf1.equals(msf2));
+		assertEquals(msf2, msf1);
+		assertEquals(msf1, msf2);
 
 		// Mismatching contents
 		msf2.append(fid, " ".getBytes());
-		assertFalse(msf2.equals(msf1));
-		assertFalse(msf1.equals(msf2));
+		assertNotEquals(msf2, msf1);
+		assertNotEquals(msf1, msf2);
 	}
 }
