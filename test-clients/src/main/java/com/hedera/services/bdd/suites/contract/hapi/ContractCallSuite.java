@@ -129,6 +129,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
+import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -254,8 +255,8 @@ public class ContractCallSuite extends HapiApiSuite {
 										.via(evmWhitelistCheckTxn)
 						))
 				).then(
-//						getTxnRecord(mirrorWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged(),
-//						getTxnRecord(evmWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged()
+						getTxnRecord(mirrorWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(1)))).logged(),
+						getTxnRecord(evmWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(bigIntResult(1)))).logged()
 				);
 	}
 
