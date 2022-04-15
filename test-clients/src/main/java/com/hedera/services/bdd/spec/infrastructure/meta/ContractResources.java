@@ -132,7 +132,11 @@ public class ContractResources {
 	public static final String TOY_MAKER_PATH = bytecodePath("ToyMaker");
 	public static final String IMMEDIATE_CHILD_ASSOC_PATH = bytecodePath("ImmediateChildAssociation");
 	public static final String INSTANT_STORAGE_HOG_PATH = bytecodePath("InstantStorageHog");
+	public static final String ASSOCIATOR_PATH = bytecodePath("Associator");
 
+	public static final String ASSOCIATOR_ASSOCIATE_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"" +
+			"account\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}]" +
+			",\"name\":\"associate\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 	public static final String INSTANT_HOG_CONS_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
 			"\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"constructor\"}";
 	public static final String IMMEDIATE_CHILD_ASSOC_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +

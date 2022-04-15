@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -69,6 +70,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ADD_TO_WHITELIST_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.APPROVE_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.ASSOCIATOR_ASSOCIATE_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.BALANCE_OF_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.DECIMALS_ABI;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.IMAP_USER_BYTECODE_PATH;
@@ -123,9 +125,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
-import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.simpleBytes;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -200,7 +203,8 @@ public class ContractCallSuite extends HapiApiSuite {
 				sendHbarsToCallerFromDifferentAddresses(),
 				bitcarbonTestStillPasses(),
 				contractCreationStoragePriceMatchesFinalExpiry(),
-				whitelistingAliasedContract()
+				whitelistingAliasedContract(),
+				cannotUseMirrorAddressOfAliasedContractInPrecompileMethod()
 		});
 	}
 
@@ -222,15 +226,15 @@ public class ContractCallSuite extends HapiApiSuite {
 						sourcing(() -> createLargeFile(
 								DEFAULT_PAYER, CREATOR, literalInitcodeFor("Creator"))),
 						withOpContext((spec, op) -> allRunFor(spec,
-						contractCreate(WHITELISTER)
-								.payingWith(DEFAULT_PAYER)
-								.bytecode(WHITELISTER)
-								.gas(GAS_TO_OFFER),
-						contractCreate(CREATOR)
-								.payingWith(DEFAULT_PAYER)
-								.bytecode(CREATOR)
-								.gas(GAS_TO_OFFER)
-								.via(creationTxn)
+								contractCreate(WHITELISTER)
+										.payingWith(DEFAULT_PAYER)
+										.bytecode(WHITELISTER)
+										.gas(GAS_TO_OFFER),
+								contractCreate(CREATOR)
+										.payingWith(DEFAULT_PAYER)
+										.bytecode(CREATOR)
+										.gas(GAS_TO_OFFER)
+										.via(creationTxn)
 						))
 				).when(
 						captureChildCreate2MetaFor(
@@ -253,6 +257,54 @@ public class ContractCallSuite extends HapiApiSuite {
 //						getTxnRecord(mirrorWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged(),
 //						getTxnRecord(evmWhitelistCheckTxn).hasPriority(recordWith().contractCallResult(resultWith().contractCallResult(simpleBytes(Bytes.of(1))))).logged()
 				);
+	}
+
+	private HapiApiSpec cannotUseMirrorAddressOfAliasedContractInPrecompileMethod() {
+		final var creationTxn = "creationTxn";
+		final var ASSOCIATOR = "Associator";
+
+		final AtomicReference<String> childMirror = new AtomicReference<>();
+		final AtomicReference<String> childEip1014 = new AtomicReference<>();
+		final AtomicReference<TokenID> tokenID = new AtomicReference<>();
+
+		return defaultHapiSpec("cannotUseMirrorAddressOfAliasedContractInPrecompileMethod")
+				.given(
+						cryptoCreate("Treasury"),
+						sourcing(() -> createLargeFile(
+								DEFAULT_PAYER, ASSOCIATOR, literalInitcodeFor("Associator"))),
+						withOpContext((spec, op) -> allRunFor(spec,
+								contractCreate(ASSOCIATOR)
+										.payingWith(DEFAULT_PAYER)
+										.bytecode(ASSOCIATOR)
+										.gas(GAS_TO_OFFER)
+										.via(creationTxn)
+						))
+				).when(
+						withOpContext((spec, op) -> {
+								allRunFor(spec,
+										captureChildCreate2MetaFor(
+												1, 0,
+												"setup", creationTxn, childMirror, childEip1014),
+										tokenCreate("TokenA")
+												.initialSupply(100)
+												.treasury("Treasury")
+												.exposingCreatedIdTo(id -> {
+													tokenID.set(asToken(id));
+												})
+								);
+								final var create2address = childEip1014.get();
+								final var mirrorAddress = childMirror.get();
+								allRunFor(spec,
+										contractCall(ASSOCIATOR, ASSOCIATOR_ASSOCIATE_ABI, create2address,
+												asAddress(tokenID.get()))
+												.gas(GAS_TO_OFFER),
+										contractCall(ASSOCIATOR, ASSOCIATOR_ASSOCIATE_ABI, mirrorAddress,
+												asAddress(tokenID.get()))
+												.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+												.gas(GAS_TO_OFFER)
+								);
+						})
+				).then();
 	}
 
 	private HapiApiSpec contractCreationStoragePriceMatchesFinalExpiry() {
