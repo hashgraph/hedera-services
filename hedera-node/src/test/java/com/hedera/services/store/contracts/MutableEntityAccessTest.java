@@ -41,7 +41,7 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -100,7 +100,7 @@ class MutableEntityAccessTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private SizeLimitedStorage storage;
 	@Mock

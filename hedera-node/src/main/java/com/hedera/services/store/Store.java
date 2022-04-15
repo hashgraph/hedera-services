@@ -42,7 +42,7 @@ public interface Store<T, K> {
     void setAccountsLedger(TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger);
 
     default void rebuildViews() {
-        /* No-op. */
+        // No-op
     }
 
     void commitCreation();

@@ -22,7 +22,6 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
@@ -49,7 +48,6 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 public class RenewableEntityClassifier {
 	private static final Logger log = LogManager.getLogger(RenewableEntityClassifier.class);
 
-	private final TokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
@@ -58,12 +56,10 @@ public class RenewableEntityClassifier {
 
 	@Inject
 	public RenewableEntityClassifier(
-			final TokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties,
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
 	) {
 		this.accounts = accounts;
-		this.tokenStore = tokenStore;
 		this.dynamicProperties = dynamicProperties;
 	}
 
@@ -89,8 +85,7 @@ public class RenewableEntityClassifier {
 			if (gracePeriodEnd > now) {
 				return isContract ? DETACHED_CONTRACT : DETACHED_ACCOUNT;
 			}
-			final var grpcId = lastClassifiedNum.toGrpcAccountId();
-			if (tokenStore.isKnownTreasury(grpcId)) {
+			if (lastClassified.isTokenTreasury()) {
 				return DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;
 			}
 			return isContract ? DETACHED_CONTRACT_GRACE_PERIOD_OVER : DETACHED_ACCOUNT_GRACE_PERIOD_OVER;

@@ -22,10 +22,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
@@ -41,7 +38,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecod
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
@@ -61,50 +58,41 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec verifiesExistence() {
-		final String CONTRACT = "extCodeHashOpChecker";
-		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
-		final ByteString EXPECTED_ACCOUNT_HASH = ByteString.copyFrom(Hash.keccak256(Bytes.EMPTY).toArray());
+		final var contract = "ExtCodeOperationsChecker";
+		final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+		final var EXPECTED_ACCOUNT_HASH = ByteString.copyFrom(Hash.keccak256(Bytes.EMPTY).toArray());
 
 		return defaultHapiSpec("VerifiesExistence")
 				.given(
-						fileCreate("bytecode").path(ContractResources.EXT_CODE_OPERATIONS_CHECKER_CONTRACT),
-						contractCreate(CONTRACT)
-								.bytecode("bytecode")
-								.gas(300_000L)
+						uploadInitCode(contract),
+						contractCreate(contract)
 				).when(
 				)
 				.then(
-						contractCall(CONTRACT,
-								ContractResources.EXT_CODE_OP_CHECKER_HASH_OF,
-								INVALID_ADDRESS)
+						contractCall(contract, "hashOf", INVALID_ADDRESS)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-						contractCallLocal(CONTRACT,
-								ContractResources.EXT_CODE_OP_CHECKER_HASH_OF,
-								INVALID_ADDRESS)
+						contractCallLocal(contract, "hashOf", INVALID_ADDRESS)
 								.hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
 						withOpContext((spec, opLog) -> {
-							AccountID accountID = spec.registry().getAccountID(DEFAULT_PAYER);
-							ContractID contractID = spec.registry().getContractId(CONTRACT);
-							String accountSolidityAddress = asHexedSolidityAddress(accountID);
-							String contractAddress = asHexedSolidityAddress(contractID);
+							final var accountID = spec.registry().getAccountID(DEFAULT_PAYER);
+							final var contractID = spec.registry().getContractId(contract);
+							final var accountSolidityAddress = asHexedSolidityAddress(accountID);
+							final var contractAddress = asHexedSolidityAddress(contractID);
 
-							final var call = contractCall(CONTRACT,
-									ContractResources.EXT_CODE_OP_CHECKER_HASH_OF,
+							final var call = contractCall(contract, "hashOf",
 									accountSolidityAddress)
 									.via("callRecord");
 							final var callRecord = getTxnRecord("callRecord");
 
-							final var accountCodeHashCallLocal = contractCallLocal(CONTRACT,
-									ContractResources.EXT_CODE_OP_CHECKER_HASH_OF,
+							final var accountCodeHashCallLocal = contractCallLocal(contract, "hashOf",
 									accountSolidityAddress)
 									.saveResultTo("accountCodeHash");
 
-							final var contractCodeHash = contractCallLocal(CONTRACT,
-									ContractResources.EXT_CODE_OP_CHECKER_HASH_OF,
+							final var contractCodeHash = contractCallLocal(contract, "hashOf",
 									contractAddress)
 									.saveResultTo("contractCodeHash");
 
-							final var getBytecode = getContractBytecode(CONTRACT)
+							final var getBytecode = getContractBytecode(contract)
 									.saveResultTo("contractBytecode");
 
 							allRunFor(spec, call, callRecord, accountCodeHashCallLocal, contractCodeHash, getBytecode);
@@ -114,7 +102,8 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
 
 							final var contractCodeResult = spec.registry().getBytes("contractCodeHash");
 							final var contractBytecode = spec.registry().getBytes("contractBytecode");
-							final var expectedContractCodeHash = ByteString.copyFrom(Hash.keccak256(Bytes.of(contractBytecode)).toArray()).toByteArray();
+							final var expectedContractCodeHash =
+									ByteString.copyFrom(Hash.keccak256(Bytes.of(contractBytecode)).toArray()).toByteArray();
 
 							Assertions.assertEquals(EXPECTED_ACCOUNT_HASH, recordResult.getContractCallResult());
 							Assertions.assertArrayEquals(EXPECTED_ACCOUNT_HASH.toByteArray(), accountCodeHash);

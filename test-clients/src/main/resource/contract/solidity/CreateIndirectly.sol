@@ -10,9 +10,4 @@ contract ToyMaker {
   }
 }
 
-contract CreateIndirectly {
-    function makeOpaquely(address makerAddress) public returns (address) {
-      ToyMaker maker = ToyMaker(makerAddress);
-      return maker.make();
-    }
-}
+

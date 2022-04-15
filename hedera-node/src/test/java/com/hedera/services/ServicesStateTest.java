@@ -42,7 +42,7 @@ import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
@@ -413,6 +413,7 @@ class ServicesStateTest {
 		ServicesState.setStakeFundingMigrator(mockMigrator);
 
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
+		subject.setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		assertDoesNotThrow(subject::migrate);
@@ -427,6 +428,7 @@ class ServicesStateTest {
 		subject = mock(ServicesState.class);
 		doCallRealMethod().when(subject).migrate();
 		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0230_VERSION);
+		given(subject.tokens()).willReturn(new MerkleMap<>());
 		given(subject.accounts()).willReturn(accounts);
 		given(accounts.keySet()).willReturn(Set.of());
 
@@ -460,6 +462,7 @@ class ServicesStateTest {
 
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0240_VERSION);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		given(accounts.keySet()).willReturn(Set.of(account1, account2));
 		given(accounts.getForModify(account1)).willReturn(merkleAccount1);

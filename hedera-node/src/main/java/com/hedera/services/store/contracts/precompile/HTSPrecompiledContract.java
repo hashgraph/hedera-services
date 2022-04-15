@@ -77,8 +77,8 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.SignedTxnAccessor;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -169,12 +169,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
 	public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
-
-	/* Precompiles cannot change treasury accounts */
-	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
-	};
-	public static final TypedTokenStore.LegacyTreasuryRemover NOOP_TREASURY_REMOVER = (aId, tId) -> {
-	};
 
 	private CreateLogicFactory createLogicFactory = CreateLogic::new;
 	private MintLogicFactory mintLogicFactory = MintLogic::new;
@@ -511,7 +505,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return tokenStoreFactory.newTokenStore(
 				accountStore,
 				ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
-				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
 				sideEffects);
 	}
 
@@ -661,8 +654,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				BackingStore<TokenID, MerkleToken> tokens,
 				BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
 				BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-				TypedTokenStore.LegacyTreasuryAdder treasuryAdder,
-				TypedTokenStore.LegacyTreasuryRemover treasuryRemover,
 				SideEffectsTracker sideEffectsTracker);
 	}
 

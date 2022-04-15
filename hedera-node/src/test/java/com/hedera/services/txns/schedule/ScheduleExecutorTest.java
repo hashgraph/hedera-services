@@ -25,6 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -58,9 +59,12 @@ class ScheduleExecutorTest {
 
 	private ScheduleExecutor subject;
 
+	@Mock
+	AccessorFactory factory;
+
 	@BeforeEach
 	void setUp() {
-		subject = new ScheduleExecutor();
+		subject = new ScheduleExecutor(factory);
 	}
 
 	@Test

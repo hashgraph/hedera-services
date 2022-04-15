@@ -9,9 +9,9 @@ package com.hedera.services.sigs.sourcing;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -70,8 +70,8 @@ class PojoSigMapTest {
 		// given:
 		final var grpc = SignatureMap.newBuilder()
 				.addSigPair(SignaturePair.newBuilder()
-								.setPubKeyPrefix(ByteString.copyFromUtf8(fakePrefix))
-								.setEd25519(ByteString.copyFromUtf8(fakeSig)))
+						.setPubKeyPrefix(ByteString.copyFromUtf8(fakePrefix))
+						.setEd25519(ByteString.copyFromUtf8(fakeSig)))
 				.addSigPair(SignaturePair.newBuilder()
 						.setPubKeyPrefix(ByteString.copyFromUtf8(secondFakePrefix))
 						.setEd25519(ByteString.copyFromUtf8(secondFakeSig)))
@@ -96,5 +96,15 @@ class PojoSigMapTest {
 		assertEquals(KeyType.ECDSA_SECP256K1, subject.keyType(2));
 		// and:
 		assertEquals(3, subject.numSigsPairs());
+
+		final var expectedString = "PojoSigMap{keyTypes=[ED25519, ED25519, ECDSA_SECP256K1], rawMap=[[[97], [48, 49, " +
+				"50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, " +
+				"55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55]], [[97, 98], [49, " +
+				"50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, " +
+				"55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 48]], [[97, 98, " +
+				"99], [50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, " +
+				"54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 48, 49]]]}";
+
+		assertEquals(expectedString, subject.toString());
 	}
 }

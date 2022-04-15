@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.contract.records;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -37,13 +36,14 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
 public class LogsSuite extends HapiApiSuite {
 
 	private static final Logger log = LogManager.getLogger(LogsSuite.class);
+	private static final String CONTRACT = "Logs";
 
 	public static void main(String... args) {
 		new LogsSuite().runSuiteAsync();
@@ -69,10 +69,10 @@ public class LogsSuite extends HapiApiSuite {
 		return defaultHapiSpec("log0Works")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						fileCreate("logs").path(ContractResources.LOGS),
-						contractCreate("logsContract").bytecode("logs")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).when(
-						contractCall("logsContract", ContractResources.LOGS_LOG0_ABI, 15).via("log0")
+						contractCall(CONTRACT, "log0", 15).via("log0")
 				).then(
 						getTxnRecord("log0").logged().hasPriority(
 								recordWith().contractCallResult(
@@ -86,11 +86,10 @@ public class LogsSuite extends HapiApiSuite {
 		return defaultHapiSpec("log1Works")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-
-						fileCreate("logs").path(ContractResources.LOGS),
-						contractCreate("logsContract").bytecode("logs")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).when(
-						contractCall("logsContract", ContractResources.LOGS_LOG1_ABI, 15).via("log1")
+						contractCall(CONTRACT, "log1", 15).via("log1")
 				).then(
 						getTxnRecord("log1").logged().hasPriority(recordWith().contractCallResult(resultWith()
 								.logs(inOrder(logWith().noData().withTopicsInOrder(
@@ -105,10 +104,10 @@ public class LogsSuite extends HapiApiSuite {
 		return defaultHapiSpec("log2Works")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						fileCreate("logs").path(ContractResources.LOGS),
-						contractCreate("logsContract").bytecode("logs")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).when(
-						contractCall("logsContract", ContractResources.LOGS_LOG2_ABI, 1, 2).via("log2")
+						contractCall(CONTRACT, "log2", 1, 2).via("log2")
 				).then(
 						getTxnRecord("log2").logged().hasPriority(
 								recordWith().contractCallResult(
@@ -125,10 +124,10 @@ public class LogsSuite extends HapiApiSuite {
 		return defaultHapiSpec("log3Works")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						fileCreate("logs").path(ContractResources.LOGS),
-						contractCreate("logsContract").bytecode("logs")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).when(
-						contractCall("logsContract", ContractResources.LOGS_LOG3_ABI, 1, 2, 3).via("log3")
+						contractCall(CONTRACT, "log3", 1, 2, 3).via("log3")
 				).then(
 						getTxnRecord("log3").logged().hasPriority(
 								recordWith().contractCallResult(
@@ -146,10 +145,10 @@ public class LogsSuite extends HapiApiSuite {
 		return defaultHapiSpec("log4Works")
 				.given(
 						UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-						fileCreate("logs").path(ContractResources.LOGS),
-						contractCreate("logsContract").bytecode("logs")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).when(
-						contractCall("logsContract", ContractResources.LOGS_LOG4_ABI, 1, 2, 3, 4).via("log4")
+						contractCall(CONTRACT, "log4", 1, 2, 3, 4).via("log4")
 				).then(
 						getTxnRecord("log4").logged().hasPriority(
 								recordWith().contractCallResult(
