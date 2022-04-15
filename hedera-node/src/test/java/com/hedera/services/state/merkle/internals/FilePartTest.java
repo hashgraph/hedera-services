@@ -94,7 +94,7 @@ class FilePartTest {
 	void checkEqualityComparisonWorks() {
 		subject = new FilePart(SOME_DATA);
 		assertEquals(subject, subject);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 		assertNotEquals(subject, new Object());
 		assertEquals(subject, new FilePart(SOME_DATA));
 		assertNotEquals(subject, new FilePart("DIFFERENT DATA".getBytes()));

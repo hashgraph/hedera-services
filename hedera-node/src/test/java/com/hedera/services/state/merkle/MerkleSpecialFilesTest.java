@@ -303,7 +303,7 @@ class MerkleSpecialFilesTest {
 	@Test
 	void checkEqualityWorks() {
 		assertEquals(subject, subject);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 		assertNotEquals(subject, new Object());
 
 		// Matching initial contents
