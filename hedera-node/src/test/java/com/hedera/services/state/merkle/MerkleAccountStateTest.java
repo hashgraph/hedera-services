@@ -155,7 +155,7 @@ class MerkleAccountStateTest {
 						"numAssociations=" + associatedTokensCount + ", " +
 						"numPositiveBalances=" + numPositiveBalances + ", " +
 						"headTokenId=" + headTokenNum + ", " +
-						"numTreasuryTitles=" + numTreasuryTitles +
+						"numTreasuryTitles=" + numTreasuryTitles + ", " +
 						"ethereumNonce=" + ethereumNonce + "}",
 				subject.toString());
 	}

@@ -44,7 +44,7 @@ import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -90,7 +90,7 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private AccountStore accountStore;
 	@Mock

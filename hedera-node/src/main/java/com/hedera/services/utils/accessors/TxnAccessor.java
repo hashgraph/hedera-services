@@ -26,14 +26,7 @@ import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 
 import java.util.Map;
 
@@ -80,6 +73,11 @@ public interface TxnAccessor {
 	ScheduleID getScheduleRef();
 
 	void setScheduleRef(ScheduleID parent);
+
+	/* --- Used to track the results of creating signatures for all linked keys --- */
+	void setExpandedSigStatus(ResponseCodeEnum status);
+
+	ResponseCodeEnum getExpandedSigStatus();
 
 	/* --- Used to log failures for any transaction --- */
 	String toLoggableString();

@@ -52,8 +52,7 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 		} else {
 			final var seededAccount = propertySource.nextAccountState();
 			if (version < RELEASE_0250_VERSION) {
-				// NFTs owned was always set to 0 in these serialized forms
-				seededAccount.setNftsOwned(0);
+				seededAccount.setEthereumNonce(0L);
 				seededAccount.setNumTreasuryTitles(0);
 			}
 			return seededAccount;

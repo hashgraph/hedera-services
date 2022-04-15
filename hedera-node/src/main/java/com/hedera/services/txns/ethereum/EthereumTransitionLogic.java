@@ -35,7 +35,6 @@ import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
 import org.bouncycastle.util.encoders.Hex;
@@ -89,10 +88,10 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public void doStateTransition() {
-		var syntheticTxBody = getOrCreateTransactionBody(txnCtx.swirldsTxnAccessor());
+		var syntheticTxBody = getOrCreateTransactionBody(txnCtx.accessor());
 		EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnCtx.accessor());
 		maybeUpdateCallData(txnCtx.accessor(), ethTxData, txnCtx.accessor().getTxn().getEthereumTransaction());
-		var ethTxSigs = getOrCreateEthSigs(txnCtx.swirldsTxnAccessor(), ethTxData);
+		var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 
 		var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 
@@ -104,7 +103,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		recordService.updateFromEvmCallContext(ethTxData);
 	}
 
-	private TransactionBody getOrCreateTransactionBody(final SwirldsTxnAccessor txnCtx) {
+	private TransactionBody getOrCreateTransactionBody(final TxnAccessor txnCtx) {
 		var txBody = spanMapAccessor.getEthTxBodyMeta(txnCtx);
 		if (txBody == null) {
 			txBody = createSyntheticTransactionBody(spanMapAccessor.getEthTxDataMeta(txnCtx));
@@ -113,7 +112,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		return txBody;
 	}
 
-	private EthTxSigs getOrCreateEthSigs(final SwirldsTxnAccessor txnCtx, EthTxData ethTxData) {
+	private EthTxSigs getOrCreateEthSigs(final TxnAccessor txnCtx, EthTxData ethTxData) {
 		var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(txnCtx);
 		if (ethTxSigs == null) {
 			ethTxSigs = EthTxSigs.extractSignatures(ethTxData);
@@ -128,7 +127,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	}
 
 	@Override
-	public ResponseCodeEnum validateSemantics(SwirldsTxnAccessor accessor) {
+	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
 		var txBody = getOrCreateTransactionBody(accessor);
 
@@ -139,7 +138,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		if (accessor.getExpandedSigStatus() == ResponseCodeEnum.OK) {
 			// this is not precheck, so do more involved checks
 			maybeUpdateCallData(accessor, ethTxData, txBody.getEthereumTransaction());
-			var ethTxSigs = getOrCreateEthSigs(txnCtx.swirldsTxnAccessor(), ethTxData);
+			var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 			var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 			if (callingAccount == null) {
 				return ResponseCodeEnum.INVALID_ACCOUNT_ID; // FIXME new response code?
@@ -170,7 +169,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	}
 
 	@Override
-	public void preFetch(final SwirldsTxnAccessor accessor) {
+	public void preFetch(final TxnAccessor accessor) {
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
 
 		EthereumTransactionBody op = accessor.getTxn().getEthereumTransaction();

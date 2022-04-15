@@ -136,9 +136,9 @@ class ToStringAccountsExporterTest {
 				", expiry=1234567, balance=1, autoRenewSecs=555555, memo=This ecstasy doth unperplex, deleted=false, " +
 				"smartContract=true, numContractKvPairs=0, receiverSigRequired=true, " +
 				"proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, " +
-				"alreadyUsedAutoAssociations=7, maxAutoAssociations=10, alias=, ethereumNonce=1, " +
+				"alreadyUsedAutoAssociations=7, maxAutoAssociations=10, alias=, " +
 				"cryptoAllowances={EntityNum{value=1}=10}, fungibleTokenAllowances={}, approveForAllNfts=[], " +
-				"numAssociations=3, numPositiveBalances=0, headTokenId=0, numTreasuryTitles=0}, # " +
+				"numAssociations=3, numPositiveBalances=0, headTokenId=0, numTreasuryTitles=0, ethereumNonce=1}, # " +
 				"records=0}\n" +
 				"\n" +
 				"0.0.2\n" +
@@ -147,8 +147,8 @@ class ToStringAccountsExporterTest {
 				"\"second-fake\"\n, expiry=7654321, balance=2, autoRenewSecs=444444, memo=" +
 				"We said, and show us what we love, deleted=true, smartContract=false, numContractKvPairs=0, " +
 				"receiverSigRequired=false, proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, alreadyUsedAutoAssociations=0, " +
-				"maxAutoAssociations=0, alias=, ethereumNonce=2, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], " +
-				"numAssociations=1, numPositiveBalances=0, headTokenId=0, numTreasuryTitles=0}, # records=0}\n";
+				"maxAutoAssociations=0, alias=, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], " +
+				"numAssociations=1, numPositiveBalances=0, headTokenId=0, numTreasuryTitles=0, ethereumNonce=2}, # records=0}\n";
 
 		// given:
 		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();

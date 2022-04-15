@@ -34,7 +34,6 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -48,10 +47,7 @@ import javax.inject.Singleton;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 @Singleton
 public class ContractCallTransitionLogic implements PreFetchableTransition {
@@ -162,7 +158,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	}
 
 	@Override
-	public void preFetch(final SwirldsTxnAccessor accessor) {
+	public void preFetch(final TxnAccessor accessor) {
 		final var op = accessor.getTxn().getContractCall();
 		preFetchOperation(op);
 	}

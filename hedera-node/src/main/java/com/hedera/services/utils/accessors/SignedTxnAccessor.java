@@ -38,15 +38,7 @@ import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ScheduleID;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -110,6 +102,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private CryptoTransferMeta xferUsageMeta;
 	private BaseTransactionMeta txnUsageMeta;
 	private HederaFunctionality function;
+	private ResponseCodeEnum expandedSigStatus;
 	private PubKeyToSigBytes pubKeyToSigBytes;
 
 	private AccountID payer;
@@ -212,6 +205,16 @@ public class SignedTxnAccessor implements TxnAccessor {
 	@Override
 	public byte[] getTxnBytes() {
 		return txnBytes;
+	}
+
+	@Override
+	public void setExpandedSigStatus(final ResponseCodeEnum status) {
+		this.expandedSigStatus = status;
+	}
+
+	@Override
+	public ResponseCodeEnum getExpandedSigStatus() {
+		return expandedSigStatus;
 	}
 
 	public PubKeyToSigBytes getPkToSigsFn() {
