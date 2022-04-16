@@ -42,28 +42,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
-import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
@@ -79,6 +64,8 @@ class MerkleNetworkContextTest {
 			"x123456789x123456789x123456789x123456789x1234567".getBytes(StandardCharsets.UTF_8);
 	private Instant lastMidnightBoundaryCheck;
 	private Instant consensusTimeOfLastHandledTxn;
+	private Instant firstConsTimeOfCurrentBlock;
+	private Instant latestConsTimeOfCurrentBlock;
 	private SequenceNumber seqNo;
 	private SequenceNumber seqNoCopy;
 	private ExchangeRates midnightRateSet;
@@ -105,6 +92,8 @@ class MerkleNetworkContextTest {
 		};
 
 		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
+		firstConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_567L, 13579L);
+		latestConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_589L, 25854L);
 		lastMidnightBoundaryCheck = consensusTimeOfLastHandledTxn.minusSeconds(123L);
 
 		seqNo = mock(SequenceNumber.class);
@@ -136,6 +125,9 @@ class MerkleNetworkContextTest {
 		subject.setPreparedUpdateFileNum(preparedUpdateFileNum);
 		subject.setPreparedUpdateFileHash(preparedUpdateFileHash);
 		subject.markMigrationRecordsStreamed();
+		subject.setFirstConsTimeOfCurrentBlock(firstConsTimeOfCurrentBlock);
+		subject.setLatestConsTimeOfCurrentBlock(latestConsTimeOfCurrentBlock);
+		subject.setBlockNo(0L);
 	}
 
 	@Test
@@ -179,6 +171,9 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
 		assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
 		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
+		assertSame(subjectCopy.getBlockHashCache(), subject.getBlockHashCache());
+		assertSame(subjectCopy.getBlockNo(), subject.getBlockNo());
+		assertSame(subjectCopy.getFirstConsTimeOfCurrentBlock(), subject.getFirstConsTimeOfCurrentBlock());
 		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());
 		// and:
 		assertTrue(subject.isImmutable());
@@ -507,6 +502,20 @@ class MerkleNetworkContextTest {
 		// then:
 		assertEquals(0, subject.getEntitiesTouchedThisSecond());
 		assertEquals(0, subject.getEntitiesScannedThisSecond());
+	}
+
+	@Test
+	void startNewBlockWork() {
+		// when:
+		final Instant consTime = Instant.ofEpochSecond(1_234_567L, 890);
+
+		subject.setBlockNo(10);
+		subject.setFirstConsTimeOfCurrentBlock(consTime);
+		subject.startNewBlock(null);
+
+		// then:
+		assertEquals(11, subject.getBlockNo());
+		assertEquals(null, subject.getFirstConsTimeOfCurrentBlock());
 	}
 
 	@Test

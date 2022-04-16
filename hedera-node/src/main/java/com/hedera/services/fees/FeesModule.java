@@ -31,6 +31,7 @@ import com.hedera.services.fees.calculation.contract.ContractFeesModule;
 import com.hedera.services.fees.calculation.crypto.CryptoFeesModule;
 import com.hedera.services.fees.calculation.crypto.queries.GetAccountDetailsResourceUsage;
 import com.hedera.services.fees.calculation.crypto.queries.GetTxnRecordResourceUsage;
+import com.hedera.services.fees.calculation.ethereum.EthereumFeesModule;
 import com.hedera.services.fees.calculation.file.FileFeesModule;
 import com.hedera.services.fees.calculation.file.txns.SystemDeleteFileResourceUsage;
 import com.hedera.services.fees.calculation.file.txns.SystemUndeleteFileResourceUsage;
@@ -62,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSu
 		TokenFeesModule.class,
 		CryptoFeesModule.class,
 		ContractFeesModule.class,
+		EthereumFeesModule.class,
 		ScheduleFeesModule.class,
 		ConsensusFeesModule.class,
 })

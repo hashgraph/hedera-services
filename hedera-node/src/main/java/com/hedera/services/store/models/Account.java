@@ -91,6 +91,7 @@ public class Account {
 	private int numPositiveBalances;
 	private int numTreasuryTitles;
 	private long headTokenNum;
+	private long ethereumNonce;
 
 	public Account(Id id) {
 		this.id = id;
@@ -102,6 +103,18 @@ public class Account {
 
 	public void initBalance(long balance) {
 		this.balance = balance;
+	}
+
+	public void setEthereumNonce(long ethereumNonce) {
+		this.ethereumNonce = ethereumNonce;
+	}
+
+	public void incrementEthereumNonce() {
+		this.ethereumNonce++;
+	}
+
+	public long getEthereumNonce() {
+		return ethereumNonce;
 	}
 
 	public long getOwnedNfts() {
@@ -400,6 +413,7 @@ public class Account {
 				.add("numAssociations", numAssociations)
 				.add("numPositiveBalances", numPositiveBalances)
 				.add("headTokenNum", headTokenNum)
+				.add("ethereumNonce", ethereumNonce)
 				.toString();
 	}
 

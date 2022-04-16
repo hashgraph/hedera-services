@@ -101,6 +101,7 @@ public class AccountGC {
 		backingAccounts.remove(expiredAccountNum.toGrpcAccountId());
 		sigImpactHistorian.markEntityChanged(expiredAccountNum.longValue());
 		if (aliasManager.forgetAlias(account.getAlias())) {
+			aliasManager.forgetEvmAddress(account.getAlias());
 			sigImpactHistorian.markAliasChanged(account.getAlias());
 		}
 

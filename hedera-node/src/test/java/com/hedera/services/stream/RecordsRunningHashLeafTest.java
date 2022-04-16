@@ -95,7 +95,7 @@ class RecordsRunningHashLeafTest {
 	}
 
 	@Test
-	void setRunningHashTest() {
+	void setRunningHashTest() throws InterruptedException {
 		// initializes a leaf without setting RunningHash
 		final var leafForTestingRunningHash = new RecordsRunningHashLeaf();
 		assertNull(leafForTestingRunningHash.getRunningHash());
@@ -112,6 +112,7 @@ class RecordsRunningHashLeafTest {
 		runningHash.setHash(hash);
 		assertEquals(runningHash, leafForTestingRunningHash.getRunningHash());
 		assertEquals(hash, leafForTestingRunningHash.getRunningHash().getHash());
+		assertEquals(hash, leafForTestingRunningHash.getLatestBlockHash());
 	}
 
 	@Test

@@ -103,6 +103,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int numPositiveBalances;
 	private long headTokenId;
 	private int numTreasuryTitles;
+	private long ethereumNonce;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
 	// these per-account maps to top-level maps using the "linked-list" values idiom
@@ -139,6 +140,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.numPositiveBalances = that.numPositiveBalances;
 		this.headTokenId = that.headTokenId;
 		this.numTreasuryTitles = that.numTreasuryTitles;
+		this.ethereumNonce = that.ethereumNonce;
 	}
 
 	public MerkleAccountState(
@@ -165,7 +167,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final int numAssociations,
 			final int numPositiveBalances,
 			final long headTokenId,
-			final int numTreasuryTitles
+			final int numTreasuryTitles,
+			final long ethereumNonce
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -191,6 +194,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.numPositiveBalances = numPositiveBalances;
 		this.headTokenId = headTokenId;
 		this.numTreasuryTitles = numTreasuryTitles;
+		this.ethereumNonce = ethereumNonce;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -250,12 +254,15 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0250_VERSION) {
 			numTreasuryTitles = in.readInt();
 		}
-		if (smartContract && version >= RELEASE_0260_VERSION) {
-			byte marker = in.readByte();
-			if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
-				firstUint256KeyNonZeroBytes = marker;
-				firstUint256Key = KeyPackingUtils.deserializeUint256Key(
-						firstUint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
+		if (version >= RELEASE_0260_VERSION) {
+			ethereumNonce = in.readLong();
+			if (smartContract) {
+				byte marker = in.readByte();
+				if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
+					firstUint256KeyNonZeroBytes = marker;
+					firstUint256Key = KeyPackingUtils.deserializeUint256Key(
+							firstUint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
+				}
 			}
 		}
 	}
@@ -284,6 +291,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(numPositiveBalances);
 		out.writeLong(headTokenId);
 		out.writeInt(numTreasuryTitles);
+		out.writeLong(ethereumNonce);
 		if (smartContract) {
 			serializePossiblyMissingKey(firstUint256Key, firstUint256KeyNonZeroBytes, out);
 		}
@@ -317,6 +325,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Objects.equals(this.proxy, that.proxy) &&
 				this.nftsOwned == that.nftsOwned &&
 				this.numContractKvPairs == that.numContractKvPairs &&
+				this.ethereumNonce == that.ethereumNonce &&
 				this.maxAutoAssociations == that.maxAutoAssociations &&
 				this.usedAutoAssociations == that.usedAutoAssociations &&
 				equalUpToDecodability(this.key, that.key) &&
@@ -355,7 +364,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				numAssociations,
 				numPositiveBalances,
 				headTokenId,
-				numTreasuryTitles);
+				numTreasuryTitles,
+				ethereumNonce);
 	}
 
 	/* --- Bean --- */
@@ -385,6 +395,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("numPositiveBalances", numPositiveBalances)
 				.add("headTokenId", headTokenId)
 				.add("numTreasuryTitles", numTreasuryTitles)
+				.add("ethereumNonce", ethereumNonce)
 				.toString();
 	}
 
@@ -436,6 +447,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return proxy;
 	}
 
+	public long ethereumNonce() {
+		return ethereumNonce;
+	}
+
 	public long nftsOwned() {
 		return nftsOwned;
 	}
@@ -467,6 +482,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setMemo(String memo) {
 		assertMutable("memo");
 		this.memo = memo;
+	}
+
+	public void setEthereumNonce(long ethereumNonce) {
+		assertMutable("ethereumNonce");
+		this.ethereumNonce = ethereumNonce;
 	}
 
 	public void setDeleted(boolean deleted) {

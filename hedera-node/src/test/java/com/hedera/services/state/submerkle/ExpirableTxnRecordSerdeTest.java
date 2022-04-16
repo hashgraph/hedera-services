@@ -21,6 +21,7 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.serde.SelfSerializableDataTest;
+import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0230_VERSION;
@@ -36,6 +37,24 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 	@Override
 	protected int getNumTestCasesFor(int version) {
 		return version == RELEASE_0230_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
+	}
+
+	@Override
+	protected byte[] getSerializedForm(final int version, final int testCaseNo) {
+		return SerializedForms.loadForm(ExpirableTxnRecord.class, version, testCaseNo);
+	}
+
+	@Override
+	protected ExpirableTxnRecord getExpectedObject(final int version, final int testCaseNo) {
+		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextRecord();
+		if (version == RELEASE_0230_VERSION) {
+			// Always empty before 0.25
+		}
+		if (version < ExpirableTxnRecord.RELEASE_0260_VERSION) {
+			// Ethereum hash added in release 0.26
+			seeded.setEthereumHash(ExpirableTxnRecord.MISSING_ETHEREUM_HASH);
+		}
+		return seeded;
 	}
 
 	@Override

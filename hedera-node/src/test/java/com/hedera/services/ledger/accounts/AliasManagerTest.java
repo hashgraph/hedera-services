@@ -29,6 +29,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
@@ -131,12 +132,17 @@ class AliasManagerTest {
 		final var withNum = EntityNum.fromLong(1L);
 		final var withoutNum = EntityNum.fromLong(2L);
 		final var contractNum = EntityNum.fromLong(3L);
+		final var ecdsaNum = EntityNum.fromLong(4L);
 		final var expiredAlias = ByteString.copyFromUtf8("zyxwvut");
 		final var upToDateAlias = ByteString.copyFromUtf8("abcdefg");
+		final var ecdsaAlias = ByteString.copyFrom(Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d"));
+		final var ecdsaAddress = ByteString.copyFrom(Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
 		final var contractAlias = ByteString.copyFrom(rawNonMirrorAddress);
 
 		final var accountWithAlias = new MerkleAccount();
 		accountWithAlias.setAlias(upToDateAlias);
+		final var accountWithECDSAAlias = new MerkleAccount();
+		accountWithECDSAAlias.setAlias(ecdsaAlias);
 		final var accountWithNoAlias = new MerkleAccount();
 		final var contractAccount = new MerkleAccount();
 		contractAccount.setSmartContract(true);
@@ -144,6 +150,7 @@ class AliasManagerTest {
 
 		final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
 		liveAccounts.put(withNum, accountWithAlias);
+		liveAccounts.put(ecdsaNum, accountWithECDSAAlias); // This will add _2_ aliases
 		liveAccounts.put(withoutNum, accountWithNoAlias);
 		liveAccounts.put(contractNum, contractAccount);
 
@@ -151,11 +158,19 @@ class AliasManagerTest {
 		subject.rebuildAliasesMap(liveAccounts);
 
 		final var finalMap = subject.getAliases();
-		assertEquals(2, finalMap.size());
+		assertEquals(4, finalMap.size());
 		assertEquals(withNum, subject.getAliases().get(upToDateAlias));
+		assertEquals(ecdsaNum, subject.getAliases().get(ecdsaAlias));
+		assertEquals(ecdsaNum, subject.getAliases().get(ecdsaAddress));
 
 		// finally when
 		subject.forgetAlias(accountWithAlias.getAlias());
+		assertEquals(3, subject.getAliases().size());
+		subject.forgetEvmAddress(accountWithAlias.getAlias());
+		assertEquals(3, subject.getAliases().size());
+		subject.forgetAlias(accountWithECDSAAlias.getAlias());
+		assertEquals(2, subject.getAliases().size());
+		subject.forgetEvmAddress(accountWithECDSAAlias.getAlias());
 		assertEquals(1, subject.getAliases().size());
 	}
 }

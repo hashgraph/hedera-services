@@ -47,7 +47,8 @@
 			"FileCreate",
 			"FileUpdate",
 			"FileAppend",
-			"FileDelete"
+			"FileDelete",
+			"EthereumTransaction"
 		  ]
 		},
 		{
