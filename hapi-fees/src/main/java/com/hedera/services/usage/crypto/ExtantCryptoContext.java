@@ -182,26 +182,40 @@ public class ExtantCryptoContext {
 			return this;
 		}
 
-		public ExtantCryptoContext.Builder setCurrentCryptoAllowances(
-				final List<GrantedCryptoAllowance> currentCryptoAllowances
-		) {
-			this.currentCryptoAllowances = convertToCryptoMapFromGranted(currentCryptoAllowances);
+		public ExtantCryptoContext.Builder setCurrentCryptoAllowances(final Map<Long, Long> currentCryptoAllowances) {
+			this.currentCryptoAllowances = currentCryptoAllowances;
 			mask |= CRYPTO_ALLOWANCES_MASK;
 			return this;
 		}
 
 		public ExtantCryptoContext.Builder setCurrentTokenAllowances(
-				final List<GrantedTokenAllowance> currentTokenAllowances
-		) {
-			this.currentTokenAllowances = convertToTokenMapFromGranted(currentTokenAllowances);
+				final Map<AllowanceId, Long> currentTokenAllowances) {
+			this.currentTokenAllowances = currentTokenAllowances;
 			mask |= TOKEN_ALLOWANCES_MASK;
 			return this;
 		}
 
 		public ExtantCryptoContext.Builder setCurrentApproveForAllNftAllowances(
-				final List<GrantedNftAllowance> currentApproveForAllNftAllowances
-		) {
-			this.currentApproveForAllNftAllowances = convertToNftMapFromGranted(currentApproveForAllNftAllowances);
+				final Set<AllowanceId> currentApproveForAllNftAllowances) {
+			this.currentApproveForAllNftAllowances = currentApproveForAllNftAllowances;
+			mask |= NFT_ALLOWANCES_MASK;
+			return this;
+		}
+
+		public Builder setCurrentCryptoAllowances(final List<GrantedCryptoAllowance> grantedCryptoAllowancesList) {
+			this.currentCryptoAllowances = convertToCryptoMapFromGranted(grantedCryptoAllowancesList);
+			mask |= CRYPTO_ALLOWANCES_MASK;
+			return this;
+		}
+
+		public Builder setCurrentTokenAllowances(final List<GrantedTokenAllowance> grantedTokenAllowancesList) {
+			this.currentTokenAllowances = convertToTokenMapFromGranted(grantedTokenAllowancesList);
+			mask |= TOKEN_ALLOWANCES_MASK;
+			return this;
+		}
+
+		public Builder setCurrentApproveForAllNftAllowances(final List<GrantedNftAllowance> grantedNftAllowancesList) {
+			this.currentApproveForAllNftAllowances = convertToNftMapFromGranted(grantedNftAllowancesList);
 			mask |= NFT_ALLOWANCES_MASK;
 			return this;
 		}

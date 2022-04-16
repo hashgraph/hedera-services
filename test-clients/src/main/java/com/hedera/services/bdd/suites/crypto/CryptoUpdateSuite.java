@@ -32,11 +32,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -44,15 +43,17 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -193,10 +194,9 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("UpdateFailsWithInvalidMaxAutoAssociations")
 				.given(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-										Map.of("tokens.maxPerAccount", "" + tokenAssociations_restrictedNetwork)),
+						overridingTwo(
+								"accounts.limitTokenAssociations", "true",
+								"tokens.maxPerAccount", "" + tokenAssociations_restrictedNetwork),
 						cryptoCreate(treasury)
 								.balance(ONE_HUNDRED_HBARS),
 						cryptoCreate(firstUser)
@@ -228,7 +228,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 								.hasNewTokenAssociation(tokenB, firstUser)
 				)
 				.then(
-						getAccountInfo(firstUser)
+						getAccountDetails(firstUser)
+								.payingWith(GENESIS)
 								.hasAlreadyUsedAutomaticAssociations(originalMax)
 								.hasMaxAutomaticAssociations(originalMax)
 								.has(accountWith().noAllowances()),
@@ -240,18 +241,10 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1)
 								.hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("accounts.limitTokenAssociations", "false")),
+						overriding( "accounts.limitTokenAssociations", "false"),
 						cryptoUpdate(firstUser)
 								.maxAutomaticAssociations(tokenAssociations_restrictedNetwork + 1),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("accounts.limitTokenAssociations", "true")),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(
-										Map.of("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork))
+						overriding("tokens.maxPerAccount", "" + tokenAssociations_adventurousNetwork)
 				);
 	}
 
@@ -313,7 +306,8 @@ public class CryptoUpdateSuite extends HapiApiSuite {
 						cryptoUpdate(TARGET_ACCOUNT)
 								.entityMemo(secondMemo)
 				).then(
-						getAccountInfo(TARGET_ACCOUNT)
+						getAccountDetails(TARGET_ACCOUNT)
+								.payingWith(GENESIS)
 								.has(accountWith().memo(secondMemo))
 				);
 	}

@@ -23,7 +23,6 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,14 +39,17 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
 public class GlobalPropertiesSuite extends HapiApiSuite {
 
 	private static final Logger log = LogManager.getLogger(GlobalPropertiesSuite.class);
+	private static final String CONTRACT = "GlobalProperties";
 
 	public static void main(String... args) {
 		new GlobalPropertiesSuite().runSuiteAsync();
@@ -69,31 +71,31 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec chainIdWorks() {
-		final BigInteger expectedChainID = new BigInteger(HapiSpecSetup.getDefaultNodeProps().get("contracts.chainId"));
+		final var expectedChainID = new BigInteger(HapiSpecSetup.getDefaultNodeProps().get("contracts.chainId"));
 		return defaultHapiSpec("chainIdWorks")
 				.given(
-						fileCreate("globalProps").path(ContractResources.GLOBAL_PROPERTIES),
-						contractCreate("globalPropsContract").bytecode("globalProps")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).when(
-						contractCall("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_CHAIN_ID_ABI)
+						contractCall(CONTRACT, "getChainID")
 								.via("chainId")
 				).then(
 						getTxnRecord("chainId").logged().hasPriority(
 								recordWith().contractCallResult(
 										resultWith().resultThruAbi(
-												ContractResources.GLOBAL_PROPERTIES_CHAIN_ID_ABI,
+												getABIFor(FUNCTION, "getChainID", CONTRACT),
 												isLiteralResult(
 														new Object[]{expectedChainID}
 												)
 										)
 								)
 						),
-						contractCallLocal("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_CHAIN_ID_ABI)
+						contractCallLocal(CONTRACT, "getChainID")
 								.nodePayment(1_234_567)
 								.has(
 										ContractFnResultAsserts.resultWith()
 												.resultThruAbi(
-														ContractResources.GLOBAL_PROPERTIES_CHAIN_ID_ABI,
+														getABIFor(FUNCTION, "getChainID", CONTRACT),
 														ContractFnResultAsserts.isLiteralResult(
 																new Object[]{expectedChainID}
 														)
@@ -103,31 +105,31 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec baseFeeWorks() {
-		final BigInteger expectedBaseFee = BigInteger.valueOf(0);
+		final var expectedBaseFee = BigInteger.valueOf(0);
 		return defaultHapiSpec("baseFeeWorks")
 				.given(
-						fileCreate("globalProps").path(ContractResources.GLOBAL_PROPERTIES),
-						contractCreate("globalPropsContract").bytecode("globalProps")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).when(
-						contractCall("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_BASE_FEE_ABI)
+						contractCall(CONTRACT, "getBaseFee")
 								.via("baseFee")
 				).then(
 						getTxnRecord("baseFee").logged().hasPriority(
 								recordWith().contractCallResult(
 										resultWith().resultThruAbi(
-												ContractResources.GLOBAL_PROPERTIES_BASE_FEE_ABI,
+												getABIFor(FUNCTION, "getBaseFee", CONTRACT),
 												isLiteralResult(
 														new Object[]{BigInteger.valueOf(0)}
 												)
 										)
 								)
 						),
-						contractCallLocal("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_BASE_FEE_ABI)
+						contractCallLocal(CONTRACT, "getBaseFee")
 								.nodePayment(1_234_567)
 								.has(
 										ContractFnResultAsserts.resultWith()
 												.resultThruAbi(
-														ContractResources.GLOBAL_PROPERTIES_BASE_FEE_ABI,
+														getABIFor(FUNCTION, "getBaseFee", CONTRACT),
 														ContractFnResultAsserts.isLiteralResult(
 																new Object[]{expectedBaseFee}
 														)
@@ -139,21 +141,22 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 	private HapiApiSpec coinbaseWorks() {
 		return defaultHapiSpec("coinbaseWorks")
 				.given(
-						fileCreate("globalProps").path(ContractResources.GLOBAL_PROPERTIES),
-						contractCreate("globalPropsContract").bytecode("globalProps")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).when(
-						contractCall("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_COINBASE_ABI)
+						contractCall(CONTRACT, "getCoinbase")
 								.via("coinbase")
 				).then(
 						withOpContext((spec, opLog) -> {
 							final var expectedCoinbase = parsedToByteString(DEFAULT_PROPS.fundingAccount().getAccountNum());
 
-							final var callLocal = contractCallLocal("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_COINBASE_ABI)
+							final var callLocal = contractCallLocal(CONTRACT, "getCoinbase")
 									.nodePayment(1_234_567)
 									.saveResultTo("callLocalCoinbase");
 							final var callRecord = getTxnRecord("coinbase");
 
 							allRunFor(spec, callRecord, callLocal);
+
 							final var recordResult = callRecord.getResponseRecord().getContractCallResult();
 							final var callLocalResult = spec.registry().getBytes("callLocalCoinbase");
 							Assertions.assertEquals(recordResult.getContractCallResult(), expectedCoinbase);
@@ -166,30 +169,30 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
 		final var gasLimit = Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGas"));
 		return defaultHapiSpec("gasLimitWorks")
 				.given(
-						fileCreate("globalProps").path(ContractResources.GLOBAL_PROPERTIES),
-						contractCreate("globalPropsContract").bytecode("globalProps")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).when(
-						contractCall("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_GASLIMIT_ABI)
+						contractCall(CONTRACT, "getGasLimit")
 								.via("gasLimit")
 								.gas(gasLimit)
 				).then(
 						getTxnRecord("gasLimit").logged().hasPriority(
 								recordWith().contractCallResult(
 										resultWith().resultThruAbi(
-												ContractResources.GLOBAL_PROPERTIES_GASLIMIT_ABI,
+												getABIFor(FUNCTION, "getGasLimit", CONTRACT),
 												isLiteralResult(
 														new Object[]{BigInteger.valueOf(gasLimit)}
 												)
 										)
 								)
 						),
-						contractCallLocal("globalPropsContract", ContractResources.GLOBAL_PROPERTIES_GASLIMIT_ABI)
+						contractCallLocal(CONTRACT, "getGasLimit")
 								.gas(gasLimit)
 								.nodePayment(1_234_567)
 								.has(
 										ContractFnResultAsserts.resultWith()
 												.resultThruAbi(
-														ContractResources.GLOBAL_PROPERTIES_GASLIMIT_ABI,
+														getABIFor(FUNCTION, "getGasLimit", CONTRACT),
 														ContractFnResultAsserts.isLiteralResult(
 																new Object[]{BigInteger.valueOf(gasLimit)}
 														)

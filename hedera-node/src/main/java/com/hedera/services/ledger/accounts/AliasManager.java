@@ -113,7 +113,8 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	 * From given MerkleMap of accounts, populate the auto accounts creations map. Iterate through
 	 * each account in accountsMap and add an entry to autoAccountsMap if {@code alias} exists on the account.
 	 *
-	 * @param accounts the current accounts
+	 * @param accounts
+	 * 		the current accounts
 	 */
 	public void rebuildAliasesMap(final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		final var numCreate2Aliases = new AtomicInteger();
@@ -147,7 +148,8 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	/**
 	 * Returns if there is an account linked the given alias.
 	 *
-	 * @param alias the alias of interest
+	 * @param alias
+	 * 		the alias of interest
 	 * @return whether there is a linked account
 	 */
 	public boolean contains(final ByteString alias) {

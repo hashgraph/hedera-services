@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.internals.FilePart;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -41,6 +42,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
@@ -241,6 +243,31 @@ public class MerkleSpecialFiles extends AbstractMerkleLeaf {
 			}
 		}
 		return new Hash(noThrowSha384HashOf(baos.toByteArray()), DigestType.SHA_384);
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || MerkleSpecialFiles.class != obj.getClass()) {
+			return false;
+		}
+
+		var that = (MerkleSpecialFiles) obj;
+		return Objects.equals(this.fileContents, that.fileContents);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(MerkleSpecialFiles.class)
+				.add("fileContents", this.fileContents)
+				.toString();
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.fileContents);
 	}
 
 	private byte[] hashOfKnown(FileID fid) {

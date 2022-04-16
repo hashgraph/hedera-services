@@ -253,4 +253,9 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 	public void setNext(final long next) {
 		this.next = next;
 	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0180_VERSION;
+	}
 }

@@ -155,7 +155,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
 			entry("autoRemove.maxPurgedKvPairsPerTouch", 10),
-			entry("autoRenew.targetTypes", EnumSet.of(CONTRACT)),
+			entry("autoRenew.targetTypes", EnumSet.noneOf(EntityType.class)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
 			entry("autorenew.gracePeriod", 604800L),
@@ -216,7 +216,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxTransactionLimit", 20),
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
-			entry("accounts.limitTokenAssociations", true)
+			entry("accounts.limitTokenAssociations", false)
 	);
 
 	@Test

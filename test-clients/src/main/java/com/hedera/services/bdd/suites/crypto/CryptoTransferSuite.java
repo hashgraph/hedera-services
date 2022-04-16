@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -58,14 +59,12 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.i
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNonfungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.CREATE_DONOR_PATH;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PAYABLE_CONSTRUCTOR;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -74,13 +73,11 @@ import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relat
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoAdjustAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
@@ -95,6 +92,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.allowanceTinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
@@ -113,13 +111,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureOneChildCreate2MetaFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
@@ -134,7 +130,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
@@ -298,9 +293,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		final var counterparty = "counterparty";
 		final var partyCreation2 = "partyCreation2";
 		final var counterCreation2 = "counterCreation2";
-		final var initcode = "initcode";
-		final var createDonor = "createDonor";
 		final var multiKey = "multi";
+		final var contract = "CreateDonor";
 
 		final AtomicReference<String> partyAliasAddr = new AtomicReference<>();
 		final AtomicReference<String> partyMirrorAddr = new AtomicReference<>();
@@ -323,20 +317,18 @@ public class CryptoTransferSuite extends HapiApiSuite {
 				.given(
 						newKeyNamed(multiKey),
 						cryptoCreate(TOKEN_TREASURY),
-						fileCreate(initcode),
-						updateLargeFile(GENESIS, initcode, extractByteCode(CREATE_DONOR_PATH)),
-						contractCreate(createDonor)
+						uploadInitCode(contract),
+						contractCreate(contract)
 								.adminKey(multiKey)
-								.payingWith(GENESIS)
-								.bytecode(initcode),
-						contractCall(createDonor, CREATE_DONOR_ABI, salt)
+								.payingWith(GENESIS),
+						contractCall(contract, "buildDonor", salt)
 								.sending(1000)
 								.payingWith(GENESIS)
 								.gas(2_000_000L)
 								.via(partyCreation2),
 						captureOneChildCreate2MetaFor(
 								party, partyCreation2, partyMirrorAddr, partyAliasAddr),
-						contractCall(createDonor, CREATE_DONOR_ABI, otherSalt)
+						contractCall(contract, "buildDonor", otherSalt)
 								.sending(1000)
 								.payingWith(GENESIS)
 								.gas(2_000_000L)
@@ -438,8 +430,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec cannotTransferFromImmutableAccounts() {
-		final var initcode = "initcode";
-		final var contract = "contract";
+		final var contract = "PayableConstructor";
 		final var firstStakingFund = "0.0.800";
 		final var secondStakingFund = "0.0.801";
 		final var snapshot800 = "800startBalance";
@@ -450,9 +441,8 @@ public class CryptoTransferSuite extends HapiApiSuite {
 		return defaultHapiSpec("CannotTransferFromImmutableAccounts")
 				.given(
 						newKeyNamed(multiKey),
-						fileCreate(initcode).path(PAYABLE_CONSTRUCTOR),
+						uploadInitCode(contract),
 						contractCreate(contract)
-								.bytecode(initcode)
 								.balance(ONE_HBAR)
 								.immutable()
 								.payingWith(GENESIS)
@@ -522,10 +512,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoApproveAllowance()
 								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
 								.addCryptoAllowance(secondStakingFund, FUNDING, 100L)
-								.hasKnownStatus(INVALID_ALLOWANCE_OWNER_ID),
-						cryptoAdjustAllowance()
-								.payingWith(GENESIS).signedBy(GENESIS).fee(ONE_HBAR)
-								.addCryptoAllowance(firstStakingFund, FUNDING, 100L)
 								.hasKnownStatus(INVALID_ALLOWANCE_OWNER_ID)
 				);
 	}
@@ -625,17 +611,19 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.signedBy(spender, owner, otherReceiver, otherOwner)
 								.via("complexAllowanceTransfer"),
 						getTxnRecord("complexAllowanceTransfer").logged(),
-						getAccountInfo(owner)
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
 								.hasToken(relationshipWith(fungibleToken).balance(925))
 								.hasToken(relationshipWith(nonFungibleToken).balance(0))
-								.has(accountWith()
+								.has(AccountDetailsAsserts.accountWith()
 										.balanceLessThan(98 * ONE_HBAR)
 										.cryptoAllowancesContaining(spender, 9 * ONE_HBAR)
 										.tokenAllowancesContaining(fungibleToken, spender, 475)),
-						getAccountInfo(otherOwner)
+						getAccountDetails(otherOwner)
+								.payingWith(GENESIS)
 								.hasToken(relationshipWith(fungibleToken).balance(970))
 								.hasToken(relationshipWith(nonFungibleToken).balance(0))
-								.has(accountWith()
+								.has(AccountDetailsAsserts.accountWith()
 										.balanceLessThan(98 * ONE_HBAR)
 										.cryptoAllowancesContaining(spender, 4 * ONE_HBAR)
 										.tokenAllowancesContaining(fungibleToken, spender, 85)
@@ -757,7 +745,17 @@ public class CryptoTransferSuite extends HapiApiSuite {
 						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 6).between(owner, receiver))
 								.payingWith(spender)
 								.signedBy(spender)
-								.hasKnownStatus(SENDER_DOES_NOT_OWN_NFT_SERIAL_NO),
+								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 6).between(receiver, owner))
+								.payingWith(spender)
+								.signedBy(spender)
+								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
+						cryptoTransfer(movingUnique(nonFungibleToken, 6).between(receiver, owner)),
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 6).between(owner, receiver))
+								.payingWith(spender)
+								.signedBy(spender)
+								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
+						cryptoTransfer(movingUnique(nonFungibleToken, 6).between(owner, receiver)),
 						tokenAssociate(otherReceiver, fungibleToken),
 						grantTokenKyc(fungibleToken, otherReceiver),
 						cryptoTransfer(movingWithAllowance(1100, fungibleToken).between(owner, otherReceiver))
@@ -811,8 +809,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
-						getAccountInfo(owner)
-								.has(accountWith().tokenAllowancesContaining(fungibleToken, spender, 1450))
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(AccountDetailsAsserts.accountWith().tokenAllowancesContaining(fungibleToken,
+										spender, 1450))
 								.hasToken(relationshipWith(fungibleToken).balance(950L)),
 						cryptoTransfer(moving(1000, fungibleToken).between(TOKEN_TREASURY, owner)),
 						cryptoTransfer(
@@ -835,14 +835,28 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
+						cryptoTransfer(movingUnique(nonFungibleToken, 2L).between(receiver, owner)),
 						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver))
 								.payingWith(spender)
 								.signedBy(spender)
 								.hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE),
-						getAccountInfo(owner)
-								.has(accountWith()
+						cryptoApproveAllowance()
+								.payingWith(owner)
+								.addNftAllowance(owner, nonFungibleToken, spender, true, List.of())
+								.fee(ONE_HUNDRED_HBARS),
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver))
+								.payingWith(spender)
+								.signedBy(spender),
+						cryptoTransfer(movingUnique(nonFungibleToken, 2L).between(receiver, owner)),
+						cryptoTransfer(movingUniqueWithAllowance(nonFungibleToken, 2L).between(owner, receiver))
+								.payingWith(spender)
+								.signedBy(spender),
+						getAccountDetails(owner)
+								.payingWith(GENESIS)
+								.has(AccountDetailsAsserts.accountWith()
 										.cryptoAllowancesCount(0)
-										.tokenAllowancesContaining(fungibleToken, spender, 1400))
+										.tokenAllowancesContaining(fungibleToken, spender, 1400)
+										.nftApprovedAllowancesContaining(nonFungibleToken, spender))
 				);
 	}
 
@@ -1670,8 +1684,9 @@ public class CryptoTransferSuite extends HapiApiSuite {
 								.hasExpectedLedgerId("0x03")
 								.has(accountWith().balance(initialBalance - 3_000L)),
 						getAccountInfo("payeeSigReq").has(accountWith().balance(initialBalance + 1_000L)),
-						getAccountInfo("payeeNoSigReq").has(
-								accountWith().balance(initialBalance + 2_000L).noAllowances())
+						getAccountDetails("payeeNoSigReq")
+								.payingWith(GENESIS)
+								.has(AccountDetailsAsserts.accountWith().balance(initialBalance + 2_000L).noAllowances())
 				);
 	}
 

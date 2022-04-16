@@ -27,7 +27,7 @@ import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.stats.CounterFactory;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;

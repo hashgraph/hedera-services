@@ -62,6 +62,8 @@ class AccountGCTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	@Mock
 	private AccountGC.RemovalFacilitation removalFacilitation;
+	@Mock
+	private TokenRelsListRemoval listRemoval;
 
 	private AccountGC subject;
 

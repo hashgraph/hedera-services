@@ -68,8 +68,9 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
 
 	static final int RELEASE_0230_VERSION = 10;
-	static final int RELEASE_0251_VERSION = 11;
-	static final int RELEASE_0260_VERSION = 12;
+	static final int RELEASE_0250_ALPHA_VERSION = 11;
+	static final int RELEASE_0250_VERSION = 12;
+	static final int RELEASE_0260_VERSION = 13;
 	private static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
@@ -101,6 +102,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int numAssociations;
 	private int numPositiveBalances;
 	private long headTokenId;
+	private int numTreasuryTitles;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
 	// these per-account maps to top-level maps using the "linked-list" values idiom
@@ -136,6 +138,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.numAssociations = that.numAssociations;
 		this.numPositiveBalances = that.numPositiveBalances;
 		this.headTokenId = that.headTokenId;
+		this.numTreasuryTitles = that.numTreasuryTitles;
 	}
 
 	public MerkleAccountState(
@@ -161,7 +164,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final long nftsOwned,
 			final int numAssociations,
 			final int numPositiveBalances,
-			final long headTokenId
+			final long headTokenId,
+			final int numTreasuryTitles
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -186,6 +190,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.numAssociations = numAssociations;
 		this.numPositiveBalances = numPositiveBalances;
 		this.headTokenId = headTokenId;
+		this.numTreasuryTitles = numTreasuryTitles;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -217,8 +222,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		proxy = readNullableSerializable(in);
 		// Added in 0.16
 		nftsOwned = in.readLong();
-		// Added in 0.25
-		if (version >= RELEASE_0251_VERSION) {
+		if (version >= RELEASE_0250_ALPHA_VERSION) {
 			maxAutoAssociations = in.readInt();
 			usedAutoAssociations = in.readInt();
 		} else {
@@ -227,6 +231,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			maxAutoAssociations = getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
 			usedAutoAssociations = getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
 		}
+		// Added in 0.18
 		number = in.readInt();
 		// Added in 0.21
 		alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
@@ -237,10 +242,13 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			fungibleTokenAllowances = deserializeFungibleTokenAllowances(in);
 			approveForAllNfts = deserializeApproveForAllNftsAllowances(in);
 		}
-		if (version >= RELEASE_0251_VERSION) {
+		if (version >= RELEASE_0250_ALPHA_VERSION) {
 			numAssociations = in.readInt();
 			numPositiveBalances = in.readInt();
 			headTokenId = in.readLong();
+		}
+		if (version >= RELEASE_0250_VERSION) {
+			numTreasuryTitles = in.readInt();
 		}
 		if (smartContract && version >= RELEASE_0260_VERSION) {
 			byte marker = in.readByte();
@@ -275,6 +283,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(numAssociations);
 		out.writeInt(numPositiveBalances);
 		out.writeLong(headTokenId);
+		out.writeInt(numTreasuryTitles);
 		if (smartContract) {
 			serializePossiblyMissingKey(firstUint256Key, firstUint256KeyNonZeroBytes, out);
 		}
@@ -318,7 +327,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Arrays.equals(this.firstUint256Key, that.firstUint256Key) &&
 				this.numAssociations == that.numAssociations &&
 				this.numPositiveBalances == that.numPositiveBalances &&
-				this.headTokenId == that.headTokenId;
+				this.headTokenId == that.headTokenId &&
+				this.numTreasuryTitles == that.numTreasuryTitles;
 	}
 
 	@Override
@@ -344,7 +354,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Arrays.hashCode(firstUint256Key),
 				numAssociations,
 				numPositiveBalances,
-				headTokenId);
+				headTokenId,
+				numTreasuryTitles);
 	}
 
 	/* --- Bean --- */
@@ -373,6 +384,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("numAssociations", numAssociations)
 				.add("numPositiveBalances", numPositiveBalances)
 				.add("headTokenId", headTokenId)
+				.add("numTreasuryTitles", numTreasuryTitles)
 				.toString();
 	}
 
@@ -477,7 +489,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.proxy = proxy;
 	}
 
-	public void setNftsOwned(long nftsOwned) {
+	public void setNftsOwned(final long nftsOwned) {
 		assertMutable("nftsOwned");
 		this.nftsOwned = nftsOwned;
 	}
@@ -552,6 +564,19 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setCryptoAllowancesUnsafe(final Map<EntityNum, Long> cryptoAllowances) {
 		assertMutable("cryptoAllowances");
 		this.cryptoAllowances = cryptoAllowances;
+	}
+
+	public boolean isTokenTreasury() {
+		return numTreasuryTitles > 0;
+	}
+
+	public int getNumTreasuryTitles() {
+		return numTreasuryTitles;
+	}
+
+	public void setNumTreasuryTitles(final int numTreasuryTitles) {
+		assertMutable("numTreasuryTitles");
+		this.numTreasuryTitles = numTreasuryTitles;
 	}
 
 	public Set<FcTokenAllowanceId> getApproveForAllNfts() {

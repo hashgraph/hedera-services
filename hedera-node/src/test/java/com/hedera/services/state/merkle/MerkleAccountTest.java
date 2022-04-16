@@ -56,8 +56,10 @@ import static org.mockito.BDDMockito.verify;
 
 class MerkleAccountTest {
 	private static final JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
+	private static final int numTreasuryTitles = 23;
 	private static final long expiry = 1_234_567L;
 	private static final long balance = 555_555L;
+	private static final long nftsOwned = 150L;
 	private static final long autoRenewSecs = 234_567L;
 	private static final String memo = "A memo";
 	private static final boolean deleted = true;
@@ -75,7 +77,6 @@ class MerkleAccountTest {
 			UInt256.fromHexString("0x0000fe0432ce31138ecf09aa3e8a410004a1e204ef84efe01ee160fea1e22060");
 	private static final int[] explicitFirstKey = ContractKey.asPackedInts(firstKey);
 	private static final byte numNonZeroBytesInFirst = 30;
-	private static final long nftsOwned = 666;
 
 	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private static final long otherExpiry = 7_234_567L;
@@ -136,7 +137,8 @@ class MerkleAccountTest {
 				nftsOwned,
 				0,
 				0,
-				lastAssociatedTokenNum);
+				lastAssociatedTokenNum,
+				numTreasuryTitles);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
 		subject.setNftsOwned(2L);
@@ -241,6 +243,8 @@ class MerkleAccountTest {
 		assertEquals(state.getNumAssociations(), subject.getNumAssociations());
 		assertEquals(state.getNumPositiveBalances(), subject.getNumPositiveBalances());
 		assertEquals(state.getHeadTokenId(), subject.getHeadTokenId());
+		assertEquals(state.getNumTreasuryTitles(), subject.getNumTreasuryTitles());
+		assertEquals(state.isTokenTreasury(), subject.isTokenTreasury());
 	}
 
 	@Test
@@ -279,6 +283,7 @@ class MerkleAccountTest {
 		subject.setHeadTokenId(lastAssociatedTokenNum);
 		subject.setNumPositiveBalances(0);
 		subject.setNumAssociations(0);
+		subject.setNumTreasuryTitles(numTreasuryTitles);
 
 		verify(delegate).setExpiry(otherExpiry);
 		verify(delegate).setAutoRenewSecs(otherAutoRenewSecs);
@@ -301,6 +306,7 @@ class MerkleAccountTest {
 		verify(delegate).setNumPositiveBalances(0);
 		verify(delegate).setNumAssociations(0);
 		verify(delegate).setHeadTokenId(lastAssociatedTokenNum);
+		verify(delegate).setNumTreasuryTitles(numTreasuryTitles);
 	}
 
 	@Test

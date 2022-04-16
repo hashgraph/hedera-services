@@ -20,6 +20,7 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -72,20 +73,21 @@ public class CreateLogic {
 	public void create(final long now, final AccountID activePayer, final TokenCreateTransactionBody op) {
 		final var creation = creationFactory.processFrom(accountStore, tokenStore, dynamicProperties, op);
 
-		/* --- Create the model objects --- */
+		// --- Create the model objects ---
 		creation.loadModelsWith(activePayer, ids, validator);
 
-		/* --- Do the business logic --- */
+		// --- Do the business logic ---
 		creation.doProvisionallyWith(now, MODEL_FACTORY, RELS_LISTING);
 
-		/* --- Persist the created model --- */
+		// --- Persist the created model ---
 		creation.persist();
-
 		creation.newAssociations().forEach(sideEffectsTracker::trackExplicitAutoAssociation);
+
+		// --- Externalize side-effects ---
 		sigImpactHistorian.markEntityChanged(creation.newTokenId().num());
 	}
 
-	// Only used in unit-tests
+	@VisibleForTesting
 	public void setCreationFactory(final Creation.CreationFactory creationFactory) {
 		this.creationFactory = creationFactory;
 	}

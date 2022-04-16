@@ -21,7 +21,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -51,6 +51,8 @@ import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 class HederaSLoadOperationTest {
+	final Address recipientAccount = Address.fromHexString("0x0001");
+
 	HederaSLoadOperation subject;
 
 	@Mock
@@ -63,7 +65,7 @@ class HederaSLoadOperationTest {
 	EVM evm;
 
 	@Mock
-	HederaWorldState.Updater worldUpdater;
+	HederaStackedWorldStateUpdater worldUpdater;
 
 	@Mock
 	EvmAccount evmAccount;
@@ -79,12 +81,13 @@ class HederaSLoadOperationTest {
 
 	@BeforeEach
 	void setUp() {
-		givenValidContext(keyBytesMock, valueBytesMock);
+		givenValidContext();
 		subject = new HederaSLoadOperation(gasCalculator, dynamicProperties);
 	}
 
 	@Test
 	void executesProperlyWithColdSuccess() {
+		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(false);
@@ -107,6 +110,7 @@ class HederaSLoadOperationTest {
 
 	@Test
 	void executesProperlyWithWarmSuccess() {
+		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
 		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
@@ -127,6 +131,7 @@ class HederaSLoadOperationTest {
 
 	@Test
 	void executeHaltsForInsufficientGas() {
+		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
 		given(messageFrame.getRemainingGas()).willReturn(Gas.of(0));
@@ -143,6 +148,7 @@ class HederaSLoadOperationTest {
 
 	@Test
 	void executeWithUnderFlowException() {
+		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.popStackItem()).willThrow(new FixedStack.UnderflowException());
 		final var result = subject.execute(messageFrame, evm);
 		assertEquals(INSUFFICIENT_STACK_ITEMS, result.getHaltReason().get());
@@ -150,6 +156,7 @@ class HederaSLoadOperationTest {
 
 	@Test
 	void executeWithOverFlowException() {
+		givenAdditionalContext(keyBytesMock, valueBytesMock);
 		given(messageFrame.warmUpStorage(any(), any())).willReturn(true);
 		given(messageFrame.getRemainingGas()).willReturn(Gas.of(300));
 		given(dynamicProperties.shouldEnableTraceability()).willReturn(true);
@@ -163,17 +170,19 @@ class HederaSLoadOperationTest {
 		assertEquals(TOO_MANY_STACK_ITEMS, result.getHaltReason().get());
 	}
 
-	private void givenValidContext(Bytes key, Bytes value) {
+	private void givenAdditionalContext(Bytes key, Bytes value) {
 		final UInt256 keyBytes = UInt256.fromBytes(key);
 		final UInt256 valueBytes = UInt256.fromBytes(value);
-		final var recipientAccount = Address.fromHexString("0x0001");
 
 		given(messageFrame.popStackItem()).willReturn(keyBytes).willReturn(valueBytes);
+		given(worldUpdater.get(recipientAccount)).willReturn(evmAccount);
+		given(evmAccount.getAddress()).willReturn(Address.fromHexString("0x123"));
+	}
+
+	private void givenValidContext() {
 		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
 		given(messageFrame.getRecipientAddress()).willReturn(recipientAccount);
-		given(worldUpdater.get(recipientAccount)).willReturn(evmAccount);
 
-		given(evmAccount.getAddress()).willReturn(Address.fromHexString("0x123"));
 		given(gasCalculator.getSloadOperationGasCost()).willReturn(Gas.of(10));
 		given(gasCalculator.getWarmStorageReadCost()).willReturn(Gas.of(20));
 		given(gasCalculator.getColdSloadCost()).willReturn(Gas.of(10));

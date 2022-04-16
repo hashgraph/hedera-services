@@ -35,7 +35,7 @@ import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -98,7 +98,7 @@ class ContractCreateTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private AccountStore accountStore;
 	@Mock

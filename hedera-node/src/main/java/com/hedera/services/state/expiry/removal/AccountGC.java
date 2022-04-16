@@ -42,6 +42,21 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * Responsible for "garbage collection" of an expired account whose grace period has ended; such an account
+ * may still own fungible token units or NFTs, and we need to either,
+ * <ol>
+ *     <li>Return these assets to the treasuries of their respective token types; or,</li>
+ *     <li>"Burn" them, if they belong to a token type that has been deleted or removed.</li>
+ * </ol>
+ * Doing a treasury return or burn of fungible units is straightforward. NFTs are a problem, however---we
+ * do not know <i>which serial numbers</i> the expired account owned. The current implementation responds
+ * by simply "stranding" any such NFTs; that is, leaving them in state with an {@code owner} field still
+ * set to the now-missing account.
+ *
+ * <p>The full implementation, with NFT treasury return, will be done through the tasks listed in issue
+ * https://github.com/hashgraph/hedera-services/issues/3174.
+ */
 @Singleton
 public class AccountGC {
 	private final AliasManager aliasManager;

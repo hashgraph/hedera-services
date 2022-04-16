@@ -9,9 +9,9 @@ package com.hedera.services.txns.submission;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,9 @@ package com.hedera.services.txns.submission;
  */
 
 import com.hedera.services.context.domain.security.HapiOpPermissions;
-import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.throttling.TransactionThrottling;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.txns.auth.SystemOpPolicies;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
@@ -32,6 +32,7 @@ import javax.inject.Singleton;
 import java.util.List;
 import java.util.function.LongPredicate;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetAccountDetails;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -46,7 +47,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 @Singleton
 public class SystemPrecheck {
 	public static final LongPredicate IS_THROTTLE_EXEMPT = num -> num >= 1 && num <= 100L;
-	public static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES = List.of(NetworkGetExecutionTime);
+	public static final List<HederaFunctionality> RESTRICTED_FUNCTIONALITIES = List.of(NetworkGetExecutionTime,
+			GetAccountDetails);
 
 	private final SystemOpPolicies systemOpPolicies;
 	private final HapiOpPermissions hapiOpPermissions;

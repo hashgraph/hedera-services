@@ -32,7 +32,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -111,7 +111,7 @@ class ScheduleCreateTransitionLogicTest {
 	private OptionValidator validator;
 	private ScheduleStore store;
 	private MerkleSchedule merkleSchedule;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private TransactionContext txnCtx;
 	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
 	private ScheduleExecutor executor;
@@ -126,7 +126,7 @@ class ScheduleCreateTransitionLogicTest {
 	private void setup() throws InvalidProtocolBufferException {
 		validator = mock(OptionValidator.class);
 		store = mock(ScheduleStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		activationHelper = mock(InHandleActivationHelper.class);
 		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
 		executor = mock(ScheduleExecutor.class);

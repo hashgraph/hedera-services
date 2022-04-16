@@ -28,7 +28,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -44,10 +44,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
@@ -59,13 +59,13 @@ class TokenUnfreezeTransitionLogicTest {
 	private long accountNum = 54321L;
 	private TokenID tokenID = IdUtils.asToken("0.0." + tokenNum);
 	private AccountID accountID = IdUtils.asAccount("0.0." + accountNum);
-	private Id tokenId = new Id(0,0,tokenNum);
-	private Id accountId = new Id(0,0,accountNum);
+	private Id tokenId = new Id(0, 0, tokenNum);
+	private Id accountId = new Id(0, 0, accountNum);
 
 	private TypedTokenStore tokenStore;
 	private AccountStore accountStore;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private TokenRelationship tokenRelationship;
 	private Token token;
 	private Account account;
@@ -77,7 +77,7 @@ class TokenUnfreezeTransitionLogicTest {
 	private void setup() {
 		accountStore = mock(AccountStore.class);
 		tokenStore = mock(TypedTokenStore.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		tokenRelationship = mock(TokenRelationship.class);
 		token = mock(Token.class);
 		account = mock(Account.class);

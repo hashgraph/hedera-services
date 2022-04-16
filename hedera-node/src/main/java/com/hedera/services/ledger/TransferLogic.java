@@ -50,6 +50,7 @@ import java.util.TreeMap;
 import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
@@ -66,7 +67,8 @@ public class TransferLogic {
 			NUM_ASSOCIATIONS,
 			HEAD_TOKEN_NUM,
 			NUM_NFTS_OWNED,
-			USED_AUTOMATIC_ASSOCIATIONS
+			USED_AUTOMATIC_ASSOCIATIONS,
+			NUM_TREASURY_TITLES
 	);
 
 	private final TokenStore tokenStore;
@@ -164,7 +166,8 @@ public class TransferLogic {
 				}
 			} else if (change.isApprovedAllowance() && change.isForFungibleToken()) {
 				adjustFungibleTokenAllowance(change, accountId);
-			} else if (change.isApprovedAllowance() && change.isForNft()) {
+			} else if (change.isForNft()) {
+				// wipe the allowance on this uniqueToken
 				nftsLedger.set(change.nftId(), SPENDER, MISSING_ENTITY_ID);
 			}
 		}

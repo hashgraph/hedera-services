@@ -20,12 +20,14 @@ package com.hedera.services.state.merkle.internals;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class FilePart implements FCQueueElement {
 	private static final int CURRENT_VERSION = 1;
@@ -84,5 +86,30 @@ public class FilePart implements FCQueueElement {
 	@Override
 	public int getVersion() {
 		return CURRENT_VERSION;
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || FilePart.class != obj.getClass()) {
+			return false;
+		}
+
+		var that = (FilePart) obj;
+		return Arrays.equals(this.data, that.data);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(FilePart.class)
+				.add("data", Arrays.toString(this.data))
+				.toString();
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(this.data);
 	}
 }
