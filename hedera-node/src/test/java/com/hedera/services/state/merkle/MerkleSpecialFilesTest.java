@@ -41,11 +41,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -274,5 +277,50 @@ class MerkleSpecialFilesTest {
 		newSubject.deserialize(din, MerkleSpecialFiles.CURRENT_VERSION);
 
 		assertTrue(newSubject.getFileContents().isEmpty(), "Deserialized instance should be empty");
+	}
+
+	@Test
+	void checkHashCodesDiverse() {
+		Set<Integer> hashCodes = new HashSet<>();
+		hashCodes.add(subject.hashCode());
+		subject.append(fid, "hello".getBytes());
+		hashCodes.add(subject.hashCode());
+		subject.append(secondFid, "hello".getBytes());
+		hashCodes.add(subject.hashCode());
+		subject.append(fid, " ".getBytes());
+		hashCodes.add(subject.hashCode());
+		assertTrue(hashCodes.size() >= 3);
+	}
+
+	@Test
+	void checkStringContainsContents() {
+		subject.append(fid, new byte[] {123});
+		assertTrue(subject.toString().contains(String.valueOf(fid.getFileNum())));
+		subject.append(secondFid, new byte[] {111});
+		assertTrue(subject.toString().contains(String.valueOf(secondFid.getFileNum())), subject.toString());
+	}
+
+	@Test
+	@SuppressWarnings("java:S3415")
+	void checkEqualityWorks() {
+		assertEquals(subject, subject);
+		// Note: suppressed warning here because check needs to cover null code-path of equals method.
+		assertNotEquals(subject, null);
+		assertNotEquals(subject, new Object());
+
+		// Matching initial contents
+		assertEquals(new MerkleSpecialFiles(), new MerkleSpecialFiles());
+		// Matching added contents
+		var msf1 = new MerkleSpecialFiles();
+		var msf2 = new MerkleSpecialFiles();
+		msf1.append(fid, "hello".getBytes());
+		msf2.append(fid, "hello".getBytes());
+		assertEquals(msf2, msf1);
+		assertEquals(msf1, msf2);
+
+		// Mismatching contents
+		msf2.append(fid, " ".getBytes());
+		assertNotEquals(msf2, msf1);
+		assertNotEquals(msf1, msf2);
 	}
 }
