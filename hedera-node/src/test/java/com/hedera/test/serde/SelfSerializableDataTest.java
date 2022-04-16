@@ -166,7 +166,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	@ParameterizedTest
 	@ArgumentsSource(CurrentVersionArgumentsProvider.class)
 	void serializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {
-		assertSameSerialization(getType(), this::getExpectedObject, version, testCaseNo);
+		assertSameSerialization(getType(), this::getExpectedObject, version, testCaseNo, 265);
 	}
 
 	static class SupportedVersionsArgumentsProvider implements ArgumentsProvider {

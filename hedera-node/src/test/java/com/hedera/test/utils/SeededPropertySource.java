@@ -81,13 +81,20 @@ public class SeededPropertySource {
 	private static final long BASE_SEED = 4_242_424L;
 
 	private final SplittableRandom SEEDED_RANDOM;
+	private final int responseCodeEnumCount;
 
-	public SeededPropertySource(final SplittableRandom SEEDED_RANDOM) {
+	public SeededPropertySource(final SplittableRandom SEEDED_RANDOM, final int responseCodeEnumCount) {
 		this.SEEDED_RANDOM = SEEDED_RANDOM;
+		this.responseCodeEnumCount = responseCodeEnumCount;
+	}
+
+	public static SeededPropertySource forSerdeTest(final int version, final int testCaseNo,
+			final int responseCodeEnumCount) {
+		return new SeededPropertySource(new SplittableRandom(version * BASE_SEED + testCaseNo), responseCodeEnumCount);
 	}
 
 	public static SeededPropertySource forSerdeTest(final int version, final int testCaseNo) {
-		return new SeededPropertySource(new SplittableRandom(version * BASE_SEED + testCaseNo));
+		return new SeededPropertySource(new SplittableRandom(version * BASE_SEED + testCaseNo), 265);
 	}
 
 	public EvmFnResult nextEvmResult() {
@@ -581,7 +588,7 @@ public class SeededPropertySource {
 
 	public ResponseCodeEnum nextStatus() {
 		final var choices = ResponseCodeEnum.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		return choices[SEEDED_RANDOM.nextInt(responseCodeEnumCount)];
 	}
 
 	public ExchangeRates nextExchangeRates() {

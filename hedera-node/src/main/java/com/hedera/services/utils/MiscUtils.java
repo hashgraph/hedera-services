@@ -71,7 +71,6 @@ import static com.hedera.services.grpc.controllers.ConsensusController.GET_TOPIC
 import static com.hedera.services.grpc.controllers.ConsensusController.SUBMIT_MESSAGE_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.UPDATE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ContractController.CALL_CONTRACT_METRIC;
-import static com.hedera.services.grpc.controllers.ContractController.CALL_CONTRACT_METRIC;
 import static com.hedera.services.grpc.controllers.ContractController.CALL_ETHEREUM_METRIC;
 import static com.hedera.services.grpc.controllers.ContractController.CREATE_CONTRACT_METRIC;
 import static com.hedera.services.grpc.controllers.ContractController.DELETE_CONTRACT_METRIC;

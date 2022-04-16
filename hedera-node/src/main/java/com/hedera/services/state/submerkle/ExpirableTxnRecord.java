@@ -343,6 +343,9 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
 		// Added in 0.18
 		newTokenAssociations = in.readSerializableList(Integer.MAX_VALUE);
+		if (newTokenAssociations.isEmpty()) {
+			newTokenAssociations = NO_NEW_TOKEN_ASSOCIATIONS;
+		}
 		// Added in 0.21
 		final var hasChildRecords = in.readBoolean();
 		if (hasChildRecords) {

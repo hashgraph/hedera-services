@@ -130,7 +130,7 @@ public class ContractController extends SmartContractServiceGrpc.SmartContractSe
 	}
 
 	@Override
-	public void contractCallEthereum(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+	public void callEthereum(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, EthereumTransaction);
 	}
 }

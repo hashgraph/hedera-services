@@ -176,7 +176,7 @@ class ContractControllerTest {
 	@Test
 	void forwardsCallEthereum() {
 		// when:
-		subject.contractCallEthereum(txn, txnObserver);
+		subject.callEthereum(txn, txnObserver);
 
 		// expect:
 		verify(txnResponseHelper).submit(txn, txnObserver, EthereumTransaction);
