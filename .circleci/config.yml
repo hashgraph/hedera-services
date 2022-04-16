@@ -806,6 +806,13 @@ workflows:
   # This workflow will be running normally in master branch on a daily basis
 
   GCP-Daily-Services-Crypto-Migration-7N-1C:
+    triggers:
+      - schedule:
+          cron: "45 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1128,6 +1135,13 @@ workflows:
 
 
   GCP-Daily-Services-Reconnect-6N-4C:
+    triggers:
+      - schedule:
+          cron: "40 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1323,6 +1337,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
+    triggers:
+      - schedule:
+          cron: "25 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
