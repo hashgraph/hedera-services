@@ -167,6 +167,8 @@ class BasicTransactionContextTest {
 	private EntityIdSource ids;
 	@Mock
 	private EvmFnResult result;
+	@Mock
+	private EvmFnResult.EvmFnCallContext evmFnCallContext;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -356,6 +358,27 @@ class BasicTransactionContextTest {
 		record = subject.recordSoFar().build();
 
 		assertSame(result, record.getContractCallResult());
+	}
+
+	@Test
+	void configuresEthereumHash() {
+		var callData = new byte[] {1};
+		var ethHash = new byte[] {2};
+		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+		given(accessor.getTxnId()).willReturn(txnId);
+		given(accessor.getTxn()).willReturn(txn);
+		given(evmFnCallContext.getEthereumHash()).willReturn(ethHash);
+		
+
+		// when:
+		subject.setCallResult(result);
+		subject.updateFromEvmCallContext(evmFnCallContext);
+		setUpBuildingExpirableTxnRecord();
+		record = subject.recordSoFar().build();
+
+		// then:
+		verify(result).updateFromEvmCallContext(evmFnCallContext);
+		assertArrayEquals(ethHash, record.getEthereumHash());
 	}
 
 	@Test

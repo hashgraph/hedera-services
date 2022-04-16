@@ -45,7 +45,13 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -62,9 +68,21 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.txns.ethereum.TestingConstants.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.services.txns.ethereum.TestingConstants.CHAINID_TESTNET;
+import static com.hedera.services.txns.ethereum.TestingConstants.TINYBARS_2_IN_WEIBARS;
+import static com.hedera.services.txns.ethereum.TestingConstants.TINYBARS_57_IN_WEIBARS;
+import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_ADDRESS;
+import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
+import static com.hedera.services.txns.ethereum.TestingConstants.WEIBARS_IN_TINYBAR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -75,10 +93,6 @@ class EthereumTransactionTransitionLogicTest {
 	private final Account relayerAccount = new Account(new Id(0, 0, 1001));
 	private final Account senderAccount = new Account(new Id(0, 0, 1002));
 	private final Account contractAccount = new Account(new Id(0, 0, 1006));
-	@Mock
-	OptionValidator optionValidator;
-	@Mock
-	GlobalDynamicProperties globalDynamicProperties;
 	ContractCallTransitionLogic contractCallTransitionLogic;
 	ContractCreateTransitionLogic contractCreateTransitionLogic;
 	EthereumTransitionLogic subject;
@@ -87,6 +101,8 @@ class EthereumTransactionTransitionLogicTest {
 	private long sent = 1_234L;
 	private byte[] chainId= CHAINID_TESTNET;
 	private byte[] callData = new byte[0];
+	@Mock
+	OptionValidator optionValidator;
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
@@ -102,7 +118,7 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private CreateEvmTxProcessor createEvmTxProcessor;
 	@Mock
-	private GlobalDynamicProperties properties;
+	private GlobalDynamicProperties globalDynamicProperties;
 	@Mock
 	private CodeCache codeCache;
 	@Mock
@@ -122,7 +138,7 @@ class EthereumTransactionTransitionLogicTest {
 	private void setup() {
 		contractCallTransitionLogic = new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager);
+				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager);
 		contractCreateTransitionLogic = new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator,
 				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian);
 		given(globalDynamicProperties.getChainId()).willReturn(0x128);
@@ -274,9 +290,9 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
-	void acceptsOkSyntax() {
+	void acceptsOkSyntaxEthCall() {
 		givenValidTxnCtx();
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(globalDynamicProperties.maxGas()).willReturn(gas + 1);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
@@ -284,9 +300,42 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void acceptsOkSyntaxEthCreate() {
+		target = null;
+		givenValidTxnCtx();
+		given(optionValidator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(optionValidator.memoCheck(any())).willReturn(OK);
+		given(globalDynamicProperties.maxGas()).willReturn(Integer.MAX_VALUE);
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+
+		// expect:
+		assertEquals(OK, subject.validateSemantics(accessor));
+	}
+
+	@Test
+	void rejectWrongTransactionBody() {
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(spanMapAccessor.getEthTxBodyMeta(accessor)).willReturn(
+				TransactionBody.newBuilder().setContractUpdateInstance(
+				ContractUpdateTransactionBody.newBuilder()).build());
+
+		// expect:
+		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+	}
+
+	@Test
+	void unsupportedSemanticCheck() {
+		givenValidTxnCtx();
+		
+		// expect:
+		assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(null));
+	}
+
+	@Test
 	void providingGasOverLimitReturnsCorrectPrecheck() {
 		givenValidTxnCtx();
-		given(properties.maxGas()).willReturn(gas - 1);
+		given(globalDynamicProperties.maxGas()).willReturn(gas - 1);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
@@ -305,7 +354,7 @@ class EthereumTransactionTransitionLogicTest {
 
 	@Test
 	void expandedSignaturesValid() {
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(globalDynamicProperties.maxGas()).willReturn(gas + 1);
 		givenValidTxnCtx();
 		given(accessor.getExpandedSigStatus()).willReturn(OK);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);

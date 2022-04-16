@@ -33,7 +33,7 @@ public record EthTxData(
 		byte[] r,
 		byte[] s) implements EvmFnResult.EvmFnCallContext {
 
-	private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+	static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
 	// TODO constants should be in besu-native
 	static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;

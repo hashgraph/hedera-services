@@ -33,7 +33,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.math.ec.ECCurve;
@@ -41,12 +40,10 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
-import org.spongycastle.util.encoders.Hex;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
-import java.security.PublicKey;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -123,7 +120,8 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 
 	public boolean maybeLinkEvmAddress(final JKey key, final EntityNum num) {
 		if (key != null && key.hasECDSAsecp256k1Key()) {
-			byte[] rawCompressedKey = fromBytesInternal(key.getECDSASecp256k1Key());
+			// Only complressed keys are stored at the moment
+			byte[] rawCompressedKey = key.getECDSASecp256k1Key();
 			if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
 				var evmAddress = calculateEthAddress(rawCompressedKey);
 				link(evmAddress, num);
@@ -170,24 +168,6 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 				workingAliases::size, numCreate2Aliases::get, numEOAliases::get);
 	}
 
-	static byte[] fromBytesInternal(byte[] publicKey) {
-		if (publicKey.length == 33) {
-			// compressed 33 byte raw form
-			return publicKey;
-		} else if (publicKey.length == 35 && publicKey[0]==58 && publicKey[1]==33) {
-			// compressed 33 byte raw form
-			byte[] key = new byte[33];
-			System.arraycopy(publicKey, 2, key, 0, 33);
-			return key;
-		} else if (publicKey.length == 65) {
-			// compress the 65 byte form
-			return SECP256K1_CURVE.decodePoint(publicKey).getEncoded(true);
-		} else {
-			// Assume a DER-encoded public key descriptor
-			return SubjectPublicKeyInfo.getInstance(publicKey).getPublicKeyData().getBytes();
-		}
-	}
-
 	static ByteString calculateEthAddress(byte[] rawCompressedKey) {
 		BigInteger x = new BigInteger(rawCompressedKey, 1, 32);
 		ECPoint ecPoint = decompressKey(x, (rawCompressedKey[0] & 0x1) == 0x1);
@@ -220,32 +200,22 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 		return curAliases().remove(alias) != null;
 	}
 
-	/**
-	 * Returns if there is an account linked the given alias.
-	 *
-	 * @param alias the alias of interest
-	 * @return whether there is a linked account
-	 */
-	public boolean contains(final ByteString alias) {
-		return curAliases().containsKey(alias);
-	}
-
-	public boolean forgetEvmAddress(final ByteString alias) {
+	public void forgetEvmAddress(final ByteString alias) {
 		try {
 			var key = Key.parseFrom(alias);
 			var jKey = JKey.mapKey(key);
 			if (jKey.hasECDSAsecp256k1Key()) {
-				byte[] rawCompressedKey = fromBytesInternal(jKey.getECDSASecp256k1Key());
+				// ecdsa keys from alias are currently only stored in compressed form.
+				byte[] rawCompressedKey = jKey.getECDSASecp256k1Key();
+				// trust, but verify
 				if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
 					var evmAddress = calculateEthAddress(rawCompressedKey);
-					return curAliases().remove(evmAddress) != null;
+					curAliases().remove(evmAddress);
 				}
 			}
 		} catch (InvalidProtocolBufferException | DecoderException internal) {
 			// any parse error means it's not a evm address
 		}
-
-		return false;
 	}
 
 	/**

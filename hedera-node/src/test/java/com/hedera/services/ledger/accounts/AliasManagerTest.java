@@ -172,5 +172,8 @@ class AliasManagerTest {
 		assertEquals(2, subject.getAliases().size());
 		subject.forgetEvmAddress(accountWithECDSAAlias.getAlias());
 		assertEquals(1, subject.getAliases().size());
+		subject.forgetEvmAddress(ByteString.copyFromUtf8("This is not a valid alias"));
+		assertEquals(1, subject.getAliases().size());
+
 	}
 }

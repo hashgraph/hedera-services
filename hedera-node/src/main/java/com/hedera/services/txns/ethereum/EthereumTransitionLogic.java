@@ -36,7 +36,13 @@ import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.bouncycastle.util.encoders.Hex;
 
 import javax.inject.Inject;
@@ -141,7 +147,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 			var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 			if (callingAccount == null) {
-				return ResponseCodeEnum.INVALID_ACCOUNT_ID; // FIXME new response code?
+				return ResponseCodeEnum.INVALID_ACCOUNT_ID; 
 			}
 
 			var accountNonce = (long) accountsLedger.get(callingAccount.toGrpcAccountId(), AccountProperty.ETHEREUM_NONCE);
@@ -201,7 +207,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	}
 
 	private TransactionBody createSyntheticTransactionBody(EthTxData ethTxData) {
-		//TODO short circuit direct calls to tokens and topics
+		// maybe we could short circuit direct calls to tokens and topics?  maybe not
 		if (ethTxData.to() != null && ethTxData.to().length != 0) {
 			var synthOp = ContractCallTransactionBody.newBuilder()
 					.setFunctionParameters(ByteString.copyFrom(ethTxData.callData()))
