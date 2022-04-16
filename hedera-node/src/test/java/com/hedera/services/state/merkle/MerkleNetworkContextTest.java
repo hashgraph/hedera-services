@@ -171,7 +171,8 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
 		assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
 		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
-		assertSame(subjectCopy.getBlockHashCache(), subject.getBlockHashCache());
+		assertEquals(subjectCopy.getBlockHashCache(), subject.getBlockHashCache());
+		assertNotSame(subject.getBlockHashCache(), subjectCopy.getBlockHashCache());
 		assertSame(subjectCopy.getBlockNo(), subject.getBlockNo());
 		assertSame(subjectCopy.getFirstConsTimeOfCurrentBlock(), subject.getFirstConsTimeOfCurrentBlock());
 		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());

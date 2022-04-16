@@ -71,13 +71,12 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 
 	static final int RELEASE_0200_VERSION = 6;
 	static final int RELEASE_0240_VERSION = 7;
-	static final int RELEASE_0250_VERSION = 8;
-	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	static final int RELEASE_0260_VERSION = 8;
+	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x8d4aa0f0a968a9f3L;
 	static final Instant[] NO_CONGESTION_STARTS = new Instant[0];
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
-	public static final Instant NULL_CONSENSUS_TIME = null;
 	private static final org.hyperledger.besu.datatypes.Hash UNAVAILABLE_BLOCK_HASH =
 			convertSwirldsHashToBesuHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
@@ -105,8 +104,8 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot = NO_GAS_THROTTLE_SNAPSHOT;
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 	private long blockNo = 0;
-	private Instant firstConsTimeOfCurrentBlock = NULL_CONSENSUS_TIME;
-	private Instant latestConsTimeOfCurrentBlock = NULL_CONSENSUS_TIME;
+	private Instant firstConsTimeOfCurrentBlock = null;
+	private Instant latestConsTimeOfCurrentBlock = null;
 	private SortedMap<Long, org.hyperledger.besu.datatypes.Hash> blockHashes = new TreeMap<>();
 
 	public MerkleNetworkContext() {
@@ -144,7 +143,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
 		this.latestConsTimeOfCurrentBlock = that.latestConsTimeOfCurrentBlock;
 		this.blockNo = that.blockNo;
-		this.blockHashes = that.blockHashes;
+		this.blockHashes = new TreeMap<>(that.blockHashes);
 	}
 
 	// Helpers that reset the received argument based on the network context
@@ -237,7 +236,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	public void finishCurrentBlock(final Hash hash) {
-		if(blockHashes.size() > 255) {
+		if (blockHashes.size() > 255) {
 			blockHashes.remove(blockHashes.firstKey());
 		}
 		blockHashes.put(blockNo, convertSwirldsHashToBesuHash(hash));
@@ -286,7 +285,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0240_VERSION) {
 			migrationRecordsStreamed = in.readBoolean();
 		}
-		if (version >= RELEASE_0250_VERSION) {
+		if (version >= RELEASE_0260_VERSION) {
 			final var firstBlockTime = readNullable(in, RichInstant::from);
 			firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
 			final var latestBlockTime = readNullable(in, RichInstant::from);

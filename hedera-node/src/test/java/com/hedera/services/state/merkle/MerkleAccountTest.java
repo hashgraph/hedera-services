@@ -230,7 +230,7 @@ class MerkleAccountTest {
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getAccountKey()));
 		assertSame(tokens, subject.tokens());
-		assertEquals(2L, subject.getNftsOwned());
+		assertEquals(nftsOwned, subject.getNftsOwned());
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(state.getUsedAutomaticAssociations(), subject.getUsedAutoAssociations());
 		assertEquals(state.getAlias(), subject.getAlias());

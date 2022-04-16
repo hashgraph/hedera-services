@@ -21,21 +21,18 @@ package com.hedera.services.stream;
  */
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
-import com.swirlds.common.system.NodeId;
-import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import org.apache.commons.lang3.RandomUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,14 +43,21 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Queue;
 
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(LogCaptureExtension.class)
 public class RecordStreamManagerTest {
@@ -164,11 +168,6 @@ public class RecordStreamManagerTest {
 	void addRecordStreamObjectTest() {
 		// setup:
 		final MiscRunningAvgs runningAvgsMock = mock(MiscRunningAvgs.class);
-		final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext(
-				NULL_CONSENSUS_TIME,
-				new SequenceNumber(2),
-				1,
-				new ExchangeRates());
 		final var mockQueue = mock(Queue.class);
 		recordStreamManager = new RecordStreamManager(
 				multiStreamMock, writeQueueThreadMock, runningAvgsMock);

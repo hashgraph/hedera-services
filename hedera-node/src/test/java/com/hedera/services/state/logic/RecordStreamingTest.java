@@ -49,7 +49,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NULL_CONSENSUS_TIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -81,7 +80,7 @@ class RecordStreamingTest {
 	private RecordsRunningHashLeaf recordsRunningHashLeaf;
 
     private static final MerkleNetworkContext merkleNetworkContext = new MerkleNetworkContext(
-            NULL_CONSENSUS_TIME,
+            null,
             new SequenceNumber(2),
             1,
             new ExchangeRates());

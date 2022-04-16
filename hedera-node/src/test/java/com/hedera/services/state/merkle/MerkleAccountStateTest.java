@@ -157,7 +157,7 @@ class MerkleAccountStateTest {
 				"fungibleTokenAllowances={FcTokenAllowanceId{tokenNum=2000, spenderNum=1000}=1}, " +
 				"approveForAllNfts=[FcTokenAllowanceId{tokenNum=2000, spenderNum=3000}], " +
 				"firstContractStorageKey=fe0432ce31138ecf09aa3e8a41004a1e204ef84efe01ee160fea1e22060, " +
-				"numAssociations=3, numPositiveBalances=2, headTokenId=2000, numTreasuryTitles=23}";
+				"numAssociations=3, numPositiveBalances=2, headTokenId=2000, numTreasuryTitles=23, ethereumNonce=0}";
 		assertEquals(desired, subject.toString());
 	}
 

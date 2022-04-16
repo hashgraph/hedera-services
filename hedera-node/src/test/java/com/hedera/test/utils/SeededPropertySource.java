@@ -628,7 +628,8 @@ public class SeededPropertySource {
 
 	public ResponseCodeEnum nextStatus() {
 		final var choices = ResponseCodeEnum.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		// When the SelfSerializableDataTest was introduced, there were 265 response codes
+		return choices[SEEDED_RANDOM.nextInt(265)];
 	}
 
 	public ExchangeRates nextExchangeRates() {
