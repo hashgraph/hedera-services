@@ -29,6 +29,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.txns.ethereum.EthTxData;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
@@ -47,11 +48,13 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -75,6 +78,7 @@ import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
 import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -92,6 +96,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -259,6 +264,16 @@ class SignedTxnAccessorTest {
 		assertEquals(2, accessor.getNumAutoCreations());
 		assertTrue(accessor.areAutoCreationsCounted());
 		accessor.setNumAutoCreations(2);
+	}
+
+	@Test
+	void canGetExpandedSigStatus() {
+		final var accessor = SignedTxnAccessor.uncheckedFrom(Transaction.getDefaultInstance());
+		assertNull(accessor.getExpandedSigStatus());
+		accessor.setExpandedSigStatus(ResponseCodeEnum.ACCOUNT_DELETED);
+		assertEquals(ResponseCodeEnum.ACCOUNT_DELETED, accessor.getExpandedSigStatus());
+		accessor.setExpandedSigStatus(ResponseCodeEnum.OK);
+		assertEquals(ResponseCodeEnum.OK, accessor.getExpandedSigStatus());
 	}
 
 	@Test
@@ -596,6 +611,16 @@ class SignedTxnAccessorTest {
 		assertEquals(now, expandedMeta.getEffectiveNow());
 	}
 
+	@Test
+	void setEthTxDataMetaMetaWorks() {
+		final var txn = signedEthereumTxn();
+		final var accessor = SignedTxnAccessor.uncheckedFrom(txn);
+		final var spanMapAccessor = accessor.getSpanMapAccessor();
+
+		final var expandedMeta = spanMapAccessor.getEthTxDataMeta(accessor);
+		
+		assertEquals(98304L, expandedMeta.gasLimit());
+	}
 
 	@Test
 	void getGasLimitWorksForCreate() {
@@ -711,6 +736,10 @@ class SignedTxnAccessorTest {
 		return buildTransactionFrom(cryptoDeleteAllowanceOp());
 	}
 
+	private Transaction signedEthereumTxn() {
+		return buildTransactionFrom(ethereumTransactionOp());
+	}
+
 	private TransactionBody cryptoCreateOp() {
 		final var op = CryptoCreateTransactionBody.newBuilder()
 				.setMemo(memo)
@@ -763,6 +792,19 @@ class SignedTxnAccessorTest {
 						.setTransactionValidStart(Timestamp.newBuilder()
 								.setSeconds(now)))
 				.setCryptoDeleteAllowance(op)
+				.build();
+	}
+
+	private TransactionBody ethereumTransactionOp() {
+		final var op = EthereumTransactionBody.newBuilder()
+				.setEthereumData(ByteString.copyFrom(Hex.decode(
+						"f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792")))
+				.build();
+		return TransactionBody.newBuilder()
+				.setTransactionID(TransactionID.newBuilder()
+						.setTransactionValidStart(Timestamp.newBuilder()
+								.setSeconds(now)))
+				.setEthereumTransaction(op)
 				.build();
 	}
 

@@ -362,7 +362,6 @@ class BasicTransactionContextTest {
 
 	@Test
 	void configuresEthereumHash() {
-		var callData = new byte[] {1};
 		var ethHash = new byte[] {2};
 		given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
 		given(accessor.getTxnId()).willReturn(txnId);

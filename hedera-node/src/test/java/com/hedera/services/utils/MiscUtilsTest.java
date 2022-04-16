@@ -69,6 +69,7 @@ import com.hederahashgraph.api.proto.java.CryptoGetLiveHashQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetStakersQuery;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
@@ -216,6 +217,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetIn
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetLiveHash;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
@@ -713,6 +715,7 @@ class MiscUtilsTest {
 			put(SystemUndelete, new BodySetter<>(SystemUndeleteTransactionBody.class));
 			put(ContractCall, new BodySetter<>(ContractCallTransactionBody.class));
 			put(ContractCreate, new BodySetter<>(ContractCreateTransactionBody.class));
+			put(EthereumTransaction, new BodySetter<>(EthereumTransactionBody.class));
 			put(ContractUpdate, new BodySetter<>(ContractUpdateTransactionBody.class));
 			put(CryptoAddLiveHash, new BodySetter<>(CryptoAddLiveHashTransactionBody.class));
 			put(CryptoCreate, new BodySetter<>(CryptoCreateTransactionBody.class));

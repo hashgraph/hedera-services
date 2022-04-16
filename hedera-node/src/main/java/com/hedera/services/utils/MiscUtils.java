@@ -71,6 +71,8 @@ import static com.hedera.services.grpc.controllers.ConsensusController.GET_TOPIC
 import static com.hedera.services.grpc.controllers.ConsensusController.SUBMIT_MESSAGE_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.UPDATE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ContractController.CALL_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.CALL_CONTRACT_METRIC;
+import static com.hedera.services.grpc.controllers.ContractController.CALL_ETHEREUM_METRIC;
 import static com.hedera.services.grpc.controllers.ContractController.CREATE_CONTRACT_METRIC;
 import static com.hedera.services.grpc.controllers.ContractController.DELETE_CONTRACT_METRIC;
 import static com.hedera.services.grpc.controllers.ContractController.GET_CONTRACT_BYTECODE_METRIC;
@@ -323,6 +325,7 @@ public final class MiscUtils {
 		BASE_STAT_NAMES.put(ContractCreate, CREATE_CONTRACT_METRIC);
 		BASE_STAT_NAMES.put(ContractUpdate, UPDATE_CONTRACT_METRIC);
 		BASE_STAT_NAMES.put(ContractCall, CALL_CONTRACT_METRIC);
+		BASE_STAT_NAMES.put(EthereumTransaction, CALL_ETHEREUM_METRIC);
 		BASE_STAT_NAMES.put(ContractDelete, DELETE_CONTRACT_METRIC);
 		BASE_STAT_NAMES.put(ConsensusCreateTopic, CREATE_TOPIC_METRIC);
 		BASE_STAT_NAMES.put(ConsensusUpdateTopic, UPDATE_TOPIC_METRIC);

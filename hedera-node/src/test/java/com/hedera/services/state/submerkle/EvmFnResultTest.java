@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.txns.ethereum.EthTxData;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -39,6 +40,7 @@ import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +49,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 import static java.util.stream.Collectors.toList;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -505,6 +508,22 @@ class EvmFnResultTest {
 	void serializableDetWorks() {
 		assertEquals(EvmFnResult.RELEASE_0250_VERSION, subject.getVersion());
 		assertEquals(EvmFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
+	}
+	
+	@Test 
+	void updateFromEvmCallContextWorks() {
+		var oneByte = new byte[] { 1 };
+		EthTxData ethTxData =
+				new EthTxData(oneByte, EthTxData.EthTransactionType.EIP2930, oneByte, 1,
+						oneByte, oneByte, oneByte, 5678,
+						oneByte, BigInteger.valueOf(34_000_000_000L), oneByte, null, 1,
+						oneByte, oneByte, oneByte);
+		
+		subject.updateFromEvmCallContext(ethTxData);
+		
+		assertEquals(5678, subject.getGas());
+		assertEquals(3, subject.getAmount());
+		assertArrayEquals(oneByte, subject.getFunctionParameters());
 	}
 
 	private static EvmLog logFrom(final int s) {

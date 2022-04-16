@@ -856,10 +856,6 @@ public class ExpirableTxnRecord implements FCQueueElement {
 			return alias;
 		}
 
-		public byte[] getEthereumHash() {
-			return ethereumHash;
-		}
-
 		public boolean shouldNotBeExternalized() {
 			return onlyExternalizedIfSuccessful &&
 					!TxnReceipt.SUCCESS_LITERAL.equals(receiptBuilder.getStatus());

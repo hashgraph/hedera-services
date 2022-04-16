@@ -495,6 +495,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 		final var ethTxData = EthTxData.populateEthTxData(hapiTx.getEthereumData().toByteArray());
 		SPAN_MAP_ACCESSOR.setEthTxDataMeta(this, ethTxData);
 	}
+	
 	@Override
 	public SubType getSubType() {
 		if (function == CryptoTransfer) {
