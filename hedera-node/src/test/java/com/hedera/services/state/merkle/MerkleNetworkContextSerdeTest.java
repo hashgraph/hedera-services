@@ -55,7 +55,6 @@ public class MerkleNetworkContextSerdeTest extends SelfSerializableDataTest<Merk
 		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextNetworkContext();
 		if (version < MerkleNetworkContext.RELEASE_0260_VERSION) {
 			seeded.setFirstConsTimeOfCurrentBlock(null);
-			seeded.setLatestConsTimeOfCurrentBlock(null);
 			if (version == MerkleNetworkContext.RELEASE_0200_VERSION) {
 				seeded.setMigrationRecordsStreamed(false);
 			}

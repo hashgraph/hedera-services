@@ -20,6 +20,7 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.fees.FeeMultiplierSource;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.submerkle.ExchangeRates;
@@ -57,6 +58,7 @@ import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
+	private static final int NUM_BLOCK_HASHES_TO_KEEP = 256;
 	private static final String LINE_WRAP = "\n    ";
 	private static final String NOT_EXTANT = "<NONE>";
 	private static final String NOT_AVAILABLE = "<N/A>";
@@ -78,7 +80,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	static final DeterministicThrottle.UsageSnapshot[] NO_SNAPSHOTS = new DeterministicThrottle.UsageSnapshot[0];
 
 	private static final org.hyperledger.besu.datatypes.Hash UNAVAILABLE_BLOCK_HASH =
-			convertSwirldsHashToBesuHash(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
+			ethHashFrom(new ImmutableHash(new byte[DigestType.SHA_384.digestLength()]));
 
 	static Supplier<ExchangeRates> ratesSupplier = ExchangeRates::new;
 	static Supplier<SequenceNumber> seqNoSupplier = SequenceNumber::new;
@@ -105,7 +107,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	private DeterministicThrottle.UsageSnapshot[] usageSnapshots = NO_SNAPSHOTS;
 	private long blockNo = 0;
 	private Instant firstConsTimeOfCurrentBlock = null;
-	private Instant latestConsTimeOfCurrentBlock = null;
 	private SortedMap<Long, org.hyperledger.besu.datatypes.Hash> blockHashes = new TreeMap<>();
 
 	public MerkleNetworkContext() {
@@ -141,7 +142,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		this.preparedUpdateFileHash = that.preparedUpdateFileHash;
 		this.migrationRecordsStreamed = that.migrationRecordsStreamed;
 		this.firstConsTimeOfCurrentBlock = that.firstConsTimeOfCurrentBlock;
-		this.latestConsTimeOfCurrentBlock = that.latestConsTimeOfCurrentBlock;
 		this.blockNo = that.blockNo;
 		this.blockHashes = new TreeMap<>(that.blockHashes);
 	}
@@ -230,16 +230,13 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		preparedUpdateFileHash = NO_PREPARED_UPDATE_FILE_HASH;
 	}
 
-	public void startNewBlock(final Instant firstBlockTime) {
-		blockNo++;
-		firstConsTimeOfCurrentBlock = firstBlockTime;
-	}
-
-	public void finishCurrentBlock(final Hash hash) {
-		if (blockHashes.size() > 255) {
+	public long finishBlock(final Hash swirldsHash, final Instant firstConsTimeOfNewBlock) {
+		if (blockHashes.size() == NUM_BLOCK_HASHES_TO_KEEP) {
 			blockHashes.remove(blockHashes.firstKey());
 		}
-		blockHashes.put(blockNo, convertSwirldsHashToBesuHash(hash));
+		blockHashes.put(blockNo++, ethHashFrom(swirldsHash));
+		firstConsTimeOfCurrentBlock = firstConsTimeOfNewBlock;
+		return blockNo;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -288,8 +285,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0260_VERSION) {
 			final var firstBlockTime = readNullable(in, RichInstant::from);
 			firstConsTimeOfCurrentBlock = firstBlockTime == null ? null : firstBlockTime.toJava();
-			final var latestBlockTime = readNullable(in, RichInstant::from);
-			latestConsTimeOfCurrentBlock = latestBlockTime == null ? null : latestBlockTime.toJava();
 			blockNo = in.readLong();
 		}
 	}
@@ -354,7 +349,6 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		writeNullable(fromJava(gasThrottleUsageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
 		out.writeBoolean(migrationRecordsStreamed);
 		writeNullable(fromJava(firstConsTimeOfCurrentBlock), out, RichInstant::serialize);
-		writeNullable(fromJava(latestConsTimeOfCurrentBlock), out, RichInstant::serialize);
 		out.writeLong(blockNo);
 	}
 
@@ -418,20 +412,12 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		return blockHashes.getOrDefault(blockNumber, UNAVAILABLE_BLOCK_HASH);
 	}
 
-	public Instant getFirstConsTimeOfCurrentBlock() {
+	public Instant firstConsTimeOfCurrentBlock() {
 		return firstConsTimeOfCurrentBlock;
 	}
 
 	public void setFirstConsTimeOfCurrentBlock(final Instant firstConsTimeOfCurrentBlock) {
 		this.firstConsTimeOfCurrentBlock = firstConsTimeOfCurrentBlock;
-	}
-
-	public Instant getLatestConsTimeOfCurrentBlock() {
-		return latestConsTimeOfCurrentBlock;
-	}
-
-	public void setLatestConsTimeOfCurrentBlock(final Instant latestConsTimeOfCurrentBlock) {
-		this.latestConsTimeOfCurrentBlock = latestConsTimeOfCurrentBlock;
 	}
 
 	private String usageSnapshotsDesc() {
@@ -672,7 +658,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	/* --- Utility methods --- */
-	public static org.hyperledger.besu.datatypes.Hash convertSwirldsHashToBesuHash(final Hash hash) {
+	public static org.hyperledger.besu.datatypes.Hash ethHashFrom(final Hash hash) {
 		final byte[] hashBytesToConvert = hash.getValue();
 		final byte[] suffixBytes = new byte[32];
 		System.arraycopy(hashBytesToConvert, 16, suffixBytes, 0, 32);
@@ -680,18 +666,20 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	}
 
 	/* --- Used for tests --- */
+	@VisibleForTesting
 	public Map<Long, org.hyperledger.besu.datatypes.Hash> getBlockHashCache() {
 		return blockHashes;
 	}
 
+	@VisibleForTesting
 	public void clearBlockData() {
 		blockHashes = new TreeMap<>();
 		blockNo = 0;
 		firstConsTimeOfCurrentBlock = null;
-		latestConsTimeOfCurrentBlock = null;
 	}
 
-	public void setBlockNo(final long blockNo) {
+	@VisibleForTesting
+	void setBlockNo(final long blockNo) {
 		this.blockNo = blockNo;
 	}
 }
