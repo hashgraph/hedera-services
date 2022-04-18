@@ -753,13 +753,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-NetError-4N-1C:
-    triggers:
-      - schedule:
-          cron: "30 5 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
