@@ -64,7 +64,7 @@ class ReleaseTwentySixMigrationTest {
 	private ReleaseTwentySixMigration.MigrationUtility migrationUtility;
 
 	@Test
-	void migratesAsExpected() throws InterruptedException {
+	void migratesToIterableStorageAsExpected() throws InterruptedException {
 		given(initializingState.accounts()).willReturn(accounts);
 		given(initializingState.getChild(StateChildIndices.CONTRACT_STORAGE)).willReturn(contractStorage);
 		given(migratorFactory.from(

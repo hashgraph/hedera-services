@@ -75,8 +75,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
 import static com.hedera.services.state.migration.ReleaseTwentyFiveMigration.initTreasuryTitleCounts;
+import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
@@ -195,9 +195,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var bootstrapProps = new BootstrapProperties();
 		final var seqStart = bootstrapProps.getLongProperty("hedera.firstUserEntity");
 		createGenesisChildren(addressBook, seqStart);
-
-		networkCtx().setBlockNo(bootstrapProps.getLongProperty("blocks.lastBlockNumber"));
-		networkCtx().setLatestConsTimeOfCurrentBlock(bootstrapProps.getInstantProperty("blocks.lastBlockTimestamp"));
 
 		internalInit(platform, bootstrapProps, dualState);
 	}

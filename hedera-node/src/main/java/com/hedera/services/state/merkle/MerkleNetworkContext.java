@@ -404,6 +404,10 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 				congestionStartsDesc();
 	}
 
+	public void setBlockNo(final long blockNo) {
+		this.blockNo = blockNo;
+	}
+
 	public long getBlockNo() {
 		return blockNo;
 	}
@@ -669,17 +673,5 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 	@VisibleForTesting
 	public Map<Long, org.hyperledger.besu.datatypes.Hash> getBlockHashCache() {
 		return blockHashes;
-	}
-
-	@VisibleForTesting
-	public void clearBlockData() {
-		blockHashes = new TreeMap<>();
-		blockNo = 0;
-		firstConsTimeOfCurrentBlock = null;
-	}
-
-	@VisibleForTesting
-	void setBlockNo(final long blockNo) {
-		this.blockNo = blockNo;
 	}
 }

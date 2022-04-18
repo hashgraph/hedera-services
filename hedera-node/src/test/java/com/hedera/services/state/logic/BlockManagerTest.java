@@ -20,6 +20,7 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.TxnUtils;
@@ -33,6 +34,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
+import static com.hedera.services.state.logic.BlockManager.BLOCK_PERIOD_MS;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -42,6 +45,8 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class BlockManagerTest {
 	@Mock
+	private BootstrapProperties bootstrapProperties;
+	@Mock
 	private MerkleNetworkContext networkContext;
 	@Mock
 	private RecordsRunningHashLeaf runningHashLeaf;
@@ -50,7 +55,29 @@ class BlockManagerTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new BlockManager(() -> networkContext, () -> runningHashLeaf);
+		subject = new BlockManager(bootstrapProperties, () -> networkContext, () -> runningHashLeaf);
+	}
+
+	@Test
+	void initializesBlockConceptAsExpected() {
+		final var lastKnownNo = 1234L;
+		final var knownStartTime = Instant.parse("2022-04-01T00:00:00Z");
+		final var effCurBlockStart = Instant.parse("2022-04-18T12:27:58Z");
+		given(bootstrapProperties.getInstantProperty("bootstrap.lastKnownBlockStartTime"))
+				.willReturn(knownStartTime);
+		given(bootstrapProperties.getLongProperty("bootstrap.lastKnownBlockNumber"))
+				.willReturn(lastKnownNo);
+
+		final var periodOfKnownBlock = getPeriod(knownStartTime, BLOCK_PERIOD_MS);
+		final var periodOfCurrentBlock = getPeriod(effCurBlockStart, BLOCK_PERIOD_MS);
+		final var blockNoDelta = periodOfCurrentBlock - periodOfKnownBlock;
+		final var expectedCurBlockNo = lastKnownNo + blockNoDelta;
+
+		final var newBlockNo = subject.getManagedBlockNumberAt(effCurBlockStart);
+
+		verify(networkContext).setBlockNo(expectedCurBlockNo);
+		verify(networkContext).setFirstConsTimeOfCurrentBlock(effCurBlockStart);
+		assertEquals(expectedCurBlockNo, newBlockNo);
 	}
 
 	@Test
@@ -58,16 +85,6 @@ class BlockManagerTest {
 		given(networkContext.getBlockNo()).willReturn(someBlockNo);
 
 		assertEquals(someBlockNo, subject.getCurrentBlockNumber());
-	}
-
-	@Test
-	void usesCurrentBlockNumberAndUpdatesFirstConsTimeIfCurrentlyNull() {
-		given(networkContext.getBlockNo()).willReturn(someBlockNo);
-
-		final var newBlockNo = subject.getManagedBlockNumberAt(aTime);
-
-		verify(networkContext).setFirstConsTimeOfCurrentBlock(aTime);
-		assertEquals(someBlockNo, newBlockNo);
 	}
 
 	@Test

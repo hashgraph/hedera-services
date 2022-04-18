@@ -218,8 +218,8 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
 			entry("accounts.limitTokenAssociations", false),
-			entry("blocks.lastBlockTimestamp", Instant.parse("2022-04-01T00:00:00Z")),
-			entry("blocks.lastBlockNumber", 1L)
+			entry("bootstrap.lastKnownBlockStartTime", Instant.parse("2022-04-01T00:00:00Z")),
+			entry("bootstrap.lastKnownBlockNumber", 1L)
 	);
 
 	@Test

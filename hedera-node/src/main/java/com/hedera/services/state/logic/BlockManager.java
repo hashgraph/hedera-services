@@ -20,6 +20,7 @@ package com.hedera.services.state.logic;
  * ‍
  */
 
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.crypto.Hash;
@@ -46,16 +47,19 @@ public class BlockManager {
 
 	public static final long BLOCK_PERIOD_MS = 2_000L;
 
+	private final BootstrapProperties bootstrapProperties;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeaf;
 
 	@Inject
 	public BlockManager(
+			final BootstrapProperties bootstrapProperties,
 			final Supplier<MerkleNetworkContext> networkCtx,
 			final Supplier<RecordsRunningHashLeaf> runningHashLeaf
 	) {
 		this.networkCtx = networkCtx;
 		this.runningHashLeaf = runningHashLeaf;
+		this.bootstrapProperties = bootstrapProperties;
 	}
 
 	/**
@@ -87,10 +91,20 @@ public class BlockManager {
 	public long getManagedBlockNumberAt(final Instant now) {
 		final var curNetworkCtx = networkCtx.get();
 		final var firstBlockTime = curNetworkCtx.firstConsTimeOfCurrentBlock();
+		// Only possible when handling the first transaction after the 0.26 upgrade; from then
+		// on there will always be a current block with a first consensus time
 		if (firstBlockTime == null) {
+			final var lastKnownBlockNo =
+					bootstrapProperties.getLongProperty("bootstrap.lastKnownBlockNumber");
+			final var lastKnownBlockStartTime =
+					bootstrapProperties.getInstantProperty("bootstrap.lastKnownBlockStartTime");
+			final var elapsedPeriodsSinceLastKnownBlock =
+					getPeriod(now, BLOCK_PERIOD_MS) - getPeriod(lastKnownBlockStartTime, BLOCK_PERIOD_MS);
+			final var currentBlockNo = lastKnownBlockNo + elapsedPeriodsSinceLastKnownBlock;
+			curNetworkCtx.setBlockNo(currentBlockNo);
 			curNetworkCtx.setFirstConsTimeOfCurrentBlock(now);
-			log.debug("Pending block {} is starting @ {}", curNetworkCtx.getBlockNo(), now);
-			return curNetworkCtx.getBlockNo();
+			log.info("First conceptualized block {} is starting @ {}", currentBlockNo, now);
+			return currentBlockNo;
 		} else {
 			final var inSamePeriod = getPeriod(now, BLOCK_PERIOD_MS) == getPeriod(firstBlockTime, BLOCK_PERIOD_MS);
 			if (inSamePeriod) {
