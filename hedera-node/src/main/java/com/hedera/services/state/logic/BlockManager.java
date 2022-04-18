@@ -34,6 +34,12 @@ import java.util.function.Supplier;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
+/**
+ * Manages the block-related fields in the {@link MerkleNetworkContext}, based on 2-second "periods" in
+ * consensus time. Whenever a user transaction's consensus timestamp is the first in a new period,
+ * starts a new block by recording the running hash of the last transaction in the current period and
+ * incrementing the block number via a call to {@link MerkleNetworkContext#finishBlock(Hash, Instant)}.
+ */
 @Singleton
 public class BlockManager {
 	private static final Logger log = LogManager.getLogger(BlockManager.class);
@@ -52,10 +58,32 @@ public class BlockManager {
 		this.runningHashLeaf = runningHashLeaf;
 	}
 
+	/**
+	 * Accepts the {@link RunningHash} that, <b>if</b> the corresponding user transaction is the last in this
+	 * 2-second period, will be the "block hash" for the current block.
+	 *
+	 * @param runningHash the latest candidate for the current block hash
+	 */
 	public void updateCurrentBlockHash(final RunningHash runningHash) {
 		runningHashLeaf.get().setRunningHash(runningHash);
 	}
 
+	/**
+	 * Provides the current block number.
+	 *
+	 * @return the current block number
+	 */
+	public long getCurrentBlockNumber() {
+		return networkCtx.get().getBlockNo();
+	}
+
+	/**
+	 * Given the consensus timestamp of a user transaction, manages the block-related fields in the
+	 * {@link MerkleNetworkContext}, finishing the current block if appropriate.
+	 *
+	 * @param now the latest consensus timestamp of a user transaction
+	 * @return the new block number, taking this timestamp into account
+	 */
 	public long getManagedBlockNumberAt(final Instant now) {
 		final var curNetworkCtx = networkCtx.get();
 		final var firstBlockTime = curNetworkCtx.firstConsTimeOfCurrentBlock();

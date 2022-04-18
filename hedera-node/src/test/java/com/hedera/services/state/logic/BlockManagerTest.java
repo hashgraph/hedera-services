@@ -54,6 +54,13 @@ class BlockManagerTest {
 	}
 
 	@Test
+	void delegatesCurrentBlockNumberToContext() {
+		given(networkContext.getBlockNo()).willReturn(someBlockNo);
+
+		assertEquals(someBlockNo, subject.getCurrentBlockNumber());
+	}
+
+	@Test
 	void usesCurrentBlockNumberAndUpdatesFirstConsTimeIfCurrentlyNull() {
 		given(networkContext.getBlockNo()).willReturn(someBlockNo);
 

@@ -33,6 +33,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 
+import static com.hedera.services.state.logic.RecordStreaming.PENDING_USER_TXN_BLOCK_NO;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -47,6 +49,8 @@ class RecordStreamingTest {
     private RecordStreamObject secondFollowingChildRso;
     @Mock
     private RecordStreamObject firstPrecedingChildRso;
+    @Mock
+    private RecordStreamObject systemRso;
     @Mock
     private BlockManager blockManager;
     @Mock
@@ -64,7 +68,8 @@ class RecordStreamingTest {
     @Test
     void streamsAllRecordsAtExpectedTimes() {
         givenCollabSetup();
-        givenAlignable(firstPrecedingChildRso, topLevelRso, firstFollowingChildRso, secondFollowingChildRso);
+        givenAlignable(firstPrecedingChildRso, topLevelRso, firstFollowingChildRso, secondFollowingChildRso, systemRso);
+        given(systemRso.getRunningHash()).willReturn(mockSystemHash);
 
         given(recordsHistorian.hasPrecedingChildRecords()).willReturn(true);
         given(recordsHistorian.getPrecedingChildRecords()).willReturn(List.of(
@@ -77,14 +82,18 @@ class RecordStreamingTest {
         given(nonBlockingHandoff.offer(firstPrecedingChildRso)).willReturn(true);
         given(nonBlockingHandoff.offer(firstFollowingChildRso)).willReturn(true);
         given(nonBlockingHandoff.offer(secondFollowingChildRso)).willReturn(true);
+        given(nonBlockingHandoff.offer(systemRso)).willReturn(true);
 
-        subject.run();
+        subject.streamUserTxnRecords();
+        subject.streamSystemRecord(systemRso);
 
         verify(nonBlockingHandoff).offer(firstPrecedingChildRso);
         verify(nonBlockingHandoff).offer(firstFollowingChildRso);
         verify(nonBlockingHandoff).offer(topLevelRso);
         verify(nonBlockingHandoff).offer(secondFollowingChildRso);
-        verify(blockManager).updateCurrentBlockHash(mockHash);
+        verify(nonBlockingHandoff).offer(systemRso);
+        verify(blockManager).updateCurrentBlockHash(mockUserHash);
+        verify(blockManager).updateCurrentBlockHash(mockSystemHash);
     }
 
     @Test
@@ -97,16 +106,33 @@ class RecordStreamingTest {
                 .willReturn(false)
                 .willReturn(true);
 
-        subject.run();
+        subject.streamUserTxnRecords();
 
         verify(nonBlockingHandoff, times(2)).offer(topLevelRso);
-        verify(blockManager).updateCurrentBlockHash(mockHash);
+        verify(blockManager).updateCurrentBlockHash(mockUserHash);
+
+        subject.resetBlockNo();
+
+        assertEquals(PENDING_USER_TXN_BLOCK_NO, subject.getBlockNo());
+    }
+
+    @Test
+    void usesCurrentBlockNumberIfNoUserRecordsCouldBeStreamed() {
+        given(blockManager.getCurrentBlockNumber()).willReturn(someBlockNo);
+        givenAlignable(systemRso);
+        given(systemRso.getRunningHash()).willReturn(mockSystemHash);
+        given(nonBlockingHandoff.offer(systemRso)).willReturn(true);
+
+        subject.streamSystemRecord(systemRso);
+
+        verify(nonBlockingHandoff).offer(systemRso);
+        verify(blockManager).updateCurrentBlockHash(mockSystemHash);
     }
 
     private void givenCollabSetup() {
         given(recordsHistorian.firstUsedTimestamp()).willReturn(aTime);
         given(blockManager.getManagedBlockNumberAt(aTime)).willReturn(someBlockNo);
-        given(recordsHistorian.lastRunningHash()).willReturn(mockHash);
+        given(recordsHistorian.lastRunningHash()).willReturn(mockUserHash);
     }
 
     private void givenAlignable(final RecordStreamObject... mockRsos) {
@@ -117,5 +143,6 @@ class RecordStreamingTest {
 
     private static final Instant aTime = Instant.ofEpochSecond(1_234_567L, 890);
     private static final long someBlockNo = 123_456;
-    private static final RunningHash mockHash = new RunningHash();
+    private static final RunningHash mockUserHash = new RunningHash();
+    private static final RunningHash mockSystemHash = new RunningHash();
 }

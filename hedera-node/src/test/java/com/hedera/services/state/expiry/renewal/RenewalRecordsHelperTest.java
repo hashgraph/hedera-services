@@ -109,7 +109,7 @@ class RenewalRecordsHelperTest {
 		subject.streamCryptoRemoval(expiredNum, tokensFrom(displacements), adjustmentsFrom(displacements));
 
 		// then:
-		verify(recordStreaming).stream(rso);
+		verify(recordStreaming).streamSystemRecord(rso);
 
 		subject.endRenewalCycle();
 		assertNull(subject.getCycleStart());
@@ -128,7 +128,7 @@ class RenewalRecordsHelperTest {
 		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, false);
 
 		// then:
-		verify(recordStreaming).stream(rso);
+		verify(recordStreaming).streamSystemRecord(rso);
 
 		subject.endRenewalCycle();
 		assertNull(subject.getCycleStart());
@@ -147,7 +147,7 @@ class RenewalRecordsHelperTest {
 		subject.streamCryptoRenewal(expiredNum, fee, newExpiry, true);
 
 		// then:
-		verify(recordStreaming).stream(rso);
+		verify(recordStreaming).streamSystemRecord(rso);
 
 		subject.endRenewalCycle();
 		assertNull(subject.getCycleStart());
