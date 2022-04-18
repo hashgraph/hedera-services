@@ -64,7 +64,6 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 	private int nextSourceId = 1;
 	private EntityCreator creator;
 
-	private ExpirableTxnRecord topLevelRecord;
 	private RecordStreamObject topLevelStreamObj;
 
 	@Inject
@@ -97,7 +96,7 @@ public class TxnAwareRecordsHistorian implements RecordsHistorian {
 		final var numChildren = (short) (precedingChildRecords.size() + followingChildRecords.size());
 
 		finalizeChildRecords(consensusNow, topLevel);
-		topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
+		final var topLevelRecord = topLevel.setNumChildRecords(numChildren).build();
 		topLevelStreamObj = new RecordStreamObject(topLevelRecord, accessor.getSignedTxnWrapper(), consensusNow);
 
 		final var effPayer = txnCtx.effectivePayer();

@@ -41,12 +41,10 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
-import org.spongycastle.util.encoders.Hex;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.math.BigInteger;
-import java.security.PublicKey;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
