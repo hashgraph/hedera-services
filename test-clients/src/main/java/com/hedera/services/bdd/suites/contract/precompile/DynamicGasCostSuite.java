@@ -47,6 +47,8 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SELF_ASSOC_CONS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SELF_ASSOC_PATH;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -62,12 +64,10 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.swirlds.common.CommonUtils.hex;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.*;
 
-//	TODO: Fix failing tests: all positive specs are failing before and after the refactor with either CONTRACT_REVERT_EXECUTED or
-//  with CustomSpecAssert failed expected: <10000> but was: <0>!
 public class DynamicGasCostSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DynamicGasCostSuite.class);
 
@@ -119,7 +119,8 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						inlineCreate2CanFailSafely(),
 						allLogOpcodesResolveExpectedContractId(),
 						eip1014AliasIsPriorityInErcOwnerPrecompile(),
-						childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor()
+						canAssociateInConstructor(),
+						childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
 				}
 		);
 	}
@@ -280,6 +281,33 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								log.info("Next entity num was {} instead of expected {}",
 										id.getAccountNum(),
 										factoryEntityNum.get() + 1)))
+				);
+	}
+
+	private HapiApiSpec canAssociateInConstructor() {
+		final var initcode = "initcode";
+		final var token = "token";
+		final var contract = "contract";
+		final var creation = "creation";
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+
+		return defaultHapiSpec("CanAssociateInConstructor")
+				.given(
+						fileCreate(initcode).path(SELF_ASSOC_PATH),
+						tokenCreate(token)
+								.exposingCreatedIdTo(id -> tokenMirrorAddr.set(hex(asAddress(HapiPropertySource.asToken(id)))))
+				).when(
+						sourcing(() -> contractCreate(
+								contract, SELF_ASSOC_CONS_ABI, tokenMirrorAddr.get()
+						)
+								.payingWith(GENESIS)
+								.omitAdminKey()
+								.bytecode(initcode)
+								.gas(4_000_000)
+								.via(creation))
+				).then(
+//						tokenDissociate(contract, token)
+						getContractInfo(contract).logged()
 				);
 	}
 

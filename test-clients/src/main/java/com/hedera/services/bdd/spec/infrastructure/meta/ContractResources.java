@@ -44,6 +44,13 @@ public class ContractResources {
 	public static final String FIBONACCI_PLUS_PATH = bytecodePath("FibonacciPlus");
 	public static final String DELEGATE_CONTRACT = bytecodePath("DelegateContract");
 	public static final String ASSOCIATOR_PATH = bytecodePath("Associator");
+	public static final String INSTANT_STORAGE_HOG_PATH = bytecodePath("InstantStorageHog");
+	public static final String SELF_ASSOC_PATH = bytecodePath("SelfAssociating");
+
+	public static final String INSTANT_HOG_CONS_ABI = "{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"n\"," +
+			"\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"constructor\"}";
+	public static final String SELF_ASSOC_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
+			"\"name\":\"tokenAddr\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
 
 	public static final String ASSOCIATOR_ASSOCIATE_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"" +
 			"account\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}]" +

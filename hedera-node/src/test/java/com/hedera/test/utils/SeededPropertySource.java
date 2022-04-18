@@ -67,7 +67,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import org.apache.commons.lang3.tuple.Pair;
@@ -86,6 +86,7 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
+import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 
 public class SeededPropertySource {
 	private static final long BASE_SEED = 4_242_424L;
@@ -254,7 +255,7 @@ public class SeededPropertySource {
 	 *
 	 * @return the "modernized" account state
 	 */
-	public MerkleAccountState next0241AccountState() {
+	public MerkleAccountState next0242AccountState() {
 		final var key = nextKey();
 		final var expiry = nextUnsignedLong();
 		final var balance = nextUnsignedLong();
@@ -294,12 +295,12 @@ public class SeededPropertySource {
 		return seeded;
 	}
 
-	public MerkleAccountState nextAccountState() {
+	public MerkleAccountState next0250AccountState() {
 		final var maxAutoAssoc = SEEDED_RANDOM.nextInt(1234);
 		final var usedAutoAssoc = SEEDED_RANDOM.nextInt(maxAutoAssoc + 1);
 		final var numAssociations = SEEDED_RANDOM.nextInt(12345);
 		final var numPositiveBalanceAssociations = SEEDED_RANDOM.nextInt(numAssociations);
-		return new MerkleAccountState(
+		final var misorderedState = new MerkleAccountState(
 				nextKey(),
 				nextUnsignedLong(),
 				nextUnsignedLong(),
@@ -317,10 +318,51 @@ public class SeededPropertySource {
 				nextGrantedCryptoAllowances(10),
 				nextGrantedFungibleAllowances(10),
 				nextApprovedForAllAllowances(10),
+				null,
+				(byte) 0,
+				0,
 				numAssociations,
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
+				0,
+				0);
+		misorderedState.setNftsOwned(nextUnsignedLong());
+		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
+		return misorderedState;
+	}
+
+	public MerkleAccountState next0260AccountState() {
+		final var maxAutoAssoc = SEEDED_RANDOM.nextInt(1234);
+		final var usedAutoAssoc = SEEDED_RANDOM.nextInt(maxAutoAssoc + 1);
+		final var numAssociations = SEEDED_RANDOM.nextInt(12345);
+		final var numPositiveBalanceAssociations = SEEDED_RANDOM.nextInt(numAssociations);
+		final var isContract = nextBoolean();
+		final var firstContractKey = isContract ? nextPackedInts(8) : null;
+		final var firstKeyBytes = isContract ? computeNonZeroBytes(firstContractKey) : (byte) 0;
+		return new MerkleAccountState(
+				nextKey(),
 				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextUnsignedLong(),
+				nextString(100),
+				nextBoolean(),
+				isContract,
+				nextBoolean(),
+				nextEntityId(),
+				nextInt(),
+				maxAutoAssoc,
+				usedAutoAssoc,
+				nextByteString(36),
+				nextUnsignedInt(),
+				nextGrantedCryptoAllowances(10),
+				nextGrantedFungibleAllowances(10),
+				nextApprovedForAllAllowances(10),
+				firstContractKey,
+				firstKeyBytes,
+				nextUnsignedInt(),
+				numAssociations,
+				numPositiveBalanceAssociations,
+				nextInRangeLong(),
 				nextUnsignedInt(),
 				nextUnsignedLong());
 	}
@@ -366,14 +408,9 @@ public class SeededPropertySource {
 		if (nextBoolean()) {
 			builder.setNewTokenAssociations(nextTokenAssociationsList());
 		}
-		var submittingMember = nextUnsignedLong();
-		var expiry = nextUnsignedLong();
-		if (nextBoolean()) {
-			builder.setEthereumHash(nextBytes(32));
-		}
 		final var seeded = builder.build();
-		seeded.setSubmittingMember(submittingMember);
-		seeded.setExpiry(expiry);
+		seeded.setSubmittingMember(nextUnsignedLong());
+		seeded.setExpiry(nextUnsignedLong());
 		return seeded;
 	}
 
@@ -824,6 +861,14 @@ public class SeededPropertySource {
 	public byte[] nextBytes(final int n) {
 		final var ans = new byte[n];
 		SEEDED_RANDOM.nextBytes(ans);
+		return ans;
+	}
+
+	public int[] nextPackedInts(final int n) {
+		final var ans = new int[n];
+		for (int i = 0; i < ans.length; i++) {
+			ans[i] = nextInt();
+		}
 		return ans;
 	}
 

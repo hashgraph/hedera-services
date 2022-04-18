@@ -20,7 +20,7 @@ package com.hedera.services.stats;
  * ‍
  */
 
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.statistics.StatEntry;
 import com.swirlds.common.statistics.StatsSpeedometer;
 import org.junit.jupiter.api.BeforeEach;

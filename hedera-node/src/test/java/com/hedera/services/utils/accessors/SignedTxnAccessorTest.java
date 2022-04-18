@@ -76,8 +76,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.FeeBuilder;
-import com.swirlds.common.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
@@ -670,7 +670,7 @@ class SignedTxnAccessorTest {
 				.setBodyBytes(someTxn.toByteString())
 				.setSigMap(onePairSigMap)
 				.build();
-		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
 		SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContentsDirect());

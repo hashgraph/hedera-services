@@ -20,13 +20,13 @@ package com.hedera.services;
  * ‍
  */
 
-import com.swirlds.common.NodeId;
-import com.swirlds.common.Platform;
-import com.swirlds.common.PlatformStatus;
-import com.swirlds.common.SwirldMain;
-import com.swirlds.common.SwirldState;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.PlatformStatus;
+import com.swirlds.common.system.SwirldMain;
+import com.swirlds.common.system.SwirldState;
 import com.swirlds.platform.Browser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,8 +36,8 @@ import java.time.Instant;
 import java.util.Locale;
 
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.swirlds.common.PlatformStatus.ACTIVE;
-import static com.swirlds.common.PlatformStatus.MAINTENANCE;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.MAINTENANCE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**

@@ -65,8 +65,6 @@ class ServicesTxnManagerTest {
 	@Mock
 	private Runnable processLogic;
 	@Mock
-	private Runnable recordStreaming;
-	@Mock
 	private Runnable triggeredProcessLogic;
 	@Mock
 	private SignedTxnAccessor accessor;
@@ -82,6 +80,8 @@ class ServicesTxnManagerTest {
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private MigrationRecordsManager migrationRecordsManager;
+	@Mock
+	private RecordStreaming recordStreaming;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -91,8 +91,8 @@ class ServicesTxnManagerTest {
 	@BeforeEach
 	void setup() {
 		subject = new ServicesTxnManager(
-				processLogic, recordStreaming, triggeredProcessLogic, recordCache,
-				ledger, txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager);
+				processLogic, triggeredProcessLogic, recordCache, ledger,
+				txnCtx, sigImpactHistorian, recordsHistorian, migrationRecordsManager, recordStreaming);
 	}
 
 	@Test
@@ -113,7 +113,7 @@ class ServicesTxnManagerTest {
 		inOrder.verify(migrationRecordsManager).publishMigrationRecords(consensusTime);
 		inOrder.verify(processLogic).run();
 		inOrder.verify(ledger).commit();
-		inOrder.verify(recordStreaming).run();
+		inOrder.verify(recordStreaming).streamUserTxnRecords();
 	}
 
 	@Test
@@ -128,7 +128,7 @@ class ServicesTxnManagerTest {
 	void warnsOnFailedRecordStreaming() {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
-		willThrow(IllegalStateException.class).given(recordStreaming).run();
+		willThrow(IllegalStateException.class).given(recordStreaming).streamUserTxnRecords();
 
 		// when:
 		subject.process(accessor, consensusTime, submittingMember);
@@ -140,7 +140,7 @@ class ServicesTxnManagerTest {
 
 	@Test
 	void usesFallbackLoggingWhenNecessary() {
-		willThrow(IllegalStateException.class).given(recordStreaming).run();
+		willThrow(IllegalStateException.class).given(recordStreaming).streamUserTxnRecords();
 
 		// when:
 		subject.process(accessor, consensusTime, submittingMember);
@@ -167,7 +167,7 @@ class ServicesTxnManagerTest {
 		inOrder.verify(ledger).begin();
 		inOrder.verify(txnCtx).setStatus(ResponseCodeEnum.FAIL_INVALID);
 		inOrder.verify(ledger).rollback();
-		inOrder.verify(recordStreaming, never()).run();
+		inOrder.verify(recordStreaming, never()).streamUserTxnRecords();
 		// and:
 		assertThat(logCaptor.errorLogs(), contains(
 				Matchers.startsWith("Possibly CATASTROPHIC failure in txn processing")));
@@ -194,7 +194,7 @@ class ServicesTxnManagerTest {
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
 		inOrder.verify(ledger).rollback();
-		inOrder.verify(recordStreaming, never()).run();
+		inOrder.verify(recordStreaming, never()).streamUserTxnRecords();
 		// and:
 		assertThat(logCaptor.errorLogs(), contains(
 				Matchers.startsWith("Possibly CATASTROPHIC failure in txn commit")));
@@ -222,7 +222,7 @@ class ServicesTxnManagerTest {
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
 		inOrder.verify(ledger).rollback();
-		inOrder.verify(recordStreaming, never()).run();
+		inOrder.verify(recordStreaming, never()).streamUserTxnRecords();
 		// and:
 		assertThat(logCaptor.errorLogs(), contains(
 				Matchers.startsWith("Possibly CATASTROPHIC failure in txn commit"),
@@ -251,7 +251,7 @@ class ServicesTxnManagerTest {
 		inOrder.verify(ledger).commit();
 		inOrder.verify(recordCache).setFailInvalid(effectivePayer, accessor, consensusTime, submittingMember);
 		inOrder.verify(ledger).rollback();
-		inOrder.verify(recordStreaming, never()).run();
+		inOrder.verify(recordStreaming, never()).streamUserTxnRecords();
 		// and:
 		assertThat(logCaptor.errorLogs(), contains(
 				Matchers.startsWith("Possibly CATASTROPHIC failure in txn commit"),

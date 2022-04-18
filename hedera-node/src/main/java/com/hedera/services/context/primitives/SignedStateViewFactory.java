@@ -28,8 +28,8 @@ import com.hedera.services.context.StateChildren;
 import com.hedera.services.exceptions.NoValidSignedStateException;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.swirlds.common.AutoCloseableWrapper;
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

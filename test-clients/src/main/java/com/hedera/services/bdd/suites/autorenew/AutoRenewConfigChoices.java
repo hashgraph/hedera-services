@@ -31,7 +31,7 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 
 public class AutoRenewConfigChoices {
 	static final int DEFAULT_HIGH_TOUCH_COUNT = 10_000;
-	static final int DEFAULT_HIGH_SPIN_SCAN_COUNT = 10_000;
+	static final int HIGH_SCAN_CYCLE_COUNT = 10_000;
 
 	static final String defaultMinAutoRenewPeriod =
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.minDuration");
@@ -44,11 +44,22 @@ public class AutoRenewConfigChoices {
 			final long minAutoRenewPeriod,
 			final long gracePeriod
 	) {
+		return enableContractAutoRenewWith(
+				minAutoRenewPeriod, gracePeriod,
+				HIGH_SCAN_CYCLE_COUNT, DEFAULT_HIGH_TOUCH_COUNT);
+	}
+
+	public static HapiSpecOperation enableContractAutoRenewWith(
+			final long minAutoRenewPeriod,
+			final long gracePeriod,
+			final int maxScannedPerCycle,
+			final int maxTouchedPerCycle
+	) {
 		return fileUpdate(APP_PROPERTIES)
 				.payingWith(GENESIS)
 				.overridingProps(propsForAutoRenewOnWith(
 						minAutoRenewPeriod, gracePeriod,
-						DEFAULT_HIGH_SPIN_SCAN_COUNT, DEFAULT_HIGH_TOUCH_COUNT,
+						maxScannedPerCycle, maxTouchedPerCycle,
 						"CONTRACT"));
 	}
 
@@ -59,7 +70,7 @@ public class AutoRenewConfigChoices {
 		return propsForAccountAutoRenewOnWith(
 				minAutoRenewPeriod,
 				gracePeriod,
-				DEFAULT_HIGH_SPIN_SCAN_COUNT,
+				HIGH_SCAN_CYCLE_COUNT,
 				DEFAULT_HIGH_TOUCH_COUNT);
 	}
 

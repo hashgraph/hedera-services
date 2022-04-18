@@ -27,6 +27,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -373,6 +374,18 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public void setNumContractKvPairs(final int numContractKvPairs) {
 		/* The MerkleAccountState will throw a MutabilityException if this MerkleAccount is immutable */
 		state().setNumContractKvPairs(numContractKvPairs);
+	}
+
+	public ContractKey getFirstContractStorageKey() {
+		return state().getFirstContractStorageKey();
+	}
+
+	public int[] getFirstUint256Key() {
+		return state().getFirstUint256Key();
+	}
+
+	public void setFirstUint256StorageKey(final int[] firstUint256Key) {
+		state().setFirstUint256Key(firstUint256Key);
 	}
 
 	public Map<EntityNum, Long> getCryptoAllowances() {

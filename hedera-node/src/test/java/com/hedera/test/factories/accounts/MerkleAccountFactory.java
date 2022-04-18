@@ -59,10 +59,12 @@ public class MerkleAccountFactory {
 	private Optional<Integer> alreadyUsedAutoAssociations = Optional.empty();
 	private Optional<Integer> maxAutoAssociations = Optional.empty();
 	private Optional<ByteString> alias = Optional.empty();
+	private EntityNum num = null;
 	private Set<TokenID> associatedTokens = new HashSet<>();
 	private TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>();
 	private TreeMap<FcTokenAllowanceId, Long> fungibleTokenAllowances = new TreeMap<>();
 	private TreeSet<FcTokenAllowanceId> approveForAllNftsAllowances = new TreeSet<>();
+	private int[] firstUint256Key;
 
 	public MerkleAccount get() {
 		MerkleAccount value = new MerkleAccount();
@@ -90,6 +92,12 @@ public class MerkleAccountFactory {
 		value.setNumAssociations(associatedTokensCount.orElse(0));
 		value.setNumPositiveBalances(numPositiveBalances.orElse(0));
 		value.setHeadTokenId(lastAssociatedToken.orElse(MISSING_ID.num()));
+		if (firstUint256Key != null) {
+			value.setFirstUint256StorageKey(firstUint256Key);
+		}
+		if (num != null) {
+			value.setKey(num);
+		}
 		return value;
 	}
 
@@ -102,6 +110,16 @@ public class MerkleAccountFactory {
 
 	public static MerkleAccountFactory newContract() {
 		return new MerkleAccountFactory().isSmartContract(true);
+	}
+
+	public MerkleAccountFactory firstContractKey(final int[] uint256Key) {
+		this.firstUint256Key = uint256Key;
+		return this;
+	}
+
+	public MerkleAccountFactory number(final EntityNum num) {
+		this.num = num;
+		return this;
 	}
 
 	public MerkleAccountFactory numKvPairs(final int numKvPairs) {

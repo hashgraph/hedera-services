@@ -22,7 +22,7 @@ package com.hedera.services.legacy.core.jproto;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 
 public class JContractAliasKey extends JKey {
 	private final long shardNum;

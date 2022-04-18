@@ -20,9 +20,9 @@ package com.hedera.services.context.annotations;
  * ‍
  */
 
-import com.swirlds.common.AddressBook;
-import com.swirlds.common.Platform;
-import com.swirlds.common.SwirldDualState;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.AddressBook;
+import com.swirlds.common.system.Platform;
 
 import javax.inject.Qualifier;
 import java.lang.annotation.ElementType;

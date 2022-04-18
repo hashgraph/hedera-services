@@ -27,34 +27,16 @@
 
 	<developers>
 		<developer>
-			<name>Abhishek Pandey</name>
-			<email>abhishek.pandey@hedera.com</email>
-			<organization>Hedera Hashgraph, LLC</organization>
-			<organizationUrl>https://www.hedera.com</organizationUrl>
-		</developer>
-		<developer>
 			<name>Anirudh Ghanta</name>
 			<email>anirudh.ghanta@hedera.com</email>
 			<organization>Hedera Hashgraph, LLC</organization>
 			<organizationUrl>https://www.hedera.com</organizationUrl>
 		</developer>
 		<developer>
-			<name>Cesar Vazquez</name>
-			<email>cesarvazquez@swirlds.com</email>
-			<organization>Swirlds, Inc.</organization>
-			<organizationUrl>https://www.swirlds.com</organizationUrl>
-		</developer>
-		<developer>
 			<name>Jeffrey Tang</name>
 			<email>jeffrey@swirlds.com</email>
 			<organization>Swirlds, Inc.</organization>
 			<organizationUrl>https://www.swirlds.com</organizationUrl>
-		</developer>
-		<developer>
-			<name>Leo Jiang</name>
-			<email>leo.jiang@hedera.com</email>
-			<organization>Hedera Hashgraph, LLC</organization>
-			<organizationUrl>https://www.hedera.com</organizationUrl>
 		</developer>
 		<developer>
 			<name>Michael Tinker</name>
@@ -73,18 +55,6 @@
 			<email>nosh@swirlds.com</email>
 			<organization>Swirlds, Inc.</organization>
 			<organizationUrl>https://www.swirlds.com</organizationUrl>
-		</developer>
-		<developer>
-			<name>Qian Qiu</name>
-			<email>qianqiu@swirlds.com</email>
-			<organization>Swirlds, Inc.</organization>
-			<organizationUrl>https://www.swirlds.com</organizationUrl>
-		</developer>
-		<developer>
-			<name>Quan Nguyen</name>
-			<email>quan.nguyen@hedera.com</email>
-			<organization>Hedera Hashgraph, LLC</organization>
-			<organizationUrl>https://www.hedera.com</organizationUrl>
 		</developer>
 	</developers>
 
@@ -121,17 +91,14 @@
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
+			<id>sdk-staging</id>
+			<name>0.26.x SDK</name>
+			<url>https://oss.sonatype.org/content/repositories/comswirlds-1283</url>
+		</repository>
+		<repository>
 			<id>eth-tx-interop-protobuf</id>
 			<name>Interop Protobufs</name>
 			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1436</url>
-		</repository>
-		<repository>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-			<id>sdk-staging</id>
-			<name>0.25.x SDK</name>
-			<url>https://oss.sonatype.org/content/repositories/comswirlds-1277</url>
 		</repository>
 	</repositories>
 	<distributionManagement>
@@ -188,7 +155,7 @@
 		<log4j.version>2.17.2</log4j.version>
 		<netty.version>4.1.66.Final</netty.version>
 		<protobuf-java.version>3.19.4</protobuf-java.version>
-		<swirlds.version>0.25.0</swirlds.version>
+		<swirlds.version>0.26.0-test.2</swirlds.version>
 		<!-- Test dependency properties in alphabetical order -->
 		<hamcrest.version>2.2</hamcrest.version>
 		<junit5.version>5.8.2</junit5.version>

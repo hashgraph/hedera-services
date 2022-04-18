@@ -44,7 +44,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -74,7 +74,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.codec.DecoderException;
@@ -121,7 +121,7 @@ import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.PauseNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Paused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -185,7 +185,7 @@ class StateViewTest {
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
-	private VirtualMap<ContractKey, ContractValue> contractStorage;
+	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
 	private NetworkInfo networkInfo;
@@ -316,7 +316,7 @@ class StateViewTest {
 		uniqueTokens.put(treasuryNftKey, treasuryNft);
 
 		storage = (VirtualMap<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMap.class);
-		contractStorage = (VirtualMap<ContractKey, ContractValue>) mock(VirtualMap.class);
+		contractStorage = (VirtualMap<ContractKey, IterableContractValue>) mock(VirtualMap.class);
 
 		children = new MutableStateChildren();
 		children.setUniqueTokens(uniqueTokens);

@@ -45,7 +45,7 @@ import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
@@ -107,7 +107,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.swirlds.common.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Collections.unmodifiableMap;
 
 public class StateView {
@@ -582,7 +582,7 @@ public class StateView {
 		return stateChildren == null ? emptyVm() : stateChildren.storage();
 	}
 
-	public VirtualMap<ContractKey, ContractValue> contractStorage() {
+	public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
 		return stateChildren == null ? emptyVm() : stateChildren.contractStorage();
 	}
 

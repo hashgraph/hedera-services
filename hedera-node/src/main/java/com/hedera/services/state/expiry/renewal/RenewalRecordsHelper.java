@@ -120,7 +120,7 @@ public class RenewalRecordsHelper {
 			final Instant at
 	) {
 		final var rso = new RecordStreamObject(expiringRecord, synthFromBody(synthBody.build()), at);
-		recordStreaming.stream(rso);
+		recordStreaming.streamSystemRecord(rso);
 	}
 
 	public void endRenewalCycle() {
