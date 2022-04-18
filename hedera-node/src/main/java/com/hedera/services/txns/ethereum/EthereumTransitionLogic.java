@@ -36,7 +36,13 @@ import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.bouncycastle.util.encoders.Hex;
 
 import javax.inject.Inject;
@@ -132,21 +138,21 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		var txBody = getOrCreateTransactionBody(accessor);
 
 		if (ethTxData.chainId().length == 0 || Arrays.compare(chainId, ethTxData.chainId()) != 0) {
-			return ResponseCodeEnum.FAIL_INVALID; //FIXME ResponseCodeEnum.WRONG_CHAIN_ID
+			return ResponseCodeEnum.WRONG_CHAIN_ID;
 		}
 
 		if (accessor.getExpandedSigStatus() == ResponseCodeEnum.OK) {
 			// this is not precheck, so do more involved checks
-			maybeUpdateCallData(accessor, ethTxData, txBody.getEthereumTransaction());
+			maybeUpdateCallData(accessor, ethTxData, accessor.getTxn().getEthereumTransaction());
 			var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 			var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 			if (callingAccount == null) {
-				return ResponseCodeEnum.INVALID_ACCOUNT_ID; // FIXME new response code?
+				return ResponseCodeEnum.INVALID_ACCOUNT_ID; 
 			}
 
 			var accountNonce = (long) accountsLedger.get(callingAccount.toGrpcAccountId(), AccountProperty.ETHEREUM_NONCE);
 			if (ethTxData.nonce() != accountNonce) {
-				return ResponseCodeEnum.FAIL_INVALID; //FIXME ResponseCodeEnum.WRONG_NONCE
+				return ResponseCodeEnum.WRONG_NONCE;
 			}
 		}
 
@@ -191,9 +197,8 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		if ((ethTxData.callData() == null || ethTxData.callData().length == 0) && op.hasCallData()) {
 			var callDataFileId = op.getCallData();
 			validateTrue(hfs.exists(callDataFileId), INVALID_FILE_ID);
-			//TODO for now existing init codes are hex encoded.  We should make a way for them to be binary encoded.
 			byte[] callDataFile = Hex.decode(hfs.cat(callDataFileId));
-			validateFalse(callDataFile.length == 0, CONTRACT_FILE_EMPTY); // FIXME new failure response code
+			validateFalse(callDataFile.length == 0, CONTRACT_FILE_EMPTY);
 			ethTxData = ethTxData.replaceCallData(callDataFile);
 			spanMapAccessor.setEthTxDataMeta(accessor, ethTxData);
 		}
@@ -201,7 +206,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	}
 
 	private TransactionBody createSyntheticTransactionBody(EthTxData ethTxData) {
-		//TODO short circuit direct calls to tokens and topics
+		// maybe we could short circuit direct calls to tokens and topics?  maybe not
 		if (ethTxData.to() != null && ethTxData.to().length != 0) {
 			var synthOp = ContractCallTransactionBody.newBuilder()
 					.setFunctionParameters(ByteString.copyFrom(ethTxData.callData()))

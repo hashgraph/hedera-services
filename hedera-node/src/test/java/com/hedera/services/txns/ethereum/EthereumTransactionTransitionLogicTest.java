@@ -45,13 +45,16 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.swirlds.common.utility.CommonUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -76,12 +79,16 @@ import static com.hedera.services.txns.ethereum.TestingConstants.WEIBARS_IN_TINY
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -91,10 +98,6 @@ class EthereumTransactionTransitionLogicTest {
 	private final Account relayerAccount = new Account(new Id(0, 0, 1001));
 	private final Account senderAccount = new Account(new Id(0, 0, 1002));
 	private final Account contractAccount = new Account(new Id(0, 0, 1006));
-	@Mock
-	OptionValidator optionValidator;
-	@Mock
-	GlobalDynamicProperties globalDynamicProperties;
 	ContractCallTransitionLogic contractCallTransitionLogic;
 	ContractCreateTransitionLogic contractCreateTransitionLogic;
 	EthereumTransitionLogic subject;
@@ -103,6 +106,9 @@ class EthereumTransactionTransitionLogicTest {
 	private long sent = 1_234L;
 	private byte[] chainId= CHAINID_TESTNET;
 	private byte[] callData = new byte[0];
+	private FileID callDataFile = null;
+	@Mock
+	OptionValidator optionValidator;
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
@@ -118,7 +124,7 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private CreateEvmTxProcessor createEvmTxProcessor;
 	@Mock
-	private GlobalDynamicProperties properties;
+	private GlobalDynamicProperties globalDynamicProperties;
 	@Mock
 	private CodeCache codeCache;
 	@Mock
@@ -138,7 +144,7 @@ class EthereumTransactionTransitionLogicTest {
 	private void setup() {
 		contractCallTransitionLogic = new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager);
+				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager);
 		contractCreateTransitionLogic = new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator,
 				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian);
 		given(globalDynamicProperties.getChainId()).willReturn(0x128);
@@ -290,9 +296,9 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
-	void acceptsOkSyntax() {
+	void acceptsOkSyntaxEthCall() {
 		givenValidTxnCtx();
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(globalDynamicProperties.maxGas()).willReturn(gas + 1);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
@@ -300,9 +306,114 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void acceptsOkSyntaxEthCreate() {
+		target = null;
+		givenValidTxnCtx();
+		given(optionValidator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(optionValidator.memoCheck(any())).willReturn(OK);
+		given(globalDynamicProperties.maxGas()).willReturn(gas+1);
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+
+		// expect:
+		assertEquals(OK, subject.validateSemantics(accessor));
+	}
+
+
+	@Test
+	void acceptsOkFileExpandedCallData() {
+		target = null;
+		callDataFile = IdUtils.asFile("0.0.1234");
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(optionValidator.isValidAutoRenewPeriod(any())).willReturn(true);
+		given(globalDynamicProperties.maxGas()).willReturn(gas+1);
+		given(optionValidator.memoCheck(any())).willReturn(OK);
+		given(accessor.getExpandedSigStatus()).willReturn(OK);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(hfs.exists(callDataFile)).willReturn(true);
+		given(hfs.cat(callDataFile)).willReturn(new byte[] {0x30, 0x31, 0x32, 0x33});
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(EntityNum.fromInt(4321));
+		given(accountsLedger.get(any(), eq(AccountProperty.ETHEREUM_NONCE))).willReturn(ethTxData.nonce());
+
+		// expect:
+		assertEquals(OK, subject.validateSemantics(accessor));
+	}
+
+//	@Test
+//	void acceptsConsensusDecoded() {
+//		givenValidTxnCtx();
+//		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+//		given(optionValidator.isValidAutoRenewPeriod(any())).willReturn(true);
+//		given(globalDynamicProperties.maxGas()).willReturn(gas+1);
+//		given(optionValidator.memoCheck(any())).willReturn(OK);
+//		given(accessor.getExpandedSigStatus()).willReturn(OK);
+//		given(accessor.getTxn()).willReturn(ethTxTxn);
+//		given(hfs.exists(callDataFile)).willReturn(true);
+//		given(hfs.cat(callDataFile)).willReturn(new byte[] {0x30, 0x31, 0x32, 0x33});
+//		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(EntityNum.fromInt(4321));
+//
+//		// expect:
+//		assertEquals(OK, subject.validateSemantics(accessor));
+//	}
+//
+//	@Test
+//	void rejectsConsensusNoContract() {
+//		givenValidTxnCtx();
+//		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+//		given(optionValidator.isValidAutoRenewPeriod(any())).willReturn(true);
+//		given(globalDynamicProperties.maxGas()).willReturn(gas+1);
+//		given(optionValidator.memoCheck(any())).willReturn(OK);
+//		given(accessor.getExpandedSigStatus()).willReturn(OK);
+//		given(accessor.getTxn()).willReturn(ethTxTxn);
+//		given(hfs.exists(callDataFile)).willReturn(true);
+//		given(hfs.cat(callDataFile)).willReturn(new byte[] {0x30, 0x31, 0x32, 0x33});
+//		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(EntityNum.fromInt(4321));
+//
+//		// expect:
+//		assertEquals(OK, subject.validateSemantics(accessor));
+//	}
+//
+//	@Test
+//	void rejectsConsensusWrongNonce() {
+//		givenValidTxnCtx();
+//		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+//		given(optionValidator.isValidAutoRenewPeriod(any())).willReturn(true);
+//		given(globalDynamicProperties.maxGas()).willReturn(gas+1);
+//		given(optionValidator.memoCheck(any())).willReturn(OK);
+//		given(accessor.getExpandedSigStatus()).willReturn(OK);
+//		given(accessor.getTxn()).willReturn(ethTxTxn);
+//		given(hfs.exists(callDataFile)).willReturn(true);
+//		given(hfs.cat(callDataFile)).willReturn(new byte[] {0x30, 0x31, 0x32, 0x33});
+//		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(EntityNum.fromInt(4321));
+//
+//		// expect:
+//		assertEquals(OK, subject.validateSemantics(accessor));
+//	}
+
+	@Test
+	void rejectWrongTransactionBody() {
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(spanMapAccessor.getEthTxBodyMeta(accessor)).willReturn(
+				TransactionBody.newBuilder().setContractUpdateInstance(
+						ContractUpdateTransactionBody.newBuilder()).build());
+
+		// expect:
+		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+	}
+
+	@Test
+	void unsupportedSemanticCheck() {
+		givenValidTxnCtx();
+		
+		// expect:
+		assertEquals(NOT_SUPPORTED, subject.semanticCheck().apply(null));
+	}
+
+	@Test
 	void providingGasOverLimitReturnsCorrectPrecheck() {
 		givenValidTxnCtx();
-		given(properties.maxGas()).willReturn(gas - 1);
+		given(globalDynamicProperties.maxGas()).willReturn(gas - 1);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
@@ -316,18 +427,19 @@ class EthereumTransactionTransitionLogicTest {
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
-		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+		assertEquals(WRONG_CHAIN_ID, subject.validateSemantics(accessor));
 	}
 
 	@Test
 	void expandedSignaturesValid() {
-		given(properties.maxGas()).willReturn(gas + 1);
+		given(globalDynamicProperties.maxGas()).willReturn(gas + 1);
 		givenValidTxnCtx();
 		given(accessor.getExpandedSigStatus()).willReturn(OK);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
 		given(accountsLedger.get(any(), any())).willReturn(1L);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
 
 		// expect:
 		assertEquals(OK, subject.validateSemantics(accessor));
@@ -341,9 +453,10 @@ class EthereumTransactionTransitionLogicTest {
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
 		given(accountsLedger.get(any(), any())).willReturn(0L);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
 
 		// expect:
-		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+		assertEquals(WRONG_NONCE, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -351,6 +464,7 @@ class EthereumTransactionTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getExpandedSigStatus()).willReturn(OK);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
 
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, subject.validateSemantics(accessor));
@@ -377,10 +491,14 @@ class EthereumTransactionTransitionLogicTest {
 		);
 		ethTxData = EthTxSigs.signMessage(unsignedTx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
+		var ethTxBodyBuilder = EthereumTransactionBody.newBuilder()
+				.setEthereumData(ByteString.copyFrom(ethTxData.encodeTx()));
+		if (callDataFile != null) {
+			ethTxBodyBuilder.setCallData(callDataFile);
+		}
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
-				.setEthereumTransaction(EthereumTransactionBody.newBuilder().setEthereumData(
-						ByteString.copyFrom(ethTxData.encodeTx())).build());
+				.setEthereumTransaction(ethTxBodyBuilder.build());
 		ethTxTxn = op.build();
 	}
 

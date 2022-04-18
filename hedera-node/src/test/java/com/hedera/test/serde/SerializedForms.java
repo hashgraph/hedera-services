@@ -80,7 +80,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
  * When running this file, be sure to set the hedera-services/hedera-node directory as the working directory
  * before running.
  */
-
 public class SerializedForms {
 	private static final String SERIALIZED_FORMS_LOC = "src/test/resources/serdes";
 	private static final String FORM_TPL = "%s-v%d-sn%d.hex";
@@ -177,7 +176,7 @@ public class SerializedForms {
 							MIN_TEST_CASES_PER_VERSION),
 					entry(TxnId.class, SeededPropertySource::nextTxnId, TxnIdSerdeTest.NUM_TEST_CASES),
 					entry(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, 2 * MIN_TEST_CASES_PER_VERSION)
-			);
+	);
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(
 			final Class<T> type,

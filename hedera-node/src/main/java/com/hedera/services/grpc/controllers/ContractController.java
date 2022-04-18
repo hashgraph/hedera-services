@@ -51,6 +51,7 @@ public class ContractController extends SmartContractServiceGrpc.SmartContractSe
 	public static final String CREATE_CONTRACT_METRIC = "createContract";
 	public static final String UPDATE_CONTRACT_METRIC = "updateContract";
 	public static final String DELETE_CONTRACT_METRIC = "deleteContract";
+	public static final String CALL_ETHEREUM_METRIC = "callEthereum";
 	/* Queries */
 	public static final String GET_CONTRACT_INFO_METRIC = "getContractInfo";
 	public static final String LOCALCALL_CONTRACT_METRIC = "contractCallLocalMethod";
@@ -129,7 +130,7 @@ public class ContractController extends SmartContractServiceGrpc.SmartContractSe
 	}
 
 	@Override
-	public void contractCallEthereum(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
+	public void callEthereum(Transaction signedTxn, StreamObserver<TransactionResponse> observer) {
 		txnHelper.submit(signedTxn, observer, EthereumTransaction);
 	}
 }

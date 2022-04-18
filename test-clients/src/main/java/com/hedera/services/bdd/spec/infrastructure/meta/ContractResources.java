@@ -51,6 +51,7 @@ public class ContractResources {
 			"\"type\":\"uint256\"}],\"stateMutability\":\"payable\",\"type\":\"constructor\"}";
 	public static final String SELF_ASSOC_CONS_ABI = "{\"inputs\":[{\"internalType\":\"address\"," +
 			"\"name\":\"tokenAddr\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}";
+
 	public static final String ASSOCIATOR_ASSOCIATE_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"" +
 			"account\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}]" +
 			",\"name\":\"associate\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";

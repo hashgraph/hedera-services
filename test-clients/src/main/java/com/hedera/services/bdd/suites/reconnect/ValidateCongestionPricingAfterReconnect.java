@@ -143,6 +143,12 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
 								.within(5 * 60, TimeUnit.SECONDS)
 								.loggingAvailabilityEvery(30)
 								.sleepingBetweenRetriesFor(10),
+						// So although currently disconnected node is in ACTIVE mode, it might
+						// immediately enter BEHIND mode and start a reconnection session.
+						// We need to wait for the reconnection session to finish and the platform becomes ACTIVE again,
+						// then we can send more transactions. Otherwise, transactions may be pending for too long
+						// and we will get UNKNOWN status
+						sleepFor(30000),
 						blockingOrder(
 								IntStream.range(0, 10).mapToObj(i ->
 										contractCall(oneContract)

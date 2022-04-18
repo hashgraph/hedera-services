@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigInteger;
 import java.util.List;
 
+import static com.hedera.services.txns.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,8 +45,6 @@ class EthTxDataTest {
 			"f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792";
 	static final String RAW_TX_TYPE_2 =
 			"02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
-	static final String RAW_TX_TYPE_2_ACCESS_LIST =
-			"02f8a10101648227108402625a0094000000000000000000000000000000000000c0de80a4693c61390000000000000000000000000000000000000000000000000000000000000000d7d694000000000000000000000000000000000000ba5ec080a0d5a3052a8cc387f35ffdebe832afdfdd45980cdcbb9b926dee7fb9b1d9a4ee08a06210d404eb6aecd05bc214b120959a71ede9fadcae4b769c96c58bffa216f205";
 
 	static final String EIP_155_DEMO_ADDRESS = "9d8a62f656a8d1615c1294fd71e9cfb3e4855a4f";
 	static final String EIP_155_DEMO_PUBKEY = "024bc2a31265153f07e70e0bab08724e6b85e217f8cd628ceb62974247bb493382";
@@ -54,36 +53,34 @@ class EthTxDataTest {
 
 	@Test
 	void extractFrontierSignature() {
-		try {
-			var frontierTx = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
-			assertNotNull(frontierTx);
-			assertEquals(RAW_TX_TYPE_0, Hex.toHexString(frontierTx.rawTx()));
-			assertEquals(EthTxData.EthTransactionType.LEGACY_ETHEREUM, frontierTx.type());
-			assertEquals("012a", Hex.toHexString(frontierTx.chainId()));
-			assertEquals(1, frontierTx.nonce());
-			assertEquals("2f", Hex.toHexString(frontierTx.gasPrice()));
-			assertNull(frontierTx.maxPriorityGas());
-			assertNull(frontierTx.maxGas());
-			assertEquals(98_304L, frontierTx.gasLimit());
-			assertEquals("7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181", Hex.toHexString(frontierTx.to()));
-			assertEquals(BigInteger.ZERO, frontierTx.value());
-			assertEquals("7653", Hex.toHexString(frontierTx.callData()));
-			assertNull(frontierTx.accessList());
-			assertEquals(0, frontierTx.recId());
-			assertEquals("0277", Hex.toHexString(frontierTx.v()));
-			assertEquals("f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2f",
-					Hex.toHexString(frontierTx.r()));
-			assertEquals("0c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792",
-					Hex.toHexString(frontierTx.s()));
+		var frontierTx = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+		assertNotNull(frontierTx);
+		assertEquals(RAW_TX_TYPE_0, Hex.toHexString(frontierTx.rawTx()));
+		assertEquals(EthTxData.EthTransactionType.LEGACY_ETHEREUM, frontierTx.type());
+		assertEquals("012a", Hex.toHexString(frontierTx.chainId()));
+		assertEquals(1, frontierTx.nonce());
+		assertEquals("2f", Hex.toHexString(frontierTx.gasPrice()));
+		assertNull(frontierTx.maxPriorityGas());
+		assertNull(frontierTx.maxGas());
+		assertEquals(98_304L, frontierTx.gasLimit());
+		assertEquals("7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181", Hex.toHexString(frontierTx.to()));
+		assertEquals(BigInteger.ZERO, frontierTx.value());
+		assertEquals("7653", Hex.toHexString(frontierTx.callData()));
+		assertNull(frontierTx.accessList());
+		assertEquals(0, frontierTx.recId());
+		assertEquals("0277", Hex.toHexString(frontierTx.v()));
+		assertEquals("f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2f",
+				Hex.toHexString(frontierTx.r()));
+		assertEquals("0c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792",
+				Hex.toHexString(frontierTx.s()));
+		assertEquals("9ffbd69c44cf643ed8d1e756b505e545e3b5dd3a6b5ef9da1d8eca6679706594", 
+				Hex.toHexString(frontierTx.getEthereumHash()));
 
-			var frontierSigs = EthTxSigs.extractSignatures(frontierTx);
-			assertNotNull(frontierSigs);
+		var frontierSigs = EthTxSigs.extractSignatures(frontierTx);
+		assertNotNull(frontierSigs);
 
-			assertEquals(SIGNATURE_ADDRESS, Hex.toHexString(frontierSigs.address()));
-			assertEquals(SIGNATURE_PUBKEY, Hex.toHexString(frontierSigs.publicKey()));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		assertEquals(SIGNATURE_ADDRESS, Hex.toHexString(frontierSigs.address()));
+		assertEquals(SIGNATURE_PUBKEY, Hex.toHexString(frontierSigs.publicKey()));
 	}
 
 	@Test
@@ -214,18 +211,19 @@ class EthTxDataTest {
 	@Test
 	void roundTripTests() {
 		EthTxData parsed = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
+		assertNotNull(parsed);
 		assertArrayEquals(Hex.decode(RAW_TX_TYPE_0), parsed.encodeTx());
 
 		parsed = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_2));
+		assertNotNull(parsed);
 		assertArrayEquals(Hex.decode(RAW_TX_TYPE_2), parsed.encodeTx());
 	}
 
 	@Test
 	void replaceCallData() {
 		var parsed = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_2));
+		assertNotNull(parsed);
 		var noCallData = parsed.replaceCallData(new byte[0]);
-		System.out.println(Hex.toHexString(noCallData.encodeTx()));
-		System.out.println(RAW_TX_TYPE_2.replace("83123456", "80"));
 		assertArrayEquals(Hex.decode(RAW_TX_TYPE_2
 						.replace("f870", "f86d") // tx is shorter
 						.replace("83123456", "80")), // calldata changed
@@ -233,15 +231,30 @@ class EthTxDataTest {
 	}
 
 	@Test
+	void amountInTinyBars() {
+		var oneByte = new byte[] { 1 };
+		EthTxData tinybarTx =
+				new EthTxData(oneByte, EthTxData.EthTransactionType.EIP2930, oneByte, 1,
+						oneByte, oneByte, oneByte, 1,
+						oneByte, WEIBARS_TO_TINYBARS, oneByte, null, 1,
+						oneByte, oneByte, oneByte);
+		assertEquals(1L, tinybarTx.getAmount());
+
+	}
+
+	@Test
 	void toStringHashAndEquals() {
 		var parsed = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_2));
+		assertNotNull(parsed);
 		var parsedAgain = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_2));
+		assertNotNull(parsedAgain);
 		var parsed0 = EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0));
-		assertDoesNotThrow(() -> parsed.toString());
-		assertDoesNotThrow(() -> parsed0.toString());
-		assertDoesNotThrow(() -> parsed.hashCode());
-		assertDoesNotThrow(() -> parsed0.hashCode());
-		
+		assertNotNull(parsed0);
+		assertDoesNotThrow(parsed::toString);
+		assertDoesNotThrow(parsed0::toString);
+		assertDoesNotThrow(parsed::hashCode);
+		assertDoesNotThrow(parsed0::hashCode);
+
 		assertEquals(parsed, parsedAgain);
 		assertNotEquals(parsed, parsed0);
 	}
