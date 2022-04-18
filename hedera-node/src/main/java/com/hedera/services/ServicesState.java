@@ -196,6 +196,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		final var seqStart = bootstrapProps.getLongProperty("hedera.firstUserEntity");
 		createGenesisChildren(addressBook, seqStart);
 
+		networkCtx().setBlockNo(bootstrapProps.getLongProperty("blocks.lastBlockNumber"));
+		networkCtx().setLatestConsTimeOfCurrentBlock(bootstrapProps.getInstantProperty("blocks.lastBlockTimestamp"));
+
 		internalInit(platform, bootstrapProps, dualState);
 	}
 

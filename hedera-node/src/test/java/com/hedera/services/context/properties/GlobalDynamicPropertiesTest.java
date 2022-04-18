@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
+import java.time.Instant;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,6 +47,11 @@ class GlobalDynamicPropertiesTest {
 	private static final String[] upgradeArtifactLocs = new String[] {
 			"/opt/hgcapp/HapiApp2.0/data/upgrade",
 			"data/upgrade"
+	};
+
+	private static final Instant[] lastBlockTimestamps = new Instant[] {
+			Instant.parse("2022-04-01T00:00:00Z"),
+			Instant.parse("2022-04-02T00:00:00Z")
 	};
 
 	private PropertySource properties;
@@ -173,6 +179,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(49L, subject.frontendThrottleGasLimit());
 		assertEquals(50L, subject.consensusThrottleGasLimit());
 		assertEquals(51L, subject.triggerTxnWindBackNanos());
+		assertEquals(63L, subject.bootstrapLastBlockNumber());
 	}
 
 	@Test
@@ -188,6 +195,17 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(Set.of(HederaFunctionality.CryptoTransfer), subject.schedulingWhitelist());
 		assertEquals(oddCongestion, subject.congestionMultipliers());
 		assertEquals(upgradeArtifactLocs[1], subject.upgradeArtifactsLoc());
+	}
+
+	@Test
+	void constructInstantAsExpected() {
+		givenPropsWithSeed(1);
+
+		// when:
+		subject = new GlobalDynamicProperties(numbers, properties);
+
+		//then
+		assertEquals(lastBlockTimestamps[1], subject.bootstrapLastBlockTimestamp());
 	}
 
 	@Test
@@ -285,6 +303,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(51L, subject.consensusThrottleGasLimit());
 		assertEquals(52L, subject.triggerTxnWindBackNanos());
 		assertEquals(54L, subject.htsDefaultGasCost());
+		assertEquals(64L, subject.bootstrapLastBlockNumber());
 	}
 
 	@Test
@@ -301,6 +320,17 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(evenCongestion, subject.congestionMultipliers());
 		assertEquals(evenFactor, subject.nftMintScaleFactor());
 		assertEquals(upgradeArtifactLocs[0], subject.upgradeArtifactsLoc());
+	}
+
+	@Test
+	void reloadsInstantAsExpected() {
+		givenPropsWithSeed(2);
+
+		// when:
+		subject = new GlobalDynamicProperties(numbers, properties);
+
+		//then
+		assertEquals(lastBlockTimestamps[0], subject.bootstrapLastBlockTimestamp());
 	}
 
 	private void givenPropsWithSeed(int i) {
@@ -386,6 +416,8 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
 				.willReturn((i + 61) % 2 == 0);
 		given(properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch")).willReturn(i + 62);
+		given(properties.getLongProperty("blocks.lastBlockNumber")).willReturn(i + 62L);
+		given(properties.getInstantProperty("blocks.lastBlockTimestamp")).willReturn(lastBlockTimestamps[i % 2]);
 	}
 
 	private Set<EntityType> typesFor(final int i) {
