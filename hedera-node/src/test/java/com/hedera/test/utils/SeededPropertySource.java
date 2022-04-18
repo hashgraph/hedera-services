@@ -204,18 +204,33 @@ public class SeededPropertySource {
 	}
 
 	public FcCustomFee.FeeType nextFeeType() {
+		// size of FcCustomFee.FeeType.class.getEnumConstants() in 0.25
+		return nextFeeType(3);  
+	}
+	
+	public FcCustomFee.FeeType nextFeeType(final int range) {
 		final var choices = FcCustomFee.FeeType.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
 	public TokenType nextTokenType() {
+		// size of TokenType.class.getEnumConstants() in 0.25
+		return nextTokenType(2);
+	}
+	
+	public TokenType nextTokenType(final int range) {
 		final var choices = TokenType.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
 	public TokenSupplyType nextTokenSupplyType() {
+		// size of TokenSupplyType.class.getEnumConstants() in 0.25
+		return nextTokenSupplyType(2);
+	}
+	
+	public TokenSupplyType nextTokenSupplyType(final int range) {
 		final var choices = TokenSupplyType.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
 	public MerkleSchedule nextSchedule() {
@@ -627,9 +642,13 @@ public class SeededPropertySource {
 	}
 
 	public ResponseCodeEnum nextStatus() {
+		// size of ResponseCodeEnum.class.getEnumConstants() in 0.25
+		return nextStatus(265);
+	}
+
+	public ResponseCodeEnum nextStatus(final int range) {
 		final var choices = ResponseCodeEnum.class.getEnumConstants();
-		// When the SelfSerializableDataTest was introduced, there were 265 response codes
-		return choices[SEEDED_RANDOM.nextInt(265)];
+		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
 	public ExchangeRates nextExchangeRates() {
@@ -639,8 +658,13 @@ public class SeededPropertySource {
 	}
 
 	public EntityType nextEntityType() {
+		// size of EntityType.class.getEnumConstants() in 0.25
+		return nextEntityType(6);
+	}
+
+	public EntityType nextEntityType(final int range) {
 		final var choices = EntityType.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
 	public Map<EntityNum, Map<FcTokenAllowanceId, Long>> nextFungibleAllowances(
