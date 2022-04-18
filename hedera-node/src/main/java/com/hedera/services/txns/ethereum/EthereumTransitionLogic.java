@@ -138,7 +138,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		var txBody = getOrCreateTransactionBody(accessor);
 
 		if (ethTxData.chainId().length == 0 || Arrays.compare(chainId, ethTxData.chainId()) != 0) {
-			return ResponseCodeEnum.FAIL_INVALID; //FIXME ResponseCodeEnum.WRONG_CHAIN_ID
+			return ResponseCodeEnum.WRONG_CHAIN_ID;
 		}
 
 		if (accessor.getExpandedSigStatus() == ResponseCodeEnum.OK) {
@@ -152,7 +152,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
 			var accountNonce = (long) accountsLedger.get(callingAccount.toGrpcAccountId(), AccountProperty.ETHEREUM_NONCE);
 			if (ethTxData.nonce() != accountNonce) {
-				return ResponseCodeEnum.FAIL_INVALID; //FIXME ResponseCodeEnum.WRONG_NONCE
+				return ResponseCodeEnum.WRONG_NONCE;
 			}
 		}
 
@@ -197,9 +197,8 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		if ((ethTxData.callData() == null || ethTxData.callData().length == 0) && op.hasCallData()) {
 			var callDataFileId = op.getCallData();
 			validateTrue(hfs.exists(callDataFileId), INVALID_FILE_ID);
-			//TODO for now existing init codes are hex encoded.  We should make a way for them to be binary encoded.
 			byte[] callDataFile = Hex.decode(hfs.cat(callDataFileId));
-			validateFalse(callDataFile.length == 0, CONTRACT_FILE_EMPTY); // FIXME new failure response code
+			validateFalse(callDataFile.length == 0, CONTRACT_FILE_EMPTY);
 			ethTxData = ethTxData.replaceCallData(callDataFile);
 			spanMapAccessor.setEthTxDataMeta(accessor, ethTxData);
 		}
