@@ -43,6 +43,11 @@ public class ContractResources {
 	public static final String DOUBLE_SEND_BYTECODE_PATH = bytecodePath("DoubleSend");
 	public static final String FIBONACCI_PLUS_PATH = bytecodePath("FibonacciPlus");
 	public static final String DELEGATE_CONTRACT = bytecodePath("DelegateContract");
+	public static final String ASSOCIATOR_PATH = bytecodePath("Associator");
+
+	public static final String ASSOCIATOR_ASSOCIATE_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"" +
+			"account\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}]" +
+			",\"name\":\"associate\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 	public static final String CREATE_CHILD_ABI = "{\"constant\":false," +
 			"\"inputs\":[],\"name\":\"create\"," +
@@ -147,6 +152,18 @@ public class ContractResources {
 			"\"name\":\"toFirst\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"toSecond\"," +
 			"\"type\":\"uint32\"}],\"name\":\"donate\",\"outputs\":[],\"payable\":true," +
 			"\"stateMutability\":\"payable\",\"type\":\"function\"}";
+
+	public static final String ADD_TO_WHITELIST_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_toBePermitted" +
+			"\",\"type\":\"address\"}],\"name\":\"addToWhitelist\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type" +
+			"\":\"function\"}";
+
+	public static final String RAW_IS_WHITELISTED_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type" +
+			"\":\"address\"}],\"name\":\"whitelist\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"" +
+			"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"}";
+
+	public static final String IS_WHITELISTED_ABI = "{\"inputs\":[{\"internalType\":\"address\",\"name\":\"whitelister\"" +
+			",\"type\":\"address\"}],\"name\":\"isWhitelisted\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"" +
+			"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
 
 	public static String bytecodePath(String bytecode) {
