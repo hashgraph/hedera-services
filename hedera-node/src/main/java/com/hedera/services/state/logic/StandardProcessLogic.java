@@ -24,12 +24,13 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.EntityAutoRenewal;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.SwirldTransaction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,6 +45,7 @@ public class StandardProcessLogic implements ProcessLogic {
 
 	private final ExpiryManager expiries;
 	private final InvariantChecks invariantChecks;
+	private final RecordsHistorian recordsHistorian;
 	private final ExpandHandleSpan expandHandleSpan;
 	private final EntityAutoRenewal autoRenewal;
 	private final ServicesTxnManager txnManager;
@@ -57,6 +59,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			final ExpiryManager expiries,
 			final InvariantChecks invariantChecks,
 			final ExpandHandleSpan expandHandleSpan,
+			final RecordsHistorian recordsHistorian,
 			final EntityAutoRenewal autoRenewal,
 			final ServicesTxnManager txnManager,
 			final SigImpactHistorian sigImpactHistorian,
@@ -68,6 +71,7 @@ public class StandardProcessLogic implements ProcessLogic {
 		this.invariantChecks = invariantChecks;
 		this.expandHandleSpan = expandHandleSpan;
 		this.executionTimeTracker = executionTimeTracker;
+		this.recordsHistorian = recordsHistorian;
 		this.autoRenewal = autoRenewal;
 		this.txnManager = txnManager;
 		this.txnCtx = txnCtx;
@@ -95,7 +99,7 @@ public class StandardProcessLogic implements ProcessLogic {
 
 			doProcess(submittingMember, consensusTime, effectiveConsensusTime, accessor);
 
-			autoRenewal.execute(consensusTime);
+			autoRenewal.execute(recordsHistorian.nextFollowingChildConsensusTime());
 		} catch (InvalidProtocolBufferException e) {
 			log.warn("Consensus platform txn was not gRPC!", e);
 		} catch (Exception internal) {
@@ -107,7 +111,7 @@ public class StandardProcessLogic implements ProcessLogic {
 			final long submittingMember,
 			final Instant consensusTime,
 			final Instant effectiveConsensusTime,
-			final PlatformTxnAccessor accessor
+			final SwirldsTxnAccessor accessor
 	) {
 		executionTimeTracker.start();
 		txnManager.process(accessor, effectiveConsensusTime, submittingMember);

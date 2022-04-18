@@ -20,13 +20,14 @@ package com.hedera.services.sigs.verification;
  * ‍
  */
 
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.PlatformSigOps;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.txns.PlatformTxnFactory;
 import com.hedera.test.utils.IdUtils;
@@ -43,7 +44,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.PlatformTxnAccessor.uncheckedAccessorFor;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
 import static com.hedera.test.factories.sigs.SyncVerifiers.ALWAYS_VALID;
@@ -62,7 +62,7 @@ class PrecheckVerifierTest {
 			.setTransactionID(TransactionID.newBuilder().setAccountID(IdUtils.asAccount("0.0.2")))
 			.build();
 	private static final Transaction txn = Transaction.newBuilder().setBodyBytes(txnBody.toByteString()).build();
-	private static final PlatformTxnAccessor realAccessor = uncheckedAccessorFor(PlatformTxnFactory.from(txn));
+	private static PlatformTxnAccessor realAccessor;
 
 	private final static byte[][] VALID_SIG_BYTES = {
 			"firstSig".getBytes(),
@@ -83,9 +83,13 @@ class PrecheckVerifierTest {
 	private PrecheckKeyReqs precheckKeyReqs;
 	private PrecheckVerifier subject;
 	private SignedTxnAccessor mockAccessor;
+	private static AliasManager aliasManager;
 
 	@BeforeAll
 	static void setupAll() throws Throwable {
+		aliasManager = mock(AliasManager.class);
+		realAccessor = PlatformTxnAccessor.from(SignedTxnAccessor.from(PlatformTxnFactory.from(txn).getContentsDirect()),
+				PlatformTxnFactory.from(txn));
 		reqKeys = List.of(
 				KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),
 				KeyTree.withRoot(ed25519()).asJKey());

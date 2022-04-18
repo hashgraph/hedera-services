@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.perf.mixedops;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
@@ -35,12 +34,12 @@ import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
@@ -54,6 +53,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(MixedTransferCallAndSubmitLoadTest.class);
+	private static final String CONTRACT = "SimpleStorage";
 
 	public static void main(String... args) {
 		MixedTransferCallAndSubmitLoadTest suite = new MixedTransferCallAndSubmitLoadTest();
@@ -81,7 +81,7 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 								.toArray(n -> new HapiSpecOperation[n]),
 						IntStream.range(0, settings.getBurstSize() / 25)
 								.mapToObj(i ->
-										contractCall("simpleStorage", ContractResources.SIMPLE_STORAGE_SETTER_ABI, i)
+										contractCall(CONTRACT, "set", i)
 												.noLogging()
 												.hasPrecheckFrom(
 													OK, BUSY, DUPLICATE_TRANSACTION, PLATFORM_TRANSACTION_NOT_CREATED)
@@ -111,8 +111,8 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
 						createTopic("topic"),
 						cryptoCreate("sender").balance(999_999_999_999_999L),
 						cryptoCreate("receiver"),
-						fileCreate("bytecode").path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
-						contractCreate("simpleStorage").bytecode("bytecode")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).then(
 						runLoadTest(transferBurst)
 								.tps(settings::getTps)

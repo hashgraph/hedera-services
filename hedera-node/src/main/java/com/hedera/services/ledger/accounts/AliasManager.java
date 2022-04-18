@@ -113,7 +113,8 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	 * From given MerkleMap of accounts, populate the auto accounts creations map. Iterate through
 	 * each account in accountsMap and add an entry to autoAccountsMap if {@code alias} exists on the account.
 	 *
-	 * @param accounts the current accounts
+	 * @param accounts
+	 * 		the current accounts
 	 */
 	public void rebuildAliasesMap(final MerkleMap<EntityNum, MerkleAccount> accounts) {
 		final var numCreate2Aliases = new AtomicInteger();
@@ -132,27 +133,23 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	}
 
 	/**
-	 * Removes an entry from the autoAccountsMap when an entity is expired and deleted from the ledger.
+	 * Ensures an alias is no longer in use, returning whether it previously was.
 	 *
-	 * @param expiredId
-	 * 		entity id that is expired
-	 * @param accounts
-	 * 		current accounts map
-	 * @return whether the alias was forgotten
+	 * @param alias the alias to forget
+	 * @return whether it was present
 	 */
-	public boolean forgetAliasIfPresent(final EntityNum expiredId, final MerkleMap<EntityNum, MerkleAccount> accounts) {
-		final var alias = accounts.get(expiredId).getAlias();
-		if (!alias.isEmpty()) {
-			curAliases().remove(alias);
-			return true;
+	public boolean forgetAlias(final ByteString alias) {
+		if (alias.isEmpty()) {
+			return false;
 		}
-		return false;
+		return curAliases().remove(alias) != null;
 	}
 
 	/**
 	 * Returns if there is an account linked the given alias.
 	 *
-	 * @param alias the alias of interest
+	 * @param alias
+	 * 		the alias of interest
 	 * @return whether there is a linked account
 	 */
 	public boolean contains(final ByteString alias) {

@@ -28,7 +28,7 @@ import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -57,6 +57,7 @@ import java.util.function.Function;
 
 import static com.hedera.services.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
@@ -106,16 +107,18 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	@Override
 	public void init() {
 		usagePrices.loadPriceSchedules();
-		autoRenewCalcs.setCryptoAutoRenewPriceSeq(usagePrices.activePricingSequence(CryptoAccountAutoRenew));
+		autoRenewCalcs.setAccountRenewalPriceSeq(usagePrices.activePricingSequence(CryptoAccountAutoRenew));
+		autoRenewCalcs.setContractRenewalPriceSeq(usagePrices.activePricingSequence(ContractAutoRenew));
 	}
 
 	@Override
 	public RenewAssessment assessCryptoAutoRenewal(
-			MerkleAccount expiredAccount,
-			long requestedRenewal,
-			Instant now
+			final MerkleAccount expiredAccountOrContract,
+			final long requestedRenewal,
+			final Instant now
 	) {
-		return autoRenewCalcs.maxRenewalAndFeeFor(expiredAccount, requestedRenewal, now, exchange.activeRate(now));
+		return autoRenewCalcs.assessCryptoRenewal(
+				expiredAccountOrContract, requestedRenewal, now, exchange.activeRate(now));
 	}
 
 	@Override
@@ -271,6 +274,8 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
 	}
 
 	private SigValueObj getSigUsage(TxnAccessor accessor, JKey payerKey) {
-		return new SigValueObj(accessor.numSigPairs(), numSimpleKeys(payerKey), accessor.sigMapSize());
+		int numPayerKeys = numSimpleKeys(payerKey);
+		final var sigUsage = accessor.usageGiven(numPayerKeys);
+		return new SigValueObj(sigUsage.numSigs(), numPayerKeys, sigUsage.sigsSize());
 	}
 }

@@ -21,7 +21,7 @@ package com.hedera.services.fees.charging;
  */
 
 import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.fee.FeeObject;
 
 /**

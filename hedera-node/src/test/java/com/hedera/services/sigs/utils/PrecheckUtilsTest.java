@@ -21,7 +21,7 @@ package com.hedera.services.sigs.utils;
  */
 
 import com.hedera.services.context.NodeInfo;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -58,7 +58,7 @@ class PrecheckUtilsTest {
 
 	@Test
 	void queryPaymentsMustBeCryptoTransfers() throws Throwable {
-		final var txn = new PlatformTxnAccessor(from(
+		final var txn = PlatformTxnAccessor.from(from(
 				newSignedCryptoUpdate("0.0.2").get()
 		)).getTxn();
 
@@ -68,7 +68,7 @@ class PrecheckUtilsTest {
 	@Test
 	void transferWithoutTargetNodeIsNotQueryPayment() throws Throwable {
 		given(nodeInfo.selfAccount()).willReturn(node);
-		final var txn = new PlatformTxnAccessor(from(
+		final var txn = PlatformTxnAccessor.from(from(
 				newSignedCryptoTransfer().transfers(
 						tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L)
 				).get()
@@ -80,7 +80,7 @@ class PrecheckUtilsTest {
 	@Test
 	void queryPaymentTransfersToTargetNode() throws Throwable {
 		given(nodeInfo.selfAccount()).willReturn(node);
-		final var txn = new PlatformTxnAccessor(from(
+		final var txn = PlatformTxnAccessor.from(from(
 				newSignedCryptoTransfer().transfers(
 						tinyBarsFromTo(nodeId, "0.0.2048", 1_000L)
 				).get()

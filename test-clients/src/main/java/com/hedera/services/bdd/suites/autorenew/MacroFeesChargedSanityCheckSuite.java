@@ -59,7 +59,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enablingAutoRenewWith;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
 import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
@@ -111,7 +111,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
 						}),
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(1, 1234L)),
+								.overridingProps(propsForAccountAutoRenewOnWith(1, 1234L)),
 						sourcing(() -> cryptoCreate(target)
 								.entityMemo(crazyMemo)
 								.balance(balanceForThreeHourRenew.get())
@@ -160,7 +160,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
 				.given(
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
-								.overridingProps(enablingAutoRenewWith(1, 1234L)),
+								.overridingProps(propsForAccountAutoRenewOnWith(1, 1234L)),
 						cryptoCreate(target)
 								.entityMemo(crazyMemo)
 								.balance(startBalance)

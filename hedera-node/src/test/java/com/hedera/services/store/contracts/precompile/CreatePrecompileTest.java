@@ -41,7 +41,7 @@ import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -96,8 +96,6 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_ADDER;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.NOOP_TREASURY_REMOVER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -140,7 +138,7 @@ class CreatePrecompileTest {
 	@Mock
 	private TxnAwareEvmSigsVerifier sigsVerifier;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private DecodingFacade decoder;
 	@Mock
@@ -211,7 +209,7 @@ class CreatePrecompileTest {
 	private static final long TEST_NETWORK_FEE = 100L;
 	private static final long EXPECTED_TINYBARS_REQUIREMENT =
 			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) +
-			(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / 5;
+					(TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / 5;
 	private static final long SENDER_INITIAL_BALANCE = 1_000_000L;
 	private static final long FUNDING_ACCOUNT_INITIAL_BALANCE = 123_123L;
 
@@ -314,8 +312,8 @@ class CreatePrecompileTest {
 						new TokenCreateWrapper.KeyValueWrapper(
 								false,
 								EntityIdUtils.contractIdFromEvmAddress(contractAddress),
-								new byte[]{},
-								new byte[]{},
+								new byte[] { },
+								new byte[] { },
 								null)
 				),
 				new TokenCreateWrapper.TokenKeyWrapper(
@@ -323,8 +321,8 @@ class CreatePrecompileTest {
 						new TokenCreateWrapper.KeyValueWrapper(
 								false,
 								null,
-								new byte[]{},
-								new byte[]{},
+								new byte[] { },
+								new byte[] { },
 								EntityIdUtils.contractIdFromEvmAddress(contractAddress))
 				))
 		);
@@ -340,7 +338,7 @@ class CreatePrecompileTest {
 		final var tokenCreateWrapper = createNonFungibleTokenCreateWrapperWithKeys(List.of(
 				new TokenCreateWrapper.TokenKeyWrapper(
 						1,
-						new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[]{},
+						new TokenCreateWrapper.KeyValueWrapper(false, null, new byte[] { },
 								new byte[JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH], null)
 				))
 		);
@@ -360,10 +358,10 @@ class CreatePrecompileTest {
 						new TokenCreateWrapper.KeyValueWrapper(
 								false,
 								null,
-								new byte[]{},
-								new byte[]{},
+								new byte[] { },
+								new byte[] { },
 								EntityIdUtils.contractIdFromEvmAddress(contractAddress))
-		)));
+				)));
 		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
 		tokenCreateWrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES);
@@ -381,8 +379,8 @@ class CreatePrecompileTest {
 						new TokenCreateWrapper.KeyValueWrapper(
 								true,
 								null,
-								new byte[]{},
-								new byte[]{},
+								new byte[] { },
+								new byte[] { },
 								null))
 		));
 		tokenCreateWrapper.setFixedFees(List.of(fixedFee));
@@ -405,15 +403,15 @@ class CreatePrecompileTest {
 		given(worldUpdater.aliases()).willReturn(aliases);
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_CREATE_FUNGIBLE_TOKEN);
 		final var tokenCreateWrapper = createTokenCreateWrapperWithKeys(List.of(
-				new TokenCreateWrapper.TokenKeyWrapper(
-						1,
-						new TokenCreateWrapper.KeyValueWrapper(
-								false,
-								null,
-								new byte[JEd25519Key.ED25519_BYTE_LENGTH],
-								new byte[]{},
-								null
-						))
+						new TokenCreateWrapper.TokenKeyWrapper(
+								1,
+								new TokenCreateWrapper.KeyValueWrapper(
+										false,
+										null,
+										new byte[JEd25519Key.ED25519_BYTE_LENGTH],
+										new byte[] { },
+										null
+								))
 				)
 		);
 		given(decoder.decodeFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
@@ -469,7 +467,7 @@ class CreatePrecompileTest {
 										false,
 										null,
 										new byte[JEd25519Key.ED25519_BYTE_LENGTH],
-										new byte[]{},
+										new byte[] { },
 										null
 								))
 				)
@@ -485,7 +483,7 @@ class CreatePrecompileTest {
 		given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
 		given(tokenCreateValidator.apply(any())).willReturn(INVALID_SIGNATURE);
 		given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
-			.willReturn(mockRecordBuilder);
+				.willReturn(mockRecordBuilder);
 		given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
 
 		// when:
@@ -524,7 +522,7 @@ class CreatePrecompileTest {
 				.thenReturn(TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY);
 		final var tokenCreateWrapper =
 				createTokenCreateWrapperWithKeys(List.of(new TokenCreateWrapper.TokenKeyWrapper(1, keyValueMock))
-		);
+				);
 		given(decoder.decodeFungibleCreate(eq(pretendArguments), any())).willReturn(tokenCreateWrapper);
 		given(mockSynthBodyBuilder.build())
 				.willReturn(TransactionBody.newBuilder().setTokenCreation(tokenCreateTransactionBody).build());
@@ -569,10 +567,10 @@ class CreatePrecompileTest {
 										false,
 										EntityIdUtils.contractIdFromEvmAddress(contractAddress),
 										new byte[JEd25519Key.ED25519_BYTE_LENGTH],
-										new byte[]{},
+										new byte[] { },
 										null
 								)
-				))
+						))
 		);
 
 		prepareAndAssertRevertReasonIsSetAndNullIsReturned(tokenCreateWrapper);
@@ -585,22 +583,22 @@ class CreatePrecompileTest {
 				createTokenCreateWrapperWithKeys(
 						List.of(
 								new TokenCreateWrapper.TokenKeyWrapper(
-									0,
-									new TokenCreateWrapper.KeyValueWrapper(
-										false,
-										EntityIdUtils.contractIdFromEvmAddress(contractAddress),
-										new byte[]{},
-										new byte[]{},
-										null)
+										0,
+										new TokenCreateWrapper.KeyValueWrapper(
+												false,
+												EntityIdUtils.contractIdFromEvmAddress(contractAddress),
+												new byte[] { },
+												new byte[] { },
+												null)
 								),
 								new TokenCreateWrapper.TokenKeyWrapper(
-									1,
-									new TokenCreateWrapper.KeyValueWrapper(
-										false,
-										null,
-										new byte[JEd25519Key.ED25519_BYTE_LENGTH],
-										new byte[]{},
-										null)
+										1,
+										new TokenCreateWrapper.KeyValueWrapper(
+												false,
+												null,
+												new byte[JEd25519Key.ED25519_BYTE_LENGTH],
+												new byte[] { },
+												null)
 								))
 				);
 
@@ -617,8 +615,8 @@ class CreatePrecompileTest {
 								new TokenCreateWrapper.KeyValueWrapper(
 										false,
 										EntityIdUtils.contractIdFromEvmAddress(contractAddress),
-										new byte[]{},
-										new byte[]{},
+										new byte[] { },
+										new byte[] { },
 										null)
 						),
 						new TokenCreateWrapper.TokenKeyWrapper(
@@ -626,8 +624,8 @@ class CreatePrecompileTest {
 								new TokenCreateWrapper.KeyValueWrapper(
 										false,
 										null,
-										new byte[]{},
-										new byte[]{},
+										new byte[] { },
+										new byte[] { },
 										EntityIdUtils.contractIdFromEvmAddress(contractAddress))
 						))
 		);
@@ -645,8 +643,8 @@ class CreatePrecompileTest {
 								new TokenCreateWrapper.KeyValueWrapper(
 										false,
 										null,
-										new byte[]{},
-										new byte[]{},
+										new byte[] { },
+										new byte[] { },
 										EntityIdUtils.contractIdFromEvmAddress(contractAddress))
 						))
 		);
@@ -688,7 +686,7 @@ class CreatePrecompileTest {
 	}
 
 	@Test
-	void createReturnsNullAndSetsRevertReasonWhenDecimalsIsBiggerThanMaxInt()  {
+	void createReturnsNullAndSetsRevertReasonWhenDecimalsIsBiggerThanMaxInt() {
 		// test-specific preparations
 		final var invalidTokenCreate = new TokenCreateWrapper(
 				true,
@@ -709,7 +707,7 @@ class CreatePrecompileTest {
 	}
 
 	@Test
-	void createReturnsNullAndSetsRevertReasonWhenInvalidFixedFeeIsPresent()  {
+	void createReturnsNullAndSetsRevertReasonWhenInvalidFixedFeeIsPresent() {
 		// test-specific preparations
 		final var invalidTokenCreate = createTokenCreateWrapperWithKeys(Collections.emptyList());
 		final var fixedFeeMock = mock(TokenCreateWrapper.FixedFeeWrapper.class);
@@ -721,7 +719,7 @@ class CreatePrecompileTest {
 	}
 
 	@Test
-	void createReturnsNullAndSetsRevertReasonWhenRoyaltyFeeWithInvalidFallbackFeeIsPresent()  {
+	void createReturnsNullAndSetsRevertReasonWhenRoyaltyFeeWithInvalidFallbackFeeIsPresent() {
 		// test-specific preparations
 		final var invalidTokenCreate = createTokenCreateWrapperWithKeys(Collections.emptyList());
 		final var fixedFeeMock = mock(TokenCreateWrapper.FixedFeeWrapper.class);
@@ -752,8 +750,7 @@ class CreatePrecompileTest {
 		given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
 		given(tokenCreateValidator.apply(any())).willReturn(ResponseCodeEnum.OK);
 		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels,
-				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER, sideEffects))
+		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(typedTokenStore);
 		given(createLogicFactory.newTokenCreateLogic(
 				accountStore,

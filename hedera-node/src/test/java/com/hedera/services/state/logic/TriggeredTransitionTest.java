@@ -26,7 +26,8 @@ import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.FeeChargingPolicy;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.fee.FeeObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,7 @@ class TriggeredTransitionTest {
 	private final FeeObject fee = new FeeObject(1, 2, 3);
 
 	@Mock
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private StateView currentView;
 	@Mock

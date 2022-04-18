@@ -36,7 +36,7 @@ import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -165,9 +165,7 @@ public class ExpiringCreations implements EntityCreator {
 				.setMemo(memo)
 				.setHbarAdjustments(sideEffectsTracker.getNetTrackedHbarChanges())
 				.setAssessedCustomFees(customFeesCharged)
-				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations())
-				.setCryptoAllowances(sideEffectsTracker.getCryptoAllowances())
-				.setFungibleTokenAllowances(sideEffectsTracker.getFungibleTokenAllowances());
+				.setNewTokenAssociations(sideEffectsTracker.getTrackedAutoAssociations());
 
 		if (sideEffectsTracker.hasTrackedAutoCreation()) {
 			receiptBuilder.setAccountId(EntityId.fromGrpcAccountId(sideEffectsTracker.getTrackedAutoCreatedAccountId()));

@@ -41,11 +41,10 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fchashmap.FCHashMap;
@@ -57,8 +56,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.nio.charset.StandardCharsets;
-
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
@@ -90,6 +88,10 @@ class WorldLedgersTest {
 	private static final AccountID accountID = treasury.toGrpcAccountId();
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final Address sponsor = Address.fromHexString("0xcba");
+
+	private static final AccountID accountA = IdUtils.asAccount("0.0.1234");
+	private static final Address address = EntityIdUtils.asTypedEvmAddress(accountA);
+	private static final ByteString aliasBytes = ByteString.copyFromUtf8("I am alias");
 
 	private static final NftId nftId = new NftId(0, 0, 123, 456);
 
@@ -191,7 +193,7 @@ class WorldLedgersTest {
 	void mirrorNoAliasIsCanonicalSourceWithLedgers() {
 		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
 		given(accountsLedger.exists(id)).willReturn(true);
-		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.EMPTY);
+		given(accountsLedger.get(id, ALIAS)).willReturn(ByteString.EMPTY);
 
 		assertSame(sponsor, subject.canonicalAddress(sponsor));
 	}
@@ -221,7 +223,7 @@ class WorldLedgersTest {
 	void mirrorWithAliasUsesAliasAsCanonicalSource() {
 		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
 		given(accountsLedger.exists(id)).willReturn(true);
-		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
+		given(accountsLedger.get(id, ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
 		assertEquals(alias, subject.canonicalAddress(sponsor));
 	}
 
@@ -350,6 +352,27 @@ class WorldLedgersTest {
 		assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
 		final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
 		assertSame(liveAliases, stackedAliases.wrappedAliases());
+	}
+
+	@Test
+	void mutableLedgersCheckForToken() {
+		final var htsProxy = Address.ALTBN128_PAIRING;
+		final var htsId = EntityIdUtils.tokenIdFromEvmAddress(htsProxy);
+
+		given(tokensLedger.contains(htsId)).willReturn(true);
+
+		assertTrue(subject.isTokenAddress(htsProxy));
+	}
+
+	@Test
+	void staticLedgersUseEntityAccessForTokenTest() {
+		final var htsProxy = Address.ALTBN128_PAIRING;
+
+		given(staticEntityAccess.isTokenAccount(htsProxy)).willReturn(true);
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+
+		assertTrue(subject.isTokenAddress(htsProxy));
 	}
 
 	@Test

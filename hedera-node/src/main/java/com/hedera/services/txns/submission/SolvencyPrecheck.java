@@ -31,7 +31,7 @@ import com.hedera.services.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.fee.FeeObject;
 import com.swirlds.merkle.map.MerkleMap;
@@ -139,7 +139,7 @@ public class SolvencyPrecheck {
 			ResponseCodeEnum finalStatus = OK;
 			if (payerBalance < requiredPayerBalance) {
 				final var isDetached = payerBalance == 0
-						&& dynamicProperties.autoRenewEnabled()
+						&& dynamicProperties.shouldAutoRenewSomeEntityType()
 						&& !validator.isAfterConsensusSecond(payerAccount.getExpiry());
 				finalStatus = isDetached ? ACCOUNT_EXPIRED_AND_PENDING_REMOVAL : INSUFFICIENT_PAYER_BALANCE;
 			}

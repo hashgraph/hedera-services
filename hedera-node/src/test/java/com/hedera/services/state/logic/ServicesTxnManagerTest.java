@@ -23,10 +23,10 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.migration.MigrationRecordsManager;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -69,7 +69,7 @@ class ServicesTxnManagerTest {
 	@Mock
 	private Runnable triggeredProcessLogic;
 	@Mock
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private HederaLedger ledger;
 	@Mock
@@ -77,7 +77,7 @@ class ServicesTxnManagerTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private AccountRecordsHistorian recordsHistorian;
+	private RecordsHistorian recordsHistorian;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock

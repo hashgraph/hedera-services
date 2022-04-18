@@ -65,6 +65,7 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -108,6 +109,14 @@ public class WorldLedgers {
 
 		this.aliases = aliases;
 		this.staticEntityAccess = staticEntityAccess;
+	}
+
+	public boolean isTokenAddress(final Address address) {
+		if (staticEntityAccess != null)	{
+			return staticEntityAccess.isTokenAccount(address);
+		} else {
+			return tokensLedger.contains(tokenIdFromEvmAddress(address));
+		}
 	}
 
 	public String nameOf(final TokenID tokenId) {
@@ -167,24 +176,29 @@ public class WorldLedgers {
 		if (aliases.isInUse(addressOrAlias)) {
 			return addressOrAlias;
 		}
-		final var sourceId = accountIdFromEvmAddress(addressOrAlias);
+
+		return getAddressOrAlias(addressOrAlias);
+	}
+
+	public Address getAddressOrAlias(final Address address) {
+		final var sourceId = accountIdFromEvmAddress(address);
 		final ByteString alias;
 		if (accountsLedger != null) {
 			if (!accountsLedger.exists(sourceId)) {
-				return addressOrAlias;
+				return address;
 			}
 			alias = (ByteString) accountsLedger.get(sourceId, ALIAS);
 		} else {
 			Objects.requireNonNull(staticEntityAccess, "Null ledgers must imply non-null static access");
 			if (!staticEntityAccess.isExtant(sourceId)) {
-				return addressOrAlias;
+				return address;
 			}
 			alias = staticEntityAccess.alias(sourceId);
 		}
 		if (!alias.isEmpty()) {
 			return Address.wrap(Bytes.wrap(alias.toByteArray()));
 		} else {
-			return addressOrAlias;
+			return address;
 		}
 	}
 

@@ -23,27 +23,37 @@ package com.hedera.services.store.contracts;
  */
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 
 public class HederaStackedWorldStateUpdater
-		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount>
+		extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
 		implements HederaWorldUpdater {
 
 	private static CustomizerFactory customizerFactory = ContractCustomizer::fromSponsorContract;
 
 	private final HederaMutableWorldState worldState;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	private Gas sbhRefund = Gas.ZERO;
 	private int numAllocatedIds = 0;
@@ -51,19 +61,43 @@ public class HederaStackedWorldStateUpdater
 	private ContractCustomizer pendingCreationCustomizer = null;
 
 	public HederaStackedWorldStateUpdater(
-			final AbstractLedgerWorldUpdater<HederaMutableWorldState, HederaWorldState.WorldStateAccount> updater,
+			final AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater,
 			final HederaMutableWorldState worldState,
-			final WorldLedgers trackingLedgers
+			final WorldLedgers trackingLedgers,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		super(updater, trackingLedgers);
 		this.worldState = worldState;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public boolean hasMutableLedgers() {
 		return trackingLedgers().areMutable();
 	}
 
+	public boolean contractIsTokenTreasury(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+		final var accountId = accountIdFromEvmAddress(address);
+		return (int) trackingAccounts().get(accountId, NUM_TREASURY_TITLES) > 0;
+	}
+
+	public boolean contractHasAnyBalance(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+		final var accountId = accountIdFromEvmAddress(address);
+		return (int) trackingAccounts().get(accountId, NUM_POSITIVE_BALANCES) > 0;
+	}
+
+	public boolean contractOwnsNfts(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+		final var accountId = accountIdFromEvmAddress(address);
+		return (long) trackingAccounts().get(accountId, NUM_NFTS_OWNED) > 0L;
+	}
+
 	public byte[] unaliased(final byte[] evmAddress) {
+		final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
+		if (!addressOrAlias.equals(trackingLedgers().canonicalAddress(addressOrAlias))) {
+			throw new InvalidTransactionException(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
+		}
 		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
 	}
 
@@ -128,6 +162,26 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
+	public Account get(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+		if (isTokenRedirect(address)) {
+			return new WorldStateTokenAccount(address);
+		}
+		return super.get(addressOrAlias);
+	}
+
+	@Override
+	public EvmAccount getAccount(final Address addressOrAlias) {
+		final var address = aliases().resolveForEvm(addressOrAlias);
+		if (isTokenRedirect(address)) {
+			final var proxyAccount = new WorldStateTokenAccount(address);
+			final var newMutable = new UpdateTrackingLedgerAccount<>(proxyAccount, trackingAccounts());
+			return new WrappedEvmAccount(newMutable);
+		}
+		return super.getAccount(address);
+	}
+
+	@Override
 	public Gas getSbhRefund() {
 		return sbhRefund;
 	}
@@ -160,26 +214,22 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	@Override
-	public HederaWorldState.WorldStateAccount getHederaAccount(final Address addressOrAlias) {
-		final var address = aliases().resolveForEvm(addressOrAlias);
-		return parentUpdater().map(u -> ((HederaWorldUpdater) u).getHederaAccount(address)).orElse(null);
-	}
-
-	@Override
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public WorldUpdater updater() {
 		return new HederaStackedWorldStateUpdater(
 				(AbstractLedgerWorldUpdater) this,
-				worldState,
-				trackingLedgers().wrapped());
+				worldState, trackingLedgers().wrapped(), dynamicProperties);
 	}
 
 	// --- Internal helpers
+	boolean isTokenRedirect(final Address address) {
+		return dynamicProperties.isRedirectTokenCallsEnabled() && trackingLedgers().isTokenAddress(address);
+	}
+
 	private boolean isMissingTarget(final Address alias) {
 		final var target = aliases().resolveForEvm(alias);
 		return !trackingAccounts().exists(accountIdFromEvmAddress(target));
 	}
-
 
 	@FunctionalInterface
 	interface CustomizerFactory {

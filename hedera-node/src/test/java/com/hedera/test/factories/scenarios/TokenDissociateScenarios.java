@@ -20,7 +20,7 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
@@ -30,7 +30,7 @@ public enum TokenDissociateScenarios implements TxnHandlingScenario {
 	TOKEN_DISSOCIATE_WITH_KNOWN_TARGET {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenDissociate()
 							.targeting(MISC_ACCOUNT)
 							.dissociating(KNOWN_TOKEN_WITH_KYC)
@@ -43,7 +43,7 @@ public enum TokenDissociateScenarios implements TxnHandlingScenario {
 	TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenDissociate()
 							.targeting(DEFAULT_PAYER)
 							.dissociating(KNOWN_TOKEN_WITH_KYC)
@@ -55,7 +55,7 @@ public enum TokenDissociateScenarios implements TxnHandlingScenario {
 	TOKEN_DISSOCIATE_WITH_MISSING_TARGET {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedTokenDissociate()
 							.targeting(MISSING_ACCOUNT)
 							.dissociating(KNOWN_TOKEN_WITH_KYC)

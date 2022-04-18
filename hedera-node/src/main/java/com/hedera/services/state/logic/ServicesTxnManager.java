@@ -23,13 +23,13 @@ package com.hedera.services.state.logic;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.annotations.RunRecordStreaming;
 import com.hedera.services.state.annotations.RunTopLevelTransition;
 import com.hedera.services.state.annotations.RunTriggeredTransition;
 import com.hedera.services.state.migration.MigrationRecordsManager;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +52,7 @@ public class ServicesTxnManager {
 	private final HederaLedger ledger;
 	private final TransactionContext txnCtx;
 	private final SigImpactHistorian sigImpactHistorian;
-	private final AccountRecordsHistorian recordsHistorian;
+	private final RecordsHistorian recordsHistorian;
 	private final MigrationRecordsManager migrationRecordsManager;
 
 	@Inject
@@ -64,7 +64,7 @@ public class ServicesTxnManager {
 			final HederaLedger ledger,
 			final TransactionContext txnCtx,
 			final SigImpactHistorian sigImpactHistorian,
-			final AccountRecordsHistorian recordsHistorian,
+			final RecordsHistorian recordsHistorian,
 			final MigrationRecordsManager migrationRecordsManager
 	) {
 		this.txnCtx = txnCtx;

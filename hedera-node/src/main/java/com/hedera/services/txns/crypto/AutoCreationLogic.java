@@ -33,14 +33,14 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.records.AccountRecordsHistorian;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -130,13 +130,13 @@ public class AutoCreationLogic {
 	}
 
 	/**
-	 * Notifies the given {@link AccountRecordsHistorian} of the child records for any
+	 * Notifies the given {@link RecordsHistorian} of the child records for any
 	 * provisionally created accounts since the last call to {@link AutoCreationLogic#reset()}.
 	 *
 	 * @param recordsHistorian
 	 * 		the records historian that should track the child records
 	 */
-	public void submitRecordsTo(final AccountRecordsHistorian recordsHistorian) {
+	public void submitRecordsTo(final RecordsHistorian recordsHistorian) {
 		for (final var pendingCreation : pendingCreations) {
 			final var syntheticCreation = pendingCreation.syntheticBody();
 			final var childRecord = pendingCreation.recordBuilder();
