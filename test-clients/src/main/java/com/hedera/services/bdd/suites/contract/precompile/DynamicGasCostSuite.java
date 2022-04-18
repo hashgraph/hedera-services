@@ -64,8 +64,8 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.swirlds.common.CommonUtils.hex;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DynamicGasCostSuite extends HapiApiSuite {
@@ -112,7 +112,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						canDeleteViaAlias(),
 						cannotSelfDestructToMirrorAddress(),
 						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
+						canInternallyCallAliasedAddressesOnlyViaCreate2Address(),
 						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
 						canUseAliasesInPrecompilesAndContractKeys(),
 						inlineCreateCanFailSafely(),
@@ -993,7 +993,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec priorityAddressIsCreate2ForInternalMessages() {
+	private HapiApiSpec canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
 		final var creation2 = "create2Txn";
 		final var contract = "AddressValueRet";
 		final var aliasCall = "aliasCall";
@@ -1006,7 +1006,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 		final var salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
 
-		return defaultHapiSpec("PriorityAddressIsCreate2ForInternalMessages")
+		return defaultHapiSpec("CanInternallyCallAliasedAddressesOnlyViaCreate2Address")
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
@@ -1022,6 +1022,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						sourcing(() -> contractCallLocal(
 								contract, "callReturner", mirrorAddr.get()
 						)
+								.hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
 								.payingWith(GENESIS)
 								.exposingTypedResultsTo(results -> {
 									log.info("Returner reported {} when called with mirror address", results);
@@ -1043,24 +1044,17 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						sourcing(() -> contractCall(
 								contract, "callReturner", mirrorAddr.get()
 						)
+								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
 								.payingWith(GENESIS)
 								.via(mirrorCall))
 				).then(
 						withOpContext((spec, opLog) -> {
-							final var aliasLookup = getTxnRecord(aliasCall);
-							final var mirrorLookup = getTxnRecord(aliasCall);
-							allRunFor(spec, aliasLookup, mirrorLookup);
-							final var aliasResult =
-									aliasLookup.getResponseRecord().getContractCallResult().getContractCallResult();
+							final var mirrorLookup = getTxnRecord(mirrorCall);
+							allRunFor(spec, mirrorLookup);
 							final var mirrorResult =
 									mirrorLookup.getResponseRecord().getContractCallResult().getContractCallResult();
-							assertEquals(
-									aliasResult, mirrorResult,
-									"Call with mirror address should be same as call with alias");
-							assertEquals(
-									staticCallAliasAns.get(),
-									staticCallMirrorAns.get(),
-									"Static call with mirror address should be same as call with alias");
+							assertEquals(ByteString.EMPTY, mirrorResult,
+									"Internal calls with mirror address should not be possible for aliased contracts");
 						})
 				);
 	}

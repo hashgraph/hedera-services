@@ -26,8 +26,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 
@@ -243,5 +243,10 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 	@Override
 	public void setKey(EntityNumPair phl) {
 		this.numbers = phl.value();
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0180_VERSION;
 	}
 }

@@ -121,7 +121,7 @@ public class KeyFactory implements Serializable {
 			final String passphrase
 	) {
 		final var pubKeyBytes = targetKeyExtractor.apply(registry.getKey(name));
-		final var hexedPubKey = com.swirlds.common.CommonUtils.hex(pubKeyBytes);
+		final var hexedPubKey = com.swirlds.common.utility.CommonUtils.hex(pubKeyBytes);
 		final var key = (EdDSAPrivateKey) pkMap.get(hexedPubKey);
 		Ed25519Utils.writeKeyTo(key, loc, passphrase);
 	}
@@ -131,13 +131,13 @@ public class KeyFactory implements Serializable {
 	}
 
 	public void incorporate(final String byName, final EdDSAPrivateKey key, final SigControl control) {
-		final var pubKeyHex = com.swirlds.common.CommonUtils.hex(key.getAbyte());
+		final var pubKeyHex = com.swirlds.common.utility.CommonUtils.hex(key.getAbyte());
 		pkMap.put(pubKeyHex, key);
 		controlMap.put(registry.getKey(byName), control);
 	}
 
 	public void incorporateEd25519SimpleWacl(final String byName, final EdDSAPrivateKey key) {
-		final var pubKeyHex = com.swirlds.common.CommonUtils.hex(key.getAbyte());
+		final var pubKeyHex = com.swirlds.common.utility.CommonUtils.hex(key.getAbyte());
 		incorporate(byName, pubKeyHex, key, KeyShape.listOf(1));
 	}
 
@@ -276,7 +276,7 @@ public class KeyFactory implements Serializable {
 
 		private void signIfNecessary(final Key key) throws Throwable {
 			final var pk = extractPubKey(key);
-			final var hexedPk = com.swirlds.common.CommonUtils.hex(pk);
+			final var hexedPk = com.swirlds.common.utility.CommonUtils.hex(pk);
 			if (!used.contains(hexedPk)) {
 				final var privateKey = pkMap.get(hexedPk);
 				final byte[] sig;
@@ -310,7 +310,7 @@ public class KeyFactory implements Serializable {
 
 	public static EdDSAPrivateKey payerKey(HapiSpecSetup setup) throws Exception {
 		if (StringUtils.isNotEmpty(setup.defaultPayerKey())) {
-			return Ed25519Utils.keyFrom(com.swirlds.common.CommonUtils.unhex(setup.defaultPayerKey()));
+			return Ed25519Utils.keyFrom(com.swirlds.common.utility.CommonUtils.unhex(setup.defaultPayerKey()));
 		} else if (StringUtils.isNotEmpty(setup.defaultPayerMnemonic())) {
 			return mnemonicToEd25519Key(setup.defaultPayerMnemonic());
 		} else if (StringUtils.isNotEmpty(setup.defaultPayerMnemonicFile())) {

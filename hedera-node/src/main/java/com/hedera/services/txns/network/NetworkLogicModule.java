@@ -24,7 +24,7 @@ import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.utils.UnzipUtility;
-import com.swirlds.common.SwirldDualState;
+import com.swirlds.common.system.SwirldDualState;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;

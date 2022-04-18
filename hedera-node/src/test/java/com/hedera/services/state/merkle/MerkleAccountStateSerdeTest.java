@@ -23,20 +23,23 @@ package com.hedera.services.state.merkle;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
+import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_ALPHA_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_VERSION;
 
 public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<MerkleAccountState> {
+	public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
+
 	@Override
 	protected Class<MerkleAccountState> getType() {
 		return MerkleAccountState.class;
 	}
 
 	@Override
-	protected int getNumTestCasesFor(int version) {
-		return MIN_TEST_CASES_PER_VERSION;
+	protected int getNumTestCasesFor(final int version) {
+		return version < MerkleAccountState.RELEASE_0260_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
 	}
 
 	@Override
@@ -48,20 +51,22 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 	protected MerkleAccountState getExpectedObject(final int version, final int testCaseNo) {
 		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
 		if (version == RELEASE_0230_VERSION) {
-			return propertySource.next0241AccountState();
-		} else {
-			final var seededAccount = propertySource.nextAccountState();
-			if (version < RELEASE_0250_VERSION) {
-				seededAccount.setEthereumNonce(0L);
+			return propertySource.next0242AccountState();
+		} else if (version <= RELEASE_0250_VERSION) {
+			final var seededAccount = propertySource.next0250AccountState();
+			if (version == RELEASE_0250_ALPHA_VERSION) {
 				seededAccount.setNumTreasuryTitles(0);
+				seededAccount.setNftsOwned(0);
 			}
 			return seededAccount;
+		} else {
+			return getExpectedObject(propertySource);
 		}
 	}
 
 	@Override
 	protected MerkleAccountState getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextAccountState();
+		return propertySource.next0260AccountState();
 	}
 
 	private static byte[] getForm(final int version, final int testCaseNo) {

@@ -199,7 +199,7 @@ abstract class EvmTxProcessor {
 
 		final MerkleNetworkContext curNetworkCtx = networkCtx.get();
 		final Address coinbase = Id.fromGrpcAccount(dynamicProperties.fundingAccount()).asEvmAddress();
-		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, curNetworkCtx.getBlockNo(), curNetworkCtx.getFirstConsTimeOfCurrentBlock());
+		final HederaBlockValues blockValues = new HederaBlockValues(gasLimit, curNetworkCtx.getBlockNo(), curNetworkCtx.firstConsTimeOfCurrentBlock());
 		final Gas gasAvailable = Gas.of(gasLimit).minus(intrinsicGas);
 		final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 

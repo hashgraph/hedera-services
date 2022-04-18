@@ -55,9 +55,12 @@ import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.migration.LegacyStateChildIndices;
 import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
+import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.serdes.IoUtils;
+import com.hedera.services.state.virtual.IterableStorageUtils;
+import com.hedera.services.state.virtual.KeyPackingUtils;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.stats.ServicesStatsConfig;
@@ -117,6 +120,7 @@ class UtilsConstructorTest {
 			BitPackUtils.class,
 			LegacyStateChildIndices.class,
 			ReleaseTwentyFourMigration.class,
+			ReleaseTwentySixMigration.class,
 			StateChildIndices.class,
 			StateVersions.class,
 			MiscRunningAvgs.Names.class,
@@ -158,6 +162,8 @@ class UtilsConstructorTest {
 			HederaOperationUtil.class,
 			GasCalculatorHederaUtil.class,
 			SerializationUtils.class,
+			KeyPackingUtils.class,
+			IterableStorageUtils.class,
 			EthereumLogicModule.class
 	));
 

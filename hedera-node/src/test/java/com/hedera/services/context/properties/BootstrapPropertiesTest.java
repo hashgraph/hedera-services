@@ -38,6 +38,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hedera.services.context.properties.EntityType.CONTRACT;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -154,6 +155,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.tokenTransfers.maxLen", 10),
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
+			entry("autoRemove.maxPurgedKvPairsPerTouch", 10),
 			entry("autoRenew.targetTypes", EnumSet.noneOf(EntityType.class)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
@@ -216,8 +218,8 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
 			entry("accounts.limitTokenAssociations", false),
-			entry("blocks.lastBlockTimestamp", Instant.parse("2022-04-01T00:00:00Z")),
-			entry("blocks.lastBlockNumber", 1L)
+			entry("bootstrap.lastKnownBlockStartTime", Instant.parse("2022-04-01T00:00:00Z")),
+			entry("bootstrap.lastKnownBlockNumber", 1L)
 	);
 
 	@Test

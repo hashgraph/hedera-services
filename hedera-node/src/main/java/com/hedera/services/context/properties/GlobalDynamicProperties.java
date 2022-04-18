@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Instant;
 import java.util.Set;
 
 import static com.hedera.services.context.properties.EntityType.ACCOUNT;
@@ -113,8 +112,7 @@ public class GlobalDynamicProperties {
 	private boolean enableAllowances;
 	private boolean limitTokenAssociations;
 	private boolean enableHTSPrecompileCreate;
-	private long bootstrapLastBlockNumber;
-	private Instant bootstrapLastBlockTimestamp;
+	private int maxPurgedKvPairsPerTouch;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -207,8 +205,7 @@ public class GlobalDynamicProperties {
 		atLeastOneAutoRenewTargetType = !autoRenewTargetTypes.isEmpty();
 		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
-		bootstrapLastBlockNumber = properties.getLongProperty("blocks.lastBlockNumber");
-		bootstrapLastBlockTimestamp = properties.getInstantProperty("blocks.lastBlockTimestamp");
+		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
 	}
 
 	public int maxTokensPerAccount() {
@@ -503,11 +500,7 @@ public class GlobalDynamicProperties {
 		return enableHTSPrecompileCreate;
 	}
 
-	public long bootstrapLastBlockNumber() {
-		return bootstrapLastBlockNumber;
-	}
-
-	public Instant bootstrapLastBlockTimestamp() {
-		return bootstrapLastBlockTimestamp;
-	}
+	public int getMaxPurgedKvPairsPerTouch() {
+		return maxPurgedKvPairsPerTouch;
+        }
 }

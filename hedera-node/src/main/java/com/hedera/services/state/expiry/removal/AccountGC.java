@@ -122,8 +122,9 @@ public class AccountGC {
 		while (relKey != null && i-- > 0) {
 			final var rel = curRels.get(relKey);
 			final var tokenNum = relKey.getLowOrderAsNum();
-			if (rel.getBalance() > 0) {
-				treasuryReturnHelper.updateReturns(expiredAccountNum, tokenNum, 0, returnTransfers);
+			final var tokenBalance = rel.getBalance();
+			if (tokenBalance > 0) {
+				treasuryReturnHelper.updateReturns(expiredAccountNum, tokenNum, tokenBalance, returnTransfers);
 			}
 			// We are always removing the root, hence receiving the new root
 			relKey = removalFacilitation.removeNext(relKey, relKey, listRemoval);

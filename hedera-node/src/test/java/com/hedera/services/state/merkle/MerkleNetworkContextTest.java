@@ -33,8 +33,10 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
-import com.swirlds.common.MutabilityException;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.platform.state.DualStateImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,7 +67,6 @@ class MerkleNetworkContextTest {
 	private Instant lastMidnightBoundaryCheck;
 	private Instant consensusTimeOfLastHandledTxn;
 	private Instant firstConsTimeOfCurrentBlock;
-	private Instant latestConsTimeOfCurrentBlock;
 	private SequenceNumber seqNo;
 	private SequenceNumber seqNoCopy;
 	private ExchangeRates midnightRateSet;
@@ -93,7 +94,6 @@ class MerkleNetworkContextTest {
 
 		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
 		firstConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_567L, 13579L);
-		latestConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_589L, 25854L);
 		lastMidnightBoundaryCheck = consensusTimeOfLastHandledTxn.minusSeconds(123L);
 
 		seqNo = mock(SequenceNumber.class);
@@ -126,8 +126,36 @@ class MerkleNetworkContextTest {
 		subject.setPreparedUpdateFileHash(preparedUpdateFileHash);
 		subject.markMigrationRecordsStreamed();
 		subject.setFirstConsTimeOfCurrentBlock(firstConsTimeOfCurrentBlock);
-		subject.setLatestConsTimeOfCurrentBlock(latestConsTimeOfCurrentBlock);
 		subject.setBlockNo(0L);
+	}
+
+	@Test
+	void updatesExpectedFieldsWhenFinishingBlock() {
+		final var newFirstConsTime = firstConsTimeOfCurrentBlock.plusSeconds(3);
+		subject.setBlockNo(aBlockNo);
+
+		final var newBlockNo = subject.finishBlock(aFullBlockHash, newFirstConsTime);
+
+		assertEquals(Map.of(aBlockNo, aEthHash), subject.getBlockHashCache());
+		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
+		assertEquals(aBlockNo + 1, subject.getBlockNo());
+		assertEquals(aBlockNo + 1, newBlockNo);
+	}
+
+	@Test
+	void doesntKeepMoreThanExpectedBlockHashes() {
+		final var newFirstConsTime = firstConsTimeOfCurrentBlock.plusSeconds(3);
+		subject.setBlockNo(aBlockNo);
+		for (int i = 0; i < 256; i++) {
+			subject.getBlockHashCache().put((long) i, aEthHash);
+		}
+
+		subject.finishBlock(aFullBlockHash, newFirstConsTime);
+
+		assertFalse(subject.getBlockHashCache().containsKey(0L));
+		assertEquals(aEthHash, subject.getBlockHashCache().get(aBlockNo));
+		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
+		assertEquals(aBlockNo + 1, subject.getBlockNo());
 	}
 
 	@Test
@@ -171,9 +199,10 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
 		assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
 		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
-		assertSame(subjectCopy.getBlockHashCache(), subject.getBlockHashCache());
+		assertEquals(subjectCopy.getBlockHashCache(), subject.getBlockHashCache());
+		assertNotSame(subject.getBlockHashCache(), subjectCopy.getBlockHashCache());
 		assertSame(subjectCopy.getBlockNo(), subject.getBlockNo());
-		assertSame(subjectCopy.getFirstConsTimeOfCurrentBlock(), subject.getFirstConsTimeOfCurrentBlock());
+		assertSame(subjectCopy.firstConsTimeOfCurrentBlock(), subject.firstConsTimeOfCurrentBlock());
 		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());
 		// and:
 		assertTrue(subject.isImmutable());
@@ -505,20 +534,6 @@ class MerkleNetworkContextTest {
 	}
 
 	@Test
-	void startNewBlockWork() {
-		// when:
-		final Instant consTime = Instant.ofEpochSecond(1_234_567L, 890);
-
-		subject.setBlockNo(10);
-		subject.setFirstConsTimeOfCurrentBlock(consTime);
-		subject.startNewBlock(null);
-
-		// then:
-		assertEquals(11, subject.getBlockNo());
-		assertEquals(null, subject.getFirstConsTimeOfCurrentBlock());
-	}
-
-	@Test
 	void updatesEmptySnapshotsAsExpected() {
 		// setup:
 		throttling = mock(FunctionalityThrottling.class);
@@ -797,4 +812,8 @@ class MerkleNetworkContextTest {
 	private Instant[] congestionStarts() {
 		return congestionStarts;
 	}
+
+	private static final long aBlockNo = 123_456L;
+	private static final Hash aFullBlockHash = new Hash(TxnUtils.randomUtf8Bytes(48));
+	private static final org.hyperledger.besu.datatypes.Hash aEthHash = ethHashFrom(aFullBlockHash);
 }

@@ -107,7 +107,8 @@ class AccountGCTest {
 		final var actualReturns = subject.expireBestEffort(num, accountWithTokens);
 
 		assertEquals(expectedReturns, actualReturns);
-		verify(treasuryReturnHelper, never()).updateReturns(any(), eq(bToken), eq(0), any());
+		verify(treasuryReturnHelper).updateReturns(any(), eq(aToken), eq(1L), any());
+		verify(treasuryReturnHelper, never()).updateReturns(any(), eq(bToken), eq(0L), any());
 		assertRemovalStepsTaken(num, accountWithTokens);
 	}
 
