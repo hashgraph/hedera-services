@@ -28,7 +28,7 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -68,7 +68,7 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private Function<CustomFee, FcCustomFee> grpcFeeConverter;
 	@Mock
@@ -155,10 +155,10 @@ class TokenFeeScheduleUpdateTransitionLogicTest {
 	private void givenTxnCtx() {
 		final TokenFeeScheduleUpdateTransactionBody tokenFeeScheduleUpdateTxn =
 				TokenFeeScheduleUpdateTransactionBody.newBuilder()
-				.setTokenId(target)
-				.addCustomFees(CustomFee.getDefaultInstance())
-				.addCustomFees(CustomFee.getDefaultInstance())
-				.build();
+						.setTokenId(target)
+						.addCustomFees(CustomFee.getDefaultInstance())
+						.addCustomFees(CustomFee.getDefaultInstance())
+						.build();
 
 		final var txn = TransactionBody.newBuilder()
 				.setTokenFeeScheduleUpdate(tokenFeeScheduleUpdateTxn)

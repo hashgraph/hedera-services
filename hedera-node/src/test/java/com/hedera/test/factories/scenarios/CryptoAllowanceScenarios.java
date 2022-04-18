@@ -20,7 +20,7 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.CryptoApproveAllowanceFactory.newSignedApproveAllowance;
 import static com.hedera.test.factories.txns.CryptoDeleteAllowanceFactory.newSignedDeleteAllowance;
@@ -29,7 +29,7 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	CRYPTO_APPROVE_ALLOWANCE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceList)
 							.withNftAllowances(nftAllowanceList)
@@ -41,7 +41,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_ALLOWANCE_USING_DELEGATING_SPENDER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceList)
 							.withNftAllowances(delegatingNftAllowanceList)
@@ -53,7 +53,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_TOKEN_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceList)
 							.withNftAllowances(nftAllowanceList)
@@ -64,7 +64,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_CRYPTO_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceMissingOwnerList)
 							.withNftAllowances(nftAllowanceList)
@@ -75,7 +75,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceList)
 							.withNftAllowances(nftAllowanceMissingOwnerList)
@@ -86,7 +86,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_NFT_ALLOWANCE_MISSING_DELEGATING_SPENDER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceList)
 							.withNftAllowances(delegatingNftAllowanceMissingOwnerList)
@@ -97,7 +97,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedApproveAllowance()
 							.withCryptoAllowances(cryptoAllowanceNoOwnerList)
 							.withNftAllowances(nftAllowanceList)
@@ -109,7 +109,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_DELETE_ALLOWANCE_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedDeleteAllowance()
 							.withNftAllowances(nftDeleteAllowanceList)
 							.nonPayerKts(OWNER_ACCOUNT_KT)
@@ -119,7 +119,7 @@ public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
 	},
 	CRYPTO_DELETE_NFT_ALLOWANCE_MISSING_OWNER_SCENARIO {
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedDeleteAllowance()
 							.withNftAllowances(nftDeleteAllowanceMissingOwnerList)
 							.get()

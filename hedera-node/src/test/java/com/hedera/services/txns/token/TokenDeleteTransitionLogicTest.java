@@ -28,7 +28,7 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
@@ -53,7 +53,7 @@ class TokenDeleteTransitionLogicTest {
 	private static final TokenID grpcTokenId = IdUtils.asToken("0.0.12345");
 	private static final Id tokenId = Id.fromGrpcToken(grpcTokenId);
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private TypedTokenStore typedTokenStore;
 	private AccountStore accountStore;
 	private Token token;
@@ -66,7 +66,7 @@ class TokenDeleteTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		txnCtx = mock(TransactionContext.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		typedTokenStore = mock(TypedTokenStore.class);
 		accountStore = mock(AccountStore.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);

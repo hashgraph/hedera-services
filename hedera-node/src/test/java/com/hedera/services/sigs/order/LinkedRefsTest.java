@@ -148,6 +148,16 @@ class LinkedRefsTest {
 		assertSame(when, subject.getSourceSignedAt());
 	}
 
+	@Test
+	void toStringWorks(){
+		subject.setSourceSignedAt(when);
+		subject.link(1L);
+		subject.link(2L);
+		subject.link(3L);
+		final var expectedString = "LinkedRefs{sourceSignedAt=1970-01-15T06:56:07Z, linkedAliases=null, linkedNums=[1, 2, 3, 0]}";
+		assertEquals(expectedString , subject.toString());
+	}
+
 	private static final ByteString alias = ByteString.copyFromUtf8("0123456789");
 	private static final Instant when = Instant.ofEpochSecond(1_234_567L);
 }

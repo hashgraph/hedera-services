@@ -9,9 +9,9 @@ package com.hedera.services.fees.charging;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,14 +20,14 @@ package com.hedera.services.fees.charging;
  * ‍
  */
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
-import com.hedera.services.utils.SignedTxnAccessor;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -46,6 +46,7 @@ import java.util.Map;
 
 import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
 import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
+import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -62,16 +63,16 @@ class TxnChargingPolicyAgentTest {
 	private final long submittingNode = 1L;
 	private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
 	private final FeeObject mockFees = new FeeObject(1L, 2L, 3L);
-	private final TxnAccessor accessor = SignedTxnAccessor.uncheckedFrom(Transaction.newBuilder()
+	private final PlatformTxnAccessor accessor = PlatformTxnAccessor.from(from(Transaction.newBuilder()
 			.setBodyBytes(TransactionBody.newBuilder()
-			.setTransactionID(TransactionID.newBuilder()
-					.setTransactionValidStart(Timestamp.newBuilder()
-							.setSeconds(1_234_567L)
-							.build())
-					.setAccountID(IdUtils.asAccount("0.0.1234")))
+					.setTransactionID(TransactionID.newBuilder()
+							.setTransactionValidStart(Timestamp.newBuilder()
+									.setSeconds(1_234_567L)
+									.build())
+							.setAccountID(IdUtils.asAccount("0.0.1234")))
 					.build()
 					.toByteString())
-			.build());
+			.build()));
 
 	@Mock
 	private StateView currentView;
@@ -89,6 +90,9 @@ class TxnChargingPolicyAgentTest {
 	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
 	private TxnChargingPolicyAgent subject;
+
+	TxnChargingPolicyAgentTest() throws InvalidProtocolBufferException {
+	}
 
 	@BeforeEach
 	void setUp() {

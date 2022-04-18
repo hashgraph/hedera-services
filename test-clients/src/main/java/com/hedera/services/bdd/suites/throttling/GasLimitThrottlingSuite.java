@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.throttling;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -32,9 +31,9 @@ import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -42,6 +41,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 public class GasLimitThrottlingSuite extends HapiApiSuite {
 
 	private static final Logger log = LogManager.getLogger(GasLimitThrottlingSuite.class);
+	private static final String CONTRACT = "Benchmark";
+
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
@@ -58,7 +59,7 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec txsUnderGasLimitAllowed() {
-		final int NUM_CALLS = 10;
+		final var NUM_CALLS = 10;
 		return defaultHapiSpec("TXsUnderGasLimitAllowed")
 				.given(
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"),
@@ -68,13 +69,13 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 				).when(
 						/* we need the payer account, see SystemPrecheck IS_THROTTLE_EXEMPT */
 						cryptoCreate("payerAccount").balance(ONE_MILLION_HBARS),
-						fileCreate("contractBytecode").path(ContractResources.BENCHMARK_CONTRACT),
-						contractCreate("perf").bytecode("contractBytecode").payingWith("payerAccount")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT).payingWith("payerAccount")
 				).then(
 						UtilVerbs.inParallel(
 								asOpArray(NUM_CALLS, i ->
 										contractCall(
-												"perf", ContractResources.TWO_SSTORES,
+												CONTRACT, "twoSSTOREs",
 												Bytes.fromHexString("0x05").toArray()
 										)
 												.gas(100_000)
@@ -83,7 +84,7 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 								)
 						),
 						UtilVerbs.sleepFor(1000),
-						contractCall("perf", ContractResources.TWO_SSTORES,
+						contractCall(CONTRACT, "twoSSTOREs",
 								Bytes.fromHexString("0x06").toArray())
 								.gas(1_000_000L)
 								.payingWith("payerAccount")
@@ -93,6 +94,7 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec txOverGasLimitThrottled() {
+
 		return defaultHapiSpec("TXOverGasLimitThrottled")
 				.given(
 						UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"),
@@ -101,11 +103,11 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
 						UtilVerbs.overriding("contracts.consensusThrottleMaxGasLimit", "1000000")
 				).when(
 						cryptoCreate("payerAccount").balance(ONE_MILLION_HBARS),
-						fileCreate("contractBytecode").path(ContractResources.BENCHMARK_CONTRACT),
-						contractCreate("perf").bytecode("contractBytecode")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).then(
 						contractCall(
-								"perf", ContractResources.TWO_SSTORES,
+								CONTRACT, "twoSSTOREs",
 								Bytes.fromHexString("0x05").toArray()
 						)
 								.gas(1_000_001)
