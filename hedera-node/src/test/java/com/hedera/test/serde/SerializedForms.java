@@ -79,7 +79,7 @@ public class SerializedForms {
 			final int testCaseNo,
 			final int responseCodeEnumCount
 	) {
-		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo, responseCodeEnumCount);
+		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
 		final var example = factory.apply(propertySource);
 		final var actual = SerdeUtils.serialize(example);
 		final var expected = loadForm(type, version, testCaseNo);
