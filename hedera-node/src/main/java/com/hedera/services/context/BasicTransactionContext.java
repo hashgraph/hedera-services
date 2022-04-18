@@ -30,12 +30,13 @@ import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -228,6 +229,15 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
+	public SwirldsTxnAccessor swirldsTxnAccessor() {
+		if (accessor instanceof SwirldsTxnAccessor swirldsTxnAccessor) {
+			return swirldsTxnAccessor;
+		} else {
+			throw new IllegalStateException("This context did not originate from a Swirlds transaction");
+		}
+	}
+
+	@Override
 	public void setStatus(final ResponseCodeEnum status) {
 		statusSoFar = status;
 	}
@@ -279,6 +289,16 @@ public class BasicTransactionContext implements TransactionContext {
 	public void setCallResult(final EvmFnResult result) {
 		this.evmFnResult = result;
 		recordConfig = expiringRecord -> expiringRecord.setContractCallResult(result);
+	}
+
+	@Override
+	public void updateFromEvmCallContext(final EvmFnResult.EvmFnCallContext callContext) {
+		this.evmFnResult.updateFromEvmCallContext(callContext);
+		var wrappedRecordConfig = recordConfig;
+		recordConfig = expiringRecord -> {
+			wrappedRecordConfig.accept(expiringRecord);
+			expiringRecord.setEthereumHash(callContext.getEthereumHash());
+		};
 	}
 
 	@Override

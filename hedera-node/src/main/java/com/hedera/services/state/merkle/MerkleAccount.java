@@ -191,6 +191,19 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		state().setNftsOwned(nftsOwned);
 	}
 
+	public boolean isTokenTreasury() {
+		return state().isTokenTreasury();
+	}
+
+	public int getNumTreasuryTitles() {
+		return state().getNumTreasuryTitles();
+	}
+
+	public void setNumTreasuryTitles(final int treasuryTitles) {
+		// This will throw MutabilityException if we are immutable
+		state().setNumTreasuryTitles(treasuryTitles);
+	}
+
 	public String getMemo() {
 		return state().memo();
 	}
@@ -217,6 +230,15 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 		throwIfImmutable("Cannot change this account's alias if it's immutable.");
 		Objects.requireNonNull(alias);
 		state().setAlias(alias);
+	}
+
+	public long getEthereumNonce() {
+		return state().ethereumNonce();
+	}
+
+	public void setEthereumNonce(final long ethereumNonce) {
+		throwIfImmutable("Cannot change this account's ethereumNonce if it's immutable.");
+		state().setEthereumNonce(ethereumNonce);
 	}
 
 	public int getNumAssociations() {

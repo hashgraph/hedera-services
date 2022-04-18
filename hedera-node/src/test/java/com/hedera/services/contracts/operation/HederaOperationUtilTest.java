@@ -27,6 +27,7 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.WorldStateAccount;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -69,7 +70,7 @@ class HederaOperationUtilTest {
 	@Mock
 	private HederaWorldState.Updater updater;
 	@Mock
-	private HederaWorldState.WorldStateAccount worldStateAccount;
+	private WorldStateAccount worldStateAccount;
 	@Mock
 	private EvmSigsVerifier sigsVerifier;
 	@Mock

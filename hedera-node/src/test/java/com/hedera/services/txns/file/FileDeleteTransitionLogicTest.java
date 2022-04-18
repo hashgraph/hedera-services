@@ -28,7 +28,7 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -72,7 +72,7 @@ class FileDeleteTransitionLogicTest {
 			.build();
 
 	private TransactionBody fileDeleteTxn;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private HederaFs hfs;
 	private TransactionContext txnCtx;
 	private SigImpactHistorian sigImpactHistorian;
@@ -80,7 +80,7 @@ class FileDeleteTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 

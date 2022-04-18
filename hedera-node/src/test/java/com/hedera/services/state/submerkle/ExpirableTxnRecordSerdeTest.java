@@ -50,6 +50,10 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 		if (version == RELEASE_0230_VERSION) {
 			// Always empty before 0.25
 		}
+		if (version < ExpirableTxnRecord.RELEASE_0260_VERSION) {
+			// Ethereum hash added in release 0.26
+			seeded.setEthereumHash(ExpirableTxnRecord.MISSING_ETHEREUM_HASH);
+		}
 		return seeded;
 	}
 

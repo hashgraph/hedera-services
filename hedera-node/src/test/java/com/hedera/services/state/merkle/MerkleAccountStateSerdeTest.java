@@ -26,6 +26,7 @@ import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.CommonUtils;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
+import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_VERSION;
 
 public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<MerkleAccountState> {
 	@Override
@@ -49,7 +50,12 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 		if (version == RELEASE_0230_VERSION) {
 			return propertySource.next0241AccountState();
 		} else {
-			return getExpectedObject(propertySource);
+			final var seededAccount = propertySource.nextAccountState();
+			if (version < RELEASE_0250_VERSION) {
+				seededAccount.setEthereumNonce(0L);
+				seededAccount.setNumTreasuryTitles(0);
+			}
+			return seededAccount;
 		}
 	}
 

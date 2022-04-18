@@ -22,7 +22,7 @@ package com.hedera.services.queries.crypto;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.queries.AnswerService;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoGetLiveHashQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetLiveHashResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

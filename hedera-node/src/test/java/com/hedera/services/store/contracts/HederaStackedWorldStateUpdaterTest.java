@@ -22,27 +22,31 @@ package com.hedera.services.store.contracts;
  *
  */
 
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.store.contracts.HederaWorldState.WorldStateAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
+import org.hyperledger.besu.evm.account.Account;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
@@ -63,23 +67,74 @@ class HederaStackedWorldStateUpdaterTest {
 	@Mock
 	private WorldLedgers trackingLedgers;
 	@Mock(extraInterfaces = { HederaWorldUpdater.class })
-	private AbstractLedgerWorldUpdater<HederaMutableWorldState, WorldStateAccount> updater;
+	private AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
 	private HederaMutableWorldState worldState;
 	@Mock
-	private HederaWorldState.WorldStateAccount account;
-	@Mock
 	private HederaStackedWorldStateUpdater.CustomizerFactory customizerFactory;
 	@Mock
 	private ContractCustomizer customizer;
+	@Mock
+	private GlobalDynamicProperties globalDynamicProperties;
 
 	private HederaStackedWorldStateUpdater subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers);
+		subject = new HederaStackedWorldStateUpdater(updater, worldState, trackingLedgers, globalDynamicProperties);
+	}
+
+	@Test
+	void recognizesTreasuryAccount() {
+		final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
+		final var treasuryAddressId = EntityIdUtils.accountIdFromEvmAddress(treasuryAddress);
+		given(aliases.resolveForEvm(treasuryAddress)).willReturn(treasuryAddress);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(accountsLedger.get(treasuryAddressId, NUM_TREASURY_TITLES)).willReturn(1);
+		assertTrue(subject.contractIsTokenTreasury(treasuryAddress));
+		given(accountsLedger.get(treasuryAddressId, NUM_TREASURY_TITLES)).willReturn(0);
+		assertFalse(subject.contractIsTokenTreasury(treasuryAddress));
+	}
+
+	@Test
+	void recognizesNonZeroTokenBalanceAccount() {
+		final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
+		final var positiveBalanceId = EntityIdUtils.accountIdFromEvmAddress(treasuryAddress);
+		given(aliases.resolveForEvm(treasuryAddress)).willReturn(treasuryAddress);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(accountsLedger.get(positiveBalanceId, NUM_POSITIVE_BALANCES)).willReturn(1);
+		assertTrue(subject.contractHasAnyBalance(treasuryAddress));
+		given(accountsLedger.get(positiveBalanceId, NUM_POSITIVE_BALANCES)).willReturn(0);
+		assertFalse(subject.contractHasAnyBalance(treasuryAddress));
+	}
+
+	@Test
+	void recognizesAccountWhoStillOwnsNfts() {
+		final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
+		final var positiveBalanceId = EntityIdUtils.accountIdFromEvmAddress(treasuryAddress);
+		given(aliases.resolveForEvm(treasuryAddress)).willReturn(treasuryAddress);
+		given(trackingLedgers.accounts()).willReturn(accountsLedger);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+		given(accountsLedger.get(positiveBalanceId, NUM_NFTS_OWNED)).willReturn(1L);
+		assertTrue(subject.contractOwnsNfts(treasuryAddress));
+		given(accountsLedger.get(positiveBalanceId, NUM_NFTS_OWNED)).willReturn(0L);
+		assertFalse(subject.contractOwnsNfts(treasuryAddress));
+	}
+
+	@Test
+	void understandsRedirectsIfDisabled() {
+		assertFalse(subject.isTokenRedirect(Address.ALTBN128_PAIRING));
+	}
+
+	@Test
+	void understandsRedirectsIfMissingTokens() {
+		given(globalDynamicProperties.isRedirectTokenCallsEnabled()).willReturn(true);
+		given(trackingLedgers.isTokenAddress(Address.ALTBN128_PAIRING)).willReturn(true);
+		assertTrue(subject.isTokenRedirect(Address.ALTBN128_PAIRING));
 	}
 
 	@Test
@@ -236,34 +291,6 @@ class HederaStackedWorldStateUpdaterTest {
 	void updaterReturnsStacked() {
 		var updater = subject.updater();
 		assertEquals(HederaStackedWorldStateUpdater.class, updater.getClass());
-	}
-
-	@Test
-	void getHederaAccountReturnsNullIfNotPresentInParent() {
-		given(trackingLedgers.aliases()).willReturn(aliases);
-		given(aliases.resolveForEvm(address)).willReturn(address);
-		given(((HederaWorldUpdater) updater).getHederaAccount(address)).willReturn(null);
-
-		final var result = subject.getHederaAccount(address);
-
-		// then:
-		assertNull(result);
-		// and:
-		verify((HederaWorldUpdater) updater).getHederaAccount(address);
-	}
-
-	@Test
-	void getHederaAccountReturnsValueIfPresentInParent() {
-		given(trackingLedgers.aliases()).willReturn(aliases);
-		given(aliases.resolveForEvm(address)).willReturn(address);
-		given(((HederaWorldUpdater) updater).getHederaAccount(address)).willReturn(account);
-
-		final var result = subject.getHederaAccount(address);
-
-		// then:
-		assertEquals(account, result);
-		// and:
-		verify((HederaWorldUpdater) updater).getHederaAccount(address);
 	}
 
 	private void withMockCustomizerFactory(final Runnable spec) {

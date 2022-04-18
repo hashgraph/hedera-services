@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.perf.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -37,7 +36,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 public class ContractCallPerfSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallPerfSuite.class);
@@ -65,32 +66,33 @@ public class ContractCallPerfSuite extends HapiApiSuite {
 		final int NUM_CALLS = 1_000;
 		final long ENDING_BALANCE = NUM_CALLS * (NUM_CALLS + 1) / 2;
 		final String DEPOSIT_MEMO = "So we out-danced thought, body perfection brought...";
+		final var verboseDeposit = "VerboseDeposit";
+		final var balanceLookup = "BalanceLookup";
 
 		return defaultHapiSpec("ContractCallPerf")
 				.given(
-						fileCreate("contractBytecode").path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
-						contractCreate("perf").bytecode("contractBytecode"),
-						fileCreate("lookupBytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("balanceLookup").bytecode("lookupBytecode").balance(1L)
+						uploadInitCode(verboseDeposit,balanceLookup),
+						contractCreate(verboseDeposit),
+						contractCreate(balanceLookup).balance(1L)
 				).when(
-						getContractInfo("perf").hasExpectedInfo().logged(),
+						getContractInfo(verboseDeposit).hasExpectedInfo().logged(),
 						UtilVerbs.startThroughputObs("contractCall").msToSaturateQueues(50L)
 				).then(
 						UtilVerbs.inParallel(asOpArray(NUM_CALLS, i ->
-								contractCall("perf", ContractResources.VERBOSE_DEPOSIT_ABI, i + 1, 0, DEPOSIT_MEMO)
+								contractCall(verboseDeposit, "deposit", i + 1, 0, DEPOSIT_MEMO)
 										.sending(i + 1)
 										.deferStatusResolution())),
 						UtilVerbs.finishThroughputObs("contractCall")
 								.gatedByQuery(() ->
 										contractCallLocal(
-												"balanceLookup",
-												ContractResources.BALANCE_LOOKUP_ABI,
+												balanceLookup,
+												"lookup",
 												spec -> new Object[]{
-														spec.registry().getContractId("perf").getContractNum()
+														spec.registry().getContractId(verboseDeposit).getContractNum()
 												}
 										).has(
 												resultWith().resultThruAbi(
-														ContractResources.BALANCE_LOOKUP_ABI,
+														getABIFor(FUNCTION, "lookup", balanceLookup),
 														isLiteralResult(
 																new Object[]{BigInteger.valueOf(ENDING_BALANCE)}
 														)

@@ -32,7 +32,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -67,9 +67,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyLong;
@@ -98,7 +98,7 @@ class TokenUpdateTransitionLogicTest {
 	private HederaLedger ledger;
 	private TransactionContext txnCtx;
 	private SigImpactHistorian sigImpactHistorian;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private Predicate<TokenUpdateTransactionBody> expiryOnlyCheck;
 
 	private TokenUpdateTransitionLogic subject;
@@ -108,7 +108,7 @@ class TokenUpdateTransitionLogicTest {
 		validator = mock(OptionValidator.class);
 		store = mock(TokenStore.class);
 		ledger = mock(HederaLedger.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 
 		token = mock(MerkleToken.class);
@@ -348,6 +348,8 @@ class TokenUpdateTransitionLogicTest {
 		subject.doStateTransition();
 
 		verify(txnCtx).setStatus(SUCCESS);
+		verify(ledger).decrementNumTreasuryTitles(oldTreasury);
+		verify(ledger).incrementNumTreasuryTitles(newTreasury);
 		verify(sigImpactHistorian).markEntityChanged(target.getTokenNum());
 	}
 

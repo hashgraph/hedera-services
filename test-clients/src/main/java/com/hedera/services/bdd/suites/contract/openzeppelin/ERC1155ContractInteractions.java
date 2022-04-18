@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.contract.openzeppelin;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
@@ -36,26 +35,24 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 
 public class ERC1155ContractInteractions extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
-	private static final String CONTRACT_NAME = "ERC-1155";
 	private static final String OPERATIONS_PAYER = "payer";
 	private static final String ACCOUNT1 = "acc1";
-	private static final String CONTRACT_FILE_NAME = "contractFileName";
+	private static final String CONTRACT = "GameItems";
+
 	public static void main(String... args) {
 		new ERC1155ContractInteractions().runSuiteSync();
 	}
-	
+
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(
@@ -66,46 +63,48 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
 	private HapiApiSpec erc1155() {
 		final var PAYER_KEY = "payerKey";
 		final var FILE_KEY_LIST = "fileKeyList";
-		return defaultHapiSpec(CONTRACT_NAME)
+
+		return defaultHapiSpec("ERC-1155")
 				.given(
 						newKeyNamed(PAYER_KEY),
 						newKeyListNamed(FILE_KEY_LIST, List.of(PAYER_KEY)),
 						cryptoCreate(ACCOUNT1),
 						cryptoCreate(OPERATIONS_PAYER).balance(ONE_MILLION_HBARS).key(PAYER_KEY),
-						fileCreate(CONTRACT_FILE_NAME).payingWith(OPERATIONS_PAYER).key(FILE_KEY_LIST),
-						updateLargeFile(OPERATIONS_PAYER, CONTRACT_FILE_NAME, extractByteCode(ContractResources.ERC_1155_BYTECODE_PATH))
+						uploadInitCode(CONTRACT)
 				)
 				.when()
 				.then(
-						contractCreate(CONTRACT_NAME).bytecode(CONTRACT_FILE_NAME).via("contractCreate").payingWith(OPERATIONS_PAYER),
+						contractCreate(CONTRACT).via("contractCreate").payingWith(OPERATIONS_PAYER),
 						getTxnRecord("contractCreate").logged(), // 121618 gas
 						getAccountBalance(OPERATIONS_PAYER).logged(), // started with 1M hbars
 						getAccountInfo(ACCOUNT1).savingSnapshot(ACCOUNT1 + "Info"),
 						getAccountInfo(OPERATIONS_PAYER).savingSnapshot(OPERATIONS_PAYER + "Info"),
 						withOpContext((spec, log) -> {
-							var accountOneAddress = spec.registry().getAccountInfo(ACCOUNT1 + "Info").getContractAccountID();
-							var operationsPayerAddress = spec.registry().getAccountInfo(OPERATIONS_PAYER + "Info").getContractAccountID();
-							var ops = new ArrayList<HapiSpecOperation>();
+							final var accountOneAddress = spec.registry().getAccountInfo(ACCOUNT1 + "Info").getContractAccountID();
+							final var operationsPayerAddress = spec.registry().getAccountInfo(OPERATIONS_PAYER + "Info").getContractAccountID();
+							final var ops = new ArrayList<HapiSpecOperation>();
 
 							/* approve for other accounts */
-							var approveCall = contractCall(CONTRACT_NAME, ContractResources.ERC_1155_ABI_APPROVE, accountOneAddress, true)
-									.via("acc1ApproveCall").payingWith(OPERATIONS_PAYER) 
+							final var approveCall = contractCall(CONTRACT, "setApprovalForAll",
+									accountOneAddress, true
+							)
+									.via("acc1ApproveCall")
+									.payingWith(OPERATIONS_PAYER)
 									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
 							ops.add(approveCall);
-							
+
 							/* mint to the contract owner */
-							var mintCall = contractCall(CONTRACT_NAME, ContractResources.ERC_1155_ABI_MINT, 0, 10, operationsPayerAddress)
+							final var mintCall = contractCall(CONTRACT, "mintToken",
+									0, 10, operationsPayerAddress
+							)
 									.via("contractMintCall")
 									.payingWith(OPERATIONS_PAYER)
 									.hasKnownStatus(ResponseCodeEnum.SUCCESS);
 							ops.add(mintCall);
 
 							/* transfer from - account to account */
-							var transferCall = contractCall(
-									CONTRACT_NAME,
-									ContractResources.ERC_1155_ABI_SAFE_TRANSFER_FROM,
-									operationsPayerAddress,
-									accountOneAddress,
+							final var transferCall = contractCall(CONTRACT, "safeTransferFrom",
+									operationsPayerAddress, accountOneAddress,
 									0, // token id 
 									1, // amount 
 									"0x0"

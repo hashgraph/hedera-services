@@ -27,8 +27,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
@@ -58,15 +59,16 @@ public class AdjustFeeScheduleSuite extends HapiApiSuite {
 	}
 
 	private HapiApiSpec updateFeesFor() {
-
-		return defaultHapiSpec("updateFees")
-				.given(
-				).when(
-				).then(
-						reduceFeeFor(CryptoTransfer, 2L, 3L, 3L),
-						reduceFeeFor(ConsensusSubmitMessage, 2L, 3L, 3L),
-						sleepFor(30000)
-				);
+		final var fixedFee = ONE_HUNDRED_HBARS;
+		return customHapiSpec("updateFees").withProperties(Map.of(
+						"fees.useFixedOffer", "true",
+						"fees.fixedOffer", "" + fixedFee
+				)
+		).given( ).when( ).then(
+				reduceFeeFor(CryptoTransfer, 2L, 3L, 3L),
+				reduceFeeFor(ConsensusSubmitMessage, 2L, 3L, 3L),
+				sleepFor(30000)
+		);
 	}
 
 	@Override

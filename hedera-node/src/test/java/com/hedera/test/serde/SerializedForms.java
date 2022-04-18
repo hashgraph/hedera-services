@@ -23,6 +23,7 @@ package com.hedera.test.serde;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest;
 import com.hedera.test.utils.SeededPropertySource;
@@ -45,10 +46,10 @@ public class SerializedForms {
 	private static final String FORM_TPL = "%s-v%d-sn%d.hex";
 
 	public static void main(String... args) {
-//		saveAccountStates(MerkleAccountStateSerdeTest.MIN_TEST_CASES_PER_VERSION);
+		saveAccountStates(MerkleAccountStateSerdeTest.MIN_TEST_CASES_PER_VERSION);
 //		saveTxnReceipts(2 * MIN_TEST_CASES_PER_VERSION);
 //		saveNetworkContexts(MerkleNetworkContextSerdeTest.MIN_TEST_CASES_PER_VERSION);
-		saveRecords(ExpirableTxnRecordSerdeTest.NUM_TEST_CASES);
+//		saveRecords(ExpirableTxnRecordSerdeTest.NUM_TEST_CASES);
 //		save024xRecords(ExpirableTxnRecordSerdeTest.MIN_TEST_CASES_PER_VERSION);
 //		saveSchedules(MerkleScheduleSerdeTest.NUM_TEST_CASES);
 //		saveTokens(MerkleTokenSerdeTest.NUM_TEST_CASES);
@@ -57,7 +58,6 @@ public class SerializedForms {
 //		saveTopics(MerkleTopicSerdeTest.NUM_TEST_CASES);
 //		saveEvmResults(EvmFnResultSerdeTest.MIN_TEST_CASES_PER_VERSION);
 	}
-
 
 	public static <T extends SelfSerializable> byte[] loadForm(
 			final Class<T> type,
