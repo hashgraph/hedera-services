@@ -45,7 +45,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -82,6 +81,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -426,7 +427,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
-		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+		assertEquals(WRONG_CHAIN_ID, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -455,7 +456,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(ethTxTxn);
 
 		// expect:
-		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+		assertEquals(WRONG_NONCE, subject.validateSemantics(accessor));
 	}
 
 	@Test

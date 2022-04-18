@@ -43,7 +43,6 @@ import com.hedera.services.state.submerkle.EvmFnResultSerdeTest;
 import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.state.submerkle.EvmLogSerdeTest;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
