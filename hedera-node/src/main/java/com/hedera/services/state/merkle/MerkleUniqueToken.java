@@ -244,4 +244,9 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 	public void setKey(EntityNumPair phl) {
 		this.numbers = phl.value();
 	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0180_VERSION;
+	}
 }

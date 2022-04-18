@@ -28,7 +28,6 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
@@ -49,16 +48,36 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 import static com.hedera.services.bdd.suites.utils.contracts.FunctionParameters.functionParameters;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -82,7 +101,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	private static final String DELEGATE_CONTRACT_KEY_NAME = "contractKey";
 
 	public static void main(String... args) {
-		new ContractMintHTSSuite().runSuiteAsync();
+		new ContractMintHTSSuite().runSuiteSync();
 	}
 
 	@Override
@@ -102,6 +121,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 		return List.of(
 				rollbackOnFailedMintAfterFungibleTransfer(),
 				rollbackOnFailedAssociateAfterNonFungibleMint(),
+				fungibleTokenMintFailure(),
 				gasCostNotMetSetsInsufficientGasStatusInChildRecord()
 		);
 	}
@@ -135,8 +155,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.exposingCreatedIdTo(idLit -> fungibleNum.set(asDotDelimitedLongArray(idLit)[2])),
 						uploadInitCode(HELLO_WORLD_MINT)
 				).when(
-						sourcing(() -> contractCreate(HELLO_WORLD_MINT, fungibleNum.get()))
-				).then(
+						sourcing(() -> contractCreate(HELLO_WORLD_MINT, fungibleNum.get())),
 						contractCall(HELLO_WORLD_MINT, "brrr", amount
 						)
 								.via(firstMintTxn)
@@ -149,10 +168,20 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						getTokenInfo(fungibleToken).logged(),
 						contractCall(HELLO_WORLD_MINT, "brrr", amount).via(secondMintTxn),
 						getTxnRecord(secondMintTxn).andAllChildRecords().logged(),
-						getTokenInfo(fungibleToken).hasTotalSupply(2 * amount),
+						getTokenInfo(fungibleToken).hasTotalSupply(2 * amount)
+				).then(
 						childRecordsCheck(secondMintTxn, SUCCESS,
 								recordWith()
 										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(2469134L)
+																.withSerialNumbers()
+														)
+										)
 										.newTotalSupply(2469134L)
 										.tokenTransfers(
 												changingFungibleBalances()
@@ -197,7 +226,38 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 						getTxnRecord(secondMintTxn).andAllChildRecords().logged()
 				).then(
 						getTokenInfo(nonFungibleToken).hasTotalSupply(2),
-						getTokenNftInfo(nonFungibleToken, 2L).logged()
+						getTokenNftInfo(nonFungibleToken, 2L).logged(),
+						childRecordsCheck(firstMintTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(1)
+																.withSerialNumbers(1)
+														)
+										)
+										.newTotalSupply(1)
+										.serialNos(List.of(1L))
+
+						),
+						childRecordsCheck(secondMintTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(2)
+																.withSerialNumbers(2)
+														)
+										)
+										.newTotalSupply(2)
+										.serialNos(List.of(2L))
+						)
 				);
 	}
 
@@ -237,7 +297,21 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														parsedToByteString(0)))))))
 				).then(
 						getTokenInfo(fungibleToken).hasTotalSupply(amount),
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, amount)
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, amount),
+						childRecordsCheck(firstMintTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(10)
+																.withSerialNumbers()
+														)
+										)
+										.newTotalSupply(10)
+						)
 				);
 	}
 
@@ -279,7 +353,22 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														parsedToByteString(1)))))))
 				).then(
 						getTokenInfo(nonFungibleToken).hasTotalSupply(totalSupply),
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, totalSupply)
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, totalSupply),
+						childRecordsCheck(firstMintTxn, SUCCESS,
+								recordWith()
+										.status(SUCCESS)
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(SUCCESS)
+																.withTotalSupply(2L)
+																.withSerialNumbers(1L, 2L)
+														)
+										)
+										.newTotalSupply(2)
+										.serialNos(Arrays.asList(1L, 2L))
+						)
 				);
 	}
 
@@ -335,37 +424,45 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 				).then(
 						assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(nestedTransferTxn),
 						withOpContext((spec, opLog) -> allRunFor(spec,
-								getTxnRecord(nestedTransferTxn).andAllChildRecords().logged(),
-								childRecordsCheck(nestedTransferTxn, SUCCESS,
-										recordWith()
-												.status(SUCCESS)
-												.contractCallResult(
-														resultWith()
-																.gasUsed(expectedGasUsage)
-																.contractCallResult(htsPrecompileResult()
-																		.forFunction(HTSPrecompileResult.FunctionType.MINT)
-																		.withStatus(SUCCESS)
-																		.withTotalSupply(1L)
-																		.withSerialNumbers(1L)
-																)
-																.gas(3_838_738L)
-																.amount(0L)
-																.functionParameters(functionParameters()
-																		.forFunction(FunctionParameters.PrecompileFunction.MINT)
-																		.withTokenAddress(asAddress(spec.registry()
-																				.getTokenID(nonFungibleToken)))
-																		.withAmount(0L)
-																		.withMetadata(Arrays.asList("Test metadata 1"))
-																		.build()
-																)
-												),
-										recordWith()
-												.status(SUCCESS)
-												.tokenTransfers(NonFungibleTransfers
-														.changingNFTBalances()
-														.including(nonFungibleToken, TOKEN_TREASURY, theRecipient, 1)
-												)
-								)))
+										childRecordsCheck(nestedTransferTxn, SUCCESS,
+												recordWith()
+														.status(SUCCESS)
+														.contractCallResult(
+																resultWith()
+																		.gasUsed(expectedGasUsage)
+																		.contractCallResult(htsPrecompileResult()
+																				.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																				.withStatus(SUCCESS)
+																				.withTotalSupply(1L)
+																				.withSerialNumbers(1L)
+																		)
+																		.gas(3_838_738L)
+																		.amount(0L)
+																		.functionParameters(functionParameters()
+																				.forFunction(FunctionParameters.PrecompileFunction.MINT)
+																				.withTokenAddress(asAddress(spec.registry()
+																						.getTokenID(nonFungibleToken)))
+																				.withAmount(0L)
+																				.withMetadata(List.of("Test metadata 1"))
+																				.build()
+																		)
+														),
+												recordWith()
+														.status(SUCCESS)
+														.contractCallResult(
+																resultWith()
+																		.contractCallResult(htsPrecompileResult()
+																				.forFunction(HTSPrecompileResult.FunctionType.SUCCESS)
+																				.withStatus(SUCCESS)
+																		)
+														)
+														.tokenTransfers(NonFungibleTransfers
+																.changingNFTBalances()
+																.including(nonFungibleToken, TOKEN_TREASURY, theRecipient, 1)
+														)
+										)
+								)
+						)
 				);
 	}
 
@@ -407,13 +504,27 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												)
 														.payingWith(GENESIS).alsoSigningWithFullPrefix(multiKey)
 														.via(failedMintTxn)
-														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												getTxnRecord(failedMintTxn).andAllChildRecords().logged()
 										)
 						)
 				).then(
 						getAccountBalance(theAccount).hasTokenBalance(fungibleToken, 200),
-						getAccountBalance(theRecipient).hasTokenBalance(fungibleToken, 0)
+						getAccountBalance(theRecipient).hasTokenBalance(fungibleToken, 0),
+						childRecordsCheck(failedMintTxn, CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(REVERTED_SUCCESS),
+								recordWith()
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(INSUFFICIENT_GAS)
+																.withTotalSupply(0L)
+																.withSerialNumbers()
+														)
+										)
+						)
 				);
 	}
 
@@ -447,7 +558,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 												spec,
 												contractCreate(outerContract, getNestedContractAddress(nestedContract, spec),
 														asAddress(spec.registry().getTokenID(nonFungibleToken)))
-														.bytecode(outerContract)
 														.gas(GAS_TO_OFFER),
 												newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON,
 														outerContract))),
@@ -459,12 +569,26 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 														.payingWith(GENESIS).alsoSigningWithFullPrefix(MULTI_KEY)
 														.via(nestedMintTxn)
 														.gas(GAS_TO_OFFER)
-														.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
 												getTxnRecord(nestedMintTxn).andAllChildRecords().logged()
 										)
 						)
 				).then(
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, 0)
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(nonFungibleToken, 0),
+						childRecordsCheck(nestedMintTxn, CONTRACT_REVERT_EXECUTED,
+								recordWith()
+										.status(SUCCESS)
+										.newTotalSupply(1)
+										.serialNos(List.of(1L)),
+								recordWith()
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.FAILED)
+																.withStatus(INVALID_TOKEN_ID)
+														)
+										)
+						)
 				);
 	}
 
@@ -495,7 +619,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 				).when(
 						uploadInitCode(theContract),
 						sourcing(() -> contractCreate(theContract, fungibleNum.get())
-								.bytecode(mintContractByteCode).payingWith(theAccount)
+								.payingWith(theAccount)
 								.gas(GAS_TO_OFFER))
 				).then(
 						contractCall(theContract, "mintFungibleToken", amount)
@@ -503,30 +627,14 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.alsoSigningWithFullPrefix(multiKey)
 								.gas(2_000_000L)
 								.hasKnownStatus(SUCCESS),
-						getTxnRecord(firstMintTxn).andAllChildRecords().logged()
+						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
+						emptyChildRecordsCheck(firstMintTxn, SUCCESS)
 				);
-	}
-
-	@NotNull
-	private CustomSpecAssert assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(final String nestedTransferTxn) {
-		return assertionsHold((spec, log) -> {
-			var subOp = getTxnRecord(nestedTransferTxn);
-			allRunFor(spec, subOp);
-
-			var record = subOp.getResponseRecord();
-
-			final var contractCallResult =
-					record.getContractCallResult();
-			assertEquals(0L, contractCallResult.getGas());
-			assertEquals(0L, contractCallResult.getAmount());
-			assertEquals(ByteString.EMPTY, contractCallResult.getFunctionParameters());
-		});
 	}
 
 	private HapiApiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
 
 		final var theAccount = "anybody";
-		final var mintContractByteCode = "mintContractByteCode";
 		final var amount = 10L;
 		final var fungibleToken = "fungibleToken";
 		final var multiKey = "purpose";
@@ -559,9 +667,20 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 								.alsoSigningWithFullPrefix(multiKey)
 								.gas(48_000),
 						getTxnRecord(firstMintTxn).andAllChildRecords().logged(),
-						childRecordsCheck(firstMintTxn, SUCCESS, recordWith().status(INSUFFICIENT_GAS)),
 						getTokenInfo(fungibleToken).hasTotalSupply(0),
-						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, 0)
+						getAccountBalance(TOKEN_TREASURY).hasTokenBalance(fungibleToken, 0),
+						childRecordsCheck(firstMintTxn, SUCCESS,
+								recordWith()
+										.contractCallResult(
+												resultWith()
+														.contractCallResult(htsPrecompileResult()
+																.forFunction(HTSPrecompileResult.FunctionType.MINT)
+																.withStatus(INSUFFICIENT_GAS)
+																.withTotalSupply(0L)
+																.withSerialNumbers()
+														)
+										)
+						)
 				);
 	}
 
@@ -573,5 +692,21 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 	@Override
 	protected Logger getResultsLogger() {
 		return log;
+	}
+
+	@NotNull
+	private CustomSpecAssert assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(final String nestedTransferTxn) {
+		return assertionsHold((spec, log) -> {
+			var subOp = getTxnRecord(nestedTransferTxn);
+			allRunFor(spec, subOp);
+
+			var record = subOp.getResponseRecord();
+
+			final var contractCallResult =
+					record.getContractCallResult();
+			assertEquals(0L, contractCallResult.getGas());
+			assertEquals(0L, contractCallResult.getAmount());
+			assertEquals(ByteString.EMPTY, contractCallResult.getFunctionParameters());
+		});
 	}
 }

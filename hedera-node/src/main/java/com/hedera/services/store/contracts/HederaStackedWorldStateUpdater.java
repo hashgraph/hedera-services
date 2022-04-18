@@ -24,12 +24,14 @@ package com.hedera.services.store.contracts;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
@@ -92,6 +94,10 @@ public class HederaStackedWorldStateUpdater
 	}
 
 	public byte[] unaliased(final byte[] evmAddress) {
+		final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
+		if (!addressOrAlias.equals(trackingLedgers().canonicalAddress(addressOrAlias))) {
+			throw new InvalidTransactionException(ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
+		}
 		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
 	}
 
@@ -161,7 +167,7 @@ public class HederaStackedWorldStateUpdater
 		if (isTokenRedirect(address)) {
 			return new WorldStateTokenAccount(address);
 		}
-		return super.get(address);
+		return super.get(addressOrAlias);
 	}
 
 	@Override

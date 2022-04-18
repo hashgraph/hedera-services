@@ -20,8 +20,8 @@ package com.hedera.test.serde;
  * ‍
  */
 
-import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.ClassLoaderHelper;
+import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.SerializableDataInputStream;
