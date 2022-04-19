@@ -124,7 +124,7 @@ import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.store.contracts.precompile.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
@@ -169,12 +169,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
 	public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
-
-	/* Precompiles cannot change treasury accounts */
-	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
-	};
-	public static final TypedTokenStore.LegacyTreasuryRemover NOOP_TREASURY_REMOVER = (aId, tId) -> {
-	};
 
 	private CreateLogicFactory createLogicFactory = CreateLogic::new;
 	private MintLogicFactory mintLogicFactory = MintLogic::new;
@@ -511,7 +505,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return tokenStoreFactory.newTokenStore(
 				accountStore,
 				ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
-				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
 				sideEffects);
 	}
 
@@ -661,8 +654,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				BackingStore<TokenID, MerkleToken> tokens,
 				BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
 				BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-				TypedTokenStore.LegacyTreasuryAdder treasuryAdder,
-				TypedTokenStore.LegacyTreasuryRemover treasuryRemover,
 				SideEffectsTracker sideEffectsTracker);
 	}
 

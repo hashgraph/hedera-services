@@ -22,6 +22,10 @@ public record NftNumPair(long tokenNum, long serialNum) {
 		return NftId.withDefaultShardRealm(tokenNum, serialNum);
 	}
 
+	public EntityNumPair asEntityNumPair() {
+		return EntityNumPair.fromLongs(tokenNum, serialNum);
+	}
+
 	public static NftNumPair fromNums(final long tokenNum, final long serialNum) {
 		return new NftNumPair(tokenNum, serialNum);
 	}

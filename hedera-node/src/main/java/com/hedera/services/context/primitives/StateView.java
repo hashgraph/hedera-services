@@ -37,6 +37,7 @@ import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.sourcing.KeyType;
+import com.hedera.services.state.backgroundSystemTasks.SystemTask;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -79,6 +80,8 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
+import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.fcqueue.FCQueueElement;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
@@ -120,6 +123,7 @@ public class StateView {
 	static final byte[] EMPTY_BYTES = new byte[0];
 	static final MerkleMap<?, ?> EMPTY_MM = new MerkleMap<>();
 	static final VirtualMap<?, ?> EMPTY_VM = new VirtualMap<>();
+	static final FCQueue<?> EMPTY_FQ = new FCQueue<>();
 
 	public static final JKey EMPTY_WACL = new JKeyList();
 	public static final MerkleToken REMOVED_TOKEN = new MerkleToken(
@@ -585,6 +589,10 @@ public class StateView {
 		return stateChildren == null ? emptyVm() : stateChildren.contractStorage();
 	}
 
+	public FCQueue<SystemTask> systemTasks() {
+		return stateChildren == null ? emptyFq() : stateChildren.systemTasks();
+	}
+
 	public MerkleMap<EntityNum, MerkleToken> tokens() {
 		return stateChildren == null ? emptyMm() : stateChildren.tokens();
 	}
@@ -733,5 +741,9 @@ public class StateView {
 	@SuppressWarnings("unchecked")
 	private static <K extends VirtualKey<K>, V extends VirtualValue> VirtualMap<K, V> emptyVm() {
 		return (VirtualMap<K, V>) EMPTY_VM;
+	}
+
+	private static <V extends FCQueueElement> FCQueue<V> emptyFq() {
+		return (FCQueue<V>) EMPTY_FQ;
 	}
 }

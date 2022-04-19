@@ -9,9 +9,9 @@ package com.hedera.services.txns.token.process;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,13 +36,13 @@ public final class NewRels {
 	public static List<TokenRelationship> listFrom(
 			final Token provisionalToken,
 			final TypedTokenStore tokenStore,
-			final GlobalDynamicProperties dynamicProperties) {
+			final GlobalDynamicProperties dynamicProperties
+	) {
 		final var treasury = provisionalToken.getTreasury();
 		final Set<Id> associatedSoFar = new HashSet<>();
 		final List<TokenRelationship> newRels = new ArrayList<>();
 
 		associateGiven(provisionalToken, treasury, tokenStore, associatedSoFar, newRels, dynamicProperties);
-
 		for (final var customFee : provisionalToken.getCustomFees()) {
 			if (customFee.requiresCollectorAutoAssociation()) {
 				final var collector = customFee.getValidatedCollector();
@@ -60,13 +60,14 @@ public final class NewRels {
 			final Set<Id> associatedSoFar,
 			final List<TokenRelationship> newRelations,
 			final GlobalDynamicProperties dynamicProperties
-	)  {
+	) {
 		final var accountId = account.getId();
 		if (associatedSoFar.contains(accountId)) {
 			return;
 		}
-
-		newRelations.addAll(account.associateWith(List.of(provisionalToken), tokenStore, false, true, dynamicProperties));
+		newRelations.addAll(
+				account.associateWith(
+						List.of(provisionalToken), tokenStore, false, true, dynamicProperties));
 		associatedSoFar.add(accountId);
 	}
 

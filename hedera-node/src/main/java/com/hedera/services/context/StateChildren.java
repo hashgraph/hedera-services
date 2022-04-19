@@ -21,6 +21,7 @@ package com.hedera.services.context;
  */
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.state.backgroundSystemTasks.SystemTask;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -37,6 +38,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.system.AddressBook;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -57,6 +59,8 @@ public interface StateChildren {
 	VirtualMap<VirtualBlobKey, VirtualBlobValue> storage();
 
 	VirtualMap<ContractKey, IterableContractValue> contractStorage();
+
+	FCQueue<SystemTask> systemTasks();
 
 	MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations();
 

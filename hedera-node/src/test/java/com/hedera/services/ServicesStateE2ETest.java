@@ -30,6 +30,15 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * These tests are responsible for testing loading of signed state data generated for various scenarios from various
+ * tagged versions of the code.
+ *
+ * NOTE: If you see a failure in these tests, it means a change was made to the de-serialization path causing the load to
+ * fail. Please double-check that a change made to the de-serialization code path is not adversely affecting decoding of
+ * previous saved serialized byte data. Also, make sure that you have fully read out all bytes to de-serialize and not
+ * leaving remaining bytes in the stream to decode.
+ */
 public class ServicesStateE2ETest {
 	private final String signedStateDir = "src/test/resources/signedState/";
 
@@ -39,8 +48,8 @@ public class ServicesStateE2ETest {
 	}
 
 	@Test
-	void testBasicState() throws IOException {
-		final var signedState = loadSignedState(signedStateDir + "basicTest/SignedState.swh");
+	void testNftsFromSignedStateV24() throws IOException {
+		final var signedState = loadSignedState(signedStateDir + "v0.24.2-nfts/SignedState.swh");
 		signedState.getSwirldState().migrate();
 	}
 

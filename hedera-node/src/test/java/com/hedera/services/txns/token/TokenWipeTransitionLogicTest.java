@@ -28,6 +28,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -154,6 +155,7 @@ class TokenWipeTransitionLogicTest {
 
 		// then:
 		verify(token).wipe(any(OwnershipTracker.class), any(TokenRelationship.class), anyList());
+		verify(typedTokenStore).updateNftLinkedList(any(Account.class), any(Id.class), anyList());
 	}
 
 	@Test

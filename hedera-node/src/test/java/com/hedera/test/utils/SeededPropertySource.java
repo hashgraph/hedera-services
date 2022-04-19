@@ -314,10 +314,11 @@ public class SeededPropertySource {
 				nextApprovedForAllAllowances(10),
 				null,
 				(byte) 0,
-				0,
 				numAssociations,
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
+				0,
+				0,
 				0,
 				0);
 	}
@@ -350,10 +351,11 @@ public class SeededPropertySource {
 				nextApprovedForAllAllowances(10),
 				firstContractKey,
 				firstKeyBytes,
-				nextUnsignedInt(),
 				numAssociations,
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
+				nextUnsignedLong(),
+				nextUnsignedInt(),
 				nextInRangeLong(),
 				nextInRangeLong());
 	}

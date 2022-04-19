@@ -113,6 +113,7 @@ public class GlobalDynamicProperties {
 	private boolean limitTokenAssociations;
 	private boolean enableHTSPrecompileCreate;
 	private int maxPurgedKvPairsPerTouch;
+	private int maxReturnedNftsPerTouch;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -206,6 +207,7 @@ public class GlobalDynamicProperties {
 		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
 		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
+		maxReturnedNftsPerTouch = properties.getIntProperty("autoRemove.maxReturnedNftsPerTouch");
 	}
 
 	public int maxTokensPerAccount() {
@@ -502,5 +504,9 @@ public class GlobalDynamicProperties {
 
 	public int getMaxPurgedKvPairsPerTouch() {
 		return maxPurgedKvPairsPerTouch;
+	}
+
+	public int getMaxReturnedNftsPerTouch() {
+		return maxReturnedNftsPerTouch;
 	}
 }

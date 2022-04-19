@@ -21,12 +21,15 @@ package com.hedera.services.state.expiry.removal;
  */
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.expiry.TokenRelsListRemoval;
+import com.hedera.services.state.expiry.UniqueTokensListRemoval;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
@@ -49,6 +52,8 @@ public class AccountGC {
 	private final TreasuryReturnHelper treasuryReturnHelper;
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
+	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
+	private final GlobalDynamicProperties dynamicProperties;
 
 	private RemovalFacilitation removalFacilitation = MapValueListUtils::removeFromMapValueList;
 
@@ -58,19 +63,24 @@ public class AccountGC {
 			final SigImpactHistorian sigImpactHistorian,
 			final TreasuryReturnHelper treasuryReturnHelper,
 			final BackingStore<AccountID, MerkleAccount> backingAccounts,
-			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels
+			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels,
+			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens,
+			final GlobalDynamicProperties dynamicProperties
 	) {
 		this.tokenRels = tokenRels;
 		this.aliasManager = aliasManager;
 		this.backingAccounts = backingAccounts;
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.treasuryReturnHelper = treasuryReturnHelper;
+		this.uniqueTokens = uniqueTokens;
+		this.dynamicProperties = dynamicProperties;
 	}
 
 	public TreasuryReturns expireBestEffort(final EntityNum expiredAccountNum, final MerkleAccount account) {
 		List<EntityId> tokenTypes = Collections.emptyList();
 		List<CurrencyAdjustments> returnTransfers = Collections.emptyList();
 		var expectedRels = account.getNumAssociations();
+		var done = account.getNftsOwned() == 0;
 		if (expectedRels > 0) {
 			tokenTypes = new ArrayList<>();
 			returnTransfers = new ArrayList<>();
@@ -81,15 +91,45 @@ public class AccountGC {
 					tokenTypes,
 					returnTransfers,
 					tokenRels.get());
+			// set num rels to 0 as we remove all associations
+			account.setNumAssociations(0);
 		}
 
-		backingAccounts.remove(expiredAccountNum.toGrpcAccountId());
-		sigImpactHistorian.markEntityChanged(expiredAccountNum.longValue());
-		if (aliasManager.forgetAlias(account.getAlias())) {
-			sigImpactHistorian.markAliasChanged(account.getAlias());
+		if (!done) {
+			final var nftsOwned = account.getNftsOwned();
+			done = returnNfts(
+					nftsOwned,
+					account.getHeadNftId(),
+					account.getHeadNftSerialNum(),
+					uniqueTokens.get());
+			final var remainingNfts = done ? 0 : nftsOwned - dynamicProperties.getMaxReturnedNftsPerTouch();
+			account.setNftsOwned(remainingNfts);
 		}
 
-		return new TreasuryReturns(tokenTypes, returnTransfers, true);
+		if (done) {
+			backingAccounts.remove(expiredAccountNum.toGrpcAccountId());
+			sigImpactHistorian.markEntityChanged(expiredAccountNum.longValue());
+			if (aliasManager.forgetAlias(account.getAlias())) {
+				sigImpactHistorian.markAliasChanged(account.getAlias());
+			}
+		}
+
+		return new TreasuryReturns(tokenTypes, returnTransfers, done);
+	}
+
+	private boolean returnNfts(
+			final long nftsOwned,
+			final long headNftNum,
+			final long headSerialNum,
+			final MerkleMap<EntityNumPair, MerkleUniqueToken> currUniqueTokens
+	) {
+		final var uniqueTokensRemoval = new UniqueTokensListRemoval(currUniqueTokens);
+		var nftKey = EntityNumPair.fromLongs(headNftNum, headSerialNum);
+		var i = Math.min(nftsOwned, dynamicProperties.getMaxReturnedNftsPerTouch());
+		while (nftKey != null && i-- > 0) {
+			nftKey = treasuryReturnHelper.updateNftReturns(nftKey, uniqueTokensRemoval);
+		}
+		return nftsOwned < dynamicProperties.getMaxReturnedNftsPerTouch();
 	}
 
 	private void doTreasuryReturnsWith(
@@ -118,7 +158,7 @@ public class AccountGC {
 
 	@FunctionalInterface
 	interface RemovalFacilitation {
-		EntityNumPair removeNext(EntityNumPair key, EntityNumPair root, TokenRelsListRemoval listRemoval);
+		EntityNumPair removeNext(EntityNumPair key, EntityNumPair root, TokenRelsListRemoval tokenRelsListRemoval);
 	}
 
 	@VisibleForTesting

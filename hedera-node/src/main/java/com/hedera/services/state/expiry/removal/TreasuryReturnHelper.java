@@ -20,6 +20,7 @@ package com.hedera.services.state.expiry.removal;
  * ‍
  */
 
+import com.hedera.services.state.expiry.UniqueTokensListRemoval;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
+import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
 @Singleton
@@ -72,6 +74,25 @@ public class TreasuryReturnHelper {
 			addProperReturn(expiredAccountNum, treasuryNum, balance, returnTransfers);
 			incrementBalance(treasuryNum, tokenNum, balance);
 		}
+	}
+
+	EntityNumPair updateNftReturns(
+			final EntityNumPair nftKey,
+			final UniqueTokensListRemoval uniqueTokensRemoval
+	) {
+		final var curTokens = tokens.get();
+		final var tokenNum = nftKey.getHiOrderAsNum();
+		final var token = curTokens.get(tokenNum);
+		final var uniqueToken = uniqueTokensRemoval.getForModify(nftKey);
+		if (token != null && token.tokenType() == NON_FUNGIBLE_UNIQUE && uniqueToken != null) {
+			if (token.isDeleted()) {
+				uniqueTokensRemoval.remove(nftKey);
+			} else {
+				uniqueToken.setOwner(MISSING_ENTITY_ID);
+			}
+			return uniqueTokensRemoval.next(uniqueToken);
+		}
+		return null;
 	}
 
 	private void incrementBalance(final EntityNum treasuryNum, final EntityNum tokenNum, final long balance) {

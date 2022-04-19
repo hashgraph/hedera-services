@@ -26,7 +26,8 @@ import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.utility.CommonUtils;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
-import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0251_VERSION;
+import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_VERSION;
+import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0260_VERSION;
 
 public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<MerkleAccountState> {
 	public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
@@ -37,8 +38,8 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 	}
 
 	@Override
-	protected int getNumTestCasesFor(final int version) {
-		return version < MerkleAccountState.RELEASE_0260_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
+	protected int getNumTestCasesFor(int version) {
+		return MIN_TEST_CASES_PER_VERSION;
 	}
 
 	@Override
@@ -51,10 +52,19 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
 		if (version == RELEASE_0230_VERSION) {
 			return propertySource.next0242AccountState();
-		} else if (version == RELEASE_0251_VERSION) {
-			return propertySource.next0251AccountState();
 		} else {
-			return getExpectedObject(propertySource);
+			final var seededAccount = propertySource.nextAccountState();
+			if (version < RELEASE_0250_VERSION) {
+				// NFTs owned was always set to 0 in these serialized forms
+				seededAccount.setNftsOwned(0);
+				seededAccount.setNumTreasuryTitles(0);
+			}
+			if (version < RELEASE_0260_VERSION) {
+				seededAccount.setFirstUint256Key(null);
+				seededAccount.setHeadNftSerialNum(0L);
+				seededAccount.setHeadNftId(0L);
+			}
+			return seededAccount;
 		}
 	}
 

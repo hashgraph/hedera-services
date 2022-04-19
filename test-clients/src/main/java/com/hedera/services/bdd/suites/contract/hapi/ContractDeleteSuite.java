@@ -20,8 +20,13 @@ package com.hedera.services.bdd.suites.contract.hapi;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,18 +35,29 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.PAYABLE_CONSTRUCTOR;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SELF_DESTRUCT_CALL_ABI;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemContractUndelete;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
 public class ContractDeleteSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractDeleteSuite.class);
@@ -63,9 +79,128 @@ public class ContractDeleteSuite extends HapiApiSuite {
 						deleteWorksWithMutableContract(),
 						deleteFailsWithImmutableContract(),
 						deleteTransfersToAccount(),
-						deleteTransfersToContract()
+						deleteTransfersToContract(),
+						cannotDeleteOrSelfDestructTokenTreasury(),
+						cannotDeleteOrSelfDestructContractWithNonZeroTokenBalance(),
+						cannotDeleteOrSelfDestructContractWhoOwnsNfts()
 				}
 		);
+	}
+
+	HapiApiSpec cannotDeleteOrSelfDestructTokenTreasury() {
+		final var firstContractTreasury = "contract1";
+		final var secondContractTreasury = "contract2";
+		final var someToken = "someToken";
+		final var initcode = "initcode";
+		final var multiKey = "multi";
+		final var escapeRoute = "civilian";
+
+		return defaultHapiSpec("CannotDeleteOrSelfDestructTokenTreasury")
+				.given(
+						newKeyNamed(multiKey),
+						cryptoCreate(escapeRoute),
+						fileCreate(initcode)
+								.path(ContractResources.SELF_DESTRUCT_CALLABLE),
+						contractCreate(firstContractTreasury)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(123),
+						contractCreate(secondContractTreasury)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(321),
+						tokenCreate(someToken)
+								.adminKey(multiKey)
+								.treasury(firstContractTreasury)
+				).when(
+						contractDelete(firstContractTreasury)
+								.hasKnownStatus(ACCOUNT_IS_TREASURY),
+						tokenAssociate(secondContractTreasury, someToken),
+						tokenUpdate(someToken).treasury(secondContractTreasury),
+						contractDelete(firstContractTreasury),
+						contractCall(secondContractTreasury, SELF_DESTRUCT_CALL_ABI)
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+						tokenAssociate(escapeRoute, someToken),
+						tokenUpdate(someToken).treasury(escapeRoute)
+				).then(
+						contractCall(secondContractTreasury, SELF_DESTRUCT_CALL_ABI)
+				);
+	}
+
+	HapiApiSpec cannotDeleteOrSelfDestructContractWithNonZeroTokenBalance() {
+		final var firstContractTreasury = "contract1";
+		final var nonZeroBalanceContract = "contract2";
+		final var someToken = "someToken";
+		final var initcode = "initcode";
+		final var multiKey = "multi";
+
+		return defaultHapiSpec("CannotDeleteOrSelfDestructContractWithNonZeroTokenBalance")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(initcode)
+								.path(ContractResources.SELF_DESTRUCT_CALLABLE),
+						contractCreate(firstContractTreasury)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(123),
+						contractCreate(nonZeroBalanceContract)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(321),
+						tokenCreate(someToken)
+								.initialSupply(10)
+								.adminKey(multiKey)
+								.treasury(firstContractTreasury)
+				).when(
+						tokenAssociate(nonZeroBalanceContract, someToken),
+						cryptoTransfer(TokenMovement.moving(5, someToken)
+								.between(firstContractTreasury, nonZeroBalanceContract))
+				).then(
+						contractDelete(nonZeroBalanceContract)
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+						contractCall(nonZeroBalanceContract, SELF_DESTRUCT_CALL_ABI)
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
+				);
+	}
+
+	HapiApiSpec cannotDeleteOrSelfDestructContractWhoOwnsNfts() {
+		final var firstContractTreasury = "contract1";
+		final var nonZeroBalanceContract = "contract2";
+		final var someToken = "someToken";
+		final var initcode = "initcode";
+		final var multiKey = "multi";
+
+		return defaultHapiSpec("CannotDeleteOrSelfDestructContractWhoOwnsNfts")
+				.given(
+						newKeyNamed(multiKey),
+						fileCreate(initcode)
+								.path(ContractResources.SELF_DESTRUCT_CALLABLE),
+						contractCreate(firstContractTreasury)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(123),
+						contractCreate(nonZeroBalanceContract)
+								.adminKey(multiKey)
+								.bytecode(initcode)
+								.balance(321),
+						tokenCreate(someToken)
+								.initialSupply(0L)
+								.adminKey(multiKey)
+								.supplyKey(multiKey)
+								.treasury(firstContractTreasury)
+								.supplyType(TokenSupplyType.INFINITE)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+				).when(
+						mintToken(someToken, List.of(ByteString.copyFromUtf8("somemetadata"))),
+						tokenAssociate(nonZeroBalanceContract, someToken),
+						cryptoTransfer(TokenMovement.movingUnique(someToken, 1)
+								.between(firstContractTreasury, nonZeroBalanceContract))
+				).then(
+						contractDelete(nonZeroBalanceContract)
+								.hasKnownStatus(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES),
+						contractCall(nonZeroBalanceContract, SELF_DESTRUCT_CALL_ABI)
+								.hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)
+				);
 	}
 
 	HapiApiSpec rejectsWithoutProperSig() {
@@ -83,7 +218,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
 		return defaultHapiSpec("SystemCannotDeleteOrUndeleteContracts")
 				.given(
 						contractCreate("test-contract")
-				).when( ).then(
+				).when().then(
 						systemContractDelete("test-contract")
 								.payingWith(SYSTEM_DELETE_ADMIN)
 								.hasPrecheck(NOT_SUPPORTED),

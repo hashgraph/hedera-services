@@ -89,6 +89,7 @@ public class RenewalProcess {
 			case EXPIRED_CONTRACT_READY_TO_RENEW -> renewIfTargeted(entityNum, true);
 			default -> NOTHING_TO_DO;
 		};
+		// TODO use the FcQueue and handle the nfts in it.
 	}
 
 	private EntityProcessResult renewIfTargeted(final EntityNum entityNum, final boolean isContract) {

@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SerdeUtils {
 	public static byte[] serOutcome(ThrowingConsumer<DataOutputStream> serializer) throws Exception {
@@ -133,11 +134,14 @@ public class SerdeUtils {
 
 		final var bais = new ByteArrayInputStream(serializedForm);
 		final var in = new SerializableDataInputStream(bais);
+		byte[] leftover;
 		try {
 			reconstruction.deserialize(in, version);
+			leftover = in.readAllBytes();
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+		assertEquals(0, leftover.length, "No bytes should be left in the stream");
 
 		return reconstruction;
 	}

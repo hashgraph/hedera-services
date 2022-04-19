@@ -135,9 +135,8 @@ class ToStringAccountsExporterTest {
 				"smartContract=true, numContractKvPairs=0, receiverSigRequired=true, proxy=EntityId{shard=0, realm=0, " +
 				"num=0}, nftsOwned=0, alreadyUsedAutoAssociations=7, maxAutoAssociations=10, alias=, " +
 				"cryptoAllowances={EntityNum{value=1}=10}, fungibleTokenAllowances={}, approveForAllNfts=[], " +
-				"firstContractStorageKey=<N/A>, numAssociations=3, numPositiveBalances=0, headTokenId=0, headNftId=0, " +
-				"headNftSerialNum=0}, # " +
-				"records=0}\n" +
+				"firstContractStorageKey=<N/A>, numAssociations=3, numPositiveBalances=0, headTokenId=0, numTreasuryTitles=0, " +
+				"headNftId=0, headNftSerialNum=0}, # records=0}\n" +
 				"\n" +
 				"0.0.2\n" +
 				"---\n" +
@@ -146,8 +145,8 @@ class ToStringAccountsExporterTest {
 				"deleted=true, smartContract=false, numContractKvPairs=0, receiverSigRequired=false, " +
 				"proxy=EntityId{shard=0, realm=0, num=0}, nftsOwned=0, alreadyUsedAutoAssociations=0, " +
 				"maxAutoAssociations=0, alias=, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], " +
-				"firstContractStorageKey=<N/A>, numAssociations=1, numPositiveBalances=0, headTokenId=0, headNftId=0, " +
-				"headNftSerialNum=0}, # records=0}\n";
+				"firstContractStorageKey=<N/A>, numAssociations=1, numPositiveBalances=0, headTokenId=0, " +
+				"numTreasuryTitles=0, headNftId=0, headNftSerialNum=0}, # records=0}\n";
 
 		// given:
 		MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();

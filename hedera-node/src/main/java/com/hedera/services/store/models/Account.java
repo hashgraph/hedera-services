@@ -89,6 +89,7 @@ public class Account {
 	private TreeSet<FcTokenAllowanceId> approveForAllNfts;
 	private int numAssociations;
 	private int numPositiveBalances;
+	private int numTreasuryTitles;
 	private long headTokenNum;
 	private long headNftId;
 	private long headNftSerialNum;
@@ -119,6 +120,23 @@ public class Account {
 
 	public void setAutoAssociationMetadata(int autoAssociationMetadata) {
 		this.autoAssociationMetadata = autoAssociationMetadata;
+	}
+
+	public int getNumTreasuryTitles() {
+		return numTreasuryTitles;
+	}
+
+	public void setNumTreasuryTitles(int numTreasuryTitles) {
+		this.numTreasuryTitles = numTreasuryTitles;
+	}
+
+	public void incrementNumTreasuryTitles() {
+		numTreasuryTitles++;
+	}
+
+	public void decrementNumTreasuryTitles() {
+		validateTrue(numTreasuryTitles > 0, FAIL_INVALID);
+		numTreasuryTitles--;
 	}
 
 	public Address canonicalAddress() {

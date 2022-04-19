@@ -20,6 +20,7 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
+import com.hedera.services.state.backgroundSystemTasks.SystemTask;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
@@ -28,11 +29,13 @@ import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.fcqueue.FCQueue;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 @Singleton
 public class DissociateLogic {
@@ -40,16 +43,21 @@ public class DissociateLogic {
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
 	private final DissociationFactory dissociationFactory;
+	private final Supplier<FCQueue<SystemTask>> systemTasks;
 
 	@Inject
-	public DissociateLogic(OptionValidator validator,
-						   TypedTokenStore tokenStore,
-						   AccountStore accountStore,
-						   DissociationFactory dissociationFactory) {
+	public DissociateLogic(
+			OptionValidator validator,
+			TypedTokenStore tokenStore,
+			AccountStore accountStore,
+			DissociationFactory dissociationFactory,
+			Supplier<FCQueue<SystemTask>> systemTasks
+			) {
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
 		this.dissociationFactory = dissociationFactory;
+		this.systemTasks = systemTasks;
 	}
 
 	public void dissociate(Id accountId, List<TokenID> tokenIDList) {
@@ -57,7 +65,7 @@ public class DissociateLogic {
 		final var account = accountStore.loadAccount(accountId);
 		final List<Dissociation> dissociations = new ArrayList<>();
 		for (var tokenId : tokenIDList) {
-			dissociations.add(dissociationFactory.loadFrom(tokenStore, account, Id.fromGrpcToken(tokenId)));
+			dissociations.add(dissociationFactory.loadFrom(tokenStore, account, Id.fromGrpcToken(tokenId), systemTasks.get()));
 		}
 
 		/* --- Do the business logic --- */

@@ -52,6 +52,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.HEAD_NFT_SER
 import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
@@ -69,6 +70,7 @@ public class TransferLogic {
 			HEAD_TOKEN_NUM,
 			NUM_NFTS_OWNED,
 			USED_AUTOMATIC_ASSOCIATIONS,
+			NUM_TREASURY_TITLES,
 			HEAD_NFT_ID,
 			HEAD_NFT_SERIAL_NUM
 	);

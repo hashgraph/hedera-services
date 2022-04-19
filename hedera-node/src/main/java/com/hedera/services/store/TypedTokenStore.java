@@ -44,8 +44,9 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -76,24 +77,16 @@ import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 public class TypedTokenStore extends ReadOnlyTokenStore {
 	private final SideEffectsTracker sideEffectsTracker;
 
-	/* Only needed for interoperability with legacy HTS during refactor */
-	private final LegacyTreasuryRemover delegate;
-	private final LegacyTreasuryAdder addKnownTreasury;
-
 	@Inject
 	public TypedTokenStore(
 			final AccountStore accountStore,
 			final BackingStore<TokenID, MerkleToken> tokens,
 			final BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
 			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-			final LegacyTreasuryAdder legacyStoreDelegate,
-			final LegacyTreasuryRemover delegate,
 			final SideEffectsTracker sideEffectsTracker
 	) {
 		super(accountStore, tokens, uniqueTokens, tokenRels);
-		this.delegate = delegate;
 		this.sideEffectsTracker = sideEffectsTracker;
-		this.addKnownTreasury = legacyStoreDelegate;
 	}
 
 	/**
@@ -157,7 +150,7 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 	 * @param token
 	 * 		the token to save
 	 */
-	public void commitToken(Token token) {
+	public void commitToken(final Token token) {
 		final var mutableToken = tokens.getRef(token.getId().asGrpcToken());
 		mapModelChanges(token, mutableToken);
 		tokens.put(token.getId().asGrpcToken(), mutableToken);
@@ -168,13 +161,8 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 		if (token.hasRemovedUniqueTokens()) {
 			destroyRemoved(token.removedUniqueTokens());
 		}
-
-		/* Only needed during HTS refactor. Will be removed once all operations that
-		 * refer to the knownTreasuries in-memory structure are refactored */
 		if (token.isDeleted()) {
-			final AccountID affectedTreasury = token.getTreasury().getId().asGrpcAccount();
-			final TokenID mutatedToken = token.getId().asGrpcToken();
-			delegate.removeKnownTreasuryForToken(affectedTreasury, mutatedToken);
+			token.getTreasury().decrementNumTreasuryTitles();
 		}
 		sideEffectsTracker.trackTokenChanges(token);
 	}
@@ -184,30 +172,24 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 	 * Maps the properties between the mutable and immutable token, and later puts the immutable one in state.
 	 * Adds the token's treasury to the known treasuries map.
 	 *
-	 * @param token
-	 * 		- the model of the token to be persisted in state.
+	 * @param modelToken
+	 * 		the model of the token to be persisted in state.
 	 */
-	public void persistNew(Token token) {
-		/* create new merkle token */
-		final var newMerkleTokenId = EntityNum.fromLong(token.getId().num());
-		final var newMerkleToken = new MerkleToken(
-				token.getExpiry(),
-				token.getTotalSupply(),
-				token.getDecimals(),
-				token.getSymbol(),
-				token.getName(),
-				token.isFrozenByDefault(),
-				!token.hasKycKey(),
-				token.getTreasury().getId().asEntityId()
-		);
-
-		/* map changes */
-		mapModelChanges(token, newMerkleToken);
-		tokens.put(newMerkleTokenId.toGrpcTokenId(), newMerkleToken);
-
-		addKnownTreasury.perform(token.getTreasury().getId().asGrpcAccount(), token.getId().asGrpcToken());
-
-		sideEffectsTracker.trackTokenChanges(token);
+	public void persistNew(final Token modelToken) {
+		final var newTokenNum = EntityNum.fromModel(modelToken.getId());
+		final var newToken = new MerkleToken(
+				modelToken.getExpiry(),
+				modelToken.getTotalSupply(),
+				modelToken.getDecimals(),
+				modelToken.getSymbol(),
+				modelToken.getName(),
+				modelToken.isFrozenByDefault(),
+				!modelToken.hasKycKey(),
+				modelToken.getTreasury().getId().asEntityId());
+		mapModelChanges(modelToken, newToken);
+		tokens.put(newTokenNum.toGrpcTokenId(), newToken);
+		modelToken.getTreasury().incrementNumTreasuryTitles();
+		sideEffectsTracker.trackTokenChanges(modelToken);
 	}
 
 	public void persistNft(UniqueToken nft) {
@@ -274,19 +256,21 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 
 	public void updateNftLinkedList(
 			final Account account, final Id targetTokenId, final List<Long> serialNumbers) {
-		List<UniqueToken> touchedUniqueTokens = new ArrayList<>();
+		Map<NftId, UniqueToken> touchedUniqueTokens = new HashMap<>();
 		for (long serialNum : serialNumbers) {
-			final var nft = loadUniqueToken(targetTokenId, serialNum);
+			final var nftId = NftId.withDefaultShardRealm(targetTokenId.num(), serialNum);
+			final var nft = touchedUniqueTokens.getOrDefault(nftId,
+					loadUniqueToken(targetTokenId, serialNum));
 			final var currHeadNftNum = account.getHeadNftId();
 			final var currHeadNftSerialNum = account.getHeadNftSerialNum();
 
 			if (currHeadNftNum == targetTokenId.num() && currHeadNftSerialNum == serialNum) {
 				final var nextNftId = nft.getNext();
 				if (!nextNftId.equals(NftNumPair.MISSING_NFT_NUM_PAIR)) {
-					final var nextNft = loadUniqueToken(
-							Id.fromGrpcToken(nextNftId.tokenId()), nextNftId.serialNum());
+					final var nextNft = touchedUniqueTokens.getOrDefault(nextNftId.nftId(),
+							loadUniqueToken(Id.fromGrpcToken(nextNftId.tokenId()), nextNftId.serialNum()));
 					nextNft.setPrev(NftNumPair.MISSING_NFT_NUM_PAIR);
-					touchedUniqueTokens.add(nextNft);
+					touchedUniqueTokens.put(nextNftId.nftId(), nextNft);
 				}
 				account.setHeadNftId(nextNftId.tokenNum());
 				account.setHeadNftSerialNum(nextNftId.serialNum());
@@ -295,31 +279,21 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 				final var prevNftId = nft.getPrev();
 
 				if (!nextNftId.equals(NftNumPair.MISSING_NFT_NUM_PAIR)) {
-					final var nextNft = loadUniqueToken(
-							Id.fromGrpcToken(nextNftId.tokenId()), nextNftId.serialNum());
+					final var nextNft = touchedUniqueTokens.getOrDefault(nextNftId.nftId(),
+							loadUniqueToken(Id.fromGrpcToken(nextNftId.tokenId()), nextNftId.serialNum()));
 					nextNft.setPrev(prevNftId);
-					touchedUniqueTokens.add(nextNft);
+					touchedUniqueTokens.put(nextNft.getNftId(), nextNft);
 				}
 
-				final var prevNft = loadUniqueToken(
-						Id.fromGrpcToken(prevNftId.tokenId()), prevNftId.serialNum());
+				final var prevNft = touchedUniqueTokens.getOrDefault(prevNftId.nftId(),
+						loadUniqueToken(Id.fromGrpcToken(prevNftId.tokenId()), prevNftId.serialNum()));
 				prevNft.setNext(nextNftId);
-				touchedUniqueTokens.add(prevNft);
+				touchedUniqueTokens.put(prevNft.getNftId(), prevNft);
 			}
 		}
 
-		for (var nft : touchedUniqueTokens) {
+		for (var nft : touchedUniqueTokens.values()) {
 			persistNft(nft);
 		}
-	}
-
-	@FunctionalInterface
-	public interface LegacyTreasuryAdder {
-		void perform(final AccountID aId, final TokenID tId);
-	}
-
-	@FunctionalInterface
-	public interface LegacyTreasuryRemover {
-		void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId);
 	}
 }

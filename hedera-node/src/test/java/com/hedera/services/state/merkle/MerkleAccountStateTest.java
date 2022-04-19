@@ -28,6 +28,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.exceptions.MutabilityException;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -38,12 +39,11 @@ import java.util.Collections;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.services.state.virtual.KeyPackingUtils.readableContractStorageKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,6 +53,7 @@ class MerkleAccountStateTest {
 	private static final long balance = 555_555L;
 	private static final long autoRenewSecs = 234_567L;
 	private static final long nftsOwned = 150L;
+	private static final long otherNftsOwned = 151L;
 	private static final String memo = "A memo";
 	private static final boolean deleted = true;
 	private static final boolean smartContract = true;
@@ -61,8 +62,6 @@ class MerkleAccountStateTest {
 	private static final int number = 123;
 	private static final int maxAutoAssociations = 1234;
 	private static final int usedAutoAssociations = 1233;
-	private static final int autoAssociationMetadata =
-			buildAutomaticAssociationMetaData(maxAutoAssociations, usedAutoAssociations);
 	private static final Key aliasKey = Key.newBuilder()
 			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
 	private static final ByteString alias = aliasKey.getECDSASecp256K1();
@@ -90,6 +89,9 @@ class MerkleAccountStateTest {
 	private static final byte otherNumNonZeroBytesInFirst = 31;
 	private static final int associatedTokensCount = 3;
 	private static final int numPositiveBalances = 2;
+	private static final int otherNumPositiveBalances = 3;
+	private static final int numTreasuryTitles = 23;
+	private static final int otherNumTreasuryTitles = 32;
 
 	private static final EntityNum spenderNum1 = EntityNum.fromLong(1000L);
 	private static final EntityNum spenderNum2 = EntityNum.fromLong(3000L);
@@ -137,47 +139,42 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				explicitFirstKey,
 				numNonZeroBytesInFirst,
-				nftsOwned,
 				associatedTokensCount,
 				numPositiveBalances,
 				headTokenNum,
+				nftsOwned,
+				numTreasuryTitles,
 				headNftId,
 				headNftSerialNum);
 	}
 
 	@Test
 	void toStringWorks() {
-		final var desired = "MerkleAccountState{number=123 <-> 0.0.123, key=ed25519: " +
-				"\"abcdefghijklmnopqrstuvwxyz012345\"\n" +
-				", expiry=1234567, balance=555555, autoRenewSecs=234567, memo=A memo, deleted=true, smartContract=true," +
-				" numContractKvPairs=123, receiverSigRequired=true, proxy=EntityId{shard=1, realm=2, num=3}, " +
-				"nftsOwned=150, alreadyUsedAutoAssociations=1233, maxAutoAssociations=1234, " +
-				"alias=bbbbbbbbbbbbbbbbbbbbb, cryptoAllowances={EntityNum{value=1000}=10}, " +
-				"fungibleTokenAllowances={FcTokenAllowanceId{tokenNum=2000, spenderNum=1000}=1}, " +
-				"approveForAllNfts=[FcTokenAllowanceId{tokenNum=2000, spenderNum=3000}], " +
-				"firstContractStorageKey=fe0432ce31138ecf09aa3e8a41004a1e204ef84efe01ee160fea1e22060, " +
-				"numAssociations=3, numPositiveBalances=2, headTokenId=2000, headNftId=4000, headNftSerialNum=1}";
-		assertEquals(desired, subject.toString());
-	}
-
-	@Test
-	void getterWorksForNullStorageKey() {
-		subject.setFirstUint256Key(null);
-		assertNull(subject.getFirstContractStorageKey());
-		assertEquals(0, subject.getFirstUint256KeyNonZeroBytes());
-	}
-
-	@Test
-	void getterWorksForTypedStorageKey() {
-		final var expected = new ContractKey(numFromCode(number), explicitFirstKey);
-		final var actual = subject.getFirstContractStorageKey();
-		assertEquals(expected, actual);
-	}
-
-	@Test
-	void settingFirstKeyUpdatesNonZeroBytes() {
-		subject.setFirstUint256Key(otherExplicitFirstKey);
-		assertEquals(otherNumNonZeroBytesInFirst, subject.getFirstUint256KeyNonZeroBytes());
+		assertEquals("MerkleAccountState{number=123 <-> 0.0.123, " +
+						"key=" + MiscUtils.describe(key) + ", " +
+						"expiry=" + expiry + ", " +
+						"balance=" + balance + ", " +
+						"autoRenewSecs=" + autoRenewSecs + ", " +
+						"memo=" + memo + ", " +
+						"deleted=" + deleted + ", " +
+						"smartContract=" + smartContract + ", " +
+						"numContractKvPairs=" + kvPairs + ", " +
+						"receiverSigRequired=" + receiverSigRequired + ", " +
+						"proxy=" + proxy + ", nftsOwned=" + nftsOwned + ", " +
+						"alreadyUsedAutoAssociations=" + usedAutoAssociations + ", " +
+						"maxAutoAssociations=" + maxAutoAssociations + ", " +
+						"alias=" + alias.toStringUtf8() + ", " +
+						"cryptoAllowances=" + cryptoAllowances + ", " +
+						"fungibleTokenAllowances=" + fungibleTokenAllowances + ", " +
+						"approveForAllNfts=" + approveForAllNfts + ", " +
+						"firstContractStorageKey=" + readableContractStorageKey(explicitFirstKey) + ", " +
+						"numAssociations=" + associatedTokensCount + ", " +
+						"numPositiveBalances=" + numPositiveBalances + ", " +
+						"headTokenId=" + headTokenNum + ", " +
+						"numTreasuryTitles=" + numTreasuryTitles + ", " +
+						"headNftId=" + headNftId + ", " +
+						"headNftSerialNum=" + headNftSerialNum + "}",
+				subject.toString());
 	}
 
 	@Test
@@ -198,9 +195,11 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setNumContractKvPairs(otherKvPairs));
 		assertThrows(MutabilityException.class, () -> subject.setProxy(proxy));
 		assertThrows(MutabilityException.class, () -> subject.setMaxAutomaticAssociations(maxAutoAssociations));
-		assertThrows(MutabilityException.class, () -> subject.setUsedAutomaticAssociations(usedAutoAssociations));
 		assertThrows(MutabilityException.class, () -> subject.setCryptoAllowances(cryptoAllowances));
 		assertThrows(MutabilityException.class, () -> subject.setApproveForAllNfts(approveForAllNfts));
+		assertThrows(MutabilityException.class, () -> subject.setNftsOwned(0));
+		assertThrows(MutabilityException.class, () -> subject.setNumTreasuryTitles(1));
+		assertThrows(MutabilityException.class, () -> subject.setUsedAutomaticAssociations(usedAutoAssociations));
 		assertThrows(MutabilityException.class, () -> subject.setNumAssociations(5));
 		assertThrows(MutabilityException.class, () -> subject.setNumPositiveBalances(5));
 		assertThrows(MutabilityException.class, () -> subject.setHeadTokenId(5L));
@@ -208,11 +207,16 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setFirstUint256Key(explicitFirstKey));
 	}
 
+	@Test
+	void reportsTreasuryStatus() {
+		assertTrue(subject.isTokenTreasury());
+		subject.setNumTreasuryTitles(0);
+		assertFalse(subject.isTokenTreasury());
+	}
 
 	@Test
 	void copyWorks() {
 		final var copySubject = subject.copy();
-
 		assertNotSame(copySubject, subject);
 		assertEquals(subject, copySubject);
 	}
@@ -220,374 +224,106 @@ class MerkleAccountStateTest {
 	@Test
 	void equalsWorksWithRadicalDifferences() {
 		final var identical = subject;
-
-		// expect:
 		assertEquals(subject, identical);
-		assertNotEquals(null, subject);
+		assertNotEquals(subject, null);
 		assertNotEquals(subject, new Object());
 	}
 
 	@Test
-	void equalsWorksForFirstKeyBytes() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				otherExplicitFirstKey,
-				otherNumNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
+	void equalsWorksForNftsOwned() {
+		final var otherSubject = subject.copy();
+		otherSubject.setNftsOwned(otherNftsOwned);
+		assertNotEquals(subject, otherSubject);
+	}
 
+	@Test
+	void equalsWorksForNumTreasuryTitles() {
+		final var otherSubject = subject.copy();
+		otherSubject.setNumTreasuryTitles(otherNumTreasuryTitles);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForKey() {
-		final var otherSubject = new MerkleAccountState(
-				otherKey,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setAccountKey(otherKey);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForExpiry() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				otherExpiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setExpiry(otherExpiry);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForBalance() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, otherBalance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setHbarBalance(otherBalance);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForAutoRenewSecs() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, otherAutoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setAutoRenewSecs(otherAutoRenewSecs);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForMemo() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				otherMemo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setMemo(otherMemo);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForDeleted() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				otherDeleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setDeleted(otherDeleted);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForSmartContract() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, otherSmartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setSmartContract(otherSmartContract);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForReceiverSigRequired() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, otherReceiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setReceiverSigRequired(otherReceiverSigRequired);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForNumber() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				otherNumber,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setNumber(otherNumber);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForProxy() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				otherProxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setProxy(otherProxy);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForAlias() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				otherAlias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setAlias(otherAlias);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
 	void equalsWorksForKvPairs() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				otherKvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setNumContractKvPairs(otherKvPairs);
 		assertNotEquals(subject, otherSubject);
 	}
 
@@ -595,32 +331,9 @@ class MerkleAccountStateTest {
 	void equalsWorksForAllowances1() {
 		final EntityNum spenderNum1 = EntityNum.fromLong(100L);
 		final Long cryptoAllowance = 100L;
-
 		otherCryptoAllowances.put(spenderNum1, cryptoAllowance);
-
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				otherCryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setCryptoAllowances(otherCryptoAllowances);
 		assertNotEquals(subject, otherSubject);
 	}
 
@@ -629,33 +342,10 @@ class MerkleAccountStateTest {
 		final EntityNum spenderNum1 = EntityNum.fromLong(100L);
 		final EntityNum tokenForAllowance = EntityNum.fromLong(200L);
 		final Long tokenAllowanceVal = 1L;
-
 		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum1);
-
 		otherFungibleTokenAllowances.put(tokenAllowanceKey, tokenAllowanceVal);
-
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				otherFungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
+		final var otherSubject = subject.copy();
+		otherSubject.setFungibleTokenAllowances(otherFungibleTokenAllowances);
 		assertNotEquals(subject, otherSubject);
 	}
 
@@ -663,63 +353,17 @@ class MerkleAccountStateTest {
 	void equalsWorksForAllowances3() {
 		final EntityNum spenderNum1 = EntityNum.fromLong(100L);
 		final EntityNum tokenForAllowance = EntityNum.fromLong(200L);
-
 		final FcTokenAllowanceId tokenAllowanceKey = FcTokenAllowanceId.from(tokenForAllowance, spenderNum1);
-
-
 		otherApproveForAllNfts.add(tokenAllowanceKey);
-
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				otherApproveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var otherSubject = subject.copy();
+		otherSubject.setApproveForAllNfts(otherApproveForAllNfts);
 		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test
-	void equalsWorksForTokenAssociationMetadata() {
-		final var otherSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances + 1,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+	void equalsWorksForNumPositiveBalances() {
+		final var otherSubject = subject.copy();
+		otherSubject.setNumPositiveBalances(otherNumPositiveBalances);
 		assertNotEquals(subject, otherSubject);
 	}
 
@@ -733,54 +377,8 @@ class MerkleAccountStateTest {
 	@Test
 	void objectContractMet() {
 		final var defaultSubject = new MerkleAccountState();
-		final var identicalSubject = new MerkleAccountState(
-				key,
-				expiry, balance, autoRenewSecs,
-				memo,
-				deleted, smartContract, receiverSigRequired,
-				proxy,
-				number,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				kvPairs,
-				cryptoAllowances,
-				fungibleTokenAllowances,
-				approveForAllNfts,
-				explicitFirstKey,
-				numNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
-		final var otherSubject = new MerkleAccountState(
-				otherKey,
-				otherExpiry, otherBalance, otherAutoRenewSecs,
-				otherMemo,
-				otherDeleted, otherSmartContract, otherReceiverSigRequired,
-				otherProxy,
-				otherNumber,
-				maxAutoAssociations,
-				usedAutoAssociations,
-				alias,
-				otherKvPairs,
-				otherCryptoAllowances,
-				otherFungibleTokenAllowances,
-				otherApproveForAllNfts,
-				otherExplicitFirstKey,
-				otherNumNonZeroBytesInFirst,
-				nftsOwned,
-				associatedTokensCount,
-				numPositiveBalances,
-				headTokenNum,
-				headNftId,
-				headNftSerialNum);
-
+		final var identicalSubject = subject.copy();
 		assertNotEquals(subject.hashCode(), defaultSubject.hashCode());
-		assertNotEquals(subject.hashCode(), otherSubject.hashCode());
 		assertEquals(subject.hashCode(), identicalSubject.hashCode());
 	}
 
@@ -805,12 +403,6 @@ class MerkleAccountStateTest {
 		defaultSubject.setMaxAutomaticAssociations(changeMax);
 
 		assertEquals(changeMax, defaultSubject.getMaxAutomaticAssociations());
-	}
-
-	private void setEmptyAllowances() {
-		subject.setCryptoAllowances(new TreeMap<>());
-		subject.setFungibleTokenAllowances(new TreeMap<>());
-		subject.setApproveForAllNfts(new TreeSet<>());
 	}
 
 	@Test

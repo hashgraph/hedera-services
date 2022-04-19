@@ -29,6 +29,7 @@ import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.Account;
@@ -38,9 +39,9 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -85,11 +86,6 @@ class TypedTokenStoreTest {
 	private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
 	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
-	@Mock
-	private TokenStore legacyStore;
-
-	@Mock
-	private TokenStore tokenStore;
 
 	private TypedTokenStore subject;
 
@@ -103,8 +99,6 @@ class TypedTokenStoreTest {
 				tokens,
 				uniqueTokens,
 				tokenRels,
-				tokenStore::addKnownTreasury,
-				legacyStore::removeKnownTreasuryForToken,
 				sideEffectsTracker);
 	}
 
@@ -241,6 +235,7 @@ class TypedTokenStoreTest {
 	@Test
 	void persistsDeletedTokenAsExpected() {
 		setupToken();
+		treasuryAccount.incrementNumTreasuryTitles();
 		givenModifiableToken(merkleTokenId, merkleToken);
 
 		token.setIsDeleted(true);
@@ -249,7 +244,7 @@ class TypedTokenStoreTest {
 		subject.commitToken(token);
 
 		assertTrue(merkleToken.isDeleted());
-		verify(legacyStore).removeKnownTreasuryForToken(any(), any());
+		assertEquals(0, treasuryAccount.getNumTreasuryTitles());
 	}
 
 	/* --- Token saving --- */
@@ -323,6 +318,7 @@ class TypedTokenStoreTest {
 		modelToken.setAutoRenewPeriod(autoRenewPeriod);
 		modelToken.setCustomFees(List.of());
 		modelToken.setMemo(memo);
+		autoRenewAccount.incrementNumTreasuryTitles();
 		// and:
 		subject.commitToken(modelToken);
 
@@ -347,6 +343,7 @@ class TypedTokenStoreTest {
 		modelToken.setExpiry(expiry);
 		modelToken.removedUniqueTokens().add(burnedToken);
 		modelToken.setCustomFees(List.of());
+		treasuryAccount.incrementNumTreasuryTitles();
 		// and:
 		subject.commitToken(modelToken);
 
@@ -379,6 +376,7 @@ class TypedTokenStoreTest {
 		subject.persistNew(newToken);
 		verify(tokens).put(any(), any());
 		verify(sideEffectsTracker).trackTokenChanges(newToken);
+		assertEquals(1, treasuryAccount.getNumTreasuryTitles());
 	}
 
 	@Test
@@ -411,6 +409,83 @@ class TypedTokenStoreTest {
 
 		verify(uniqueTokens).put(nftId1, mut1);
 		verify(uniqueTokens).put(nftId2, mut2);
+	}
+
+	@Test
+	void adjustsUniqueTokensLinkedListAsExpected() {
+		final long seconds = 1_234_567L;
+		final int nanos = 890;
+		final var packedTime = BitPackUtils.packedTime(seconds, nanos);
+		final var nftId1 = NftId.withDefaultShardRealm(tokenNum, 1L);
+		final var nft1NumPair = NftNumPair.fromNums(tokenNum, 1L);
+		final var nftId2 = NftId.withDefaultShardRealm(tokenNum, 2L);
+		final var nft2NumPair = NftNumPair.fromNums(tokenNum, 2L);
+		final var nftId3 = NftId.withDefaultShardRealm(tokenNum, 3L);
+		final var nft3NumPair = NftNumPair.fromNums(tokenNum, 3L);
+		final var nftId4 = NftId.withDefaultShardRealm(tokenNum, 4L);
+		final var nft4NumPair = NftNumPair.fromNums(tokenNum, 4L);
+		final var nftId5 = NftId.withDefaultShardRealm(tokenNum, 5L);
+		final var nft5NumPair = NftNumPair.fromNums(tokenNum, 5L);
+		final var nft1 = new MerkleUniqueToken(
+				miscId.asEntityId().identityCode(),
+				"aa".getBytes(StandardCharsets.UTF_8),
+				packedTime,
+				EntityNumPair.fromLongs(tokenNum, 1L).value());
+		nft1.setSpender(MISSING_ENTITY_ID);
+		nft1.setNext(nft2NumPair);
+		final var nft2 = new MerkleUniqueToken(
+				miscId.asEntityId().identityCode(),
+				"bb".getBytes(StandardCharsets.UTF_8),
+				packedTime,
+				EntityNumPair.fromLongs(tokenNum, 2L).value());
+		nft2.setSpender(MISSING_ENTITY_ID);
+		nft2.setNext(nft3NumPair);
+		nft2.setPrev(nft1NumPair);
+		final var nft3 = new MerkleUniqueToken(
+				miscId.asEntityId().identityCode(),
+				"cc".getBytes(StandardCharsets.UTF_8),
+				packedTime,
+				EntityNumPair.fromLongs(tokenNum, 3L).value());
+		nft3.setSpender(MISSING_ENTITY_ID);
+		nft3.setNext(nft4NumPair);
+		nft3.setPrev(nft2NumPair);
+		final var nft4 = new MerkleUniqueToken(
+				miscId.asEntityId().identityCode(),
+				"dd".getBytes(StandardCharsets.UTF_8),
+				packedTime,
+				EntityNumPair.fromLongs(tokenNum, 4L).value());
+		nft4.setSpender(MISSING_ENTITY_ID);
+		nft4.setNext(nft5NumPair);
+		nft4.setPrev(nft3NumPair);
+		final var nft5 = new MerkleUniqueToken(
+				miscId.asEntityId().identityCode(),
+				"ee".getBytes(StandardCharsets.UTF_8),
+				packedTime,
+				EntityNumPair.fromLongs(tokenNum, 5L).value());
+		nft5.setSpender(MISSING_ENTITY_ID);
+		nft5.setPrev(nft4NumPair);
+
+		given(uniqueTokens.getRef(nftId1)).willReturn(nft1);
+		given(uniqueTokens.getRef(nftId3)).willReturn(nft3);
+		given(uniqueTokens.getRef(nftId4)).willReturn(nft4);
+		given(uniqueTokens.getImmutableRef(nftId1)).willReturn(nft1);
+		given(uniqueTokens.getImmutableRef(nftId2)).willReturn(nft2);
+		given(uniqueTokens.getImmutableRef(nftId3)).willReturn(nft3);
+		given(uniqueTokens.getImmutableRef(nftId4)).willReturn(nft4);
+		given(uniqueTokens.getImmutableRef(nftId5)).willReturn(nft5);
+
+		miscAccount.setHeadNftId(tokenNum);
+		miscAccount.setHeadNftSerialNum(1L);
+
+		subject.updateNftLinkedList(miscAccount, tokenId, List.of(2L, 5L, 1L, 4L));
+
+		assertEquals(tokenNum, miscAccount.getHeadNftId());
+		assertEquals(3L, miscAccount.getHeadNftSerialNum());
+
+		subject.updateNftLinkedList(miscAccount, tokenId, List.of(3L));
+
+		assertEquals(0L, miscAccount.getHeadNftId());
+		assertEquals(0L, miscAccount.getHeadNftSerialNum());
 	}
 
 	@Test

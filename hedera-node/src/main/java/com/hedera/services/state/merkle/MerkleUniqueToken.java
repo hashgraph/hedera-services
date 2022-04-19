@@ -48,8 +48,6 @@ import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
 	private static final int TREASURY_OWNER_CODE = 0;
 
-	static final int PRE_RELEASE_0180_VERSION = 1;
-	static final int RELEASE_0180_VERSION = 2;
 	static final int RELEASE_0250_VERSION = 3;
 	static final int RELEASE_0260_VERSION = 4;
 
