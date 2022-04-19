@@ -67,6 +67,7 @@ import com.swirlds.virtualmap.VirtualMapMigration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +77,7 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.migration.ReleaseTwentyFiveMigration.initTreasuryTitleCounts;
+import static com.hedera.services.state.migration.ReleaseTwentySixMigration.grantFreeAutoRenew;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
@@ -168,11 +170,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			initTreasuryTitleCounts(this);
 		}
 		if (deserializedVersionFromState < RELEASE_0260_VERSION) {
-			makeStorageIterable(
+			final var contractKeys = makeStorageIterable(
 					this,
 					KvPairIterationMigrator::new,
 					VirtualMapMigration::extractVirtualMapData,
 					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
+
+			// grant free auto-renew of ~90 days for all contracts once the contract expiration is enabled
+			try {
+				final var streamManager = metadata.app().recordStreamManager(); // Is this okay to use RecordStreamManager
+				grantFreeAutoRenew(this, contractKeys.keySet(), getTimeOfLastHandledTxn(), streamManager);
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
