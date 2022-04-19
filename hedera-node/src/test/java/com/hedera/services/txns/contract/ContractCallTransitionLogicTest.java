@@ -67,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCallTransitionLogicTest {
@@ -142,6 +143,39 @@ class ContractCallTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
+		verify(recordService).externaliseEvmCallTransaction(any());
+		verify(worldState).getCreatedContractIds();
+		verify(txnCtx).setTargetedContract(target);
+	}
+
+	@Test
+	void verifyAccountStoreNotQueriedForTokenAddress() {
+		// setup:
+		givenValidTxnCtx();
+		// and:
+		given(accessor.getTxn()).willReturn(contractCallTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		// and:
+		given(entityAccess.isTokenAccount(any())).willReturn(true);
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+
+		// and:
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(), Map.of());
+		given(evmTxProcessor.execute(senderAccount,
+				new Account(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())).canonicalAddress(),
+				gas, sent,
+				Bytes.EMPTY,
+				txnCtx.consensusTime()))
+				.willReturn(results);
+		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verifyNoMoreInteractions(accountStore);
+
 		verify(recordService).externaliseEvmCallTransaction(any());
 		verify(worldState).getCreatedContractIds();
 		verify(txnCtx).setTargetedContract(target);
