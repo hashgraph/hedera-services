@@ -98,4 +98,8 @@ public class CodeCache {
     Cache<BytesKey, Code> getCache() {
         return cache;
     }
+
+    void cacheValue(BytesKey key, Code value) {
+        cache.put(key, value);
+    }
 }
