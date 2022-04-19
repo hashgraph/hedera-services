@@ -25,6 +25,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -74,6 +75,8 @@ class MigrationRecordsManagerTest {
 	private SideEffectsTracker tracker801;
 	@Mock
 	private EntityCreator creator;
+	@Mock
+	private RenewalRecordsHelper recordsHelper;
 
 	private final AtomicLong nextTracker = new AtomicLong();
 
@@ -81,7 +84,7 @@ class MigrationRecordsManagerTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new MigrationRecordsManager(creator, sigImpactHistorian, recordsHistorian, () -> networkCtx);
+		subject = new MigrationRecordsManager(creator, sigImpactHistorian, recordsHistorian, () -> networkCtx, recordsHelper);
 
 		subject.setSideEffectsFactory(() -> nextTracker.getAndIncrement() == 0 ? tracker800 : tracker801);
 	}

@@ -9,9 +9,9 @@ package com.hedera.services.state.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,9 +24,15 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.expiry.renewal.RenewalRecordsHelper;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -46,6 +52,9 @@ import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.STAKING_FUND_ACCOUNTS;
+import static com.hedera.services.state.migration.ReleaseTwentySixMigration.getContractKeysAndExpirations;
+import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
+import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 
 /**
  * Responsible for externalizing any state changes that happened during migration via child records,
@@ -67,20 +76,24 @@ public class MigrationRecordsManager {
 	private final SigImpactHistorian sigImpactHistorian;
 	private final RecordsHistorian recordsHistorian;
 	private final Supplier<MerkleNetworkContext> networkCtx;
+	private final RenewalRecordsHelper recordsHelper;
 
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
+	private SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
 
 	@Inject
 	public MigrationRecordsManager(
 			final EntityCreator creator,
 			final SigImpactHistorian sigImpactHistorian,
 			final RecordsHistorian recordsHistorian,
-			final Supplier<MerkleNetworkContext> networkCtx
+			final Supplier<MerkleNetworkContext> networkCtx,
+			final RenewalRecordsHelper recordsHelper
 	) {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.recordsHistorian = recordsHistorian;
 		this.networkCtx = networkCtx;
 		this.creator = creator;
+		this.recordsHelper = recordsHelper;
 	}
 
 	/**
@@ -99,6 +112,8 @@ public class MigrationRecordsManager {
 		if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
 			final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
 			STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
+			// publish the migration records for 0.26.0, for granting free auto-renewal
+			publishContractFreeAutoRenewalRecords(now);
 		}
 
 		curNetworkCtx.markMigrationRecordsStreamed();
@@ -122,6 +137,31 @@ public class MigrationRecordsManager {
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(autoRenewPeriod))
 				.build();
 		return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
+	}
+
+	private void publishContractFreeAutoRenewalRecords(final Instant now) {
+		final var changedContracts = getContractKeysAndExpirations();
+		for (var entry : changedContracts.entrySet()) {
+			final var contractNum = entry.getKey().toEntityId();
+			final var newExpiry = entry.getValue();
+
+			final var receipt = new TxnReceipt();
+			receipt.setAccountId(contractNum);
+
+			final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry);
+			final var txnId = new TxnId(contractNum, MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
+			final var memo = "Contract " + contractNum.num() + " was automatically renewed during upgrade. New expiration time: "
+							+ newExpiry + ".";
+			final var expiringRecord = ExpirableTxnRecord.newBuilder()
+					.setTxnId(txnId)
+					.setMemo(memo)
+					.setReceipt(receipt)
+					.setConsensusTime(RichInstant.fromJava(now))
+					.build();
+			recordsHelper.stream(expiringRecord, synthBody, now);
+			sigImpactHistorian.markEntityChanged(contractNum.num());
+			log.info("Published synthetic ContractUpdate for contract 0.0.{}", contractNum.num());
+		}
 	}
 
 	@VisibleForTesting

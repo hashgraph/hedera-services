@@ -114,7 +114,7 @@ public class RenewalRecordsHelper {
 		stream(expirableTxnRecord, synthBody, eventTime);
 	}
 
-	private void stream(
+	public void stream(
 			final ExpirableTxnRecord expiringRecord,
 			final TransactionBody.Builder synthBody,
 			final Instant at
