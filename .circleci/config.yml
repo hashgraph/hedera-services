@@ -753,6 +753,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-NetError-4N-1C:
+    triggers:
+      - schedule:
+          cron: "30 5 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -874,13 +881,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
-    triggers:
-      - schedule:
-          cron: "0 3 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1012,13 +1012,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
-    triggers:
-      - schedule:
-          cron: "45 22 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1035,13 +1028,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Update-Reconnect-4N-2C:
-    triggers:
-      - schedule:
-          cron: "15 22 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1058,13 +1044,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
-    triggers:
-      - schedule:
-          cron: "15 23 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1081,13 +1060,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
-    triggers:
-      - schedule:
-          cron: "30 23 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1314,6 +1286,13 @@ workflows:
                 at: /
   #test
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
+    triggers:
+      - schedule:
+          cron: "15 7 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1577,7 +1556,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout -b test-failed-service2 origin/test-failed-service2;  cd -;
+            cd regression; git checkout -b 02251-D-get-HederaVersion origin/02251-D-get-HederaVersion;  cd -;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
