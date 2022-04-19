@@ -170,14 +170,13 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			initTreasuryTitleCounts(this);
 		}
 		if (deserializedVersionFromState < RELEASE_0260_VERSION) {
-//			makeStorageIterable(
-//					this,
-//					KvPairIterationMigrator::new,
-//					VirtualMapMigration::extractVirtualMapData,
-//					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
+			makeStorageIterable(
+					this,
+					KvPairIterationMigrator::new,
+					VirtualMapMigration::extractVirtualMapData,
+					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
 
-			// grant free auto-renew oof ~90 days for all contracts once the contract expiration is enabled
-
+			// grant free auto-renew of ~90 days for all contracts once the contract expiration is enabled
 			grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
 		}
 	}

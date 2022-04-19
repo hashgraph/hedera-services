@@ -38,10 +38,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
@@ -54,8 +50,6 @@ public class ReleaseTwentySixMigration {
 	public static final int INSERTIONS_PER_COPY = 100;
 	public static final int SEVEN_DAYS_IN_SECONDS = 604800;
 	private static final RandomExtended random = new RandomExtended(8682588012L);
-	private static final Map<EntityNum, Long> contractKeysAndExpirations = new HashMap<>();
-	private static final Set<EntityNum> contractKeys = new HashSet<>();
 
 	public static void makeStorageIterable(
 			final ServicesState initializingState,
@@ -86,17 +80,14 @@ public class ReleaseTwentySixMigration {
 			final Instant upgradeTime) {
 		final var contracts = initializingState.accounts();
 
+		log.info("Granting free auto renewal for all smart contracts by ~90 days.");
+		final var watch = StopWatch.createStarted();
 		contracts.forEach((a, b) -> {
 			if (b.isSmartContract()) {
-				contractKeys.add(a);
+				setNewExpiry(upgradeTime, contracts, a, random);
 			}
 		});
-
-		log.info("Granting free auto renewal for all smart contracts by ~90 days");
-
-		for (var key : contractKeys) {
-			setNewExpiry(upgradeTime, contracts, key, random);
-		}
+		log.info("Done in {}ms", watch.getTime(TimeUnit.MILLISECONDS));
 	}
 
 	private static void setNewExpiry(
@@ -111,11 +102,6 @@ public class ReleaseTwentySixMigration {
 						+ THREE_MONTHS_IN_SECONDS
 						+ rand.nextLong(0, SEVEN_DAYS_IN_SECONDS));
 		account.setExpiry(newExpiry);
-		contractKeysAndExpirations.put(key, newExpiry);
-	}
-
-	public static Map<EntityNum, Long> getContractKeysAndExpirations() {
-		return contractKeysAndExpirations;
 	}
 
 	@FunctionalInterface
