@@ -21,6 +21,7 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.state.backgroundSystemTasks.SystemTask;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -35,6 +36,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,12 +75,14 @@ class DissociateLogicTest {
 	private TokenRelationship tokenRelationship;
 	@Mock
 	private OptionValidator validator;
+	@Mock
+	private FCQueue<SystemTask> systemTasks;
 
 	private DissociateLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new DissociateLogic(validator, tokenStore, accountStore, relsFactory);
+		subject = new DissociateLogic(validator, tokenStore, accountStore, relsFactory, () -> systemTasks);
 	}
 
 	@Test
@@ -87,7 +91,7 @@ class DissociateLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(accountId)).willReturn(account);
 		// and:
-		given(relsFactory.loadFrom(tokenStore, account, tokenId)).willReturn(dissociation);
+		given(relsFactory.loadFrom(tokenStore, account, tokenId, systemTasks)).willReturn(dissociation);
 		willAnswer(invocationOnMock -> {
 			((List<TokenRelationship>) invocationOnMock.getArgument(0)).add(tokenRelationship);
 			return null;

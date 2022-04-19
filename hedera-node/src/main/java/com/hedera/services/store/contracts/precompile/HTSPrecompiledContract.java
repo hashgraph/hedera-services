@@ -47,6 +47,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.backgroundSystemTasks.SystemTask;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -92,6 +93,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -195,6 +197,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private final UsagePricesProvider resourceCosts;
 	private final CreateChecks tokenCreateChecks;
 	private final EntityIdSource entityIdSource;
+	private final Supplier<FCQueue<SystemTask>> systemTasks;
 
 	private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
@@ -291,7 +294,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final PrecompilePricingUtils precompilePricingUtils,
 			final UsagePricesProvider resourceCosts,
 			final CreateChecks tokenCreateChecks,
-			final EntityIdSource entityIdSource
+			final EntityIdSource entityIdSource,
+			final Supplier<FCQueue<SystemTask>> systemTasks
 	) {
 		super("HTS", gasCalculator);
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -311,6 +315,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.resourceCosts = resourceCosts;
 		this.tokenCreateChecks = tokenCreateChecks;
 		this.entityIdSource = entityIdSource;
+		this.systemTasks = systemTasks;
 	}
 
 	public Pair<Gas, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -622,7 +627,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				OptionValidator validator,
 				TypedTokenStore tokenStore,
 				AccountStore accountStore,
-				DissociationFactory dissociationFactory);
+				DissociationFactory dissociationFactory,
+				Supplier<FCQueue<SystemTask>> systemTasks);
 	}
 
 	@FunctionalInterface
@@ -742,7 +748,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Execute the transaction and capture its results --- */
 			final var dissociateLogic = dissociateLogicFactory.newDissociateLogic(
-					validator, tokenStore, accountStore, dissociationFactory);
+					validator, tokenStore, accountStore, dissociationFactory, systemTasks);
 			dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
 		}
 
