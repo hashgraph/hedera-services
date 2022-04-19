@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.proxyBytecodeFor;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -75,6 +76,14 @@ class CodeCacheTest {
 		Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
 		assertTrue(code.getBytes().isEmpty());
+	}
+
+	@Test
+	void getTokenCodeReturnsRedirectCode() {
+		given(entityAccess.isTokenAccount(any())).willReturn(true);
+
+		assertEquals(proxyBytecodeFor(Address.fromHexString("0xabc")), codeCache.getIfPresent(Address.fromHexString(
+				"0xabc")).getBytes());
 	}
 
 	@Test
