@@ -30,12 +30,12 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -94,6 +94,8 @@ class ContractCallTransitionLogicTest {
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private EntityAccess entityAccess;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
@@ -105,7 +107,7 @@ class ContractCallTransitionLogicTest {
 	private void setup() {
 		subject = new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager);
+				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
 	}
 
 	@Test
