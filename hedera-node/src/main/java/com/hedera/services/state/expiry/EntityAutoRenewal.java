@@ -107,6 +107,8 @@ public class EntityAutoRenewal {
 				break;
 			}
 		}
+		// GC the NFTs
+		renewalProcess.garbageCollectNfts();
 
 		renewalProcess.endRenewalCycle();
 		curNetworkCtx.updateAutoRenewSummaryCounts(i - 1, entitiesTouched);

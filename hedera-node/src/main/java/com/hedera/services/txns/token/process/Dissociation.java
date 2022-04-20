@@ -145,7 +145,12 @@ public class Dissociation {
 			account.setOwnedNfts(curOwnedNfts - disappearingUnits);
 			systemTasks.add(
 					new SystemTask(SystemTaskType.DISSOCIATED_NFT_REMOVALS,
-							new DissociateNftRemovals(account.getId().num(), token.getId().num(), disappearingUnits)));
+							new DissociateNftRemovals(
+									account.getId().num(),
+									token.getId().num(),
+									disappearingUnits,
+									account.getHeadNftId(),
+									account.getHeadNftSerialNum())));
 		}
 	}
 

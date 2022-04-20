@@ -25,6 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.state.backgroundSystemTasks.DissociateNftRemovals;
 import com.hedera.services.state.expiry.TokenRelsListRemoval;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -82,6 +83,16 @@ class AccountGCTest {
 				() -> uniqueTokens,
 				dynamicProperties);
 		subject.setRemovalFacilitation(removalFacilitation);
+	}
+
+	@Test
+	void burnNftsWork() {
+		final var nftRemovalTask = new DissociateNftRemovals(1001, 1002, 2, 1234, 1L);
+		final var maxTouches = 10;
+
+		subject.burnNfts(nftRemovalTask, maxTouches);
+
+
 	}
 
 	@Test

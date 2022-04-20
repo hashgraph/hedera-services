@@ -12,26 +12,70 @@ public class DissociateNftRemovals implements SelfSerializable {
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x88a07aa74cc10c3fL;
 
 	long accountNum;
-	long tokenNum;
+	long targetTokenNum;
 	long serialsCount;
+	long headTokenNum;
+	long headSerialNum;
 
-	public DissociateNftRemovals(long accountNum, long tokenNum, long serialsCount) {
+	public DissociateNftRemovals(long accountNum, long targetTokenNum, long serialsCount, long headTokenNum, long headSerialNum) {
 		this.accountNum = accountNum;
-		this.tokenNum = tokenNum;
+		this.targetTokenNum = targetTokenNum;
 		this.serialsCount = serialsCount;
+		this.headTokenNum = headTokenNum;
+		this.headSerialNum = headSerialNum;
+	}
+
+	public long getAccountNum() {
+		return accountNum;
+	}
+
+	public void setAccountNum(final long accountNum) {
+		this.accountNum = accountNum;
+	}
+
+	public long getTargetTokenNum() {
+		return targetTokenNum;
+	}
+
+	public void setTargetTokenNum(final long targetTokenNum) {
+		this.targetTokenNum = targetTokenNum;
+	}
+
+	public long getSerialsCount() {
+		return serialsCount;
+	}
+
+	public void setSerialsCount(final long serialsCount) {
+		this.serialsCount = serialsCount;
+	}
+
+	public long getHeadTokenNum() {
+		return headTokenNum;
+	}
+
+	public void setHeadTokenNum(final long headTokenNum) {
+		this.headTokenNum = headTokenNum;
+	}
+
+	public long getHeadSerialNum() {
+		return headSerialNum;
+	}
+
+	public void setHeadSerialNum(final long headSerialNum) {
+		this.headSerialNum = headSerialNum;
 	}
 
 	@Override
 	public void deserialize(final SerializableDataInputStream in, final int i) throws IOException {
 		accountNum = in.readLong();
-		tokenNum = in.readLong();
+		targetTokenNum = in.readLong();
 		serialsCount = in.readLong();
 	}
 
 	@Override
 	public void serialize(final SerializableDataOutputStream out) throws IOException {
 		out.writeLong(accountNum);
-		out.writeLong(tokenNum);
+		out.writeLong(targetTokenNum);
 		out.writeLong(serialsCount);
 	}
 

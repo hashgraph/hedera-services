@@ -28,6 +28,22 @@ public class SystemTask implements FCQueueElement {
 		this.serializableTask = task;
 	}
 
+	public SystemTaskType getTaskType() {
+		return taskType;
+	}
+
+	public void setTaskType(final SystemTaskType taskType) {
+		this.taskType = taskType;
+	}
+
+	public SelfSerializable getSerializableTask() {
+		return serializableTask;
+	}
+
+	public void setSerializableTask(final SelfSerializable serializableTask) {
+		this.serializableTask = serializableTask;
+	}
+
 	@Override
 	public SystemTask copy() {
 		return this;
