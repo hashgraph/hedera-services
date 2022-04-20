@@ -808,11 +808,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "45 5 * * *"
+          cron: "17 13 * * *"
           filters:
             branches:
               only:
-                - master
+                - 3163-M-free-contract-auto-renewalq
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1598,6 +1598,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
+            cd regression/ ; git checkout test-migration; cd .. ;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
