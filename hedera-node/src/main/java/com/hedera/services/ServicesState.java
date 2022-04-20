@@ -176,10 +176,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
 
 			// grant free auto-renew of ~90 days for all contracts once the contract expiration is enabled
-			final var properties = metadata.app().globalDynamicProperties();
-			if (properties.shouldAutoRenewContracts()) {
-				grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
-			}
+			grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
 		}
 	}
 

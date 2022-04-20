@@ -42,7 +42,7 @@ public final class StateVersions {
 	//   - Release 0.22.x was state version 15
 	public static final int RELEASE_024X_VERSION = 17;
 	public static final int RELEASE_025X_VERSION = 18;
-	public static final int RELEASE_0260_VERSION = 21;
+	public static final int RELEASE_0260_VERSION = 19;
 
 	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_024X_VERSION;
 	public static final int CURRENT_VERSION = RELEASE_0260_VERSION;

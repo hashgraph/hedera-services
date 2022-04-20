@@ -46,7 +46,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -108,7 +107,7 @@ class MigrationRecordsManagerTest {
 		accounts.put(EntityNum.fromLong(2L), merkleAccount);
 
 		subject = new MigrationRecordsManager(creator, sigImpactHistorian, recordsHistorian, () -> networkCtx,
-				() -> accounts);
+				() -> accounts, factory);
 
 		subject.setSideEffectsFactory(() -> nextTracker.getAndIncrement() == 0 ? tracker800 : tracker801);
 	}
@@ -116,14 +115,7 @@ class MigrationRecordsManagerTest {
 	@Test
 	void ifContextIndicatesRecordsNeedToBeStreamedThenDoesSo() {
 		final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
-		final ArgumentCaptor<ExpirableTxnRecord.Builder> recordCaptor = forClass(ExpirableTxnRecord.Builder.class);
-		final var inOrder = Mockito.inOrder(recordsHistorian);
 		final var synthBody = expectedSyntheticCreate();
-
-		final var contractUpdateSynthBody1 = factory.synthContractAutoRenew(contract1Id.asNum(), contract1Expiry).build();
-		final var contractUpdateSynthBody2 = factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry).build();
-		given(merkleAccount.isSmartContract()).willReturn(true);
-		given(merkleAccount.getExpiry()).willReturn(contract1Expiry).willReturn(contract2Expiry);
 
 		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker800, MEMO)).willReturn(pretend800);
 		given(creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker801, MEMO)).willReturn(pretend801);
@@ -132,26 +124,50 @@ class MigrationRecordsManagerTest {
 
 		verify(sigImpactHistorian).markEntityChanged(800L);
 		verify(sigImpactHistorian).markEntityChanged(801L);
-		verify(sigImpactHistorian).markEntityChanged(contract1Id.asNum().longValue());
-		verify(sigImpactHistorian).markEntityChanged(contract2Id.asNum().longValue());
-
 		verify(tracker800).trackAutoCreation(AccountID.newBuilder().setAccountNum(800L).build(), ByteString.EMPTY);
 		verify(tracker801).trackAutoCreation(AccountID.newBuilder().setAccountNum(801L).build(), ByteString.EMPTY);
-
-		inOrder.verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend800));
-		inOrder.verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend801));
-		inOrder.verify(recordsHistorian, times(2)).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), recordCaptor.capture());
-
+		verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend800));
+		verify(recordsHistorian).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend801));
 		verify(networkCtx).markMigrationRecordsStreamed();
 		final var bodies = bodyCaptor.getAllValues();
 		assertEquals(synthBody, bodies.get(0).build());
 		assertEquals(synthBody, bodies.get(1).build());
-		assertEquals(contractUpdateSynthBody1, bodies.get(2).build());
-		assertEquals(contractUpdateSynthBody2, bodies.get(3).build());
+	}
+
+	@Test
+	void ifContextIndicatesContractRenewRecordsNeedToBeStreamedThenDoesSo() {
+		final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
+		final ArgumentCaptor<ExpirableTxnRecord.Builder> recordCaptor = forClass(ExpirableTxnRecord.Builder.class);
+
+		final var contractUpdateSynthBody1 = factory.synthContractAutoRenew(contract1Id.asNum(), contract1Expiry).build();
+		final var contractUpdateSynthBody2 = factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry).build();
+
+		final var account1 = new MerkleAccount();
+		account1.setSmartContract(true);
+		account1.setExpiry(contract1Expiry);
+		account1.setKey(contract1Id.asNum());
+
+		final var account2 = new MerkleAccount();
+		account2.setSmartContract(true);
+		account2.setExpiry(contract2Expiry);
+		account2.setKey(contract2Id.asNum());
+
+		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
+		given(merkleAccount.cast()).willReturn(account1).willReturn(account2);
+
+		subject.publishMigrationRecords(now);
+
+		verify(recordsHistorian, times(2)).trackPrecedingChildRecord(eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), recordCaptor.capture());
+		verify(networkCtx).markMigrationRecordsStreamed();
+
+		final var bodies = bodyCaptor.getAllValues();
+		assertEquals(contractUpdateSynthBody1, bodies.get(0).build());
+		assertEquals(contractUpdateSynthBody2, bodies.get(1).build());
 
 		final var records = recordCaptor.getAllValues();
-		assertEquals(expectedContractUpdateRecord(contract1Id, contract1Expiry).build(), records.get(0).build());
-		assertEquals(expectedContractUpdateRecord(contract2Id, contract2Expiry).build(), records.get(1).build());
+		//since txnId will be set at late point, will set txnId for comparing
+		assertEquals(expectedContractUpdateRecord(contract1Id, contract1Expiry).build(), records.get(0).setTxnId(new TxnId()).build());
+		assertEquals(expectedContractUpdateRecord(contract2Id, contract2Expiry).build(), records.get(1).setTxnId(new TxnId()).build());
 	}
 
 	private ExpirableTxnRecord.Builder expectedContractUpdateRecord(final EntityId num, final long newExpiry) {
@@ -161,7 +177,7 @@ class MigrationRecordsManagerTest {
 		final var memo = String.format(CONTRACT_UPGRADE_MEMO, num.num(), newExpiry);
 		final var txnId = new TxnId(num, MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
 		return ExpirableTxnRecord.newBuilder()
-				.setTxnId(txnId)
+				.setTxnId(new TxnId())
 				.setMemo(memo)
 				.setReceipt(receipt)
 				.setConsensusTime(RichInstant.fromJava(now));
@@ -180,6 +196,7 @@ class MigrationRecordsManagerTest {
 	@Test
 	void doesntStreamRewardAccountCreationIfNotGenesis() {
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(Instant.MAX);
+		given(merkleAccount.cast()).willReturn(new MerkleAccount());
 
 		subject.publishMigrationRecords(now);
 

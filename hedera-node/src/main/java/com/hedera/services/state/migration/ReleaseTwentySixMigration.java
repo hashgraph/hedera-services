@@ -28,6 +28,7 @@ import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.RandomExtended;
@@ -82,9 +83,9 @@ public class ReleaseTwentySixMigration {
 
 		log.info("Granting free auto renewal for all smart contracts by ~90 days.");
 		final var watch = StopWatch.createStarted();
-		contracts.forEach((a, b) -> {
-			if (b.isSmartContract()) {
-				setNewExpiry(upgradeTime, contracts, a, random);
+		MiscUtils.forEach(contracts, (id, account) -> {
+			if (account.isSmartContract()) {
+				setNewExpiry(upgradeTime, contracts, id, random);
 			}
 		});
 		log.info("Done in {}ms", watch.getTime(TimeUnit.MILLISECONDS));

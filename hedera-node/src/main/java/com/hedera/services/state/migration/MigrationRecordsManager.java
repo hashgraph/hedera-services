@@ -31,9 +31,9 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -46,7 +46,6 @@ import org.apache.logging.log4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.function.Supplier;
 
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
@@ -54,8 +53,6 @@ import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.services.state.initialization.BackedSystemAccountsCreator.STAKING_FUND_ACCOUNTS;
-import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 
 /**
  * Responsible for externalizing any state changes that happened during migration via child records,
@@ -82,7 +79,7 @@ public class MigrationRecordsManager {
 	private final Supplier<MerkleNetworkContext> networkCtx;
 
 	private Supplier<SideEffectsTracker> sideEffectsFactory = SideEffectsTracker::new;
-	private SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
+	private final SyntheticTxnFactory syntheticTxnFactory;
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
 
 	@Inject
@@ -91,13 +88,15 @@ public class MigrationRecordsManager {
 			final SigImpactHistorian sigImpactHistorian,
 			final RecordsHistorian recordsHistorian,
 			final Supplier<MerkleNetworkContext> networkCtx,
-			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts
+			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final SyntheticTxnFactory syntheticTxnFactory
 	) {
 		this.sigImpactHistorian = sigImpactHistorian;
 		this.recordsHistorian = recordsHistorian;
 		this.networkCtx = networkCtx;
 		this.creator = creator;
 		this.accounts = accounts;
+		this.syntheticTxnFactory = syntheticTxnFactory;
 	}
 
 	/**
@@ -116,7 +115,8 @@ public class MigrationRecordsManager {
 		if (curNetworkCtx.consensusTimeOfLastHandledTxn() == null) {
 			final var implicitAutoRenewPeriod = FUNDING_ACCOUNT_EXPIRY - now.getEpochSecond();
 			STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
-			// publish the migration records for 0.26.0, for granting free auto-renewal
+		} else {
+			// publish the migration records for 0.26.0, for granting free auto-renewal when starting from a saved state
 			publishContractFreeAutoRenewalRecords(now);
 		}
 
@@ -144,33 +144,25 @@ public class MigrationRecordsManager {
 	}
 
 	private void publishContractFreeAutoRenewalRecords(final Instant now) {
-		final var changedContracts = new HashMap<EntityNum, Long>();
-		accounts.get().forEach((a, b) -> {
-			if (b.isSmartContract()) {
-				changedContracts.put(a, b.getExpiry());
+		MiscUtils.forEach(accounts.get(), (id, account) -> {
+			if (account.isSmartContract()) {
+				final var contractNum = id.toEntityId();
+				final var newExpiry = account.getExpiry();
+
+				final var receipt = new TxnReceipt();
+				receipt.setAccountId(contractNum);
+
+				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry);
+				final var memo = String.format(CONTRACT_UPGRADE_MEMO, contractNum.num(), newExpiry);
+				final var synthRecord = ExpirableTxnRecord.newBuilder()
+						.setMemo(memo)
+						.setReceipt(receipt)
+						.setConsensusTime(RichInstant.fromJava(now));
+
+				recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
+				log.debug("Published synthetic ContractUpdate for contract 0.0.{}", contractNum.num());
 			}
 		});
-
-		for (var entry : changedContracts.entrySet()) {
-			final var contractNum = entry.getKey().toEntityId();
-			final var newExpiry = entry.getValue();
-
-			final var receipt = new TxnReceipt();
-			receipt.setAccountId(contractNum);
-
-			final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry);
-			final var memo = String.format(CONTRACT_UPGRADE_MEMO, contractNum.num(), newExpiry);
-			final var txnId = new TxnId(contractNum, MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
-			final var synthRecord = ExpirableTxnRecord.newBuilder()
-					.setTxnId(txnId)
-					.setMemo(memo)
-					.setReceipt(receipt)
-					.setConsensusTime(RichInstant.fromJava(now));
-
-			recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
-			sigImpactHistorian.markEntityChanged(contractNum.num());
-			log.info("Published synthetic ContractUpdate for contract 0.0.{}", contractNum.num());
-		}
 	}
 
 	@VisibleForTesting
