@@ -344,6 +344,67 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void verifyExternaliseContractResultCreateWithoutMemoAndNullProxy() throws DecoderException {
+		// setup:
+		target = null;
+		givenValidTxnCtx();
+		// and:
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(
+				contractAccount.getId().asEvmAddress());
+
+		// and:
+		final var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(), Map.of());
+		given(createEvmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+				Bytes.EMPTY,
+				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD))
+				.willReturn(results);
+		given(worldState.getCreatedContractIds()).willReturn(List.of(contractAccount.getId().asGrpcContract()));
+
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
+				senderAccount.getId().asEntityNum());
+
+		given(globalDynamicProperties.minAutoRenewDuration()).willReturn(1L);
+		final var senderKey = new JContractIDKey(contractAccount.getId().asGrpcContract());
+		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), KEY)).willReturn(senderKey);
+		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), AccountProperty.AUTO_RENEW_PERIOD)).willReturn(AUTO_RENEW_PERIOD);
+		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), MEMO)).willReturn(null);
+		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), PROXY)).willReturn(null);
+		given(optionValidator.attemptToDecodeOrThrow(any(), any())).willReturn(senderKey);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		final var expectedSyntheticCreateBody = ContractCreateTransactionBody.newBuilder()
+				.setAdminKey(JKey.mapJKey(senderKey))
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(AUTO_RENEW_PERIOD).build())
+				.setInitcode(ByteString.copyFrom(ethTxData.callData()))
+				.setGas(ethTxData.gasLimit())
+				.setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
+				.build();
+		final var expectedTxnBody =
+				TransactionBody.newBuilder().setContractCreateInstance(expectedSyntheticCreateBody).build();
+		verify(contractCreateTransitionLogic).doStateTransitionOperation(
+				expectedTxnBody,
+				senderAccount.getId(),
+				true
+		);
+		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
+		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
+		verify(recordService).updateFromEvmCallContext(any());
+		verify(worldState).getCreatedContractIds();
+		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
+	}
+
+	@Test
 	void verifyProcessorCallingWithCorrectCallData() {
 		// setup:
 		callData = Hex.decode("fffefdfc");
