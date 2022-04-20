@@ -30,7 +30,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
@@ -51,11 +50,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
-import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.eq;
@@ -171,16 +169,13 @@ class MigrationRecordsManagerTest {
 	}
 
 	private ExpirableTxnRecord.Builder expectedContractUpdateRecord(final EntityId num, final long newExpiry) {
-		final var receipt = new TxnReceipt();
-		receipt.setAccountId(num);
+		final var receipt =  TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
 
 		final var memo = String.format(CONTRACT_UPGRADE_MEMO, num.num(), newExpiry);
-		final var txnId = new TxnId(num, MISSING_INSTANT, false, USER_TRANSACTION_NONCE);
 		return ExpirableTxnRecord.newBuilder()
 				.setTxnId(new TxnId())
 				.setMemo(memo)
-				.setReceipt(receipt)
-				.setConsensusTime(RichInstant.fromJava(now));
+				.setReceipt(receipt);
 	}
 
 	@Test

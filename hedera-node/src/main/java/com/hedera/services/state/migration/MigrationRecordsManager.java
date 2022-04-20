@@ -30,7 +30,6 @@ import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
@@ -48,6 +47,7 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.function.Supplier;
 
+import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
@@ -117,7 +117,7 @@ public class MigrationRecordsManager {
 			STAKING_FUND_ACCOUNTS.forEach(num -> publishForStakingFund(num, implicitAutoRenewPeriod));
 		} else {
 			// publish the migration records for 0.26.0, for granting free auto-renewal when starting from a saved state
-			publishContractFreeAutoRenewalRecords(now);
+			publishContractFreeAutoRenewalRecords();
 		}
 
 		curNetworkCtx.markMigrationRecordsStreamed();
@@ -143,21 +143,19 @@ public class MigrationRecordsManager {
 		return TransactionBody.newBuilder().setCryptoCreateAccount(txnBody);
 	}
 
-	private void publishContractFreeAutoRenewalRecords(final Instant now) {
+	private void publishContractFreeAutoRenewalRecords() {
 		MiscUtils.forEach(accounts.get(), (id, account) -> {
 			if (account.isSmartContract()) {
 				final var contractNum = id.toEntityId();
 				final var newExpiry = account.getExpiry();
 
-				final var receipt = new TxnReceipt();
-				receipt.setAccountId(contractNum);
+				final var syntheticSuccessReceipt = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
 
 				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry);
 				final var memo = String.format(CONTRACT_UPGRADE_MEMO, contractNum.num(), newExpiry);
 				final var synthRecord = ExpirableTxnRecord.newBuilder()
 						.setMemo(memo)
-						.setReceipt(receipt)
-						.setConsensusTime(RichInstant.fromJava(now));
+						.setReceipt(syntheticSuccessReceipt);
 
 				recordsHistorian.trackPrecedingChildRecord(DEFAULT_SOURCE_ID, synthBody, synthRecord);
 				log.debug("Published synthetic ContractUpdate for contract 0.0.{}", contractNum.num());
