@@ -291,6 +291,10 @@ public interface HapiPropertySource {
 		return CommonUtils.hex(asSolidityAddress(contractId));
 	}
 
+	static String asHexedSolidityAddress(final TokenID tokenId) {
+		return CommonUtils.hex(asSolidityAddress(tokenId));
+	}
+
 	static byte[] asSolidityAddress(final ContractID contractId) {
 		return asSolidityAddress((int) contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
 	}
