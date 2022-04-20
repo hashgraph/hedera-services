@@ -191,7 +191,6 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 	 */
 	@Override
 	public void release() {
-		// TODO?
 	}
 
 	/**

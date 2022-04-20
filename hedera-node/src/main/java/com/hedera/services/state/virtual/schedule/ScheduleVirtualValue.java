@@ -555,7 +555,6 @@ public class ScheduleVirtualValue implements VirtualValue {
 	 */
 	@Override
 	public void release() {
-		// TODO?
 	}
 
 	/**

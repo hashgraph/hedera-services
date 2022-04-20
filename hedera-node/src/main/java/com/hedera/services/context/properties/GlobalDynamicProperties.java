@@ -374,7 +374,6 @@ public class GlobalDynamicProperties {
 		return schedulingLongTermEnabled;
 	}
 
-	// TODO: convert to int
 	public long schedulingMaxTxnPerSecond() {
 		return schedulingMaxTxnPerSecond;
 	}
