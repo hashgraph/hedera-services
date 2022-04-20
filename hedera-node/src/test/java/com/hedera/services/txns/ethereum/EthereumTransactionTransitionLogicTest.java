@@ -38,6 +38,7 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -59,6 +60,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
@@ -147,6 +149,8 @@ class EthereumTransactionTransitionLogicTest {
 	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
 	private HederaFs hfs;
+	@Mock
+	private EntityAccess entityAccess;
 	private TransactionBody ethTxTxn;
 	private EthTxData ethTxData;
 
@@ -157,9 +161,9 @@ class EthereumTransactionTransitionLogicTest {
 	private void setup() {
 		contractCallTransitionLogic = new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager);
+				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
 		contractCreateTransitionLogic = Mockito.spy(new ContractCreateTransitionLogic(hfs, txnCtx, accountStore,
-			optionValidator,
+				optionValidator,
 				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian));
 		given(globalDynamicProperties.getChainId()).willReturn(0x128);
 		subject = new EthereumTransitionLogic(txnCtx, spanMapAccessor, contractCallTransitionLogic,
