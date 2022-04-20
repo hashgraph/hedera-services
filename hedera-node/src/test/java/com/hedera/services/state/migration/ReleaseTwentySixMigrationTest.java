@@ -28,6 +28,7 @@ import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.RandomExtended;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -38,9 +39,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.INSERTIONS_PER_COPY;
+import static com.hedera.services.state.migration.ReleaseTwentySixMigration.SEVEN_DAYS_IN_SECONDS;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.THREAD_COUNT;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.grantFreeAutoRenew;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -107,14 +110,30 @@ class ReleaseTwentySixMigrationTest {
 	@Test
 	void grantsAutoRenewToContracts() {
 		final var accountsMap = new MerkleMap<EntityNum, MerkleAccount>();
-		accounts.put(EntityNum.fromLong(1L), merkleAccount);
-		accounts.put(EntityNum.fromLong(2L), merkleAccount);
+		accountsMap.put(EntityNum.fromLong(1L), merkleAccount);
+		accountsMap.put(EntityNum.fromLong(2L), merkleAccount);
+		final var instant = Instant.ofEpochSecond(123456789L);
+
+		final var rand = new RandomExtended(8682588012L);
 
 		given(initializingState.accounts()).willReturn(accountsMap);
-		given(initializingState.getChild(StateChildIndices.CONTRACT_STORAGE)).willReturn(contractStorage);
+		given(merkleAccount.isSmartContract()).willReturn(true);
+		given(merkleAccount.getExpiry()).willReturn(1234L).willReturn(2345L);
 
-		grantFreeAutoRenew(initializingState, Instant.now());
+		grantFreeAutoRenew(initializingState, instant);
 
-		verify(merkleAccount, times(2)).setExpiry(anyLong());
+		final var expectedExpiry1 = getExpectedExpiry(1234L, instant.getEpochSecond(), rand);
+		final var expectedExpiry2 = getExpectedExpiry(2345L, instant.getEpochSecond(), rand);
+
+		verify(merkleAccount, times(2)).isSmartContract();
+		verify(merkleAccount).setExpiry(expectedExpiry1);
+		verify(merkleAccount).setExpiry(expectedExpiry2);
+	}
+
+	private long getExpectedExpiry(final long currentExpiry, final long instant, final RandomExtended rand) {
+		return Math.max(currentExpiry,
+				         instant
+						+ THREE_MONTHS_IN_SECONDS
+						+ rand.nextLong(0, SEVEN_DAYS_IN_SECONDS));
 	}
 }

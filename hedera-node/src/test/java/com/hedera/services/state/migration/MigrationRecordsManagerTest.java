@@ -71,8 +71,6 @@ class MigrationRecordsManagerTest {
 	private static final long fundingExpiry = 33197904000L;
 	private static final ExpirableTxnRecord.Builder pretend800 = ExpirableTxnRecord.newBuilder();
 	private static final ExpirableTxnRecord.Builder pretend801 = ExpirableTxnRecord.newBuilder();
-	private static final ExpirableTxnRecord.Builder contractUpdate1 = ExpirableTxnRecord.newBuilder();
-	private static final ExpirableTxnRecord.Builder contractUpdate2 = ExpirableTxnRecord.newBuilder();
 	private static final Instant now = Instant.ofEpochSecond(1_234_567L);
 	private static final Key EXPECTED_KEY = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
 	private static final String MEMO = "Release 0.24.1 migration record";
@@ -153,11 +151,11 @@ class MigrationRecordsManagerTest {
 		assertEquals(contractUpdateSynthBody2, bodies.get(3).build());
 
 		final var records = recordCaptor.getAllValues();
-		assertTrue(expectedRecord(contract1Id, contract1Expiry).build().equals(records.get(0).build()));
-		assertTrue(expectedRecord(contract2Id, contract2Expiry).build().equals(records.get(1).build()));
+		assertTrue(expectedContractUpdateRecord(contract1Id, contract1Expiry).build().equals(records.get(0).build()));
+		assertTrue(expectedContractUpdateRecord(contract2Id, contract2Expiry).build().equals(records.get(1).build()));
 	}
 
-	private ExpirableTxnRecord.Builder expectedRecord(final EntityId num, final long newExpiry) {
+	private ExpirableTxnRecord.Builder expectedContractUpdateRecord(final EntityId num, final long newExpiry) {
 		final var receipt = new TxnReceipt();
 		receipt.setAccountId(num);
 
@@ -178,7 +176,6 @@ class MigrationRecordsManagerTest {
 
 		verifyNoInteractions(sigImpactHistorian);
 		verifyNoInteractions(recordsHistorian);
-		verifyNoInteractions(accounts);
 	}
 
 	@Test
