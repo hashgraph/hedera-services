@@ -92,10 +92,10 @@ public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
 				.maxConnectionIdle(nodeProperties.nettyMaxConnectionIdle(), TimeUnit.SECONDS)
 				.maxConcurrentCallsPerConnection(nodeProperties.nettyMaxConcurrentCalls())
 				.flowControlWindow(nodeProperties.nettyFlowControlWindow())
-				.directExecutor();
-//				.channelType(NioServerSocketChannel.class)
-//				.bossEventLoopGroup(new EpollEventLoopGroup())
-//				.workerEventLoopGroup(new EpollEventLoopGroup());
+				.directExecutor()
+				.channelType(EpollServerSocketChannel.class)
+				.bossEventLoopGroup(new EpollEventLoopGroup())
+				.workerEventLoopGroup(new EpollEventLoopGroup());
 	}
 
 	private void configureTls(NettyServerBuilder builder) throws SSLException, FileNotFoundException {
