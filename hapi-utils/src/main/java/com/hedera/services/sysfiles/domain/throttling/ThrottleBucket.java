@@ -27,6 +27,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -79,6 +80,10 @@ public final class ThrottleBucket {
 		return throttleGroups;
 	}
 
+	public void setThrottleGroups(List<ThrottleGroup> throttleGroups) {
+		this.throttleGroups = throttleGroups;
+	}
+
 	public static ThrottleBucket fromProto(final com.hederahashgraph.api.proto.java.ThrottleBucket bucket) {
 		final var pojo = new ThrottleBucket();
 		pojo.name = bucket.getName();
@@ -100,19 +105,19 @@ public final class ThrottleBucket {
 	}
 
 	/**
-	 * Returns a deterministic throttle scoped to (1 / networkSize) of the nominal milliOpsPerSec
+	 * Returns a deterministic throttle scoped to (1 / capacitySplit) of the nominal milliOpsPerSec
 	 * in each throttle group; and a list that maps each relevant {@code HederaFunctionality}
 	 * to the number of logical operations it requires from the throttle.
 	 *
-	 * @param networkSize
-	 * 		network size
-	 * @return a throttle with (1 / networkSize) the capacity of this bucket, and a list of how many logical
+	 * @param capacitySplit
+	 * 		capacity split
+	 * @return a throttle with (1 / capacitySplit) the capacity of this bucket, and a list of how many logical
 	 * 		operations each assigned function will use from the throttle
 	 * @throws IllegalStateException
 	 * 		if this bucket was constructed with invalid throttle groups
 	 */
 	public Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> asThrottleMapping(
-			final int networkSize
+			final long capacitySplit
 	) {
 		if (throttleGroups.isEmpty()) {
 			throw new IllegalStateException(exceptionMsgFor(
@@ -122,7 +127,7 @@ public final class ThrottleBucket {
 
 		assertMinimalOpsPerSec();
 		final var mtps = logicalMtps();
-		return mappingWith(mtps, networkSize);
+		return mappingWith(mtps, capacitySplit);
 	}
 
 	private long logicalMtps() {
@@ -137,22 +142,22 @@ public final class ThrottleBucket {
 
 	private Pair<DeterministicThrottle, List<Pair<HederaFunctionality, Integer>>> mappingWith(
 			final long mtps,
-			final int n
+			final long capacitySplit
 	) {
-		final var throttle = throttleFor(mtps, n);
+		final var throttle = throttleFor(mtps, capacitySplit);
 		final var totalCapacityUnits = throttle.capacity();
 
 		final Set<HederaFunctionality> seenSoFar = new HashSet<>();
 		final List<Pair<HederaFunctionality, Integer>> opsReqs = new ArrayList<>();
 		for (final var throttleGroup : throttleGroups) {
-			updateOpsReqs(n, mtps, totalCapacityUnits, throttleGroup, seenSoFar, opsReqs);
+			updateOpsReqs(capacitySplit, mtps, totalCapacityUnits, throttleGroup, seenSoFar, opsReqs);
 		}
 
 		return Pair.of(throttle, opsReqs);
 	}
 
 	private void updateOpsReqs(
-			final int n,
+			final long capacitySplit,
 			final long mtps,
 			final long totalCapacity,
 			final ThrottleGroup group,
@@ -164,7 +169,7 @@ public final class ThrottleBucket {
 		if (capacityReq < 0 || capacityReq > totalCapacity) {
 			throw new IllegalStateException(exceptionMsgFor(
 					NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
-					BUCKET_PREFIX + name + " contains an unsatisfiable milliOpsPerSec with " + n + " nodes!"));
+					BUCKET_PREFIX + name + " contains an unsatisfiable milliOpsPerSec with " + capacitySplit + " nodes!"));
 		}
 
 		final var functions = group.getOperations();
@@ -184,10 +189,10 @@ public final class ThrottleBucket {
 		}
 	}
 
-	private DeterministicThrottle throttleFor(final long mtps, final int n) {
+	private DeterministicThrottle throttleFor(final long mtps, final long capacitySplit) {
 		try {
-			final var effBurstPeriodMs = autoScaledBurstPeriodMs(n);
-			return DeterministicThrottle.withMtpsAndBurstPeriodMsNamed(mtps / n, effBurstPeriodMs, name);
+			final var effBurstPeriodMs = autoScaledBurstPeriodMs(capacitySplit);
+			return DeterministicThrottle.withMtpsAndBurstPeriodMsNamed(mtps / capacitySplit, effBurstPeriodMs, name);
 		} catch (final IllegalArgumentException unsatisfiable) {
 			if (unsatisfiable.getMessage().startsWith("Cannot free")) {
 				throw new IllegalStateException(exceptionMsgFor(
@@ -196,21 +201,21 @@ public final class ThrottleBucket {
 			} else {
 				throw new IllegalStateException(exceptionMsgFor(
 						NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION,
-						BUCKET_PREFIX + name + " contains an unsatisfiable milliOpsPerSec with " + n + " nodes!"));
+						BUCKET_PREFIX + name + " contains an unsatisfiable milliOpsPerSec with " + capacitySplit + " nodes!"));
 			}
 		}
 	}
 
-	long autoScaledBurstPeriodMs(final int splits) {
+	long autoScaledBurstPeriodMs(final long capacitySplit) {
 		final var mtps = logicalMtps();
 		var minCapacityUnitsPostSplit = 0L;
 		for (final var group : throttleGroups) {
 			final var opsReq = (int) (mtps / group.impliedMilliOpsPerSec());
 			minCapacityUnitsPostSplit = Math.max(minCapacityUnitsPostSplit, capacityRequiredFor(opsReq));
 		}
-		final var minCapacityUnits = minCapacityUnitsPostSplit * splits;
+		final var minCapacityUnits = BigInteger.valueOf(minCapacityUnitsPostSplit).multiply(BigInteger.valueOf(capacitySplit));
 		final var capacityUnitsPerMs = BucketThrottle.capacityUnitsPerMs(mtps);
-		final var minBurstPeriodMs = quotientRoundedUp(minCapacityUnits, capacityUnitsPerMs);
+		final var minBurstPeriodMs = quotientRoundedUp(minCapacityUnits, BigInteger.valueOf(capacityUnitsPerMs));
 		final var reqBurstPeriodMs = impliedBurstPeriodMs();
 		if (minBurstPeriodMs > reqBurstPeriodMs) {
 			log.info(
@@ -222,6 +227,11 @@ public final class ThrottleBucket {
 
 	public static long quotientRoundedUp(final long a, final long b) {
 		return a / b + (a % b == 0 ? 0 : 1);
+	}
+
+	public static long quotientRoundedUp(final BigInteger a, final BigInteger b) {
+		final var div = a.divideAndRemainder(b);
+		return div[0].longValue() + (div[1].longValue() == 0 ? 0 : 1);
 	}
 
 	private void assertMinimalOpsPerSec() {

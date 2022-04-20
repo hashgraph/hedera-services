@@ -26,13 +26,14 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.KvPairIterationMigrator;
+import com.hedera.services.state.migration.LongTermScheduledTransactionsMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
@@ -173,6 +174,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					KvPairIterationMigrator::new,
 					VirtualMapMigration::extractVirtualMapData,
 					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
+
+			scheduledTxnsMigrator.accept(this);
 		}
 	}
 
@@ -265,7 +268,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		topics().archive();
 		tokens().archive();
 		accounts().archive();
-		scheduleTxs().archive();
 		uniqueTokens().archive();
 		tokenAssociations().archive();
 	}
@@ -334,7 +336,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
 	}
 
-	public MerkleMap<EntityNum, MerkleSchedule> scheduleTxs() {
+	public MerkleScheduledTransactions scheduleTxs() {
 		return getChild(StateChildIndices.SCHEDULE_TXS);
 	}
 
@@ -475,7 +477,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		setChild(StateChildIndices.NETWORK_CTX, genesisNetworkCtxWith(seqStart));
 		setChild(StateChildIndices.SPECIAL_FILES, new MerkleSpecialFiles());
-		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
+		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleScheduledTransactions());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
@@ -496,6 +498,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	private static Consumer<ServicesState> stakeFundingMigrator = ReleaseTwentyFourMigration::ensureStakingFundAccounts;
+	private static Consumer<ServicesState> scheduledTxnsMigrator = LongTermScheduledTransactionsMigration::migrateScheduledTransactions;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
 	/* --- Only used by unit tests --- */
@@ -519,5 +522,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@VisibleForTesting
 	static void setStakeFundingMigrator(final Consumer<ServicesState> stakeFundingMigrator) {
 		ServicesState.stakeFundingMigrator = stakeFundingMigrator;
+	}
+
+	static void setScheduledTransactionsMigrator(final Consumer<ServicesState> scheduledTxnsMigrator) {
+		ServicesState.scheduledTxnsMigrator = scheduledTxnsMigrator;
 	}
 }

@@ -108,4 +108,17 @@ public class GasLimitDeterministicThrottle {
 		lastDecisionTime = usageSnapshot.lastDecisionTime();
 		bucket.resetUsed(usageSnapshot.used());
 	}
+
+	public void resetUsage() {
+		resetLastAllowedUse();
+		final var bucket = delegate.bucket();
+		bucket.resetUsed(0);
+	}
+
+	public void reclaimLastAllowedUse() {
+		delegate.reclaimLastAllowedUse();
+	}
+	public void resetLastAllowedUse() {
+		delegate.resetLastAllowedUse();
+	}
 }

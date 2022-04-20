@@ -4,7 +4,7 @@ package com.hedera.services.state.merkle;
  * ‌
  * Hedera Services Node
  * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,10 @@ import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
+/**
+ * @deprecated Scheduled transactions are now stored in {@link MerkleScheduledTransactions}
+ */
+@Deprecated
 public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNum> {
 	static final int RELEASE_0180_VERSION = 2;
 	static final int CURRENT_VERSION = RELEASE_0180_VERSION;
@@ -118,35 +122,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		}
 	}
 
-	public Transaction asSignedTxn() {
-		return Transaction.newBuilder()
-				.setSignedTransactionBytes(
-						SignedTransaction.newBuilder()
-								.setBodyBytes(
-										TransactionBody.newBuilder()
-												.mergeFrom(ordinaryScheduledTxn)
-												.setTransactionID(scheduledTransactionId())
-												.build()
-												.toByteString())
-								.build()
-								.toByteString())
-				.build();
-	}
-
-	public TransactionID scheduledTransactionId() {
-		if (schedulingAccount == null || schedulingTXValidStart == null) {
-			throw new IllegalStateException("Cannot invoke scheduledTransactionId on a content-addressable view!");
-		}
-		return TransactionID.newBuilder()
-				.setAccountID(schedulingAccount.toGrpcAccountId())
-				.setTransactionValidStart(asTimestamp(schedulingTXValidStart.toJava()))
-				.setScheduled(true)
-				.build();
-	}
-
-	public boolean hasValidSignatureFor(byte[] key) {
-		return notary.contains(copyFrom(key));
-	}
+	/* Object */
 
 	/**
 	 * Two {@code MerkleSchedule}s are identical as long as they agree on
@@ -286,16 +262,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		number = phi.intValue();
 	}
 
-	public MerkleSchedule toContentAddressableView() {
-		var cav = new MerkleSchedule();
-
-		cav.memo = memo;
-		cav.grpcAdminKey = grpcAdminKey;
-		cav.scheduledTxn = scheduledTxn;
-
-		return cav;
-	}
-
 	public Optional<String> memo() {
 		return Optional.ofNullable(this.memo);
 	}
@@ -358,18 +324,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		return expiry;
 	}
 
-	public void markDeleted(Instant at) {
-		throwIfImmutable("Cannot change this schedule to deleted if it's immutable.");
-		resolutionTime = RichInstant.fromJava(at);
-		deleted = true;
-	}
-
-	public void markExecuted(Instant at) {
-		throwIfImmutable("Cannot change this schedule to executed if it's immutable.");
-		resolutionTime = RichInstant.fromJava(at);
-		executed = true;
-	}
-
 	public boolean isExecuted() {
 		return executed;
 	}
@@ -392,17 +346,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		return resolutionTime.toGrpc();
 	}
 
-	@VisibleForTesting
 	public RichInstant getResolutionTime() {
 		return resolutionTime;
-	}
-
-	public HederaFunctionality scheduledFunction() {
-		try {
-			return MiscUtils.functionOf(ordinaryScheduledTxn);
-		} catch (UnknownHederaFunctionality ignore) {
-			return NONE;
-		}
 	}
 
 	public TransactionBody ordinaryViewOfScheduledTxn() {

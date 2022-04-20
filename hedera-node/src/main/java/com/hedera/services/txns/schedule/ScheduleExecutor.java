@@ -24,6 +24,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 
@@ -32,11 +33,12 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
- * Defines a final class to handle scheduled transaction execution once the scheduled transaction is signed by the
- * required number of parties.
+ * Class used to generate the TriggeredTxnAccessor for a scheduled transaction.
  */
 @Singleton
 public final class ScheduleExecutor {
@@ -48,42 +50,47 @@ public final class ScheduleExecutor {
 	}
 
 	/**
-	 * Given a {@link ScheduleID}, {@link ScheduleStore}, {@link TransactionContext} it first checks if the underlying
-	 * transaction is already executed/deleted before attempting to execute and then returns response code after
-	 * triggering the underlying transaction. A ResponseEnumCode of OK is returned upon successful trigger of the
-	 * inner transaction. The arguments cannot be null, the return type would always be a proper ResponseEnumCode.
-	 *
-	 * @param id
-	 * 		the id of the scheduled transaction
-	 * @param store
-	 * 		the relevant store of schedule entities
-	 * @param txnCtx
-	 * 		the active (parent) transaction context
-	 * @return the result {@link ResponseCodeEnum} of triggering the scheduled entity
+	 * Called to trigger the transaction after it's signatures have been checked, inside another transaction.
 	 */
-	ResponseCodeEnum processExecution(
+	ResponseCodeEnum processImmediateExecution(
 			@Nonnull ScheduleID id,
 			@Nonnull ScheduleStore store,
 			@Nonnull TransactionContext txnCtx
 	) throws InvalidProtocolBufferException {
-		Objects.requireNonNull(id, "The id of the scheduled transaction cannot be null");
-		Objects.requireNonNull(store, "The schedule entity store cannot be null");
 		Objects.requireNonNull(txnCtx, "The active transaction context cannot be null");
 
-		final var now = txnCtx.consensusTime();
-		final var executionStatus = store.markAsExecuted(id, now);
+		final var triggerResult = getTriggeredTxnAccessor(id, store, true);
+
+		if (triggerResult.getLeft() == OK) {
+			txnCtx.trigger(triggerResult.getRight());
+		}
+		return triggerResult.getLeft();
+	}
+
+	/**
+	 * Called to get the TriggeredTxnAccessor that can be used to execute a scheduled transaction.
+	 * Signatures must be checked before using it.
+	 */
+	Pair<ResponseCodeEnum, TxnAccessor> getTriggeredTxnAccessor(
+			@Nonnull final ScheduleID id,
+			@Nonnull final ScheduleStore store,
+			final boolean isImmediate
+	) throws InvalidProtocolBufferException {
+
+		Objects.requireNonNull(id, "The id of the scheduled transaction cannot be null");
+		Objects.requireNonNull(store, "The schedule entity store cannot be null");
+
+		final var executionStatus = store.preMarkAsExecuted(id);
 		if (executionStatus != OK) {
-			return executionStatus;
+			return Pair.of(executionStatus, null);
 		}
 
 		final var schedule = store.get(id);
 		final var transaction = schedule.asSignedTxn();
-		txnCtx.trigger(
-				factory.triggeredTxn(
+		return Pair.of(OK, factory.triggeredTxn(
 						transaction.toByteArray(),
 						schedule.effectivePayer().toGrpcAccountId(),
-						id));
-		return OK;
+						id, !isImmediate, !isImmediate));
 	}
 }
 

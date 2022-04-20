@@ -38,6 +38,7 @@ import com.hedera.services.usage.crypto.CryptoTransferMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -112,6 +113,9 @@ public class SignedTxnAccessor implements TxnAccessor {
 	private HederaFunctionality function;
 	private ResponseCodeEnum expandedSigStatus;
 	private PubKeyToSigBytes pubKeyToSigBytes;
+	private boolean throttleExempt;
+    private boolean congestionExempt;
+
 
 	private AccountID payer;
 	private ScheduleID scheduleRef;
@@ -285,6 +289,24 @@ public class SignedTxnAccessor implements TxnAccessor {
 	}
 
 	@Override
+	public boolean throttleExempt() {
+		return throttleExempt;
+	}
+
+	public void markThrottleExempt() {
+		this.throttleExempt = true;
+	}
+
+	@Override
+	public boolean congestionExempt() {
+		return congestionExempt;
+	}
+
+	public void markCongestionExempt() {
+		this.congestionExempt = true;
+	}
+
+	@Override
 	public ScheduleID getScheduleRef() {
 		return scheduleRef;
 	}
@@ -365,8 +387,7 @@ public class SignedTxnAccessor implements TxnAccessor {
 
 	@Override
 	public long getGasLimitForContractTx() {
-		return getFunction() == ContractCreate ? getTxn().getContractCreateInstance().getGas() :
-				getTxn().getContractCall().getGas();
+		return MiscUtils.getGasLimitForContractTx(getTxn(), getFunction());
 	}
 
 	private void setBaseUsageMeta() {

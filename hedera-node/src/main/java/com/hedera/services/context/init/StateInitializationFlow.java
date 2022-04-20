@@ -87,7 +87,7 @@ public class StateInitializationFlow {
 				activeState.tokens().size());
 		log.info("  (@ {}) # scheduled txns     = {}",
 				StateChildIndices.SCHEDULE_TXS,
-				activeState.scheduleTxs().size());
+				activeState.scheduleTxs().byId().size());
 		log.info("  (@ {}) # contract K/V pairs = {}",
 				StateChildIndices.CONTRACT_STORAGE,
 				activeState.contractStorage().size());

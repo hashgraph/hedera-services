@@ -571,28 +571,6 @@ public final class MiscUtils {
 		}
 	}
 
-	public static HederaFunctionality scheduledFunctionOf(final SchedulableTransactionBody txn) {
-		if (txn.hasCryptoTransfer()) {
-			return CryptoTransfer;
-		}
-		if (txn.hasConsensusSubmitMessage()) {
-			return ConsensusSubmitMessage;
-		}
-		if (txn.hasTokenMint()) {
-			return TokenMint;
-		}
-		if (txn.hasTokenBurn()) {
-			return TokenBurn;
-		}
-		if (txn.hasCryptoApproveAllowance()) {
-			return CryptoApproveAllowance;
-		}
-		if (txn.hasCryptoDeleteAllowance()) {
-			return CryptoDeleteAllowance;
-		}
-		return NONE;
-	}
-
 	public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
 		if (txn.hasSystemDelete()) {
 			return SystemDelete;
@@ -876,6 +854,11 @@ public final class MiscUtils {
 	 */
 	public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
 		return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
+	}
+
+	public static long getGasLimitForContractTx(final TransactionBody txn, final HederaFunctionality function) {
+		return function == ContractCreate ? txn.getContractCreateInstance().getGas() :
+				txn.getContractCall().getGas();
 	}
 
 	/**

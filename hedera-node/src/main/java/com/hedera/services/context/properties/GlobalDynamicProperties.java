@@ -79,6 +79,9 @@ public class GlobalDynamicProperties {
 	private long maxAutoRenewDuration;
 	private long minAutoRenewDuration;
 	private int localCallEstRetBytes;
+	private boolean schedulingLongTermEnabled;
+	private long schedulingMaxTxnPerSecond;
+	private long schedulingMaxExpirationFutureSeconds;
 	private int scheduledTxExpiryTimeSecs;
 	private int messageMaxBytesAllowed;
 	private Set<HederaFunctionality> schedulingWhitelist;
@@ -95,8 +98,8 @@ public class GlobalDynamicProperties {
 	private int contractMaxRefundPercentOfGasLimit;
 	private long frontendThrottleMaxGasLimit;
 	private long consensusThrottleMaxGasLimit;
+	private long scheduleThrottleMaxGasLimit;
 	private long htsDefaultGasCost;
-	private long triggerTxnWindBackNanos;
 	private int changeHistorianMemorySecs;
 	private boolean autoCreationEnabled;
 	private boolean expandSigsFromLastSignedState;
@@ -168,6 +171,9 @@ public class GlobalDynamicProperties {
 		minAutoRenewDuration = properties.getLongProperty("ledger.autoRenewPeriod.minDuration");
 		localCallEstRetBytes = properties.getIntProperty("contracts.localCall.estRetBytes");
 		scheduledTxExpiryTimeSecs = properties.getIntProperty("ledger.schedule.txExpiryTimeSecs");
+		schedulingLongTermEnabled = properties.getBooleanProperty("scheduling.longTermEnabled");
+		schedulingMaxTxnPerSecond = properties.getLongProperty("scheduling.maxTxnPerSecond");
+		schedulingMaxExpirationFutureSeconds = properties.getLongProperty("scheduling.maxExpirationFutureSeconds");
 		schedulingWhitelist = properties.getFunctionsProperty("scheduling.whitelist");
 		messageMaxBytesAllowed = properties.getIntProperty("consensus.message.maxBytesAllowed");
 		congestionMultipliers = properties.getCongestionMultiplierProperty("fees.percentCongestionMultipliers");
@@ -184,8 +190,8 @@ public class GlobalDynamicProperties {
 		contractMaxRefundPercentOfGasLimit = properties.getIntProperty("contracts.maxRefundPercentOfGasLimit");
 		frontendThrottleMaxGasLimit = properties.getLongProperty("contracts.frontendThrottleMaxGasLimit");
 		consensusThrottleMaxGasLimit = properties.getLongProperty("contracts.consensusThrottleMaxGasLimit");
+		scheduleThrottleMaxGasLimit = properties.getLongProperty("contracts.scheduleThrottleMaxGasLimit");
 		htsDefaultGasCost = properties.getLongProperty("contracts.precompile.htsDefaultGasCost");
-		triggerTxnWindBackNanos = properties.getLongProperty("scheduling.triggerTxn.windBackNanos");
 		changeHistorianMemorySecs = properties.getIntProperty("ledger.changeHistorian.memorySecs");
 		autoCreationEnabled = properties.getBooleanProperty("autoCreation.enabled");
 		expandSigsFromLastSignedState = properties.getBooleanProperty("sigs.expandFromLastSignedState");
@@ -364,6 +370,19 @@ public class GlobalDynamicProperties {
 		return scheduledTxExpiryTimeSecs;
 	}
 
+	public boolean schedulingLongTermEnabled() {
+		return schedulingLongTermEnabled;
+	}
+
+	// TODO: convert to int
+	public long schedulingMaxTxnPerSecond() {
+		return schedulingMaxTxnPerSecond;
+	}
+
+	public long schedulingMaxExpirationFutureSeconds() {
+		return schedulingMaxExpirationFutureSeconds;
+	}
+
 	public int messageMaxBytesAllowed() {
 		return messageMaxBytesAllowed;
 	}
@@ -424,12 +443,12 @@ public class GlobalDynamicProperties {
 		return consensusThrottleMaxGasLimit;
 	}
 
-	public long htsDefaultGasCost() {
-		return htsDefaultGasCost;
+	public long scheduleThrottleMaxGasLimit() {
+		return scheduleThrottleMaxGasLimit;
 	}
 
-	public long triggerTxnWindBackNanos() {
-		return triggerTxnWindBackNanos;
+	public long htsDefaultGasCost() {
+		return htsDefaultGasCost;
 	}
 
 	public int changeHistorianMemorySecs() {

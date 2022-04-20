@@ -22,6 +22,7 @@ package com.hedera.services.state.expiry;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.renewal.RenewalProcess;
 import com.hedera.services.state.logic.NetworkCtxManager;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -47,6 +48,7 @@ public class EntityAutoRenewal {
 	private final GlobalDynamicProperties dynamicProps;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final Supplier<SequenceNumber> seqNo;
+	private final ConsensusTimeTracker consensusTimeTracker;
 
 	@Inject
 	public EntityAutoRenewal(
@@ -55,6 +57,7 @@ public class EntityAutoRenewal {
 			final GlobalDynamicProperties dynamicProps,
 			final NetworkCtxManager networkCtxManager,
 			final Supplier<MerkleNetworkContext> networkCtx,
+			final ConsensusTimeTracker consensusTimeTracker,
 			final Supplier<SequenceNumber> seqNo
 	) {
 		this.seqNo = seqNo;
@@ -62,11 +65,12 @@ public class EntityAutoRenewal {
 		this.networkCtxManager = networkCtxManager;
 		this.renewalProcess = renewalProcess;
 		this.dynamicProps = dynamicProps;
+		this.consensusTimeTracker = consensusTimeTracker;
 
 		this.firstEntityToScan = hederaNumbers.numReservedSystemEntities() + 1;
 	}
 
-	public void execute(final Instant nextAvailConsTime) {
+	public void execute(final Instant currentConsTime) {
 		if (!dynamicProps.shouldAutoRenewSomeEntityType()) {
 			return;
 		}
@@ -77,13 +81,18 @@ public class EntityAutoRenewal {
 			return;
 		}
 
+		if (!consensusTimeTracker.hasMoreStandaloneRecordTime()) {
+			log.debug("Auto-renew scan skipped because there are no more standalone record times. {}", consensusTimeTracker);
+			return;
+		}
+
 		final var curNetworkCtx = networkCtx.get();
 		final int maxEntitiesToTouch = dynamicProps.autoRenewMaxNumberOfEntitiesToRenewOrDelete();
 		final int maxEntitiesToScan = dynamicProps.autoRenewNumberOfEntitiesToScan();
 		if (networkCtxManager.currentTxnIsFirstInConsensusSecond()) {
 			curNetworkCtx.clearAutoRenewSummaryCounts();
 		}
-		renewalProcess.beginRenewalCycle(nextAvailConsTime);
+		renewalProcess.beginRenewalCycle(currentConsTime);
 
 		int i = 1;
 		int entitiesTouched = 0;
@@ -101,7 +110,7 @@ public class EntityAutoRenewal {
 			} else {
 				advanceScan = true;
 			}
-			if (entitiesTouched >= maxEntitiesToTouch) {
+			if ((entitiesTouched >= maxEntitiesToTouch) || (!consensusTimeTracker.hasMoreStandaloneRecordTime())) {
 				// Allow consistent calculation of num scanned below.
 				i++;
 				break;

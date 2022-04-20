@@ -22,6 +22,7 @@ package com.hedera.services.txns.schedule;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
@@ -43,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 @Singleton
@@ -51,24 +53,29 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
 	private final InHandleActivationHelper activationHelper;
 
-	private ScheduleExecutor executor;
+	private final GlobalDynamicProperties properties;
+	private final ScheduleExecutor executor;
 	private final ScheduleStore store;
 	private final TransactionContext txnCtx;
 
-	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
-	SignatoryUtils.ScheduledSigningsWitness replSigningsWitness = SignatoryUtils::witnessScoped;
+	SigMapScheduleClassifier classifier;
+	SignatoryUtils.ScheduledSigningsWitness replSigningsWitness;
 
 	@Inject
 	public ScheduleSignTransitionLogic(
-			ScheduleStore store,
-			TransactionContext txnCtx,
-			InHandleActivationHelper activationHelper,
-			ScheduleExecutor executor
-	) {
+			final GlobalDynamicProperties properties,
+			final ScheduleStore store,
+			final TransactionContext txnCtx,
+			final InHandleActivationHelper activationHelper,
+			final ScheduleExecutor executor,
+			final ScheduleProcessing scheduleProcessing) {
+		this.properties = properties;
 		this.store = store;
 		this.txnCtx = txnCtx;
 		this.executor = executor;
 		this.activationHelper = activationHelper;
+		classifier = scheduleProcessing.classifier;
+		replSigningsWitness = scheduleProcessing.signingsWitness;
 	}
 
 	@Override
@@ -96,6 +103,10 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 			txnCtx.setStatus(SCHEDULE_ALREADY_DELETED);
 			return;
 		}
+		if (properties.schedulingLongTermEnabled() && origSchedule.calculatedExpirationTime().toJava().isAfter(txnCtx.consensusTime())) {
+			txnCtx.setStatus(SCHEDULE_PENDING_EXPIRATION);
+			return;
+		}
 
 		var validScheduleKeys = classifier.validScheduleKeys(
 				List.of(txnCtx.activePayerKey()),
@@ -108,8 +119,15 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 		if (outcome == OK) {
 			var updatedSchedule = store.get(scheduleId);
 			txnCtx.setScheduledTxnId(updatedSchedule.scheduledTransactionId());
-			if (Boolean.TRUE.equals(signingOutcome.getRight())) {
-				outcome = executor.processExecution(scheduleId, store, txnCtx);
+
+			boolean processExecution = Boolean.TRUE.equals(signingOutcome.getRight());
+
+			if (properties.schedulingLongTermEnabled() && updatedSchedule.isWaitForExpiry()) {
+				processExecution = false;
+			}
+
+			if (processExecution) {
+				outcome = executor.processImmediateExecution(scheduleId, store, txnCtx);
 			}
 		}
 		txnCtx.setStatus(outcome == OK ? SUCCESS : outcome);
@@ -127,6 +145,15 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 
 	public ResponseCodeEnum validate(TransactionBody txnBody) {
 		ScheduleSignTransactionBody op = txnBody.getScheduleSign();
+
+		if (!op.hasScheduleID()) {
+			return INVALID_SCHEDULE_ID;
+		}
+
+		// If long term scheduled transactions are enabled, the schedule must exist at the HAPI level to allow deep throttle checks
+		if (properties.schedulingLongTermEnabled() && store.get(op.getScheduleID()) == null) {
+			return INVALID_SCHEDULE_ID;
+		}
 
 		return (op.hasScheduleID()) ? OK : INVALID_SCHEDULE_ID;
 	}

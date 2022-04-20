@@ -36,6 +36,7 @@ import java.util.function.Function;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
+import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
@@ -95,6 +96,10 @@ public class ScheduleOpsUsage {
 		and the transaction id to use for querying the record of the scheduled txn. */
 		estimate.addNetworkRbs((BASIC_ENTITY_ID_SIZE + SCHEDULED_TXN_ID_SIZE)
 				* USAGE_PROPERTIES.legacyReceiptStorageSecs());
+
+		if (scheduledTxn.hasContractCall()) {
+			return estimate.get(SCHEDULE_CREATE_CONTRACT_CALL);
+		}
 
 		return estimate.get();
 	}

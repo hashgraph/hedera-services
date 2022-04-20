@@ -31,6 +31,7 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOve
 public class GasLimitBucketThrottle {
 
     private final DiscreteLeakyBucket bucket;
+	private long lastAllowedUnits = 0L;
     private static final long ONE_SECOND_IN_NANOSECONDS = 1_000_000_000;
 
     /**
@@ -61,11 +62,21 @@ public class GasLimitBucketThrottle {
 
         if (bucket.capacityFree() >= txGasLimit) {
             bucket.useCapacity(txGasLimit);
+            lastAllowedUnits += txGasLimit;
             return true;
         } else {
             return false;
         }
     }
+
+	void resetLastAllowedUse() {
+		lastAllowedUnits = 0;
+	}
+
+	void reclaimLastAllowedUse() {
+		bucket.leak(lastAllowedUnits);
+		lastAllowedUnits = 0;
+	}
 
     /**
      * Returns an instance of the {@link DiscreteLeakyBucket} used under the hood.

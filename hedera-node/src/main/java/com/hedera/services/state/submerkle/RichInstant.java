@@ -30,7 +30,9 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
-public class RichInstant {
+import org.jetbrains.annotations.NotNull;
+
+public class RichInstant implements Comparable<RichInstant> {
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
 
 	private int nanos;
@@ -121,5 +123,13 @@ public class RichInstant {
 
 	public boolean isMissing() {
 		return this.equals(MISSING_INSTANT);
+	}
+
+	@Override
+	public int compareTo(@NotNull RichInstant o) {
+		if (o.seconds == seconds) {
+			return Integer.compare(nanos, o.nanos);
+		}
+		return Long.compare(seconds, o.seconds);
 	}
 }

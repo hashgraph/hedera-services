@@ -132,6 +132,9 @@ public class DeterministicThrottle {
 	public void reclaimLastAllowedUse() {
 		delegate.reclaimLastAllowedUse();
 	}
+	public void resetLastAllowedUse() {
+		delegate.resetLastAllowedUse();
+	}
 
 	public String name() {
 		return name;
@@ -158,6 +161,12 @@ public class DeterministicThrottle {
 		final var bucket = delegate.bucket();
 		lastDecisionTime = usageSnapshot.lastDecisionTime();
 		bucket.resetUsed(usageSnapshot.used());
+	}
+
+	public void resetUsage() {
+		resetLastAllowedUse();
+		final var bucket = delegate.bucket();
+		bucket.resetUsed(0L);
 	}
 
 	/* NOTE: The Object methods below are only overridden to improve

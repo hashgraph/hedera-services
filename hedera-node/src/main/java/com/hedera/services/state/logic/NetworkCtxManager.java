@@ -32,10 +32,12 @@ import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
@@ -171,9 +173,11 @@ public class NetworkCtxManager {
 	 *     <li>The congestion pricing multiplier.</li>
 	 * </ol>
 	 *
-	 * @param op the type of transaction just handled
+	 * @param accessor the transaction just handled
 	 */
-	public void finishIncorporating(HederaFunctionality op) {
+	public void finishIncorporating(@Nonnull TxnAccessor accessor) {
+		HederaFunctionality op = accessor.getFunction();
+
 		opCounters.countHandled(op);
 		if (consensusSecondJustChanged) {
 			runningAvgs.recordGasPerConsSec(gasUsedThisConsSec);
@@ -185,7 +189,7 @@ public class NetworkCtxManager {
 			gasUsedThisConsSec += gasUsed;
 			if (dynamicProperties.shouldThrottleByGas()) {
 				final var excessAmount = txnCtx.accessor().getGasLimitForContractTx() - gasUsed;
-				handleThrottling.leakUnusedGasPreviouslyReserved(excessAmount);
+				handleThrottling.leakUnusedGasPreviouslyReserved(accessor, excessAmount);
 			}
 		}
 

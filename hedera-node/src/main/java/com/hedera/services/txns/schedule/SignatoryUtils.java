@@ -22,7 +22,7 @@ package com.hedera.services.txns.schedule;
 
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -88,7 +88,7 @@ public class SignatoryUtils {
 		return Pair.of(status, isReadyToExecute);
 	}
 
-	static boolean isReady(final MerkleSchedule schedule, final InHandleActivationHelper activationHelper) {
+	static boolean isReady(final ScheduleVirtualValue schedule, final InHandleActivationHelper activationHelper) {
 		return activationHelper.areScheduledPartiesActive(
 				schedule.ordinaryViewOfScheduledTxn(),
 				(key, sig) -> schedule.hasValidSignatureFor(key.primitiveKeyIfPresent()));
