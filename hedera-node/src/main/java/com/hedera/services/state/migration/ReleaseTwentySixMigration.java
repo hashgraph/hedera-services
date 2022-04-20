@@ -83,7 +83,7 @@ public class ReleaseTwentySixMigration {
 
 		log.info("Granting free auto renewal for all smart contracts by ~90 days.");
 		final var watch = StopWatch.createStarted();
-		MiscUtils.forEach(contracts, (id, account) -> {
+		contracts.forEach((id, account) -> {
 			if (account.isSmartContract()) {
 				setNewExpiry(upgradeTime, contracts, id, random);
 			}

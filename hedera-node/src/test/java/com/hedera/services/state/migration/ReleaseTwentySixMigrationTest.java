@@ -48,6 +48,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -115,20 +116,15 @@ class ReleaseTwentySixMigrationTest {
 		final var rand = new RandomExtended(8682588012L);
 
 		given(initializingState.accounts()).willReturn(accountsMap);
-
-		final var account = new MerkleAccount();
-		account.setSmartContract(true);
-		account.setExpiry(1234L);
-		account.setKey(EntityNum.fromLong(1L));
-
+		given(merkleAccount.isSmartContract()).willReturn(true);
 		given(merkleAccount.getExpiry()).willReturn(1234L).willReturn(2345L);
-		given(merkleAccount.cast()).willReturn(account);
 
 		grantFreeAutoRenew(initializingState, instant);
 
 		final var expectedExpiry1 = getExpectedExpiry(1234L, instant.getEpochSecond(), rand);
 		final var expectedExpiry2 = getExpectedExpiry(2345L, instant.getEpochSecond(), rand);
 
+		verify(merkleAccount, times(2)).isSmartContract();
 		verify(merkleAccount).setExpiry(expectedExpiry1);
 		verify(merkleAccount).setExpiry(expectedExpiry2);
 	}

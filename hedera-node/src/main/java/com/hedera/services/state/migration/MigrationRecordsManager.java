@@ -144,7 +144,7 @@ public class MigrationRecordsManager {
 	}
 
 	private void publishContractFreeAutoRenewalRecords() {
-		MiscUtils.forEach(accounts.get(), (id, account) -> {
+		accounts.get().forEach((id, account) -> {
 			if (account.isSmartContract()) {
 				final var contractNum = id.toEntityId();
 				final var newExpiry = account.getExpiry();

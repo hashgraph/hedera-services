@@ -140,18 +140,9 @@ class MigrationRecordsManagerTest {
 		final var contractUpdateSynthBody1 = factory.synthContractAutoRenew(contract1Id.asNum(), contract1Expiry).build();
 		final var contractUpdateSynthBody2 = factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry).build();
 
-		final var account1 = new MerkleAccount();
-		account1.setSmartContract(true);
-		account1.setExpiry(contract1Expiry);
-		account1.setKey(contract1Id.asNum());
-
-		final var account2 = new MerkleAccount();
-		account2.setSmartContract(true);
-		account2.setExpiry(contract2Expiry);
-		account2.setKey(contract2Id.asNum());
-
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
-		given(merkleAccount.cast()).willReturn(account1).willReturn(account2);
+		given(merkleAccount.isSmartContract()).willReturn(true);
+		given(merkleAccount.getExpiry()).willReturn(contract1Expiry).willReturn(contract2Expiry);
 
 		subject.publishMigrationRecords(now);
 
@@ -191,7 +182,6 @@ class MigrationRecordsManagerTest {
 	@Test
 	void doesntStreamRewardAccountCreationIfNotGenesis() {
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(Instant.MAX);
-		given(merkleAccount.cast()).willReturn(new MerkleAccount());
 
 		subject.publishMigrationRecords(now);
 
