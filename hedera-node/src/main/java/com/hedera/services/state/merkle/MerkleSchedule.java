@@ -20,25 +20,19 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -47,7 +41,6 @@ import com.swirlds.common.merkle.utility.Keyed;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -58,9 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hedera.services.utils.MiscUtils.describe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 /**
  * @deprecated Scheduled transactions are now stored in {@link MerkleScheduledTransactions}
@@ -262,39 +253,6 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		number = phi.intValue();
 	}
 
-	public Optional<String> memo() {
-		return Optional.ofNullable(this.memo);
-	}
-
-	public boolean hasAdminKey() {
-		return adminKey != null;
-	}
-
-	public Optional<JKey> adminKey() {
-		return Optional.ofNullable(adminKey);
-	}
-
-	@VisibleForTesting
-	public void setAdminKey(JKey adminKey) {
-		throwIfImmutable("Cannot change this schedule's adminKey if it's immutable.");
-		this.adminKey = adminKey;
-	}
-
-	@VisibleForTesting
-	public void setPayer(EntityId payer) {
-		throwIfImmutable("Cannot change this schedule's payer if it's immutable.");
-		this.payer = payer;
-	}
-
-	@VisibleForTesting
-	public void setBodyBytes(final byte[] bodyBytes) {
-		this.bodyBytes = bodyBytes;
-	}
-
-	public EntityId payer() {
-		return payer;
-	}
-
 	public EntityId effectivePayer() {
 		return hasExplicitPayer() ? payer : schedulingAccount;
 	}
@@ -303,21 +261,8 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		return payer != null;
 	}
 
-	public EntityId schedulingAccount() {
-		return schedulingAccount;
-	}
-
-	public RichInstant schedulingTXValidStart() {
-		return this.schedulingTXValidStart;
-	}
-
 	public List<byte[]> signatories() {
 		return signatories;
-	}
-
-	public void setExpiry(long expiry) {
-		throwIfImmutable("Cannot change this schedule's expiry time if it's immutable.");
-		this.expiry = expiry;
 	}
 
 	public long expiry() {
@@ -332,38 +277,12 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 		return deleted;
 	}
 
-	public Timestamp deletionTime() {
-		if (!deleted) {
-			throw new IllegalStateException("Schedule not deleted, cannot return deletion time!");
-		}
-		return resolutionTime.toGrpc();
-	}
-
-	public Timestamp executionTime() {
-		if (!executed) {
-			throw new IllegalStateException("Schedule not executed, cannot return execution time!");
-		}
-		return resolutionTime.toGrpc();
-	}
-
 	public RichInstant getResolutionTime() {
 		return resolutionTime;
 	}
 
-	public TransactionBody ordinaryViewOfScheduledTxn() {
-		return ordinaryScheduledTxn;
-	}
-
-	public SchedulableTransactionBody scheduledTxn() {
-		return scheduledTxn;
-	}
-
 	public byte[] bodyBytes() {
 		return bodyBytes;
-	}
-
-	public Key grpcAdminKey() {
-		return grpcAdminKey;
 	}
 
 	private void initFromBodyBytes() {
@@ -378,7 +297,7 @@ public class MerkleSchedule extends AbstractMerkleLeaf implements Keyed<EntityNu
 				payer = EntityId.fromGrpcAccountId(creationOp.getPayerAccountID());
 			}
 			if (creationOp.hasAdminKey()) {
-				MiscUtils.asUsableFcKey(creationOp.getAdminKey()).ifPresent(this::setAdminKey);
+				MiscUtils.asUsableFcKey(creationOp.getAdminKey()).ifPresent(k -> this.adminKey = k);
 				if (adminKey != null) {
 					grpcAdminKey = creationOp.getAdminKey();
 				}

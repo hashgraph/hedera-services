@@ -9,7 +9,7 @@ package com.hedera.services.txns.schedule;
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -61,123 +61,123 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTUR
 public class ScheduleProcessing {
 	private static final Logger log = LogManager.getLogger(ScheduleProcessing.class);
 
-    private final SigImpactHistorian sigImpactHistorian;
-    private final ScheduleStore store;
-    private final ScheduleExecutor scheduleExecutor;
+	private final SigImpactHistorian sigImpactHistorian;
+	private final ScheduleStore store;
+	private final ScheduleExecutor scheduleExecutor;
 	private final GlobalDynamicProperties dynamicProperties;
-    private final SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
-    private final CharacteristicsFactory characteristics;
+	private final SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
+	private final CharacteristicsFactory characteristics;
 	private final TimedFunctionalityThrottling scheduleThrottling;
 
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
 
 	@Inject
-    public ScheduleProcessing(final SigImpactHistorian sigImpactHistorian, final ScheduleStore store,
-            final ScheduleExecutor scheduleExecutor, final GlobalDynamicProperties dynamicProperties,
-            final SigsAndPayerKeyScreen sigsAndPayerKeyScreen, final CharacteristicsFactory characteristics,
-            @ScheduleThrottle final TimedFunctionalityThrottling scheduleThrottling) {
-        this.sigImpactHistorian = sigImpactHistorian;
-        this.store = store;
-        this.scheduleExecutor = scheduleExecutor;
-        this.dynamicProperties = dynamicProperties;
-        this.sigsAndPayerKeyScreen = sigsAndPayerKeyScreen;
-        this.characteristics = characteristics;
-        this.scheduleThrottling = scheduleThrottling;
-    }
+	public ScheduleProcessing(final SigImpactHistorian sigImpactHistorian, final ScheduleStore store,
+			final ScheduleExecutor scheduleExecutor, final GlobalDynamicProperties dynamicProperties,
+			final SigsAndPayerKeyScreen sigsAndPayerKeyScreen, final CharacteristicsFactory characteristics,
+			@ScheduleThrottle final TimedFunctionalityThrottling scheduleThrottling) {
+		this.sigImpactHistorian = sigImpactHistorian;
+		this.store = store;
+		this.scheduleExecutor = scheduleExecutor;
+		this.dynamicProperties = dynamicProperties;
+		this.sigsAndPayerKeyScreen = sigsAndPayerKeyScreen;
+		this.characteristics = characteristics;
+		this.scheduleThrottling = scheduleThrottling;
+	}
 
-    public void expire(Instant consensusTime) {
+	public void expire(Instant consensusTime) {
 
-        while (true) {
-            store.advanceCurrentMinSecond(consensusTime);
+		while (true) {
+			store.advanceCurrentMinSecond(consensusTime);
 
-            List<ScheduleID> txnIdsToExpire = store.nextSchedulesToExpire(consensusTime);
-            if (txnIdsToExpire.size() <= 0) {
-                break;
-            }
+			List<ScheduleID> txnIdsToExpire = store.nextSchedulesToExpire(consensusTime);
+			if (txnIdsToExpire.size() <= 0) {
+				break;
+			}
 
-            for (var txnId : txnIdsToExpire) {
-                store.expire(txnId);
-                sigImpactHistorian.markEntityChanged(fromScheduleId(txnId).longValue());
-            }
-        }
+			for (var txnId : txnIdsToExpire) {
+				store.expire(txnId);
+				sigImpactHistorian.markEntityChanged(fromScheduleId(txnId).longValue());
+			}
+		}
 
-    }
+	}
 
-    @Nullable
-    public TxnAccessor triggerNextTransactionExpiringAsNeeded(Instant consensusTime, @Nullable TxnAccessor previous) {
+	@Nullable
+	public TxnAccessor triggerNextTransactionExpiringAsNeeded(Instant consensusTime, @Nullable TxnAccessor previous) {
 
-        var previousId = previous == null ? null : previous.getScheduleRef();
+		var previousId = previous == null ? null : previous.getScheduleRef();
 
-        while (true) {
+		while (true) {
 
-            expire(consensusTime);
+			expire(consensusTime);
 
-            if (!this.dynamicProperties.schedulingLongTermEnabled()) {
-                return null;
-            }
+			if (!this.dynamicProperties.schedulingLongTermEnabled()) {
+				return null;
+			}
 
-            var next = store.nextScheduleToEvaluate(consensusTime);
+			var next = store.nextScheduleToEvaluate(consensusTime);
 
-            if (next == null) {
-                return null;
-            }
+			if (next == null) {
+				return null;
+			}
 
-            if (next.equals(previousId)) {
-                log.error("tried to process the same transaction twice! {}", next);
-                throw new IllegalStateException("tried to process the same transaction twice!");
-            }
+			if (next.equals(previousId)) {
+				log.error("tried to process the same transaction twice! {}", next);
+				throw new IllegalStateException("tried to process the same transaction twice!");
+			}
 
-            previousId = next;
+			previousId = next;
 
-            // if we were going to check throttling to prevent scheduled transactions from all executing
-            // rapidly after downtime, it would be done here.
+			// if we were going to check throttling to prevent scheduled transactions from all executing
+			// rapidly after downtime, it would be done here.
 
-            try {
-                var schedule = store.get(next);
+			try {
+				var schedule = store.get(next);
 
-                var parentSignedTxn = schedule.parentAsSignedTxn();
+				var parentSignedTxn = schedule.parentAsSignedTxn();
 
-                var accessor = PlatformTxnAccessor.from(
-                        SignedTxnAccessor.uncheckedFrom(parentSignedTxn), new SwirldTransaction(parentSignedTxn.toByteArray()));
+				var accessor = PlatformTxnAccessor.from(
+						SignedTxnAccessor.uncheckedFrom(parentSignedTxn), new SwirldTransaction(parentSignedTxn.toByteArray()));
 
-                sigsAndPayerKeyScreen.applyTo(accessor, Optional.empty());
+				sigsAndPayerKeyScreen.applyTo(accessor, Optional.empty());
 
-                var inHandleActivationHelper = new InHandleActivationHelper(characteristics, () -> accessor);
+				var inHandleActivationHelper = new InHandleActivationHelper(characteristics, () -> accessor);
 
-                if (!SignatoryUtils.isReady(schedule, inHandleActivationHelper)) {
+				if (!SignatoryUtils.isReady(schedule, inHandleActivationHelper)) {
 
-                    // expire transactions that are not ready to execute
-                    store.expire(next);
-                    sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
+					// expire transactions that are not ready to execute
+					store.expire(next);
+					sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
 
-                } else {
+				} else {
 
-                    var triggerResult = scheduleExecutor.getTriggeredTxnAccessor(next, store, false);
+					var triggerResult = scheduleExecutor.getTriggeredTxnAccessor(next, store, false);
 
-                    if (triggerResult.getLeft() != OK) {
-                        log.error("Scheduled transaction was not trigger-able even though it should be! Expiring it. {}", next);
-                        store.expire(next);
-                        sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
-                    } else {
-                        return triggerResult.getRight();
-                    }
+					if (triggerResult.getLeft() != OK) {
+						log.error("Scheduled transaction was not trigger-able even though it should be! Expiring it. {}", next);
+						store.expire(next);
+						sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
+					} else {
+						return triggerResult.getRight();
+					}
 
-                }
-            } catch (Exception e) {
-                log.error("SCHEDULED TRANSACTION SKIPPED!! Failed to triggered transaction due unexpected error! {}", next, e);
+				}
+			} catch (Exception e) {
+				log.error("SCHEDULED TRANSACTION SKIPPED!! Failed to triggered transaction due unexpected error! {}", next, e);
 
-                // Immediately expire malfunctioning transactions, if we get here then there is a bug.
-                // We can't leave it in the db, it will prevent other scheduled transactions from processing.
-                store.expire(next);
-                sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
-            }
+				// Immediately expire malfunctioning transactions, if we get here then there is a bug.
+				// We can't leave it in the db, it will prevent other scheduled transactions from processing.
+				store.expire(next);
+				sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
+			}
 
-        }
+		}
 
-    }
+	}
 
-    public ResponseCodeEnum checkFutureThrottlesForCreate(final ScheduleVirtualValue schedule) {
+	public ResponseCodeEnum checkFutureThrottlesForCreate(final ScheduleVirtualValue schedule) {
 
 		if (dynamicProperties.schedulingLongTermEnabled()) {
 			scheduleThrottling.resetUsage();
@@ -214,7 +214,7 @@ public class ScheduleProcessing {
 
 		}
 
-        return OK;
-    }
+		return OK;
+	}
 
 }
