@@ -67,7 +67,6 @@ import com.swirlds.virtualmap.VirtualMapMigration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -177,7 +176,10 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
 
 			// grant free auto-renew of ~90 days for all contracts once the contract expiration is enabled
-			grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+			final var properties = metadata.app().globalDynamicProperties();
+			if (properties.shouldAutoRenewContracts()) {
+				grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+			}
 		}
 	}
 

@@ -58,7 +58,6 @@ import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -151,8 +150,8 @@ class MigrationRecordsManagerTest {
 		assertEquals(contractUpdateSynthBody2, bodies.get(3).build());
 
 		final var records = recordCaptor.getAllValues();
-		assertTrue(expectedContractUpdateRecord(contract1Id, contract1Expiry).build().equals(records.get(0).build()));
-		assertTrue(expectedContractUpdateRecord(contract2Id, contract2Expiry).build().equals(records.get(1).build()));
+		assertEquals(expectedContractUpdateRecord(contract1Id, contract1Expiry).build(), records.get(0).build());
+		assertEquals(expectedContractUpdateRecord(contract2Id, contract2Expiry).build(), records.get(1).build());
 	}
 
 	private ExpirableTxnRecord.Builder expectedContractUpdateRecord(final EntityId num, final long newExpiry) {
