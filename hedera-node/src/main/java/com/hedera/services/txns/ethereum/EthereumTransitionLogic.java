@@ -118,6 +118,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			final var synthOp =
 					addInheritablePropertiesToContractCreate(syntheticTxBody.getContractCreateInstance(), callingAccount.toGrpcAccountId());
 			syntheticTxBody = TransactionBody.newBuilder().setContractCreateInstance(synthOp).build();
+			spanMapAccessor.setEthTxBodyMeta(txnCtx.accessor(), syntheticTxBody);
 			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
 		}
 		recordService.updateFromEvmCallContext(ethTxData);

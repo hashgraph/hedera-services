@@ -268,11 +268,14 @@ class EthereumTransactionTransitionLogicTest {
 				.setMemo(senderMemo)
 				.setProxyAccountID(senderAccount.getId().asGrpcAccount())
 				.build();
+		final var expectedTxnBody =
+				TransactionBody.newBuilder().setContractCreateInstance(expectedSyntheticCreateBody).build();
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
-				TransactionBody.newBuilder().setContractCreateInstance(expectedSyntheticCreateBody).build(),
+				expectedTxnBody,
 				senderAccount.getId(),
 				true
 		);
+		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
 		verify(recordService).updateFromEvmCallContext(any());
 		verify(worldState).getCreatedContractIds();
@@ -326,11 +329,14 @@ class EthereumTransactionTransitionLogicTest {
 				.setGas(ethTxData.gasLimit())
 				.setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
 				.build();
+		final var expectedTxnBody =
+				TransactionBody.newBuilder().setContractCreateInstance(expectedSyntheticCreateBody).build();
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
-				TransactionBody.newBuilder().setContractCreateInstance(expectedSyntheticCreateBody).build(),
+				expectedTxnBody,
 				senderAccount.getId(),
 				true
 		);
+		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
 		verify(recordService).updateFromEvmCallContext(any());
 		verify(worldState).getCreatedContractIds();
