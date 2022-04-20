@@ -82,7 +82,6 @@ class HederaSelfDestructOperationTest {
 		final var beneficiaryMirror = beneficiary.toEvmAddress();
 		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
 		given(frame.popStackItem()).willReturn(beneficiaryMirror);
-		given(worldUpdater.priorityAddress(eip1014Address)).willReturn(eip1014Address);
 		given(frame.getRecipientAddress()).willReturn(eip1014Address);
 		given(worldUpdater.get(any())).willReturn(account);
 		given(account.getBalance()).willReturn(Wei.ONE);
@@ -100,7 +99,6 @@ class HederaSelfDestructOperationTest {
 		givenRubberstampValidator();
 
 		given(frame.getStackItem(0)).willReturn(eip1014Address);
-		given(worldUpdater.priorityAddress(eip1014Address)).willReturn(eip1014Address);
 		given(frame.getRecipientAddress()).willReturn(eip1014Address);
 
 		final var opResult = subject.execute(frame, evm);
@@ -110,27 +108,11 @@ class HederaSelfDestructOperationTest {
 	}
 
 	@Test
-	void rejectsSelfDestructOfAliasWithMirrorAddressUsage() {
-		givenRubberstampValidator();
-
-		final var passedBeneficiaryAddress = beneficiary.toEvmAddress();
-		given(frame.getStackItem(0)).willReturn(eip1014Address);
-		given(worldUpdater.priorityAddress(passedBeneficiaryAddress)).willReturn(eip1014Address);
-		given(frame.getRecipientAddress()).willReturn(passedBeneficiaryAddress);
-
-		final var opResult = subject.execute(frame, evm);
-
-		assertEquals(Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS), opResult.getHaltReason());
-		assertEquals(Optional.of(Gas.of(2L)), opResult.getGasCost());
-	}
-
-	@Test
 	void rejectsSelfDestructIfTreasury() {
 		givenRubberstampValidator();
 
 		final var beneficiaryMirror = beneficiary.toEvmAddress();
 		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
-		given(worldUpdater.priorityAddress(eip1014Address)).willReturn(eip1014Address);
 		given(frame.getRecipientAddress()).willReturn(eip1014Address);
 		given(worldUpdater.contractIsTokenTreasury(eip1014Address)).willReturn(true);
 
@@ -146,7 +128,6 @@ class HederaSelfDestructOperationTest {
 
 		final var beneficiaryMirror = beneficiary.toEvmAddress();
 		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
-		given(worldUpdater.priorityAddress(eip1014Address)).willReturn(eip1014Address);
 		given(frame.getRecipientAddress()).willReturn(eip1014Address);
 		given(worldUpdater.contractHasAnyBalance(eip1014Address)).willReturn(true);
 
@@ -162,7 +143,6 @@ class HederaSelfDestructOperationTest {
 
 		final var beneficiaryMirror = beneficiary.toEvmAddress();
 		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
-		given(worldUpdater.priorityAddress(eip1014Address)).willReturn(eip1014Address);
 		given(frame.getRecipientAddress()).willReturn(eip1014Address);
 		given(worldUpdater.contractOwnsNfts(eip1014Address)).willReturn(true);
 

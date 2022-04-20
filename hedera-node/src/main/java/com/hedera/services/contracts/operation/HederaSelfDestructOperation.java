@@ -66,7 +66,7 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
 		final var beneficiaryAddress = Words.toAddress(frame.getStackItem(0));
 		final var toBeDeleted = frame.getRecipientAddress();
 		final var beneficiary = updater.get(beneficiaryAddress);
-		if (!addressValidator.test(beneficiaryAddress, frame) || !toBeDeleted.equals(updater.priorityAddress(toBeDeleted))) {
+		if (!addressValidator.test(beneficiaryAddress, frame)) {
 			return reversionWith(null, HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
 		}
 
