@@ -35,13 +35,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.INSERTIONS_PER_COPY;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.THREAD_COUNT;
+import static com.hedera.services.state.migration.ReleaseTwentySixMigration.grantFreeAutoRenew;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,6 +67,8 @@ class ReleaseTwentySixMigrationTest {
 	private ReleaseTwentySixMigration.MigratorFactory migratorFactory;
 	@Mock
 	private ReleaseTwentySixMigration.MigrationUtility migrationUtility;
+	@Mock
+	private MerkleAccount merkleAccount;
 
 	@Test
 	void migratesToIterableStorageAsExpected() throws InterruptedException {
@@ -95,5 +102,19 @@ class ReleaseTwentySixMigrationTest {
 
 		Assertions.assertThrows(IllegalStateException.class, () ->
 				makeStorageIterable(initializingState, migratorFactory, migrationUtility, iterableContractStorage));
+	}
+
+	@Test
+	void grantsAutoRenewToContracts() {
+		final var accountsMap = new MerkleMap<EntityNum, MerkleAccount>();
+		accounts.put(EntityNum.fromLong(1L), merkleAccount);
+		accounts.put(EntityNum.fromLong(2L), merkleAccount);
+
+		given(initializingState.accounts()).willReturn(accountsMap);
+		given(initializingState.getChild(StateChildIndices.CONTRACT_STORAGE)).willReturn(contractStorage);
+
+		grantFreeAutoRenew(initializingState, Instant.now());
+
+		verify(merkleAccount, times(2)).setExpiry(anyLong());
 	}
 }
