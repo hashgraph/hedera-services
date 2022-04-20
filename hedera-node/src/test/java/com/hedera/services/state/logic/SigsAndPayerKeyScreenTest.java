@@ -24,7 +24,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.Rationalization;
 import com.hedera.services.stats.MiscSpeedometers;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -61,7 +61,7 @@ class SigsAndPayerKeyScreenTest {
 	@Mock
 	private BiPredicate<JKey, TransactionSignature> validityTest;
 	@Mock
-	private TxnAccessor accessor;
+	private PlatformTxnAccessor accessor;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;

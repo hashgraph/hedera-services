@@ -21,7 +21,8 @@ package com.hedera.services.stats;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.Platform;
@@ -157,7 +158,7 @@ class HapiOpCountersTest {
 	void updatesAvgSubmitMessageHdlSizeForHandled() {
 		final var expectedSize = 12345;
 		final var txn = mock(TransactionBody.class);
-		final var accessor = mock(PlatformTxnAccessor.class);
+		final var accessor = mock(SignedTxnAccessor.class);
 		given(txn.getSerializedSize()).willReturn(expectedSize);
 		given(accessor.getTxn()).willReturn(txn);
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -174,7 +175,7 @@ class HapiOpCountersTest {
 		final var accessor = mock(PlatformTxnAccessor.class);
 		given(txn.getSerializedSize()).willReturn(expectedSize);
 		given(accessor.getTxn()).willReturn(txn);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 
 		subject.countReceived(ConsensusSubmitMessage);
 		subject.countSubmitted(ConsensusSubmitMessage);

@@ -22,10 +22,7 @@ package com.hedera.services.bdd.suites.contract.opcodes;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,11 +37,13 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 public class BalanceOperationSuite extends HapiApiSuite {
@@ -62,78 +61,69 @@ public class BalanceOperationSuite extends HapiApiSuite {
 	}
 
 	HapiApiSpec verifiesExistenceOfAccountsAndContracts() {
-		final long BALANCE = 10;
-		final String ACCOUNT = "test";
-		final String CONTRACT = "balanceChecker";
-		final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+		final var contract = "BalanceChecker";
+		final var BALANCE = 10L;
+		final var ACCOUNT = "test";
+		final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
+
 
 		return defaultHapiSpec("VerifiesExistenceOfAccountsAndContracts")
 				.given(
-						fileCreate("bytecode").path(ContractResources.BALANCE_CHECKER_CONTRACT),
-						contractCreate("balanceChecker")
-								.bytecode("bytecode")
-								.gas(300_000L),
-						cryptoCreate("test").balance(BALANCE)
+						cryptoCreate("test").balance(BALANCE),
+						uploadInitCode(contract),
+						contractCreate(contract)
 				).when(
 				).then(
-						contractCall(CONTRACT,
-								ContractResources.BALANCE_CHECKER_BALANCE_OF,
-								INVALID_ADDRESS)
+						contractCall(contract, "balanceOf", INVALID_ADDRESS)
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS),
-						contractCallLocal(CONTRACT,
-								ContractResources.BALANCE_CHECKER_BALANCE_OF,
-								INVALID_ADDRESS)
+						contractCallLocal(contract, "balanceOf", INVALID_ADDRESS)
 								.hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS),
-						withOpContext((spec, opLog) -> {
-							AccountID id = spec.registry().getAccountID(ACCOUNT);
-							ContractID contractID = spec.registry().getContractId(CONTRACT);
-							String solidityAddress = asHexedSolidityAddress(id);
-							String contractAddress = asHexedSolidityAddress(contractID);
+						withOpContext(
+								(spec, opLog) -> {
+									final var id = spec.registry().getAccountID(ACCOUNT);
+									final var contractID = spec.registry().getContractId(contract);
+									final var solidityAddress = asHexedSolidityAddress(id);
+									final var contractAddress = asHexedSolidityAddress(contractID);
 
-							final var call = contractCall(CONTRACT,
-									ContractResources.BALANCE_CHECKER_BALANCE_OF,
-									solidityAddress)
-									.via("callRecord");
+									final var call = contractCall(contract, "balanceOf", solidityAddress)
+											.via("callRecord");
 
-							final var callRecord = getTxnRecord("callRecord").hasPriority(
-									recordWith().contractCallResult(
-											resultWith().resultThruAbi(
-													ContractResources.BALANCE_CHECKER_BALANCE_OF,
-													isLiteralResult(
-															new Object[]{BigInteger.valueOf(BALANCE)}
-													)
+									final var callRecord = getTxnRecord("callRecord").hasPriority(
+											recordWith().contractCallResult(
+													resultWith()
+															.resultThruAbi(getABIFor(FUNCTION, "balanceOf", contract),
+																	isLiteralResult(new Object[]{BigInteger.valueOf(BALANCE)})
+															)
 											)
-									)
-							);
-
-							final var callLocal = contractCallLocal(CONTRACT,
-									ContractResources.BALANCE_CHECKER_BALANCE_OF,
-									solidityAddress)
-									.has(
-											ContractFnResultAsserts.resultWith()
-													.resultThruAbi(
-															ContractResources.BALANCE_CHECKER_BALANCE_OF,
-															ContractFnResultAsserts.isLiteralResult(
-																	new Object[]{BigInteger.valueOf(BALANCE)}
-															)
-													)
 									);
 
-							final var contractCallLocal = contractCallLocal(CONTRACT,
-									ContractResources.BALANCE_CHECKER_BALANCE_OF,
-									contractAddress)
-									.has(
-											ContractFnResultAsserts.resultWith()
-													.resultThruAbi(
-															ContractResources.BALANCE_CHECKER_BALANCE_OF,
-															ContractFnResultAsserts.isLiteralResult(
-																	new Object[]{BigInteger.valueOf(0)}
+									final var callLocal = contractCallLocal(contract, "balanceOf",
+											solidityAddress)
+											.has(
+													ContractFnResultAsserts.resultWith()
+															.resultThruAbi(getABIFor(FUNCTION, "balanceOf", contract),
+																	ContractFnResultAsserts.isLiteralResult(
+																			new Object[]{BigInteger.valueOf(BALANCE)}
+																	)
 															)
-													)
-									);
+											);
 
-							allRunFor(spec, call, callLocal, callRecord, contractCallLocal);
-						})
+									final var contractCallLocal = contractCallLocal(contract,
+											"balanceOf",
+											contractAddress)
+											.has(
+													ContractFnResultAsserts.resultWith()
+															.resultThruAbi(
+																	getABIFor(FUNCTION, "balanceOf", contract),
+																	ContractFnResultAsserts.isLiteralResult(
+																			new Object[]{BigInteger.valueOf(0)}
+																	)
+															)
+											);
+
+									allRunFor(spec, call, callLocal, callRecord, contractCallLocal);
+								}
+						)
 				);
 	}
 

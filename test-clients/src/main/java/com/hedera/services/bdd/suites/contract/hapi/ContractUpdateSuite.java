@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -37,27 +36,23 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VARIOUS_CALLS_CODE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VARIOUS_CALLS_DELEGATE_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VARIOUS_CALLS_NORMAL_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VARIOUS_CALLS_STATIC_ABI;
-import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.VARIOUS_CREATE2_CALLS_PATH;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.precompile.DynamicGasCostSuite.captureChildCreate2MetaFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -75,6 +70,9 @@ public class ContractUpdateSuite extends HapiApiSuite {
 			Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 	private static final long ONE_DAY = 60 * 60 * 24;
 	private static final long ONE_MONTH = 30 * ONE_DAY;
+	public static final String ADMIN_KEY = "adminKey";
+	public static final String NEW_ADMIN_KEY = "newAdminKey";
+	private static final String CONTRACT = "Multipurpose";
 
 	public static void main(String... args) {
 		new ContractUpdateSuite().runSuiteAsync();
@@ -87,7 +85,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 						updateWithBothMemoSettersWorks(),
 						updatingExpiryWorks(),
 						rejectsExpiryTooFarInTheFuture(),
@@ -98,7 +96,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						fridayThe13thSpec(),
 						updateDoesNotChangeBytecode(),
 						eip1014AddressAlwaysHasPriority(),
-						immutableContractKeyFormIsStandard(),
+						immutableContractKeyFormIsStandard()
 				}
 		);
 	}
@@ -107,7 +105,6 @@ public class ContractUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec eip1014AddressAlwaysHasPriority() {
 		final var contract = "VariousCreate2Calls";
 		final var creationTxn = "creationTxn";
-		final var initcode = "initcode";
 		final var callTxn = "callTxn";
 		final var callcodeTxn = "callcodeTxn";
 		final var staticcallTxn = "staticcallTxn";
@@ -118,60 +115,60 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("Eip1014AddressAlwaysHasPriority")
 				.given(
-						fileCreate(initcode).contents(""),
-						updateLargeFile(DEFAULT_PAYER, initcode, extractByteCode(VARIOUS_CREATE2_CALLS_PATH)),
-						contractCreate(contract).bytecode(initcode).via(creationTxn)
+						uploadInitCode(contract),
+						contractCreate(contract).via(creationTxn)
 				).when(
 						captureChildCreate2MetaFor(
 								2, 0,
 								"setup", creationTxn, childMirror, childEip1014)
 				).then(
-						contractCall(contract, VARIOUS_CALLS_NORMAL_ABI).via(callTxn),
+						contractCall(contract, "makeNormalCall").via(callTxn),
 						sourcing(() -> getTxnRecord(callTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
-										VARIOUS_CALLS_NORMAL_ABI,
-										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
-						contractCall(contract, VARIOUS_CALLS_STATIC_ABI).via(staticcallTxn),
+										getABIFor(FUNCTION, "makeNormalCall", contract),
+										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+						contractCall(contract, "makeStaticCall").via(staticcallTxn),
 						sourcing(() -> getTxnRecord(staticcallTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
-										VARIOUS_CALLS_STATIC_ABI,
-										isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
-						contractCall(contract, VARIOUS_CALLS_DELEGATE_ABI).via(delegatecallTxn),
-						sourcing(
-								() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
-										resultWith().resultThruAbi(
-												VARIOUS_CALLS_DELEGATE_ABI,
-												isLiteralResult(new Object[] { unhex(childEip1014.get()) }))))),
-						contractCall(contract, VARIOUS_CALLS_CODE_ABI).via(callcodeTxn),
+										getABIFor(FUNCTION, "makeStaticCall", contract),
+										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+						contractCall(contract, "makeDelegateCall").via(delegatecallTxn),
+						sourcing(() -> getTxnRecord(delegatecallTxn).logged().hasPriority(recordWith().contractCallResult(
+								resultWith().resultThruAbi(
+										getABIFor(FUNCTION, "makeDelegateCall", contract),
+										isLiteralResult(new Object[]{unhex(childEip1014.get())}))))),
+						contractCall(contract, "makeCallCode").via(callcodeTxn),
 						sourcing(() -> getTxnRecord(callcodeTxn).logged().hasPriority(recordWith().contractCallResult(
 								resultWith().resultThruAbi(
-										VARIOUS_CALLS_CODE_ABI,
-										isLiteralResult(new Object[] { unhex(childEip1014.get()) })))))
+										getABIFor(FUNCTION, "makeCallCode", contract),
+										isLiteralResult(new Object[]{unhex(childEip1014.get())})))))
 				);
 	}
 
 	private HapiApiSpec updateWithBothMemoSettersWorks() {
-		String firstMemo = "First";
-		String secondMemo = "Second";
-		String thirdMemo = "Third";
+		final var firstMemo = "First";
+		final var secondMemo = "Second";
+		final var thirdMemo = "Third";
+
 		return defaultHapiSpec("UpdateWithBothMemoSettersWorks")
 				.given(
-						newKeyNamed("adminKey"),
-						contractCreate("contract")
-								.adminKey("adminKey")
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
 								.entityMemo(firstMemo)
 				).when(
-						contractUpdate("contract")
+						contractUpdate(CONTRACT)
 								.newMemo(secondMemo),
-						contractUpdate("contract")
+						contractUpdate(CONTRACT)
 								.newMemo(ZERO_BYTE_MEMO)
 								.hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-						getContractInfo("contract").has(contractWith().memo(secondMemo))
+						getContractInfo(CONTRACT).has(contractWith().memo(secondMemo))
 				).then(
-						contractUpdate("contract")
+						contractUpdate(CONTRACT)
 								.useDeprecatedMemoField()
 								.newMemo(thirdMemo),
-						getContractInfo("contract").has(contractWith().memo(thirdMemo))
+						getContractInfo(CONTRACT).has(contractWith().memo(thirdMemo))
 				);
 	}
 
@@ -179,14 +176,15 @@ public class ContractUpdateSuite extends HapiApiSuite {
 		final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
 		return defaultHapiSpec("UpdatingExpiryWorks")
 				.given(
-						contractCreate("contract")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				)
 				.when(
-						contractUpdate("contract")
+						contractUpdate(CONTRACT)
 								.newExpirySecs(newExpiry)
 				)
 				.then(
-						getContractInfo("contract").has(contractWith().expiry(newExpiry))
+						getContractInfo(CONTRACT).has(contractWith().expiry(newExpiry))
 				);
 	}
 
@@ -196,9 +194,10 @@ public class ContractUpdateSuite extends HapiApiSuite {
 
 		return defaultHapiSpec("RejectsExpiryTooFarInTheFuture")
 				.given(
-						contractCreate("target")
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
 				).when().then(
-						contractUpdate("target")
+						contractUpdate(CONTRACT)
 								.newExpirySecs(excessiveExpiry)
 								.hasKnownStatus(INVALID_EXPIRATION_TIME)
 				);
@@ -207,17 +206,18 @@ public class ContractUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec updateAutoRenewWorks() {
 		return defaultHapiSpec("UpdateAutoRenewWorks")
 				.given(
-						newKeyNamed("admin"),
-						contractCreate("contract")
-								.adminKey("admin")
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
 								.autoRenewSecs(THREE_MONTHS_IN_SECONDS)
 				)
 				.when(
-						contractUpdate("contract")
+						contractUpdate(CONTRACT)
 								.newAutoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY)
 				)
 				.then(
-						getContractInfo("contract")
+						getContractInfo(CONTRACT)
 								.has(contractWith()
 										.autoRenew(THREE_MONTHS_IN_SECONDS + ONE_DAY))
 				);
@@ -226,79 +226,83 @@ public class ContractUpdateSuite extends HapiApiSuite {
 	private HapiApiSpec updateAdminKeyWorks() {
 		return defaultHapiSpec("UpdateAdminKeyWorks")
 				.given(
-						newKeyNamed("oldAdminKey"),
-						newKeyNamed("newAdminKey"),
-						contractCreate("contract")
-								.adminKey("oldAdminKey")
+						newKeyNamed(ADMIN_KEY),
+						newKeyNamed(NEW_ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
 				).when(
-						contractUpdate("contract")
-								.newKey("newAdminKey")
+						contractUpdate(CONTRACT)
+								.newKey(NEW_ADMIN_KEY)
 				).then(
-						contractUpdate("contract")
+						contractUpdate(CONTRACT)
 								.newMemo("some new memo"),
-						getContractInfo("contract")
+						getContractInfo(CONTRACT)
 								.has(contractWith()
-										.adminKey("newAdminKey")
+										.adminKey(NEW_ADMIN_KEY)
 										.memo("some new memo"))
 				);
 	}
 
 	// https://github.com/hashgraph/hedera-services/issues/3037
 	private HapiApiSpec immutableContractKeyFormIsStandard() {
-		final var immutableContract = "immutable";
-
 		return defaultHapiSpec("ImmutableContractKeyFormIsStandard")
 				.given(
-						contractCreate(immutableContract).immutable()
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT).immutable()
 				).when( ).then(
-						getContractInfo(immutableContract)
-								.has(contractWith().immutableContractKey(immutableContract))
+						getContractInfo(CONTRACT)
+								.has(contractWith().immutableContractKey(CONTRACT))
 				);
 	}
 
 	private HapiApiSpec canMakeContractImmutableWithEmptyKeyList() {
 		return defaultHapiSpec("CanMakeContractImmutableWithEmptyKeyList")
 				.given(
-						newKeyNamed("adminKey"),
-						newKeyNamed("newAdminKey"),
-						contractCreate("toBeImmutable")
-								.adminKey("adminKey")
+						newKeyNamed(ADMIN_KEY),
+						newKeyNamed(NEW_ADMIN_KEY),
+						uploadInitCode(CONTRACT),
+						contractCreate(CONTRACT)
+								.adminKey(ADMIN_KEY)
 				).when(
-						contractUpdate("toBeImmutable")
+						contractUpdate(CONTRACT)
 								.improperlyEmptyingAdminKey()
 								.hasKnownStatus(INVALID_ADMIN_KEY),
-						contractUpdate("toBeImmutable")
+						contractUpdate(CONTRACT)
 								.properlyEmptyingAdminKey()
 				).then(
-						contractUpdate("toBeImmutable")
-								.newKey("newAdminKey")
+						contractUpdate(CONTRACT)
+								.newKey(NEW_ADMIN_KEY)
 								.hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT)
 				);
 	}
 
 	private HapiApiSpec givenAdminKeyMustBeValid() {
+		final var contract = "BalanceLookup";
 		return defaultHapiSpec("GivenAdminKeyMustBeValid")
 				.given(
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("target").bytecode("bytecode")
+						uploadInitCode(contract),
+						contractCreate(contract)
 				).when(
-						getContractInfo("target").logged()
+						getContractInfo(contract).logged()
 				).then(
-						contractUpdate("target")
+						contractUpdate(contract)
 								.useDeprecatedAdminKey()
-								.signedBy(GENESIS, "target")
+								.signedBy(GENESIS, contract)
 								.hasKnownStatus(INVALID_ADMIN_KEY)
 				);
 	}
 
 	HapiApiSpec fridayThe13thSpec() {
-		long newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
-		long betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 3;
-		final String INITIAL_MEMO = "This is a memo string with only Ascii characters";
-		final String NEW_MEMO = "Turning and turning in the widening gyre, the falcon cannot hear the falconer...";
-		final String BETTER_MEMO = "This was Mr. Bleaney's room...";
-		KeyShape initialKeyShape = KeyShape.SIMPLE;
-		KeyShape newKeyShape = listOf(3);
+		final var contract = "SimpleStorage";
+		final var suffix = "Clone";
+		final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
+		final var betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 3;
+		final var INITIAL_MEMO = "This is a memo string with only Ascii characters";
+		final var NEW_MEMO = "Turning and turning in the widening gyre, the falcon cannot hear the falconer...";
+		final var BETTER_MEMO = "This was Mr. Bleaney's room...";
+		final var initialKeyShape = KeyShape.SIMPLE;
+		final var newKeyShape = listOf(3);
 
 		return defaultHapiSpec("FridayThe13thSpec")
 				.given(
@@ -306,127 +310,122 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						newKeyNamed("newAdminKey").shape(newKeyShape),
 						cryptoCreate("payer")
 								.balance(10 * ONE_HUNDRED_HBARS),
-						fileCreate("bytecode")
-								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH)
-								.payingWith("payer")
+						uploadInitCode(contract)
 				).when(
-						contractCreate("immutableContract")
+						contractCreate(contract)
 								.payingWith("payer")
-								.omitAdminKey()
-								.bytecode("bytecode"),
-						contractCreate("contract")
+								.omitAdminKey(),
+						contractCustomCreate(contract, suffix)
 								.payingWith("payer")
 								.adminKey("initialAdminKey")
-								.entityMemo(INITIAL_MEMO)
-								.bytecode("bytecode"),
-						getContractInfo("contract")
+								.entityMemo(INITIAL_MEMO),
+						getContractInfo(contract + suffix)
 								.payingWith("payer")
 								.logged()
 								.has(contractWith()
 										.memo(INITIAL_MEMO)
 										.adminKey("initialAdminKey"))
 				).then(
-						contractUpdate("contract")
+						contractUpdate(contract + suffix)
 								.payingWith("payer")
 								.newKey("newAdminKey")
 								.signedBy("payer", "initialAdminKey")
 								.hasKnownStatus(INVALID_SIGNATURE),
-						contractUpdate("contract")
+						contractUpdate(contract + suffix)
 								.payingWith("payer")
 								.newKey("newAdminKey")
 								.signedBy("payer", "newAdminKey")
 								.hasKnownStatus(INVALID_SIGNATURE),
-						contractUpdate("contract")
+						contractUpdate(contract + suffix)
 								.payingWith("payer")
 								.newKey("newAdminKey"),
-						contractUpdate("contract")
+						contractUpdate(contract + suffix)
 								.payingWith("payer")
 								.newExpirySecs(newExpiry)
 								.newMemo(NEW_MEMO),
-						getContractInfo("contract")
+						getContractInfo(contract + suffix)
 								.payingWith("payer")
 								.logged()
 								.has(contractWith()
-										.solidityAddress("contract")
+										.solidityAddress(contract + suffix)
 										.memo(NEW_MEMO)
 										.expiry(newExpiry)),
-						contractUpdate("contract")
+						contractUpdate(contract + suffix)
 								.payingWith("payer")
 								.newMemo(BETTER_MEMO),
-						getContractInfo("contract")
+						getContractInfo(contract + suffix)
 								.payingWith("payer")
 								.logged()
 								.has(contractWith()
 										.memo(BETTER_MEMO)
 										.expiry(newExpiry)),
-						contractUpdate("contract")
+						contractUpdate(contract + suffix)
 								.payingWith("payer")
 								.newExpirySecs(betterExpiry),
-						getContractInfo("contract")
+						getContractInfo(contract + suffix)
 								.payingWith("payer")
 								.logged()
 								.has(contractWith()
 										.memo(BETTER_MEMO)
 										.expiry(betterExpiry)),
-						contractUpdate("contract")
+						contractUpdate(contract + suffix)
 								.payingWith("payer")
 								.signedBy("payer")
 								.newExpirySecs(newExpiry)
 								.hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED),
-						contractUpdate("contract")
+						contractUpdate(contract + suffix)
 								.payingWith("payer")
 								.signedBy("payer")
 								.newMemo(NEW_MEMO)
 								.hasKnownStatus(INVALID_SIGNATURE),
-						contractUpdate("contract")
+						contractUpdate(contract + suffix)
 								.payingWith("payer")
 								.signedBy("payer", "initialAdminKey")
 								.hasKnownStatus(INVALID_SIGNATURE),
-						contractUpdate("immutableContract")
+						contractUpdate(contract)
 								.payingWith("payer")
 								.newMemo(BETTER_MEMO)
 								.hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
-						contractDelete("immutableContract")
+						contractDelete(contract)
 								.payingWith("payer")
 								.hasKnownStatus(MODIFYING_IMMUTABLE_CONTRACT),
-						contractUpdate("immutableContract")
+						contractUpdate(contract)
 								.payingWith("payer")
 								.newExpirySecs(betterExpiry),
-						contractDelete("contract")
+						contractDelete(contract + suffix)
 								.payingWith("payer")
 								.signedBy("payer", "initialAdminKey")
 								.hasKnownStatus(INVALID_SIGNATURE),
-						contractDelete("contract")
+						contractDelete(contract + suffix)
 								.payingWith("payer")
 								.signedBy("payer")
 								.hasKnownStatus(INVALID_SIGNATURE),
-						contractDelete("contract")
+						contractDelete(contract + suffix)
 								.payingWith("payer")
 								.hasKnownStatus(SUCCESS)
 				);
 	}
 
 	private HapiApiSpec updateDoesNotChangeBytecode() {
+		final var simpleStorageContract = "SimpleStorage";
+		final var emptyConstructorContract = "EmptyConstructor";
 		return defaultHapiSpec("HSCS-DCPR-001")
 				.given(
-						fileCreate("contractFile")
-								.path(ContractResources.EMPTY_CONSTRUCTOR).via("fileCreate"),
-						fileCreate("bytecode2")
-								.path(ContractResources.SIMPLE_STORAGE_BYTECODE_PATH),
-						contractCreate("contract")
-								.bytecode("contractFile"),
-						getContractBytecode("contract").saveResultTo("initialBytecode")
+						uploadInitCode(simpleStorageContract, emptyConstructorContract),
+						contractCreate(simpleStorageContract),
+						getContractBytecode(simpleStorageContract).saveResultTo("initialBytecode")
 				)
 				.when(
-						contractUpdate("contract")
-								.bytecode("bytecode2")
+						contractUpdate(simpleStorageContract).bytecode(emptyConstructorContract)
 				)
 				.then(
-						withOpContext((spec, log) -> {
-							var op = getContractBytecode("contract").hasBytecode(
-									spec.registry().getBytes("initialBytecode"));
-							allRunFor(spec, op);
-						})
+						withOpContext(
+								(spec, log) -> {
+									var op = getContractBytecode(simpleStorageContract).hasBytecode(
+											spec.registry().getBytes("initialBytecode"));
+									allRunFor(spec, op);
+								}
+						)
 				);
 	}
 

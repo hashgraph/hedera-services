@@ -420,4 +420,9 @@ public class FcCustomFee implements SelfSerializable {
 		dos.writeLong(fee.getUnitsToCollect());
 		dos.writeSerializable(fee.getTokenDenomination(), true);
 	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_017X_VERSION;
+	}
 }

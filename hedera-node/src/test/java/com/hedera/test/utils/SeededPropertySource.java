@@ -33,12 +33,16 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.merkle.internals.FilePart;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
@@ -47,6 +51,7 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
@@ -54,14 +59,18 @@ import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -197,18 +206,33 @@ public class SeededPropertySource {
 	}
 
 	public FcCustomFee.FeeType nextFeeType() {
+		// size of FcCustomFee.FeeType.class.getEnumConstants() in 0.25
+		return nextFeeType(3);
+	}
+
+	public FcCustomFee.FeeType nextFeeType(final int range) {
 		final var choices = FcCustomFee.FeeType.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
 	public TokenType nextTokenType() {
+		// size of TokenType.class.getEnumConstants() in 0.25
+		return nextTokenType(2);
+	}
+
+	public TokenType nextTokenType(final int range) {
 		final var choices = TokenType.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
 	public TokenSupplyType nextTokenSupplyType() {
+		// size of TokenSupplyType.class.getEnumConstants() in 0.25
+		return nextTokenSupplyType(2);
+	}
+
+	public TokenSupplyType nextTokenSupplyType(final int range) {
 		final var choices = TokenSupplyType.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
 	public MerkleSchedule nextSchedule() {
@@ -635,8 +659,13 @@ public class SeededPropertySource {
 	}
 
 	public ResponseCodeEnum nextStatus() {
+		// size of ResponseCodeEnum.class.getEnumConstants() in 0.25
+		return nextStatus(265);
+	}
+
+	public ResponseCodeEnum nextStatus(final int range) {
 		final var choices = ResponseCodeEnum.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
 	public ExchangeRates nextExchangeRates() {
@@ -646,8 +675,13 @@ public class SeededPropertySource {
 	}
 
 	public EntityType nextEntityType() {
+		// size of EntityType.class.getEnumConstants() in 0.25
+		return nextEntityType(6);
+	}
+
+	public EntityType nextEntityType(final int range) {
 		final var choices = EntityType.class.getEnumConstants();
-		return choices[SEEDED_RANDOM.nextInt(choices.length)];
+		return choices[SEEDED_RANDOM.nextInt(range)];
 	}
 
 	public Map<EntityNum, Map<FcTokenAllowanceId, Long>> nextFungibleAllowances(
@@ -885,5 +919,66 @@ public class SeededPropertySource {
 				.setMemo(nextString(50))
 				.build()
 				.toByteArray();
+	}
+
+	public RecordsRunningHashLeaf nextRecordsRunningHashLeaf() {
+		return new RecordsRunningHashLeaf(new RunningHash(new Hash(nextBytes(48))));
+	}
+
+	public MerkleUniqueToken nextMerkleUniqueToken() {
+		final var seeded = new MerkleUniqueToken(
+				nextNonZeroInt(Integer.MAX_VALUE),
+				nextBytes(nextNonZeroInt(100)),
+				nextUnsignedLong(),
+				nextUnsignedLong()
+		);
+		seeded.setSpender(EntityNum.fromInt(nextNonZeroInt(Integer.MAX_VALUE)).toEntityId());
+		return seeded;
+	}
+
+	public FcTokenAllowance nextFcTokenAllowance() {
+		return FcTokenAllowance.from(
+				nextBoolean(),
+				Longs.asList(nextLongs(nextNonZeroInt(100))));
+	}
+
+	public FilePart nextFilePart() {
+		return new FilePart(nextBytes(nextNonZeroInt(1000)));
+	}
+
+	public MerkleEntityId nextMerkleEntityId() {
+		final var entityId = nextEntityId();
+		return new MerkleEntityId(entityId.shard(), entityId.realm(), entityId.num());
+	}
+
+	public FileID nextFileID() {
+		// By default, the shard and realm numbers are 0.
+		return FileID.newBuilder()
+				.setShardNum(0)
+				.setRealmNum(0)
+				.setFileNum(nextUnsignedLong())
+				.build();
+	}
+
+	public MerkleSpecialFiles nextMerkleSpecialFiles() {
+		final var seeded = new MerkleSpecialFiles();
+		final int numFiles = nextNonZeroInt(100);
+		for (int i = 0; i < numFiles; i++) {
+			seeded.append(nextFileID(), nextBytes(nextNonZeroInt(1000)));
+		}
+		return seeded;
+	}
+
+	public MerkleTokenRelStatus nextMerkleTokenRelStatus() {
+		final var seeded = new MerkleTokenRelStatus(
+				nextUnsignedLong(),
+				nextBoolean(),
+				nextBoolean(),
+				nextBoolean(),
+				nextUnsignedLong()
+		);
+		seeded.setPrev(nextUnsignedLong());
+		seeded.setNext(nextUnsignedLong());
+		return seeded;
 	}
 }

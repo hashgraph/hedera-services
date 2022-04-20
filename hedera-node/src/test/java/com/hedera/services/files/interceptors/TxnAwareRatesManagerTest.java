@@ -9,9 +9,9 @@ package com.hedera.services.files.interceptors;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,8 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -96,7 +97,7 @@ class TxnAwareRatesManagerTest {
 		PlatformTxnAccessor accessor = mock(PlatformTxnAccessor.class);
 		given(accessor.getSignedTxnWrapper()).willReturn(Transaction.getDefaultInstance());
 		txnCtx = mock(TransactionContext.class);
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		midnightRates = mock(ExchangeRates.class);
 		postUpdateCb = mock(Consumer.class);
 
@@ -148,6 +149,8 @@ class TxnAwareRatesManagerTest {
 
 	@Test
 	void ingnoresPostUpdateForSomehowInvalidBytes() {
+		final var accessor = mock(SignedTxnAccessor.class);
+		given(txnCtx.accessor()).willReturn(accessor);
 		// when:
 		subject.postUpdate(exchangeRates, invalidBytes);
 

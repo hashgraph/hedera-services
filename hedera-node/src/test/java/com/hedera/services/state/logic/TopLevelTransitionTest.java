@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@ package com.hedera.services.state.logic;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +51,7 @@ class TopLevelTransitionTest {
 	@Mock
 	private TxnChargingPolicyAgent chargingPolicyAgent;
 	@Mock
-	private TxnAccessor accessor;
+	private PlatformTxnAccessor accessor;
 	@Mock
 	private RequestedTransition requestedTransition;
 	@Mock
@@ -77,7 +77,7 @@ class TopLevelTransitionTest {
 
 	@Test
 	void switchesToStandinUtilizationAndAbortsWhenKeyActivationScreenFails() {
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(INVALID_SIGNATURE);
 
@@ -96,7 +96,7 @@ class TopLevelTransitionTest {
 				networkCtxManager, sigsAndPayerKeyScreen, chargingPolicyAgent,
 				networkUtilization, nonPayerKeysScreen, requestedTransition);
 
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
@@ -122,7 +122,7 @@ class TopLevelTransitionTest {
 				networkCtxManager, sigsAndPayerKeyScreen, chargingPolicyAgent,
 				nonPayerKeysScreen, txnCtx, networkUtilization);
 
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);
@@ -142,7 +142,7 @@ class TopLevelTransitionTest {
 
 	@Test
 	void abortsWhenChargingPolicyAgentFails() {
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 
@@ -155,7 +155,7 @@ class TopLevelTransitionTest {
 
 	@Test
 	void abortsWhenKeyActivationScreenFails() {
-		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.consensusTime()).willReturn(consensusNow);
 		given(sigsAndPayerKeyScreen.applyTo(accessor)).willReturn(OK);
 		given(chargingPolicyAgent.applyPolicyFor(accessor)).willReturn(true);

@@ -69,6 +69,8 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
@@ -89,6 +91,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public final class TokenPauseSpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(TokenPauseSpecs.class);
 
+	private static final String associationsLimitProperty = "accounts.limitTokenAssociations";
+	private static final String defaultAssociationsLimit =
+			HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 	static final String defaultMinAutoRenewPeriod =
 			HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.minDuration");
 
@@ -154,9 +159,9 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 								.maxSupply(500)
 								.kycKey(key)
 								.initialSupply(100),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "0"))
+						overridingTwo(
+								associationsLimitProperty, "true",
+								"tokens.maxPerAccount", "0")
 				)
 				.when(
 						tokenCreate(token3)
@@ -177,9 +182,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 								.hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
 				)
 				.then(
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("accounts.limitTokenAssociations", "false")),
+						overriding(associationsLimitProperty, defaultAssociationsLimit),
 						tokenCreate(token3)
 								.supplyType(TokenSupplyType.FINITE)
 								.tokenType(FUNGIBLE_COMMON)
@@ -191,12 +194,8 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 								.maxAutomaticTokenAssociations(10_000),
 						tokenAssociate(user1, token1),
 						tokenAssociate(treasury1, token2),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("tokens.maxPerAccount", "1000")),
-						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
-								.overridingProps(Map.of("accounts.limitTokenAssociations", "true"))
+						// Restore default
+						overriding("tokens.maxPerAccount", "1000")
 				);
 	}
 

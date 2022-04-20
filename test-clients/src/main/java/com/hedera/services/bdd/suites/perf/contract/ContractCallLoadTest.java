@@ -22,7 +22,6 @@ package com.hedera.services.bdd.suites.perf.contract;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import org.apache.logging.log4j.LogManager;
@@ -37,7 +36,7 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -45,6 +44,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 
 public class ContractCallLoadTest extends LoadTest {
 	private static final Logger log = LogManager.getLogger(ContractCallLoadTest.class);
+	private static final String VERBOSE_DEPOSIT = "VerboseDeposit";
+	private static final String BALANCE_LOOKUP = "BalanceLookup";
 
 	public static void main(String... args) {
 		parseArgs(args);
@@ -69,7 +70,7 @@ public class ContractCallLoadTest extends LoadTest {
 		Supplier<HapiSpecOperation[]> callBurst = () -> new HapiSpecOperation[]{
 				inParallel(IntStream.range(0, settings.getBurstSize())
 						.mapToObj(i ->
-								contractCall("perf", ContractResources.VERBOSE_DEPOSIT_ABI, i + 1, 0, DEPOSIT_MEMO)
+								contractCall(VERBOSE_DEPOSIT, "deposit", i + 1, 0, DEPOSIT_MEMO)
 										.sending(i + 1)
 										.noLogging()
 										.suppressStats(true)
@@ -87,11 +88,10 @@ public class ContractCallLoadTest extends LoadTest {
 						withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
 						logIt(ignore -> settings.toString())
 				).when(
-						fileCreate("contractBytecode").path(ContractResources.VERBOSE_DEPOSIT_BYTECODE_PATH),
-						contractCreate("perf").bytecode("contractBytecode"),
-						fileCreate("lookupBytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("balanceLookup").bytecode("lookupBytecode").balance(1L),
-						getContractInfo("perf").hasExpectedInfo().logged()
+						uploadInitCode(VERBOSE_DEPOSIT,BALANCE_LOOKUP),
+						contractCreate(VERBOSE_DEPOSIT),
+						contractCreate(BALANCE_LOOKUP).balance(1L),
+						getContractInfo(VERBOSE_DEPOSIT).hasExpectedInfo().logged()
 
 				).then(
 						defaultLoadTest(callBurst, settings)

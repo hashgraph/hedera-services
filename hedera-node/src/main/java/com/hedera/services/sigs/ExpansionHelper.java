@@ -22,8 +22,8 @@ package com.hedera.services.sigs;
 
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 
 public interface ExpansionHelper {
-	void expandIn(PlatformTxnAccessor txnAccessor, SigRequirements keyOrderer, PubKeyToSigBytes pkToSigFn);
+	void expandIn(SwirldsTxnAccessor txnAccessor, SigRequirements keyOrderer, PubKeyToSigBytes pkToSigFn);
 }
