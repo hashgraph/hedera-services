@@ -808,11 +808,11 @@ workflows:
   GCP-Daily-Services-Crypto-Migration-7N-1C:
     triggers:
       - schedule:
-          cron: "17 13 * * *"
+          cron: "24 13 * * *"
           filters:
             branches:
               only:
-                - 3163-M-free-contract-auto-renewalq
+                - 3163-M-free-contract-auto-renewal
     jobs:
       - build-platform-and-services
       - jrs-regression:

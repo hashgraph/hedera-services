@@ -34,7 +34,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -95,10 +94,6 @@ public class KvPairIterationMigrator implements InterruptableConsumer<Pair<Contr
 
 	public VirtualMap<ContractKey, IterableContractValue> getMigratedStorage() {
 		return iterableContractStorage;
-	}
-
-	public Map<EntityNum, ContractKey> getContractKeys() {
-		return rootKeys;
 	}
 
 	public void finish() {
