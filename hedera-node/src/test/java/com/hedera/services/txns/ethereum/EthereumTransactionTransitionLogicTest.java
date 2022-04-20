@@ -26,6 +26,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CallEvmTxProcessor;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
@@ -60,7 +61,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
@@ -98,10 +98,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -263,6 +267,64 @@ class EthereumTransactionTransitionLogicTest {
 				.setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
 				.setMemo(senderMemo)
 				.setProxyAccountID(senderAccount.getId().asGrpcAccount())
+				.build();
+		verify(contractCreateTransitionLogic).doStateTransitionOperation(
+				TransactionBody.newBuilder().setContractCreateInstance(expectedSyntheticCreateBody).build(),
+				senderAccount.getId(),
+				true
+		);
+		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
+		verify(recordService).updateFromEvmCallContext(any());
+		verify(worldState).getCreatedContractIds();
+		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
+	}
+
+	@Test
+	void verifyExternaliseContractResultCreateWithoutMemoAndProxy() throws DecoderException {
+		// setup:
+		target = null;
+		givenValidTxnCtx();
+		// and:
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(worldState.newContractAddress(senderAccount.getId().asEvmAddress())).willReturn(
+				contractAccount.getId().asEvmAddress());
+
+		// and:
+		final var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(), Map.of());
+		given(createEvmTxProcessor.execute(senderAccount, contractAccount.getId().asEvmAddress(), gas, sent,
+				Bytes.EMPTY,
+				txnCtx.consensusTime(), consensusTime.getEpochSecond() + AUTO_RENEW_PERIOD))
+				.willReturn(results);
+		given(worldState.getCreatedContractIds()).willReturn(List.of(contractAccount.getId().asGrpcContract()));
+
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
+				senderAccount.getId().asEntityNum());
+
+		given(globalDynamicProperties.minAutoRenewDuration()).willReturn(1L);
+		final var senderKey = new JContractIDKey(contractAccount.getId().asGrpcContract());
+		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), KEY)).willReturn(senderKey);
+		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), AccountProperty.AUTO_RENEW_PERIOD)).willReturn(AUTO_RENEW_PERIOD);
+		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), MEMO)).willReturn(null);
+		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), PROXY)).willReturn(EntityId.MISSING_ENTITY_ID);
+		given(optionValidator.attemptToDecodeOrThrow(any(), any())).willReturn(senderKey);
+
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		final var expectedSyntheticCreateBody = ContractCreateTransactionBody.newBuilder()
+				.setAdminKey(JKey.mapJKey(senderKey))
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(AUTO_RENEW_PERIOD).build())
+				.setInitcode(ByteString.copyFrom(ethTxData.callData()))
+				.setGas(ethTxData.gasLimit())
+				.setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
 				.build();
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
 				TransactionBody.newBuilder().setContractCreateInstance(expectedSyntheticCreateBody).build(),
@@ -513,6 +575,54 @@ class EthereumTransactionTransitionLogicTest {
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, subject.validateSemantics(accessor));
 	}
+
+	@Test
+	void invalidSenderJKeyOnContractCreateThrows() {
+		// setup:
+		target = null;
+		givenValidTxnCtx();
+		// and:
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+
+		// and:
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
+				senderAccount.getId().asEntityNum());
+		given(globalDynamicProperties.minAutoRenewDuration()).willReturn(1L);
+		given(accountsLedger.get(senderAccount.getId().asGrpcAccount(), KEY)).willReturn(new JKey() {
+			@Override
+			public boolean isEmpty() {
+				return false;
+			}
+
+			@Override
+			public boolean isValid() {
+				return false;
+			}
+
+			@Override
+			public void setForScheduledTxn(boolean flag) {
+			}
+
+			@Override
+			public boolean isForScheduledTxn() {
+				return false;
+			}
+		});
+
+		// when:
+		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition());
+
+		// then:
+		verify(contractCreateTransitionLogic, never()).doStateTransitionOperation(
+				any(),
+				any(),
+				anyBoolean()
+		);
+		verify(recordService, never()).updateFromEvmCallContext(any());
+	}
+
 
 	private void givenValidTxnCtx() {
 		var unsignedTx = new EthTxData(
