@@ -55,7 +55,7 @@ public class ReleaseTwentySixMigration {
 		final var contracts = initializingState.accounts();
 		final VirtualMap<ContractKey, ContractValue> contractStorage = initializingState.getChild(CONTRACT_STORAGE);
 		final var migrator = migratorFactory.from(
-				INSERTIONS_PER_COPY, contracts, IterableStorageUtils::upsertMapping, iterableContractStorage);
+				INSERTIONS_PER_COPY, contracts, IterableStorageUtils::overwritingUpsertMapping, iterableContractStorage);
 		try {
 			log.info("Migrating contract storage into iterable VirtualMap with {} threads", THREAD_COUNT);
 			final var watch = StopWatch.createStarted();

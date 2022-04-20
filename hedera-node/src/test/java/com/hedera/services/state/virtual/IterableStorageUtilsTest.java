@@ -9,9 +9,9 @@ package com.hedera.services.state.virtual;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,17 +26,20 @@ import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static com.hedera.services.state.virtual.IterableStorageUtils.inPlaceUpsertMapping;
+import static com.hedera.services.state.virtual.IterableStorageUtils.overwritingUpsertMapping;
 import static com.hedera.services.state.virtual.IterableStorageUtils.removeMapping;
-import static com.hedera.services.state.virtual.IterableStorageUtils.upsertMapping;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -68,26 +71,51 @@ class IterableStorageUtilsTest {
 	}
 
 	@Test
+	void canRemoveOnlyValue() {
+		given(storage.get(rootKey)).willReturn(rootValue);
+
+		final var newRoot = removeMapping(rootKey, rootKey, storage);
+
+		assertNull(newRoot);
+	}
+
+	@Test
 	void canListNoStorageValues() {
 		assertEquals("[]", IterableStorageUtils.joinedStorageMappings(null, storage));
 	}
 
 	@Test
-	void canUpdateExistingMapping() {
+	void canUpdateExistingMappingInPlace() {
 		given(storage.getForModify(targetKey)).willReturn(targetValue);
 
-		final var newRoot = upsertMapping(
+		final var newRoot = inPlaceUpsertMapping(
 				targetKey, nextValue,
 				rootKey, null,
 				storage);
 
 		assertSame(rootKey, newRoot);
-		assertArrayEquals(nextValue.getValue(), targetValue.getValue());
+		assertArrayEquals(targetValue.getValue(), nextValue.getValue());
 	}
 
 	@Test
-	void canInsertToEmptyList() {
-		final var newRoot = upsertMapping(
+	void canUpdateExistingMappingOverwriting() {
+		final var valueCaptor = ArgumentCaptor.forClass(IterableContractValue.class);
+		given(storage.get(targetKey)).willReturn(targetValue);
+
+		final var newRoot = overwritingUpsertMapping(
+				targetKey, nextValue,
+				rootKey, null,
+				storage);
+
+		assertSame(rootKey, newRoot);
+		verify(storage).put(eq(targetKey), valueCaptor.capture());
+		final var putValue = valueCaptor.getValue();
+		assertArrayEquals(nextValue.getValue(), putValue.getValue());
+	}
+
+	@Test
+	void canInsertToEmptyListInPlace() {
+		final var newRoot = inPlaceUpsertMapping(
 				targetKey, targetValue,
 				null, null,
 				storage);
@@ -98,11 +126,23 @@ class IterableStorageUtilsTest {
 	}
 
 	@Test
-	void canInsertWithUnknownRootValue() {
+	void canInsertToEmptyListOverwriting() {
+		final var newRoot = overwritingUpsertMapping(
+				targetKey, targetValue,
+				null, null,
+				storage);
+
+		verify(storage).put(targetKey, targetValue);
+
+		assertSame(targetKey, newRoot);
+	}
+
+	@Test
+	void canInsertWithUnknownRootValueInPlace() {
 		given(storage.getForModify(targetKey)).willReturn(null);
 		given(storage.getForModify(rootKey)).willReturn(rootValue);
 
-		final var newRoot = upsertMapping(
+		final var newRoot = inPlaceUpsertMapping(
 				targetKey, targetValue,
 				rootKey, null,
 				storage);
@@ -116,8 +156,29 @@ class IterableStorageUtilsTest {
 	}
 
 	@Test
-	void canInsertWithPrefetchedValue() {
-		final var newRoot = upsertMapping(
+	void canInsertWithUnknownRootValueOverwriting() {
+		final var valueCaptor = ArgumentCaptor.forClass(IterableContractValue.class);
+		given(storage.get(targetKey)).willReturn(null);
+		given(storage.get(rootKey)).willReturn(rootValue);
+
+		final var newRoot = overwritingUpsertMapping(
+				targetKey, targetValue,
+				rootKey, null,
+				storage);
+
+		verify(storage).put(targetKey, targetValue);
+
+		assertSame(targetKey, newRoot);
+		assertNull(targetValue.getPrevKeyScopedTo(contractNum));
+		assertEquals(rootKey, targetValue.getNextKeyScopedTo(contractNum));
+		verify(storage).put(eq(rootKey), valueCaptor.capture());
+		final var putValue = valueCaptor.getValue();
+		assertEquals(newRoot, putValue.getPrevKeyScopedTo(contractNum));
+	}
+
+	@Test
+	void canInsertWithPrefetchedValueInPlace() {
+		final var newRoot = inPlaceUpsertMapping(
 				targetKey, targetValue,
 				rootKey, rootValue,
 				storage);
@@ -132,63 +193,19 @@ class IterableStorageUtilsTest {
 	}
 
 	@Test
-	void canRemoveFromRootWithNextValue() {
-		rootValue.setNextKey(nextKey.getKey());
-		nextValue.setPrevKey(rootKey.getKey());
-		given(storage.getForModify(nextKey)).willReturn(nextValue);
-		given(storage.get(rootKey)).willReturn(rootValue);
+	void canInsertWithPrefetchedValueOverwriting() {
+		final var newRoot = overwritingUpsertMapping(
+				targetKey, targetValue,
+				rootKey, rootValue,
+				storage);
 
-		final var newRoot = removeMapping(rootKey, rootKey, storage);
+		assertSame(targetKey, newRoot);
+		assertNull(targetValue.getPrevKeyScopedTo(contractNum));
+		assertEquals(rootKey, targetValue.getNextKeyScopedTo(contractNum));
+		assertEquals(newRoot, rootValue.getPrevKeyScopedTo(contractNum));
 
-		assertEquals(nextKey, newRoot);
-		assertNull(nextValue.getPrevKeyScopedTo(contractNum));
-
-		verify(storage).remove(rootKey);
-	}
-
-	@Test
-	void canRemoveFromNonRootWithNextValue() {
-		rootValue.setNextKey(targetKey.getKey());
-		targetValue.setPrevKey(rootKey.getKey());
-		targetValue.setNextKey(nextKey.getKey());
-		nextValue.setPrevKey(targetKey.getKey());
-		given(storage.getForModify(nextKey)).willReturn(nextValue);
-		given(storage.getForModify(rootKey)).willReturn(rootValue);
-		given(storage.get(targetKey)).willReturn(targetValue);
-
-		final var newRoot = removeMapping(targetKey, rootKey, storage);
-
-		assertEquals(rootKey, newRoot);
-		assertEquals(rootKey, nextValue.getPrevKeyScopedTo(contractNum));
-		assertEquals(nextKey, rootValue.getNextKeyScopedTo(contractNum));
-
-		verify(storage).remove(targetKey);
-	}
-
-	@Test
-	void canRemoveFromNonRootEnd() {
-		rootValue.setNextKey(targetKey.getKey());
-		targetValue.setPrevKey(rootKey.getKey());
-		given(storage.getForModify(rootKey)).willReturn(rootValue);
-		given(storage.get(targetKey)).willReturn(targetValue);
-
-		final var newRoot = removeMapping(targetKey, rootKey, storage);
-
-		assertEquals(rootKey, newRoot);
-		assertNull(rootValue.getNextKeyScopedTo(contractNum));
-
-		verify(storage).remove(targetKey);
-	}
-
-	@Test
-	void canRemoveOnlyValue() {
-		given(storage.get(rootKey)).willReturn(rootValue);
-
-		final var newRoot = removeMapping(rootKey, rootKey, storage);
-
-		assertNull(newRoot);
-
-		verify(storage).remove(rootKey);
+		verify(storage).put(targetKey, targetValue);
+		verify(storage, never()).getForModify(rootKey);
 	}
 
 	private static final long contractNum = 1234;

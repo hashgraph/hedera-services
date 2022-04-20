@@ -20,6 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.swirlds.common.FastCopyable;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -29,7 +30,7 @@ public class MapValueListUtils {
 	/**
 	 * Removes the key/value pair with the given key from its containing linked list in the map represented by the
 	 * given {@link MapValueListRemoval}, updating the doubly-linked list to maintain the prev/next keys of the
-	 * "adjacent" value(s) as needed.
+	 * "adjacent" value(s) as needed. Uses {@link MapValueListRemoval#getForModify(Object)}.
 	 *
 	 * @param key
 	 * 		the key of the mapping to remove
@@ -40,33 +41,76 @@ public class MapValueListUtils {
 	 * @return the new root key, for convenience
 	 */
 	public static @Nullable
-	<K, V> K removeFromMapValueList(
+	<K, V extends FastCopyable> K inPlaceRemoveFromMapValueList(
 			@NotNull final K key,
 			@NotNull final K root,
 			@NotNull final MapValueListRemoval<K, V> listRemoval
 	) {
-		final var value = listRemoval.get(key);
-		Objects.requireNonNull(value, "The removed mapping had no value for key " + key);
+		return internalRemoveFromMapValueList(key, root, listRemoval, true);
+	}
+
+	/**
+	 * Removes the key/value pair with the given key from its containing linked list in the map represented by the
+	 * given {@link MapValueListRemoval}, updating the doubly-linked list to maintain the prev/next keys of the
+	 * "adjacent" value(s) as needed. Does <i>not</i> use {@link MapValueListRemoval#getForModify(Object)}.
+	 *
+	 * @param key
+	 * 		the key of the mapping to remove
+	 * @param root
+	 * 		the key of the root mapping in the affected node's list
+	 * @param listRemoval
+	 * 		the facilitator representing the underlying map
+	 * @return the new root key, for convenience
+	 */
+	public static @Nullable
+	<K, V extends FastCopyable> K overwritingRemoveFromMapValueList(
+			@NotNull final K key,
+			@NotNull final K root,
+			@NotNull final MapValueListRemoval<K, V> listRemoval
+	) {
+		return internalRemoveFromMapValueList(key, root, listRemoval, false);
+	}
+
+	private static @Nullable
+	<K, V extends FastCopyable> K internalRemoveFromMapValueList(
+			@NotNull final K key,
+			@NotNull final K root,
+			@NotNull final MapValueListRemoval<K, V> listRemoval,
+			boolean useGetForModify
+	) {
+		final var value = Objects.requireNonNull(listRemoval.get(key), () -> "Missing key " + key);
 		listRemoval.remove(key);
 
 		final var nextKey = listRemoval.next(value);
 		final var prevKey = listRemoval.prev(value);
 		if (nextKey != null) {
-			final var nextValue = listRemoval.getForModify(nextKey);
-			Objects.requireNonNull(nextValue, "The next mapping had no value for key " + nextKey);
+			final var nextValue = useGetForModify
+					? Objects.requireNonNull(listRemoval.getForModify(nextKey), () -> "Missing next key " + nextKey)
+					// Note it is ONLY safe to call copy() here---making the map's value
+					// immutable!---because we immediately put() the mutable value below
+					: Objects.requireNonNull(listRemoval.get(nextKey), () -> "Missing next key " + nextKey).<V>copy();
 			if (prevKey == null) {
 				listRemoval.markAsHead(nextValue);
 			} else {
 				listRemoval.updatePrev(nextValue, prevKey);
 			}
+			if (!useGetForModify) {
+				listRemoval.put(nextKey, nextValue);
+			}
 		}
 		if (prevKey != null) {
-			final var prevValue = listRemoval.getForModify(prevKey);
-			Objects.requireNonNull(prevValue, "The previous mapping had no value for key " + prevKey);
+			final var prevValue = useGetForModify
+					? Objects.requireNonNull(listRemoval.getForModify(prevKey), () -> "Missing prev key " + prevKey)
+					// Note it is ONLY safe to call copy() here---making the map's value
+					// immutable!---because we immediately put() the mutable value below
+					: Objects.requireNonNull(listRemoval.get(prevKey), () -> "Missing prev key " + prevKey).<V>copy();
 			if (nextKey == null) {
 				listRemoval.markAsTail(prevValue);
 			} else {
 				listRemoval.updateNext(prevValue, nextKey);
+			}
+			if (!useGetForModify) {
+				listRemoval.put(prevKey, prevValue);
 			}
 		}
 		return key.equals(root) ? nextKey : root;
