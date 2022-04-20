@@ -22,8 +22,8 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.EntityNumPair;
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -252,5 +252,10 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 
 	public void setNext(final long next) {
 		this.next = next;
+	}
+
+	@Override
+	public int getMinimumSupportedVersion() {
+		return RELEASE_0180_VERSION;
 	}
 }

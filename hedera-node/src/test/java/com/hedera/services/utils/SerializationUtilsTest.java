@@ -20,7 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.swirlds.common.io.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

@@ -35,6 +35,7 @@ import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -45,7 +46,6 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hedera.test.utils.EntityIdConverter;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -55,7 +55,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.CommonUtils;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -82,6 +82,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -136,6 +138,8 @@ class EthereumTransactionTransitionLogicTest {
 	TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
 	@Mock
 	private HederaFs hfs;
+	@Mock
+	private EntityAccess entityAccess;
 	private TransactionBody ethTxTxn;
 	private EthTxData ethTxData;
 
@@ -143,7 +147,7 @@ class EthereumTransactionTransitionLogicTest {
 	private void setup() {
 		contractCallTransitionLogic = new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager);
+				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
 		contractCreateTransitionLogic = new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator,
 				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian);
 		given(globalDynamicProperties.getChainId()).willReturn(0x128);
@@ -433,7 +437,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 
 		// expect:
-		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+		assertEquals(WRONG_CHAIN_ID, subject.validateSemantics(accessor));
 	}
 
 	@Test
@@ -462,7 +466,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(ethTxTxn);
 
 		// expect:
-		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+		assertEquals(WRONG_NONCE, subject.validateSemantics(accessor));
 	}
 
 	@Test

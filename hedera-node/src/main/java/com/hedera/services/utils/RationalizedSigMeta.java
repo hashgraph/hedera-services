@@ -21,8 +21,8 @@ package com.hedera.services.utils;
  */
 
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.swirlds.common.SwirldDualState;
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
 
 import java.time.Instant;

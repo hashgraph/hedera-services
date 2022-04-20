@@ -23,6 +23,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult;
@@ -37,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -86,7 +88,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 	}
 
 	List<HapiApiSpec> ERC_20() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 				getErc20TokenName(),
 				getErc20TokenSymbol(),
 				getErc20TokenDecimals(),
@@ -99,12 +101,13 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				transferErc20TokenFromErc721TokenFails(),
 				transferErc20TokenReceiverContract(),
 				transferErc20TokenSenderAccount(),
-				transferErc20TokenAliasedSender()
+				transferErc20TokenAliasedSender(),
+				directCallsWorkForERC20()
 		});
 	}
 
 	List<HapiApiSpec> ERC_721() {
-		return List.of(new HapiApiSpec[] {
+		return List.of(new HapiApiSpec[]{
 				getErc721TokenName(),
 				getErc721Symbol(),
 				getErc721TokenURI(),
@@ -112,7 +115,8 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				getErc721BalanceOf(),
 				getErc721TotalSupply(),
 				getErc721TokenURIFromErc20TokenFails(),
-				getErc721OwnerOfFromErc20TokenFails()
+				getErc721OwnerOfFromErc20TokenFails(),
+				directCallsWorkForERC721()
 		});
 	}
 
@@ -1237,6 +1241,290 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 						)
 				).then(
 						getTxnRecord(invalidOwnerOfTxn).andAllChildRecords().logged()
+				);
+	}
+
+	private HapiApiSpec directCallsWorkForERC20() {
+
+		final AtomicReference<String> tokenNum = new AtomicReference<>();
+
+		final var tokenName = "TokenA";
+		final var tokenSymbol = "FDFGF";
+		final var tokenDecimals = 10;
+		final var tokenTotalSupply = 5;
+		final var tokenTransferAmount = 3;
+
+		final var symbolTxn = "symbolTxn";
+		final var nameTxn = "nameTxn";
+		final var decimalsTxn = "decimalsTxn";
+		final var totalSupplyTxn = "totalSupplyTxn";
+		final var balanceOfTxn = "balanceOfTxn";
+		final var transferTxn = "transferTxn";
+
+		return defaultHapiSpec("DirectCallsWorkForERC20")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(RECIPIENT).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(FUNGIBLE_TOKEN)
+								.tokenType(TokenType.FUNGIBLE_COMMON)
+								.supplyType(TokenSupplyType.INFINITE)
+								.initialSupply(tokenTotalSupply)
+								.name(tokenName)
+								.symbol(tokenSymbol)
+								.decimals(tokenDecimals)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(tokenNum::set),
+						tokenAssociate(ACCOUNT, FUNGIBLE_TOKEN),
+						tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
+						cryptoTransfer(moving(tokenTransferAmount, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, ACCOUNT))
+				).when(withOpContext(
+						(spec, ignore) -> {
+							var tokenAddress = asHexedSolidityAddress(asToken(tokenNum.get()));
+							allRunFor(spec,
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "name", "ERC20ABI")
+									).via(nameTxn),
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "symbol", "ERC20ABI")
+									).via(symbolTxn),
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "decimals", "ERC20ABI")
+									).via(decimalsTxn),
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "totalSupply", "ERC20ABI")
+									).via(totalSupplyTxn),
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "balanceOf", "ERC20ABI"),
+											asHexedSolidityAddress(spec.registry().getAccountID(ACCOUNT))
+									).via(balanceOfTxn),
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "transfer", "ERC20ABI"),
+											asHexedSolidityAddress(spec.registry().getAccountID(RECIPIENT)),
+											tokenTransferAmount
+									).via(transferTxn).payingWith(ACCOUNT)
+							);
+						})
+				).then(
+						withOpContext(
+								(spec, ignore) ->
+										allRunFor(spec,
+												childRecordsCheck(nameTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.NAME)
+																						.withName(tokenName)
+																				)
+																)
+												),
+												childRecordsCheck(symbolTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.SYMBOL)
+																						.withSymbol(tokenSymbol)
+																				)
+																)
+												),
+												childRecordsCheck(decimalsTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.DECIMALS)
+																						.withDecimals(tokenDecimals)
+																				)
+																)
+												),
+												childRecordsCheck(totalSupplyTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.TOTAL_SUPPLY)
+																						.withTotalSupply(tokenTotalSupply)
+																				)
+																)
+												),
+												childRecordsCheck(balanceOfTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.BALANCE)
+																						.withBalance(tokenTransferAmount)
+																				)
+																)
+												),
+												childRecordsCheck(transferTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.ERC_TRANSFER)
+																						.withErcFungibleTransferStatus(true)
+																				)
+																)
+												)))
+				);
+	}
+
+	private HapiApiSpec directCallsWorkForERC721() {
+
+		final AtomicReference<String> tokenNum = new AtomicReference<>();
+
+		final var tokenName = "TokenA";
+		final var tokenSymbol = "FDFDFD";
+		final var tokenTotalSupply = 1;
+
+		final var symbolTxn = "symbolTxn";
+		final var nameTxn = "nameTxn";
+		final var tokenURITxn = "tokenURITxn";
+		final var totalSupplyTxn = "totalSupplyTxn";
+		final var balanceOfTxn = "balanceOfTxn";
+		final var ownerOfTxn = "ownerOfTxn";
+
+		return defaultHapiSpec("DirectCallsWorkForERC721")
+				.given(
+						newKeyNamed(MULTI_KEY),
+						cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(RECIPIENT).balance(100 * ONE_HUNDRED_HBARS),
+						cryptoCreate(TOKEN_TREASURY),
+						tokenCreate(NON_FUNGIBLE_TOKEN)
+								.tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+								.name(tokenName)
+								.symbol(tokenSymbol)
+								.initialSupply(0)
+								.treasury(TOKEN_TREASURY)
+								.adminKey(MULTI_KEY)
+								.supplyKey(MULTI_KEY)
+								.exposingCreatedIdTo(tokenNum::set),
+						mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META)),
+						tokenAssociate(ACCOUNT, NON_FUNGIBLE_TOKEN),
+						tokenAssociate(RECIPIENT, NON_FUNGIBLE_TOKEN),
+						cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1).between(TOKEN_TREASURY,
+								ACCOUNT))
+				).when(withOpContext(
+						(spec, ignore) -> {
+							var tokenAddress = asHexedSolidityAddress(asToken(tokenNum.get()));
+							allRunFor(spec,
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "name", "ERC721ABI")
+									).via(nameTxn),
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "symbol", "ERC721ABI")
+									).via(symbolTxn),
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "tokenURI", "ERC721ABI"),
+											1
+									).via(tokenURITxn),
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "totalSupply", "ERC721ABI")
+									).via(totalSupplyTxn),
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "balanceOf", "ERC721ABI"),
+											asHexedSolidityAddress(spec.registry().getAccountID(ACCOUNT))
+									).via(balanceOfTxn),
+									contractCallWithFunctionAbi(
+											tokenAddress,
+											getABIFor(FunctionType.FUNCTION, "ownerOf", "ERC721ABI"),
+											1
+									).via(ownerOfTxn)
+							);
+						})
+				).then(
+						withOpContext(
+								(spec, ignore) ->
+										allRunFor(spec,
+												childRecordsCheck(nameTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.NAME)
+																						.withName(tokenName)
+																				)
+																)
+												),
+												childRecordsCheck(symbolTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.SYMBOL)
+																						.withSymbol(tokenSymbol)
+																				)
+																)
+												),
+												childRecordsCheck(tokenURITxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.TOKEN_URI)
+																						.withTokenUri("FIRST")
+																				)
+																)
+												),
+												childRecordsCheck(totalSupplyTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.TOTAL_SUPPLY)
+																						.withTotalSupply(tokenTotalSupply)
+																				)
+																)
+												),
+												childRecordsCheck(balanceOfTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.BALANCE)
+																						.withBalance(1)
+																				)
+																)
+												),
+												childRecordsCheck(ownerOfTxn, SUCCESS,
+														recordWith()
+																.status(SUCCESS)
+																.contractCallResult(
+																		resultWith()
+																				.contractCallResult(htsPrecompileResult()
+																						.forFunction(HTSPrecompileResult.FunctionType.OWNER)
+																						.withOwner(asAddress(spec.registry().getAccountID(ACCOUNT)))
+																				)
+																)
+												)))
 				);
 	}
 

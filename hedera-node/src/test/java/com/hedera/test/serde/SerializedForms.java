@@ -24,39 +24,68 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
+import com.hedera.services.state.merkle.MerkleEntityId;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
+import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.merkle.MerkleScheduleSerdeTest;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTokenSerdeTest;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleTopicSerdeTest;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.internals.FilePart;
+import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.services.state.submerkle.EvmFnResultSerdeTest;
+import com.hedera.services.state.submerkle.EvmLog;
+import com.hedera.services.state.submerkle.EvmLogSerdeTest;
+import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.ExpirableTxnRecordSerdeTest;
+import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.services.state.submerkle.FcTokenAllowance;
+import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.services.state.submerkle.NftAdjustments;
+import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.state.submerkle.TxnIdSerdeTest;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
-import com.swirlds.common.CommonUtils;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.utility.CommonUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.function.Function;
 
+import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
+/**
+ * The purpose of this executable is to generate the latest serialized bytes for the
+ * serialization-deserialization (serde) tests for serializable classes. Please DO NOT remove classes from being
+ * serialized unless you are absolutely sure they are no longer in saved signed state data.
+ *
+ * When running this file, be sure to set the hedera-services/hedera-node directory as the working directory
+ * before running.
+ */
 public class SerializedForms {
 	private static final String SERIALIZED_FORMS_LOC = "src/test/resources/serdes";
 	private static final String FORM_TPL = "%s-v%d-sn%d.hex";
 
 	public static void main(String... args) {
-//		saveAccountStates(MerkleAccountStateSerdeTest.MIN_TEST_CASES_PER_VERSION);
-//		saveTxnReceipts(2 * MIN_TEST_CASES_PER_VERSION);
-//		saveNetworkContexts(MerkleNetworkContextSerdeTest.MIN_TEST_CASES_PER_VERSION);
-//		saveRecords(ExpirableTxnRecordSerdeTest.NUM_TEST_CASES);
-		saveRecords(4 * ExpirableTxnRecordSerdeTest.MIN_TEST_CASES_PER_VERSION);
-//		saveSchedules(MerkleScheduleSerdeTest.NUM_TEST_CASES);
-//		saveTokens(MerkleTokenSerdeTest.NUM_TEST_CASES);
-//		saveLogs(EvmLogSerdeTest.NUM_TEST_CASES);
-//		saveTxnIds(TxnIdSerdeTest.NUM_TEST_CASES);
-//		saveTopics(MerkleTopicSerdeTest.NUM_TEST_CASES);
-//		saveEvmResults(EvmFnResultSerdeTest.MIN_TEST_CASES_PER_VERSION);
+		generateSerializedData();
 	}
 
 	public static <T extends SelfSerializable> byte[] loadForm(
@@ -76,10 +105,9 @@ public class SerializedForms {
 			final Class<T> type,
 			final Function<SeededPropertySource, T> factory,
 			final int version,
-			final int testCaseNo,
-			final int responseCodeEnumCount
+			final int testCaseNo
 	) {
-		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo, responseCodeEnumCount);
+		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
 		final var example = factory.apply(propertySource);
 		final var actual = SerdeUtils.serialize(example);
 		final var expected = loadForm(type, version, testCaseNo);
@@ -88,17 +116,67 @@ public class SerializedForms {
 				"Regression in serializing test case #" + testCaseNo);
 	}
 
-	private static void saveTxnReceipts(final int n) {
-		saveForCurrentVersion(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, n);
+	private static void generateSerializedData() {
+		for (var entry : GENERATOR_MAPPING.entrySet()) {
+			entry.getValue().run();
+		}
 	}
 
-	private static void saveRecords(final int n) {
-		saveForCurrentVersion(ExpirableTxnRecord.class, SeededPropertySource::nextRecord, n);
+	private static <T extends SelfSerializable> Map.Entry<Class<T>, Runnable> entry(
+			Class<T> classType,
+			Function<SeededPropertySource, T> factoryFn,
+			int numTests) {
+		return Map.entry(classType, () -> saveForCurrentVersion(classType, factoryFn, numTests));
 	}
 
-	private static void saveAccountStates(final int n) {
-		saveForCurrentVersion(MerkleAccountState.class, SeededPropertySource::nextAccountState, n);
-	}
+	/**
+	 * The entries in this map will be used to construct serializable object classes and generate serialized bytes that
+	 * can be used for testing. The entries consist of:
+	 * - the serializable class type (e.g., SomeSerializableObject.class)
+	 * - function that takes a SeededPropertySource instance and generates an instance of the class filled with random
+	 * data
+	 * - an integer specifying the number of test cases to generate.
+	 */
+	private static final Map<Class<? extends SelfSerializable>, Runnable> GENERATOR_MAPPING =
+			Map.ofEntries(
+					entry(CurrencyAdjustments.class, SeededPropertySource::nextCurrencyAdjustments,
+							MIN_TEST_CASES_PER_VERSION),
+					entry(EntityId.class, SeededPropertySource::nextEntityId, MIN_TEST_CASES_PER_VERSION),
+					entry(EvmFnResult.class, SeededPropertySource::nextEvmResult,
+							EvmFnResultSerdeTest.MIN_TEST_CASES_PER_VERSION),
+					entry(EvmLog.class, SeededPropertySource::nextEvmLog, EvmLogSerdeTest.NUM_TEST_CASES),
+					entry(ExchangeRates.class, SeededPropertySource::nextExchangeRates, MIN_TEST_CASES_PER_VERSION),
+					entry(ExpirableTxnRecord.class, SeededPropertySource::nextRecord,
+							ExpirableTxnRecordSerdeTest.NUM_TEST_CASES),
+					entry(FcAssessedCustomFee.class, SeededPropertySource::nextAssessedFee, MIN_TEST_CASES_PER_VERSION),
+					entry(FcCustomFee.class, SeededPropertySource::nextCustomFee, MIN_TEST_CASES_PER_VERSION),
+					entry(FcTokenAllowance.class, SeededPropertySource::nextFcTokenAllowance,
+							MIN_TEST_CASES_PER_VERSION),
+					entry(FcTokenAllowanceId.class, SeededPropertySource::nextAllowanceId, MIN_TEST_CASES_PER_VERSION),
+					entry(FcTokenAssociation.class, SeededPropertySource::nextTokenAssociation,
+							MIN_TEST_CASES_PER_VERSION),
+					entry(FilePart.class, SeededPropertySource::nextFilePart, MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleAccountState.class, SeededPropertySource::next0260AccountState,
+							MerkleAccountStateSerdeTest.NUM_TEST_CASES),
+					entry(MerkleEntityId.class, SeededPropertySource::nextMerkleEntityId, MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleNetworkContext.class, SeededPropertySource::nextNetworkContext,
+							MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
+					entry(MerkleSchedule.class, SeededPropertySource::nextSchedule,
+							MerkleScheduleSerdeTest.NUM_TEST_CASES),
+					entry(MerkleSpecialFiles.class, SeededPropertySource::nextMerkleSpecialFiles,
+							MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleToken.class, SeededPropertySource::nextToken, MerkleTokenSerdeTest.NUM_TEST_CASES),
+					entry(MerkleTokenRelStatus.class, SeededPropertySource::nextMerkleTokenRelStatus,
+							MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleTopic.class, SeededPropertySource::nextTopic, MerkleTopicSerdeTest.NUM_TEST_CASES),
+					entry(MerkleUniqueToken.class, SeededPropertySource::nextMerkleUniqueToken,
+							MIN_TEST_CASES_PER_VERSION),
+					entry(NftAdjustments.class, SeededPropertySource::nextOwnershipChanges, MIN_TEST_CASES_PER_VERSION),
+					entry(RecordsRunningHashLeaf.class, SeededPropertySource::nextRecordsRunningHashLeaf,
+							MIN_TEST_CASES_PER_VERSION),
+					entry(TxnId.class, SeededPropertySource::nextTxnId, TxnIdSerdeTest.NUM_TEST_CASES),
+					entry(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, 2 * MIN_TEST_CASES_PER_VERSION)
+	);
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(
 			final Class<T> type,

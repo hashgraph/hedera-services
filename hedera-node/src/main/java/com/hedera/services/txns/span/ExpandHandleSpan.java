@@ -23,11 +23,11 @@ package com.hedera.services.txns.span;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
-import com.swirlds.common.SwirldDualState;
-import com.swirlds.common.SwirldTransaction;
 
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;

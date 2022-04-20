@@ -67,7 +67,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWN
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.store.contracts.WorldLedgers.staticLedgersWith;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -122,6 +122,8 @@ class AbstractLedgerWorldUpdaterTest {
 	private EntityAccess entityAccess;
 	@Mock
 	private StaticEntityAccess staticEntityAccess;
+	@Mock
+	private WorldLedgers mockLedgers;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -175,8 +177,32 @@ class AbstractLedgerWorldUpdaterTest {
 	void getDelegatesToWrappedIfNotDeletedAndNotMutable() {
 		final var wrappedAccount = new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess);
 		given(worldState.get(aAddress)).willReturn(wrappedAccount);
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
 		final var actual = subject.get(aAddress);
+		assertSame(wrappedAccount, actual);
+	}
+
+	@Test
+	void getReturnsNullWithMirrorUsageInsteadOfCreate2() {
+		subject = new MockLedgerWorldUpdater(worldState, mockLedgers, customizer);
+		given(mockLedgers.canonicalAddress(aAddress)).willReturn(bAddress);
+
+		final var result = subject.get(aAddress);
+		assertNull(result);
+	}
+
+	@Test
+	void getPropagatesToParentUpdaterProperly() {
+		final var worldStateUpdater = new MockLedgerWorldUpdater(worldState, mockLedgers, customizer);
+		final var stackedWorldStateUpdater = new MockStackedLedgerUpdater(worldStateUpdater, mockLedgers, customizer);
+		final var wrappedAccount = new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess);
+		given(worldState.get(aAddress)).willReturn(wrappedAccount);
+		given(mockLedgers.aliases()).willReturn(aliases);
+		given(mockLedgers.canonicalAddress(aAddress)).willReturn(aAddress);
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
+
+		final var actual = stackedWorldStateUpdater.get(aAddress);
 		assertSame(wrappedAccount, actual);
 	}
 
@@ -261,6 +287,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 		given(worldState.get(aAddress)).willReturn(
 				new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess));
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
 		final var mutableResponse = subject.getAccount(aAddress);
 		final var getResponse = subject.get(aAddress);

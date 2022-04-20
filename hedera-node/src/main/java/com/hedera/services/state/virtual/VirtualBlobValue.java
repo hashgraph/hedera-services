@@ -20,8 +20,8 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
-import com.swirlds.common.io.SerializableDataInputStream;
-import com.swirlds.common.io.SerializableDataOutputStream;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
 
@@ -50,7 +50,6 @@ public class VirtualBlobValue implements VirtualValue {
 	public VirtualBlobValue(byte[] data) {
 		this.data = data;
 	}
-
 
 	public VirtualBlobValue(final VirtualBlobValue that) {
 		this.data = that.data;
@@ -115,10 +114,14 @@ public class VirtualBlobValue implements VirtualValue {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj) return true;
-		if (obj == null || getClass() != obj.getClass()) return false;
-		VirtualBlobValue simpContractValue = (VirtualBlobValue) obj;
-		return Arrays.equals(data, simpContractValue.data);
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		final var that = (VirtualBlobValue) obj;
+		return Arrays.equals(data, that.data);
 	}
 
 	@Override

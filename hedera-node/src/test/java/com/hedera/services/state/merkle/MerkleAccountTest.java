@@ -27,9 +27,11 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.fcqueue.FCQueue;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +41,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -71,6 +74,10 @@ class MerkleAccountTest {
 			.setECDSASecp256K1(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbb")).build();
 	private static final int kvPairs = 123;
 	private static final ByteString alias = aliasKey.getECDSASecp256K1();
+	private static final UInt256 firstKey =
+			UInt256.fromHexString("0x0000fe0432ce31138ecf09aa3e8a410004a1e204ef84efe01ee160fea1e22060");
+	private static final int[] explicitFirstKey = ContractKey.asPackedInts(firstKey);
+	private static final byte numNonZeroBytesInFirst = 30;
 
 	private static final JKey otherKey = new JEd25519Key("aBcDeFgHiJkLmNoPqRsTuVwXyZ012345".getBytes());
 	private static final long otherExpiry = 7_234_567L;
@@ -126,17 +133,16 @@ class MerkleAccountTest {
 				cryptoAllowances,
 				fungibleTokenAllowances,
 				approveForAllNfts,
+				explicitFirstKey,
+				numNonZeroBytesInFirst,
+				nftsOwned,
 				0,
 				0,
 				lastAssociatedTokenNum,
-				nftsOwned,
 				numTreasuryTitles,
 				ethereumNonce);
 
-
-
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
-		subject.setNftsOwned(2L);
 	}
 
 	@Test
@@ -224,13 +230,16 @@ class MerkleAccountTest {
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getAccountKey()));
 		assertSame(tokens, subject.tokens());
-		assertEquals(2L, subject.getNftsOwned());
+		assertEquals(nftsOwned, subject.getNftsOwned());
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(state.getUsedAutomaticAssociations(), subject.getUsedAutoAssociations());
 		assertEquals(state.getAlias(), subject.getAlias());
 		assertEquals(state.getNumContractKvPairs(), subject.getNumContractKvPairs());
 		assertEquals(state.getCryptoAllowances().entrySet(), subject.getCryptoAllowances().entrySet());
 		assertEquals(state.getFungibleTokenAllowances().entrySet(), subject.getFungibleTokenAllowances().entrySet());
+		final var expected = new ContractKey(numFromCode(number), explicitFirstKey);
+		final var actual = subject.getFirstContractStorageKey();
+		assertEquals(expected, actual);
 		assertEquals(state.getApproveForAllNfts(), subject.getApproveForAllNfts());
 		assertEquals(state.getNumAssociations(), subject.getNumAssociations());
 		assertEquals(state.getNumPositiveBalances(), subject.getNumPositiveBalances());

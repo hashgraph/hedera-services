@@ -20,13 +20,13 @@ package com.hedera.test.serde;
  * ‍
  */
 
-import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.ClassLoaderHelper;
+import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.io.Versioned;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -166,7 +166,7 @@ public abstract class SelfSerializableDataTest<T extends SelfSerializable> {
 	@ParameterizedTest
 	@ArgumentsSource(CurrentVersionArgumentsProvider.class)
 	void serializationHasNoRegressionWithCurrentVersion(final int version, final int testCaseNo) {
-		assertSameSerialization(getType(), this::getExpectedObject, version, testCaseNo, 265);
+		assertSameSerialization(getType(), this::getExpectedObject, version, testCaseNo);
 	}
 
 	static class SupportedVersionsArgumentsProvider implements ArgumentsProvider {

@@ -21,7 +21,7 @@ package com.hedera.test.factories.txns;
  */
 
 
-import com.swirlds.common.SwirldTransaction;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 
 public class PlatformTxnFactory {
 	public static SwirldTransaction from(com.hederahashgraph.api.proto.java.Transaction signedTxn) {

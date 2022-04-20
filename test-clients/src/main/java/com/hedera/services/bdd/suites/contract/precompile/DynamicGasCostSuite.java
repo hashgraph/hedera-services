@@ -47,6 +47,8 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SELF_ASSOC_CONS_ABI;
+import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.SELF_ASSOC_PATH;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -62,12 +64,10 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.swirlds.common.CommonUtils.hex;
-import static com.swirlds.common.CommonUtils.unhex;
+import static com.swirlds.common.utility.CommonUtils.hex;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.*;
 
-//	TODO: Fix failing tests: all positive specs are failing before and after the refactor with either CONTRACT_REVERT_EXECUTED or
-//  with CustomSpecAssert failed expected: <10000> but was: <0>!
 public class DynamicGasCostSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DynamicGasCostSuite.class);
 
@@ -112,14 +112,15 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						canDeleteViaAlias(),
 						cannotSelfDestructToMirrorAddress(),
 						priorityAddressIsCreate2ForStaticHapiCalls(),
-						priorityAddressIsCreate2ForInternalMessages(),
+						canInternallyCallAliasedAddressesOnlyViaCreate2Address(),
 						create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed(),
 						canUseAliasesInPrecompilesAndContractKeys(),
 						inlineCreateCanFailSafely(),
 						inlineCreate2CanFailSafely(),
 						allLogOpcodesResolveExpectedContractId(),
 						eip1014AliasIsPriorityInErcOwnerPrecompile(),
-						childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor()
+						canAssociateInConstructor(),
+						childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor(),
 				}
 		);
 	}
@@ -280,6 +281,33 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								log.info("Next entity num was {} instead of expected {}",
 										id.getAccountNum(),
 										factoryEntityNum.get() + 1)))
+				);
+	}
+
+	private HapiApiSpec canAssociateInConstructor() {
+		final var initcode = "initcode";
+		final var token = "token";
+		final var contract = "contract";
+		final var creation = "creation";
+		final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
+
+		return defaultHapiSpec("CanAssociateInConstructor")
+				.given(
+						fileCreate(initcode).path(SELF_ASSOC_PATH),
+						tokenCreate(token)
+								.exposingCreatedIdTo(id -> tokenMirrorAddr.set(hex(asAddress(HapiPropertySource.asToken(id)))))
+				).when(
+						sourcing(() -> contractCreate(
+								contract, SELF_ASSOC_CONS_ABI, tokenMirrorAddr.get()
+						)
+								.payingWith(GENESIS)
+								.omitAdminKey()
+								.bytecode(initcode)
+								.gas(4_000_000)
+								.via(creation))
+				).then(
+//						tokenDissociate(contract, token)
+						getContractInfo(contract).logged()
 				);
 	}
 
@@ -965,7 +993,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiApiSpec priorityAddressIsCreate2ForInternalMessages() {
+	private HapiApiSpec canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
 		final var creation2 = "create2Txn";
 		final var contract = "AddressValueRet";
 		final var aliasCall = "aliasCall";
@@ -978,7 +1006,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 
 		final var salt = unhex("aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011");
 
-		return defaultHapiSpec("PriorityAddressIsCreate2ForInternalMessages")
+		return defaultHapiSpec("CanInternallyCallAliasedAddressesOnlyViaCreate2Address")
 				.given(
 						uploadInitCode(contract),
 						contractCreate(contract)
@@ -994,6 +1022,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						sourcing(() -> contractCallLocal(
 								contract, "callReturner", mirrorAddr.get()
 						)
+								.hasAnswerOnlyPrecheck(INVALID_SOLIDITY_ADDRESS)
 								.payingWith(GENESIS)
 								.exposingTypedResultsTo(results -> {
 									log.info("Returner reported {} when called with mirror address", results);
@@ -1015,24 +1044,17 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						sourcing(() -> contractCall(
 								contract, "callReturner", mirrorAddr.get()
 						)
+								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)
 								.payingWith(GENESIS)
 								.via(mirrorCall))
 				).then(
 						withOpContext((spec, opLog) -> {
-							final var aliasLookup = getTxnRecord(aliasCall);
-							final var mirrorLookup = getTxnRecord(aliasCall);
-							allRunFor(spec, aliasLookup, mirrorLookup);
-							final var aliasResult =
-									aliasLookup.getResponseRecord().getContractCallResult().getContractCallResult();
+							final var mirrorLookup = getTxnRecord(mirrorCall);
+							allRunFor(spec, mirrorLookup);
 							final var mirrorResult =
 									mirrorLookup.getResponseRecord().getContractCallResult().getContractCallResult();
-							assertEquals(
-									aliasResult, mirrorResult,
-									"Call with mirror address should be same as call with alias");
-							assertEquals(
-									staticCallAliasAns.get(),
-									staticCallMirrorAns.get(),
-									"Static call with mirror address should be same as call with alias");
+							assertEquals(ByteString.EMPTY, mirrorResult,
+									"Internal calls with mirror address should not be possible for aliased contracts");
 						})
 				);
 	}

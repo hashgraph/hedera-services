@@ -22,13 +22,13 @@ package com.hedera.services.stats;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.Pause;
 import com.hedera.services.utils.SleepingPause;
-import com.swirlds.common.NodeId;
-import com.swirlds.common.Platform;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +68,7 @@ class ServicesStatsManagerTest {
 	@Mock
 	private NodeLocalProperties properties;
 	@Mock
-	private VirtualMap<ContractKey, ContractValue> storage;
+	private VirtualMap<ContractKey, IterableContractValue> storage;
 	@Mock
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> bytecode;
 

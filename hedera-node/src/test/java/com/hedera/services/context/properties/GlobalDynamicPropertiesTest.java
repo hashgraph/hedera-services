@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
+import java.time.Instant;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,6 +47,11 @@ class GlobalDynamicPropertiesTest {
 	private static final String[] upgradeArtifactLocs = new String[] {
 			"/opt/hgcapp/HapiApp2.0/data/upgrade",
 			"data/upgrade"
+	};
+
+	private static final Instant[] lastBlockTimestamps = new Instant[] {
+			Instant.parse("2022-04-01T00:00:00Z"),
+			Instant.parse("2022-04-02T00:00:00Z")
 	};
 
 	private PropertySource properties;
@@ -151,6 +157,7 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(53, subject.maxAggregateContractKvPairs());
 		assertEquals(54, subject.maxIndividualContractKvPairs());
 		assertEquals(55, subject.maxNumQueryableRecords());
+		assertEquals(63, subject.getMaxPurgedKvPairsPerTouch());
 	}
 
 	@Test
@@ -384,6 +391,7 @@ class GlobalDynamicPropertiesTest {
 		given(properties.getBooleanProperty("accounts.limitTokenAssociations")).willReturn((i + 60) % 2 == 0);
 		given(properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate"))
 				.willReturn((i + 61) % 2 == 0);
+		given(properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch")).willReturn(i + 62);
 	}
 
 	private Set<EntityType> typesFor(final int i) {

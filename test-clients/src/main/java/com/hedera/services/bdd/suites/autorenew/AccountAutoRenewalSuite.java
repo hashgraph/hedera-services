@@ -49,7 +49,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.DEFAULT_HIGH_SPIN_SCAN_COUNT;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.HIGH_SCAN_CYCLE_COUNT;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.DEFAULT_HIGH_TOUCH_COUNT;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
@@ -107,7 +107,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 								.overridingProps(propsForAccountAutoRenewOnWith(
 										briefAutoRenew,
 										0,
-										DEFAULT_HIGH_SPIN_SCAN_COUNT,
+										HIGH_SCAN_CYCLE_COUNT,
 										DEFAULT_HIGH_TOUCH_COUNT)),
 						cryptoCreate(autoRenewedAccount)
 								.autoRenewSecs(briefAutoRenew)
@@ -147,7 +147,7 @@ public class AccountAutoRenewalSuite extends HapiApiSuite {
 						fileUpdate(APP_PROPERTIES)
 								.payingWith(GENESIS)
 								.overridingProps(propsForAccountAutoRenewOnWith(
-										briefAutoRenew, 0, DEFAULT_HIGH_SPIN_SCAN_COUNT, 2)),
+										briefAutoRenew, 0, HIGH_SCAN_CYCLE_COUNT, 2)),
 						cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
 						cryptoCreate(firstTouchable)
 								.autoRenewSecs(briefAutoRenew).balance(0L),
