@@ -20,13 +20,15 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
-import com.hedera.services.utils.MapValueListUtils;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
+
+import static com.hedera.services.utils.MapValueListUtils.overwritingRemoveFromMapValueList;
 
 public class IterableStorageUtils {
 	private static final String NO_ITERABLE_STORAGE = "[]";
@@ -68,6 +70,7 @@ public class IterableStorageUtils {
 	 *     <li>Otherwise, inserts a new key/value pair in the given {@code VirtualMap} at the front of the doubly-linked
 	 *     list of the relevant contract's storage, updating the prev/next keys of the "adjacent" values as needed.</li>
 	 * </ol>
+	 * Uses {@link VirtualMap#getForModify(VirtualKey)}.
 	 *
 	 * @param key
 	 * 		the key of the new mapping
@@ -81,27 +84,45 @@ public class IterableStorageUtils {
 	 * 		the working copy of the storage map
 	 * @return the new root key, for convenience
 	 */
-	public static ContractKey upsertMapping(
+	public static ContractKey inPlaceUpsertMapping(
 			@NotNull final ContractKey key,
 			@NotNull final IterableContractValue value,
 			@Nullable final ContractKey rootKey,
 			@Nullable final IterableContractValue rootValue,
-			final VirtualMap<ContractKey, IterableContractValue> storage
+			@NotNull final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
-		final var oldValue = storage.getForModify(key);
-		if (oldValue != null) {
-			oldValue.setValue(value.getValue());
-			return rootKey;
-		} else {
-			storage.put(key, value);
-			if (rootKey != null) {
-				value.setNextKey(rootKey.getKey());
-				final var nextValue = rootValue == null ? storage.getForModify(rootKey) : rootValue;
-				Objects.requireNonNull(nextValue, "The root mapping had no value for key " + rootKey);
-				nextValue.setPrevKey(key.getKey());
-			}
-			return key;
-		}
+		return internalUpsertMapping(key, value, rootKey, rootValue, storage, true);
+	}
+
+	/**
+	 * "Upserts" a key/value pair in the given {@code VirtualMap}, as follows:
+	 * <ol>
+	 *     <li>If the key is already present, simply updates its value with no other actions.</li>
+	 *     <li>Otherwise, inserts a new key/value pair in the given {@code VirtualMap} at the front of the doubly-linked
+	 *     list of the relevant contract's storage, updating the prev/next keys of the "adjacent" values as needed.</li>
+	 * </ol>
+	 * Does <b>not</b> use {@link VirtualMap#getForModify(VirtualKey)}.
+	 *
+	 * @param key
+	 * 		the key of the new mapping
+	 * @param value
+	 * 		the value of the new mapping
+	 * @param rootKey
+	 * 		the key of the root mapping in the storage list
+	 * @param rootValue
+	 * 		if pre-fetched, the value of the root mapping in the storage list
+	 * @param storage
+	 * 		the working copy of the storage map
+	 * @return the new root key, for convenience
+	 */
+	public static ContractKey overwritingUpsertMapping(
+			@NotNull final ContractKey key,
+			@NotNull final IterableContractValue value,
+			@Nullable final ContractKey rootKey,
+			@Nullable final IterableContractValue rootValue,
+			@NotNull final VirtualMap<ContractKey, IterableContractValue> storage
+	) {
+		return internalUpsertMapping(key, value, rootKey, rootValue, storage, false);
 	}
 
 	/**
@@ -119,9 +140,54 @@ public class IterableStorageUtils {
 	public static @Nullable ContractKey removeMapping(
 			@NotNull final ContractKey key,
 			@NotNull final ContractKey root,
-			final VirtualMap<ContractKey, IterableContractValue> storage
+			@NotNull final VirtualMap<ContractKey, IterableContractValue> storage
 	) {
-		return MapValueListUtils.removeFromMapValueList(key, root, new ContractStorageListRemoval(key.getContractId(), storage));
+		return overwritingRemoveFromMapValueList(key, root, new ContractStorageListRemoval(key.getContractId(), storage));
 	}
 
+	private static ContractKey internalUpsertMapping(
+			@NotNull final ContractKey key,
+			@NotNull final IterableContractValue value,
+			@Nullable final ContractKey rootKey,
+			@Nullable final IterableContractValue rootValue,
+			@NotNull final VirtualMap<ContractKey, IterableContractValue> storage,
+			boolean useGetForModify
+	) {
+		final IterableContractValue oldValue;
+		if (useGetForModify) {
+			oldValue = storage.getForModify(key);
+		} else {
+			final var candidateValue = storage.get(key);
+			// Note it is ONLY safe to call copy() here---making the map's value
+			// immutable!---because we immediately put() the mutable value below
+			oldValue = (candidateValue != null) ? candidateValue.copy() : null;
+		}
+		if (oldValue != null) {
+			oldValue.setValue(value.getValue());
+			if (!useGetForModify) {
+				storage.put(key, oldValue);
+			}
+			return rootKey;
+		} else {
+			storage.put(key, value);
+			if (rootKey != null) {
+				value.setNextKey(rootKey.getKey());
+				final IterableContractValue nextValue;
+				if (rootValue != null) {
+					nextValue = rootValue;
+				} else {
+					nextValue = useGetForModify
+							? Objects.requireNonNull(storage.getForModify(rootKey), () -> "Missing root " + rootKey)
+							// Note it is ONLY safe to call copy() here---making the map's value
+							// immutable!---because we immediately put() the mutable value below
+							: Objects.requireNonNull(storage.get(rootKey), () -> "Missing root " + rootKey).copy();
+				}
+				nextValue.setPrevKey(key.getKey());
+				if (!useGetForModify && rootValue == null) {
+					storage.put(rootKey, nextValue);
+				}
+			}
+			return key;
+		}
+	}
 }

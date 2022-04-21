@@ -110,7 +110,7 @@ public interface ContractsModule {
 	@Provides
 	@Singleton
 	static SizeLimitedStorage.IterableStorageUpserter provideStorageUpserter() {
-		return IterableStorageUtils::upsertMapping;
+		return IterableStorageUtils::overwritingUpsertMapping;
 	}
 
 	@Provides
