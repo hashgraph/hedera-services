@@ -31,7 +31,6 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertiesModule;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.context.properties.SemanticVersions;
 import com.hedera.services.contracts.ContractsModule;
 import com.hedera.services.fees.FeesModule;
 import com.hedera.services.files.FilesModule;
@@ -114,8 +113,6 @@ public interface ServicesApp {
 	/* Needed by ServicesState */
 	HashLogger hashLogger();
 	ProcessLogic logic();
-	/* Needed by ServicesState */
-	SemanticVersions semanticVersions();
 	ExpandHandleSpan expandHandleSpan();
 	ServicesInitFlow initializationFlow();
 	DualStateAccessor dualStateAccessor();
