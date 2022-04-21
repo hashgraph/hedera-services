@@ -23,6 +23,7 @@
     <sshj.version>0.27.0</sshj.version>
     <snakeyaml.version>1.30</snakeyaml.version>
     <besu.version>22.1.1</besu.version>
+    <besu-native.version>0.4.3</besu-native.version>
 
     <sonar.skip>true</sonar.skip>
     <jacoco.skip>true</jacoco.skip>
@@ -291,6 +292,11 @@
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
       <version>20210307</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hyperledger.besu</groupId>
+      <artifactId>secp256k1</artifactId>
+      <version>${besu-native.version}</version>
     </dependency>
   </dependencies>
   <profiles>

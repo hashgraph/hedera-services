@@ -304,6 +304,10 @@ public class KeyFactory implements Serializable {
 		}
 	}
 
+	public ECPrivateKey getPrivateKey(final String pubKeyHex) {
+		return (ECPrivateKey) pkMap.get(pubKeyHex);
+	}
+
 	public static KeyList getCompositeList(Key key) {
 		return key.hasKeyList() ? key.getKeyList() : key.getThresholdKey().getKeys();
 	}

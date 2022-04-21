@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractDelete;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractUpdate;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoDelete;
@@ -329,6 +330,17 @@ public class TxnVerbs {
 	public static HapiContractCall contractCall(String contract, String functionName, Object... params) {
 		final var abi = getABIFor(FUNCTION, functionName, contract);
 		return new HapiContractCall(abi, contract, params);
+	}
+
+	/** This method allows the developer to invoke a contract function by the name of the called contract and the name
+	 * of the desired function and make an ethereum call
+	 * @param contract the name of the contract
+	 * @param functionName the name of the function
+	 * @param params the arguments (if any) passed to the contract's function
+	 */
+	public static HapiEthereumCall ethereumCall(String contract, String functionName, Object... params) {
+		final var abi = getABIFor(FUNCTION, functionName, contract);
+		return new HapiEthereumCall(abi, contract, params);
 	}
 
 	/** This method provides for the proper execution of specs, which execute contract calls with a function ABI instead of
