@@ -1263,6 +1263,13 @@ workflows:
 
 
   GCP-Daily-Services-HTS-Restart-Performance-7N-7C:
+    triggers:
+      - schedule:
+          cron: "30 4 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1347,6 +1354,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-3NReconnect-15N-4C:
+    triggers:
+      - schedule:
+          cron: "25 8 * * *"
+          filters:
+            branches:
+              only:
+                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
