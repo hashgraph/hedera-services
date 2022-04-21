@@ -1214,7 +1214,7 @@ workflows:
             - install-tools
             - attach_workspace:
                 at: /
-#   test
+
   GCP-Daily-Services-Comp-Restart-Performance-Hotspot-6N-6C:
     triggers:
       - schedule:
