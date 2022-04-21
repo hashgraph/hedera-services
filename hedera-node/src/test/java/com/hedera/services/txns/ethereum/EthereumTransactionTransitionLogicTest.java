@@ -286,13 +286,6 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
-	void contractCallTransactionsMapToSyntheticTxFieldsCorrectly() {
-		givenValidTxnCtx();
-		given(spanMapAccessor.getEthTxBodyMeta(accessor)).willReturn(ethTxTxn);
-		subject.getOrCreateTransactionBody(accessor);
-	}
-
-	@Test
 	void codeCacheThrowingExceptionDuringGetDoesntPropagate() {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(ethTxTxn);

@@ -109,7 +109,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		recordService.updateFromEvmCallContext(ethTxData);
 	}
 
-	protected TransactionBody getOrCreateTransactionBody(final TxnAccessor txnCtx) {
+	private TransactionBody getOrCreateTransactionBody(final TxnAccessor txnCtx) {
 		var txBody = spanMapAccessor.getEthTxBodyMeta(txnCtx);
 		if (txBody == null) {
 			txBody = createSyntheticTransactionBody(spanMapAccessor.getEthTxDataMeta(txnCtx));
