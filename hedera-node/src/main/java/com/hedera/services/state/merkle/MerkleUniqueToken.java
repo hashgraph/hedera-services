@@ -48,9 +48,9 @@ import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
 	private static final int TREASURY_OWNER_CODE = 0;
 
+	static final int RELEASE_0180_VERSION = 2;
 	static final int RELEASE_0250_VERSION = 3;
 	static final int RELEASE_0260_VERSION = 4;
-
 
 	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x899641dafcc39164L;
@@ -118,7 +118,7 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 	/* Object */
 	@Override
 	public int getMinimumSupportedVersion() {
-		return RELEASE_0250_VERSION;
+		return RELEASE_0180_VERSION;
 	}
 
 	@Override
@@ -186,8 +186,9 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 		metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
 		// added in 18
 		numbers = in.readLong();
-		// added in 25
-		spenderCode = in.readInt();
+		if (version >= RELEASE_0250_VERSION) {
+			spenderCode = in.readInt();
+		}
 		if (version >= RELEASE_0260_VERSION) {
 			prev = NftNumPair.fromNums(in.readLong(), in.readLong());
 			next = NftNumPair.fromNums(in.readLong(), in.readLong());

@@ -19,10 +19,12 @@ package com.hedera.services.state.merkle;
  * limitations under the License.
  * ‍
  */
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.NftNumPair;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 
+import static com.hedera.services.state.merkle.MerkleUniqueToken.RELEASE_0180_VERSION;
 import static com.hedera.services.state.merkle.MerkleUniqueToken.RELEASE_0250_VERSION;
 
 public class MerkleUniqueTokenSerdeTest extends SelfSerializableDataTest<MerkleUniqueToken> {
@@ -42,7 +44,10 @@ public class MerkleUniqueTokenSerdeTest extends SelfSerializableDataTest<MerkleU
 	protected MerkleUniqueToken getExpectedObject(final int version, final int testCaseNo) {
 		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
 		final var seededObject = getExpectedObject(propertySource);
-		if (version == RELEASE_0250_VERSION) {
+		if (version <= RELEASE_0180_VERSION) {
+			seededObject.setSpender(EntityId.MISSING_ENTITY_ID);
+		}
+		if (version <= RELEASE_0250_VERSION) {
 			seededObject.setPrev(NftNumPair.MISSING_NFT_NUM_PAIR);
 			seededObject.setNext(NftNumPair.MISSING_NFT_NUM_PAIR);
 			return seededObject;
