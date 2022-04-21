@@ -51,6 +51,7 @@ class MerkleAccountStateTest {
 	private static final JKey key = new JEd25519Key("abcdefghijklmnopqrstuvwxyz012345".getBytes());
 	private static final long expiry = 1_234_567L;
 	private static final long balance = 555_555L;
+	private static final long ethereumNonce = 0L;
 	private static final long autoRenewSecs = 234_567L;
 	private static final long nftsOwned = 150L;
 	private static final long otherNftsOwned = 151L;
@@ -139,11 +140,12 @@ class MerkleAccountStateTest {
 				approveForAllNfts,
 				explicitFirstKey,
 				numNonZeroBytesInFirst,
+				nftsOwned,
 				associatedTokensCount,
 				numPositiveBalances,
 				headTokenNum,
-				nftsOwned,
 				numTreasuryTitles,
+				ethereumNonce,
 				headNftId,
 				headNftSerialNum);
 	}
@@ -195,9 +197,14 @@ class MerkleAccountStateTest {
 		assertThrows(MutabilityException.class, () -> subject.setNumContractKvPairs(otherKvPairs));
 		assertThrows(MutabilityException.class, () -> subject.setProxy(proxy));
 		assertThrows(MutabilityException.class, () -> subject.setMaxAutomaticAssociations(maxAutoAssociations));
+		assertThrows(MutabilityException.class, () -> subject.setUsedAutomaticAssociations(usedAutoAssociations));
 		assertThrows(MutabilityException.class, () -> subject.setCryptoAllowances(cryptoAllowances));
 		assertThrows(MutabilityException.class, () -> subject.setApproveForAllNfts(approveForAllNfts));
-		assertThrows(MutabilityException.class, () -> subject.setNftsOwned(0));
+		assertThrows(MutabilityException.class, () -> subject.setNumAssociations(5));
+		assertThrows(MutabilityException.class, () -> subject.setNumPositiveBalances(5));
+		assertThrows(MutabilityException.class, () -> subject.setHeadTokenId(5L));
+		assertThrows(MutabilityException.class, () -> subject.setNftsOwned(nftsOwned));
+		assertThrows(MutabilityException.class, () -> subject.setFirstUint256Key(explicitFirstKey));
 		assertThrows(MutabilityException.class, () -> subject.setNumTreasuryTitles(1));
 		assertThrows(MutabilityException.class, () -> subject.setUsedAutomaticAssociations(usedAutoAssociations));
 		assertThrows(MutabilityException.class, () -> subject.setNumAssociations(5));
@@ -214,6 +221,7 @@ class MerkleAccountStateTest {
 		assertFalse(subject.isTokenTreasury());
 	}
 
+
 	@Test
 	void copyWorks() {
 		final var copySubject = subject.copy();
@@ -227,6 +235,14 @@ class MerkleAccountStateTest {
 		assertEquals(subject, identical);
 		assertNotEquals(subject, null);
 		assertNotEquals(subject, new Object());
+	}
+
+	@Test
+	void equalsWorksForFirstKeyBytes() {
+		final var otherSubject = subject.copy();
+		otherSubject.setFirstUint256Key(otherExplicitFirstKey);
+
+		assertNotEquals(subject, otherSubject);
 	}
 
 	@Test

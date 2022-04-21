@@ -209,6 +209,14 @@ public interface TransactionContext {
 	void setCallResult(EvmFnResult result);
 
 	/**
+	 * Add call context information to an already set call result
+	 *
+	 * @param callContext
+	 * 		the context to add to the call result
+	 */
+	void updateFromEvmCallContext(EvmFnResult.EvmFnCallContext callContext);
+
+	/**
 	 * Record that the current transaction created a smart contract with
 	 * a specified result.
 	 *

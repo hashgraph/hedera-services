@@ -26,6 +26,7 @@ import com.hedera.services.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.system.transaction.SwirldTransaction;
 
 import java.util.function.Function;
 

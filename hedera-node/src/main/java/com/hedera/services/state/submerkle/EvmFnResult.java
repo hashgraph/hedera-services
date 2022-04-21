@@ -70,6 +70,13 @@ public class EvmFnResult implements SelfSerializable {
 	public static final int MAX_ADDRESS_BYTES = 20;
 	public static final int MAX_FUNCTION_PARAMETERS_BYTES = Integer.MAX_VALUE;
 
+	public interface EvmFnCallContext {
+		long gasLimit();
+		long getAmount();
+		byte[] callData();
+		byte[] getEthereumHash();
+	}
+
 	private long gasUsed;
 	private byte[] bloom = EMPTY;
 	private byte[] result = EMPTY;
@@ -349,6 +356,12 @@ public class EvmFnResult implements SelfSerializable {
 
 	public void setFunctionParameters(final byte[] functionParameters) {
 		this.functionParameters = functionParameters;
+	}
+
+	public void updateFromEvmCallContext(EvmFnCallContext callContext) {
+		setGas(callContext.gasLimit());
+		setAmount(callContext.getAmount());
+		setFunctionParameters(callContext.callData());
 	}
 
 	public ContractFunctionResult toGrpc() {

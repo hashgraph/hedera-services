@@ -60,6 +60,7 @@ class MerkleAccountTest {
 	private static final long expiry = 1_234_567L;
 	private static final long balance = 555_555L;
 	private static final long nftsOwned = 150L;
+	private static final long ethereumNonce = 1L;
 	private static final long autoRenewSecs = 234_567L;
 	private static final String memo = "A memo";
 	private static final boolean deleted = true;
@@ -136,16 +137,16 @@ class MerkleAccountTest {
 				approveForAllNfts,
 				explicitFirstKey,
 				numNonZeroBytesInFirst,
+				nftsOwned,
 				0,
 				0,
 				lastAssociatedTokenNum,
-				nftsOwned,
 				numTreasuryTitles,
+				ethereumNonce,
 				lastAssociatedNftNum,
 				lastAssociatedNftSerial);
 
 		subject = new MerkleAccount(List.of(state, payerRecords, tokens));
-		subject.setNftsOwned(2L);
 	}
 
 	@Test
@@ -233,7 +234,7 @@ class MerkleAccountTest {
 		assertEquals(state.proxy(), subject.getProxy());
 		assertTrue(equalUpToDecodability(state.key(), subject.getAccountKey()));
 		assertSame(tokens, subject.tokens());
-		assertEquals(2L, subject.getNftsOwned());
+		assertEquals(nftsOwned, subject.getNftsOwned());
 		assertEquals(state.getMaxAutomaticAssociations(), subject.getMaxAutomaticAssociations());
 		assertEquals(state.getUsedAutomaticAssociations(), subject.getUsedAutoAssociations());
 		assertEquals(state.getAlias(), subject.getAlias());

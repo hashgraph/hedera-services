@@ -30,11 +30,12 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -66,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class ContractCallTransitionLogicTest {
@@ -76,7 +78,7 @@ class ContractCallTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private SignedTxnAccessor accessor;
+	private PlatformTxnAccessor accessor;
 	@Mock
 	private AccountStore accountStore;
 	@Mock
@@ -93,6 +95,8 @@ class ContractCallTransitionLogicTest {
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private EntityAccess entityAccess;
 
 	private TransactionBody contractCallTxn;
 	private final Instant consensusTime = Instant.now();
@@ -104,7 +108,7 @@ class ContractCallTransitionLogicTest {
 	private void setup() {
 		subject = new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager);
+				evmTxProcessor, properties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
 	}
 
 	@Test
@@ -139,6 +143,39 @@ class ContractCallTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
+		verify(recordService).externaliseEvmCallTransaction(any());
+		verify(worldState).getCreatedContractIds();
+		verify(txnCtx).setTargetedContract(target);
+	}
+
+	@Test
+	void verifyAccountStoreNotQueriedForTokenAddress() {
+		// setup:
+		givenValidTxnCtx();
+		// and:
+		given(accessor.getTxn()).willReturn(contractCallTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		// and:
+		given(entityAccess.isTokenAccount(any())).willReturn(true);
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+
+		// and:
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(), Map.of());
+		given(evmTxProcessor.execute(senderAccount,
+				new Account(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())).canonicalAddress(),
+				gas, sent,
+				Bytes.EMPTY,
+				txnCtx.consensusTime()))
+				.willReturn(results);
+		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verifyNoMoreInteractions(accountStore);
+
 		verify(recordService).externaliseEvmCallTransaction(any());
 		verify(worldState).getCreatedContractIds();
 		verify(txnCtx).setTargetedContract(target);

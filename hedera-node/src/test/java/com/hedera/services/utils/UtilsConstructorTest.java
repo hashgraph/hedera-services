@@ -31,6 +31,7 @@ import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.fees.calculation.consensus.ConsensusFeesModule;
 import com.hedera.services.fees.calculation.contract.ContractFeesModule;
 import com.hedera.services.fees.calculation.crypto.CryptoFeesModule;
+import com.hedera.services.fees.calculation.ethereum.EthereumFeesModule;
 import com.hedera.services.fees.calculation.file.FileFeesModule;
 import com.hedera.services.fees.calculation.meta.FixedUsageEstimates;
 import com.hedera.services.fees.calculation.schedule.ScheduleFeesModule;
@@ -71,6 +72,7 @@ import com.hedera.services.throttling.ThrottlingModule;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
 import com.hedera.services.txns.crypto.CryptoLogicModule;
+import com.hedera.services.txns.ethereum.EthereumLogicModule;
 import com.hedera.services.txns.file.FileLogicModule;
 import com.hedera.services.txns.network.NetworkLogicModule;
 import com.hedera.services.txns.schedule.ScheduleLogicModule;
@@ -141,6 +143,7 @@ class UtilsConstructorTest {
 			SubmissionModule.class,
 			ConsensusFeesModule.class,
 			ContractFeesModule.class,
+			EthereumFeesModule.class,
 			CryptoFeesModule.class,
 			FileFeesModule.class,
 			ScheduleFeesModule.class,
@@ -162,7 +165,8 @@ class UtilsConstructorTest {
 			GasCalculatorHederaUtil.class,
 			SerializationUtils.class,
 			KeyPackingUtils.class,
-			IterableStorageUtils.class
+			IterableStorageUtils.class,
+			EthereumLogicModule.class
 	));
 
 	@Test

@@ -28,8 +28,10 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
+import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.utils.EntityIdUtils;
@@ -65,6 +67,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	private final CodeCache codeCache;
 	private final AliasManager aliasManager;
 	private final SigImpactHistorian sigImpactHistorian;
+	private final EntityAccess entityAccess;
 
 	@Inject
 	public ContractCallTransitionLogic(
@@ -76,7 +79,8 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 			final GlobalDynamicProperties properties,
 			final CodeCache codeCache,
 			final SigImpactHistorian sigImpactHistorian,
-			final AliasManager aliasManager
+			final AliasManager aliasManager,
+			final EntityAccess entityAccess
 	) {
 		this.txnCtx = txnCtx;
 		this.aliasManager = aliasManager;
@@ -87,25 +91,39 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 		this.properties = properties;
 		this.codeCache = codeCache;
 		this.sigImpactHistorian = sigImpactHistorian;
+		this.entityAccess = entityAccess;
 	}
 
 	@Override
 	public void doStateTransition() {
 		// --- Translate from gRPC types ---
 		var contractCallTxn = txnCtx.accessor().getTxn();
+		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
+		doStateTransitionOperation(contractCallTxn, senderId, false);
+	}
+
+	public void doStateTransitionOperation(final TransactionBody contractCallTxn, final Id senderId, boolean incrementCounter) {
 		var op = contractCallTxn.getContractCall();
 		final var target = targetOf(op);
-		final var senderId = Id.fromGrpcAccount(contractCallTxn.getTransactionID().getAccountID());
-		final var contractId = target.toId();
+		final var targetId = target.toId();
 
 		// --- Load the model objects ---
 		final var sender = accountStore.loadAccount(senderId);
-		final var receiver = accountStore.loadContract(contractId);
+
+		Account receiver = entityAccess.isTokenAccount(targetId.asEvmAddress()) ?
+				new Account(targetId) :
+				accountStore.loadContract(targetId);
+
 		final var callData = !op.getFunctionParameters().isEmpty()
 				? Bytes.wrap(op.getFunctionParameters().toByteArray())
 				: Bytes.EMPTY;
 
 		// --- Do the business logic ---
+		if (incrementCounter) {
+			sender.incrementEthereumNonce();
+			accountStore.commitAccount(sender);
+		}
+
 		final var result = evmTxProcessor.execute(
 				sender,
 				receiver.canonicalAddress(),
@@ -154,6 +172,10 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
 	@Override
 	public void preFetch(final TxnAccessor accessor) {
 		final var op = accessor.getTxn().getContractCall();
+		preFetchOperation(op);
+	}
+
+	public void preFetchOperation(final ContractCallTransactionBody op) {
 		final var id = targetOf(op);
 		final var address = id.toEvmAddress();
 

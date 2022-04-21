@@ -313,7 +313,7 @@ public class SeededPropertySource {
 		return subject;
 	}
 
-	public MerkleAccountState next0251AccountState() {
+	public MerkleAccountState next0250AccountState() {
 		final var maxAutoAssoc = SEEDED_RANDOM.nextInt(1234);
 		final var usedAutoAssoc = SEEDED_RANDOM.nextInt(maxAutoAssoc + 1);
 		final var numAssociations = SEEDED_RANDOM.nextInt(12345);
@@ -338,16 +338,14 @@ public class SeededPropertySource {
 				nextApprovedForAllAllowances(10),
 				null,
 				(byte) 0,
+				0,
 				numAssociations,
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
-				0,
-				0,
-				0,
-				0);
+				0,0,0,0);
 	}
 
-	public MerkleAccountState nextAccountState() {
+	public MerkleAccountState next0260AccountState() {
 		final var maxAutoAssoc = SEEDED_RANDOM.nextInt(1234);
 		final var usedAutoAssoc = SEEDED_RANDOM.nextInt(maxAutoAssoc + 1);
 		final var numAssociations = SEEDED_RANDOM.nextInt(12345);
@@ -375,13 +373,14 @@ public class SeededPropertySource {
 				nextApprovedForAllAllowances(10),
 				firstContractKey,
 				firstKeyBytes,
+				nextUnsignedInt(),
 				numAssociations,
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
-				nextUnsignedLong(),
 				nextUnsignedInt(),
+				nextUnsignedLong(),
 				nextInRangeLong(),
-				nextInRangeLong());
+				nextUnsignedLong());
 	}
 
 	public ExpirableTxnRecord nextRecord() {

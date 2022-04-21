@@ -453,7 +453,8 @@ public class StateView {
 				.setExpirationTime(Timestamp.newBuilder().setSeconds(account.getExpiry()))
 				.setContractAccountID(asHexedEvmAddress(accountID))
 				.setOwnedNfts(account.getNftsOwned())
-				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations());
+				.setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
+				.setEthereumNonce(account.getEthereumNonce());
 		Optional.ofNullable(account.getProxy())
 				.map(EntityId::toGrpcAccountId)
 				.ifPresent(info::setProxyAccountID);

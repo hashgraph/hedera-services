@@ -77,6 +77,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKEN;
@@ -190,6 +191,7 @@ class DissociatePrecompilesTest {
 	private EntityIdSource entityIdSource;
 
 	private HTSPrecompiledContract subject;
+	private final Supplier<FCQueue<SystemTask>> systemTasksSupplier = () -> systemTasks;
 
 	@BeforeEach
 	void setUp() {
@@ -197,7 +199,7 @@ class DissociatePrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
-				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, () -> systemTasks);
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, systemTasksSupplier);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setDissociateLogicFactory(dissociateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);
@@ -248,7 +250,7 @@ class DissociatePrecompilesTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
 		given(dissociateLogicFactory.newDissociateLogic(
-				validator, tokenStore, accountStore, dissociationFactory, () -> systemTasks)).willReturn(dissociateLogic);
+				validator, tokenStore, accountStore, dissociationFactory, systemTasksSupplier)).willReturn(dissociateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -295,7 +297,7 @@ class DissociatePrecompilesTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
 		given(dissociateLogicFactory.newDissociateLogic(
-				validator, tokenStore, accountStore, dissociationFactory, () -> systemTasks)).willReturn(dissociateLogic);
+				validator, tokenStore, accountStore, dissociationFactory, systemTasksSupplier)).willReturn(dissociateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())

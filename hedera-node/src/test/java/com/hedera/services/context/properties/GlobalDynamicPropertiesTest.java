@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
+import java.time.Instant;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,6 +47,11 @@ class GlobalDynamicPropertiesTest {
 	private static final String[] upgradeArtifactLocs = new String[] {
 			"/opt/hgcapp/HapiApp2.0/data/upgrade",
 			"data/upgrade"
+	};
+
+	private static final Instant[] lastBlockTimestamps = new Instant[] {
+			Instant.parse("2022-04-01T00:00:00Z"),
+			Instant.parse("2022-04-02T00:00:00Z")
 	};
 
 	private PropertySource properties;

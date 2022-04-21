@@ -88,6 +88,8 @@ class StandardProcessLogicTest {
 	private SigImpactHistorian sigImpactHistorian;
 	@Mock
 	private RecordsHistorian recordsHistorian;
+	@Mock
+	private RecordStreaming recordStreaming;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
@@ -99,12 +101,13 @@ class StandardProcessLogicTest {
 		subject = new StandardProcessLogic(
 				expiries, invariantChecks,
 				expandHandleSpan, recordsHistorian, autoRenewal, txnManager,
-				sigImpactHistorian, txnCtx, executionTimeTracker, dynamicProperties);
+				sigImpactHistorian, txnCtx, executionTimeTracker, dynamicProperties, recordStreaming);
 	}
 
 	@Test
 	void happyPathFlowsForNonTriggered() throws InvalidProtocolBufferException {
-		final InOrder inOrder = inOrder(expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian);
+		final InOrder inOrder = inOrder(
+				expiries, executionTimeTracker, txnManager, autoRenewal, sigImpactHistorian, recordStreaming);
 
 		given(expandHandleSpan.accessorFor(swirldTransaction)).willReturn(accessor);
 		given(invariantChecks.holdFor(accessor, consensusNow, member)).willReturn(true);
@@ -117,6 +120,7 @@ class StandardProcessLogicTest {
 		inOrder.verify(sigImpactHistorian).setChangeTime(consensusNow);
 		inOrder.verify(expiries).purge(consensusNow.getEpochSecond());
 		inOrder.verify(sigImpactHistorian).purge();
+		inOrder.verify(recordStreaming).resetBlockNo();
 		inOrder.verify(executionTimeTracker).start();
 		inOrder.verify(txnManager).process(accessor, consensusNow, member);
 		inOrder.verify(executionTimeTracker).stop();

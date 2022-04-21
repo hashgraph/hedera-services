@@ -62,6 +62,7 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.JvmSystemExits;
@@ -300,6 +301,14 @@ public interface StateModule {
 			final MutableStateChildren workingState
 	) {
 		return workingState::networkCtx;
+	}
+
+	@Provides
+	@Singleton
+	static Supplier<RecordsRunningHashLeaf> provideRecordsRunningHashLeaf(
+			final MutableStateChildren workingState
+	) {
+		return workingState::runningHashLeaf;
 	}
 
 	@Provides

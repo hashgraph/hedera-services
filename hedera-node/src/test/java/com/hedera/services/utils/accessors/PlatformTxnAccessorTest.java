@@ -421,7 +421,7 @@ class PlatformTxnAccessorTest {
 				.setBodyBytes(someTxn.toByteString())
 				.setSigMap(onePairSigMap)
 				.build();
-		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
+		final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
 		// when:
 		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);

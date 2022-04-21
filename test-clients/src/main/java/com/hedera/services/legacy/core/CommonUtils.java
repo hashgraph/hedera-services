@@ -75,6 +75,7 @@ public class CommonUtils {
 		copyArray(12, solidityByteArray, accountNumBytes);
 		return hex(solidityByteArray);
 	}
+
 	private static void copyArray(int startInToArray, byte[] toArray, byte[] fromArray) {
 		if (fromArray == null || toArray == null) {
 			return;

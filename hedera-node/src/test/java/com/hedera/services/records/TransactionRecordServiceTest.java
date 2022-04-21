@@ -67,6 +67,8 @@ class TransactionRecordServiceTest {
 	private TransactionProcessingResult processingResult;
 	@Mock
 	private EvmFnResult functionResult;
+	@Mock
+	private EvmFnResult.EvmFnCallContext evmFnCallContext;
 
 	private TransactionRecordService subject;
 
@@ -156,6 +158,14 @@ class TransactionRecordServiceTest {
 		verify(txnCtx).setStatus(ResponseCodeEnum.INVALID_SIGNATURE);
 		verify(txnCtx).setCreateResult(any());
 		verify(txnCtx).addNonThresholdFeeChargedToPayer(NON_THRESHOLD_FEE);
+	}
+	
+	@Test 
+	void updateFromEvmCallContextRelaysToDelegate() {
+		// when:
+		subject.updateFromEvmCallContext(evmFnCallContext);
+		// then:
+		verify(txnCtx).updateFromEvmCallContext(evmFnCallContext);
 	}
 
 	@Test

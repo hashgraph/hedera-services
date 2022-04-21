@@ -114,6 +114,7 @@ public class AccountGC {
 			backingAccounts.remove(expiredAccountNum.toGrpcAccountId());
 			sigImpactHistorian.markEntityChanged(expiredAccountNum.longValue());
 			if (aliasManager.forgetAlias(account.getAlias())) {
+				aliasManager.forgetEvmAddress(account.getAlias());
 				sigImpactHistorian.markAliasChanged(account.getAlias());
 			}
 		}
@@ -140,26 +141,44 @@ public class AccountGC {
 		final var currUniqueTokens = uniqueTokens.get();
 		final var targetTokenNum = nftRemovalTask.getTargetTokenNum();
 		final var totalSerialsToRemove = nftRemovalTask.getSerialsCount();
+		final var account = backingAccounts.getRef(
+				EntityNum.fromLong(nftRemovalTask.getAccountNum()).toGrpcAccountId());
 		var nftKey = EntityNumPair.fromLongs(
 				nftRemovalTask.getHeadTokenNum(), nftRemovalTask.getHeadSerialNum());
 		var touched = 0;
-		while (nftKey != MISSING_NUM_PAIR && touched < maxTouches && touched < totalSerialsToRemove) {
+		while (
+				nftKey != MISSING_NUM_PAIR &&
+				touched < maxTouches && touched < totalSerialsToRemove &&
+				account != null
+		) {
+			final var accountHeadNftNum = account.getHeadNftId();
+			final var accountHeadSerialNum = account.getHeadNftSerialNum();
 			final var nft = currUniqueTokens.get(nftKey);
 			final var nextKey = nft.getNext();
 			if(nftKey.getHiOrderAsLong() == targetTokenNum) {
-				final var prevKey = nft.getPrev();
-				if (prevKey != MISSING_NFT_NUM_PAIR) {
-					final var prevNft = currUniqueTokens.getForModify(prevKey.asEntityNumPair());
-					prevNft.setNext(nextKey);
-				}
-				if (nextKey != MISSING_NFT_NUM_PAIR) {
-					final var nextNft = currUniqueTokens.getForModify(nextKey.asEntityNumPair());
-					nextNft.setPrev(prevKey);
+				// if we are removing the head
+				if (targetTokenNum == accountHeadNftNum && nftKey.getLowOrderAsLong() == accountHeadSerialNum) {
+					if (nextKey != MISSING_NFT_NUM_PAIR) {
+						final var nextNft = currUniqueTokens.getForModify(nextKey.asEntityNumPair());
+						nextNft.setPrev(MISSING_NFT_NUM_PAIR);
+					}
+					account.setHeadNftId(nextKey.tokenNum());
+					account.setHeadNftSerialNum(nextKey.serialNum());
+				} else {
+					final var prevKey = nft.getPrev();
+					if (prevKey != MISSING_NFT_NUM_PAIR) {
+						final var prevNft = currUniqueTokens.getForModify(prevKey.asEntityNumPair());
+						prevNft.setNext(nextKey);
+					}
+					if (nextKey != MISSING_NFT_NUM_PAIR) {
+						final var nextNft = currUniqueTokens.getForModify(nextKey.asEntityNumPair());
+						nextNft.setPrev(prevKey);
+					}
 				}
 				currUniqueTokens.remove(nftKey);
+				touched++;
 			}
 			nftKey = nextKey.asEntityNumPair();
-			touched++;
 		}
 		nftRemovalTask.setSerialsCount(totalSerialsToRemove - touched);
 		nftRemovalTask.setHeadSerialNum(nftKey.getHiOrderAsLong());

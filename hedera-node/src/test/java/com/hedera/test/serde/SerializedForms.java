@@ -25,6 +25,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
@@ -74,14 +75,13 @@ import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
- *  The purpose of this executable is to generate the latest serialized bytes for the
- *  serialization-deserialization (serde) tests for serializable classes. Please DO NOT remove classes from being
- *  serialized unless you are absolutely sure they are no longer in saved signed state data.
+ * The purpose of this executable is to generate the latest serialized bytes for the
+ * serialization-deserialization (serde) tests for serializable classes. Please DO NOT remove classes from being
+ * serialized unless you are absolutely sure they are no longer in saved signed state data.
  *
- *  When running this file, be sure to set the hedera-services/hedera-node directory as the working directory
- *  before running.
+ * When running this file, be sure to set the hedera-services/hedera-node directory as the working directory
+ * before running.
  */
-
 public class SerializedForms {
 	private static final String SERIALIZED_FORMS_LOC = "src/test/resources/serdes";
 	private static final String FORM_TPL = "%s-v%d-sn%d.hex";
@@ -146,10 +146,10 @@ public class SerializedForms {
 	/**
 	 * The entries in this map will be used to construct serializable object classes and generate serialized bytes that
 	 * can be used for testing. The entries consist of:
-	 *  - the serializable class type (e.g., SomeSerializableObject.class)
-	 *  - function that takes a SeededPropertySource instance and generates an instance of the class filled with random
-	 *    data
-	 *  - an integer specifying the number of test cases to generate.
+	 * - the serializable class type (e.g., SomeSerializableObject.class)
+	 * - function that takes a SeededPropertySource instance and generates an instance of the class filled with random
+	 * data
+	 * - an integer specifying the number of test cases to generate.
 	 */
 	private static final Map<Class<? extends SelfSerializable>, Runnable> GENERATOR_MAPPING =
 			Map.ofEntries(
@@ -170,7 +170,8 @@ public class SerializedForms {
 					entry(FcTokenAssociation.class, SeededPropertySource::nextTokenAssociation,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(FilePart.class, SeededPropertySource::nextFilePart, MIN_TEST_CASES_PER_VERSION),
-					entry(MerkleAccountState.class, SeededPropertySource::nextAccountState, MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleAccountState.class, SeededPropertySource::next0260AccountState,
+							MerkleAccountStateSerdeTest.NUM_TEST_CASES),
 					entry(MerkleEntityId.class, SeededPropertySource::nextMerkleEntityId, MIN_TEST_CASES_PER_VERSION),
 					entry(MerkleNetworkContext.class, SeededPropertySource::nextNetworkContext,
 							MerkleNetworkContextSerdeTest.NUM_TEST_CASES),
@@ -190,10 +191,6 @@ public class SerializedForms {
 					entry(TxnId.class, SeededPropertySource::nextTxnId, TxnIdSerdeTest.NUM_TEST_CASES),
 					entry(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, 2 * MIN_TEST_CASES_PER_VERSION)
 	);
-
-	private static void saveUniqueTokens(final int n) {
-		saveForCurrentVersion(MerkleUniqueToken.class, SeededPropertySource::nextUniqueToken, n);
-	}
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(
 			final Class<T> type,

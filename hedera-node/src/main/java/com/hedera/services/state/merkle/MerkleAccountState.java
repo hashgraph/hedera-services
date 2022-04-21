@@ -104,6 +104,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private int numTreasuryTitles;
 	private long headNftId;
 	private long headNftSerialNum;
+	private long ethereumNonce;
 
 	// C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
 	// these per-account maps to top-level maps using the "linked-list" values idiom
@@ -140,6 +141,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.numPositiveBalances = that.numPositiveBalances;
 		this.headTokenId = that.headTokenId;
 		this.numTreasuryTitles = that.numTreasuryTitles;
+		this.ethereumNonce = that.ethereumNonce;
 		this.headNftId = that.headNftId;
 		this.headNftSerialNum = that.headNftSerialNum;
 	}
@@ -164,11 +166,12 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final Set<FcTokenAllowanceId> approveForAllNfts,
 			final int[] firstUint256Key,
 			final byte firstUint256KeyNonZeroBytes,
+			final long nftsOwned,
 			final int numAssociations,
 			final int numPositiveBalances,
 			final long headTokenId,
-			final long nftsOwned,
 			final int numTreasuryTitles,
+			final long ethereumNonce,
 			final long headNftId,
 			final long headNftSerialNum
 	) {
@@ -189,13 +192,14 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.cryptoAllowances = cryptoAllowances;
 		this.fungibleTokenAllowances = fungibleTokenAllowances;
 		this.approveForAllNfts = approveForAllNfts;
-		this.numAssociations = numAssociations;
-		this.numPositiveBalances = numPositiveBalances;
-		this.headTokenId = headTokenId;
 		this.firstUint256Key = firstUint256Key;
 		this.firstUint256KeyNonZeroBytes = firstUint256KeyNonZeroBytes;
 		this.nftsOwned = nftsOwned;
+		this.numAssociations = numAssociations;
+		this.numPositiveBalances = numPositiveBalances;
+		this.headTokenId = headTokenId;
 		this.numTreasuryTitles = numTreasuryTitles;
+		this.ethereumNonce = ethereumNonce;
 		this.headNftId = headNftId;
 		this.headNftSerialNum = headNftSerialNum;
 	}
@@ -239,6 +243,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			maxAutoAssociations = getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
 			usedAutoAssociations = getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
 		}
+		// Added in 0.18
 		number = in.readInt();
 		// Added in 0.21
 		alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
@@ -257,15 +262,16 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		if (version >= RELEASE_0250_VERSION) {
 			numTreasuryTitles = in.readInt();
 		}
-		if (smartContract && version >= RELEASE_0260_VERSION) {
-			byte marker = in.readByte();
-			if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
-				firstUint256KeyNonZeroBytes = marker;
-				firstUint256Key = KeyPackingUtils.deserializeUint256Key(
-						firstUint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
-			}
-		}
 		if (version >= RELEASE_0260_VERSION) {
+			ethereumNonce = in.readLong();
+			if (smartContract) {
+				byte marker = in.readByte();
+				if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
+					firstUint256KeyNonZeroBytes = marker;
+					firstUint256Key = KeyPackingUtils.deserializeUint256Key(
+							firstUint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
+				}
+			}
 			headNftId = in.readLong();
 			headNftSerialNum = in.readLong();
 		}
@@ -294,6 +300,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		out.writeInt(numAssociations);
 		out.writeInt(numPositiveBalances);
 		out.writeLong(headTokenId);
+		out.writeInt(numTreasuryTitles);
+		out.writeLong(ethereumNonce);
 		if (smartContract) {
 			serializePossiblyMissingKey(firstUint256Key, firstUint256KeyNonZeroBytes, out);
 		}
@@ -329,6 +337,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				Objects.equals(this.proxy, that.proxy) &&
 				this.nftsOwned == that.nftsOwned &&
 				this.numContractKvPairs == that.numContractKvPairs &&
+				this.ethereumNonce == that.ethereumNonce &&
 				this.maxAutoAssociations == that.maxAutoAssociations &&
 				this.usedAutoAssociations == that.usedAutoAssociations &&
 				equalUpToDecodability(this.key, that.key) &&
@@ -370,6 +379,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				numPositiveBalances,
 				headTokenId,
 				numTreasuryTitles,
+				ethereumNonce,
 				headNftId,
 				headNftSerialNum);
 	}
@@ -401,6 +411,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("numPositiveBalances", numPositiveBalances)
 				.add("headTokenId", headTokenId)
 				.add("numTreasuryTitles", numTreasuryTitles)
+				.add("ethereumNonce", ethereumNonce)
 				.add("headNftId", headNftId)
 				.add("headNftSerialNum", headNftSerialNum)
 				.toString();
@@ -454,6 +465,10 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		return proxy;
 	}
 
+	public long ethereumNonce() {
+		return ethereumNonce;
+	}
+
 	public long nftsOwned() {
 		return nftsOwned;
 	}
@@ -485,6 +500,11 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	public void setMemo(String memo) {
 		assertMutable("memo");
 		this.memo = memo;
+	}
+
+	public void setEthereumNonce(long ethereumNonce) {
+		assertMutable("ethereumNonce");
+		this.ethereumNonce = ethereumNonce;
 	}
 
 	public void setDeleted(boolean deleted) {

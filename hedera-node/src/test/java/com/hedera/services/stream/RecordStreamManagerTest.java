@@ -30,8 +30,11 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.stream.MultiStream;
 import com.swirlds.common.stream.QueueThreadObjectStream;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
 import org.apache.commons.lang3.RandomUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,6 +57,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -165,23 +169,15 @@ public class RecordStreamManagerTest {
 	@Test
 	void addRecordStreamObjectTest() {
 		// setup:
+		final MiscRunningAvgs runningAvgsMock = mock(MiscRunningAvgs.class);
 		final var mockQueue = mock(Queue.class);
 		recordStreamManager = new RecordStreamManager(
 				multiStreamMock, writeQueueThreadMock, runningAvgsMock);
 		assertFalse(recordStreamManager.getInFreeze(),
 				"inFreeze should be false after initialization");
 		final int recordsNum = 10;
-		for (int i = 0; i < recordsNum; i++) {
-			RecordStreamObject recordStreamObject = mock(RecordStreamObject.class);
-			when(writeQueueThreadMock.getQueue()).thenReturn(mockQueue);
-			given(mockQueue.size()).willReturn(i);
-			recordStreamManager.addRecordStreamObject(recordStreamObject);
-			verify(multiStreamMock).addObject(recordStreamObject);
-			verify(runningAvgsMock).writeQueueSizeRecordStream(i);
-			// multiStream should not be closed after adding it
-			verify(multiStreamMock, never()).close();
-			assertFalse(recordStreamManager.getInFreeze(),
-					"inFreeze should be false after adding the records");
+		for (int i = 1; i <= recordsNum; i++) {
+			addRecordStreamObject(runningAvgsMock, mockQueue, i, INITIAL_RANDOM_HASH);
 		}
 		// set inFreeze to be true
 		recordStreamManager.setInFreeze(true);
@@ -199,7 +195,7 @@ public class RecordStreamManagerTest {
 		// multiStreamMock should be closed when inFreeze is set to be true
 		verify(multiStreamMock).close();
 		// should get recordStream queue size and set to runningAvgs
-		verify(runningAvgsMock).writeQueueSizeRecordStream(recordsNum);
+		verify(runningAvgsMock, times(2)).writeQueueSizeRecordStream(recordsNum);
 	}
 
 	@ParameterizedTest
@@ -238,5 +234,22 @@ public class RecordStreamManagerTest {
 
 		assertEquals(expected, RecordStreamManager.effLogDir(withSeparatorSuffix, memo));
 		assertEquals(expected, RecordStreamManager.effLogDir(withoutSeparatorSuffix, memo));
+	}
+
+	// For ease of testing, we will assume that a new block contains a single RecordStreamObject.
+	// In the real world scenario, a block/record file will contain >=1 RecordStreamObjects.
+	private void addRecordStreamObject(final MiscRunningAvgs runningAvgsMock,
+													 final Queue mockQueue, final int queueSize, final Hash hash) {
+		final RecordStreamObject recordStreamObject = mock(RecordStreamObject.class);
+		when(writeQueueThreadMock.getQueue()).thenReturn(mockQueue);
+		given(mockQueue.size()).willReturn(queueSize);
+		when(recordStreamObject.getRunningHash()).thenReturn(new RunningHash(hash));
+		recordStreamManager.addRecordStreamObject(recordStreamObject);
+		verify(multiStreamMock).addObject(recordStreamObject);
+		verify(runningAvgsMock).writeQueueSizeRecordStream(queueSize);
+		// multiStream should not be closed after adding it
+		verify(multiStreamMock, never()).close();
+		assertFalse(recordStreamManager.getInFreeze(),
+				"inFreeze should be false after adding the records");
 	}
 }

@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
-import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -51,59 +50,25 @@ import java.util.stream.IntStream;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
-import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.*;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.FIBONACCI_PLUS_PATH;
 import static com.hedera.services.bdd.spec.infrastructure.meta.ContractResources.bytecodePath;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
-import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
-import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
+import static com.hedera.services.bdd.spec.keys.KeyShape.*;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.*;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContractCreateSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
@@ -118,30 +83,31 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(
-//				createEmptyConstructor(),
-//				insufficientPayerBalanceUponCreation(),
-//				rejectsInvalidMemo(),
-//				rejectsInsufficientFee(),
-//				rejectsInvalidBytecode(),
-//				revertsNonzeroBalance(),
-//				createFailsIfMissingSigs(),
-//				rejectsInsufficientGas(),
-//				createsVanillaContractAsExpectedWithOmittedAdminKey(),
-//				childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-				cannotCreateTooLargeContract()
-//				revertedTryExtCallHasNoSideEffects(),
-//				getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-//				receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-//				cannotSendToNonExistentAccount(),
-//				canCallPendingContractSafely(),
-//				delegateContractIdRequiredForTransferInDelegateCall(),
-//				maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-//				minChargeIsTXGasUsedByContractCreate(),
-//				gasLimitOverMaxGasLimitFailsPrecheck(),
-//				vanillaSuccess(),
-//				propagatesNestedCreations(),
-//				blockTimestampIsConsensusTime()
+		return List.of(new HapiApiSpec[] {
+						createEmptyConstructor(),
+						insufficientPayerBalanceUponCreation(),
+						rejectsInvalidMemo(),
+						rejectsInsufficientFee(),
+						rejectsInvalidBytecode(),
+						revertsNonzeroBalance(),
+						createFailsIfMissingSigs(),
+						rejectsInsufficientGas(),
+						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+						cannotCreateTooLargeContract(),
+						revertedTryExtCallHasNoSideEffects(),
+						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+						cannotSendToNonExistentAccount(),
+						canCallPendingContractSafely(),
+						delegateContractIdRequiredForTransferInDelegateCall(),
+						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+						minChargeIsTXGasUsedByContractCreate(),
+						gasLimitOverMaxGasLimitFailsPrecheck(),
+						vanillaSuccess(),
+						propagatesNestedCreations(),
+						blockTimestampIsConsensusTime()
+				}
 		);
 	}
 
@@ -636,7 +602,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 							final var gasUsed = spec.registry().getTransactionRecord("createTXRec")
 									.getContractCreateResult().getGasUsed();
-							Assertions.assertTrue(gasUsed > 0L);
+							assertTrue(gasUsed > 0L);
 						}),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
@@ -656,6 +622,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	HapiApiSpec blockTimestampIsConsensusTime() {
 		final var contract = "EmitBlockTimestamp";
+		final var initcode = "initcode";
+		final var blockTimeLogger = "blockTimeLogger";
+		final var firstBlock = "firstBlock";
 		final var timeLoggingTxn = "timeLoggingTxn";
 
 		return defaultHapiSpec("BlockTimestampIsConsensusTime")
@@ -663,31 +632,46 @@ public class ContractCreateSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract)
 				).when(
-						contractCall(contract, "logNow")
+						contractCall(blockTimeLogger, "logNow")
+								.via(firstBlock).delayBy(5000),
+						contractCall(blockTimeLogger, "logNow")
 								.via(timeLoggingTxn)
 				).then(
 						withOpContext((spec, opLog) -> {
+							final var firstBlockOp = getTxnRecord(firstBlock);
 							final var recordOp = getTxnRecord(timeLoggingTxn);
-							allRunFor(spec, recordOp);
-							final var record = recordOp.getResponseRecord();
-							final var consensusSecond = record.getConsensusTimestamp().getSeconds();
-							final var logs = record.getContractCallResult().getLogInfoList();
+							allRunFor(spec, firstBlockOp, recordOp);
 
-							assertEquals(2, logs.size());
-							final var blockTimeLogData = logs.get(0).getData().toByteArray();
-							final var blockTimestamp = Longs.fromByteArray(
-									Arrays.copyOfRange(blockTimeLogData, 24, 32));
-							assertEquals(consensusSecond, blockTimestamp,
-									"Wrong block time");
+							//First block info
+							final var firstBlockRecord = firstBlockOp.getResponseRecord();
+							final var firstBlockLogs = firstBlockRecord.getContractCallResult().getLogInfoList();
+							final var firstBlockTimeLogData = firstBlockLogs.get(0).getData().toByteArray();
+							final var firstBlockTimestamp = Longs.fromByteArray(
+									Arrays.copyOfRange(firstBlockTimeLogData, 24, 32));
+							final var firstBlockHashLogData = firstBlockLogs.get(1).getData().toByteArray();
+							final var firstBlockNumber = Longs.fromByteArray(
+									Arrays.copyOfRange(firstBlockHashLogData, 24, 32));
+							final var firstBlockHash = Bytes32.wrap(
+									Arrays.copyOfRange(firstBlockHashLogData, 32, 64));
+							assertEquals(Bytes32.ZERO, firstBlockHash);
 
-							final var blockHashLogData = logs.get(1).getData().toByteArray();
-							final var prevBlockNumber = Longs.fromByteArray(
-									Arrays.copyOfRange(blockHashLogData, 24, 32));
-							assertEquals(consensusSecond - 1, prevBlockNumber,
+							//Second block info
+							final var secondBlockRecord = recordOp.getResponseRecord();
+							final var secondBlockLogs = secondBlockRecord.getContractCallResult().getLogInfoList();
+							assertEquals(2, secondBlockLogs.size());
+							final var secondBlockTimeLogData = secondBlockLogs.get(0).getData().toByteArray();
+							final var secondBlockTimestamp = Longs.fromByteArray(
+									Arrays.copyOfRange(secondBlockTimeLogData, 24, 32));
+							assertTrue(firstBlockTimestamp != secondBlockTimestamp, "Wrong block time");
+
+							final var secondBlockHashLogData = secondBlockLogs.get(1).getData().toByteArray();
+							final var secondBlockNumber = Longs.fromByteArray(
+									Arrays.copyOfRange(secondBlockHashLogData, 24, 32));
+							assertEquals(firstBlockNumber + 1, secondBlockNumber,
 									"Wrong previous block number");
-							final var blockHash = Bytes32.wrap(
-									Arrays.copyOfRange(blockHashLogData, 32, 64));
-							assertEquals(Bytes32.ZERO, blockHash);
+							final var secondBlockHash = Bytes32.wrap(
+									Arrays.copyOfRange(secondBlockHashLogData, 32, 64));
+							assertEquals(Bytes32.ZERO, secondBlockHash);
 						})
 				);
 	}

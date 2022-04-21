@@ -40,6 +40,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.system.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
+import com.swirlds.common.system.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 

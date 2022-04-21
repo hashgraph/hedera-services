@@ -26,6 +26,7 @@ import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.utility.CommonUtils;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
+import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_ALPHA_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0260_VERSION;
 
@@ -38,8 +39,8 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 	}
 
 	@Override
-	protected int getNumTestCasesFor(int version) {
-		return MIN_TEST_CASES_PER_VERSION;
+	protected int getNumTestCasesFor(final int version) {
+		return version < MerkleAccountState.RELEASE_0260_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
 	}
 
 	@Override
@@ -52,12 +53,11 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 		final var propertySource = SeededPropertySource.forSerdeTest(version, testCaseNo);
 		if (version == RELEASE_0230_VERSION) {
 			return propertySource.next0242AccountState();
-		} else {
-			final var seededAccount = propertySource.nextAccountState();
-			if (version < RELEASE_0250_VERSION) {
-				// NFTs owned was always set to 0 in these serialized forms
-				seededAccount.setNftsOwned(0);
+		} else if (version <= RELEASE_0250_VERSION) {
+			final var seededAccount = propertySource.next0250AccountState();
+			if (version == RELEASE_0250_ALPHA_VERSION) {
 				seededAccount.setNumTreasuryTitles(0);
+				seededAccount.setNftsOwned(0);
 			}
 			if (version < RELEASE_0260_VERSION) {
 				seededAccount.setFirstUint256Key(null);
@@ -65,12 +65,14 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 				seededAccount.setHeadNftId(0L);
 			}
 			return seededAccount;
+		} else {
+			return getExpectedObject(propertySource);
 		}
 	}
 
 	@Override
 	protected MerkleAccountState getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextAccountState();
+		return propertySource.next0260AccountState();
 	}
 
 	private static byte[] getForm(final int version, final int testCaseNo) {

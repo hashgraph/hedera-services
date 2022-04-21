@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -155,6 +156,7 @@ class BootstrapPropertiesTest {
 			entry("ledger.totalTinyBarFloat", 5000000000000000000L),
 			entry("autoCreation.enabled", true),
 			entry("autoRemove.maxPurgedKvPairsPerTouch", 10),
+			entry("autoRemove.maxReturnedNftsPerTouch", 10),
 			entry("autoRenew.targetTypes", EnumSet.of(CONTRACT)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
@@ -216,7 +218,9 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxTransactionLimit", 20),
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
-			entry("accounts.limitTokenAssociations", false)
+			entry("accounts.limitTokenAssociations", false),
+			entry("bootstrap.lastKnownBlockStartTime", Instant.parse("2022-04-01T00:00:00Z")),
+			entry("bootstrap.lastKnownBlockNumber", 1L)
 	);
 
 	@Test

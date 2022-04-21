@@ -71,6 +71,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -104,6 +105,7 @@ class AccountPropertyTest {
 		final boolean origIsReceiverSigReq = false;
 		final boolean origIsContract = false;
 		final long origBalance = 1L;
+		final long origEthereumNonce = 1L;
 		final long origAutoRenew = 1L;
 		final long origNumNfts = 123L;
 		final long origExpiry = 1L;
@@ -123,6 +125,7 @@ class AccountPropertyTest {
 		final boolean newIsReceiverSigReq = true;
 		final boolean newIsContract = true;
 		final long newBalance = 2L;
+		final long newEthereumNonce = 2L;
 		final long newAutoRenew = 2L;
 		final long newExpiry = 2L;
 		final long newNumNfts = 321L;
@@ -186,6 +189,7 @@ class AccountPropertyTest {
 		account.setNumPositiveBalances(origNumPositiveBalances);
 		account.setNumAssociations(origAssociationCount);
 		account.setBalance(origBalance);
+		account.setEthereumNonce(origEthereumNonce);
 		account.records().offer(origPayerRecords.get(0));
 		account.records().offer(origPayerRecords.get(1));
 		account.setMaxAutomaticAssociations(origMaxAutoAssociations);
@@ -228,6 +232,7 @@ class AccountPropertyTest {
 		HEAD_TOKEN_NUM.setter().accept(account, newLastAssociatedTokenNum);
 		NUM_POSITIVE_BALANCES.setter().accept(account, newNumPositiveBalances);
 		NUM_TREASURY_TITLES.setter().accept(account, newNumTreasuryTitles);
+		ETHEREUM_NONCE.setter().accept(account, newEthereumNonce);
 
 		assertEquals(newIsDeleted, IS_DELETED.getter().apply(account));
 		assertEquals(newIsReceiverSigReq, IS_RECEIVER_SIG_REQUIRED.getter().apply(account));
@@ -251,6 +256,7 @@ class AccountPropertyTest {
 		assertEquals(newNumPositiveBalances, NUM_POSITIVE_BALANCES.getter().apply(account));
 		assertEquals(newLastAssociatedTokenNum, HEAD_TOKEN_NUM.getter().apply(account));
 		assertEquals(newNumTreasuryTitles, NUM_TREASURY_TITLES.getter().apply(account));
+		assertEquals(newEthereumNonce, ETHEREUM_NONCE.getter().apply(account));
 	}
 
 	private ExpirableTxnRecord expirableRecord(final ResponseCodeEnum status) {

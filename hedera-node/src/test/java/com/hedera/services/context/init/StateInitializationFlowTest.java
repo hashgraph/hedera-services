@@ -26,6 +26,7 @@ import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HederaFs;
+import com.hedera.services.state.backgroundSystemTasks.SystemTask;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -42,6 +43,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,6 +101,8 @@ class StateInitializationFlowTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
 	@Mock
 	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+	@Mock
+	private FCQueue<SystemTask> systemTasks;
 
 	private StateInitializationFlow subject;
 
@@ -119,6 +123,7 @@ class StateInitializationFlowTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
+		given(activeState.systemTasks()).willReturn(systemTasks);
 		givenMockMerkleMaps();
 
 		// when:
@@ -141,6 +146,7 @@ class StateInitializationFlowTest {
 		given(runningHash.getHash()).willReturn(hash);
 		given(runningHashLeaf.getRunningHash()).willReturn(runningHash);
 		given(activeState.runningHashLeaf()).willReturn(runningHashLeaf);
+		given(activeState.systemTasks()).willReturn(systemTasks);
 		given(hfs.numRegisteredInterceptors()).willReturn(5);
 		givenMockMerkleMaps();
 

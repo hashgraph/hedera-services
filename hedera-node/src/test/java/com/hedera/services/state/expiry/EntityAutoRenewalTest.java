@@ -150,6 +150,7 @@ class EntityAutoRenewalTest {
 		verify(renewalProcess).beginRenewalCycle(instantNow);
 		verify(renewalProcess, times(2)).process(aNum);
 		verify(renewalProcess).endRenewalCycle();
+		verify(renewalProcess).garbageCollectNfts();
 		verifyNoMoreInteractions(renewalProcess);
 		verify(networkCtx).updateLastScannedEntity(aNum);
 	}
@@ -170,6 +171,7 @@ class EntityAutoRenewalTest {
 		verify(renewalProcess).beginRenewalCycle(instantNow);
 		verify(renewalProcess, times(2)).process(aNum);
 		verify(renewalProcess).endRenewalCycle();
+		verify(renewalProcess).garbageCollectNfts();
 		verifyNoMoreInteractions(renewalProcess);
 		verify(networkCtx).updateLastScannedEntity(aNum - 1);
 	}

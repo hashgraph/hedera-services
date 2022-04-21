@@ -33,7 +33,10 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.platform.state.DualStateImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,28 +45,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
-import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_CONGESTION_STARTS;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_HASH;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
+import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(LogCaptureExtension.class)
@@ -79,6 +67,7 @@ class MerkleNetworkContextTest {
 			"x123456789x123456789x123456789x123456789x1234567".getBytes(StandardCharsets.UTF_8);
 	private Instant lastMidnightBoundaryCheck;
 	private Instant consensusTimeOfLastHandledTxn;
+	private Instant firstConsTimeOfCurrentBlock;
 	private SequenceNumber seqNo;
 	private SequenceNumber seqNoCopy;
 	private ExchangeRates midnightRateSet;
@@ -105,6 +94,7 @@ class MerkleNetworkContextTest {
 		};
 
 		consensusTimeOfLastHandledTxn = Instant.ofEpochSecond(1_234_567L, 54321L);
+		firstConsTimeOfCurrentBlock = Instant.ofEpochSecond(1_234_567L, 13579L);
 		lastMidnightBoundaryCheck = consensusTimeOfLastHandledTxn.minusSeconds(123L);
 
 		seqNo = mock(SequenceNumber.class);
@@ -136,6 +126,37 @@ class MerkleNetworkContextTest {
 		subject.setPreparedUpdateFileNum(preparedUpdateFileNum);
 		subject.setPreparedUpdateFileHash(preparedUpdateFileHash);
 		subject.markMigrationRecordsStreamed();
+		subject.setFirstConsTimeOfCurrentBlock(firstConsTimeOfCurrentBlock);
+		subject.setBlockNo(0L);
+	}
+
+	@Test
+	void updatesExpectedFieldsWhenFinishingBlock() {
+		final var newFirstConsTime = firstConsTimeOfCurrentBlock.plusSeconds(3);
+		subject.setBlockNo(aBlockNo);
+
+		final var newBlockNo = subject.finishBlock(aFullBlockHash, newFirstConsTime);
+
+		assertEquals(Map.of(aBlockNo, aEthHash), subject.getBlockHashCache());
+		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
+		assertEquals(aBlockNo + 1, subject.getBlockNo());
+		assertEquals(aBlockNo + 1, newBlockNo);
+	}
+
+	@Test
+	void doesntKeepMoreThanExpectedBlockHashes() {
+		final var newFirstConsTime = firstConsTimeOfCurrentBlock.plusSeconds(3);
+		subject.setBlockNo(aBlockNo);
+		for (int i = 0; i < 256; i++) {
+			subject.getBlockHashCache().put((long) i, aEthHash);
+		}
+
+		subject.finishBlock(aFullBlockHash, newFirstConsTime);
+
+		assertFalse(subject.getBlockHashCache().containsKey(0L));
+		assertEquals(aEthHash, subject.getBlockHashCache().get(aBlockNo));
+		assertEquals(newFirstConsTime, subject.firstConsTimeOfCurrentBlock());
+		assertEquals(aBlockNo + 1, subject.getBlockNo());
 	}
 
 	@Test
@@ -179,6 +200,10 @@ class MerkleNetworkContextTest {
 		assertEquals(subjectCopy.getEntitiesTouchedThisSecond(), entitiesTouchedThisSecond);
 		assertEquals(subjectCopy.getPreparedUpdateFileNum(), preparedUpdateFileNum);
 		assertSame(subjectCopy.getPreparedUpdateFileHash(), subject.getPreparedUpdateFileHash());
+		assertEquals(subjectCopy.getBlockHashCache(), subject.getBlockHashCache());
+		assertNotSame(subject.getBlockHashCache(), subjectCopy.getBlockHashCache());
+		assertSame(subjectCopy.getBlockNo(), subject.getBlockNo());
+		assertSame(subjectCopy.firstConsTimeOfCurrentBlock(), subject.firstConsTimeOfCurrentBlock());
 		assertEquals(subjectCopy.areMigrationRecordsStreamed(), subject.areMigrationRecordsStreamed());
 		// and:
 		assertTrue(subject.isImmutable());
@@ -788,4 +813,8 @@ class MerkleNetworkContextTest {
 	private Instant[] congestionStarts() {
 		return congestionStarts;
 	}
+
+	private static final long aBlockNo = 123_456L;
+	private static final Hash aFullBlockHash = new Hash(TxnUtils.randomUtf8Bytes(48));
+	private static final org.hyperledger.besu.datatypes.Hash aEthHash = ethHashFrom(aFullBlockHash);
 }

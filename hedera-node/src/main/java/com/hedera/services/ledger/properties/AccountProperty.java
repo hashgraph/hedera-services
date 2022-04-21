@@ -205,6 +205,17 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getAlias;
 		}
 	},
+	ETHEREUM_NONCE {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, v) -> a.setEthereumNonce((long) v);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getEthereumNonce;
+		}
+	},
 	CRYPTO_ALLOWANCES {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
@@ -271,17 +282,6 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 			return MerkleAccount::getHeadTokenId;
 		}
 	},
-	NUM_TREASURY_TITLES {
-		@Override
-		public BiConsumer<MerkleAccount, Object> setter() {
-			return (a, t) -> a.state().setNumTreasuryTitles((int) t);
-		}
-
-		@Override
-		public Function<MerkleAccount, Object> getter() {
-			return MerkleAccount::getNumTreasuryTitles;
-		}
-	},
 	FIRST_CONTRACT_STORAGE_KEY {
 		@Override
 		public BiConsumer<MerkleAccount, Object> setter() {
@@ -291,6 +291,17 @@ public enum AccountProperty implements BeanProperty<MerkleAccount> {
 		@Override
 		public Function<MerkleAccount, Object> getter() {
 			return MerkleAccount::getFirstUint256Key;
+		}
+        },
+	NUM_TREASURY_TITLES {
+		@Override
+		public BiConsumer<MerkleAccount, Object> setter() {
+			return (a, t) -> a.state().setNumTreasuryTitles((int) t);
+		}
+
+		@Override
+		public Function<MerkleAccount, Object> getter() {
+			return MerkleAccount::getNumTreasuryTitles;
 		}
 	},
 	HEAD_NFT_ID {
