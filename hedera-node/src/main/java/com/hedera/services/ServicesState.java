@@ -82,6 +82,7 @@ import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.migration.ReleaseTwentyFiveMigration.initTreasuryTitleCounts;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_0260_CHILDREN;
+import static com.hedera.services.state.migration.ReleaseTwentySixMigration.grantFreeAutoRenew;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
@@ -182,6 +183,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					VirtualMapMigration::extractVirtualMapData,
 					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
 			buildAccountNftsOwnedLinkedList();
+
+			// grant free auto-renew of ~90 days for all contracts once the contract expiration is enabled
+			grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
 		}
 	}
 
