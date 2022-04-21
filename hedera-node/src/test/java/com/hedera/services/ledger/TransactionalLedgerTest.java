@@ -25,6 +25,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
@@ -54,7 +55,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -149,6 +149,28 @@ class TransactionalLedgerTest {
 		assertEquals(Map.of(OBJ, things, FLAG, true), changes.changes(0));
 		verify(backingTestAccounts).put(1L, expectedCommit);
 		assertTrue(testLedger.getCreatedKeys().isEmpty());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void committingIncludesOnlyNonTransientDestructions() {
+		final ArgumentCaptor<EntityChangeSet<Long, TestAccount, TestAccountProperty>> captor =
+				forClass(EntityChangeSet.class);
+		setupInterceptedTestLedger();
+
+		given(backingTestAccounts.getImmutableRef(2L)).willReturn(anotherAccount);
+		testLedger.begin();
+		testLedger.destroy(2L);
+		testLedger.destroy(2L);
+		testLedger.destroy(3L);
+		testLedger.commit();
+
+		verify(testInterceptor).preview(captor.capture());
+		final var changes = captor.getValue();
+		assertEquals(1, changes.size());
+		assertEquals(2L, changes.id(0));
+		assertEquals(anotherAccount, changes.entity(0));
+		assertNull(changes.changes(0));
 	}
 
 	@Test
@@ -253,11 +275,14 @@ class TransactionalLedgerTest {
 
 		testLedger.begin();
 		testLedger.create(1L);
+		testLedger.create(2L);
 		testLedger.destroy(1L);
+		testLedger.destroy(2L);
 		testLedger.put(1L, anAccount);
 		testLedger.commit();
 
 		verify(backingTestAccounts).put(1L, anAccount);
+		verify(backingTestAccounts, never()).remove(1L);
 	}
 
 	@Test
@@ -266,7 +291,7 @@ class TransactionalLedgerTest {
 
 		final int M = 2, N = 100;
 		final var inOrder = inOrder(backingTestAccounts);
-		final List<Long> ids = LongStream.range(M, N).boxed().collect(toList());
+		final List<Long> ids = LongStream.range(M, N).boxed().toList();
 
 		testLedger.begin();
 		ids.forEach(id -> testLedger.create(id));
@@ -282,7 +307,7 @@ class TransactionalLedgerTest {
 
 		final int M = 2, N = 100;
 		final var inOrder = inOrder(backingTestAccounts);
-		final List<Long> ids = LongStream.range(M, N).boxed().collect(toList());
+		final List<Long> ids = LongStream.range(M, N).boxed().toList();
 
 		testLedger.begin();
 		ids.forEach(id -> testLedger.create(id));

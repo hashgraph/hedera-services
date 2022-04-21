@@ -21,16 +21,18 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.ledger.AccountsCommitInterceptor;
-import com.hedera.services.ledger.TokenRelsCommitInterceptor;
-import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
+import com.hedera.services.ledger.interceptors.TokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -110,7 +112,9 @@ public interface StoresModule {
 	@Singleton
 	static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> provideTokenRelsLedger(
 			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels,
-			final SideEffectsTracker sideEffectsTracker
+			final TransactionContext txnCtx,
+			final SideEffectsTracker sideEffectsTracker,
+			final TokenRelsLinkManager relsLinkManager
 	) {
 		final var tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
@@ -118,8 +122,8 @@ public interface StoresModule {
 				backingTokenRels,
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor(sideEffectsTracker);
-		tokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
+		final var interceptor = new LinkAwareTokenRelsCommitInterceptor(txnCtx, sideEffectsTracker, relsLinkManager);
+		tokenRelsLedger.setCommitInterceptor(interceptor);
 		return tokenRelsLedger;
 	}
 

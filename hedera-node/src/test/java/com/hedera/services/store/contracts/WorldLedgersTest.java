@@ -90,8 +90,6 @@ class WorldLedgersTest {
 	private static final Address sponsor = Address.fromHexString("0xcba");
 
 	private static final AccountID accountA = IdUtils.asAccount("0.0.1234");
-	private static final Address address = EntityIdUtils.asTypedEvmAddress(accountA);
-	private static final ByteString aliasBytes = ByteString.copyFromUtf8("I am alias");
 
 	private static final NftId nftId = new NftId(0, 0, 123, 456);
 

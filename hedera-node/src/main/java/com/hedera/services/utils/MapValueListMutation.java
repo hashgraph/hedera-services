@@ -23,7 +23,7 @@ package com.hedera.services.utils;
 import javax.annotation.Nullable;
 
 /**
- * Facilitates the removal of one or more keys from an implicit map whose values compose a family of
+ * Facilitates the mutation of one or more keys from an implicit map whose values compose a family of
  * doubly-linked lists. The interface could be made more concise by making {@code K} and {@code V} bounded
  * types, but after some consideration this approach seemed to better suit our use cases.
  *
@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
  * @param <V>
  * 		type of value in the linked-values map
  */
-public interface MapValueListRemoval<K, V> {
+public interface MapValueListMutation<K, V> {
 	/**
 	 * Gets the value for the specified key.
 	 *
@@ -52,6 +52,16 @@ public interface MapValueListRemoval<K, V> {
 	 */
 	@Nullable
 	V getForModify(K key);
+
+	/**
+	 * Adds the given mapping.
+	 *
+	 * @param key
+	 * 		the key of interest
+	 * @param value
+	 * 		the corresponding value
+	 */
+	void put(K key, V value);
 
 	/**
 	 * Removes the value for the specified key.

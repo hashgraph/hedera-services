@@ -1,4 +1,4 @@
-package com.hedera.services.ledger;
+package com.hedera.services.ledger.interceptors;
 
 /*-
  * ‌
@@ -21,16 +21,19 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.store.models.NftId;
+import com.hedera.services.ledger.CommitInterceptor;
+import com.hedera.services.ledger.EntityChangeSet;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hederahashgraph.api.proto.java.TokenID;
 
-public class UniqueTokensCommitInterceptor implements CommitInterceptor<NftId, MerkleUniqueToken, NftProperty> {
+public class TokensCommitInterceptor implements CommitInterceptor<TokenID, MerkleToken, TokenProperty> {
+
 	// The tracker this interceptor should use for previewing changes. The interceptor is NOT
 	// responsible for calling reset() on the tracker, as that will be done by the client code.
 //	private SideEffectsTracker sideEffectsTracker;
 
-	public UniqueTokensCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
+	public TokensCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
 //		this.sideEffectsTracker = sideEffectsTracker;
 	}
 
@@ -38,7 +41,7 @@ public class UniqueTokensCommitInterceptor implements CommitInterceptor<NftId, M
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void preview(final EntityChangeSet<NftId, MerkleUniqueToken, NftProperty> pendingChanges) {
+	public void preview(final EntityChangeSet<TokenID, MerkleToken, TokenProperty> pendingChanges) {
 		// No-op for now
 	}
 }

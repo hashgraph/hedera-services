@@ -355,12 +355,13 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	@Override
 	public void destroy(final K id) {
 		throwIfNotInTxn();
-		deadKeys.add(id);
-		removedKeys.add(id);
+		if (!deadKeys.contains(id)) {
+			deadKeys.add(id);
+			removedKeys.add(id);
+		}
 	}
 
 	// --- BackingStore implementation ---
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -397,6 +398,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		throwIfNotInTxn();
 		if (isZombie(id)) {
 			deadKeys.remove(id);
+			removedKeys.remove(id);
 		}
 		// The ledger wrapping us may have created an entity we don't have, so catch up on that if necessary;
 		// note this differs from the semantics of set() above, which throws if the target entity is missing
@@ -503,6 +505,15 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	private void computePendingChanges() {
 		doForRetainedIn(changedKeys, previewAction);
 		doForRetainedIn(createdKeys, previewAction);
+		if (!removedKeys.isEmpty()) {
+			for (final var id : removedKeys) {
+				final var entity = entities.getImmutableRef(id);
+				// Ignore entities that were created and destroyed within the transaction
+				if (entity != null) {
+					pendingChanges.include(id, entity, null);
+				}
+			}
+		}
 	}
 
 	private void flushPendingChanges() {

@@ -41,7 +41,6 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xe487c7b8b4e7233fL;
 
-
 	private long numbers;
 	private long balance;
 	private boolean frozen;
@@ -53,6 +52,10 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 
 	public MerkleTokenRelStatus() {
 		/* RuntimeConstructable */
+	}
+
+	public MerkleTokenRelStatus(final long numbers) {
+		this.numbers = numbers;
 	}
 
 	public MerkleTokenRelStatus(

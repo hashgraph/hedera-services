@@ -22,14 +22,12 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.AccountsCommitInterceptor;
+import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.TokenRelsCommitInterceptor;
-import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -47,6 +45,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
@@ -112,7 +111,7 @@ public class WorldLedgers {
 	}
 
 	public boolean isTokenAddress(final Address address) {
-		if (staticEntityAccess != null)	{
+		if (staticEntityAccess != null) {
 			return staticEntityAccess.isTokenAccount(address);
 		} else {
 			return tokensLedger.contains(tokenIdFromEvmAddress(address));
@@ -266,19 +265,36 @@ public class WorldLedgers {
 			return staticLedgersWith(StackedContractAliases.wrapping(aliases), staticEntityAccess);
 		}
 
-		final var tokensCommitInterceptor = new TokensCommitInterceptor(sideEffectsTracker);
-		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor(sideEffectsTracker);
-		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor(sideEffectsTracker);
+		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
+		final var wrappedNftsLedger = activeLedgerWrapping(nftsLedger);
+		final var wrappedTokensLedger = activeLedgerWrapping(tokensLedger);
+		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
 		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+		wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
+
+		return new WorldLedgers(
+				StackedContractAliases.wrapping(aliases),
+				wrappedTokenRelsLedger,
+				wrappedAccountsLedger,
+				wrappedNftsLedger,
+				wrappedTokensLedger);
+	}
+
+	public WorldLedgers wrappedInternal(
+			final SideEffectsTracker sideEffectsTracker,
+			@Nullable final
+			CommitInterceptor<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty> relsInterceptor
+	) {
+		if (!areMutable()) {
+			return staticLedgersWith(StackedContractAliases.wrapping(aliases), staticEntityAccess);
+		}
 
 		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
-		wrappedTokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
-		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
-		wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		final var wrappedNftsLedger = activeLedgerWrapping(nftsLedger);
-		wrappedNftsLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
 		final var wrappedTokensLedger = activeLedgerWrapping(tokensLedger);
-		wrappedTokensLedger.setCommitInterceptor(tokensCommitInterceptor);
+		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
+		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+		wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 
 		return new WorldLedgers(
 				StackedContractAliases.wrapping(aliases),
@@ -314,7 +330,7 @@ public class WorldLedgers {
 			final TokenProperty property,
 			final BiFunction<StaticEntityAccess, TokenID, T> staticGetter
 	) {
-		if (staticEntityAccess != null)	{
+		if (staticEntityAccess != null) {
 			return staticGetter.apply(staticEntityAccess, tokenId);
 		} else {
 			return getTokenMeta(tokenId, property);
