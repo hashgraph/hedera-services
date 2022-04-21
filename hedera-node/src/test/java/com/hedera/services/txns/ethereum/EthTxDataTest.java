@@ -194,8 +194,7 @@ class EthTxDataTest {
 		// Unsupported Transaciton Type
 		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 127 }, size_13)));
 		// Trimmed End Bytes
-		assertThrows(IllegalArgumentException.class, () ->
-				EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(Hex.decode(RAW_TX_TYPE_0_TRIMMED_LAST_BYTES))));
+		assertNull(EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0_TRIMMED_LAST_BYTES)));
 
 		// poorly wrapped typed transaction
 		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 }, oneByte, oneByte)));
@@ -220,24 +219,21 @@ class EthTxDataTest {
 		normalData[1] = wrongData;
 		final var invalidNonceData = Arrays.asList(normalData);
 
-		assertThrows(IllegalArgumentException.class, () ->
-				EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidNonceData)));
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidNonceData)));
 
 		// invalid gasLimit
 		normalData = normalRlpData();
 		normalData[4] = wrongData;
 		final var invalidGasLimitData = Arrays.asList(normalData);
 
-		assertThrows(IllegalArgumentException.class, () ->
-				EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidGasLimitData)));
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidGasLimitData)));
 
 		// invalid recId
 		normalData = normalRlpData();
 		normalData[9] = wrongData;
 		final var invalidRecIdData = Arrays.asList(normalData);
 
-		assertThrows(IllegalArgumentException.class, () ->
-				EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidRecIdData)));
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidRecIdData)));
 	}
 
 	@Test
