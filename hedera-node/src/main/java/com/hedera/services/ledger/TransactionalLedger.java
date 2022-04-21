@@ -597,6 +597,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	@VisibleForTesting
+	public CommitInterceptor<K, A, P> getCommitInterceptor() {
+		return commitInterceptor;
+	}
+
+	@VisibleForTesting
 	EntityChangeSet<K, A, P> getPendingChanges() {
 		return pendingChanges;
 	}

@@ -31,6 +31,7 @@ import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingTokens;
+import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -44,7 +45,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fchashmap.FCHashMap;
@@ -73,7 +73,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -88,8 +90,6 @@ class WorldLedgersTest {
 	private static final AccountID accountID = treasury.toGrpcAccountId();
 	private static final Address alias = Address.fromHexString("0xabcdefabcdefabcdefbabcdefabcdefabcdefbbb");
 	private static final Address sponsor = Address.fromHexString("0xcba");
-
-	private static final AccountID accountA = IdUtils.asAccount("0.0.1234");
 
 	private static final NftId nftId = new NftId(0, 0, 123, 456);
 
@@ -291,15 +291,21 @@ class WorldLedgersTest {
 		final var wrappedUnusable = nullAccounts.wrapped(sideEffectsTracker);
 		assertSame(((StackedContractAliases) wrappedUnusable.aliases()).wrappedAliases(), nullAccounts.aliases());
 		assertFalse(wrappedUnusable.areMutable());
+		assertThrows(IllegalStateException.class, () ->
+				wrappedUnusable.customizeForAutoAssociatingOp(sideEffectsTracker));
 
 		final var wrappedSource = source.wrapped(sideEffectsTracker);
-
 		assertSame(liveTokenRels, wrappedSource.tokenRels().getEntitiesLedger());
 		assertSame(liveAccounts, wrappedSource.accounts().getEntitiesLedger());
 		assertSame(liveNfts, wrappedSource.nfts().getEntitiesLedger());
 		assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
 		final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
 		assertSame(liveAliases, stackedAliases.wrappedAliases());
+
+		wrappedSource.customizeForAutoAssociatingOp(sideEffectsTracker);
+		assertInstanceOf(
+				AutoAssocTokenRelsCommitInterceptor.class,
+				wrappedSource.tokenRels().getCommitInterceptor());
 	}
 
 	@Test
