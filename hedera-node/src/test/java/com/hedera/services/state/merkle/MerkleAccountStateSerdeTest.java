@@ -28,7 +28,6 @@ import com.swirlds.common.utility.CommonUtils;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_ALPHA_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_VERSION;
-import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0260_VERSION;
 
 public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<MerkleAccountState> {
 	public static final int NUM_TEST_CASES = 2 * MIN_TEST_CASES_PER_VERSION;
@@ -58,11 +57,6 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
 			if (version == RELEASE_0250_ALPHA_VERSION) {
 				seededAccount.setNumTreasuryTitles(0);
 				seededAccount.setNftsOwned(0);
-			}
-			if (version < RELEASE_0260_VERSION) {
-				seededAccount.setFirstUint256Key(null);
-				seededAccount.setHeadNftSerialNum(0L);
-				seededAccount.setHeadNftId(0L);
 			}
 			return seededAccount;
 		} else {

@@ -252,6 +252,22 @@ public class SeededPropertySource {
 		return seeded;
 	}
 
+	public MerkleUniqueToken next0260UniqueToken() {
+		final var ownerCode = SEEDED_RANDOM.nextInt(1234);
+		final var spenderCode = SEEDED_RANDOM.nextInt(1234);
+		final var packedCreationTime = packedTime(nextInRangeLong(), nextInt());
+		final var metadata = nextBytes(10);
+		final var numbers = SEEDED_RANDOM.nextLong(1234);
+		final var prev = NftNumPair.fromNums(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
+		final var next = NftNumPair.fromNums(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
+
+		final var subject = new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
+		subject.setSpender(new EntityId(0,0, spenderCode));
+		subject.setPrev(prev);
+		subject.setNext(next);
+		return subject;
+	}
+
 	/**
 	 * Provides a current {@link MerkleAccountState} that has the same "value" as a previously serialized instance.
 	 *
@@ -297,22 +313,6 @@ public class SeededPropertySource {
 		return seeded;
 	}
 
-	public MerkleUniqueToken nextUniqueToken() {
-		final var ownerCode = SEEDED_RANDOM.nextInt(1234);
-		final var spenderCode = SEEDED_RANDOM.nextInt(1234);
-		final var packedCreationTime = packedTime(nextInRangeLong(), nextInt());
-		final var metadata = nextBytes(10);
-		final var numbers = SEEDED_RANDOM.nextLong(1234);
-		final var prev = NftNumPair.fromNums(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
-		final var next = NftNumPair.fromNums(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
-
-		final var subject = new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
-		subject.setSpender(new EntityId(0,0, spenderCode));
-		subject.setPrev(prev);
-		subject.setNext(next);
-		return subject;
-	}
-
 	public MerkleAccountState next0250AccountState() {
 		final var maxAutoAssoc = SEEDED_RANDOM.nextInt(1234);
 		final var usedAutoAssoc = SEEDED_RANDOM.nextInt(maxAutoAssoc + 1);
@@ -342,7 +342,8 @@ public class SeededPropertySource {
 				numAssociations,
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
-				0,0,0,0);
+				nextUnsignedInt(),
+				0,0,0);
 	}
 
 	public MerkleAccountState next0260AccountState() {
@@ -922,17 +923,6 @@ public class SeededPropertySource {
 
 	public RecordsRunningHashLeaf nextRecordsRunningHashLeaf() {
 		return new RecordsRunningHashLeaf(new RunningHash(new Hash(nextBytes(48))));
-	}
-
-	public MerkleUniqueToken nextMerkleUniqueToken() {
-		final var seeded = new MerkleUniqueToken(
-				nextNonZeroInt(Integer.MAX_VALUE),
-				nextBytes(nextNonZeroInt(100)),
-				nextUnsignedLong(),
-				nextUnsignedLong()
-		);
-		seeded.setSpender(EntityNum.fromInt(nextNonZeroInt(Integer.MAX_VALUE)).toEntityId());
-		return seeded;
 	}
 
 	public FcTokenAllowance nextFcTokenAllowance() {

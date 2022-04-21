@@ -24,8 +24,6 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
@@ -183,7 +181,7 @@ public class SerializedForms {
 					entry(MerkleTokenRelStatus.class, SeededPropertySource::nextMerkleTokenRelStatus,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(MerkleTopic.class, SeededPropertySource::nextTopic, MerkleTopicSerdeTest.NUM_TEST_CASES),
-					entry(MerkleUniqueToken.class, SeededPropertySource::nextMerkleUniqueToken,
+					entry(MerkleUniqueToken.class, SeededPropertySource::next0260UniqueToken,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(NftAdjustments.class, SeededPropertySource::nextOwnershipChanges, MIN_TEST_CASES_PER_VERSION),
 					entry(RecordsRunningHashLeaf.class, SeededPropertySource::nextRecordsRunningHashLeaf,

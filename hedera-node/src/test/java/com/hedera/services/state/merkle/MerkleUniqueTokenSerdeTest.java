@@ -35,7 +35,7 @@ public class MerkleUniqueTokenSerdeTest extends SelfSerializableDataTest<MerkleU
 
 	@Override
 	protected MerkleUniqueToken getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextUniqueToken();
+		return propertySource.next0260UniqueToken();
 	}
 
 	@Override

@@ -174,6 +174,7 @@ class MerkleAccountStateTest {
 						"numPositiveBalances=" + numPositiveBalances + ", " +
 						"headTokenId=" + headTokenNum + ", " +
 						"numTreasuryTitles=" + numTreasuryTitles + ", " +
+						"ethereumNonce=" + ethereumNonce + ", " +
 						"headNftId=" + headNftId + ", " +
 						"headNftSerialNum=" + headNftSerialNum + "}",
 				subject.toString());
