@@ -570,8 +570,11 @@ class TransactionalLedgerTest {
 		setupTestLedger();
 
 		testLedger.begin();
-
-		assertThrows(IllegalStateException.class, () -> testLedger.begin());
+		testLedger.create(1L);
+		testLedger.set(1L, OBJ, things[0]);
+		assertFalse(testLedger.getChanges().isEmpty());
+		testLedger.begin();
+		assertTrue(testLedger.getChanges().isEmpty());
 	}
 
 	@Test

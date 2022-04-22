@@ -210,7 +210,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	public void begin() {
-		throwIfInTxn();
+		ensureNotInTxn();
 		isInTransaction = true;
 		if (pendingChanges != null) {
 			pendingChanges.clear();
@@ -498,9 +498,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 		}
 	}
 
-	private void throwIfInTxn() {
+	private void ensureNotInTxn() {
 		if (isInTransaction) {
-			throw new IllegalStateException("Transaction already active");
+			log.warn("Ledger with property type {} still in transaction at begin()", propertyType::getSimpleName);
+			rollback();
 		}
 	}
 
