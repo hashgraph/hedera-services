@@ -159,6 +159,25 @@ class CreationTest {
 	}
 
 	@Test
+	void onlyReturnsNewAssociationsWithProvisionalTokenId() {
+		givenSubjectWithEverything();
+		given(accountStore.loadAccountOrFailWith(treasuryId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN)).willReturn(treasury);
+		given(accountStore.loadAccountOrFailWith(autoRenewId, INVALID_AUTORENEW_ACCOUNT)).willReturn(autoRenew);
+		given(ids.newTokenId(grpcSponsor)).willReturn(provisionalId.asGrpcToken());
+
+		subject.loadModelsWith(grpcSponsor, ids, validator);
+		subject.setNewAndUpdatedRels(List.of(oldRel, newRel));
+		given(oldRel.getToken()).willReturn(new Token(new Id(0, 0, 9999)));
+		given(newRel.getToken()).willReturn(provisionalToken);
+		given(provisionalToken.getId()).willReturn(provisionalId);
+		given(newRel.asAutoAssociation()).willReturn(new FcTokenAssociation(provisionalId.num(), 0));
+
+		final var autoAssociations= subject.newAssociations();
+		assertEquals(1, autoAssociations.size());
+		assertEquals(provisionalId.num(), autoAssociations.get(0).token());
+	}
+
+	@Test
 	void validatesNumCustomFees() {
 		givenSubjectWithEverything();
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(1);
