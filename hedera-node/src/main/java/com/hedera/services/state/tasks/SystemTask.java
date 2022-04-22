@@ -27,6 +27,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class SystemTask implements FCQueueElement {
 	static final int RELEASE_0260_VERSION = 1;
@@ -105,6 +106,11 @@ public class SystemTask implements FCQueueElement {
 	@Override
 	public int getVersion() {
 		return CURRENT_VERSION;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(taskType, serializableTask);
 	}
 
 	@Override

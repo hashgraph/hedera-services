@@ -47,6 +47,17 @@ class DissociateNftRemovalsTest {
 	}
 
 	@Test
+	void hashWorks() {
+		final DissociateNftRemovals subject2 = new DissociateNftRemovals(
+				accountNum, tokenNum, serialsCount+1, headNftTokenNum, headSerialNum);
+		final var identicalSubject = new DissociateNftRemovals(
+				accountNum, tokenNum, serialsCount, headNftTokenNum, headSerialNum);
+
+		assertEquals(subject.hashCode(), identicalSubject.hashCode());
+		assertNotEquals(subject.hashCode(), subject2.hashCode());
+	}
+
+	@Test
 	void equalsWork() {
 		final long otherAccountNum = 1002L;
 		final long otherTokenNum = 1003L;

@@ -25,6 +25,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class DissociateNftRemovals implements SelfSerializable {
 	static final int RELEASE_0260_VERSION = 1;
@@ -115,6 +116,11 @@ public class DissociateNftRemovals implements SelfSerializable {
 	@Override
 	public int getVersion() {
 		return CURRENT_VERSION;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(accountNum, targetTokenNum, serialsCount, headNftTokenNum, headSerialNum);
 	}
 
 	@Override

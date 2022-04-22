@@ -68,6 +68,17 @@ class SystemTaskTest {
 	}
 
 	@Test
+	void hashWorks() {
+		final DissociateNftRemovals otherNftRemovalTask = new DissociateNftRemovals(
+				accountNum, tokenNum, serialsCount+1, headNftTokenNum, headSerialNum);
+		final var subject2 = new SystemTask(DISSOCIATED_NFT_REMOVALS, otherNftRemovalTask);
+		final var identicalSubject = new SystemTask(DISSOCIATED_NFT_REMOVALS, nftRemovalTask);
+
+		assertEquals(subject.hashCode(), identicalSubject.hashCode());
+		assertNotEquals(subject.hashCode(), subject2.hashCode());
+	}
+
+	@Test
 	void gettersAndSettersWork() {
 		subject = new SystemTask();
 
