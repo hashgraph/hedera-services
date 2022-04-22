@@ -65,6 +65,13 @@ class TokenRelsListRemovalTest {
 	}
 
 	@Test
+	void delegatesPut() {
+		subject.put(rootRelKey, rootRel);
+
+		verify(tokenRels).put(rootRelKey, rootRel);
+	}
+
+	@Test
 	void delegatesRemove() {
 		subject.remove(rootRelKey);
 

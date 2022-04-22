@@ -58,6 +58,14 @@ public class ContractStorageListRemoval implements MapValueListRemoval<ContractK
 	 * {@inheritDoc}
 	 */
 	@Override
+	public void put(final ContractKey key, final IterableContractValue value) {
+		storage.put(key, value);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	public void remove(final ContractKey key) {
 		storage.remove(key);
 	}

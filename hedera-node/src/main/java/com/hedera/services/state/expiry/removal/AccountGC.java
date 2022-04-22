@@ -65,7 +65,7 @@ public class AccountGC {
 	private final BackingStore<AccountID, MerkleAccount> backingAccounts;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenRels;
 
-	private RemovalFacilitation removalFacilitation = MapValueListUtils::removeFromMapValueList;
+	private RemovalFacilitation removalFacilitation = MapValueListUtils::inPlaceRemoveFromMapValueList;
 
 	@Inject
 	public AccountGC(
