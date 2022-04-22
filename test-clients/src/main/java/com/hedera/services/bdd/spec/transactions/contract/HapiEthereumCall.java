@@ -30,6 +30,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.EthTxData;
+import com.hedera.services.bdd.spec.utilops.EthTxSigs;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
@@ -44,6 +45,7 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.sun.jna.ptr.IntByReference;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.ethereum.core.CallTransaction;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
@@ -84,7 +86,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private long gasLimit;
     private Optional<FileID> ethCallData = Optional.empty();
     private Optional<Long> maxGasAllowance = Optional.empty();
-    private byte[] ethTxSigner;
+    private String privateKeyRef;
 
     private Consumer<Object[]> resultObserver = null;
 
@@ -159,8 +161,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         return this;
     }
 
-    public HapiEthereumCall ethTxSigner(byte[] ethTxSigner) {
-        this.ethTxSigner = ethTxSigner;
+    public HapiEthereumCall signingWith(String signingWith) {
+        this.privateKeyRef = signingWith;
         return this;
     }
 
@@ -252,7 +254,22 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 maxPriorityGasBytes, gasBytes, gasLimit,
                 Utils.asAddress(contractID), value, callData, new byte[]{}, 0, null, null, null);
 
-        final var signedEthTxData = signMessage(ethTxData, ethTxSigner);
+        var key = spec.registry().getKey(privateKeyRef);
+        final var privateKey = spec.keys().getPrivateKey(com.swirlds.common.utility.CommonUtils.hex(key.getECDSASecp256K1().toByteArray()));
+        
+        byte[] privateKeyByteArray;
+        byte[] dByteArray = ((BCECPrivateKey)privateKey).getD().toByteArray();
+        if (dByteArray.length < 32) {
+            privateKeyByteArray = new byte[32];
+            System.arraycopy(dByteArray, 0, privateKeyByteArray, 32 - dByteArray.length, dByteArray.length);
+        } else if (dByteArray.length == 32) {
+            privateKeyByteArray = dByteArray;
+        } else {
+            privateKeyByteArray = new byte[32];
+            System.arraycopy(dByteArray, dByteArray.length - 32, privateKeyByteArray, 0, 32);
+        }
+        
+        final var signedEthTxData = signMessage(ethTxData, privateKeyByteArray);
 
         final EthereumTransactionBody ethOpBody = spec
                 .txns()
@@ -267,54 +284,56 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     private EthTxData signMessage(EthTxData ethTx, byte[] privateKey) {
-        byte[] signableMessage = calculateSingableMessage(ethTx);
-        final LibSecp256k1.secp256k1_ecdsa_recoverable_signature signature =
-                new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
-        LibSecp256k1.secp256k1_ecdsa_sign_recoverable(
-                LibSecp256k1.CONTEXT, signature, new Keccak.Digest256().digest(signableMessage), privateKey, null, null);
-
-        final ByteBuffer compactSig = ByteBuffer.allocate(64);
-        final IntByReference recId = new IntByReference(0);
-        LibSecp256k1.secp256k1_ecdsa_recoverable_signature_serialize_compact(
-                LibSecp256k1.CONTEXT, compactSig, recId, signature);
-        compactSig.flip();
-        final byte[] sig = compactSig.array();
-
-        // wrap in signature object
-        final byte[] r = new byte[32];
-        System.arraycopy(sig, 0, r, 0, 32);
-        final byte[] s = new byte[32];
-        System.arraycopy(sig, 32, s, 0, 32);
-
-        BigInteger v;
-        if (ethTx.type() == EthTxData.EthTransactionType.LEGACY_ETHEREUM) {
-            if (ethTx.chainId() == null || ethTx.chainId().length == 0) {
-                v = BigInteger.valueOf(27L + recId.getValue());
-            } else {
-                v = BigInteger.valueOf(35L + recId.getValue())
-                        .add(new BigInteger(1, ethTx.chainId()).multiply(BigInteger.TWO));
-            }
-        } else {
-            v = null;
-        }
-
-        return new EthTxData(
-                ethTx.rawTx(),
-                ethTx.type(),
-                ethTx.chainId(),
-                ethTx.nonce(),
-                ethTx.gasPrice(),
-                ethTx.maxPriorityGas(),
-                ethTx.maxGas(),
-                ethTx.gasLimit(),
-                ethTx.to(),
-                ethTx.value(),
-                ethTx.callData(),
-                ethTx.accessList(),
-                (byte) recId.getValue(),
-                v == null ? null : v.toByteArray(),
-                r,
-                s);
+        System.out.println(Bytes.wrap(privateKey).toHexString());
+        return EthTxSigs.signMessage(ethTx, privateKey);
+//        byte[] signableMessage = calculateSingableMessage(ethTx);
+//        final LibSecp256k1.secp256k1_ecdsa_recoverable_signature signature =
+//                new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
+//        LibSecp256k1.secp256k1_ecdsa_sign_recoverable(
+//                LibSecp256k1.CONTEXT, signature, new Keccak.Digest256().digest(signableMessage), privateKey, null, null);
+//
+//        final ByteBuffer compactSig = ByteBuffer.allocate(64);
+//        final IntByReference recId = new IntByReference(0);
+//        LibSecp256k1.secp256k1_ecdsa_recoverable_signature_serialize_compact(
+//                LibSecp256k1.CONTEXT, compactSig, recId, signature);
+//        compactSig.flip();
+//        final byte[] sig = compactSig.array();
+//
+//        // wrap in signature object
+//        final byte[] r = new byte[32];
+//        System.arraycopy(sig, 0, r, 0, 32);
+//        final byte[] s = new byte[32];
+//        System.arraycopy(sig, 32, s, 0, 32);
+//
+//        BigInteger v;
+//        if (ethTx.type() == EthTxData.EthTransactionType.LEGACY_ETHEREUM) {
+//            if (ethTx.chainId() == null || ethTx.chainId().length == 0) {
+//                v = BigInteger.valueOf(27L + recId.getValue());
+//            } else {
+//                v = BigInteger.valueOf(35L + recId.getValue())
+//                        .add(new BigInteger(1, ethTx.chainId()).multiply(BigInteger.TWO));
+//            }
+//        } else {
+//            v = null;
+//        }
+//
+//        return new EthTxData(
+//                ethTx.rawTx(),
+//                ethTx.type(),
+//                ethTx.chainId(),
+//                ethTx.nonce(),
+//                ethTx.gasPrice(),
+//                ethTx.maxPriorityGas(),
+//                ethTx.maxGas(),
+//                ethTx.gasLimit(),
+//                ethTx.to(),
+//                ethTx.value(),
+//                ethTx.callData(),
+//                ethTx.accessList(),
+//                (byte) recId.getValue(),
+//                v == null ? null : v.toByteArray(),
+//                r,
+//                s);
     }
 
     private byte[] calculateSingableMessage(EthTxData ethTx) {

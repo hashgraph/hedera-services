@@ -7,6 +7,10 @@ import com.hedera.services.bdd.spec.utilops.EthTxData;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
+
+import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -55,23 +59,17 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         cryptoCreate(ACCOUNT).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS))
                 ).when(
-                        withOpContext((spec, opLog) -> {
-                            final var a = spec.registry().getKey(secp256k1SourceKey);
-                            final var b = spec.keys().getPrivateKey(com.swirlds.common.utility.CommonUtils.hex(a.getECDSASecp256K1().toByteArray()));
-
-                            final var ethRecord = ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount
-                            ).type(EthTxData.EthTransactionType.EIP1559)
-                                    .ethTxSigner(b.getEncoded())
-                                    .payingWith(ACCOUNT)
-                                    .via("payTxn")
-                                    .gas(500_000L)
-                                    .gasPrice(10L)
-                                    .maxGasAllowance(5L)
-                                    .maxPriorityGas(2L)
-                                    .gasLimit(1_000_000L)
-                                    .sending(depositAmount);
-                            allRunFor(spec, ethRecord);
-                        })
+                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(secp256k1SourceKey)
+                                .payingWith(ACCOUNT)
+                                .via("payTxn")
+                                .gas(500_000L)
+                                .gasPrice(10L)
+                                .maxGasAllowance(5L)
+                                .maxPriorityGas(2L)
+                                .gasLimit(1_000_000L)
+                                .sending(depositAmount)
                 ).then(
                         getTxnRecord("payTxn")
                                 .hasPriority(recordWith().contractCallResult(
