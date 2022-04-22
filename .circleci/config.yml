@@ -880,21 +880,7 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Update-Ubuntu1804-4N-2C:
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/Update
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Crypto-Update-Ubuntu1804-4N-2C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
+
 
   GCP-Daily-Services-Update-Rhel7-4N-2C:
     triggers:
@@ -1011,69 +997,8 @@ workflows:
             - attach_workspace:
                 at: /
 
-  GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C:
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/UpdateDisPreUpdate
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Update-DisPreUpdate-4N-2C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
 
-  GCP-Daily-Services-Update-Reconnect-4N-2C:
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/UpdateReconnect
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-4N-2C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
 
-  GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C:
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/UpdateReconnectAbort
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-4N-2C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
-
-  GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C:
-    jobs:
-      - build-platform-and-services
-      - jrs-regression:
-          context: Slack
-          regression_path: /swirlds-platform/regression
-          result_path: results/4N_2C/UpdateReconnectAbortDisPreUpdate
-          config_type: "daily"
-          workflow-name: "GCP-Daily-Services-Comp-Update-Reconnect-Abort-DisPreUpdate-4N-2C"
-          requires:
-            - build-platform-and-services
-          pre-steps:
-            - install-tools
-            - attach_workspace:
-                at: /
 
   GCP-Daily-Services-Account-Balances-client-validation-6N-1C:
     triggers:
@@ -1308,13 +1233,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-NI-Reconnect-Correctness-6N-1C:
-    triggers:
-      - schedule:
-          cron: "25 7 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1331,13 +1249,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-ND-Reconnect-Correctness-6N-1C:
-    triggers:
-      - schedule:
-          cron: "25 8 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1562,7 +1473,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout -b 02245-D-rm-updateJar100M-file origin/02245-D-rm-updateJar100M-file;  cd -;
+            cd regression; git checkout -b 02253-D-failed-reconnect-timing origin/02253-D-failed-reconnect-timing;  cd -;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
