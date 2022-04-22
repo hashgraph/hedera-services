@@ -99,17 +99,6 @@ class CreationTest {
 	private Creation subject;
 
 	@Test
-	void getsExpectedAutoAssociations() {
-		givenSubjectWithEverything();
-		given(newRel.asAutoAssociation()).willReturn(autoAssociation);
-		subject.setNewAndUpdatedRels(List.of(newRel));
-
-		final var actual = subject.newAssociations();
-
-		assertEquals(List.of(autoAssociation), actual);
-	}
-
-	@Test
 	void persistWorks() {
 		givenSubjectWithEverything();
 		given(newRel.getAccount()).willReturn(treasury);
