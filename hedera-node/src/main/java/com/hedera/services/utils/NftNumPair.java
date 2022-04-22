@@ -30,10 +30,6 @@ public record NftNumPair(long tokenNum, long serialNum) {
 		return new NftNumPair(tokenNum, serialNum);
 	}
 
-	public static NftNumPair fromGrpc(final TokenID tokenId, final long serialNum) {
-		return new NftNumPair(tokenId.getTokenNum(), serialNum);
-	}
-
 	@Override
 	public String toString() {
 		return String.format("%d.%d.%d.%d",

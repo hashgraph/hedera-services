@@ -95,12 +95,14 @@ class SystemTaskTest {
 				accountNum, tokenNum, serialsCount+1, headNftTokenNum, headSerialNum);
 		final var subject2 = new SystemTask();
 		final var subject3 = new SystemTask(DISSOCIATED_NFT_REMOVALS, otherNftRemovalTask);
+		final var subject4 = new SystemTask(null, nftRemovalTask);
 		final var identicalSubject = new SystemTask(DISSOCIATED_NFT_REMOVALS, nftRemovalTask);
 
 		assertEquals(subject, subject);
 		assertEquals(subject, identicalSubject);
 		assertNotEquals(subject, subject2);
 		assertNotEquals(subject, subject3);
-		assertNotEquals(null, subject);
+		assertNotEquals(subject2, subject4);
+		assertNotEquals(subject, null);
 	}
 }
