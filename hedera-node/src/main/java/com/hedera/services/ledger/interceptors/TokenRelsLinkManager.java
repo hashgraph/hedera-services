@@ -54,7 +54,7 @@ public class TokenRelsLinkManager {
 		final var curAccounts = accounts.get();
 		final var mutableAccount = curAccounts.getForModify(accountNum);
 		var rootKey = rootKeyOf(mutableAccount);
-		if (dissociatedTokenNums != null) {
+		if (rootKey != null && dissociatedTokenNums != null) {
 			for (final var tokenNum : dissociatedTokenNums) {
 				final var tbdKey = EntityNumPair.fromNums(accountNum, tokenNum);
 				rootKey = removeFromMapValueList(tbdKey, rootKey, listMutation);
