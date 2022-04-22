@@ -168,7 +168,7 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 				workingAliases::size, numCreate2Aliases::get, numEOAliases::get);
 	}
 
-	static ByteString calculateEthAddress(byte[] rawCompressedKey) {
+	public static ByteString calculateEthAddress(byte[] rawCompressedKey) {
 		BigInteger x = new BigInteger(rawCompressedKey, 1, 32);
 		ECPoint ecPoint = decompressKey(x, (rawCompressedKey[0] & 0x1) == 0x1);
 		byte[] uncompressedKeyDer = ecPoint.getEncoded(false);

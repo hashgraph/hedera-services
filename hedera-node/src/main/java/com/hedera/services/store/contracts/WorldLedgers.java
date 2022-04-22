@@ -28,6 +28,7 @@ import com.hedera.services.ledger.TokenRelsCommitInterceptor;
 import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -196,7 +197,13 @@ public class WorldLedgers {
 			alias = staticEntityAccess.alias(sourceId);
 		}
 		if (!alias.isEmpty()) {
-			return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			if (alias.size() == 20) {
+				return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			} else if (alias.size() == 35 && alias.startsWith(ByteString.copyFrom(new byte[] {0x3a, 0x21}))) {
+				return Address.wrap(Bytes.wrap(AliasManager.calculateEthAddress(alias.substring(2).toByteArray()).toByteArray()));
+			} else {
+				return address;
+			}
 		} else {
 			return address;
 		}
