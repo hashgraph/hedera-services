@@ -49,7 +49,7 @@ public class AutoAssocTokenRelsCommitInterceptor
 	);
 
 	// If null, every new association is interpreted as an auto-association; if non-null, associations
-	// are only auto-associations if the active transaction type is _not_ in AUTO_ASSOCIATING_OPS
+	// are only auto-associations if the active transaction type is in AUTO_ASSOCIATING_OPS
 	@Nullable
 	private final TransactionContext txnCtx;
 	protected final SideEffectsTracker sideEffectsTracker;
@@ -78,7 +78,7 @@ public class AutoAssocTokenRelsCommitInterceptor
 		if (txnCtx != null && activeOpIsNotAutoAssociating()) {
 			return;
 		}
-		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
+		for (int i = 0, n = pendingChanges.retainedSize(); i < n; i++) {
 			// A null current entity means this is a new association
 			if (pendingChanges.entity(i) == null) {
 				final var id = pendingChanges.id(i);

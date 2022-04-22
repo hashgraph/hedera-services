@@ -22,14 +22,18 @@ package com.hedera.services.state.merkle;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.services.utils.EntityNumPair;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SerializableDataInputStream;
 import com.swirlds.common.io.SerializableDataOutputStream;
 import com.swirlds.common.merkle.utility.AbstractMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
 
+import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums;
 import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
 
 public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<EntityNumPair> {
@@ -54,8 +58,8 @@ public class MerkleTokenRelStatus extends AbstractMerkleLeaf implements Keyed<En
 		/* RuntimeConstructable */
 	}
 
-	public MerkleTokenRelStatus(final long numbers) {
-		this.numbers = numbers;
+	public MerkleTokenRelStatus(final Pair<AccountID, TokenID> grpcRel) {
+		this.numbers = packedNums(grpcRel.getLeft().getAccountNum(), grpcRel.getRight().getTokenNum());
 	}
 
 	public MerkleTokenRelStatus(

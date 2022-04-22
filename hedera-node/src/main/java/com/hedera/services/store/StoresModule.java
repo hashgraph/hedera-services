@@ -31,7 +31,6 @@ import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
-import com.hedera.services.ledger.interceptors.TokensCommitInterceptor;
 import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
@@ -96,14 +95,11 @@ public interface StoresModule {
 			final BackingStore<TokenID, MerkleToken> backingTokens,
 			final SideEffectsTracker sideEffectsTracker
 	) {
-		final var tokensLedger = new TransactionalLedger<>(
+		return new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				backingTokens,
 				new ChangeSummaryManager<>());
-		final var tokensCommitInterceptor = new TokensCommitInterceptor(sideEffectsTracker);
-		tokensLedger.setCommitInterceptor(tokensCommitInterceptor);
-		return tokensLedger;
 	}
 
 	@Binds

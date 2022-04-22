@@ -1,5 +1,25 @@
 package com.hedera.services.ledger.interceptors;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.EntityChangeSet;
@@ -16,8 +36,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums;
 
 /**
  * Derived interceptor that maintains the token association linked list for any account being
@@ -70,9 +88,9 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
 			final var accountNum = EntityNum.fromLong(id.getLeft().getAccountNum());
 			touched.add(accountNum);
 			if (entity == null) {
-				// A null current entity means this is a new association
-				final var number = packedNums(accountNum.longValue(), id.getRight().getTokenNum());
-				final var newRel = new MerkleTokenRelStatus(number);
+				// A null current entity means this is a new association; we cache a new relationship
+				// with the number initialized so the TokenRelsLinkManager has all needed information
+				final var newRel = new MerkleTokenRelStatus(id);
 				pendingChanges.cacheEntity(i, newRel);
 				addedRels.computeIfAbsent(accountNum, ignore -> new ArrayList<>()).add(newRel);
 			} else {

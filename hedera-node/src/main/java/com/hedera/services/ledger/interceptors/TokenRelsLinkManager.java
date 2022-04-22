@@ -1,5 +1,25 @@
 package com.hedera.services.ledger.interceptors;
 
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -38,22 +58,22 @@ public class TokenRelsLinkManager {
 	 * {@link MerkleTokenRelStatus#getRelatedTokenNum()} cannot return zero! This contract is respected by the sole
 	 * client of this class, the {@link LinkAwareTokenRelsCommitInterceptor}.
 	 *
-	 * @param accountNum
-	 * @param dissociatedTokenNums
-	 * @param newTokenRels
+	 * @param accountNum the account whose list is being updated
+	 * @param dissociatedTokenNums the numbers of the tokens being dissociated
+	 * @param newTokenRels the new token relationships being created
 	 */
 	void updateLinks(
 			final EntityNum accountNum,
 			@Nullable final List<EntityNum> dissociatedTokenNums,
 			@Nullable final List<MerkleTokenRelStatus> newTokenRels
 	) {
-		final var literalNum = accountNum.longValue();
+		final var primitiveNum = accountNum.longValue();
 		final var curTokenRels = tokenRels.get();
-		final var listMutation = new TokenRelsListMutation(literalNum, curTokenRels);
+		final var listMutation = new TokenRelsListMutation(primitiveNum, curTokenRels);
 
 		final var curAccounts = accounts.get();
 		final var mutableAccount = curAccounts.getForModify(accountNum);
-		var rootKey = rootKeyOf(mutableAccount);
+		var rootKey = rootKeyOf(primitiveNum, mutableAccount);
 		if (rootKey != null && dissociatedTokenNums != null) {
 			for (final var tokenNum : dissociatedTokenNums) {
 				final var tbdKey = EntityNumPair.fromNums(accountNum, tokenNum);
@@ -64,7 +84,7 @@ public class TokenRelsLinkManager {
 			MerkleTokenRelStatus rootRel = null;
 			for (final var newRel : newTokenRels) {
 				final var literalTokenNum = newRel.getRelatedTokenNum();
-				final var newKey = EntityNumPair.fromLongs(literalNum, literalTokenNum);
+				final var newKey = EntityNumPair.fromLongs(primitiveNum, literalTokenNum);
 				rootKey = inPlaceInsertAtMapValueListHead(newKey, newRel, rootKey, rootRel, listMutation);
 				rootRel = newRel;
 			}
@@ -74,8 +94,8 @@ public class TokenRelsLinkManager {
 	}
 
 	@Nullable
-	private EntityNumPair rootKeyOf(final MerkleAccount account) {
+	private EntityNumPair rootKeyOf(final long primitiveNum, final MerkleAccount account) {
 		final var headNum = account.getHeadTokenId();
-		return headNum == 0 ? null : EntityNumPair.fromLongs(account.getKey().longValue(), headNum);
+		return headNum == 0 ? null : EntityNumPair.fromLongs(primitiveNum, headNum);
 	}
 }

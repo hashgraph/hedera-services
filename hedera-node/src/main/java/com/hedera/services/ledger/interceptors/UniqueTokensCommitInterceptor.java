@@ -9,9 +9,9 @@ package com.hedera.services.ledger.interceptors;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,13 +27,12 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.store.models.NftId;
 
+/**
+ * Placeholder for upcoming work.
+ */
 public class UniqueTokensCommitInterceptor implements CommitInterceptor<NftId, MerkleUniqueToken, NftProperty> {
-	// The tracker this interceptor should use for previewing changes. The interceptor is NOT
-	// responsible for calling reset() on the tracker, as that will be done by the client code.
-//	private SideEffectsTracker sideEffectsTracker;
-
 	public UniqueTokensCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
-//		this.sideEffectsTracker = sideEffectsTracker;
+		// No-op
 	}
 
 	/**
@@ -41,6 +40,6 @@ public class UniqueTokensCommitInterceptor implements CommitInterceptor<NftId, M
 	 */
 	@Override
 	public void preview(final EntityChangeSet<NftId, MerkleUniqueToken, NftProperty> pendingChanges) {
-		// No-op for now
+		// No-op
 	}
 }
