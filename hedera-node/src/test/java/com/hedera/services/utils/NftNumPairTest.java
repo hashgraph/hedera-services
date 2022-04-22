@@ -44,7 +44,7 @@ class NftNumPairTest {
 		assertEquals(subject, identical);
 		assertNotEquals(subject, subject2);
 		assertNotEquals(subject, subject3);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 
 	}
 }

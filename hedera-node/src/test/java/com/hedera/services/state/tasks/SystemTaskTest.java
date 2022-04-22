@@ -103,6 +103,6 @@ class SystemTaskTest {
 		assertNotEquals(subject, subject2);
 		assertNotEquals(subject, subject3);
 		assertNotEquals(subject2, subject4);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 	}
 }

@@ -85,6 +85,6 @@ class DissociateNftRemovalsTest {
 		assertNotEquals(subject, subject4);
 		assertNotEquals(subject, subject5);
 		assertNotEquals(subject, subject6);
-		assertNotEquals(subject, null);
+		assertNotEquals(null, subject);
 	}
 }
