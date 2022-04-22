@@ -1210,13 +1210,6 @@ workflows:
             - attach_workspace:
                 at: /
   GCP-Daily-Services-Comp-Reconnect-6N-1C:
-    triggers:
-      - schedule:
-          cron: "15 7 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
