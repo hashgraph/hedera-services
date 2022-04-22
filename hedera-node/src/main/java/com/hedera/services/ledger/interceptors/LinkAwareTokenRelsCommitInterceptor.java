@@ -73,8 +73,8 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
 				// A null current entity means this is a new association
 				final var number = packedNums(accountNum.longValue(), id.getRight().getTokenNum());
 				final var newRel = new MerkleTokenRelStatus(number);
-				addedRels.computeIfAbsent(accountNum, ignore -> new ArrayList<>())
-						.add(newRel);
+				pendingChanges.cacheEntity(i, newRel);
+				addedRels.computeIfAbsent(accountNum, ignore -> new ArrayList<>()).add(newRel);
 			} else {
 				// A null change set means the relationship is ending
 				final var tbdTokenNum = EntityNum.fromLong(entity.getRelatedTokenNum());

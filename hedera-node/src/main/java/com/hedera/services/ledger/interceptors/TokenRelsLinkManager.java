@@ -44,8 +44,8 @@ public class TokenRelsLinkManager {
 	 */
 	void updateLinks(
 			final EntityNum accountNum,
-			final List<EntityNum> dissociatedTokenNums,
-			final List<MerkleTokenRelStatus> newTokenRels
+			@Nullable final List<EntityNum> dissociatedTokenNums,
+			@Nullable final List<MerkleTokenRelStatus> newTokenRels
 	) {
 		final var literalNum = accountNum.longValue();
 		final var curTokenRels = tokenRels.get();
@@ -54,16 +54,20 @@ public class TokenRelsLinkManager {
 		final var curAccounts = accounts.get();
 		final var mutableAccount = curAccounts.getForModify(accountNum);
 		var rootKey = rootKeyOf(mutableAccount);
-		for (final var tokenNum : dissociatedTokenNums) {
-			final var tbdKey = EntityNumPair.fromNums(accountNum, tokenNum);
-			rootKey = removeFromMapValueList(tbdKey, rootKey, listMutation);
+		if (dissociatedTokenNums != null) {
+			for (final var tokenNum : dissociatedTokenNums) {
+				final var tbdKey = EntityNumPair.fromNums(accountNum, tokenNum);
+				rootKey = removeFromMapValueList(tbdKey, rootKey, listMutation);
+			}
 		}
-		MerkleTokenRelStatus rootRel = null;
-		for (final var newRel : newTokenRels) {
-			final var literalTokenNum = newRel.getRelatedTokenNum();
-			final var newKey = EntityNumPair.fromLongs(literalNum, literalTokenNum);
-			rootKey = inPlaceInsertAtMapValueListHead(newKey, newRel, rootKey, rootRel, listMutation);
-			rootRel = newRel;
+		if (newTokenRels != null) {
+			MerkleTokenRelStatus rootRel = null;
+			for (final var newRel : newTokenRels) {
+				final var literalTokenNum = newRel.getRelatedTokenNum();
+				final var newKey = EntityNumPair.fromLongs(literalNum, literalTokenNum);
+				rootKey = inPlaceInsertAtMapValueListHead(newKey, newRel, rootKey, rootRel, listMutation);
+				rootRel = newRel;
+			}
 		}
 		final var newHeadTokenId = (rootKey == null) ? 0 : rootKey.getLowOrderAsLong();
 		mutableAccount.setHeadTokenId(newHeadTokenId);

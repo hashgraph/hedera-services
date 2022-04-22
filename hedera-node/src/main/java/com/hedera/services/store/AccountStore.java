@@ -163,7 +163,6 @@ public class AccountStore {
 		account.setCryptoAllowances(merkleAccount.getCryptoAllowances());
 		account.setFungibleTokenAllowances(merkleAccount.getFungibleTokenAllowances());
 		account.setApproveForAllNfts(merkleAccount.getApproveForAllNfts());
-		account.setHeadTokenNum(merkleAccount.getHeadTokenId());
 		account.setNumAssociations(merkleAccount.getNumAssociations());
 		account.setNumPositiveBalances(merkleAccount.getNumPositiveBalances());
 		account.setNumTreasuryTitles(merkleAccount.getNumTreasuryTitles());
@@ -202,7 +201,6 @@ public class AccountStore {
 		mutableAccount.setCryptoAllowances(model.getMutableCryptoAllowances());
 		mutableAccount.setFungibleTokenAllowances(model.getMutableFungibleTokenAllowances());
 		mutableAccount.setApproveForAllNfts(model.getMutableApprovedForAllNfts());
-		mutableAccount.setHeadTokenId(model.getHeadTokenNum());
 		mutableAccount.setNumPositiveBalances(model.getNumPositiveBalances());
 		mutableAccount.setNumAssociations(model.getNumAssociations());
 		mutableAccount.setNumTreasuryTitles(model.getNumTreasuryTitles());

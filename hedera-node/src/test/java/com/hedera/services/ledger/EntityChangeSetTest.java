@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EntityChangeSetTest {
@@ -43,6 +44,15 @@ class EntityChangeSetTest {
 		assertEquals(2, subject.size());
 		assertChangeAt(0, 1L, null, oneChanges);
 		assertChangeAt(1, 2L, a, twoChanges);
+	}
+
+	@Test
+	void canUpdateCachedEntity() {
+		final Map<TestAccountProperty, Object> twoChanges = Map.of(TestAccountProperty.FLAG, false);
+		subject.include(1L, null, oneChanges);
+		subject.include(2L, null, twoChanges);
+		subject.cacheEntity(1, a);
+		assertSame(a, subject.entity(1));
 	}
 
 	@Test

@@ -59,15 +59,11 @@ class TokenRelationshipTest {
 	void setUp() {
 		token = new Token(tokenId);
 		account = new Account(accountId);
-		account.setHeadTokenNum(key.getLowOrderAsLong());
 		int associatedTokensCount = 3;
 		account.setNumAssociations(associatedTokensCount);
 
 		subject = new TokenRelationship(token, account);
 		subject.initBalance(balance);
-		subject.setKey(key);
-		subject.setNextKey(nextKey);
-		subject.setPrevKey(prevKey);
 	}
 
 	@Test
@@ -254,9 +250,6 @@ class TokenRelationshipTest {
 	void testHashCode() {
 		var rel = new TokenRelationship(token, account);
 		rel.initBalance(balance);
-		rel.setPrevKey(prevKey);
-		rel.setKey(key);
-		rel.setNextKey(nextKey);
 		assertEquals(rel.hashCode(), subject.hashCode());
 	}
 

@@ -24,6 +24,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
+import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -75,10 +76,16 @@ public class AutoAssocTokenRelsCommitInterceptor
 	public void preview(
 			final EntityChangeSet<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty> pendingChanges
 	) {
+		System.out.println(txnCtx.accessor().getFunction());
 		if (txnCtx != null && !AUTO_ASSOCIATING_OPS.contains(txnCtx.accessor().getFunction())) {
 			return;
 		}
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
+			System.out.println("Pending change: "
+					+ BackingTokenRels.readableTokenRel(pendingChanges.id(i))
+					+ " against "
+					+ pendingChanges.entity(i)
+					+ " (" + pendingChanges.changes(i) + ")");
 			// A null current entity means this is a new association
 			if (pendingChanges.entity(i) == null) {
 				final var id = pendingChanges.id(i);

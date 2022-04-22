@@ -102,9 +102,7 @@ class TokenTest {
 		treasuryRel = new TokenRelationship(subject, treasuryAccount);
 		treasuryRel.initBalance(initialTreasuryBalance);
 		treasuryRel.setAutomaticAssociation(true);
-		treasuryRel.setKey(treasuryAssociationKey);
 		nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount);
-		nonTreasuryRel.setKey(nonTreasuryAssociationKey);
 	}
 
 	@Test
@@ -200,7 +198,6 @@ class TokenTest {
 		assertNotNull(rel);
 		assertFalse(rel.isFrozen());
 		assertTrue(rel.isKycGranted());
-		assertEquals(treasuryAssociationKey, rel.getKey());
 	}
 
 	@Test

@@ -197,6 +197,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	public void setCommitInterceptor(final CommitInterceptor<K, A, P> commitInterceptor) {
+		System.out.println("Set interceptor of type "
+				+ commitInterceptor.getClass().getSimpleName()
+				+ " in object " + System.identityHashCode(this));
 		this.commitInterceptor = commitInterceptor;
 		pendingChanges = new EntityChangeSet<>();
 		previewAction = id -> {
@@ -255,9 +258,12 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	public void commit() {
 		throwIfNotInTxn();
 
+		System.out.println("Committing ledger with property type " + propertyType.getSimpleName());
 		try {
 			if (commitInterceptor != null) {
+				System.out.println("   -> " + changeSetSoFar());
 				computePendingChanges();
+				System.out.println("   -> " + pendingChanges.size() + " pending changes");
 				commitInterceptor.preview(pendingChanges);
 				flushPendingChanges();
 			} else {

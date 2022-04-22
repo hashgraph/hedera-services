@@ -77,6 +77,10 @@ public class EntityChangeSet<K, A, P extends Enum<P> & BeanProperty<A>> {
 		changes.add(entityChanges);
 	}
 
+	public void cacheEntity(final int i, final A entity) {
+		entities.set(i, entity);
+	}
+
 	@VisibleForTesting
 	List<K> getIds() {
 		return ids;

@@ -23,6 +23,7 @@ import java.util.Map;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -85,8 +86,10 @@ class LinkAwareTokenRelsCommitInterceptorTest {
 
 		final var expectedNewRel = new MerkleTokenRelStatus();
 		expectedNewRel.setKey(EntityNumPair.fromLongs(aAccountId.getAccountNum(), newAssocTokenId.getTokenNum()));
+		final var changes = someChanges();
 
-		subject.preview(someChanges());
+		subject.preview(changes);
+		assertNotNull(changes.entity(1));
 
 		verify(relsLinkManager).updateLinks(accountNum, List.of(tbdTokenNum), List.of(expectedNewRel));
 	}

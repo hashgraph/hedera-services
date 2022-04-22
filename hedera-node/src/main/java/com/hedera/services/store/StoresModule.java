@@ -48,14 +48,17 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Singleton;
+import java.util.function.Supplier;
 
 @Module
 public interface StoresModule {
@@ -66,11 +69,6 @@ public interface StoresModule {
 	@Binds
 	@Singleton
 	BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(BackingNfts backingNfts);
-
-	@Binds
-	@Singleton
-	BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> bindBackingTokenRels(
-			BackingTokenRels backingTokenRels);
 
 	@Binds
 	@Singleton
@@ -108,18 +106,23 @@ public interface StoresModule {
 		return tokensLedger;
 	}
 
+	@Binds
+	@Singleton
+	BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> bindBackingTokenRels(
+			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger);
+
 	@Provides
 	@Singleton
 	static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> provideTokenRelsLedger(
-			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels,
 			final TransactionContext txnCtx,
 			final SideEffectsTracker sideEffectsTracker,
-			final TokenRelsLinkManager relsLinkManager
+			final TokenRelsLinkManager relsLinkManager,
+			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations
 	) {
 		final var tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
-				backingTokenRels,
+				new BackingTokenRels(tokenAssociations),
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
 		final var interceptor = new LinkAwareTokenRelsCommitInterceptor(txnCtx, sideEffectsTracker, relsLinkManager);

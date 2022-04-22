@@ -51,6 +51,27 @@ class TokenRelsLinkManagerTest {
 	}
 
 	@Test
+	void justDissociatesAsExpected() {
+		setupMaps();
+
+		subject.updateLinks(accountNum, List.of(a), null);
+
+		final var updatedAccount = accounts.get(accountNum);
+		assertEquals(bRelKey.getLowOrderAsLong(), updatedAccount.getHeadTokenId());
+	}
+
+	@Test
+	void justAssociatesAsExpected() {
+		setupMaps();
+		eRel.setKey(EntityNumPair.fromNums(accountNum, e));
+
+		subject.updateLinks(accountNum, null, List.of(eRel));
+
+		final var updatedAccount = accounts.get(accountNum);
+		assertEquals(eRelKey.getLowOrderAsLong(), updatedAccount.getHeadTokenId());
+	}
+
+	@Test
 	void updatesToEmptyListAsExpected() {
 		setupMaps();
 

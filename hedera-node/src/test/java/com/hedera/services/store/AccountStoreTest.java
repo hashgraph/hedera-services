@@ -249,7 +249,7 @@ class AccountStoreTest {
 		for (int i = 0; i < 11; i++) {
 			model.decrementUsedAutomaticAssociations();
 		}
-		model.incrementUsedAutomaticAssocitions();
+		model.incrementUsedAutomaticAssociations();
 
 		// and:
 		subject.commitAccount(model);
@@ -292,7 +292,6 @@ class AccountStoreTest {
 		secondRel.setKey(secondRelKey);
 		secondRel.setPrev(firstAssocTokenNum);
 		firstRel.setNext(secondAssocTokenNum);
-		miscAccount.setHeadTokenNum(firstAssocTokenNum);
 
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.initBalance(balance);
