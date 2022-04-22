@@ -74,8 +74,8 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						renewsUsingContractFundsIfNoAutoRenewAccount(),
-						storageExpiryWorksAtTheExpectedInterval(),
+						renewsUsingContractFundsIfNoAutoRenewAccount(),
+//						storageExpiryWorksAtTheExpectedInterval(),
 				}
 		);
 	}
@@ -87,9 +87,9 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 		final var aFungibleToken = "aFT";
 		final var bFungibleToken = "bFT";
 		final var nonFungibleToken = "NFT";
+		final var supplyKey = "multi";
 		final var aFungibleAmount = 1_000_000L;
 		final var bFungibleAmount = 666L;
-		final var supplyKey = "multi";
 
 		return defaultHapiSpec("StorageExpiryWorksAtTheExpectedInterval")
 				.given(

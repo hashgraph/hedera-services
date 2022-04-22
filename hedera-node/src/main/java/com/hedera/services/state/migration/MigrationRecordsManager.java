@@ -151,7 +151,7 @@ public class MigrationRecordsManager {
 
 				final var syntheticSuccessReceipt = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
 
-				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry);
+				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry, contractNum.toGrpcAccountId());
 				final var memo = String.format(CONTRACT_UPGRADE_MEMO, contractNum.num(), newExpiry);
 				final var synthRecord = ExpirableTxnRecord.newBuilder()
 						.setMemo(memo)

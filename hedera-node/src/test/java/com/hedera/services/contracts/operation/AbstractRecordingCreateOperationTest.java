@@ -25,6 +25,7 @@ import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
@@ -203,7 +204,7 @@ class AbstractRecordingCreateOperationTest {
 		givenSpawnPrereqs();
 		givenBuilderPrereqs();
 		given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
-		given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
+		given(syntheticTxnFactory.contractCreation(contractCustomizer, EntityId.MISSING_ENTITY_ID)).willReturn(mockCreation);
 		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
 		given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
 

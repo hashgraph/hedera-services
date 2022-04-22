@@ -9,9 +9,9 @@ package com.hedera.services.contracts.operation;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,10 +21,14 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -206,7 +210,10 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 					NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 			childRecord.onlyExternalizeIfSuccessful();
 			final var opCustomizer = updater.customizerForPendingCreation();
-			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
+			final var parentId = EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress());
+			final var autoRenewAccount = (EntityId) updater.trackingLedgers().accounts().get(parentId,
+					AccountProperty.AUTO_RENEW_ACCOUNT_ID);
+			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer, autoRenewAccount);
 			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp);
 		} else {
 			frame.setReturnData(childFrame.getOutputData());

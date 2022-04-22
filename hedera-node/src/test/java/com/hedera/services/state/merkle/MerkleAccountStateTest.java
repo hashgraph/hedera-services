@@ -81,6 +81,7 @@ class MerkleAccountStateTest {
 	private static final boolean otherSmartContract = false;
 	private static final boolean otherReceiverSigRequired = false;
 	private static final EntityId otherProxy = new EntityId(3L, 2L, 1L);
+	private static final EntityId autoRenewAccountId = new EntityId(4L, 5L, 6L);
 	private static final int otherNumber = 456;
 	private static final int kvPairs = 123;
 	private static final int otherKvPairs = 456;
@@ -143,7 +144,8 @@ class MerkleAccountStateTest {
 				numPositiveBalances,
 				headTokenNum,
 				numTreasuryTitles,
-				ethereumNonce);
+				ethereumNonce,
+				autoRenewAccountId);
 	}
 
 	@Test

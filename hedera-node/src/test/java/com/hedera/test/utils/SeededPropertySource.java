@@ -325,7 +325,8 @@ public class SeededPropertySource {
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
 				0,
-				0);
+				0,
+				nextEntityId());
 		misorderedState.setNftsOwned(nextUnsignedLong());
 		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
 		return misorderedState;
@@ -364,7 +365,8 @@ public class SeededPropertySource {
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
 				nextUnsignedInt(),
-				nextUnsignedLong());
+				nextUnsignedLong(),
+				nextEntityId());
 	}
 
 	public ExpirableTxnRecord nextRecord() {

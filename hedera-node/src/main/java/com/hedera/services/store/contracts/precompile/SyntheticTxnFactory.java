@@ -22,6 +22,8 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -58,7 +60,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -87,12 +91,13 @@ public class SyntheticTxnFactory {
 				.setCryptoDelete(op);
 	}
 
-	public TransactionBody.Builder synthContractAutoRenew(final EntityNum contractNum, final long newExpiry) {
+	public TransactionBody.Builder synthContractAutoRenew(final EntityNum contractNum, final long newExpiry,
+			final AccountID payerForAutoRenew) {
 		final var op = ContractUpdateTransactionBody.newBuilder()
 				.setContractID(contractNum.toGrpcContractID())
 				.setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
 		return TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder().setAccountID(contractNum.toGrpcAccountId()))
+				.setTransactionID(TransactionID.newBuilder().setAccountID(payerForAutoRenew))
 				.setContractUpdateInstance(op);
 	}
 
@@ -106,9 +111,15 @@ public class SyntheticTxnFactory {
 				.setCryptoUpdateAccount(op);
 	}
 
-	public TransactionBody.Builder contractCreation(final ContractCustomizer customizer) {
+	public TransactionBody.Builder contractCreation(final ContractCustomizer customizer,
+			final EntityId autoRenewAccount) {
 		final var builder = ContractCreateTransactionBody.newBuilder();
+
+		if (!MISSING_ID.equals(autoRenewAccount)) {
+			builder.setAutoRenewAccountId(autoRenewAccount.toGrpcAccountId());
+		}
 		customizer.customizeSynthetic(builder);
+
 		return TransactionBody.newBuilder().setContractCreateInstance(builder);
 	}
 
@@ -206,7 +217,8 @@ public class SyntheticTxnFactory {
 		txnBodyBuilder.setSymbol(tokenCreateWrapper.getSymbol());
 		txnBodyBuilder.setDecimals(tokenCreateWrapper.getDecimals().intValue());
 		txnBodyBuilder.setTokenType(tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : NON_FUNGIBLE_UNIQUE);
-		txnBodyBuilder.setSupplyType(tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
+		txnBodyBuilder.setSupplyType(
+				tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
 		txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
 		txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValue());
 		if (tokenCreateWrapper.getTreasury() != null)
@@ -218,7 +230,8 @@ public class SyntheticTxnFactory {
 		if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null)
 			txnBodyBuilder.setAutoRenewAccount(tokenCreateWrapper.getExpiry().autoRenewAccount());
 		if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != 0)
-			txnBodyBuilder.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
+			txnBodyBuilder.setAutoRenewPeriod(
+					Duration.newBuilder().setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
 		tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
 			final var key = tokenKeyWrapper.key().asGrpc();
 			if (tokenKeyWrapper.isUsedForAdminKey()) txnBodyBuilder.setAdminKey(key);

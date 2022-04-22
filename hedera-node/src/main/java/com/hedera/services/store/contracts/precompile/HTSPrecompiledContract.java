@@ -77,6 +77,7 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -123,6 +124,7 @@ import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.store.contracts.precompile.DescriptorUtils.isTokenProxyRedirect;
@@ -132,6 +134,7 @@ import static com.hedera.services.store.contracts.precompile.PrecompilePricingUt
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
 import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
@@ -898,7 +901,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Validate Solidity input and massage it to be able to transform it to tokenCreateTxnBody --- */
 			verifySolidityInput();
 			try {
-				replaceInheritedKeysWithSenderKey();
+				replaceInheritedProperties();
 			} catch (DecoderException e) {
 				throw new InvalidTransactionException(FAIL_INVALID);
 			}
@@ -1017,9 +1020,17 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			}
 		}
 
-		private void replaceInheritedKeysWithSenderKey() throws DecoderException {
-			tokenCreateOp.setAllInheritedKeysTo((JKey) ledgers.accounts().get(
-					EntityIdUtils.accountIdFromEvmAddress(senderAddress), AccountProperty.KEY));
+		private void replaceInheritedKeysWithSenderKey(AccountID parentId) throws DecoderException {
+			tokenCreateOp.setAllInheritedKeysTo((JKey) ledgers.accounts().get(parentId, AccountProperty.KEY));
+		}
+
+		private void replaceInheritedProperties() throws DecoderException {
+			final var parentId = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
+			final var parentAutoRenewId = (EntityId) ledgers.accounts().get(parentId, AUTO_RENEW_ACCOUNT_ID);
+			if (!MISSING_ID.equals(parentAutoRenewId) && !tokenCreateOp.hasAutoRenewAccount()) {
+				tokenCreateOp.inheritAutoRenewAccount(parentAutoRenewId);
+			}
+			replaceInheritedKeysWithSenderKey(parentId);
 		}
 
 		private boolean validateAdminKey(

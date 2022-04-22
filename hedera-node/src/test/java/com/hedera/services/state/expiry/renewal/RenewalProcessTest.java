@@ -27,6 +27,7 @@ import com.hedera.services.state.expiry.removal.AccountGC;
 import com.hedera.services.state.expiry.removal.ContractGC;
 import com.hedera.services.state.expiry.removal.TreasuryReturns;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import org.junit.jupiter.api.Assertions;
@@ -300,7 +301,7 @@ class RenewalProcessTest {
 
 		assertEquals(DONE, result);
 		verify(helper).renewLastClassifiedWith(fee, actualRenewalPeriod);
-		verify(recordsHelper).streamCryptoRenewal(key, fee, now - 1 + actualRenewalPeriod, false);
+		verify(recordsHelper).streamCryptoRenewal(key, fee, now - 1 + actualRenewalPeriod, false, key);
 	}
 
 	@Test
@@ -321,7 +322,7 @@ class RenewalProcessTest {
 
 		assertEquals(DONE, result);
 		verify(helper).renewLastClassifiedWith(fee, actualRenewalPeriod);
-		verify(recordsHelper).streamCryptoRenewal(key, fee, now - 1 + actualRenewalPeriod, true);
+		verify(recordsHelper).streamCryptoRenewal(key, fee, now - 1 + actualRenewalPeriod, true, key);
 	}
 
 	@Test

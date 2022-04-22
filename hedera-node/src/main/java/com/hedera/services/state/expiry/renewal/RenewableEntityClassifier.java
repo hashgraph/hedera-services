@@ -53,6 +53,7 @@ public class RenewableEntityClassifier {
 
 	private EntityNum lastClassifiedNum;
 	private MerkleAccount lastClassified = null;
+	private EntityNum payerForAutoRenew;
 
 	@Inject
 	public RenewableEntityClassifier(
@@ -96,18 +97,24 @@ public class RenewableEntityClassifier {
 		return lastClassified;
 	}
 
+	public EntityNum getPayerForAutoRenew() {
+		return payerForAutoRenew;
+	}
+
 	// --- Internal helpers ---
 	void renewLastClassifiedWith(long fee, long renewalPeriod) {
 		assertHasLastClassifiedAccount();
-		assertLastClassifiedAccountCanAfford(fee);
+		assertPayerAccountForRenewalCanAfford(fee);
 
 		final var currentAccounts = accounts.get();
 
 		final var mutableLastClassified = currentAccounts.getForModify(lastClassifiedNum);
 		final long newExpiry = mutableLastClassified.getExpiry() + renewalPeriod;
-		final long newBalance = mutableLastClassified.getBalance() - fee;
 		mutableLastClassified.setExpiry(newExpiry);
-		mutableLastClassified.setBalanceUnchecked(newBalance);
+
+		final var mutablePayerForRenew = currentAccounts.getForModify(payerForAutoRenew);
+		final long newBalance = mutablePayerForRenew.getBalance() - fee;
+		mutablePayerForRenew.setBalanceUnchecked(newBalance);
 
 		final var fundingId = fromAccountId(dynamicProperties.fundingAccount());
 		final var mutableFundingAccount = currentAccounts.getForModify(fundingId);
@@ -117,15 +124,33 @@ public class RenewableEntityClassifier {
 		log.debug("Renewed {} at a price of {}tb", lastClassifiedNum, fee);
 	}
 
+
+	private MerkleAccount resolvePayerForAutoRenew(final long fee) {
+		if (lastClassified.isSmartContract() && lastClassified.hasAutoRenewAccount()) {
+			payerForAutoRenew = lastClassified.getAutoRenewAccount().asNum();
+			final var autoRenewAccount = accounts.get().get(payerForAutoRenew);
+			if (isValid(autoRenewAccount, fee)) {
+				return autoRenewAccount;
+			}
+		}
+		payerForAutoRenew = lastClassifiedNum;
+		return lastClassified;
+	}
+
+	private boolean isValid(final MerkleAccount payer, final long fee) {
+		return payer != null && !payer.isDeleted() && payer.getBalance() >= fee;
+	}
+
 	private void assertHasLastClassifiedAccount() {
 		if (lastClassified == null) {
 			throw new IllegalStateException("Cannot remove a last classified account; none is present!");
 		}
 	}
 
-	private void assertLastClassifiedAccountCanAfford(long fee) {
-		if (lastClassified.getBalance() < fee) {
-			var msg = "Cannot charge " + fee + " to account number " + lastClassifiedNum.longValue() + "!";
+	private void assertPayerAccountForRenewalCanAfford(long fee) {
+		final var payer = resolvePayerForAutoRenew(fee);
+		if (payer.getBalance() < fee) {
+			var msg = "Cannot charge " + fee + " to account number " + payer.state().number() + "!";
 			throw new IllegalStateException(msg);
 		}
 	}

@@ -100,9 +100,10 @@ public class RenewalProcess {
 		final var assessment = fees.assessCryptoAutoRenewal(lastClassified, reqPeriod, cycleTime);
 		final long renewalPeriod = assessment.renewalPeriod();
 		final long renewalFee = assessment.fee();
+		final var payer = helper.getPayerForAutoRenew();
 		helper.renewLastClassifiedWith(renewalFee, renewalPeriod);
-		recordsHelper.streamCryptoRenewal(
-				entityNum, renewalFee, lastClassified.getExpiry() + renewalPeriod, isContract);
+		recordsHelper.streamCryptoRenewal(entityNum, renewalFee, lastClassified.getExpiry() + renewalPeriod,
+				isContract, payer);
 		return DONE;
 	}
 
