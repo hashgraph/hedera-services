@@ -147,7 +147,9 @@ public class Creation {
 	}
 
 	public List<FcTokenAssociation> newAssociations() {
-		return newAndUpdatedRels.stream().map(TokenRelationship::asAutoAssociation).toList();
+		return newAndUpdatedRels.stream()
+				.filter(rel -> rel.getToken().getId().equals(provisionalId))
+				.map(TokenRelationship::asAutoAssociation).toList();
 	}
 
 	public Id newTokenId() {
