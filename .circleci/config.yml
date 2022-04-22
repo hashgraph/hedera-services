@@ -828,17 +828,17 @@ workflows:
             - attach_workspace:
                 at: /
 
-# The mainnet migration test needs to be run in a 18-node test network.
-# Enable this workflow to run on a daily only when a new release branch is tagged and branched.
-# Once this branch is released, disable this workflow.
+  # The mainnet migration test needs to be run in a 18-node test network.
+  # Enable this workflow to run on a daily only when a new release branch is tagged and branched.
+  # Once this branch is released, disable this workflow.
   GCP-Daily-Services-Crypto-Migration-18N-1C:
     triggers:
-          - schedule:
-              cron: "0 23,8 * * *"
-              filters:
-                branches:
-                  only:
-                    - release-branch-N
+      - schedule:
+          cron: "0 23,8 * * *"
+          filters:
+            branches:
+              only:
+                - release-branch-N
     jobs:
       - build-platform-and-services
       - update-start-up-key-for-mainnet:
@@ -1377,49 +1377,49 @@ workflows:
                 at: /
 
   continuous-integration-gcp:
-      jobs:
-        - build-artifact:
-            name: "artifact-build"
-            context: SonarCloud
-            filters:
-              branches:
-                ignore:
-                  - NONE
-            workflow-name: "Continuous-integration"
-        - sonar-check:
-            context: SonarCloud
-            requires:
-              - artifact-build
-            workflow-name: "Continuous-integration-GCP"
+    jobs:
+      - build-artifact:
+          name: "artifact-build"
+          context: SonarCloud
+          filters:
+            branches:
+              ignore:
+                - NONE
+          workflow-name: "Continuous-integration"
+      - sonar-check:
+          context: SonarCloud
+          requires:
+            - artifact-build
+          workflow-name: "Continuous-integration-GCP"
 
-        - build-platform-and-services:
-            context: SonarCloud
-            requires:
-              - artifact-build
-            workflow-name: "Continuous-integration-GCP"
-        - javadoc-generation:
-            context: Slack
-            requires:
-              - build-platform-and-services
-            pre-steps:
-              - attach_workspace:
-                  at: /
-        - jrs-regression:
-            context: Slack
-            regression_path: /swirlds-platform/regression
-            result_path: results/4N_1C/CI
-            config_type: "ci"
-            workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
-            name: "run-continuous-integration-gcp"
-            continuous_integration: true
-            slack_results_channel: "hedera-cicd"
-            slack_summary_channel: "hedera-cicd"
-            requires:
-              - javadoc-generation
-            pre-steps:
-              - install-tools
-              - attach_workspace:
-                  at: /
+      - build-platform-and-services:
+          context: SonarCloud
+          requires:
+            - artifact-build
+          workflow-name: "Continuous-integration-GCP"
+      - javadoc-generation:
+          context: Slack
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - attach_workspace:
+                at: /
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression
+          result_path: results/4N_1C/CI
+          config_type: "ci"
+          workflow-name: "GCP-Commit-Services-Comp-Basic-4N-1C"
+          name: "run-continuous-integration-gcp"
+          continuous_integration: true
+          slack_results_channel: "hedera-cicd"
+          slack_summary_channel: "hedera-cicd"
+          requires:
+            - javadoc-generation
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
 jobs:
   build-artifact:
     parameters:
@@ -1552,7 +1552,7 @@ jobs:
       - run:
           name: Build hedera-services repo
           command: |
-                mvn --no-transfer-progress clean install -DskipTests ;
+            mvn --no-transfer-progress clean install -DskipTests ;
       - run:
           name: Checkout swirlds-platform repos and build
           command: |
@@ -1562,7 +1562,7 @@ jobs:
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
             git submodule update --init --recursive --checkout;
-            cd regression; git checkout -b 02251-D-get-HederaVersion origin/02251-D-get-HederaVersion;  cd -;
+            cd regression; git checkout -b 02245-D-rm-updateJar100M-file origin/02245-D-rm-updateJar100M-file;  cd -;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
@@ -1657,9 +1657,9 @@ jobs:
       workflow-name: << parameters.workflow-name >>
     steps:
       - gcp_import_credentials:
-         username_variable: GCLOUD_SERVICE_ACCOUNT_NAME
-         keyfile_variable: GCLOUD_SERVICE_KEY
-         project_variable: GOOGLE_PROJECT_ID
+          username_variable: GCLOUD_SERVICE_ACCOUNT_NAME
+          keyfile_variable: GCLOUD_SERVICE_KEY
+          project_variable: GOOGLE_PROJECT_ID
       - add_ssh_keys:
           fingerprints:
             - "96:47:c4:5c:e7:45:06:c5:26:a5:85:ef:41:22:2f:d6"
