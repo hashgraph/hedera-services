@@ -441,6 +441,63 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void verifyContractCallFailsOnInvalidToAddress() {
+		// setup:
+		givenValidTxnCtx();
+		// and:
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		given(entityAccess.isTokenAccount(any())).willReturn(false);
+		given(accountStore.loadContract(any())).willThrow(InvalidTransactionException.class);
+		// and:
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
+				senderAccount.getId().asEntityNum());
+
+		// when:
+		assertThrows(InvalidTransactionException.class, () -> subject.doStateTransition() );
+
+		// then:
+		verify(evmTxProcessor, never()).execute(any(), any(), anyLong(), anyLong(), any(), any());
+		verify(recordService, never()).updateFromEvmCallContext(any());
+	}
+
+	@Test
+	void verifyContractCallWhenToIsTokenSucceeds() {
+		// setup:
+		givenValidTxnCtx();
+		// and:
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+		given(txnCtx.consensusTime()).willReturn(consensusTime);
+		// and:
+		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+		final var tokenId = new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum());
+		given(entityAccess.isTokenAccount(tokenId.asEvmAddress())).willReturn(true);
+
+		// and:
+		var results = TransactionProcessingResult.successful(
+				null, 1234L, 0L, 124L, Bytes.EMPTY,
+				contractAccount.getId().asEvmAddress(), Map.of());
+		given(evmTxProcessor.execute(senderAccount, new Account(tokenId).canonicalAddress(), gas, sent, Bytes.EMPTY,
+				txnCtx.consensusTime()))
+				.willReturn(results);
+		given(worldState.getCreatedContractIds()).willReturn(List.of());
+
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
+				senderAccount.getId().asEntityNum());
+		// when:
+		subject.doStateTransition();
+
+		// then:
+		verify(recordService).externaliseEvmCallTransaction(any());
+		verify(recordService).updateFromEvmCallContext(any());
+	}
+
+	@Test
 	void successfulPreFetch() {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(ethTxTxn);
