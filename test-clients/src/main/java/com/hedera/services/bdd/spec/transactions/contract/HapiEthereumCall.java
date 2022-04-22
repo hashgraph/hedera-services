@@ -42,16 +42,12 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.sun.jna.ptr.IntByReference;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.ethereum.core.CallTransaction;
-import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -147,7 +143,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     public HapiEthereumCall sending(long amount) {
-        valueSent = Optional.of((BigInteger.valueOf(amount).divide(BigInteger.valueOf(10_000_000_000L))).longValue());
+        valueSent = Optional.of(amount);
+//        valueSent = Optional.of((BigInteger.valueOf(amount).divide(BigInteger.valueOf(10_000_000_000L))).longValue());
         return this;
     }
 
