@@ -503,21 +503,25 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	private void computePendingChanges() {
-		doForRetainedIn(changedKeys, previewAction);
-		doForRetainedIn(createdKeys, previewAction);
+		computeForRetainedIn(changedKeys, previewAction);
+		computeForRetainedIn(createdKeys, previewAction);
 		if (!removedKeys.isEmpty()) {
-			for (final var id : removedKeys) {
-				final var entity = entities.getImmutableRef(id);
-				// Ignore entities that were created and destroyed within the transaction
-				if (entity != null) {
-					pendingChanges.include(id, entity, null);
-				}
+			computeRemovals();
+		}
+	}
+
+	private void computeRemovals() {
+		for (final var id : removedKeys) {
+			final var entity = entities.getImmutableRef(id);
+			// Ignore entities that were created and destroyed within the transaction
+			if (entity != null) {
+				pendingChanges.includeRemoval(id, entity);
 			}
 		}
 	}
 
 	private void flushPendingChanges() {
-		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
+		for (int i = 0, n = pendingChanges.retainedSize(); i < n; i++) {
 			final var id = pendingChanges.id(i);
 			final var cachedEntity = pendingChanges.entity(i);
 			final var entity = (cachedEntity == null) ? newEntity.get() : entities.getRef(id);
@@ -528,12 +532,12 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	private void flushListed(final List<K> l) {
-		if (doForRetainedIn(l, finalizeAction)) {
+		if (computeForRetainedIn(l, finalizeAction)) {
 			l.clear();
 		}
 	}
 
-	private boolean doForRetainedIn(final List<K> l, final Consumer<K> action) {
+	private boolean computeForRetainedIn(final List<K> l, final Consumer<K> action) {
 		if (l.isEmpty()) {
 			return false;
 		}

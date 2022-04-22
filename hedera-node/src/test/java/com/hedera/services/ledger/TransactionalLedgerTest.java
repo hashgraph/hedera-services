@@ -63,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
@@ -121,6 +122,18 @@ class TransactionalLedgerTest {
 		testLedger.begin();
 
 		assertEquals(0, statefulChanges.size());
+	}
+
+	@Test
+	void doesNotPutAnythingDestroyedEntity() {
+		setupInterceptedTestLedger();
+		given(backingTestAccounts.getImmutableRef(2L)).willReturn(anotherAccount);
+
+		testLedger.begin();
+		testLedger.destroy(2L);
+		testLedger.commit();
+
+		verify(backingTestAccounts, never()).put(eq(2L), any());
 	}
 
 	@Test

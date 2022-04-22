@@ -49,6 +49,8 @@ public class EntityChangeSet<K, A, P extends Enum<P> & BeanProperty<A>> {
 	private final List<A> entities = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
 	private final List<Map<P, Object>> changes = new ArrayList<>(MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN);
 
+	private int numRetainedChanges = 0;
+
 	public K id(final int i) {
 		return ids.get(i);
 	}
@@ -65,16 +67,28 @@ public class EntityChangeSet<K, A, P extends Enum<P> & BeanProperty<A>> {
 		ids.clear();
 		changes.clear();
 		entities.clear();
+		numRetainedChanges = 0;
 	}
 
 	public int size() {
 		return ids.size();
 	}
 
+	public int retainedSize() {
+		return numRetainedChanges;
+	}
+
 	public void include(final K key, final A entity, final Map<P, Object> entityChanges) {
 		ids.add(key);
 		entities.add(entity);
 		changes.add(entityChanges);
+		numRetainedChanges++;
+	}
+
+	public void includeRemoval(final K key, final A entity) {
+		ids.add(key);
+		entities.add(entity);
+		changes.add(null);
 	}
 
 	public void cacheEntity(final int i, final A entity) {

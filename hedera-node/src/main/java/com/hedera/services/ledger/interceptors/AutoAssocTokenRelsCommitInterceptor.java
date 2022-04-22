@@ -49,7 +49,7 @@ public class AutoAssocTokenRelsCommitInterceptor
 	);
 
 	// If null, every new association is interpreted as an auto-association; if non-null, associations
-	// are only auto-associations if the active transaction type is
+	// are only auto-associations if the active transaction type is _not_ in AUTO_ASSOCIATING_OPS
 	@Nullable
 	private final TransactionContext txnCtx;
 	protected final SideEffectsTracker sideEffectsTracker;
@@ -75,7 +75,7 @@ public class AutoAssocTokenRelsCommitInterceptor
 	public void preview(
 			final EntityChangeSet<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty> pendingChanges
 	) {
-		if (txnCtx != null && !AUTO_ASSOCIATING_OPS.contains(txnCtx.accessor().getFunction())) {
+		if (txnCtx != null && activeOpIsNotAutoAssociating()) {
 			return;
 		}
 		for (int i = 0, n = pendingChanges.size(); i < n; i++) {
@@ -85,5 +85,9 @@ public class AutoAssocTokenRelsCommitInterceptor
 				sideEffectsTracker.trackAutoAssociation(id.getRight(), id.getLeft());
 			}
 		}
+	}
+
+	private boolean activeOpIsNotAutoAssociating() {
+		return !AUTO_ASSOCIATING_OPS.contains(txnCtx.accessor().getFunction());
 	}
 }

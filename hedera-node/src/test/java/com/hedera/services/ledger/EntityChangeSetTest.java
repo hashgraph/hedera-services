@@ -66,6 +66,21 @@ class EntityChangeSetTest {
 		assertTrue(subject.getChanges().isEmpty());
 	}
 
+	@Test
+	void distinguishesBetweenRetainsAndRemovals() {
+		final Map<TestAccountProperty, Object> twoChanges = Map.of(TestAccountProperty.FLAG, false);
+		subject.include(1L, null, oneChanges);
+		subject.includeRemoval(2L, a);
+		subject.include(3L, null, twoChanges);
+
+		assertEquals(3, subject.size());
+		assertEquals(2, subject.retainedSize());
+
+		subject.clear();
+
+		assertEquals(0, subject.retainedSize());
+	}
+
 	private void assertChangeAt(
 			final int i,
 			final long k,
