@@ -23,8 +23,8 @@ package com.hedera.services.state.expiry.renewal;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
-import com.hedera.services.state.backgroundSystemTasks.DissociateNftRemovals;
-import com.hedera.services.state.backgroundSystemTasks.SystemTask;
+import com.hedera.services.state.tasks.DissociateNftRemovals;
+import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.expiry.removal.AccountGC;
 import com.hedera.services.state.expiry.removal.ContractGC;
 import com.hedera.services.state.expiry.removal.TreasuryReturns;
@@ -42,7 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Collections;
 
-import static com.hedera.services.state.backgroundSystemTasks.SystemTaskType.DISSOCIATED_NFT_REMOVALS;
+import static com.hedera.services.state.tasks.SystemTaskType.DISSOCIATED_NFT_REMOVALS;
 import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
 import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
@@ -159,7 +159,7 @@ class RenewalProcessTest {
 
 		given(nftRemovalTask.getSerialsCount()).willReturn(0L);
 		given(dynamicProperties.getMaxReturnedNftsPerTouch()).willReturn(maxTouched);
-		given(accountGC.burnNfts(nftRemovalTask, maxTouched)).willReturn(maxTouched);
+		given(accountGC.burnNfts(nftRemovalTask, maxTouched)).willReturn(maxTouched-1);
 
 		subject.garbageCollectNfts();
 

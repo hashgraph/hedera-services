@@ -43,6 +43,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -75,6 +76,7 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.codec.DecoderException;
@@ -186,6 +188,7 @@ class StateViewTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 	private VirtualMap<VirtualBlobKey, VirtualBlobValue> storage;
 	private VirtualMap<ContractKey, IterableContractValue> contractStorage;
+	private FCQueue<SystemTask> systemTasks;
 	private ScheduleStore scheduleStore;
 	private TransactionBody parentScheduleCreate;
 	private NetworkInfo networkInfo;
@@ -317,6 +320,7 @@ class StateViewTest {
 
 		storage = (VirtualMap<VirtualBlobKey, VirtualBlobValue>) mock(VirtualMap.class);
 		contractStorage = (VirtualMap<ContractKey, IterableContractValue>) mock(VirtualMap.class);
+		systemTasks = (FCQueue<SystemTask>)  mock(FCQueue.class);
 
 		children = new MutableStateChildren();
 		children.setUniqueTokens(uniqueTokens);
@@ -821,6 +825,16 @@ class StateViewTest {
 	}
 
 	@Test
+	void getsSystemTasks() {
+		final var children = new MutableStateChildren();
+		children.setSystemTasks(systemTasks);
+
+		subject = new StateView(null, children, null);
+
+		assertEquals(systemTasks, subject.systemTasks());
+	}
+
+	@Test
 	void returnsEmptyOptionalIfContractMissing() {
 		given(contracts.get(any())).willReturn(null);
 
@@ -1024,6 +1038,7 @@ class StateViewTest {
 		assertSame(StateView.EMPTY_MM, subject.contracts());
 		assertSame(StateView.EMPTY_MM, subject.accounts());
 		assertSame(StateView.EMPTY_MM, subject.topics());
+		assertSame(StateView.EMPTY_FQ, subject.systemTasks());
 		assertTrue(subject.contentsOf(target).isEmpty());
 		assertTrue(subject.infoForFile(target).isEmpty());
 		assertTrue(subject.infoForContract(cid, aliasManager, maxTokensFprAccountInfo).isEmpty());

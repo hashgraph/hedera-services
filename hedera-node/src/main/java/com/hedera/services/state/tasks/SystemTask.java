@@ -1,4 +1,24 @@
-package com.hedera.services.state.backgroundSystemTasks;
+package com.hedera.services.state.tasks;
+
+/*-
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
@@ -7,8 +27,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.fcqueue.FCQueueElement;
 
 import java.io.IOException;
-
-import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 
 public class SystemTask implements FCQueueElement {
 	static final int RELEASE_0260_VERSION = 1;
@@ -72,7 +90,10 @@ public class SystemTask implements FCQueueElement {
 	@Override
 	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
 		taskType = SystemTaskType.get(in.readInt());
-		serializableTask = readNullableSerializable(in);
+		if (taskType == SystemTaskType.DISSOCIATED_NFT_REMOVALS) {
+			serializableTask = new DissociateNftRemovals(
+					in.readLong(), in.readLong(), in.readLong(), in.readLong(), in.readLong());
+		}
 	}
 
 	@Override
@@ -84,5 +105,25 @@ public class SystemTask implements FCQueueElement {
 	@Override
 	public int getVersion() {
 		return CURRENT_VERSION;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || SystemTask.class != o.getClass()) {
+			return false;
+		}
+		var that = (SystemTask) o;
+		if (this.taskType != that.taskType) {
+			return false;
+		}
+		if (this.taskType == SystemTaskType.DISSOCIATED_NFT_REMOVALS) {
+			final var thisTask = (DissociateNftRemovals) this.serializableTask;
+			final var thatTask = (DissociateNftRemovals) that.serializableTask;
+			return thisTask.equals(thatTask);
+		}
+		return false;
 	}
 }

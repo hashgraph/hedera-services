@@ -20,7 +20,7 @@ package com.hedera.services.txns.token.process;
  * ‍
  */
 
-import com.hedera.services.state.backgroundSystemTasks.SystemTask;
+import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;

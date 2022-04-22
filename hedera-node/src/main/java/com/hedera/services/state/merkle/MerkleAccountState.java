@@ -20,7 +20,6 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -688,10 +687,5 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		if (isImmutable()) {
 			throw new MutabilityException("Cannot set " + proximalField + " on an immutable account state!");
 		}
-	}
-
-	@VisibleForTesting
-	byte getFirstUint256KeyNonZeroBytes() {
-		return firstUint256KeyNonZeroBytes;
 	}
 }

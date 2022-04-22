@@ -25,11 +25,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
-import com.swirlds.common.constructable.ClassConstructorPair;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -84,8 +79,10 @@ class MerkleUniqueTokenTest {
 		final var key = new EntityNumPair(numbers);
 		// given
 		var other = new MerkleUniqueToken(owner, metadata, otherTimestamp);
+		other.setSpender(spender);
 		other.setKey(key);
 		var other2 = new MerkleUniqueToken(owner, otherMetadata, timestamp);
+		other2.setSpender(spender);
 		other2.setKey(key);
 		var other3 = new MerkleUniqueToken(otherOwner, metadata, timestamp);
 		other3.setKey(key);
@@ -98,6 +95,11 @@ class MerkleUniqueTokenTest {
 		other6.setSpender(spender);
 		other6.setPrev(next);
 		other6.setNext(prev);
+		var other7 = new MerkleUniqueToken(owner, metadata, timestamp);
+		other7.setKey(key);
+		other7.setSpender(spender);
+		other7.setPrev(prev);
+		other7.setNext(prev);
 		var identical = new MerkleUniqueToken(owner, metadata, timestamp);
 		identical.setKey(key);
 		identical.setSpender(spender);
@@ -112,6 +114,7 @@ class MerkleUniqueTokenTest {
 		assertNotEquals(subject, other4);
 		assertNotEquals(subject, other5);
 		assertNotEquals(subject, other6);
+		assertNotEquals(subject, other7);
 		assertEquals(subject, identical);
 	}
 

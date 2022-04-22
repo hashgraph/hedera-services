@@ -54,6 +54,10 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.state.submerkle.TxnIdSerdeTest;
+import com.hedera.services.state.tasks.DissociateNftRemovals;
+import com.hedera.services.state.tasks.DissociateNftRemovalsSerdeTest;
+import com.hedera.services.state.tasks.SystemTask;
+import com.hedera.services.state.tasks.SystemTaskSerdeTest;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
@@ -187,7 +191,10 @@ public class SerializedForms {
 					entry(RecordsRunningHashLeaf.class, SeededPropertySource::nextRecordsRunningHashLeaf,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(TxnId.class, SeededPropertySource::nextTxnId, TxnIdSerdeTest.NUM_TEST_CASES),
-					entry(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, 2 * MIN_TEST_CASES_PER_VERSION)
+					entry(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, 2 * MIN_TEST_CASES_PER_VERSION),
+					entry(SystemTask.class, SeededPropertySource::nextSystemTask, SystemTaskSerdeTest.NUM_TEST_CASES),
+					entry(DissociateNftRemovals.class, SeededPropertySource::nextDissociateNftRemovals,
+							DissociateNftRemovalsSerdeTest.NUM_TEST_CASES)
 	);
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(

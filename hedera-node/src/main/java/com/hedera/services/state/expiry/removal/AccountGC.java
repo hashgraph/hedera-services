@@ -25,7 +25,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.backgroundSystemTasks.DissociateNftRemovals;
+import com.hedera.services.state.tasks.DissociateNftRemovals;
 import com.hedera.services.state.expiry.TokenRelsListRemoval;
 import com.hedera.services.state.expiry.UniqueTokensListRemoval;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -144,7 +144,7 @@ public class AccountGC {
 		final var account = backingAccounts.getRef(
 				EntityNum.fromLong(nftRemovalTask.getAccountNum()).toGrpcAccountId());
 		var nftKey = EntityNumPair.fromLongs(
-				nftRemovalTask.getHeadTokenNum(), nftRemovalTask.getHeadSerialNum());
+				nftRemovalTask.getHeadNftTokenNum(), nftRemovalTask.getHeadSerialNum());
 		var touched = 0;
 		while (
 				nftKey != MISSING_NUM_PAIR &&

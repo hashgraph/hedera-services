@@ -30,7 +30,6 @@ import com.hedera.services.stream.RecordStreamType;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.system.Platform;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
