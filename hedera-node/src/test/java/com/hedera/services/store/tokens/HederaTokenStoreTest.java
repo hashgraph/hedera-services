@@ -40,7 +40,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNumPair;
@@ -63,7 +62,6 @@ import org.mockito.Mockito;
 
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -196,9 +194,12 @@ class HederaTokenStoreTest {
 	private static final NftId aNft = new NftId(0, 0, 2, 1234);
 	private static final NftId tNft = new NftId(0, 0, 2, 12345);
 	private static final Pair<AccountID, TokenID> anotherFeeCollectorMisc = asTokenRel(anotherFeeCollector, misc);
-	private static final EntityNumPair sponsorRelMiscKey = EntityNumPair.fromLongs(sponsor.getAccountNum(), misc.getTokenNum());
-	private static final EntityNumPair sponsorRelNftKey = EntityNumPair.fromLongs(sponsor.getAccountNum(), nonfungible.getTokenNum());
-	private static final EntityNumPair anotherFeeCollectorMiscKey = EntityNumPair.fromLongs(anotherFeeCollector.getAccountNum(), misc.getTokenNum());
+	private static final EntityNumPair sponsorRelMiscKey = EntityNumPair.fromLongs(sponsor.getAccountNum(),
+			misc.getTokenNum());
+	private static final EntityNumPair sponsorRelNftKey = EntityNumPair.fromLongs(sponsor.getAccountNum(),
+			nonfungible.getTokenNum());
+	private static final EntityNumPair anotherFeeCollectorMiscKey = EntityNumPair.fromLongs(
+			anotherFeeCollector.getAccountNum(), misc.getTokenNum());
 
 	private EntityIdSource ids;
 	private SideEffectsTracker sideEffectsTracker;
@@ -501,15 +502,12 @@ class HederaTokenStoreTest {
 		final var status = subject.autoAssociate(sponsor, misc);
 
 		assertEquals(OK, status);
-		assertEquals(
-				List.of(new FcTokenAssociation(misc.getTokenNum(), sponsor.getAccountNum())),
-				sideEffectsTracker.getTrackedAutoAssociations());
 		verify(tokenRelsLedger).create(key);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
-		verify(accountsLedger).set(sponsor, NUM_ASSOCIATIONS,associatedTokensCount+1);
-		verify(accountsLedger).set(sponsor, USED_AUTOMATIC_ASSOCIATIONS, alreadyUsedAutoAssocitaions+1);
+		verify(accountsLedger).set(sponsor, NUM_ASSOCIATIONS, associatedTokensCount + 1);
+		verify(accountsLedger).set(sponsor, USED_AUTOMATIC_ASSOCIATIONS, alreadyUsedAutoAssocitaions + 1);
 	}
 
 	@Test
@@ -521,7 +519,7 @@ class HederaTokenStoreTest {
 		given(accountsLedger.get(sponsor, MAX_AUTOMATIC_ASSOCIATIONS)).willReturn(maxAutoAssociations);
 		given(accountsLedger.get(sponsor, USED_AUTOMATIC_ASSOCIATIONS)).willReturn(alreadyUsedAutoAssocitaions);
 		given(properties.areTokenAssociationsLimited()).willReturn(true);
-		given(properties.maxTokensPerAccount()).willReturn(associatedTokensCount+1);
+		given(properties.maxTokensPerAccount()).willReturn(associatedTokensCount + 1);
 
 		given(token.hasKycKey()).willReturn(true);
 		given(token.hasFreezeKey()).willReturn(true);
@@ -530,14 +528,11 @@ class HederaTokenStoreTest {
 		final var status = subject.autoAssociate(sponsor, misc);
 
 		assertEquals(OK, status);
-		assertEquals(
-				List.of(new FcTokenAssociation(misc.getTokenNum(), sponsor.getAccountNum())),
-				sideEffectsTracker.getTrackedAutoAssociations());
 		verify(tokenRelsLedger).create(key);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_FROZEN, true);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_KYC_GRANTED, false);
 		verify(tokenRelsLedger).set(key, TokenRelProperty.IS_AUTOMATIC_ASSOCIATION, true);
-		verify(accountsLedger).set(sponsor, NUM_ASSOCIATIONS,associatedTokensCount + 1);
+		verify(accountsLedger).set(sponsor, NUM_ASSOCIATIONS, associatedTokensCount + 1);
 	}
 
 	@Test
@@ -670,7 +665,7 @@ class HederaTokenStoreTest {
 		final var status = subject.changeOwner(aNft, sponsor, counterparty);
 
 		assertEquals(OK, status);
-		verify(accountsLedger).set(counterparty, NUM_ASSOCIATIONS, associatedTokensCount+1);
+		verify(accountsLedger).set(counterparty, NUM_ASSOCIATIONS, associatedTokensCount + 1);
 		verify(accountsLedger).set(counterparty, NUM_POSITIVE_BALANCES, numPositiveBalances + 1);
 	}
 
@@ -1370,8 +1365,8 @@ class HederaTokenStoreTest {
 		assertEquals(OK, status);
 		verify(tokenRelsLedger).set(anotherFeeCollectorMisc, TOKEN_BALANCE, 1L);
 		verify(accountsLedger).set(anotherFeeCollector, USED_AUTOMATIC_ASSOCIATIONS, 4);
-		verify(accountsLedger).set(anotherFeeCollector, NUM_ASSOCIATIONS, associatedTokensCount+1);
-		verify(accountsLedger).set(anotherFeeCollector, NUM_POSITIVE_BALANCES, numPositiveBalances+1);
+		verify(accountsLedger).set(anotherFeeCollector, NUM_ASSOCIATIONS, associatedTokensCount + 1);
+		verify(accountsLedger).set(anotherFeeCollector, NUM_POSITIVE_BALANCES, numPositiveBalances + 1);
 	}
 
 	@Test

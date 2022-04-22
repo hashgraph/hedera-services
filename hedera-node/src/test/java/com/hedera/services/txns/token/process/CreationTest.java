@@ -79,8 +79,6 @@ class CreationTest {
 	@Mock
 	private TokenRelationship newRel;
 	@Mock
-	private TokenRelationship oldRel;
-	@Mock
 	private FcTokenAssociation autoAssociation;
 	@Mock
 	private OptionValidator validator;
@@ -194,7 +192,7 @@ class CreationTest {
 
 		given(dynamicProperties.maxCustomFeesAllowed()).willReturn(2);
 		given(modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now)).willReturn(provisionalToken);
-		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(oldRel, newRel));
+		given(listing.listFrom(provisionalToken, tokenStore, dynamicProperties)).willReturn(List.of(newRel));
 		given(provisionalToken.getCustomFees()).willReturn(List.of(customFee));
 
 		subject.setProvisionalId(provisionalId);

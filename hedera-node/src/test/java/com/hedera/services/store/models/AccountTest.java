@@ -28,7 +28,6 @@ import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -68,15 +67,11 @@ class AccountTest {
 	private final int maxAutoAssociations = 1234;
 	private final int autoAssociationMetadata = buildAutomaticAssociationMetaData(maxAutoAssociations,
 			alreadyUsedAutoAssociations);
-	private final EntityNumPair firstRelKey = EntityNumPair.fromLongs(miscAccountNum, firstAssocTokenNum);
 	private final TokenRelationship firstRel = new TokenRelationship(null, null);
-	private final EntityNumPair secondRelKey = EntityNumPair.fromLongs(miscAccountNum, secondAssocTokenNum);
 	private final TokenRelationship secondRel = new TokenRelationship(null, null);
-	private final EntityNumPair thirdRelKey = EntityNumPair.fromLongs(miscAccountNum, thirdAssocTokenNum);
-	private final TokenRelationship thirdRel = new TokenRelationship(null, null);
-	private final Token firstToken = new Token(new Id(0,0, firstAssocTokenNum));
-	private final Token secondToken = new Token(new Id(0,0, secondAssocTokenNum));
-	private final Token thirdToken = new Token(new Id(0,0, thirdAssocTokenNum));
+	private final Token firstToken = new Token(new Id(0, 0, firstAssocTokenNum));
+	private final Token secondToken = new Token(new Id(0, 0, secondAssocTokenNum));
+	private final Token thirdToken = new Token(new Id(0, 0, thirdAssocTokenNum));
 	private final Account treasuryAccount = new Account(treasuryId);
 
 	private Account subject;
@@ -174,12 +169,9 @@ class AccountTest {
 
 	@Test
 	void toStringAsExpected() {
-		// given:
-		final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, " +
-				"ownedNfts=5, alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, " +
-				"alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null" +
-				subject.getAlias().toStringUtf8() + ", numAssociations=" + numAssociations +", numPositiveBalances="+
-				numPositiveBalances + ", headTokenNum=666}";
+		final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, ownedNfts=5, " +
+				"alreadyUsedAutoAssociations=123, maxAutoAssociations=1234, alias=, cryptoAllowances=null, " +
+				"fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=3, numPositiveBalances=2}";
 
 		// expect:
 		assertEquals(desired, subject.toString());
@@ -206,8 +198,8 @@ class AccountTest {
 
 		// then:
 		verify(dissociationRel).updateModelRelsSubjectTo(validator);
-		assertEquals(numPositiveBalances - 1 , subject.getNumPositiveBalances());
-		assertEquals(numAssociations - 1 , subject.getNumAssociations());
+		assertEquals(numPositiveBalances - 1, subject.getNumPositiveBalances());
+		assertEquals(numAssociations - 1, subject.getNumAssociations());
 		assertEquals(alreadyUsedAutoAssociations - 1, subject.getAlreadyUsedAutomaticAssociations());
 	}
 
@@ -363,7 +355,7 @@ class AccountTest {
 		final var secondNewToken = new Token(new Id(0, 0, 999));
 		subject.setAutoAssociationMetadata(autoAssociationMetadata);
 		given(dynamicProperties.areTokenAssociationsLimited()).willReturn(true);
-		given(dynamicProperties.maxTokensPerAccount()).willReturn(numAssociations+2);
+		given(dynamicProperties.maxTokensPerAccount()).willReturn(numAssociations + 2);
 
 		// when:
 		subject.associateWith(List.of(firstNewToken, secondNewToken), tokenStore, true, true, dynamicProperties);

@@ -199,7 +199,6 @@ class TypedTokenStoreTest {
 	void persistsNewTokenRelAsExpected() {
 		// setup:
 		final var expectedNewTokenRel = new MerkleTokenRelStatus(balance * 2, false, true, false);
-		expectedNewTokenRel.setKey(miscTokenRelId);
 		// given:
 		final var newTokenRel = new TokenRelationship(token, miscAccount);
 		// when:
