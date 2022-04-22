@@ -125,7 +125,7 @@ class TransactionalLedgerTest {
 	}
 
 	@Test
-	void doesNotPutAnythingDestroyedEntity() {
+	void doesNotPutAnythingForDestroyedEntity() {
 		setupInterceptedTestLedger();
 		given(backingTestAccounts.getImmutableRef(2L)).willReturn(anotherAccount);
 
@@ -134,6 +134,19 @@ class TransactionalLedgerTest {
 		testLedger.commit();
 
 		verify(backingTestAccounts, never()).put(eq(2L), any());
+	}
+
+	@Test
+	void doesNotCallRemoveIfInterceptorCompletesRemovals() {
+		setupInterceptedTestLedger();
+		given(testInterceptor.completesPendingRemovals()).willReturn(true);
+		given(backingTestAccounts.getImmutableRef(2L)).willReturn(anotherAccount);
+
+		testLedger.begin();
+		testLedger.destroy(2L);
+		testLedger.commit();
+
+		verify(backingTestAccounts, never()).remove(2L);
 	}
 
 	@Test

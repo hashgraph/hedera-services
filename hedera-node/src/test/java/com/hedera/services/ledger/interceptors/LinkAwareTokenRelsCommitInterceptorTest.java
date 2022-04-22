@@ -44,6 +44,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCal
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -64,6 +65,11 @@ class LinkAwareTokenRelsCommitInterceptorTest {
 	@BeforeEach
 	void setUp() {
 		subject = new LinkAwareTokenRelsCommitInterceptor(txnCtx, sideEffectsTracker, relsLinkManager);
+	}
+
+	@Test
+	void doesPendingRemovals() {
+		assertTrue(subject.completesPendingRemovals());
 	}
 
 	@Test

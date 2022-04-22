@@ -67,6 +67,11 @@ public class LinkAwareTokenRelsCommitInterceptor extends AutoAssocTokenRelsCommi
 	}
 
 	@Override
+	public boolean completesPendingRemovals() {
+		return true;
+	}
+
+	@Override
 	public void preview(
 			final EntityChangeSet<Pair<AccountID, TokenID>, MerkleTokenRelStatus, TokenRelProperty> pendingChanges
 	) {

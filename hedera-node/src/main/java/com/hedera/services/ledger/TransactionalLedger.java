@@ -268,7 +268,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 			changes.clear();
 
 			if (!deadKeys.isEmpty()) {
-				removedKeys.forEach(entities::remove);
+				if (commitInterceptor == null || !commitInterceptor.completesPendingRemovals()) {
+					removedKeys.forEach(entities::remove);
+				}
 				deadKeys.clear();
 				removedKeys.clear();
 			}

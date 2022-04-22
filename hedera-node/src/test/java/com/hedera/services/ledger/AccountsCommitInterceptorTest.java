@@ -34,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -45,6 +46,13 @@ class AccountsCommitInterceptorTest {
 	private SideEffectsTracker sideEffectsTracker;
 
 	private AccountsCommitInterceptor subject;
+
+	@Test
+	void doesntCompleteRemovals() {
+		setupLiveInterceptor();
+
+		assertFalse(subject.completesPendingRemovals());
+	}
 
 	@Test
 	void rejectsNonZeroSumChange() {
