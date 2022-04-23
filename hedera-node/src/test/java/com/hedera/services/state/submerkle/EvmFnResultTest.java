@@ -72,6 +72,7 @@ class EvmFnResultTest {
 	private static final byte[] functionParameters = "functionParameters".getBytes();
 	private static final String error = "Oops!";
 	private static final EntityId contractId = new EntityId(0L, 0L, 3L);
+	private static final EntityId senderId = new EntityId(0L, 0L, 42L);
 	private static final Address recipient = EntityNum.fromLong(3L).toEvmAddress();
 	private static final List<EntityId> createdContractIds = List.of(
 			new EntityId(2L, 3L, 4L),
@@ -104,7 +105,8 @@ class EvmFnResultTest {
 				stateChanges,
 				gas,
 				amount,
-				functionParameters);
+				functionParameters,
+				senderId);
 	}
 
 	@Test
@@ -156,7 +158,8 @@ class EvmFnResultTest {
 				stateChanges,
 				0L,
 				0L,
-				new byte[0]);
+				new byte[0],
+				null);
 
 		final var input = TransactionProcessingResult.failed(
 				gasUsed, 0, 0,
@@ -183,7 +186,8 @@ class EvmFnResultTest {
 				stateChanges,
 				0L,
 				0L,
-				new byte[0]);
+				new byte[0],
+				null);
 
 		final var input = TransactionProcessingResult.successful(
 				besuLogs,
@@ -221,7 +225,8 @@ class EvmFnResultTest {
 				stateChanges,
 				0L,
 				0L,
-				new byte[0]);
+				new byte[0],
+				null);
 
 		final var input = TransactionProcessingResult.successful(
 				besuLogs,
@@ -251,7 +256,8 @@ class EvmFnResultTest {
 				stateChanges,
 				gas,
 				amount,
-				functionParameters);
+				functionParameters,
+				senderId);
 		final var three = new EvmFnResult(
 				contractId,
 				result,
@@ -264,7 +270,8 @@ class EvmFnResultTest {
 				stateChanges,
 				gas,
 				amount,
-				functionParameters);
+				functionParameters, 
+				senderId);
 		final var four = new EvmFnResult(
 				contractId,
 				result,
@@ -277,7 +284,8 @@ class EvmFnResultTest {
 				stateChanges,
 				gas,
 				amount,
-				functionParameters);
+				functionParameters, 
+				senderId);
 		final var five = new EvmFnResult(
 				contractId,
 				result,
@@ -290,7 +298,8 @@ class EvmFnResultTest {
 				stateChanges,
 				gas,
 				amount,
-				functionParameters);
+				functionParameters,
+				senderId);
 		final var six = new EvmFnResult(
 				contractId,
 				result,
@@ -303,7 +312,8 @@ class EvmFnResultTest {
 				stateChanges,
 				gas,
 				amount,
-				functionParameters);
+				functionParameters,
+				senderId);
 		final var seven = new EvmFnResult(
 				contractId,
 				result,
@@ -316,7 +326,8 @@ class EvmFnResultTest {
 				stateChanges,
 				gas,
 				amount,
-				functionParameters);
+				functionParameters,
+				senderId);
 		final var eight = new EvmFnResult(
 				contractId,
 				result,
@@ -329,7 +340,8 @@ class EvmFnResultTest {
 				Collections.emptyMap(),
 				gas,
 				amount,
-				functionParameters);
+				functionParameters, 
+				senderId);
 		final var nine = new EvmFnResult(
 				contractId,
 				result,
@@ -342,7 +354,22 @@ class EvmFnResultTest {
 				stateChanges,
 				gas,
 				amount,
-				"randomParameters".getBytes());
+				"randomParameters".getBytes(),
+				senderId);
+		final var ten = new EvmFnResult(
+				contractId,
+				result,
+				error,
+				bloom,
+				gasUsed,
+				logs,
+				createdContractIds,
+				evmAddress,
+				stateChanges,
+				gas,
+				amount,
+				"randomParameters".getBytes(),
+				null);
 
 		assertNotEquals(null, one);
 		assertNotEquals(new Object(), one);
@@ -353,6 +380,7 @@ class EvmFnResultTest {
 		assertNotEquals(one, seven);
 		assertNotEquals(one, eight);
 		assertNotEquals(one, nine);
+		assertNotEquals(one, ten);
 		assertEquals(one, three);
 
 		assertNotEquals(one.hashCode(), two.hashCode());
@@ -374,7 +402,8 @@ class EvmFnResultTest {
 						subject.getStateChanges(),
 						subject.getGas(),
 						subject.getAmount(),
-						subject.getFunctionParameters()),
+						subject.getFunctionParameters(),
+						subject.getSenderId()),
 				subject
 		);
 	}
@@ -395,7 +424,8 @@ class EvmFnResultTest {
 						", evmAddress=0000000000000000000000000000000000000009, " +
 						"gas=" + gas + ", " +
 						"amount=" + amount + ", " +
-						"functionParameters=" + CommonUtils.hex(functionParameters) + "}",
+						"functionParameters=" + CommonUtils.hex(functionParameters) +
+						", senderId=EntityId{shard=0, realm=0, num=42}" + "}",
 				subject.toString());
 	}
 
@@ -420,7 +450,8 @@ class EvmFnResultTest {
 				specialStateChanges,
 				gas,
 				amount,
-				functionParameters);
+				functionParameters,
+				senderId);
 
 		final var grpc = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
@@ -442,6 +473,7 @@ class EvmFnResultTest {
 				.setGas(gas)
 				.setAmount(amount)
 				.setFunctionParameters(ByteString.copyFrom(functionParameters))
+				.setSenderId(senderId.toGrpcAccountId())
 				.build();
 
 		assertEquals(grpc, subject.toGrpc());
@@ -461,7 +493,8 @@ class EvmFnResultTest {
 				specialStateChanges,
 				gas,
 				0L,
-				functionParameters);
+				functionParameters, 
+				senderId);
 
 		final var grpc = ContractFunctionResult.newBuilder()
 				.setGasUsed(gasUsed)
@@ -477,6 +510,7 @@ class EvmFnResultTest {
 						.build())
 				.setGas(gas)
 				.setFunctionParameters(ByteString.copyFrom(functionParameters))
+				.setSenderId(senderId.toGrpcAccountId())
 				.build();
 
 		assertEquals(grpc, subject.toGrpc());
@@ -499,6 +533,7 @@ class EvmFnResultTest {
 				.setGas(gas)
 				.setAmount(amount)
 				.setFunctionParameters(ByteString.copyFrom(functionParameters))
+				.setSenderId(senderId.toGrpcAccountId())
 				.build();
 
 		assertEquals(expected, actual);
@@ -513,17 +548,19 @@ class EvmFnResultTest {
 	@Test 
 	void updateFromEvmCallContextWorks() {
 		var oneByte = new byte[] { 1 };
+		var senderId = EntityId.fromIdentityCode(42);
 		EthTxData ethTxData =
 				new EthTxData(oneByte, EthTxData.EthTransactionType.EIP2930, oneByte, 1,
 						oneByte, oneByte, oneByte, 5678,
 						oneByte, BigInteger.valueOf(34_000_000_000L), oneByte, null, 1,
 						oneByte, oneByte, oneByte);
 		
-		subject.updateFromEvmCallContext(ethTxData);
+		subject.updateForEvmCall(ethTxData, senderId);
 		
 		assertEquals(5678, subject.getGas());
 		assertEquals(3, subject.getAmount());
 		assertArrayEquals(oneByte, subject.getFunctionParameters());
+		assertEquals(senderId, subject.getSenderId());
 	}
 
 	private static EvmLog logFrom(final int s) {

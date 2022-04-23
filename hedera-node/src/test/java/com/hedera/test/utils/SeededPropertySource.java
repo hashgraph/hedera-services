@@ -114,7 +114,8 @@ public class SeededPropertySource {
 				nextStateChanges(2, 5),
 				nextUnsignedLong(),
 				nextUnsignedLong(),
-				nextBytes(128));
+				nextBytes(128),
+				nextEntityId());
 	}
 
 	public MerkleTopic nextTopic() {
@@ -562,7 +563,8 @@ public class SeededPropertySource {
 				nextStateChanges(5, 10),
 				nextUnsignedLong(),
 				nextUnsignedLong(),
-				nextBytes(64));
+				nextBytes(64),
+				nextEntityId());
 	}
 
 	public List<EvmLog> nextEvmLogs(final int n) {
