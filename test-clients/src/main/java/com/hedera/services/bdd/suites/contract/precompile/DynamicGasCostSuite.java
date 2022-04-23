@@ -770,7 +770,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						sourcing(() -> contractCallWithFunctionAbi(
 								donorAliasAddr.get(),
 								getABIFor(FUNCTION, "relinquishFundsTo", donorContract),
-								donorMirrorAddr.get()).hasKnownStatus(OBTAINER_SAME_CONTRACT_ID))
+								donorMirrorAddr.get()).hasKnownStatus(INVALID_SOLIDITY_ADDRESS))
 				).then(
 						contractCall(contract, "buildThenRevertThenBuild", otherSalt)
 								.sending(1_000)
