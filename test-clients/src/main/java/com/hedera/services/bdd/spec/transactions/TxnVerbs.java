@@ -33,6 +33,7 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractDelete;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractUpdate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumContractCreate;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApproveAllowance;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoDelete;
@@ -69,10 +70,13 @@ import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.utility.CommonUtils;
+import org.ethereum.core.CallTransaction;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -357,6 +361,10 @@ public class TxnVerbs {
 		return new HapiContractCall(abi, contract, fn);
 	}
 
+	public static HapiEthereumContractCreate ethereumContractCreate(final String contractName) {
+		return new HapiEthereumContractCreate(contractName).bytecode(contractName);
+	}
+
 	public static HapiContractCreate contractCreate(final String contractName, final Object... constructorParams) {
 		if (constructorParams.length > 0) {
 			final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
@@ -416,6 +424,27 @@ public class TxnVerbs {
 				ops.add(file);
 				ops.add(updatedFile);
 			}
+			allRunFor(spec, ops);
+		});
+	}
+
+	/**
+	 * This method enables uploading a contract bytecode with the constructor parameters (if present) appended at the end of the file
+	 * @param contractName the name of the contract, which is to be deployed
+	 * @param abi the abi of the contract
+	 * @param args the constructor arguments
+	 */
+	public static HapiSpecOperation uploadInitCodeWithConstructorArguments(final String contractName, final String abi, final Object... args) {
+		return withOpContext((spec, ctxLog) -> {
+			List<HapiSpecOperation> ops = new ArrayList<>();
+
+			final var path = getResourcePath(contractName, ".bin");
+			final var file = new HapiFileCreate(contractName);
+			final var fileByteCode = extractByteCode(path);
+			final byte[] params = args.length == 0 ? new byte[]{} : CallTransaction.Function.fromJsonInterface(abi).encodeArguments(args);
+			final var updatedFile = updateLargeFile(GENESIS, contractName, params.length == 0 ? fileByteCode : fileByteCode.concat(ByteString.copyFrom(params)));
+			ops.add(file);
+			ops.add(updatedFile);
 			allRunFor(spec, ops);
 		});
 	}

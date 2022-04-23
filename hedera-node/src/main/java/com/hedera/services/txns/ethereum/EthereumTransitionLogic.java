@@ -94,12 +94,12 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 
 	@Override
 	public void doStateTransition() {
-		var syntheticTxBody = getOrCreateTransactionBody(txnCtx.accessor());
-		EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnCtx.accessor());
+		final EthTxData ethTxData = spanMapAccessor.getEthTxDataMeta(txnCtx.accessor());
 		maybeUpdateCallData(txnCtx.accessor(), ethTxData, txnCtx.accessor().getTxn().getEthereumTransaction());
-		var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
+		final var syntheticTxBody = getOrCreateTransactionBody(txnCtx.accessor());
+		final var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 
-		var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
+		final var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 
 		if (syntheticTxBody.hasContractCall()) {
 			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
@@ -178,11 +178,14 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	public void preFetch(final TxnAccessor accessor) {
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
 
-		EthereumTransactionBody op = accessor.getTxn().getEthereumTransaction();
-		ethTxData = maybeUpdateCallData(accessor, ethTxData, op);
+//		EthereumTransactionBody op = accessor.getTxn().getEthereumTransaction();
+//		ethTxData = maybeUpdateCallData(accessor, ethTxData, op);
 
 		var ethTxSigs = EthTxSigs.extractSignatures(ethTxData);
 		spanMapAccessor.setEthTxSigsMeta(accessor, ethTxSigs);
+
+		EthereumTransactionBody op = accessor.getTxn().getEthereumTransaction();
+		ethTxData = maybeUpdateCallData(accessor, ethTxData, op);
 
 		TransactionBody txBody = createSyntheticTransactionBody(ethTxData);
 

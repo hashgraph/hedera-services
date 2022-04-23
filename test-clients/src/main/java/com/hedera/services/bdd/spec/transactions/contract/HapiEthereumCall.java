@@ -80,7 +80,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private long gasPrice;
     private long maxPriorityGas;
     private long gasLimit;
-    private Optional<FileID> ethCallData = Optional.empty();
     private Optional<Long> maxGasAllowance = Optional.empty();
     private String privateKeyRef;
 
@@ -144,17 +143,11 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     public HapiEthereumCall sending(long amount) {
         valueSent = Optional.of(amount);
-//        valueSent = Optional.of((BigInteger.valueOf(amount).divide(BigInteger.valueOf(10_000_000_000L))).longValue());
         return this;
     }
 
     public HapiEthereumCall maxGasAllowance(long maxGasAllowance) {
         this.maxGasAllowance = Optional.of(maxGasAllowance);
-        return this;
-    }
-
-    public HapiEthereumCall ethCallData(FileID fileID) {
-        ethCallData = Optional.of(fileID);
         return this;
     }
 
@@ -273,7 +266,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
                         EthereumTransactionBody.class, builder -> {
                             builder.setEthereumData(ByteString.copyFrom(signedEthTxData.encodeTx()));
-                            ethCallData.ifPresent(builder::setCallData);
                             maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
                         }
                 );
@@ -283,91 +275,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private EthTxData signMessage(EthTxData ethTx, byte[] privateKey) {
         System.out.println(Bytes.wrap(privateKey).toHexString());
         return EthTxSigs.signMessage(ethTx, privateKey);
-//        byte[] signableMessage = calculateSingableMessage(ethTx);
-//        final LibSecp256k1.secp256k1_ecdsa_recoverable_signature signature =
-//                new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
-//        LibSecp256k1.secp256k1_ecdsa_sign_recoverable(
-//                LibSecp256k1.CONTEXT, signature, new Keccak.Digest256().digest(signableMessage), privateKey, null, null);
-//
-//        final ByteBuffer compactSig = ByteBuffer.allocate(64);
-//        final IntByReference recId = new IntByReference(0);
-//        LibSecp256k1.secp256k1_ecdsa_recoverable_signature_serialize_compact(
-//                LibSecp256k1.CONTEXT, compactSig, recId, signature);
-//        compactSig.flip();
-//        final byte[] sig = compactSig.array();
-//
-//        // wrap in signature object
-//        final byte[] r = new byte[32];
-//        System.arraycopy(sig, 0, r, 0, 32);
-//        final byte[] s = new byte[32];
-//        System.arraycopy(sig, 32, s, 0, 32);
-//
-//        BigInteger v;
-//        if (ethTx.type() == EthTxData.EthTransactionType.LEGACY_ETHEREUM) {
-//            if (ethTx.chainId() == null || ethTx.chainId().length == 0) {
-//                v = BigInteger.valueOf(27L + recId.getValue());
-//            } else {
-//                v = BigInteger.valueOf(35L + recId.getValue())
-//                        .add(new BigInteger(1, ethTx.chainId()).multiply(BigInteger.TWO));
-//            }
-//        } else {
-//            v = null;
-//        }
-//
-//        return new EthTxData(
-//                ethTx.rawTx(),
-//                ethTx.type(),
-//                ethTx.chainId(),
-//                ethTx.nonce(),
-//                ethTx.gasPrice(),
-//                ethTx.maxPriorityGas(),
-//                ethTx.maxGas(),
-//                ethTx.gasLimit(),
-//                ethTx.to(),
-//                ethTx.value(),
-//                ethTx.callData(),
-//                ethTx.accessList(),
-//                (byte) recId.getValue(),
-//                v == null ? null : v.toByteArray(),
-//                r,
-//                s);
-    }
-
-    private byte[] calculateSingableMessage(EthTxData ethTx) {
-        return switch (ethTx.type()) {
-            case LEGACY_ETHEREUM -> (ethTx.chainId() != null && ethTx.chainId().length > 0)
-                    ? RLPEncoder.encodeAsList(
-                    Integers.toBytes(ethTx.nonce()),
-                    ethTx.gasPrice(),
-                    Integers.toBytes(ethTx.gasLimit()),
-                    ethTx.to(),
-                    Integers.toBytesUnsigned(ethTx.value()),
-                    ethTx.callData(),
-                    ethTx.chainId(),
-                    Integers.toBytes(0),
-                    Integers.toBytes(0))
-                    : RLPEncoder.encodeAsList(
-                    Integers.toBytes(ethTx.nonce()),
-                    ethTx.gasPrice(),
-                    Integers.toBytes(ethTx.gasLimit()),
-                    ethTx.to(),
-                    Integers.toBytesUnsigned(ethTx.value()),
-                    ethTx.callData());
-            case EIP1559 -> RLPEncoder.encodeSequentially(
-                    Integers.toBytes(2),
-                    new Object[] {
-                            ethTx.chainId(),
-                            Integers.toBytes(ethTx.nonce()),
-                            ethTx.maxPriorityGas(),
-                            ethTx.maxGas(),
-                            Integers.toBytes(ethTx.gasLimit()),
-                            ethTx.to(),
-                            Integers.toBytesUnsigned(ethTx.value()),
-                            ethTx.callData(),
-                            new Object[0]
-                    });
-            case EIP2930 -> throw new IllegalArgumentException("Unsupported transaction type " + ethTx.type());
-        };
     }
 
     @Override
