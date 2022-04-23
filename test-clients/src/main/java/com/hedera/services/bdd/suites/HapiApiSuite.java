@@ -30,7 +30,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -86,10 +88,12 @@ public abstract class HapiApiSuite {
 	public static final String THROTTLE_DEFS = HapiSpecSetup.getDefaultInstance().throttleDefinitionsName();
 
 	public static final HapiSpecSetup DEFAULT_PROPS = HapiSpecSetup.getDefaultInstance();
+	public static final String ETH_SUFFIX = "_Eth";
 
 	private boolean deferResultsSummary = false;
 	private boolean tearDownClientsAfter = true;
 	private List<HapiApiSpec> finalSpecs = Collections.emptyList();
+	private int suiteRunnerCounter = 0;
 
 	public String name() {
 		String simpleName = this.getClass().getSimpleName();
@@ -131,6 +135,7 @@ public abstract class HapiApiSuite {
 	}
 
 	public FinalOutcome runSuiteSync() {
+		runSuite(this::runSync);
 		return runSuite(this::runSync);
 	}
 
@@ -142,8 +147,11 @@ public abstract class HapiApiSuite {
 		if (!getDeferResultsSummary()) {
 			getResultsLogger().info("-------------- STARTING " + name() + " SUITE --------------");
 		}
+
+		suiteRunnerCounter++;
 		List<HapiApiSpec> specs = getSpecsInSuite();
-		specs.forEach(spec -> spec.setSuitePrefix(name()));
+		final var name = suiteRunnerCounter == 2 ? name() + ETH_SUFFIX : name();
+		specs.forEach(spec -> spec.setSuitePrefix(name));
 		runner.accept(specs);
 		finalSpecs = specs;
 		summarizeResults(getResultsLogger());

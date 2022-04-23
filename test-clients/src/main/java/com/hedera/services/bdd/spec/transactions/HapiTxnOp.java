@@ -112,7 +112,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return submitTime;
 	}
 
-	protected ResponseCodeEnum getExpectedStatus() {
+	public ResponseCodeEnum getExpectedStatus() {
 		return expectedStatus.orElse(SUCCESS);
 	}
 

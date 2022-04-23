@@ -105,6 +105,19 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.contract = contract;
     }
 
+    public HapiEthereumCall(final HapiContractCall contractCall) {
+        this.abi = contractCall.getAbi();
+        if(contractCall.getParams() != null) {
+            this.params = contractCall.getParams();
+        }
+        this.contract = contractCall.getContract();
+        this.txnName = contractCall.getTxnName();
+        this.gas = contractCall.getGas();
+        this.expectedStatus = Optional.of(contractCall.getExpectedStatus());
+        this.payer = contractCall.getPayer();
+        shouldRegisterTxn = true;
+    }
+
     public HapiEthereumCall notTryingAsHexedliteral() {
         tryAsHexedAddressIfLenMatches = false;
         return this;

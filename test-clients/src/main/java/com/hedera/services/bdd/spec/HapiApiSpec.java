@@ -186,6 +186,8 @@ public class HapiApiSpec implements Runnable {
 		return name;
 	}
 
+	public String getSuitePrefix() { return suitePrefix; }
+
 	public String logPrefix() {
 		return "'" + name + "' - ";
 	}

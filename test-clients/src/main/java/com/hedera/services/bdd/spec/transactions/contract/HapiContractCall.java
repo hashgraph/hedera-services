@@ -121,6 +121,26 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		return HederaFunctionality.ContractCall;
 	}
 
+	public String getContract() {
+		return contract;
+	}
+
+	public String getAbi() {
+		return abi;
+	}
+
+	public Object[] getParams() {
+		return params;
+	}
+
+	public String getTxnName() {
+		return txnName;
+	}
+
+	public Optional<Long> getGas() {
+		return gas;
+	}
+
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
 		return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::contractCallMethod;
