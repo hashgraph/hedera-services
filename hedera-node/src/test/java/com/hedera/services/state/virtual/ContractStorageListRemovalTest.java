@@ -68,6 +68,12 @@ class ContractStorageListRemovalTest {
 	}
 
 	@Test
+	void delegatesPut() {
+		subject.put(rootKey, rootValue);
+		verify(storage).put(rootKey, rootValue);
+	}
+
+	@Test
 	void knowsHowToMakeListNodeHead() {
 		targetValue.setPrevKey(rootKey.getKey());
 

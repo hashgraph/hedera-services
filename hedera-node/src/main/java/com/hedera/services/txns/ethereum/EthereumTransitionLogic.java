@@ -24,12 +24,15 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;
@@ -41,8 +44,10 @@ import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.apache.commons.codec.DecoderException;
 import org.bouncycastle.util.encoders.Hex;
 
 import javax.inject.Inject;
@@ -53,6 +58,10 @@ import java.util.function.Predicate;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.KEY;
+import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 
@@ -69,6 +78,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	private final HederaFs hfs;
 	private final byte[] chainId;
 	private final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	private final GlobalDynamicProperties globalDynamicProperties;
 
 	@Inject
 	public EthereumTransitionLogic(
@@ -78,8 +88,8 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			final ContractCreateTransitionLogic contractCreateTransitionLogic,
 			final TransactionRecordService recordService,
 			final HederaFs hfs,
-			GlobalDynamicProperties globalDynamicProperties,
-			AliasManager aliasManager,
+			final GlobalDynamicProperties globalDynamicProperties,
+			final AliasManager aliasManager,
 			final TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger) {
 		this.txnCtx = txnCtx;
 		this.spanMapAccessor = spanMapAccessor;
@@ -90,6 +100,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		this.chainId = Integers.toBytes(globalDynamicProperties.getChainId());
 		this.aliasManager = aliasManager;
 		this.accountsLedger = accountsLedger;
+		this.globalDynamicProperties = globalDynamicProperties;
 	}
 
 	@Override
@@ -104,6 +115,10 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		if (syntheticTxBody.hasContractCall()) {
 			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
 		} else if (syntheticTxBody.hasContractCreateInstance()) {
+			final var synthOp =
+					addInheritablePropertiesToContractCreate(syntheticTxBody.getContractCreateInstance(), callingAccount.toGrpcAccountId());
+			syntheticTxBody = TransactionBody.newBuilder().setContractCreateInstance(synthOp).build();
+			spanMapAccessor.setEthTxBodyMeta(txnCtx.accessor(), syntheticTxBody);
 			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
 		}
 		recordService.updateFromEvmCallContext(ethTxData);
@@ -218,16 +233,41 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 					.setContractID(EntityIdUtils.contractIdFromEvmAddress(ethTxData.to())).build();
 			return TransactionBody.newBuilder().setContractCall(synthOp).build();
 		} else {
-			//FIXME we need a better solution.  Something like for precheck it's the default
-			//FIXME but in consensus we get the renewal of the calling account and update the operation?
-			var autoRenewPeriod = Duration.newBuilder().setSeconds(
-					java.time.Duration.ofDays(90).getSeconds()).build();
+			final var autoRenewPeriod =
+					Duration.newBuilder().setSeconds(globalDynamicProperties.minAutoRenewDuration()).build();
 			var synthOp = ContractCreateTransactionBody.newBuilder()
 					.setInitcode(ByteString.copyFrom(ethTxData.callData()))
 					.setGas(ethTxData.gasLimit())
 					.setInitialBalance(ethTxData.value().divide(WEIBARS_TO_TINYBARS).longValueExact())
 					.setAutoRenewPeriod(autoRenewPeriod);
 			return TransactionBody.newBuilder().setContractCreateInstance(synthOp).build();
+		}
+	}
+
+	public ContractCreateTransactionBody addInheritablePropertiesToContractCreate(
+			final ContractCreateTransactionBody contractCreateTxnBody,
+			final AccountID sender
+	) {
+		final var synthOp = ContractCreateTransactionBody
+				.newBuilder(contractCreateTxnBody)
+				.setAdminKey(attemptToDecodeOrThrow((JKey) accountsLedger.get(sender, KEY)))
+				.setAutoRenewPeriod(Duration.newBuilder().setSeconds((long) accountsLedger.get(sender, AUTO_RENEW_PERIOD)));
+		final var senderMemo = (String) accountsLedger.get(sender, MEMO);
+		if (senderMemo != null) {
+			synthOp.setMemo(senderMemo);
+		}
+		final var senderProxy = (EntityId) accountsLedger.get(sender, PROXY);
+		if (senderProxy != null && !senderProxy.equals(EntityId.MISSING_ENTITY_ID)) {
+			synthOp.setProxyAccountID(senderProxy.toGrpcAccountId());
+		}
+		return synthOp.build();
+	}
+
+	private Key attemptToDecodeOrThrow(final JKey key) {
+		try {
+			return JKey.mapJKey(key);
+		} catch (DecoderException e) {
+			throw new InvalidTransactionException(ResponseCodeEnum.SERIALIZATION_FAILED);
 		}
 	}
 }
