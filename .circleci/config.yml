@@ -493,6 +493,9 @@ commands:
       slack_summary_channel:
         type: string
         default: ""
+      platform_repo_path:
+        type: string
+        default: "TBD"
       hedera_services_path:
         type: string
         default: "/repo"
@@ -575,7 +578,9 @@ commands:
               ${JRS_OPTIONS} \
               -Dlog4j.configurationFile=log4j2-jrs.xml \
               -Dspring.output.ansi.enabled=ALWAYS \
-              -jar regression.jar "${CONFIG_PATH}" -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}"
+              -jar regression.jar "${CONFIG_PATH}" \
+              -p "<< parameters.platform_repo_path >>" 
+              -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}"
             popd > /dev/null 2>&1
           no_output_timeout: 30m
 
@@ -753,13 +758,6 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-NetError-4N-1C:
-    triggers:
-      - schedule:
-          cron: "30 5 * * *"
-          filters:
-            branches:
-              only:
-                - master
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1597,6 +1595,7 @@ jobs:
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform.git;
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
+            git checkout -b 02266-D-add-platform-location origin/02266-D-add-platform-location;
             git submodule update --init --recursive --checkout;
             mvn --no-transfer-progress clean install -DskipTests;
 
@@ -1674,13 +1673,16 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
+      platform_repo_path:
+        type: string
+        default: "TBD"
       hedera_services_path:
         type: string
         default: "/repo"
@@ -1712,6 +1714,7 @@ jobs:
           slack_results_channel: << parameters.slack_results_channel >>
           slack_summary_channel: << parameters.slack_summary_channel >>
           hedera_services_path: << parameters.hedera_services_path >>
+          platform_repo_path: << parameters.platform_repo_path >>
           continuous_integration: << parameters.continuous_integration >>
       - when:
           condition: << parameters.automated_run >>
