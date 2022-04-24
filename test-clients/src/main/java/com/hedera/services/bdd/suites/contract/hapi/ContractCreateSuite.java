@@ -632,9 +632,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 						uploadInitCode(contract),
 						contractCreate(contract)
 				).when(
-						contractCall(blockTimeLogger, "logNow")
+						contractCall(contract, "logNow")
 								.via(firstBlock).delayBy(5000),
-						contractCall(blockTimeLogger, "logNow")
+						contractCall(contract, "logNow")
 								.via(timeLoggingTxn)
 				).then(
 						withOpContext((spec, opLog) -> {

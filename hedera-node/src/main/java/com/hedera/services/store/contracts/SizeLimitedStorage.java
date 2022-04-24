@@ -347,7 +347,10 @@ public class SizeLimitedStorage {
 		final var curStorage = storage.get();
 		updatedKeys.forEach((id, changeSet) -> {
 			IterableContractValue firstValue = null;
-			var firstKey = newFirstKeys.computeIfAbsent(id, this::firstKeyLookup);
+			// We can't use newFirstKeys.computeIfAbsent() below, since that method treats an id->null mapping as
+			// ABSENT(!)---but if newFirstKeys contains an id->null mapping, it means that all the existing key/value
+			// pairs were removed for that contract, and we must ignore any existing first key in the accounts map
+			var firstKey = newFirstKeys.containsKey(id) ? newFirstKeys.get(id) : firstKeyLookup(id);
 			for (final var changedKey : changeSet) {
 				final var newValue = newMappings.get(changedKey);
 				firstKey = storageUpserter.upsertMapping(changedKey, newValue, firstKey, firstValue, curStorage);
