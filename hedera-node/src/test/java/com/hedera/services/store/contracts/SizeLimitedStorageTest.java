@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class SizeLimitedStorageTest {
@@ -263,6 +264,23 @@ class SizeLimitedStorageTest {
 		subject.putStorage(firstAccount, aLiteralKey, UInt256.ZERO);
 		assertEquals(UInt256.ZERO, subject.getStorage(firstAccount, aLiteralKey));
 		assertEquals(firstKvPairs - 1, subject.usageSoFar(firstAccount));
+	}
+
+	@Test
+	void removingOnlyCurrentMappingInListCausesSubsequentInsertionToUseNullRoot() {
+		givenAccount(firstAccount, 1, firstAKey);
+		given(storage.containsKey(firstAKey)).willReturn(true);
+		givenNoSizeLimits();
+
+		subject.putStorage(firstAccount, aLiteralKey, UInt256.ZERO);
+		subject.putStorage(firstAccount, bLiteralKey, bLiteralValue);
+
+		given(storageUpserter.upsertMapping(firstBKey, bValue, null, null, storage))
+				.willReturn(firstBKey);
+
+		subject.validateAndCommit();
+
+		verify(storageUpserter).upsertMapping(firstBKey, bValue, null, null, storage);
 	}
 
 	@Test
