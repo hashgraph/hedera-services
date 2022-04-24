@@ -1595,8 +1595,8 @@ jobs:
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform.git;
             cd /swirlds-platform;
             sed -i -e 's/github.com/services-jrs-regression/g' .gitmodules;
-            git checkout -b 02266-D-add-platform-location origin/02266-D-add-platform-location;
             git submodule update --init --recursive --checkout;
+            git checkout -b 02266-D-add-platform-location origin/02266-D-add-platform-location;
             mvn --no-transfer-progress clean install -DskipTests;
 
       - run:
