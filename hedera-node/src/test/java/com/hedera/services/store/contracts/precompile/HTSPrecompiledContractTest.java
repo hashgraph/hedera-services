@@ -713,8 +713,6 @@ class HTSPrecompiledContractTest {
 		// given
 		givenFrameContext();
 		given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
-		given(syntheticTxnFactory.createTokenCreate(any()))
-				.willReturn(TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder()));
 		final var accounts = mock(TransactionalLedger.class);
 		given(wrappedLedgers.accounts()).willReturn(accounts);
 		final var key = Mockito.mock(JKey.class);

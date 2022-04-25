@@ -255,6 +255,7 @@ class StateViewTest {
 				.autoRenewPeriod(1_000_000L)
 				.deleted(true)
 				.expirationTime(9_999_999L)
+				.autoRenewAccount(asAccount("0.0.4"))
 				.get();
 		contracts = (MerkleMap<EntityNum, MerkleAccount>) mock(MerkleMap.class);
 
