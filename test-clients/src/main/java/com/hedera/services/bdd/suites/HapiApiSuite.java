@@ -30,9 +30,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -98,9 +96,10 @@ public abstract class HapiApiSuite {
 	public String name() {
 		String simpleName = this.getClass().getSimpleName();
 
-		return !simpleName.endsWith("Suite")
+		simpleName =  !simpleName.endsWith("Suite")
 				? simpleName
 				: simpleName.substring(0, simpleName.length() - "Suite".length());
+		return suiteRunnerCounter == 2 ? simpleName.concat(ETH_SUFFIX) : simpleName;
 	}
 
 	public List<HapiApiSpec> getFinalSpecs() {
@@ -136,6 +135,7 @@ public abstract class HapiApiSuite {
 
 	public FinalOutcome runSuiteSync() {
 		runSuite(this::runSync);
+		getResultsLogger().info(System.lineSeparator());
 		return runSuite(this::runSync);
 	}
 
@@ -144,13 +144,13 @@ public abstract class HapiApiSuite {
 	}
 
 	private FinalOutcome runSuite(Consumer<List<HapiApiSpec>> runner) {
+		suiteRunnerCounter++;
 		if (!getDeferResultsSummary()) {
 			getResultsLogger().info("-------------- STARTING " + name() + " SUITE --------------");
 		}
 
-		suiteRunnerCounter++;
 		List<HapiApiSpec> specs = getSpecsInSuite();
-		final var name = suiteRunnerCounter == 2 ? name() + ETH_SUFFIX : name();
+		final var name = name();
 		specs.forEach(spec -> spec.setSuitePrefix(name));
 		runner.accept(specs);
 		finalSpecs = specs;

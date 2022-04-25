@@ -22,34 +22,26 @@ package com.hedera.services.bdd.spec.utilops;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.secp256k1SourceKey;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
 
 public class CustomSpecAssert extends UtilOp {
 	static final Logger log = LogManager.getLogger(CustomSpecAssert.class);
-	private static final String secp256k1SourceKey = "secp256k1Alias";
-	private static final KeyShape secp256k1Shape = KeyShape.SECP256K1;
-	private static final Map<String, Boolean> specToInitializedEthereumContract = new HashMap<>();
 
 	public static void allRunFor(HapiApiSpec spec, List<HapiSpecOperation> ops) {
 		if(spec.getSuitePrefix().endsWith(ETH_SUFFIX)) {
-			if(!specToInitializedEthereumContract.containsKey(spec.getName())) {
+			if(!isEthereumAccountCreatedForSpec(spec.getName())) {
 				initializeEthereumAccountForSpec(spec);
-				specToInitializedEthereumContract.putIfAbsent(spec.getName(), true);
 			}
 
 			executeEthereumOps(spec, ops);
@@ -62,7 +54,7 @@ public class CustomSpecAssert extends UtilOp {
 		for (HapiSpecOperation op : ops) {
 			Optional<Throwable>	error = op.execFor(spec);
 			if (error.isPresent()) {
-				log.error("Operation '" + op.toString() + "' :: " + error.get().getMessage());
+				log.error("Operation '" + op + "' :: " + error.get().getMessage());
 				throw new IllegalStateException(error.get());
 			}
 		}
@@ -74,27 +66,19 @@ public class CustomSpecAssert extends UtilOp {
 				op = new HapiEthereumCall(((HapiContractCall) op));
 				((HapiEthereumCall) op).signingWith(secp256k1SourceKey)
 						.type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
-						.gas(500_000L)
-						.gasPrice(10L)
-						.maxGasAllowance(5L)
+						.gas(5_000_000L)
+						.gasPrice(1000L)
+						.maxGasAllowance(1_000_000L)
 						.maxPriorityGas(2L)
-						.gasLimit(1_000_000L);
+						.gasLimit(5_000_000L);
 			}
 
 			Optional<Throwable>	error = op.execFor(spec);
 			if (error.isPresent()) {
-				log.error("Operation '" + op.toString() + "' :: " + error.get().getMessage());
+				log.error("Operation '" + op + "' :: " + error.get().getMessage());
 				throw new IllegalStateException(error.get());
 			}
 		}
-	}
-
-	private static void initializeEthereumAccountForSpec(HapiApiSpec spec) {
-		final var newSpecKey = new NewSpecKey(secp256k1SourceKey).shape(secp256k1Shape);
-		final var cryptoTransfer = new HapiCryptoTransfer(HapiCryptoTransfer.tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS));
-
-		newSpecKey.execFor(spec);
-		cryptoTransfer.execFor(spec);
 	}
 
 	public static void allRunFor(HapiApiSpec spec, HapiSpecOperation... ops) {

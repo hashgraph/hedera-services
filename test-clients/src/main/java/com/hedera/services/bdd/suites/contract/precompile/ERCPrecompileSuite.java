@@ -134,7 +134,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 				getErc721Symbol(),
 				getErc721TokenURI(),
 				getErc721OwnerOf(),
-				getErc721BalanceOf()
+				getErc721BalanceOf(),
 				getErc721TotalSupply(),
 				getErc721TokenURIFromErc20TokenFails(),
 				getErc721OwnerOfFromErc20TokenFails(),

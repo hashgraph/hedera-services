@@ -33,6 +33,9 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
+import com.hedera.services.bdd.spec.utilops.EthTxData;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -80,6 +83,12 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.RUNNING;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.hasSpecBeenExecuted;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.markSpecAsBeenExecuted;
+import static com.hedera.services.bdd.spec.utilops.UtilStateChange.secp256k1SourceKey;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.stream.Collectors.joining;
@@ -218,9 +227,23 @@ public class HapiApiSpec implements Runnable {
 			return;
 		}
 
-		List<HapiSpecOperation> ops = Stream.of(given, when, then)
-				.flatMap(Arrays::stream)
-				.collect(toList());
+		List<HapiSpecOperation> ops = new ArrayList<>();
+		if(!hasSpecBeenExecuted(name)) {
+			ops = Stream.of(given, when, then)
+					.flatMap(Arrays::stream)
+					.collect(toList());
+		} else {
+			if(!isEthereumAccountCreatedForSpec(name)) {
+				initializeEthereumAccountForSpec(this);
+			}
+
+			ops = Stream.of(given, when, then)
+					.flatMap(Arrays::stream).map(this::convertHapiCall)
+					.collect(toList());
+
+			suitePrefix = suitePrefix.concat(ETH_SUFFIX);
+		}
+
 		exec(ops);
 
 		if (hapiSetup.costSnapshotMode() == TAKE) {
@@ -229,7 +252,23 @@ public class HapiApiSpec implements Runnable {
 			compareWithSnapshot();
 		}
 
+		markSpecAsBeenExecuted(name);
 		nullOutInfrastructure();
+	}
+
+	private HapiSpecOperation convertHapiCall(HapiSpecOperation op) {
+		if(op instanceof HapiContractCall) {
+			op = new HapiEthereumCall(((HapiContractCall) op));
+			((HapiEthereumCall) op).signingWith(secp256k1SourceKey)
+					.type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
+					.gas(5_000_000L)
+					.gasPrice(1000L)
+					.maxGasAllowance(1_000_000L)
+					.maxPriorityGas(2L)
+					.gasLimit(10_000_000L);
+		}
+
+		return op;
 	}
 
 	public boolean tryReinitializingFees() {

@@ -116,7 +116,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 		return expectedStatus.orElse(SUCCESS);
 	}
 
-	protected ResponseCodeEnum getExpectedPrecheck() {
+	public ResponseCodeEnum getExpectedPrecheck() {
 		return expectedPrecheck.orElse(OK);
 	}
 

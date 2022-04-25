@@ -213,6 +213,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
@@ -354,7 +355,10 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(ContractGetBytecodeSuite::new),
 				extractSpecsFromSuite(ContractGetInfoSuite::new),
 				extractSpecsFromSuite(ContractMusicalChairsSuite::new),
-				extractSpecsFromSuite(ContractUpdateSuite::new)
+				extractSpecsFromSuite(ContractUpdateSuite::new),
+
+				//TODO: adapt the rest of the suites to run ethereum calls
+				extractSpecsFromSuiteForEth(ContractCallSuite::new)
 		);
 	}
 
@@ -680,6 +684,21 @@ class E2EPackageRunner {
 									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + "}, while " +
 											"executing " +
 											"SPEC {" + s.getName() + "}");
+						}
+				));
+		return dynamicContainer(suite.getClass().getSimpleName(), tests);
+	}
+
+	private DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiApiSuite> suiteSupplier) {
+		final var suite = suiteSupplier.get();
+		final var tests = suite.getSpecsInSuite()
+				.stream()
+				.map(s -> dynamicTest(s.getName() + ETH_SUFFIX, () -> {
+							s.run();
+							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
+									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}, while " +
+											"executing " +
+											"SPEC {" + s.getName() + ETH_SUFFIX + "}");
 						}
 				));
 		return dynamicContainer(suite.getClass().getSimpleName(), tests);
