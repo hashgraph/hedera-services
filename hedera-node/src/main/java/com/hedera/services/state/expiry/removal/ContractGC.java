@@ -47,7 +47,8 @@ public class ContractGC {
 	private final Supplier<VirtualMap<ContractKey, IterableContractValue>> storage;
 	private final Supplier<VirtualMap<VirtualBlobKey, VirtualBlobValue>> bytecode;
 
-	private ContractGC.RemovalFacilitation removalFacilitation = MapValueListUtils::removeFromMapValueList;
+	// Revisit after release 0.27 to see if VirtualMap.getForModify() has been rehabilitated
+	private ContractGC.RemovalFacilitation removalFacilitation = MapValueListUtils::overwritingRemoveFromMapValueList;
 
 	@Inject
 	public ContractGC(

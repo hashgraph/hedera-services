@@ -25,6 +25,7 @@ import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
@@ -77,6 +78,8 @@ class CallLocalExecutorTest {
 	private CallLocalEvmTxProcessor evmTxProcessor;
 	@Mock
 	private AliasManager aliasManager;
+	@Mock
+	private EntityAccess entityAccess;
 
 	@BeforeEach
 	private void setup() {
@@ -105,7 +108,7 @@ class CallLocalExecutorTest {
 
 		// when:
 		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
 		// then:
 		assertEquals(expected, result);
@@ -126,7 +129,27 @@ class CallLocalExecutorTest {
 
 		// when:
 		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
+
+		// then:
+		assertEquals(expected, result);
+	}
+
+	@Test
+	void processingSuccessfulCallingToken() {
+		// setup:
+		final var transactionProcessingResult = TransactionProcessingResult
+				.successful(new ArrayList<>(), 0, 0, 1, Bytes.EMPTY, callerID.asEvmAddress(),
+						Collections.emptyMap());
+		final var expected = response(OK, transactionProcessingResult);
+
+		given(entityAccess.isTokenAccount(any())).willReturn(true);
+		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any(), any()))
+				.willReturn(transactionProcessingResult);
+
+		// when:
+		final var result =
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
 		// then:
 		assertEquals(expected, result);
@@ -147,7 +170,7 @@ class CallLocalExecutorTest {
 
 		// when:
 		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
 		// then:
 		assertEquals(expected, result);
@@ -168,7 +191,7 @@ class CallLocalExecutorTest {
 
 		// when:
 		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
 		// then:
 		assertEquals(expected, result);
@@ -189,7 +212,7 @@ class CallLocalExecutorTest {
 
 		// when:
 		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
 		// then:
 		assertEquals(expected, result);
@@ -202,7 +225,7 @@ class CallLocalExecutorTest {
 
 		// when:
 		final var result =
-				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager);
+				CallLocalExecutor.execute(accountStore, evmTxProcessor, query, aliasManager, entityAccess);
 
 		assertEquals(failedResponse(INVALID_ACCOUNT_ID), result);
 		// and:

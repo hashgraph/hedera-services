@@ -64,6 +64,14 @@ public class TokenRelsListRemoval implements MapValueListRemoval<EntityNumPair, 
 	 * {@inheritDoc}
 	 */
 	@Override
+	public void put(final EntityNumPair key, final MerkleTokenRelStatus value) {
+		tokenRels.put(key, value);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
 	public void remove(final EntityNumPair key) {
 		tokenRels.remove(key);
 	}
