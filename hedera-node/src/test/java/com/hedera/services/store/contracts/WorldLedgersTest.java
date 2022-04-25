@@ -349,6 +349,27 @@ class WorldLedgersTest {
 	}
 
 	@Test
+	void mutableLedgersCheckForToken() {
+		final var htsProxy = Address.ALTBN128_PAIRING;
+		final var htsId = EntityIdUtils.tokenIdFromEvmAddress(htsProxy);
+
+		given(tokensLedger.contains(htsId)).willReturn(true);
+
+		assertTrue(subject.isTokenAddress(htsProxy));
+	}
+
+	@Test
+	void staticLedgersUseEntityAccessForTokenTest() {
+		final var htsProxy = Address.ALTBN128_PAIRING;
+
+		given(staticEntityAccess.isTokenAccount(htsProxy)).willReturn(true);
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+
+		assertTrue(subject.isTokenAddress(htsProxy));
+	}
+
+	@Test
 	void staticLedgersUseEntityAccessForTokenMetadata() {
 		given(staticEntityAccess.decimalsOf(fungibleToken)).willReturn(decimals);
 		given(staticEntityAccess.supplyOf(fungibleToken)).willReturn(totalSupply);

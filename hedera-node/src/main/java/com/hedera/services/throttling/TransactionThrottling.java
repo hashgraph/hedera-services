@@ -21,7 +21,7 @@ package com.hedera.services.throttling;
  */
 
 import com.hedera.services.throttling.annotations.HapiThrottle;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

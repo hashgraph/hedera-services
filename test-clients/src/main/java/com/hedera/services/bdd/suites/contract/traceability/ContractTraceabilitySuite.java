@@ -25,7 +25,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -44,23 +43,23 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class ContractTraceabilitySuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractTraceabilitySuite.class);
-
-	private final String contractA = "contractA";
-	private final String contractB = "contractB";
-	private final String contractC = "contractC";
+	private static final String TRACEABILITY = "Traceability";
+	private static final String TRACEABILITY_CALLCODE = "TraceabilityCallcode";
+	private static final String FIRST = EMPTY;
+	private static final String SECOND = "B";
+	private static final String THIRD = "C";
 	private final String traceabilityTxn = "nestedtxn";
 
 	public static void main(String... args) {
@@ -74,19 +73,18 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(new HapiApiSpec[]{
-						traceabilityE2EScenario1(),
-						traceabilityE2EScenario2(),
-						traceabilityE2EScenario3(),
-						traceabilityE2EScenario4(),
-						traceabilityE2EScenario5(),
-						traceabilityE2EScenario6(),
-						traceabilityE2EScenario7(),
-						traceabilityE2EScenario8(),
-						traceabilityE2EScenario9(),
-						traceabilityE2EScenario10(),
-						traceabilityE2EScenario11()
-				}
+		return List.of(
+				traceabilityE2EScenario1(),
+				traceabilityE2EScenario2(),
+				traceabilityE2EScenario3(),
+				traceabilityE2EScenario4(),
+				traceabilityE2EScenario5(),
+				traceabilityE2EScenario6(),
+				traceabilityE2EScenario7(),
+				traceabilityE2EScenario8(),
+				traceabilityE2EScenario9(),
+				traceabilityE2EScenario10(),
+				traceabilityE2EScenario11()
 		);
 	}
 
@@ -94,16 +92,16 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return defaultHapiSpec("traceabilityE2EScenario1")
 				.given(
 						setup(
-								ContractResources.TRACEABILITY_RECURSIVE_CALLS,
-								createContractWithSlotValues(contractA, 55, 2, 2),
-								createContractWithSlotValues(contractB, 0, 0, 12),
-								createContractWithSlotValues(contractC, 0, 11, 0)
+								TRACEABILITY,
+								createContractWithSlotValues(TRACEABILITY, FIRST, 55, 2, 2),
+								createContractWithSlotValues(TRACEABILITY, SECOND, 0, 0, 12),
+								createContractWithSlotValues(TRACEABILITY, THIRD, 0, 11, 0)
 						)
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_1, SUCCESS)
+						executeScenario(TRACEABILITY, "eetScenario1", SUCCESS)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -113,14 +111,14 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(2),
 														formattedAssertionValue(55))
 										),
-								StateChange.stateChangeFor(contractB)
+								StateChange.stateChangeFor(TRACEABILITY + SECOND)
 										.withStorageChanges(
 												StorageChange.readAndWritten(
 														formattedAssertionValue(2),
 														formattedAssertionValue(12),
 														formattedAssertionValue(143))
 										),
-								StateChange.stateChangeFor(contractC)
+								StateChange.stateChangeFor(TRACEABILITY + THIRD)
 										.withStorageChanges(
 												StorageChange.readAndWritten(
 														formattedAssertionValue(0),
@@ -138,16 +136,18 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 
 	private HapiApiSpec traceabilityE2EScenario2() {
 		return defaultHapiSpec("traceabilityE2EScenario2")
-				.given(setup(ContractResources.TRACEABILITY_RECURSIVE_CALLS,
-								createContractWithSlotValues(contractA, 0, 0, 0),
-								createContractWithSlotValues(contractB, 0, 0, 99),
-								createContractWithSlotValues(contractC, 0, 88, 0)
+				.given(
+						setup(
+								TRACEABILITY,
+								createContractWithSlotValues(TRACEABILITY, FIRST, 0, 0, 0),
+								createContractWithSlotValues(TRACEABILITY, SECOND, 0, 0, 99),
+								createContractWithSlotValues(TRACEABILITY, THIRD, 0, 88, 0)
 						)
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_2, SUCCESS)
+						executeScenario(TRACEABILITY, "eetScenario2", SUCCESS)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -158,7 +158,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(0),
 														formattedAssertionValue(55))
 										),
-								StateChange.stateChangeFor(contractB)
+								StateChange.stateChangeFor(TRACEABILITY + SECOND)
 										.withStorageChanges(
 												StorageChange.readAndWritten(
 														formattedAssertionValue(0),
@@ -182,16 +182,16 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return defaultHapiSpec("traceabilityE2EScenario3")
 				.given(
 						setup(
-								ContractResources.TRACEABILITY_RECURSIVE_CALLS,
-								createContractWithSlotValues(contractA, 55, 2, 2),
-								createContractWithSlotValues(contractB, 0, 0, 12),
-								createContractWithSlotValues(contractC, 0, 11, 0)
+								TRACEABILITY,
+								createContractWithSlotValues(TRACEABILITY, FIRST, 55, 2, 2),
+								createContractWithSlotValues(TRACEABILITY, SECOND, 0, 0, 12),
+								createContractWithSlotValues(TRACEABILITY, THIRD, 0, 11, 0)
 						)
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_3, SUCCESS)
+						executeScenario(TRACEABILITY, "eetScenario3", SUCCESS)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -205,7 +205,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(2),
 														formattedAssertionValue(524))
 										),
-								StateChange.stateChangeFor(contractC)
+								StateChange.stateChangeFor(TRACEABILITY + THIRD)
 										.withStorageChanges(
 												StorageChange.readAndWritten(
 														formattedAssertionValue(0),
@@ -225,16 +225,16 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return defaultHapiSpec("traceabilityE2EScenario4")
 				.given(
 						setup(
-								ContractResources.TRACEABILITY_RECURSIVE_CALLS,
-								createContractWithSlotValues(contractA, 2, 3, 4),
-								createContractWithSlotValues(contractB, 0, 0, 0),
-								createContractWithSlotValues(contractC, 0, 0, 0)
+								TRACEABILITY,
+								createContractWithSlotValues(TRACEABILITY, FIRST, 2, 3, 4),
+								createContractWithSlotValues(TRACEABILITY, SECOND, 0, 0, 0),
+								createContractWithSlotValues(TRACEABILITY, THIRD, 0, 0, 0)
 						)
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_4, SUCCESS)
+						executeScenario(TRACEABILITY, "eetScenario4", SUCCESS)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY)
 										.withStorageChanges(
 												StorageChange.readAndWritten(
 														formattedAssertionValue(0),
@@ -259,17 +259,17 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return defaultHapiSpec("traceabilityE2EScenario5")
 				.given(
 						setup(
-								ContractResources.TRACEABILITY_RECURSIVE_CALLS,
-								createContractWithSlotValues(contractA, 55, 2, 2),
-								createContractWithSlotValues(contractB, 0, 0, 12),
-								createContractWithSlotValues(contractC, 4, 1, 0)
+								TRACEABILITY,
+								createContractWithSlotValues(TRACEABILITY, FIRST, 55, 2, 2),
+								createContractWithSlotValues(TRACEABILITY, SECOND, 0, 0, 12),
+								createContractWithSlotValues(TRACEABILITY, THIRD, 4, 1, 0)
 						)
 
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_5, SUCCESS)
+						executeScenario(TRACEABILITY, "eetScenario5", SUCCESS)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -279,14 +279,14 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(2),
 														formattedAssertionValue(55252))
 										),
-								StateChange.stateChangeFor(contractB)
+								StateChange.stateChangeFor(TRACEABILITY + SECOND)
 										.withStorageChanges(
 												StorageChange.readAndWritten(
 														formattedAssertionValue(2),
 														formattedAssertionValue(12),
 														formattedAssertionValue(524))
 										),
-								StateChange.stateChangeFor(contractC)
+								StateChange.stateChangeFor(TRACEABILITY + THIRD)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -304,17 +304,16 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return defaultHapiSpec("traceabilityE2EScenario6")
 				.given(
 						setup(
-								ContractResources.TRACEABILITY_RECURSIVE_CALLS,
-								createContractWithSlotValues(contractA, 2, 3, 4),
-								createContractWithSlotValues(contractB, 0, 0, 3),
-								createContractWithSlotValues(contractC, 0, 1, 0)
+								TRACEABILITY,
+								createContractWithSlotValues(TRACEABILITY, FIRST, 2, 3, 4),
+								createContractWithSlotValues(TRACEABILITY, SECOND, 0, 0, 3),
+								createContractWithSlotValues(TRACEABILITY, THIRD, 0, 1, 0)
 						)
-
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_6, SUCCESS)
+						executeScenario(TRACEABILITY, "eetScenario6", SUCCESS)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -329,7 +328,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(4),
 														formattedAssertionValue(5))
 										),
-								StateChange.stateChangeFor(contractC)
+								StateChange.stateChangeFor(TRACEABILITY + THIRD)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -348,17 +347,16 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return defaultHapiSpec("traceabilityE2EScenario7")
 				.given(
 						setup(
-								ContractResources.TRACEABILITY_RECURSIVE_CALLS_CALLCODE,
-								createContractWithSlotValues(contractA, 55, 2, 2),
-								createContractWithSlotValues(contractB, 0, 0, 12),
-								createContractWithSlotValues(contractC, 4, 1, 0)
+								TRACEABILITY_CALLCODE,
+								createContractWithSlotValues(TRACEABILITY_CALLCODE, FIRST, 55, 2, 2),
+								createContractWithSlotValues(TRACEABILITY_CALLCODE, SECOND, 0, 0, 12),
+								createContractWithSlotValues(TRACEABILITY_CALLCODE, THIRD, 4, 1, 0)
 						)
-
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_7, SUCCESS)
+						executeScenario(TRACEABILITY_CALLCODE, "eetScenario7", SUCCESS)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY_CALLCODE)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -368,7 +366,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(2),
 														formattedAssertionValue(55252))
 										),
-								StateChange.stateChangeFor(contractB)
+								StateChange.stateChangeFor(TRACEABILITY_CALLCODE + SECOND)
 										.withStorageChanges(
 												StorageChange.readAndWritten(
 														formattedAssertionValue(0),
@@ -392,16 +390,16 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return defaultHapiSpec("traceabilityE2EScenario8")
 				.given(
 						setup(
-								ContractResources.TRACEABILITY_RECURSIVE_CALLS_CALLCODE,
-								createContractWithSlotValues(contractA, 55, 2, 2),
-								createContractWithSlotValues(contractB, 0, 0, 12),
-								createContractWithSlotValues(contractC, 4, 1, 0)
+								TRACEABILITY_CALLCODE,
+								createContractWithSlotValues(TRACEABILITY_CALLCODE, FIRST, 55, 2, 2),
+								createContractWithSlotValues(TRACEABILITY_CALLCODE, SECOND, 0, 0, 12),
+								createContractWithSlotValues(TRACEABILITY_CALLCODE, THIRD, 4, 1, 0)
 						)
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_8, SUCCESS)
+						executeScenario(TRACEABILITY_CALLCODE, "eetScenario8", SUCCESS)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY_CALLCODE)
 										.withStorageChanges(
 												StorageChange.readAndWritten(
 														formattedAssertionValue(0),
@@ -425,16 +423,16 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return defaultHapiSpec("traceabilityE2EScenario9")
 				.given(
 						setup(
-								ContractResources.TRACEABILITY_RECURSIVE_CALLS,
-								createContractWithSlotValues(contractA, 55, 2, 2),
-								createContractWithSlotValues(contractB, 0, 0, 12),
-								createContractWithSlotValues(contractC, 0, 1, 0)
+								TRACEABILITY,
+								createContractWithSlotValues(TRACEABILITY, FIRST, 55, 2, 2),
+								createContractWithSlotValues(TRACEABILITY, SECOND, 0, 0, 12),
+								createContractWithSlotValues(TRACEABILITY, THIRD, 0, 1, 0)
 						)
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_9, CONTRACT_REVERT_EXECUTED)
+						executeScenario(TRACEABILITY, "eetScenario9", CONTRACT_REVERT_EXECUTED)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -443,13 +441,13 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1),
 														formattedAssertionValue(2))
 										),
-								StateChange.stateChangeFor(contractB)
+								StateChange.stateChangeFor(TRACEABILITY + SECOND)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(2),
 														formattedAssertionValue(12))
 										),
-								StateChange.stateChangeFor(contractC)
+								StateChange.stateChangeFor(TRACEABILITY + THIRD)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -468,16 +466,16 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return defaultHapiSpec("traceabilityE2EScenario10")
 				.given(
 						setup(
-								ContractResources.TRACEABILITY_RECURSIVE_CALLS,
-								createContractWithSlotValues(contractA, 2, 3, 4),
-								createContractWithSlotValues(contractB, 0, 0, 3),
-								createContractWithSlotValues(contractC, 0, 1, 0)
+								TRACEABILITY,
+								createContractWithSlotValues(TRACEABILITY, FIRST, 2, 3, 4),
+								createContractWithSlotValues(TRACEABILITY, SECOND, 0, 0, 3),
+								createContractWithSlotValues(TRACEABILITY, THIRD, 0, 1, 0)
 						)
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_10, SUCCESS)
+						executeScenario(TRACEABILITY, "eetScenario10", SUCCESS)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -488,7 +486,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(3),
 														formattedAssertionValue(4))
 										),
-								StateChange.stateChangeFor(contractB)
+								StateChange.stateChangeFor(TRACEABILITY + SECOND)
 										.withStorageChanges(
 												StorageChange.readAndWritten(
 														formattedAssertionValue(2),
@@ -496,7 +494,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(5)
 												)
 										),
-								StateChange.stateChangeFor(contractC)
+								StateChange.stateChangeFor(TRACEABILITY + THIRD)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -515,16 +513,16 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 		return defaultHapiSpec("traceabilityE2EScenario11")
 				.given(
 						setup(
-								ContractResources.TRACEABILITY_RECURSIVE_CALLS,
-								createContractWithSlotValues(contractA, 2, 3, 4),
-								createContractWithSlotValues(contractB, 0, 0, 3),
-								createContractWithSlotValues(contractC, 0, 1, 0)
+								TRACEABILITY,
+								createContractWithSlotValues(TRACEABILITY, FIRST, 2, 3, 4),
+								createContractWithSlotValues(TRACEABILITY, SECOND, 0, 0, 3),
+								createContractWithSlotValues(TRACEABILITY, THIRD, 0, 1, 0)
 						)
 				).when(
-						executeScenario(ContractResources.TRACEABILITY_EET_11, SUCCESS)
+						executeScenario(TRACEABILITY, "eetScenario11", SUCCESS)
 				).then(
 						assertStateChanges(
-								StateChange.stateChangeFor(contractA)
+								StateChange.stateChangeFor(TRACEABILITY)
 										.withStorageChanges(
 												StorageChange.onlyRead(
 														formattedAssertionValue(0),
@@ -535,7 +533,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(3),
 														formattedAssertionValue(4))
 										),
-								StateChange.stateChangeFor(contractC)
+								StateChange.stateChangeFor(TRACEABILITY + THIRD)
 										.withStorageChanges(
 												StorageChange.readAndWritten(
 														formattedAssertionValue(0),
@@ -552,16 +550,13 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 				);
 	}
 
-	private HapiSpecOperation[] setup(final String contractBytecode,
+	private HapiSpecOperation[] setup(final String contract,
 									  final HapiContractCreate contractA,
 									  final HapiContractCreate contractB,
 									  final HapiContractCreate contractC) {
 		return new HapiSpecOperation[]{
 				UtilVerbs.overriding("contracts.enableTraceability", "true"),
-				cryptoCreate("account").balance(10 * ONE_MILLION_HBARS),
-				fileCreate("bytecode").payingWith("account"),
-				updateLargeFile("account", "bytecode",
-						extractByteCode(contractBytecode)),
+				uploadInitCode(contract),
 				contractA,
 				contractB,
 				contractC
@@ -569,21 +564,21 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 	}
 
 	private HapiContractCreate createContractWithSlotValues(final String contract,
+															final String suffix,
 															final int slot0,
 															final int slot1,
 															final int slot2) {
-		return contractCreate(contract, ContractResources.TRACEABILITY_CONSTRUCTOR, slot0, slot1, slot2)
-				.bytecode("bytecode")
-				.gas(300_000);
+		if (suffix.equals(FIRST)) return contractCreate(contract, slot0, slot1, slot2).gas(300_000);
+		return contractCustomCreate(contract, suffix, slot0, slot1, slot2).gas(300_000);
 	}
 
 
-	private HapiSpecOperation executeScenario(final String scenario, final ResponseCodeEnum expectedExecutionStatus) {
+	private HapiSpecOperation executeScenario(final String contract, final String scenario, final ResponseCodeEnum expectedExecutionStatus) {
 		return withOpContext(
 				(spec, opLog) -> allRunFor(spec,
-						contractCall(contractA, scenario,
-								AssociatePrecompileSuite.getNestedContractAddress(contractB, spec),
-								AssociatePrecompileSuite.getNestedContractAddress(contractC, spec))
+						contractCall(contract, scenario,
+								AssociatePrecompileSuite.getNestedContractAddress(contract + "B", spec),
+								AssociatePrecompileSuite.getNestedContractAddress(contract + "C", spec))
 								.gas(1000000)
 								.via(traceabilityTxn)
 								.hasKnownStatus(expectedExecutionStatus)

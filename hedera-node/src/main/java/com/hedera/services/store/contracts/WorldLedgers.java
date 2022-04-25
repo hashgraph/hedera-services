@@ -65,6 +65,7 @@ import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALAN
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.URI_QUERY_NON_EXISTING_TOKEN_ERROR;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
@@ -108,6 +109,14 @@ public class WorldLedgers {
 
 		this.aliases = aliases;
 		this.staticEntityAccess = staticEntityAccess;
+	}
+
+	public boolean isTokenAddress(final Address address) {
+		if (staticEntityAccess != null)	{
+			return staticEntityAccess.isTokenAccount(address);
+		} else {
+			return tokensLedger.contains(tokenIdFromEvmAddress(address));
+		}
 	}
 
 	public String nameOf(final TokenID tokenId) {

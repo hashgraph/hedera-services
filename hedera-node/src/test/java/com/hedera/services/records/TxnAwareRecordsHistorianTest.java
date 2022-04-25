@@ -30,7 +30,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -112,7 +112,7 @@ class TxnAwareRecordsHistorianTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 
 	private TxnAwareRecordsHistorian subject;
 
@@ -170,6 +170,7 @@ class TxnAwareRecordsHistorianTest {
 		assertEquals(topLevelNow.plusNanos(1), subject.nextFollowingChildConsensusTime());
 		subject.trackFollowingChildRecord(1, followSynthBody, followingBuilder);
 		given(followingBuilder.shouldNotBeExternalized()).willReturn(true);
+		given(txnCtx.accessor()).willReturn(accessor);
 
 		subject.saveExpirableTransactionRecords();
 		final var followingRsos = subject.getFollowingChildRecords();

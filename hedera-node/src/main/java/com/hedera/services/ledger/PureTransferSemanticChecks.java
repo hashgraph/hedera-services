@@ -21,7 +21,7 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;

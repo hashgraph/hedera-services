@@ -347,8 +347,18 @@ public class ExpirableTxnRecord implements FCQueueElement {
 		}
 		// Added in 0.21
 		alias = ByteString.copyFrom(in.readByteArray(Integer.MAX_VALUE));
+		// Added in 0.23. It is needed only for versions < 0.25.0 and >= 0.23.0
+		deserializeAllowanceMaps(in, version);
 	}
 
+	private void deserializeAllowanceMaps(SerializableDataInputStream in, final int version) throws IOException {
+		if (version < RELEASE_0250_VERSION) {
+			// In release 0.24.x and 0.23.0 three _always-empty_ map sizes were serialized here
+			in.readInt();
+			in.readInt();
+			in.readInt();
+		}
+	}
 
 	@Override
 	public Hash getHash() {

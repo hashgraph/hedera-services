@@ -25,7 +25,7 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -61,7 +61,7 @@ class TokenMintTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private TransactionBody transactionBody;
 	@Mock

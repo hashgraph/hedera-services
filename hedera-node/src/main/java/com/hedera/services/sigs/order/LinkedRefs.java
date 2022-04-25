@@ -20,6 +20,7 @@ package com.hedera.services.sigs.order;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.SigImpactHistorian;
 
@@ -112,5 +113,13 @@ public class LinkedRefs {
 
 	public void setSourceSignedAt(final Instant sourceSignedAt) {
 		this.sourceSignedAt = sourceSignedAt;
+	}
+
+	public String toString(){
+		return MoreObjects.toStringHelper(this)
+				.add("sourceSignedAt", sourceSignedAt)
+				.add("linkedAliases", linkedAliases)
+				.add("linkedNums", linkedNums)
+				.toString();
 	}
 }

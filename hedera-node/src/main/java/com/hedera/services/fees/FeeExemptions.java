@@ -20,7 +20,7 @@ package com.hedera.services.fees;
  * ‍
  */
 
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 
 /**
  * Defines a type able to judge if an account or txn (more specifically,

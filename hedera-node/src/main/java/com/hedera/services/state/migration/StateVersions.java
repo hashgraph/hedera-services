@@ -43,9 +43,10 @@ public final class StateVersions {
 	public static final int RELEASE_0230_VERSION = 16;
 	public static final int RELEASE_0240_VERSION = 17;
 	public static final int RELEASE_0250_VERSION = 18;
+	public static final int RELEASE_0260_VERSION = 19;
 
 	public static final int MINIMUM_SUPPORTED_VERSION = RELEASE_0220_VERSION;
-	public static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	public static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 
 	private StateVersions() {
 		throw new UnsupportedOperationException("Utility Class");

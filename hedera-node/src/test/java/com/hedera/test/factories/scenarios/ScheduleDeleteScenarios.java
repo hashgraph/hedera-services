@@ -20,7 +20,7 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleDeleteFactory.newSignedScheduleDelete;
@@ -29,7 +29,7 @@ public enum ScheduleDeleteScenarios implements TxnHandlingScenario {
 	SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleDelete()
 							.deleting(KNOWN_SCHEDULE_WITH_ADMIN)
 							.get()
@@ -39,7 +39,7 @@ public enum ScheduleDeleteScenarios implements TxnHandlingScenario {
 	SCHEDULE_DELETE_WITH_MISSING_SCHEDULE {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleDelete()
 							.deleting(UNKNOWN_SCHEDULE)
 							.get()
@@ -49,7 +49,7 @@ public enum ScheduleDeleteScenarios implements TxnHandlingScenario {
 	SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleDelete()
 							.deleting(KNOWN_SCHEDULE_IMMUTABLE)
 							.get()

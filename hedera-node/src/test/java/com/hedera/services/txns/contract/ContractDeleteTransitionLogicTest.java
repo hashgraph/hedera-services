@@ -22,7 +22,7 @@ package com.hedera.services.txns.contract;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.txns.contract.helpers.DeletionLogic;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -51,7 +51,7 @@ class ContractDeleteTransitionLogicTest {
 	private DeletionLogic deletionLogic;
 	private TransactionBody contractDeleteTxn;
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	ContractDeleteTransitionLogic subject;
 
 	@BeforeEach
@@ -61,7 +61,7 @@ class ContractDeleteTransitionLogicTest {
 		deletionLogic = mock(DeletionLogic.class);
 		txnCtx = mock(TransactionContext.class);
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 
 		subject = new ContractDeleteTransitionLogic(deletionLogic, txnCtx);
 	}

@@ -23,7 +23,7 @@ package com.hedera.services.keys;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.legacy.core.jproto.JThresholdKey;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 
@@ -70,7 +70,7 @@ public final class HederaKeyActivation {
 	 * @return whether the payer's Hedera key is active
 	 */
 	public static boolean payerSigIsActive(
-			final TxnAccessor accessor,
+			final SwirldsTxnAccessor accessor,
 			final BiPredicate<JKey, TransactionSignature> validity
 	) {
 		final var sigMeta = accessor.getSigMeta();

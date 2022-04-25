@@ -20,6 +20,7 @@ package com.hedera.services.sigs.sourcing;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 
 public class PojoSigMap {
@@ -55,7 +56,8 @@ public class PojoSigMap {
 
 	public boolean isFullPrefixAt(final int i) {
 		if (i < 0 || i >= rawMap.length) {
-			throw new IllegalArgumentException("Requested prefix at index " + i + ", not in [0, " + rawMap.length + ")");
+			throw new IllegalArgumentException("Requested prefix at index " + i + ", not in [0, " + rawMap.length +
+					")");
 		}
 		return keyTypes[i].getLength() == rawMap[i][PUB_KEY_PREFIX_INDEX].length;
 	}
@@ -74,5 +76,12 @@ public class PojoSigMap {
 
 	public int numSigsPairs() {
 		return rawMap.length;
+	}
+
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("keyTypes", keyTypes)
+				.add("rawMap", rawMap)
+				.toString();
 	}
 }

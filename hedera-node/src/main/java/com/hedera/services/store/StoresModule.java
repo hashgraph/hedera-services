@@ -22,7 +22,6 @@ package com.hedera.services.store;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.ledger.AccountsCommitInterceptor;
 import com.hedera.services.ledger.TokenRelsCommitInterceptor;
@@ -41,8 +40,6 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.virtual.UniqueTokenValue;
-import com.hedera.services.store.contracts.CodeCache;
-import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
@@ -146,14 +143,5 @@ public interface StoresModule {
 	@AreTreasuryWildcardsEnabled
 	static boolean provideAreTreasuryWildcardsEnabled(final @CompositeProps PropertySource properties) {
 		return properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
-	}
-
-	@Provides
-	@Singleton
-	static CodeCache provideCodeCache(
-			final NodeLocalProperties properties,
-			final MutableEntityAccess entityAccess
-	) {
-		return new CodeCache(properties, entityAccess);
 	}
 }

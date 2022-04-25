@@ -31,7 +31,7 @@ import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,7 +113,7 @@ class SpanMapManagerTest {
 	private Map<String, Object> span = new HashMap<>();
 
 	@Mock
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock

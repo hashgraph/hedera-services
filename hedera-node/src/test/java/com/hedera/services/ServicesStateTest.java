@@ -32,8 +32,8 @@ import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
+import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
@@ -44,8 +44,8 @@ import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -89,7 +89,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -166,7 +165,7 @@ class ServicesStateTest {
 
 		// Ensure any stubbed mocks are removed.
 		ServicesState.setStakeFundingMigrator(ReleaseTwentyFourMigration::ensureStakingFundAccounts);
-		ServicesState.setUniqueTokenMigrator(ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap);
+		ServicesState.setUniqueTokenMigrator(ReleaseTwentySixMigration::migrateFromUniqueTokenMerkleMap);
 	}
 
 	@Test
@@ -424,6 +423,7 @@ class ServicesStateTest {
 		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
 
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0220_VERSION);
+		subject.setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 
 		assertDoesNotThrow(subject::migrate);
@@ -435,12 +435,13 @@ class ServicesStateTest {
 		ServicesState.setStakeFundingMigrator(mockMigrator);
 		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
 
+		subject = new ServicesState();
 		setAllMmsTo(mock(MerkleMap.class), mock(VirtualMap.class));
+		subject.setDeserializedVersion(StateVersions.RELEASE_0230_VERSION);
 		given(accounts.keySet()).willReturn(Set.of());
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
 		subject.setDeserializedVersion(StateVersions.RELEASE_0230_VERSION);
 		subject.migrate();
-
 		verify(mockMigrator).accept(subject);
 	}
 
@@ -469,6 +470,7 @@ class ServicesStateTest {
 
 		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0240_VERSION);
 		subject.setChild(StateChildIndices.ACCOUNTS, accounts);
+		subject.setChild(StateChildIndices.TOKENS, new MerkleMap<>());
 		subject.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, tokenAssociations);
 		given(accounts.keySet()).willReturn(Set.of(account1, account2));
 		given(accounts.getForModify(account1)).willReturn(merkleAccount1);
@@ -498,17 +500,17 @@ class ServicesStateTest {
 	}
 
 	@Test
-	void initTaskPostponedUntilAfterMigrationForVersionsBefore0250() {
+	void initTaskPostponedUntilAfterMigrationForVersionsBefore0260() {
 		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0240_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0250_VERSION);
 		assertDoesNotThrow(() -> subject.init(platform, addressBook, dualState));
 		assertThrows(NullPointerException.class, subject::migrate);
 	}
 
 	@Test
-	void initTaskNotPostponedAt0250AndLater() {
+	void initTaskNotPostponedAt0260AndLater() {
 		ServicesState.setUniqueTokenMigrator(uniqueTokenMigrator);
-		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0250_VERSION);
+		subject.addDeserializedChildren(Collections.emptyList(), StateVersions.RELEASE_0260_VERSION);
 		assertThrows(NullPointerException.class, () -> subject.init(platform, addressBook, dualState));
 		assertDoesNotThrow(subject::migrate);
 	}

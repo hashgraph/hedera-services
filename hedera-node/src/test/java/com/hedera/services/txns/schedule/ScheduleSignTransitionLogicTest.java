@@ -9,9 +9,9 @@ package com.hedera.services.txns.schedule;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,7 +28,7 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSchedule;
 import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
@@ -51,9 +51,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -63,203 +63,203 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 class ScheduleSignTransitionLogicTest {
-    private ScheduleStore store;
-    private PlatformTxnAccessor accessor;
-    private TransactionContext txnCtx;
-    final TransactionID scheduledTxnId = TransactionID.newBuilder()
-            .setAccountID(IdUtils.asAccount("0.0.2"))
-            .setScheduled(true)
-            .build();
-    private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
-    private SigMapScheduleClassifier classifier;
-    private Optional<List<JKey>> validScheduleKeys = Optional.of(
-            List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
+	private ScheduleStore store;
+	private SignedTxnAccessor accessor;
+	private TransactionContext txnCtx;
+	final TransactionID scheduledTxnId = TransactionID.newBuilder()
+			.setAccountID(IdUtils.asAccount("0.0.2"))
+			.setScheduled(true)
+			.build();
+	private JKey payerKey = new JEd25519Key(pretendKeyStartingWith("payer"));
+	private SigMapScheduleClassifier classifier;
+	private Optional<List<JKey>> validScheduleKeys = Optional.of(
+			List.of(new JEd25519Key(pretendKeyStartingWith("scheduled"))));
 
-    private TransactionBody scheduleSignTxn;
+	private TransactionBody scheduleSignTxn;
 
-    InHandleActivationHelper activationHelper;
-    private SignatureMap sigMap;
-    private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
-    private ScheduleExecutor executor;
+	InHandleActivationHelper activationHelper;
+	private SignatureMap sigMap;
+	private SignatoryUtils.ScheduledSigningsWitness replSigningWitness;
+	private ScheduleExecutor executor;
 
-    private ScheduleSignTransitionLogic subject;
-    private ScheduleID scheduleId = IdUtils.asSchedule("1.2.3");
-    private MerkleSchedule schedule;
+	private ScheduleSignTransitionLogic subject;
+	private ScheduleID scheduleId = IdUtils.asSchedule("1.2.3");
+	private MerkleSchedule schedule;
 
-    @BeforeEach
-    private void setup() throws InvalidProtocolBufferException {
-        store = mock(ScheduleStore.class);
-        accessor = mock(PlatformTxnAccessor.class);
-        executor = mock(ScheduleExecutor.class);
-        activationHelper = mock(InHandleActivationHelper.class);
-        txnCtx = mock(TransactionContext.class);
-        replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
-        classifier = mock(SigMapScheduleClassifier.class);
-        schedule = mock(MerkleSchedule.class);
-        given(txnCtx.activePayerKey()).willReturn(payerKey);
+	@BeforeEach
+	private void setup() throws InvalidProtocolBufferException {
+		store = mock(ScheduleStore.class);
+		accessor = mock(SignedTxnAccessor.class);
+		executor = mock(ScheduleExecutor.class);
+		activationHelper = mock(InHandleActivationHelper.class);
+		txnCtx = mock(TransactionContext.class);
+		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
+		classifier = mock(SigMapScheduleClassifier.class);
+		schedule = mock(MerkleSchedule.class);
+		given(txnCtx.activePayerKey()).willReturn(payerKey);
 
-        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
-                .willReturn(Pair.of(OK, true));
-        given(executor.processExecution(scheduleId, store, txnCtx)).willReturn(OK);
+		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
+				.willReturn(Pair.of(OK, true));
+		given(executor.processExecution(scheduleId, store, txnCtx)).willReturn(OK);
 
-        subject = new ScheduleSignTransitionLogic(store, txnCtx, activationHelper, executor);
+		subject = new ScheduleSignTransitionLogic(store, txnCtx, activationHelper, executor);
 
-        subject.replSigningsWitness = replSigningWitness;
-        subject.classifier = classifier;
-    }
+		subject.replSigningsWitness = replSigningWitness;
+		subject.classifier = classifier;
+	}
 
-    @Test
-    void hasCorrectApplicability() {
-        givenValidTxnCtx();
-        // expect:
-        assertTrue(subject.applicability().test(scheduleSignTxn));
-        assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
-    }
+	@Test
+	void hasCorrectApplicability() {
+		givenValidTxnCtx();
+		// expect:
+		assertTrue(subject.applicability().test(scheduleSignTxn));
+		assertFalse(subject.applicability().test(TransactionBody.getDefaultInstance()));
+	}
 
-    @Test
-    void setsFailInvalidIfUnhandledException() {
-        givenValidTxnCtx();
-        // and:
-        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
-                .willThrow(IllegalArgumentException.class);
+	@Test
+	void setsFailInvalidIfUnhandledException() {
+		givenValidTxnCtx();
+		// and:
+		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
+				.willThrow(IllegalArgumentException.class);
 
-        // when:
-        subject.doStateTransition();
+		// when:
+		subject.doStateTransition();
 
-        // then:
-        verify(txnCtx).setStatus(FAIL_INVALID);
-    }
+		// then:
+		verify(txnCtx).setStatus(FAIL_INVALID);
+	}
 
-    @Test
-    void failsOnInvalidScheduleId() {
-        givenCtx(true);
-        // expect:
-        assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
-    }
+	@Test
+	void failsOnInvalidScheduleId() {
+		givenCtx(true);
+		// expect:
+		assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
+	}
 
-    @Test
-    void acceptsValidTxn() {
-        givenValidTxnCtx();
+	@Test
+	void acceptsValidTxn() {
+		givenValidTxnCtx();
 
-        // expect:
-        assertEquals(OK, subject.semanticCheck().apply(scheduleSignTxn));
-    }
+		// expect:
+		assertEquals(OK, subject.semanticCheck().apply(scheduleSignTxn));
+	}
 
-    @Test
-    void abortsImmediatelyIfScheduleIsExecuted() throws InvalidProtocolBufferException {
-        givenValidTxnCtx();
-        given(store.get(scheduleId)).willReturn(schedule);
-        given(schedule.isExecuted()).willReturn(true);
+	@Test
+	void abortsImmediatelyIfScheduleIsExecuted() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.get(scheduleId)).willReturn(schedule);
+		given(schedule.isExecuted()).willReturn(true);
 
-        // when:
-        subject.doStateTransition();
+		// when:
+		subject.doStateTransition();
 
-        // and:
+		// and:
 		verifyNoInteractions(classifier);
-        verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
-        verify(executor, never()).processExecution(scheduleId, store, txnCtx);
-        verify(txnCtx).setStatus(SCHEDULE_ALREADY_EXECUTED);
-    }
+		verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
+		verify(executor, never()).processExecution(scheduleId, store, txnCtx);
+		verify(txnCtx).setStatus(SCHEDULE_ALREADY_EXECUTED);
+	}
 
-    @Test
-    void abortsImmediatelyIfScheduleIsDeleted() throws InvalidProtocolBufferException {
-        givenValidTxnCtx();
-        given(store.get(scheduleId)).willReturn(schedule);
-        given(schedule.isDeleted()).willReturn(true);
+	@Test
+	void abortsImmediatelyIfScheduleIsDeleted() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.get(scheduleId)).willReturn(schedule);
+		given(schedule.isDeleted()).willReturn(true);
 
-        // when:
-        subject.doStateTransition();
+		// when:
+		subject.doStateTransition();
 
-        // and:
-        verifyNoInteractions(classifier);
-        verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
-        verify(executor, never()).processExecution(scheduleId, store, txnCtx);
-        verify(txnCtx).setStatus(SCHEDULE_ALREADY_DELETED);
-    }
+		// and:
+		verifyNoInteractions(classifier);
+		verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
+		verify(executor, never()).processExecution(scheduleId, store, txnCtx);
+		verify(txnCtx).setStatus(SCHEDULE_ALREADY_DELETED);
+	}
 
-    @Test
-    void followsHappyPath() throws InvalidProtocolBufferException {
-        givenValidTxnCtx();
-        given(store.get(scheduleId)).willReturn(schedule);
-        given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+	@Test
+	void followsHappyPath() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.get(scheduleId)).willReturn(schedule);
+		given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
 
-        // when:
-        subject.doStateTransition();
+		// when:
+		subject.doStateTransition();
 
-        // and:
+		// and:
 		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
 		verify(executor).processExecution(scheduleId, store, txnCtx);
-        verify(txnCtx).setStatus(SUCCESS);
-    }
+		verify(txnCtx).setStatus(SUCCESS);
+	}
 
-    @Test
-    void execsOnlyIfReady() throws InvalidProtocolBufferException {
-        givenValidTxnCtx();
-        given(store.get(scheduleId)).willReturn(schedule);
-        given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
-        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
-                .willReturn(Pair.of(OK, false));
+	@Test
+	void execsOnlyIfReady() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.get(scheduleId)).willReturn(schedule);
+		given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
+				.willReturn(Pair.of(OK, false));
 
-        // when:
-        subject.doStateTransition();
+		// when:
+		subject.doStateTransition();
 
-        // and:
-        verify(txnCtx).setStatus(SUCCESS);
-        // and:
-        verify(executor, never()).processExecution(scheduleId, store, txnCtx);
-    }
+		// and:
+		verify(txnCtx).setStatus(SUCCESS);
+		// and:
+		verify(executor, never()).processExecution(scheduleId, store, txnCtx);
+	}
 
-    @Test
-    void shortCircuitsOnNonOkSigningOutcome() throws InvalidProtocolBufferException {
-        givenValidTxnCtx();
-        given(store.get(scheduleId)).willReturn(schedule);
-        given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
-                .willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
+	@Test
+	void shortCircuitsOnNonOkSigningOutcome() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.get(scheduleId)).willReturn(schedule);
+		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
+				.willReturn(Pair.of(SOME_SIGNATURES_WERE_INVALID, true));
 
-        // when:
-        subject.doStateTransition();
+		// when:
+		subject.doStateTransition();
 
-        // and:
-        verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
-        // and:
-        verify(executor, never()).processExecution(scheduleId, store, txnCtx);
-    }
+		// and:
+		verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
+		// and:
+		verify(executor, never()).processExecution(scheduleId, store, txnCtx);
+	}
 
-    @Test
-    void rejectsInvalidScheduleId() {
-        givenCtx(true);
-        assertEquals(INVALID_SCHEDULE_ID, subject.semanticCheck().apply(scheduleSignTxn));
-    }
+	@Test
+	void rejectsInvalidScheduleId() {
+		givenCtx(true);
+		assertEquals(INVALID_SCHEDULE_ID, subject.semanticCheck().apply(scheduleSignTxn));
+	}
 
-    private void givenValidTxnCtx() {
-        givenCtx(false);
-    }
+	private void givenValidTxnCtx() {
+		givenCtx(false);
+	}
 
-    private void givenCtx(boolean invalidScheduleId) {
-        sigMap = SignatureMap.newBuilder().addSigPair(
-                SignaturePair.newBuilder()
-                        .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
-                        .build())
-                .build();
-        given(accessor.getSigMap()).willReturn(sigMap);
-        given(classifier.validScheduleKeys(
-                eq(List.of(payerKey)),
-                eq(sigMap),
-                any(),
-                any())).willReturn(validScheduleKeys);
+	private void givenCtx(boolean invalidScheduleId) {
+		sigMap = SignatureMap.newBuilder().addSigPair(
+						SignaturePair.newBuilder()
+								.setPubKeyPrefix(ByteString.copyFromUtf8("a"))
+								.build())
+				.build();
+		given(accessor.getSigMap()).willReturn(sigMap);
+		given(classifier.validScheduleKeys(
+				eq(List.of(payerKey)),
+				eq(sigMap),
+				any(),
+				any())).willReturn(validScheduleKeys);
 
-        var builder = TransactionBody.newBuilder();
-        var scheduleSign = ScheduleSignTransactionBody.newBuilder()
-                .setScheduleID(scheduleId);
-        if (invalidScheduleId) {
-            scheduleSign.clearScheduleID();
-        }
+		var builder = TransactionBody.newBuilder();
+		var scheduleSign = ScheduleSignTransactionBody.newBuilder()
+				.setScheduleID(scheduleId);
+		if (invalidScheduleId) {
+			scheduleSign.clearScheduleID();
+		}
 
-        builder.setScheduleSign(scheduleSign);
+		builder.setScheduleSign(scheduleSign);
 
-        scheduleSignTxn = builder.build();
+		scheduleSignTxn = builder.build();
 
-        given(accessor.getTxn()).willReturn(scheduleSignTxn);
-        given(txnCtx.accessor()).willReturn(accessor);
-    }
+		given(accessor.getTxn()).willReturn(scheduleSignTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
+	}
 }

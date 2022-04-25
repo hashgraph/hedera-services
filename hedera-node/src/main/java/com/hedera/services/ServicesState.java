@@ -30,7 +30,7 @@ import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
+import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
@@ -75,11 +75,13 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.services.state.migration.ReleaseTwentyFiveMigration.initTreasuryTitleCounts;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0240_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0250_VERSION;
+import static com.hedera.services.state.migration.StateVersions.RELEASE_0260_VERSION;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
@@ -164,6 +166,9 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 			// add the links to the doubly linked list of MerkleTokenRelStatus map and
 			// update each account's last associated token entityNumPair
 			updateLinks();
+			initTreasuryTitleCounts(this);
+		}
+		if (deserializedVersionFromState < RELEASE_0260_VERSION) {
 			uniqueTokenMigrator.accept(this);
 		}
 		runPostMigrationTasks();
@@ -178,7 +183,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
 		Runnable initTask = () -> internalInit(platform, new BootstrapProperties(), dualState);
 
-		if (deserializedVersion < RELEASE_0250_VERSION) {
+		if (deserializedVersion < RELEASE_0260_VERSION) {
 			// Because state saved with MerkleMap cannot be properly loaded, need to defer remaining initialization
 			// until post migration.
 			addPostMigrationTask(initTask);
@@ -508,7 +513,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	private static Consumer<ServicesState> stakeFundingMigrator = ReleaseTwentyFourMigration::ensureStakingFundAccounts;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 	private static Consumer<ServicesState> uniqueTokenMigrator =
-			ReleaseTwentyFiveMigration::migrateFromUniqueTokenMerkleMap;
+			ReleaseTwentySixMigration::migrateFromUniqueTokenMerkleMap;
 
 	/* --- Only used by unit tests --- */
 	StateMetadata getMetadata() {
