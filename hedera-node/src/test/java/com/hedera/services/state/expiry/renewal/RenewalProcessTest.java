@@ -295,6 +295,7 @@ class RenewalProcessTest {
 		given(fees.assessCryptoAutoRenewal(mockAccount, requestedRenewalPeriod, instantNow))
 				.willReturn(new RenewAssessment(fee, actualRenewalPeriod));
 		given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
+		given(helper.getPayerForAutoRenew()).willReturn(key);
 
 		subject.beginRenewalCycle(instantNow);
 		final var result = subject.process(fundedExpiredAccountNum);
@@ -316,6 +317,7 @@ class RenewalProcessTest {
 		given(fees.assessCryptoAutoRenewal(mockContract, requestedRenewalPeriod, instantNow))
 				.willReturn(new RenewAssessment(fee, actualRenewalPeriod));
 		given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
+		given(helper.getPayerForAutoRenew()).willReturn(key);
 
 		subject.beginRenewalCycle(instantNow);
 		final var result = subject.process(fundedExpiredContractNum);

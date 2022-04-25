@@ -125,7 +125,7 @@ public class RenewableEntityClassifier {
 	}
 
 
-	private MerkleAccount resolvePayerForAutoRenew(final long fee) {
+	MerkleAccount resolvePayerForAutoRenew(final long fee) {
 		if (lastClassified.isSmartContract() && lastClassified.hasAutoRenewAccount()) {
 			payerForAutoRenew = lastClassified.getAutoRenewAccount().asNum();
 			final var autoRenewAccount = accounts.get().get(payerForAutoRenew);
