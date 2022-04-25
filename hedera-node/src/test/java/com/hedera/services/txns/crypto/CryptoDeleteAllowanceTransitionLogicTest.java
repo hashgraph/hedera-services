@@ -33,7 +33,7 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -79,7 +79,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 	@Mock
 	private DeleteAllowanceChecks deleteAllowanceChecks;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private StateView view;
 
@@ -191,7 +191,7 @@ class CryptoDeleteAllowanceTransitionLogicTest {
 		given(accountStore.loadAccount(Id.fromGrpcAccount(payerId))).willReturn(payerAccount);
 		given(accountStore.loadAccountOrFailWith(Id.fromGrpcAccount(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(
 				ownerAccount);
-		
+
 		subject.doStateTransition();
 
 		verify(tokenStore, never()).persistNft(any());

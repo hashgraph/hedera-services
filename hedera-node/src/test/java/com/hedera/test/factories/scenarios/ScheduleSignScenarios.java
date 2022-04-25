@@ -20,8 +20,8 @@ package com.hedera.test.factories.scenarios;
  * ‍
  */
 
-import com.hedera.services.utils.PlatformTxnAccessor;
-import com.hedera.services.utils.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.ScheduleUtils;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -35,7 +35,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 	SCHEDULE_SIGN_MISSING_SCHEDULE {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleSign()
 							.signing(UNKNOWN_SCHEDULE)
 							.get()
@@ -45,7 +45,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 	SCHEDULE_SIGN_KNOWN_SCHEDULE {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleSign()
 							.signing(KNOWN_SCHEDULE_WITH_ADMIN)
 							.get()
@@ -54,10 +54,10 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 
 		@Override
 		public byte[] extantSchedulingBodyBytes() throws Throwable {
-			var accessor = new SignedTxnAccessor(newSignedCryptoTransfer()
+			var accessor = SignedTxnAccessor.from(newSignedCryptoTransfer()
 					.sansTxnId()
 					.transfers(tinyBarsFromTo(MISC_ACCOUNT_ID, RECEIVER_SIG_ID, 1))
-					.get());
+					.get().toByteArray());
 			var scheduled = ScheduleUtils.fromOrdinary(accessor.getTxn());
 			return TransactionBody.newBuilder()
 					.setScheduleCreate(ScheduleCreateTransactionBody.newBuilder()
@@ -69,7 +69,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 	SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleSign()
 							.signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER)
 							.get()
@@ -93,7 +93,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
 	SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER {
 		@Override
 		public PlatformTxnAccessor platformTxn() throws Throwable {
-			return new PlatformTxnAccessor(from(
+			return PlatformTxnAccessor.from(from(
 					newSignedScheduleSign()
 							.signing(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER)
 							.get()

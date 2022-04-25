@@ -21,19 +21,12 @@ package com.hedera.test.utils;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.EvmLog;
 import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.utils.BytesComparator;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import com.swirlds.common.CommonUtils;
@@ -50,14 +43,13 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.SplittableRandom;
 import java.io.UncheckedIOException;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SerdeUtils {
 	public static byte[] serOutcome(ThrowingConsumer<DataOutputStream> serializer) throws Exception {
@@ -140,11 +132,14 @@ public class SerdeUtils {
 
 		final var bais = new ByteArrayInputStream(serializedForm);
 		final var in = new SerializableDataInputStream(bais);
+		byte[] leftover;
 		try {
 			reconstruction.deserialize(in, version);
+			leftover = in.readAllBytes();
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+		assertEquals(0, leftover.length, "No bytes should be left in the stream");
 
 		return reconstruction;
 	}

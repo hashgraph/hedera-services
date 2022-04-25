@@ -30,7 +30,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -86,7 +86,7 @@ class FileSysUndelTransitionLogicTest {
 
 	TransactionID txnId;
 	TransactionBody fileSysUndelTxn;
-	PlatformTxnAccessor accessor;
+	SignedTxnAccessor accessor;
 
 	HederaFs hfs;
 	SigImpactHistorian sigImpactHistorian;
@@ -102,7 +102,7 @@ class FileSysUndelTransitionLogicTest {
 		attr = new HFileMeta(false, wacl, currExpiry);
 		deletedAttr = new HFileMeta(true, wacl, currExpiry);
 
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		oldExpiries = mock(Map.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);

@@ -35,8 +35,8 @@ import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.WorldStateAccount;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
@@ -159,7 +159,7 @@ class HTSPrecompiledContractTest {
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private HederaWorldState.WorldStateAccount worldStateAccount;
+	private WorldStateAccount worldStateAccount;
 	@Mock
 	private TransactionBody.Builder mockSynthBodyBuilder;
 	@Mock
@@ -194,14 +194,6 @@ class HTSPrecompiledContractTest {
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
 				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
-	}
-
-	@Test
-	void noopTreasuryManagersDoNothing() {
-		assertDoesNotThrow(() ->
-				HTSPrecompiledContract.NOOP_TREASURY_ADDER.perform(null, null));
-		assertDoesNotThrow(() ->
-				HTSPrecompiledContract.NOOP_TREASURY_REMOVER.removeKnownTreasuryForToken(null, null));
 	}
 
 	@Test

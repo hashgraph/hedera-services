@@ -21,10 +21,16 @@ package com.hedera.services.state.submerkle;
  */
 
 import com.hedera.test.serde.SelfSerializableDataTest;
-import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;
+import com.swirlds.common.io.SerializableDataInputStream;
+import org.bouncycastle.util.Arrays;
+import org.junit.jupiter.api.Test;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0230_VERSION;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<ExpirableTxnRecord> {
 	public static final int NUM_TEST_CASES = 4 * MIN_TEST_CASES_PER_VERSION;
@@ -37,20 +43,6 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 	@Override
 	protected int getNumTestCasesFor(int version) {
 		return version == RELEASE_0230_VERSION ? MIN_TEST_CASES_PER_VERSION : NUM_TEST_CASES;
-	}
-
-	@Override
-	protected byte[] getSerializedForm(final int version, final int testCaseNo) {
-		return SerializedForms.loadForm(ExpirableTxnRecord.class, version, testCaseNo);
-	}
-
-	@Override
-	protected ExpirableTxnRecord getExpectedObject(final int version, final int testCaseNo) {
-		final var seeded = SeededPropertySource.forSerdeTest(version, testCaseNo).nextRecord();
-		if (version == RELEASE_0230_VERSION) {
-			// Always empty before 0.25
-		}
-		return seeded;
 	}
 
 	@Override

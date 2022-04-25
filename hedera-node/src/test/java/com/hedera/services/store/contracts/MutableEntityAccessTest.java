@@ -41,7 +41,7 @@ import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -100,7 +100,7 @@ class MutableEntityAccessTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private SizeLimitedStorage storage;
 	@Mock
@@ -305,76 +305,6 @@ class MutableEntityAccessTest {
 
 		// and:
 		verify(tokensLedger).exists(EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr));
-	}
-
-	@Test
-	void getsKey() {
-		// given:
-		given(ledger.key(id)).willReturn(key);
-
-		// when:
-		final var result = subject.getKey(id);
-
-		// then:
-		assertEquals(key, result);
-		// and:
-		verify(ledger).key(id);
-	}
-
-	@Test
-	void getsMemo() {
-		final var memo = "memo";
-
-		given(ledger.memo(id)).willReturn(memo);
-
-		// when:
-		final var result = subject.getMemo(id);
-
-		// then:
-		assertEquals(memo, result);
-		// and:
-		verify(ledger).memo(id);
-	}
-
-	@Test
-	void getsExpiry() {
-		final var expiry = 5678L;
-
-		given(ledger.expiry(id)).willReturn(expiry);
-
-		final var result = subject.getExpiry(id);
-
-		assertEquals(expiry, result);
-		// and:
-		verify(ledger).expiry(id);
-	}
-
-	@Test
-	void getsAutoRenew() {
-		// given:
-		given(ledger.autoRenewPeriod(id)).willReturn(autoRenewSecs);
-
-		// when:
-		final var result = subject.getAutoRenew(id);
-
-		// then:
-		assertEquals(autoRenewSecs, result);
-		// and:
-		verify(ledger).autoRenewPeriod(id);
-	}
-
-	@Test
-	void getsProxy() {
-		// given:
-		given(ledger.proxy(id)).willReturn(proxy);
-
-		// when:
-		final var result = subject.getProxy(id);
-
-		// then:
-		assertEquals(proxy, result);
-		// and:
-		verify(ledger).proxy(id);
 	}
 
 	@Test
