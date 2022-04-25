@@ -22,6 +22,7 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -236,7 +237,10 @@ public class ContractUpdateSuite extends HapiApiSuite {
 						uploadInitCode(CONTRACT),
 						contractCreate(CONTRACT)
 								.adminKey(ADMIN_KEY)
-								.autoRenewAccountId(autoRenewAccount)
+								.autoRenewAccountId(autoRenewAccount),
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
+								. logged()
 				)
 				.when(
 						contractUpdate(CONTRACT)
@@ -248,7 +252,9 @@ public class ContractUpdateSuite extends HapiApiSuite {
 								.signedBy(DEFAULT_PAYER, ADMIN_KEY, newAutoRenewAccount)
 				)
 				.then(
-						getContractInfo(CONTRACT).logged()
+						getContractInfo(CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(newAutoRenewAccount))
+								. logged()
 				);
 	}
 

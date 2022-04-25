@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -85,29 +86,29 @@ public class ContractCreateSuite extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						createEmptyConstructor(),
-						insufficientPayerBalanceUponCreation(),
-						rejectsInvalidMemo(),
-						rejectsInsufficientFee(),
-						rejectsInvalidBytecode(),
-						revertsNonzeroBalance(),
-						createFailsIfMissingSigs(),
-						rejectsInsufficientGas(),
-						createsVanillaContractAsExpectedWithOmittedAdminKey(),
-						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-						cannotCreateTooLargeContract(),
-						revertedTryExtCallHasNoSideEffects(),
-						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-						cannotSendToNonExistentAccount(),
-						canCallPendingContractSafely(),
-						delegateContractIdRequiredForTransferInDelegateCall(),
-						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-						minChargeIsTXGasUsedByContractCreate(),
-						gasLimitOverMaxGasLimitFailsPrecheck(),
-						vanillaSuccess(),
-						propagatesNestedCreations(),
-						blockTimestampIsConsensusTime(),
+//						createEmptyConstructor(),
+//						insufficientPayerBalanceUponCreation(),
+//						rejectsInvalidMemo(),
+//						rejectsInsufficientFee(),
+//						rejectsInvalidBytecode(),
+//						revertsNonzeroBalance(),
+//						createFailsIfMissingSigs(),
+//						rejectsInsufficientGas(),
+//						createsVanillaContractAsExpectedWithOmittedAdminKey(),
+//						childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+//						cannotCreateTooLargeContract(),
+//						revertedTryExtCallHasNoSideEffects(),
+//						getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+//						receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+//						cannotSendToNonExistentAccount(),
+//						canCallPendingContractSafely(),
+//						delegateContractIdRequiredForTransferInDelegateCall(),
+//						maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+//						minChargeIsTXGasUsedByContractCreate(),
+//						gasLimitOverMaxGasLimitFailsPrecheck(),
+//						vanillaSuccess(),
+//						propagatesNestedCreations(),
+//						blockTimestampIsConsensusTime(),
 						contractWithAutoRenewNeedSignatures()
 				}
 		);
@@ -738,7 +739,9 @@ public class ContractCreateSuite extends HapiApiSuite {
 								.autoRenewAccountId(autoRenewAccount)
 								.signedBy(DEFAULT_PAYER, ADMIN_KEY, autoRenewAccount)
 								.logged(),
-						getContractInfo(contract).logged()
+						getContractInfo(contract)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(autoRenewAccount))
+								. logged()
 						).when(
 				).then(
 				);
