@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.precompile;
+package com.hedera.services.store.contracts.precompile.codec;
 
 /*-
  * ‌
@@ -43,7 +43,7 @@ import java.util.Optional;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 
-final class TokenCreateWrapper {
+public class TokenCreateWrapper {
 	private final boolean isFungible;
 	private final String name;
 	private final String symbol;
@@ -60,7 +60,7 @@ final class TokenCreateWrapper {
 	private List<FractionalFeeWrapper> fractionalFees;
 	private List<RoyaltyFeeWrapper> royaltyFees;
 
-	TokenCreateWrapper(
+	public TokenCreateWrapper(
 			final boolean isFungible,
 			final String tokenName,
 			final String tokenSymbol,
@@ -91,80 +91,80 @@ final class TokenCreateWrapper {
 		this.royaltyFees = List.of();
 	}
 
-	boolean isFungible() {
+	public boolean isFungible() {
 		return isFungible;
 	}
 
-	String getName() {
+	public String getName() {
 		return name;
 	}
 
-	String getSymbol() {
+	public String getSymbol() {
 		return symbol;
 	}
 
-	AccountID getTreasury() {
+	public AccountID getTreasury() {
 		return treasury;
 	}
 
-	boolean isSupplyTypeFinite() {
+	public boolean isSupplyTypeFinite() {
 		return isSupplyTypeFinite;
 	}
 
-	BigInteger getInitSupply() {
+	public BigInteger getInitSupply() {
 		return initSupply;
 	}
 
-	BigInteger getDecimals() {
+	public BigInteger getDecimals() {
 		return decimals;
 	}
 
-	long getMaxSupply() {
+	public long getMaxSupply() {
 		return maxSupply;
 	}
 
-	String getMemo() {
+	public String getMemo() {
 		return memo;
 	}
 
-	boolean isFreezeDefault() {
+	public boolean isFreezeDefault() {
 		return isFreezeDefault;
 	}
 
-	List<TokenKeyWrapper> getTokenKeys() {
+	public List<TokenKeyWrapper> getTokenKeys() {
 		return tokenKeys;
 	}
 
-	TokenExpiryWrapper getExpiry() {
+	public TokenExpiryWrapper getExpiry() {
 		return expiry;
 	}
 
-	List<FixedFeeWrapper> getFixedFees() {
+	public List<FixedFeeWrapper> getFixedFees() {
 		return fixedFees;
 	}
 
-	List<FractionalFeeWrapper> getFractionalFees() {
+	public List<FractionalFeeWrapper> getFractionalFees() {
 		return fractionalFees;
 	}
 
-	List<RoyaltyFeeWrapper> getRoyaltyFees() {
+	public List<RoyaltyFeeWrapper> getRoyaltyFees() {
 		return royaltyFees;
 	}
 
-	void setFixedFees(final List<FixedFeeWrapper> fixedFees) {
+	public void setFixedFees(final List<FixedFeeWrapper> fixedFees) {
 		this.fixedFees = fixedFees;
 	}
 
-	void setFractionalFees(final List<FractionalFeeWrapper> fractionalFees) {
+	public void setFractionalFees(final List<FractionalFeeWrapper> fractionalFees) {
 		this.fractionalFees = fractionalFees;
 	}
 
-	void setRoyaltyFees(final List<RoyaltyFeeWrapper> royaltyFees) {
+	public void setRoyaltyFees(final List<RoyaltyFeeWrapper> royaltyFees) {
 		this.royaltyFees = royaltyFees;
 	}
 
-	void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
-		for (final var tokenKey: tokenKeys) {
+	public void setAllInheritedKeysTo(final JKey senderKey) throws DecoderException {
+		for (final var tokenKey : tokenKeys) {
 			if (tokenKey.key.isShouldInheritAccountKeySet()) {
 				tokenKey.key.setInheritedKey(JKey.mapJKey(senderKey));
 			}
@@ -179,38 +179,38 @@ final class TokenCreateWrapper {
 
 	/* ------------------ */
 
-	record TokenKeyWrapper(int keyType, KeyValueWrapper key) {
-		boolean isUsedForAdminKey() {
+	public record TokenKeyWrapper(int keyType, KeyValueWrapper key) {
+		public boolean isUsedForAdminKey() {
 			return (keyType & 1) != 0;
 		}
 
-		boolean isUsedForKycKey() {
+		public boolean isUsedForKycKey() {
 			return (keyType & 2) != 0;
 		}
 
-		boolean isUsedForFreezeKey() {
+		public boolean isUsedForFreezeKey() {
 			return (keyType & 4) != 0;
 		}
 
-		boolean isUsedForWipeKey() {
+		public boolean isUsedForWipeKey() {
 			return (keyType & 8) != 0;
 		}
 
-		boolean isUsedForSupplyKey() {
+		public boolean isUsedForSupplyKey() {
 			return (keyType & 16) != 0;
 		}
 
-		boolean isUsedForFeeScheduleKey() {
+		public boolean isUsedForFeeScheduleKey() {
 			return (keyType & 32) != 0;
 		}
 
-		boolean isUsedForPauseKey() {
+		public boolean isUsedForPauseKey() {
 			return (keyType & 64) != 0;
 		}
 	}
 
-	static final class KeyValueWrapper {
-		enum KeyValueType {
+	public static final class KeyValueWrapper {
+		public enum KeyValueType {
 			INVALID_KEY,
 			INHERIT_ACCOUNT_KEY,
 			CONTRACT_ID,
@@ -234,7 +234,7 @@ final class TokenCreateWrapper {
 				final boolean shouldInheritAccountKey,
 				final ContractID contractID,
 				final byte[] ed25519,
-		   		final byte[] ecdsaSecp256k1,
+				final byte[] ecdsaSecp256k1,
 				final ContractID delegatableContractID
 		) {
 			this.shouldInheritAccountKey = shouldInheritAccountKey;
@@ -293,27 +293,27 @@ final class TokenCreateWrapper {
 			}
 		}
 
-		KeyValueType getKeyValueType() {
+		public KeyValueType getKeyValueType() {
 			return this.keyValueType;
 		}
 
-		ContractID getContractID() {
+		public ContractID getContractID() {
 			return this.contractID;
 		}
 
-		ContractID getDelegatableContractID() {
+		public ContractID getDelegatableContractID() {
 			return this.delegatableContractID;
 		}
 
-		byte[] getEd25519Key() {
+		public byte[] getEd25519Key() {
 			return this.ed25519;
 		}
 
-		byte[] getEcdsaSecp256k1() {
+		public byte[] getEcdsaSecp256k1() {
 			return this.ecdsaSecp256k1;
 		}
 
-		Key asGrpc() {
+		public Key asGrpc() {
 			return switch (keyValueType) {
 				case INHERIT_ACCOUNT_KEY -> this.inheritedKey;
 				case CONTRACT_ID -> Key.newBuilder().setContractID(contractID).build();
@@ -325,10 +325,11 @@ final class TokenCreateWrapper {
 		}
 	}
 
-	record TokenExpiryWrapper(long second, AccountID autoRenewAccount, long autoRenewPeriod) { }
+	public record TokenExpiryWrapper(long second, AccountID autoRenewAccount, long autoRenewPeriod) {
+	}
 
-	static final class FixedFeeWrapper {
-		enum FixedFeePayment {
+	public static final class FixedFeeWrapper {
+		public enum FixedFeePayment {
 			INVALID_PAYMENT,
 			USE_HBAR,
 			USE_CURRENTLY_CREATED_TOKEN,
@@ -377,22 +378,23 @@ final class TokenCreateWrapper {
 		private FixedFee.Builder asBuilder() {
 			return switch (fixedFeePayment) {
 				case USE_HBAR -> FixedFee.newBuilder().setAmount(amount);
-				case USE_EXISTING_FUNGIBLE_TOKEN -> FixedFee.newBuilder().setAmount(amount).setDenominatingTokenId(tokenID);
+				case USE_EXISTING_FUNGIBLE_TOKEN -> FixedFee.newBuilder().setAmount(amount).setDenominatingTokenId(
+						tokenID);
 				case USE_CURRENTLY_CREATED_TOKEN -> FixedFee.newBuilder().setAmount(amount)
 						.setDenominatingTokenId(TokenID.newBuilder()
-							.setShardNum(0L)
-							.setRealmNum(0L)
-							.setTokenNum(0L)
-							.build());
+								.setShardNum(0L)
+								.setRealmNum(0L)
+								.setTokenNum(0L)
+								.build());
 				default -> throw new InvalidTransactionException(ResponseCodeEnum.FAIL_INVALID);
 			};
 		}
 
-		FixedFeePayment getFixedFeePayment() {
+		public FixedFeePayment getFixedFeePayment() {
 			return this.fixedFeePayment;
 		}
 
-		CustomFee asGrpc() {
+		public CustomFee asGrpc() {
 			final var feeBuilder = CustomFee.newBuilder()
 					.setFixedFee(asBuilder().build());
 			if (feeCollector != null) {
@@ -402,7 +404,7 @@ final class TokenCreateWrapper {
 		}
 	}
 
-	record FractionalFeeWrapper(
+	public record FractionalFeeWrapper(
 			long numerator,
 			long denominator,
 			long minimumAmount,
@@ -410,8 +412,7 @@ final class TokenCreateWrapper {
 			boolean netOfTransfers,
 			AccountID feeCollector
 	) {
-
-		CustomFee asGrpc() {
+		public CustomFee asGrpc() {
 			final var feeBuilder = CustomFee.newBuilder()
 					.setFractionalFee(FractionalFee.newBuilder()
 							.setFractionalAmount(Fraction.newBuilder()
@@ -431,10 +432,10 @@ final class TokenCreateWrapper {
 		}
 	}
 
-	record RoyaltyFeeWrapper(
+	public record RoyaltyFeeWrapper(
 			long numerator, long denominator, FixedFeeWrapper fallbackFixedFee, AccountID feeCollector
 	) {
-		CustomFee asGrpc() {
+		public CustomFee asGrpc() {
 			final var royaltyFeeBuilder = RoyaltyFee.newBuilder()
 					.setExchangeValueFraction(Fraction.newBuilder()
 							.setNumerator(numerator)

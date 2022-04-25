@@ -28,10 +28,8 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -54,12 +52,14 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.CreateLogic;
-import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -92,10 +92,10 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -124,13 +124,10 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CreatePrecompileTest {
-
 	@Mock
 	private Bytes pretendArguments;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private OptionValidator validator;
 	@Mock
 	private GasCalculator gasCalculator;
 	@Mock
@@ -143,8 +140,6 @@ class CreatePrecompileTest {
 	private DecodingFacade decoder;
 	@Mock
 	private EncodingFacade encoder;
-	@Mock
-	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
 	@Mock
 	private SideEffectsTracker sideEffects;
 	@Mock
@@ -172,8 +167,6 @@ class CreatePrecompileTest {
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock
-	private DissociationFactory dissociationFactory;
-	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
 	private StateView stateView;
@@ -184,13 +177,7 @@ class CreatePrecompileTest {
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private SigImpactHistorian sigImpactHistorian;
-	@Mock
 	private CreateChecks createChecks;
-	@Mock
-	private EntityIdSource entityIdSource;
-	@Mock
-	private HTSPrecompiledContract.CreateLogicFactory createLogicFactory;
 	@Mock
 	private CreateLogic createLogic;
 	@Mock
@@ -198,7 +185,7 @@ class CreatePrecompileTest {
 	@Mock
 	private AccountStore accountStore;
 	@Mock
-	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
+	private InfrastructureFactory infrastructureFactory;
 
 	private HTSPrecompiledContract subject;
 	private UpdateTrackingLedgerAccount senderMutableAccount;
@@ -216,14 +203,12 @@ class CreatePrecompileTest {
 	@BeforeEach
 	void setUp() {
 		subject = new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
-		subject.setCreateLogicFactory(createLogicFactory);
-		subject.setTokenStoreFactory(tokenStoreFactory);
-		subject.setAccountStoreFactory(accountStoreFactory);
-		subject.setSideEffectsFactory(() -> sideEffects);
+				dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder, encoder,
+				syntheticTxnFactory, creator, impliedTransfersMarshal,
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
+				infrastructureFactory);
+		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 	}
 
 	@Test
@@ -749,18 +734,11 @@ class CreatePrecompileTest {
 		final var tokenCreateValidator = Mockito.mock(Function.class);
 		given(createChecks.validatorForConsTime(any())).willReturn(tokenCreateValidator);
 		given(tokenCreateValidator.apply(any())).willReturn(ResponseCodeEnum.OK);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(typedTokenStore);
-		given(createLogicFactory.newTokenCreateLogic(
-				accountStore,
-				typedTokenStore,
-				dynamicProperties,
-				sigImpactHistorian,
-				sideEffects,
-				entityIdSource,
-				validator
-		)).willReturn(createLogic);
+		given(infrastructureFactory.newTokenCreateLogic(accountStore, typedTokenStore, sideEffects))
+				.willReturn(createLogic);
 		given(recordsHistorian.nextFollowingChildConsensusTime())
 				.willReturn(pendingChildConsTime);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))

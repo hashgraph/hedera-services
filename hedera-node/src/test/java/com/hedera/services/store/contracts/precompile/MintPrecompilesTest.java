@@ -28,10 +28,8 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -48,11 +46,12 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.MintLogic;
-import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -78,7 +77,7 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_MINT_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
@@ -124,8 +123,6 @@ class MintPrecompilesTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private OptionValidator validator;
-	@Mock
 	private GasCalculator gasCalculator;
 	@Mock
 	private MessageFrame frame;
@@ -137,12 +134,6 @@ class MintPrecompilesTest {
 	private DecodingFacade decoder;
 	@Mock
 	private EncodingFacade encoder;
-	@Mock
-	private HTSPrecompiledContract.MintLogicFactory mintLogicFactory;
-	@Mock
-	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
-	@Mock
-	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
 	@Mock
 	private MintLogic mintLogic;
 	@Mock
@@ -170,8 +161,6 @@ class MintPrecompilesTest {
 	@Mock
 	private ImpliedTransfersMarshal impliedTransfers;
 	@Mock
-	private DissociationFactory dissociationFactory;
-	@Mock
 	private FeeCalculator feeCalculator;
 	@Mock
 	private FeeObject mockFeeObject;
@@ -184,25 +173,21 @@ class MintPrecompilesTest {
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private SigImpactHistorian sigImpactHistorian;
-	@Mock
 	private CreateChecks createChecks;
 	@Mock
-	private EntityIdSource entityIdSource;
+	private InfrastructureFactory infrastructureFactory;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
-		subject.setMintLogicFactory(mintLogicFactory);
-		subject.setTokenStoreFactory(tokenStoreFactory);
-		subject.setAccountStoreFactory(accountStoreFactory);
-		subject.setSideEffectsFactory(() -> sideEffects);
+				dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder, encoder,
+				syntheticTxnFactory, creator, impliedTransfers,
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
+				infrastructureFactory);
+		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 	}
 
 	@Test
@@ -275,10 +260,10 @@ class MintPrecompilesTest {
 		givenLedgers();
 
 		given(sigsVerifier.hasActiveSupplyKey(true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
+		given(infrastructureFactory.newMintLogic(accountStore, tokenStore)).willReturn(mintLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -456,10 +441,10 @@ class MintPrecompilesTest {
 	private void givenFungibleCollaborators() {
 		given(sigsVerifier.hasActiveSupplyKey(true, fungibleTokenAddr, recipientAddr, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(mintLogicFactory.newMintLogic(validator, tokenStore, accountStore)).willReturn(mintLogic);
+		given(infrastructureFactory.newMintLogic(accountStore, tokenStore)).willReturn(mintLogic);
 		given(creator.createSuccessfulSyntheticRecord(Collections.emptyList(), sideEffects, EMPTY_MEMO))
 				.willReturn(expirableTxnRecordBuilder);
 	}

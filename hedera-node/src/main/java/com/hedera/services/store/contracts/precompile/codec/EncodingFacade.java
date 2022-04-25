@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.precompile;
+package com.hedera.services.store.contracts.precompile.codec;
 
 /*-
  * ‌
@@ -196,15 +196,15 @@ public class EncodingFacade {
 			this.tupleType = switch (functionType) {
 				case CREATE -> createReturnType;
 				case MINT -> mintReturnType;
-				case BURN ->  burnReturnType;
-				case TOTAL_SUPPLY ->  totalSupplyType;
-				case DECIMALS ->  decimalsType;
-				case BALANCE ->  balanceOfType;
-				case OWNER ->  ownerOfType;
-				case NAME ->  nameType;
-				case SYMBOL ->  symbolType;
-				case TOKEN_URI ->  tokenUriType;
-				case ERC_TRANSFER ->  ercTransferType;
+				case BURN -> burnReturnType;
+				case TOTAL_SUPPLY -> totalSupplyType;
+				case DECIMALS -> decimalsType;
+				case BALANCE -> balanceOfType;
+				case OWNER -> ownerOfType;
+				case NAME -> nameType;
+				case SYMBOL -> symbolType;
+				case TOKEN_URI -> tokenUriType;
+				case ERC_TRANSFER -> ercTransferType;
 			};
 
 			this.functionType = functionType;
@@ -317,7 +317,7 @@ public class EncodingFacade {
 		}
 
 		public Log build() {
-			if(tupleTypes.length()>1) {
+			if (tupleTypes.length() > 1) {
 				tupleTypes.deleteCharAt(tupleTypes.length() - 1);
 				tupleTypes.append(")");
 				final var tuple = Tuple.of(data.toArray());
@@ -339,7 +339,7 @@ public class EncodingFacade {
 		}
 
 		private static LogTopic generateLogTopic(final Object param) {
-			byte[] array = new byte[]{};
+			byte[] array = new byte[] { };
 			if (param instanceof Address address) {
 				array = address.toArray();
 			} else if (param instanceof BigInteger numeric) {
@@ -347,7 +347,7 @@ public class EncodingFacade {
 			} else if (param instanceof Long numeric) {
 				array = BigInteger.valueOf(numeric).toByteArray();
 			} else if (param instanceof Boolean bool) {
-				array = new byte[]{(byte) (Boolean.TRUE.equals(bool) ? 1 : 0)};
+				array = new byte[] { (byte) (Boolean.TRUE.equals(bool) ? 1 : 0) };
 			} else if (param instanceof Bytes bytes) {
 				array = bytes.toArray();
 			}
@@ -368,12 +368,13 @@ public class EncodingFacade {
 		private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
 			byte[] expandedArray = new byte[32];
 
-			System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length-bytesToExpand.length, bytesToExpand.length);
+			System.arraycopy(bytesToExpand, 0, expandedArray, expandedArray.length - bytesToExpand.length,
+					bytesToExpand.length);
 			return expandedArray;
 		}
 	}
 
-	static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address address) {
+	public static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(final Address address) {
 		return com.esaulpaugh.headlong.abi.Address.wrap(
 				com.esaulpaugh.headlong.abi.Address.toChecksumAddress(address.toUnsignedBigInteger()));
 	}

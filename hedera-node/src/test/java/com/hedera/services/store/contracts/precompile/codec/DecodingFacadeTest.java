@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.precompile;
+package com.hedera.services.store.contracts.precompile.codec;
 
 /*-
  * ‌
@@ -31,8 +31,8 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
-import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
+import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_EXISTING_FUNGIBLE_TOKEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -126,7 +126,7 @@ class DecodingFacadeTest {
 		assertEquals(1, fungibleTransfers.size());
 		assertEquals(1, nftExchanges.size());
 		assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
-		assertTrue(fungibleTransfers.get(0).receiver.getAccountNum() > 0);
+		assertTrue(fungibleTransfers.get(0).receiver().getAccountNum() > 0);
 		assertEquals(43, fungibleTransfers.get(0).receiverAdjustment().getAmount());
 		assertTrue(nftExchanges.get(0).getTokenType().getTokenNum() > 0);
 		assertTrue(nftExchanges.get(0).asGrpc().getReceiverAccountID().getAccountNum() > 0);
@@ -142,8 +142,8 @@ class DecodingFacadeTest {
 		assertNotNull(fungibleTransfers);
 		assertEquals(1, fungibleTransfers.size());
 		assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
-		assertTrue(fungibleTransfers.get(0).sender.getAccountNum() > 0);
-		assertEquals(50, fungibleTransfers.get(0).amount);
+		assertTrue(fungibleTransfers.get(0).sender().getAccountNum() > 0);
+		assertEquals(50, fungibleTransfers.get(0).amount());
 	}
 
 	@Test
@@ -181,8 +181,8 @@ class DecodingFacadeTest {
 		final var decodedInput = subject.decodeErcTransfer(TRANSFER_INPUT, TokenID.getDefaultInstance(), AccountID.getDefaultInstance(), a -> a);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers().get(0);
 
-		assertTrue(fungibleTransfer.receiver.getAccountNum() > 0);
-		assertEquals(2, fungibleTransfer.amount);
+		assertTrue(fungibleTransfer.receiver().getAccountNum() > 0);
+		assertEquals(2, fungibleTransfer.amount());
 	}
 
 	@Test
@@ -190,9 +190,9 @@ class DecodingFacadeTest {
 		final var decodedInput = subject.decodeERCTransferFrom(TRANSFER_FROM_FUNGIBLE_INPUT, TokenID.getDefaultInstance(),true, a -> a);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers();
 
-		assertTrue(fungibleTransfer.get(0).receiver.getAccountNum() > 0);
-		assertTrue(fungibleTransfer.get(1).sender.getAccountNum() > 0);
-		assertEquals(5, fungibleTransfer.get(0).amount);
+		assertTrue(fungibleTransfer.get(0).receiver().getAccountNum() > 0);
+		assertTrue(fungibleTransfer.get(1).sender().getAccountNum() > 0);
+		assertEquals(5, fungibleTransfer.get(0).amount());
 	}
 
 	@Test
@@ -241,10 +241,10 @@ class DecodingFacadeTest {
 		final var decodedInput = subject.decodeTransferToken(TRANSFER_TOKEN_INPUT, a -> a);
 		final var fungibleTransfer = decodedInput.get(0).fungibleTransfers().get(0);
 
-		assertTrue(fungibleTransfer.sender.getAccountNum() > 0);
-		assertTrue(fungibleTransfer.receiver.getAccountNum() > 0);
+		assertTrue(fungibleTransfer.sender().getAccountNum() > 0);
+		assertTrue(fungibleTransfer.receiver().getAccountNum() > 0);
 		assertTrue(fungibleTransfer.getDenomination().getTokenNum() > 0);
-		assertEquals(20, fungibleTransfer.amount);
+		assertEquals(20, fungibleTransfer.amount());
 	}
 
 	@Test
@@ -255,12 +255,12 @@ class DecodingFacadeTest {
 		assertEquals(2, fungibleTransfers.size());
 		assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
 		assertTrue(fungibleTransfers.get(1).getDenomination().getTokenNum() > 0);
-		assertNull(fungibleTransfers.get(0).sender);
-		assertNull(fungibleTransfers.get(1).sender);
-		assertTrue(fungibleTransfers.get(0).receiver.getAccountNum() > 0);
-		assertTrue(fungibleTransfers.get(1).receiver.getAccountNum() > 0);
-		assertEquals(10, fungibleTransfers.get(0).amount);
-		assertEquals(20, fungibleTransfers.get(1).amount);
+		assertNull(fungibleTransfers.get(0).sender());
+		assertNull(fungibleTransfers.get(1).sender());
+		assertTrue(fungibleTransfers.get(0).receiver().getAccountNum() > 0);
+		assertTrue(fungibleTransfers.get(1).receiver().getAccountNum() > 0);
+		assertEquals(10, fungibleTransfers.get(0).amount());
+		assertEquals(20, fungibleTransfers.get(1).amount());
 	}
 
 	@Test
@@ -271,12 +271,12 @@ class DecodingFacadeTest {
 		assertEquals(2, fungibleTransfers.size());
 		assertTrue(fungibleTransfers.get(0).getDenomination().getTokenNum() > 0);
 		assertTrue(fungibleTransfers.get(1).getDenomination().getTokenNum() > 0);
-		assertNull(fungibleTransfers.get(0).sender);
-		assertNull(fungibleTransfers.get(1).receiver);
-		assertTrue(fungibleTransfers.get(0).receiver.getAccountNum() > 0);
-		assertTrue(fungibleTransfers.get(1).sender.getAccountNum() > 0);
-		assertEquals(20, fungibleTransfers.get(0).amount);
-		assertEquals(20, fungibleTransfers.get(1).amount);
+		assertNull(fungibleTransfers.get(0).sender());
+		assertNull(fungibleTransfers.get(1).receiver());
+		assertTrue(fungibleTransfers.get(0).receiver().getAccountNum() > 0);
+		assertTrue(fungibleTransfers.get(1).sender().getAccountNum() > 0);
+		assertEquals(20, fungibleTransfers.get(0).amount());
+		assertEquals(20, fungibleTransfers.get(1).amount());
 	}
 
 	@Test

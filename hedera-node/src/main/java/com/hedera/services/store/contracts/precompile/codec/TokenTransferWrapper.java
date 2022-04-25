@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.precompile;
+package com.hedera.services.store.contracts.precompile.codec;
 
 /*-
  * ‌
@@ -20,6 +20,7 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 
 import java.util.List;
@@ -38,10 +39,10 @@ public record TokenTransferWrapper(
 			final var type = fungibleTransfers.get(0).getDenomination();
 			builder.setToken(type);
 			for (final var transfer : fungibleTransfers) {
-				if (transfer.sender != null) {
+				if (transfer.sender() != null) {
 					builder.addTransfers(transfer.senderAdjustment());
 				}
-				if (transfer.receiver != null) {
+				if (transfer.receiver() != null) {
 					builder.addTransfers(transfer.receiverAdjustment());
 				}
 			}

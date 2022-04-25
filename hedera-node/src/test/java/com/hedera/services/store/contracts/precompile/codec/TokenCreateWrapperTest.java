@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.precompile;
+package com.hedera.services.store.contracts.precompile.codec;
 
 /*-
  * ‌
@@ -32,7 +32,6 @@ import org.apache.commons.codec.DecoderException;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 
@@ -48,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TokenCreateWrapperTest {
-
 	private static final byte[] ecdsaSecpk256k1 = "123456789012345678901234567890123".getBytes();
 	private static final byte[] ed25519 = "12345678901234567890123456789012".getBytes();
 	private final TokenCreateWrapper.TokenKeyWrapper tokenKeyWrapper = new TokenCreateWrapper.TokenKeyWrapper(

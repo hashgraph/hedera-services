@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.precompile;
+package com.hedera.services.store.contracts.precompile.codec;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ package com.hedera.services.store.contracts.precompile;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 
@@ -30,19 +29,19 @@ import java.util.List;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-public record MintWrapper(long amount, TokenID tokenType, List<ByteString> metadata) {
-	private static final long NONFUNGIBLE_MINT_AMOUNT = -1;
-	private static final List<ByteString> FUNGIBLE_MINT_METADATA = Collections.emptyList();
+public record BurnWrapper(long amount, TokenID tokenType, List<Long> serialNos) {
+	private static final long NONFUNGIBLE_BURN_AMOUNT = -1;
+	private static final List<Long> FUNGIBLE_BURN_SERIAL_NOS = Collections.emptyList();
 
-	public static MintWrapper forNonFungible(final TokenID tokenType, final List<ByteString> metadata) {
-		return new MintWrapper(NONFUNGIBLE_MINT_AMOUNT, tokenType, metadata);
+	public static BurnWrapper forNonFungible(final TokenID tokenType, final List<Long> serialNos) {
+		return new BurnWrapper(NONFUNGIBLE_BURN_AMOUNT, tokenType, serialNos);
 	}
 
-	public static MintWrapper forFungible(final TokenID tokenType, final long amount) {
-		return new MintWrapper(amount, tokenType, FUNGIBLE_MINT_METADATA);
+	public static BurnWrapper forFungible(final TokenID tokenType, final long amount) {
+		return new BurnWrapper(amount, tokenType, FUNGIBLE_BURN_SERIAL_NOS);
 	}
 
 	public TokenType type() {
-		return (amount == NONFUNGIBLE_MINT_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
+		return (amount == NONFUNGIBLE_BURN_AMOUNT) ? NON_FUNGIBLE_UNIQUE : FUNGIBLE_COMMON;
 	}
 }

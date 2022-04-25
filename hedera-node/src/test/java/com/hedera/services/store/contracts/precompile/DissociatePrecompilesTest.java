@@ -28,10 +28,8 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -47,11 +45,12 @@ import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.token.DissociateLogic;
-import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -77,8 +76,8 @@ import java.util.Iterator;
 import java.util.Optional;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKENS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DISSOCIATE_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
@@ -111,8 +110,6 @@ class DissociatePrecompilesTest {
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
-	private OptionValidator validator;
-	@Mock
 	private GasCalculator gasCalculator;
 	@Mock
 	private MessageFrame frame;
@@ -130,14 +127,6 @@ class DissociatePrecompilesTest {
 	private DecodingFacade decoder;
 	@Mock
 	private EncodingFacade encoder;
-	@Mock
-	private HTSPrecompiledContract.MintLogicFactory mintLogicFactory;
-	@Mock
-	private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
-	@Mock
-	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
-	@Mock
-	private HTSPrecompiledContract.DissociateLogicFactory dissociateLogicFactory;
 	@Mock
 	private DissociateLogic dissociateLogic;
 	@Mock
@@ -163,8 +152,6 @@ class DissociatePrecompilesTest {
 	@Mock
 	private ExpiringCreations creator;
 	@Mock
-	private DissociationFactory dissociationFactory;
-	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock
 	private FeeCalculator feeCalculator;
@@ -179,26 +166,21 @@ class DissociatePrecompilesTest {
 	@Mock
 	private UsagePricesProvider resourceCosts;
 	@Mock
-	private SigImpactHistorian sigImpactHistorian;
-	@Mock
 	private CreateChecks createChecks;
 	@Mock
-	private EntityIdSource entityIdSource;
+	private InfrastructureFactory infrastructureFactory;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
-		subject.setMintLogicFactory(mintLogicFactory);
-		subject.setDissociateLogicFactory(dissociateLogicFactory);
-		subject.setTokenStoreFactory(tokenStoreFactory);
-		subject.setAccountStoreFactory(accountStoreFactory);
-		subject.setSideEffectsFactory(() -> sideEffects);
+				dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder, encoder,
+				syntheticTxnFactory, creator, impliedTransfersMarshal,
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
+				infrastructureFactory);
+		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 	}
 
 	@Test
@@ -240,10 +222,10 @@ class DissociatePrecompilesTest {
 		given(pretendArguments.getInt(0)).willReturn(ABI_ID_DISSOCIATE_TOKEN);
 
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers)).willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory)).willReturn(dissociateLogic);
+		given(infrastructureFactory.newDissociateLogic(accountStore, tokenStore)).willReturn(dissociateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -285,12 +267,10 @@ class DissociatePrecompilesTest {
 				.willReturn(mockSynthBodyBuilder);
 		given(sigsVerifier.hasActiveKey(false, accountAddr, senderAddr, wrappedLedgers))
 				.willReturn(true);
-		given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts))
-				.willReturn(accountStore);
-		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
+		given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
+		given(infrastructureFactory.newTokenStore(accountStore, sideEffects, tokens, nfts, tokenRels))
 				.willReturn(tokenStore);
-		given(dissociateLogicFactory.newDissociateLogic(validator, tokenStore, accountStore, dissociationFactory))
-				.willReturn(dissociateLogic);
+		given(infrastructureFactory.newDissociateLogic(accountStore, tokenStore)).willReturn(dissociateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())

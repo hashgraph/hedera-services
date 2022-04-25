@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -38,7 +39,7 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 import static com.hedera.services.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.EncodingFacade.SUCCESS_RESULT;
+import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 

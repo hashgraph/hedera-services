@@ -35,7 +35,6 @@ import java.time.Instant;
  * Defines a type able to create ids of various entities under various conditions.
  */
 public interface EntityIdSource {
-
 	/**
 	 * Returns the {@link TopicID} to use for a new topic with the given sponsor.
 	 * 

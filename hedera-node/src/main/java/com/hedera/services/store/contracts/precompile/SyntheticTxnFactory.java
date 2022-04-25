@@ -22,6 +22,12 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.store.contracts.precompile.codec.Association;
+import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
+import com.hedera.services.store.contracts.precompile.codec.Dissociation;
+import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -268,6 +274,18 @@ public class SyntheticTxnFactory {
 
 		public AccountAmount receiverAdjustment() {
 			return AccountAmount.newBuilder().setAccountID(receiver).setAmount(+amount).build();
+		}
+
+		public AccountID sender() {
+			return sender;
+		}
+
+		public AccountID receiver() {
+			return receiver;
+		}
+
+		public long amount() {
+			return amount;
 		}
 	}
 

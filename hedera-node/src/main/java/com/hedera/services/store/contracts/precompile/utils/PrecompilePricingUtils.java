@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.precompile;
+package com.hedera.services.store.contracts.precompile.utils;
 
 /*-
  * ‌
@@ -94,7 +94,7 @@ public class PrecompilePricingUtils {
 				getCanonicalPriceInTinyCents(gasCostType));
 	}
 
-	enum GasCostType {
+	public enum GasCostType {
 		UNRECOGNIZED(HederaFunctionality.UNRECOGNIZED, SubType.UNRECOGNIZED),
 		TRANSFER_FUNGIBLE(CryptoTransfer, TOKEN_FUNGIBLE_COMMON),
 		TRANSFER_NFT(CryptoTransfer, TOKEN_NON_FUNGIBLE_UNIQUE),

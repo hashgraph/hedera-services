@@ -1,4 +1,4 @@
-package com.hedera.services.store.contracts.precompile;
+package com.hedera.services.store.contracts.precompile.utils;
 
 /*-
  * ‌
@@ -23,7 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectTarget;
 import org.apache.tuweni.bytes.Bytes;
 
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 
 public class DescriptorUtils {

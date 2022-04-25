@@ -29,11 +29,9 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -49,11 +47,14 @@ import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
-import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
-import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -65,8 +66,8 @@ import com.hederahashgraph.fee.FeeObject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -86,17 +87,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_BALANCE_OF_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DECIMALS;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_ERC_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_NAME;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_OWNER_OF_NFT;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_SYMBOL;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOKEN_URI_NFT;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TOTAL_SUPPLY_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_BALANCE_OF_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_DECIMALS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_ERC_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_OWNER_OF_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_SYMBOL;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOKEN_URI_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TOTAL_SUPPLY_TOKEN;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON;
@@ -134,8 +134,6 @@ class ERC20PrecompilesTest {
     @Mock
     private GlobalDynamicProperties dynamicProperties;
     @Mock
-    private OptionValidator validator;
-    @Mock
     private GasCalculator gasCalculator;
     @Mock
     private MessageFrame frame;
@@ -147,10 +145,6 @@ class ERC20PrecompilesTest {
     private DecodingFacade decoder;
     @Mock
     private EncodingFacade encoder;
-    @Mock
-    private HTSPrecompiledContract.TokenStoreFactory tokenStoreFactory;
-    @Mock
-    private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
     @Mock
     private SideEffectsTracker sideEffects;
     @Mock
@@ -174,8 +168,6 @@ class ERC20PrecompilesTest {
     @Mock
     private ExpiringCreations creator;
     @Mock
-    private DissociationFactory dissociationFactory;
-    @Mock
     private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock
     private FeeCalculator feeCalculator;
@@ -194,10 +186,6 @@ class ERC20PrecompilesTest {
     @Mock
     private HederaTokenStore hederaTokenStore;
     @Mock
-    private HTSPrecompiledContract.TransferLogicFactory transferLogicFactory;
-    @Mock
-    private HTSPrecompiledContract.HederaTokenStoreFactory hederaTokenStoreFactory;
-    @Mock
     private FeeObject mockFeeObject;
     @Mock
     private ContractAliases aliases;
@@ -206,28 +194,22 @@ class ERC20PrecompilesTest {
     @Mock
     private BlockValues blockValues;
     @Mock
-    private SigImpactHistorian sigImpactHistorian;
-    @Mock
     private CreateChecks createChecks;
     @Mock
-    private EntityIdSource entityIdSource;
+    private InfrastructureFactory infrastructureFactory;
 
     private HTSPrecompiledContract subject;
-    private final EntityIdSource ids = NOOP_ID_SOURCE;
     private MockedStatic<EntityIdUtils> entityIdUtils;
 
     @BeforeEach
     void setUp() {
         subject = new HTSPrecompiledContract(
-                validator, dynamicProperties, gasCalculator,
-                sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-                syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
-        subject.setTransferLogicFactory(transferLogicFactory);
-        subject.setTokenStoreFactory(tokenStoreFactory);
-        subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
-        subject.setAccountStoreFactory(accountStoreFactory);
-        subject.setSideEffectsFactory(() -> sideEffects);
+                dynamicProperties, gasCalculator,
+                recordsHistorian, sigsVerifier, decoder, encoder,
+                syntheticTxnFactory, creator, impliedTransfersMarshal,
+                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
+                infrastructureFactory);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils.when(() -> EntityIdUtils.accountIdFromEvmAddress(senderAddress)).thenReturn(sender);
         entityIdUtils.when(() -> EntityIdUtils.contractIdFromEvmAddress(Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()))
@@ -303,18 +285,11 @@ class ERC20PrecompilesTest {
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true, true);
 
-        given(hederaTokenStoreFactory.newHederaTokenStore(
-                ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-        )).willReturn(hederaTokenStore);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
 
-        given(transferLogicFactory.newLogic(
-                accounts, nfts, tokenRels, hederaTokenStore,
-                sideEffects,
-                dynamicProperties,
-                validator,
-                null,
-                recordsHistorian
-        )).willReturn(transferLogic);
+        given(infrastructureFactory.newTransferLogic(
+                hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build())
@@ -553,18 +528,11 @@ class ERC20PrecompilesTest {
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
         given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true, true);
 
-        given(hederaTokenStoreFactory.newHederaTokenStore(
-                ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-        )).willReturn(hederaTokenStore);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
 
-        given(transferLogicFactory.newLogic(
-                accounts, nfts, tokenRels, hederaTokenStore,
-                sideEffects,
-                dynamicProperties,
-                validator,
-                null,
-                recordsHistorian
-        )).willReturn(transferLogic);
+        given(infrastructureFactory.newTransferLogic(
+                hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build())
@@ -615,9 +583,8 @@ class ERC20PrecompilesTest {
         given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(false);
-        given(hederaTokenStoreFactory.newHederaTokenStore(
-                ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-        )).willReturn(hederaTokenStore);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
 
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE)).willReturn(mockRecordBuilder);
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))

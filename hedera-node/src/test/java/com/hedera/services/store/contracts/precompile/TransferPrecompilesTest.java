@@ -49,6 +49,9 @@ import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -88,11 +91,11 @@ import java.util.Optional;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_CRYPTO_TRANSFER;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_NFT;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_NFTS;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_TRANSFER_TOKENS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFTS;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKEN;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_TOKENS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TOKEN_TRANSFER_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
@@ -157,12 +160,6 @@ class TransferPrecompilesTest {
 	@Mock
 	private EncodingFacade encoder;
 	@Mock
-	private HTSPrecompiledContract.TransferLogicFactory transferLogicFactory;
-	@Mock
-	private HTSPrecompiledContract.HederaTokenStoreFactory hederaTokenStoreFactory;
-	@Mock
-	private HTSPrecompiledContract.AccountStoreFactory accountStoreFactory;
-	@Mock
 	private TransferLogic transferLogic;
 	@Mock
 	private SideEffectsTracker sideEffects;
@@ -215,21 +212,20 @@ class TransferPrecompilesTest {
 	private CreateChecks createChecks;
 	@Mock
 	private EntityIdSource entityIdSource;
+	@Mock
+	private InfrastructureFactory infrastructureFactory;
 
 	private HTSPrecompiledContract subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new HTSPrecompiledContract(
-				validator, dynamicProperties, gasCalculator,
-				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
-				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
-		subject.setTransferLogicFactory(transferLogicFactory);
-		subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
-		subject.setAccountStoreFactory(accountStoreFactory);
-		subject.setSideEffectsFactory(() -> sideEffects);
-//		givenFrameContext();
+				dynamicProperties, gasCalculator,
+				recordsHistorian, sigsVerifier, decoder, encoder,
+				syntheticTxnFactory, creator, impliedTransfersMarshal,
+				() -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks,
+				infrastructureFactory);
+		given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
 	}
 
 	@Test
@@ -297,18 +293,11 @@ class TransferPrecompilesTest {
 		given(decoder.decodeTransferTokens(eq(pretendArguments), any()))
 				.willReturn(Collections.singletonList(tokensTransferList));
 
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
 
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -403,18 +392,11 @@ class TransferPrecompilesTest {
 				.willReturn(Collections.singletonList(tokensTransferListSenderOnly));
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
 
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -465,18 +447,11 @@ class TransferPrecompilesTest {
 				.willReturn(Collections.singletonList(tokensTransferListReceiverOnly));
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
 
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -526,18 +501,11 @@ class TransferPrecompilesTest {
 				.willReturn(Collections.singletonList(nftsTransferList));
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
 
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
 
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -593,19 +561,12 @@ class TransferPrecompilesTest {
 				.willReturn(Collections.singletonList(nftTransferList));
 
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
 		given(worldUpdater.aliases()).willReturn(aliases);
 
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -665,19 +626,10 @@ class TransferPrecompilesTest {
 		given(decoder.decodeCryptoTransfer(eq(pretendArguments), any()))
 				.willReturn(Collections.singletonList(nftTransferList));
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
-
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
-
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -723,19 +675,10 @@ class TransferPrecompilesTest {
 		given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
 		given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any())).willReturn(true);
 		given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody)).willReturn(OK);
-
-		given(hederaTokenStoreFactory.newHederaTokenStore(
-				ids, validator, sideEffects, dynamicProperties, tokenRels, nfts, tokens
-		)).willReturn(hederaTokenStore);
-
-		given(transferLogicFactory.newLogic(
-				accounts, nfts, tokenRels, hederaTokenStore,
-				sideEffects,
-				dynamicProperties,
-				validator,
-				null,
-				recordsHistorian
-		)).willReturn(transferLogic);
+		given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+				.willReturn(hederaTokenStore);
+		given(infrastructureFactory.newTransferLogic(
+				hederaTokenStore, sideEffects, nfts, accounts, tokenRels)).willReturn(transferLogic);
 		given(decoder.decodeTransferToken(eq(pretendArguments), any())).willReturn(
 				Collections.singletonList(TOKEN_TRANSFER_WRAPPER));
 		given(impliedTransfersMarshal.assessCustomFeesAndValidate(anyInt(), anyInt(), any(), any(), any()))
