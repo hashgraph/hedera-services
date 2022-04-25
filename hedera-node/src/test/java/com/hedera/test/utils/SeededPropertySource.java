@@ -326,7 +326,7 @@ public class SeededPropertySource {
 				nextInRangeLong(),
 				0,
 				0,
-				nextEntityId());
+				null);
 		misorderedState.setNftsOwned(nextUnsignedLong());
 		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
 		return misorderedState;
