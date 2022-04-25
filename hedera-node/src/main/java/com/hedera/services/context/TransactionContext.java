@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.EvmFnResult;
@@ -214,7 +215,7 @@ public interface TransactionContext {
 	 * @param callContext
 	 * 		the context to add to the call result
 	 */
-	void updateFromEvmCallContext(EvmFnResult.EvmFnCallContext callContext);
+	void updateFromEvmCallContext(EthTxData callContext);
 
 	/**
 	 * Record that the current transaction created a smart contract with

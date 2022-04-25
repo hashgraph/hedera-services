@@ -22,6 +22,7 @@ package com.hedera.services.records;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Topic;
 
@@ -88,7 +89,7 @@ public class TransactionRecordService {
 		txnCtx.addNonThresholdFeeChargedToPayer(result.getGasPrice() * (result.getGasUsed() - result.getSbhRefund()));
 	}
 
-	public void updateFromEvmCallContext(EvmFnResult.EvmFnCallContext callContext) {
+	public void updateFromEvmCallContext(EthTxData callContext) {
 		txnCtx.updateFromEvmCallContext(callContext);
 	}
 }

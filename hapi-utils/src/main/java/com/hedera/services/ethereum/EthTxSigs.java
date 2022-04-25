@@ -1,4 +1,4 @@
-package com.hedera.services.txns.ethereum;
+package com.hedera.services.ethereum;
 
 /*-
  * ‌
@@ -33,8 +33,8 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static com.hedera.services.txns.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
-import static com.hedera.services.txns.ethereum.EthTxData.SECP256K1_EC_COMPRESSED;
+import static com.hedera.services.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
+import static com.hedera.services.ethereum.EthTxData.SECP256K1_EC_COMPRESSED;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recover;
@@ -146,7 +146,7 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
 		LibSecp256k1.secp256k1_ec_pubkey_serialize(
 				CONTEXT, recoveredFullKey, fullKeySize, pubKey, SECP256K1_EC_UNCOMPRESSED);
 
-		recoveredFullKey.get(); // recoveryId is not part of the account hash
+		recoveredFullKey.get(); // read and discard - recoveryId is not part of the account hash
 		var preHash = new byte[64];
 		recoveredFullKey.get(preHash, 0, 64);
 		var keyHash = new Keccak.Digest256().digest(preHash);

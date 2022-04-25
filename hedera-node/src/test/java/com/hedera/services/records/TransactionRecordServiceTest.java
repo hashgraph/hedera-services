@@ -23,6 +23,7 @@ package com.hedera.services.records;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
@@ -68,7 +69,7 @@ class TransactionRecordServiceTest {
 	@Mock
 	private EvmFnResult functionResult;
 	@Mock
-	private EvmFnResult.EvmFnCallContext evmFnCallContext;
+	private EthTxData evmFnCallContext;
 
 	private TransactionRecordService subject;
 
