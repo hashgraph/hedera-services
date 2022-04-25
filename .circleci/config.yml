@@ -495,7 +495,7 @@ commands:
         default: ""
       platform_repo_path:
         type: string
-        default: "TBD"
+        default: "../platform-swirlds"
       hedera_services_path:
         type: string
         default: "/repo"
@@ -1688,7 +1688,7 @@ jobs:
         default: ""
       platform_repo_path:
         type: string
-        default: "TBD"
+        default: "../platform-swirlds"
       hedera_services_path:
         type: string
         default: "/repo"
