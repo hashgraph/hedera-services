@@ -440,4 +440,12 @@ class MerkleAccountStateTest {
 		assertEquals(approveForAllNfts, subject.getApproveForAllNfts());
 	}
 
+	@Test
+	void gettersAndSettersForAutoRenewAccountWorks() {
+		var subject = new MerkleAccountState();
+		final var account = EntityId.fromIdentityCode(10);
+		subject.setAutoRenewAccount(account);
+		assertEquals(account, subject.getAutoRenewAccount());
+	}
+
 }

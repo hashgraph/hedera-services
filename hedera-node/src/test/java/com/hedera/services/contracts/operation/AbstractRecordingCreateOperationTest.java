@@ -108,8 +108,6 @@ class AbstractRecordingCreateOperationTest {
 	private WorldLedgers ledgers;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
-	@Mock
-	private MerkleAccount autoRenewMerkleAccount;
 
 	private static final Gas childStipend = Gas.of(1_000_000L);
 	private static final Wei gasPrice = Wei.of(1000L);

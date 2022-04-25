@@ -32,7 +32,6 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -150,7 +149,7 @@ public class MigrationRecordsManager {
 				final var newExpiry = account.getExpiry();
 
 				final var syntheticSuccessReceipt = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
-
+				// for 0.26.0 migration we use the contract account's hbar since auto-renew accounts are not set
 				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry, contractNum.toGrpcAccountId());
 				final var memo = String.format(CONTRACT_UPGRADE_MEMO, contractNum.num(), newExpiry);
 				final var synthRecord = ExpirableTxnRecord.newBuilder()

@@ -567,6 +567,7 @@ class StateViewTest {
 		assertEquals(contract.getBalance(), info.getBalance());
 		assertEquals(CommonUtils.hex(create2Address.toByteArray()), info.getContractAccountID());
 		assertEquals(contract.getExpiry(), info.getExpirationTime().getSeconds());
+		assertEquals(EntityId.fromIdentityCode(4), contract.getAutoRenewAccount());
 		assertEquals(rels, info.getTokenRelationshipsList());
 		assertEquals(ledgerId, info.getLedgerId());
 		assertTrue(info.getDeleted());

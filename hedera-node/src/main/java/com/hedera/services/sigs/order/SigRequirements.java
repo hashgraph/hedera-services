@@ -425,6 +425,7 @@ public class SigRequirements {
 			if (!autoRenewAccountResult.succeeded()) {
 				return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
 			}
+			required = mutable(required);
 			required.add(autoRenewAccountResult.metadata().key());
 		}
 

@@ -175,6 +175,14 @@ class MerkleAccountTest {
 	}
 
 	@Test
+	void returnsExpectedAutoRenewAccount() {
+		final var account = EntityId.fromIdentityCode(10);
+		subject.setAutoRenewAccount(account);
+		assertEquals(account, subject.getAutoRenewAccount());
+		assertTrue(subject.hasAutoRenewAccount());
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
 	void returnsExpectedRecordsIterator() {
 		final Iterator<ExpirableTxnRecord> mockIter = (Iterator<ExpirableTxnRecord>) mock(Iterator.class);
