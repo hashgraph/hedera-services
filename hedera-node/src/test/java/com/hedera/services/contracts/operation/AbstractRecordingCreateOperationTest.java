@@ -21,15 +21,21 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
+import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -98,6 +104,12 @@ class AbstractRecordingCreateOperationTest {
 	private RecordsHistorian recordsHistorian;
 	@Mock
 	private ContractCustomizer contractCustomizer;
+	@Mock
+	private WorldLedgers ledgers;
+	@Mock
+	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
+	@Mock
+	private MerkleAccount autoRenewMerkleAccount;
 
 	private static final Gas childStipend = Gas.of(1_000_000L);
 	private static final Wei gasPrice = Wei.of(1000L);
@@ -108,6 +120,7 @@ class AbstractRecordingCreateOperationTest {
 			new Operation.OperationResult(Optional.empty(), Optional.empty());
 	private static final Operation.OperationResult EMPTY_HALT_RESULT =
 			new Operation.OperationResult(Subject.PRETEND_OPTIONAL_COST, Optional.empty());
+	private static final EntityId autoRenewId = new EntityId(0, 0, 8);
 
 	private Subject subject;
 
@@ -199,14 +212,19 @@ class AbstractRecordingCreateOperationTest {
 		final var liveRecord = ExpirableTxnRecord.newBuilder()
 				.setReceiptBuilder(TxnReceipt.newBuilder().setStatus(TxnReceipt.REVERTED_SUCCESS_LITERAL));
 		final var mockCreation = TransactionBody.newBuilder()
-				.setContractCreateInstance(ContractCreateTransactionBody.newBuilder());
+				.setContractCreateInstance(ContractCreateTransactionBody.newBuilder().setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
 		final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
+		final var autoRenewAccountId = EntityIdUtils.accountIdFromEvmAddress(Address.ALTBN128_PAIRING);
 		givenSpawnPrereqs();
 		givenBuilderPrereqs();
 		given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
-		given(syntheticTxnFactory.contractCreation(contractCustomizer, EntityId.MISSING_ENTITY_ID)).willReturn(mockCreation);
+		given(syntheticTxnFactory.contractCreation(contractCustomizer, autoRenewId)).willReturn(mockCreation);
 		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
 		given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
+		given(frame.getSenderAddress()).willReturn(Address.ALTBN128_PAIRING);
+		given(updater.trackingLedgers()).willReturn(ledgers);
+		given(ledgers.accounts()).willReturn(accountsLedger);
+		given(accountsLedger.get(autoRenewAccountId, AccountProperty.AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewId);
 
 		assertSameResult(EMPTY_HALT_RESULT, subject.execute(frame, evm));
 

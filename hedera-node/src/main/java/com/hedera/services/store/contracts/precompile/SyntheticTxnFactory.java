@@ -115,7 +115,7 @@ public class SyntheticTxnFactory {
 			final EntityId autoRenewAccount) {
 		final var builder = ContractCreateTransactionBody.newBuilder();
 
-		if (!MISSING_ID.equals(autoRenewAccount)) {
+		if (autoRenewAccount != null && !MISSING_ID.equals(autoRenewAccount)) {
 			builder.setAutoRenewAccountId(autoRenewAccount.toGrpcAccountId());
 		}
 		customizer.customizeSynthetic(builder);

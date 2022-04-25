@@ -66,6 +66,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -106,7 +107,8 @@ public class ContractCreateSuite extends HapiApiSuite {
 						gasLimitOverMaxGasLimitFailsPrecheck(),
 						vanillaSuccess(),
 						propagatesNestedCreations(),
-						blockTimestampIsConsensusTime()
+						blockTimestampIsConsensusTime(),
+						contractWithAutoRenewNeedSignatures()
 				}
 		);
 	}
@@ -129,7 +131,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 	private HapiApiSpec canCallPendingContractSafely() {
 		final var numSlots = 64;
 		final var createBurstSize = 500;
-		final int[] targets = {19, 24};
+		final int[] targets = { 19, 24 };
 		final AtomicLong createdFileNum = new AtomicLong();
 		final var callTxn = "callTxn";
 		final var contract = "FibonacciPlus";
@@ -167,7 +169,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
 	HapiApiSpec cannotSendToNonExistentAccount() {
 		final var contract = "Multipurpose";
-		Object[] donationArgs = new Object[]{666666, "Hey, Ma!"};
+		Object[] donationArgs = new Object[] { 666666, "Hey, Ma!" };
 
 		return defaultHapiSpec("CannotSendToNonExistentAccount").given(
 				uploadInitCode(contract)
@@ -321,7 +323,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 							final var registry = spec.registry();
 							final var aNum = (int) registry.getAccountID(aBeneficiary).getAccountNum();
 							final var bNum = (int) registry.getAccountID(bBeneficiary).getAccountNum();
-							final var sendArgs = new Object[]{sendAmount, aNum, bNum};
+							final var sendArgs = new Object[] { sendAmount, aNum, bNum };
 
 							final var op = contractCall(contract, "sendTo", sendArgs
 							)
@@ -715,6 +717,30 @@ public class ContractCreateSuite extends HapiApiSuite {
 						contractListWithPropertiesInheritedFrom(
 								"createChildCallResult", 1, "parentInfo"),
 						restoreDefaultMaxGas()
+				);
+	}
+
+	HapiApiSpec contractWithAutoRenewNeedSignatures() {
+		final var contract = "CreateTrivial";
+		final var autoRenewAccount = "autoRenewAccount";
+		return defaultHapiSpec("contractWithAutoRenewNeedSignatures")
+				.given(
+						newKeyNamed(ADMIN_KEY),
+						uploadInitCode(contract),
+						cryptoCreate(autoRenewAccount).balance(ONE_HUNDRED_HBARS),
+						contractCreate(contract)
+								.adminKey(ADMIN_KEY)
+								.autoRenewAccountId(autoRenewAccount)
+								.signedBy(DEFAULT_PAYER, ADMIN_KEY)
+								.hasKnownStatus(INVALID_SIGNATURE),
+						contractCreate(contract)
+								.adminKey(ADMIN_KEY)
+								.autoRenewAccountId(autoRenewAccount)
+								.signedBy(DEFAULT_PAYER, ADMIN_KEY, autoRenewAccount)
+								.logged(),
+						getContractInfo(contract).logged()
+						).when(
+				).then(
 				);
 	}
 

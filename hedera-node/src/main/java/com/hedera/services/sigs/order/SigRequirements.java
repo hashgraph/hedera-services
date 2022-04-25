@@ -455,6 +455,7 @@ public class SigRequirements {
 		if (!key.hasContractID()) {
 			var candidate = asUsableFcKey(key);
 			if (candidate.isPresent()) {
+				required = mutable(required);
 				required.add(candidate.get());
 			}
 		}
@@ -463,6 +464,7 @@ public class SigRequirements {
 			if (!autoRenewAccountResult.succeeded()) {
 				return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
 			}
+			required = mutable(required);
 			required.add(autoRenewAccountResult.metadata().key());
 		}
 		return !required.isEmpty() ? factory.forValidOrder(required) : SigningOrderResult.noKnownKeys();
