@@ -62,6 +62,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_P
 import static com.hedera.services.ledger.properties.AccountProperty.KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 
@@ -161,7 +162,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 			maybeUpdateCallData(accessor, ethTxData, accessor.getTxn().getEthereumTransaction());
 			var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 			var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
-			if (callingAccount == null) {
+			if (callingAccount == MISSING_NUM) {
 				return ResponseCodeEnum.INVALID_ACCOUNT_ID; 
 			}
 

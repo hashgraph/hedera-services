@@ -569,56 +569,19 @@ class EthereumTransactionTransitionLogicTest {
 		assertEquals(OK, subject.validateSemantics(accessor));
 	}
 
-//	@Test
-//	void acceptsConsensusDecoded() {
-//		givenValidTxnCtx();
-//		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
-//		given(optionValidator.isValidAutoRenewPeriod(any())).willReturn(true);
-//		given(globalDynamicProperties.maxGas()).willReturn(gas+1);
-//		given(optionValidator.memoCheck(any())).willReturn(OK);
-//		given(accessor.getExpandedSigStatus()).willReturn(OK);
-//		given(accessor.getTxn()).willReturn(ethTxTxn);
-//		given(hfs.exists(callDataFile)).willReturn(true);
-//		given(hfs.cat(callDataFile)).willReturn(new byte[] {0x30, 0x31, 0x32, 0x33});
-//		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(EntityNum.fromInt(4321));
-//
-//		// expect:
-//		assertEquals(OK, subject.validateSemantics(accessor));
-//	}
-//
-//	@Test
-//	void rejectsConsensusNoContract() {
-//		givenValidTxnCtx();
-//		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
-//		given(optionValidator.isValidAutoRenewPeriod(any())).willReturn(true);
-//		given(globalDynamicProperties.maxGas()).willReturn(gas+1);
-//		given(optionValidator.memoCheck(any())).willReturn(OK);
-//		given(accessor.getExpandedSigStatus()).willReturn(OK);
-//		given(accessor.getTxn()).willReturn(ethTxTxn);
-//		given(hfs.exists(callDataFile)).willReturn(true);
-//		given(hfs.cat(callDataFile)).willReturn(new byte[] {0x30, 0x31, 0x32, 0x33});
-//		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(EntityNum.fromInt(4321));
-//
-//		// expect:
-//		assertEquals(OK, subject.validateSemantics(accessor));
-//	}
-//
-//	@Test
-//	void rejectsConsensusWrongNonce() {
-//		givenValidTxnCtx();
-//		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
-//		given(optionValidator.isValidAutoRenewPeriod(any())).willReturn(true);
-//		given(globalDynamicProperties.maxGas()).willReturn(gas+1);
-//		given(optionValidator.memoCheck(any())).willReturn(OK);
-//		given(accessor.getExpandedSigStatus()).willReturn(OK);
-//		given(accessor.getTxn()).willReturn(ethTxTxn);
-//		given(hfs.exists(callDataFile)).willReturn(true);
-//		given(hfs.cat(callDataFile)).willReturn(new byte[] {0x30, 0x31, 0x32, 0x33});
-//		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(EntityNum.fromInt(4321));
-//
-//		// expect:
-//		assertEquals(OK, subject.validateSemantics(accessor));
-//	}
+	@Test
+	void acceptsConsensusDecoded() {
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(globalDynamicProperties.maxGas()).willReturn(gas+1);
+		given(accessor.getExpandedSigStatus()).willReturn(OK);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(EntityNum.fromInt(4321));
+		given(accountsLedger.get(any(), eq(AccountProperty.ETHEREUM_NONCE))).willReturn(ethTxData.nonce());
+
+		// expect:
+		assertEquals(OK, subject.validateSemantics(accessor));
+	}
 
 	@Test
 	void rejectWrongTransactionBody() {
@@ -695,6 +658,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(accessor.getExpandedSigStatus()).willReturn(OK);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.MISSING_NUM);
 
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, subject.validateSemantics(accessor));
