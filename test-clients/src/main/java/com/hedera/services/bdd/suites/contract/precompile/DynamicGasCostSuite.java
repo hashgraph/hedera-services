@@ -66,8 +66,6 @@ import static com.swirlds.common.CommonUtils.hex;
 import static com.swirlds.common.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.*;
 
-//	TODO: Fix failing tests: all positive specs are failing before and after the refactor with either CONTRACT_REVERT_EXECUTED or
-//  with CustomSpecAssert failed expected: <10000> but was: <0>!
 public class DynamicGasCostSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DynamicGasCostSuite.class);
 
