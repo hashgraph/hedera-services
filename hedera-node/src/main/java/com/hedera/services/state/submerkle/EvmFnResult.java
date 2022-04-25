@@ -59,7 +59,8 @@ public class EvmFnResult implements SelfSerializable {
 
 	static final int RELEASE_0240_VERSION = 3;
 	static final int RELEASE_0250_VERSION = 4;
-	static final int CURRENT_VERSION = RELEASE_0250_VERSION;
+	static final int RELEASE_0260_VERSION = 5;
+	static final int CURRENT_VERSION = RELEASE_0260_VERSION;
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x2055c5c03ff84eb4L;
 
@@ -203,6 +204,8 @@ public class EvmFnResult implements SelfSerializable {
 			gas = in.readLong();
 			amount = in.readLong();
 			functionParameters = in.readByteArray(MAX_FUNCTION_PARAMETERS_BYTES);
+		}
+		if (version >= RELEASE_0260_VERSION) {
 			senderId = readNullableSerializable(in);
 		}
 	}
