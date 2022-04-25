@@ -1,6 +1,8 @@
+package com.hedera.services.ledger.interceptors;
+
 /*-
  * ‌
- * Hedera Services Test Clients
+ * Hedera Services Node
  * ​
  * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
@@ -17,3 +19,17 @@
  * limitations under the License.
  * ‍
  */
+
+import com.hedera.services.context.SideEffectsTracker;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class UniqueTokensCommitInterceptorTest {
+	@Test
+	void everythingNoopForNow() {
+		final var subject = new UniqueTokensCommitInterceptor(new SideEffectsTracker());
+
+		assertDoesNotThrow(() -> subject.preview(null));
+	}
+}
