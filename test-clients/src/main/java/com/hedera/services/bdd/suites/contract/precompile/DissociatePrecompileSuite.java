@@ -69,7 +69,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 public class DissociatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DissociatePrecompileSuite.class);
 
-	private static final long GAS_TO_OFFER = 4_000_000L;
+	private static final long GAS_TO_OFFER = 2_000_000L;
 
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
@@ -279,7 +279,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												)
 														.payingWith(ACCOUNT)
 														.via("nestedDissociateTxn")
-														.gas(GAS_TO_OFFER)
+														.gas(3_000_000L)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("nestedDissociateTxn").andAllChildRecords().logged()
 										)
