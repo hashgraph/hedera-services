@@ -412,6 +412,12 @@ public class SeededPropertySource {
 		final var seeded = builder.build();
 		seeded.setSubmittingMember(nextUnsignedLong());
 		seeded.setExpiry(nextUnsignedLong());
+		if (seeded.getContractCallResult() != null && nextBoolean()) {
+			seeded.getContractCallResult().setSenderId(nextEntityId());
+		}
+		if (seeded.getContractCreateResult() != null && nextBoolean()) {
+			seeded.getContractCreateResult().setSenderId(nextEntityId());
+		}
 		return seeded;
 	}
 
@@ -564,7 +570,7 @@ public class SeededPropertySource {
 				nextUnsignedLong(),
 				nextUnsignedLong(),
 				nextBytes(64),
-				nextEntityId());
+				null);
 	}
 
 	public List<EvmLog> nextEvmLogs(final int n) {

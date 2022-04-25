@@ -137,7 +137,7 @@ class EvmFnResultTest {
 		assertEquals(createdContractIds, subject.getCreatedContractIds());
 		assertEquals(stateChanges, subject.getStateChanges());
 		assertEquals(0x2055c5c03ff84eb4L, subject.getClassId());
-		assertEquals(4, subject.getVersion());
+		assertEquals(5, subject.getVersion());
 		assertEquals(gas, subject.getGas());
 		assertEquals(amount, subject.getAmount());
 		assertEquals(functionParameters, subject.getFunctionParameters());
@@ -541,7 +541,7 @@ class EvmFnResultTest {
 
 	@Test
 	void serializableDetWorks() {
-		assertEquals(EvmFnResult.RELEASE_0250_VERSION, subject.getVersion());
+		assertEquals(EvmFnResult.RELEASE_0260_VERSION, subject.getVersion());
 		assertEquals(EvmFnResult.RUNTIME_CONSTRUCTABLE_ID, subject.getClassId());
 	}
 	
