@@ -213,7 +213,7 @@ class EthereumTransactionTransitionLogicTest {
 
 		// then:
 		verify(recordService).externaliseEvmCallTransaction(any());
-		verify(recordService).updateFromEvmCallContext(any());
+		verify(recordService).updateForEvmCall(any(), any());
 		verify(worldState).getCreatedContractIds();
 		verify(txnCtx).setTargetedContract(target);
 	}
@@ -277,7 +277,7 @@ class EthereumTransactionTransitionLogicTest {
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
-		verify(recordService).updateFromEvmCallContext(any());
+		verify(recordService).updateForEvmCall(any(), any());
 		verify(worldState).getCreatedContractIds();
 		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
 	}
@@ -338,7 +338,7 @@ class EthereumTransactionTransitionLogicTest {
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
-		verify(recordService).updateFromEvmCallContext(any());
+		verify(recordService).updateForEvmCall(any(), any());
 		verify(worldState).getCreatedContractIds();
 		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
 	}
@@ -399,7 +399,7 @@ class EthereumTransactionTransitionLogicTest {
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
 		verify(recordService).externalizeSuccessfulEvmCreate(any(), any());
-		verify(recordService).updateFromEvmCallContext(any());
+		verify(recordService).updateForEvmCall(any(), any());
 		verify(worldState).getCreatedContractIds();
 		verify(txnCtx).setTargetedContract(contractAccount.getId().asGrpcContract());
 	}
@@ -461,7 +461,7 @@ class EthereumTransactionTransitionLogicTest {
 
 		// then:
 		verify(evmTxProcessor, never()).execute(any(), any(), anyLong(), anyLong(), any(), any());
-		verify(recordService, never()).updateFromEvmCallContext(any());
+		verify(recordService, never()).updateForEvmCall(any(), any());
 	}
 
 	@Test
@@ -494,7 +494,7 @@ class EthereumTransactionTransitionLogicTest {
 
 		// then:
 		verify(recordService).externaliseEvmCallTransaction(any());
-		verify(recordService).updateFromEvmCallContext(any());
+		verify(recordService).updateForEvmCall(any(), any());
 	}
 
 	@Test
@@ -708,7 +708,7 @@ class EthereumTransactionTransitionLogicTest {
 				any(),
 				anyBoolean()
 		);
-		verify(recordService, never()).updateFromEvmCallContext(any());
+		verify(recordService, never()).updateForEvmCall(any(), any());
 	}
 
 

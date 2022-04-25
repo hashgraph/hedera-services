@@ -113,7 +113,8 @@ public class SerdeUtils {
 						() -> new TreeMap<>(BytesComparator.INSTANCE))),
 				that.getGas(),
 				that.getAmount(),
-				that.getFunctionParameters().isEmpty() ? EvmFnResult.EMPTY : that.getFunctionParameters().toByteArray()
+				that.getFunctionParameters().isEmpty() ? EvmFnResult.EMPTY : that.getFunctionParameters().toByteArray(),
+				that.hasSenderId() ? EntityId.fromGrpcAccountId(that.getSenderId()) : null
 		);
 	}
 

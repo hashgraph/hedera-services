@@ -114,7 +114,8 @@ public class SeededPropertySource {
 				nextStateChanges(2, 5),
 				nextUnsignedLong(),
 				nextUnsignedLong(),
-				nextBytes(128));
+				nextBytes(128),
+				nextEntityId());
 	}
 
 	public MerkleTopic nextTopic() {
@@ -411,6 +412,12 @@ public class SeededPropertySource {
 		final var seeded = builder.build();
 		seeded.setSubmittingMember(nextUnsignedLong());
 		seeded.setExpiry(nextUnsignedLong());
+		if (seeded.getContractCallResult() != null && nextBoolean()) {
+			seeded.getContractCallResult().setSenderId(nextEntityId());
+		}
+		if (seeded.getContractCreateResult() != null && nextBoolean()) {
+			seeded.getContractCreateResult().setSenderId(nextEntityId());
+		}
 		return seeded;
 	}
 
@@ -562,7 +569,8 @@ public class SeededPropertySource {
 				nextStateChanges(5, 10),
 				nextUnsignedLong(),
 				nextUnsignedLong(),
-				nextBytes(64));
+				nextBytes(64),
+				null);
 	}
 
 	public List<EvmLog> nextEvmLogs(final int n) {
