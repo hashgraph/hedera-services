@@ -211,7 +211,6 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .payingWith(GENESIS)
                                 .signedBy(SECP_256K1_SOURCE_KEY, GENESIS),
                         ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
-                                .adminKey(THRESHOLD)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -222,7 +221,16 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .maxPriorityGas(2L)
                                 .exposingNumTo(num -> contractID.set(
                                         asHexedSolidityAddress(0, 0, num)))
-                                .gasLimit(1_000_000L).hasKnownStatus(SUCCESS)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatus(SUCCESS),
+                        ethereumCall(PAY_RECEIVABLE_CONTRACT, "getBalance")
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(1L)
+                                .gasPrice(10L)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatus(SUCCESS)
                 ).then(
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).logged(),
                         sourcing(() -> getContractInfo(contractID.get()).logged()
