@@ -99,6 +99,7 @@ class ContractCustomizerTest {
 		given(ledger.get(sponsorId, PROXY)).willReturn(proxy);
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
+		given(ledger.get(sponsorId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
 
 		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 
@@ -114,6 +115,7 @@ class ContractCustomizerTest {
 		given(ledger.get(sponsorId, PROXY)).willReturn(proxy);
 		given(ledger.get(sponsorId, EXPIRY)).willReturn(expiry);
 		given(ledger.get(sponsorId, AUTO_RENEW_PERIOD)).willReturn(autoRenewPeriod);
+		given(ledger.get(sponsorId, AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewAccount);
 
 		final var subject = ContractCustomizer.fromSponsorContract(sponsorId, ledger);
 

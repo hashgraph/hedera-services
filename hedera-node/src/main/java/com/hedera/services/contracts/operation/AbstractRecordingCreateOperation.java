@@ -21,13 +21,10 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.utils.EntityIdUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -209,12 +206,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 					NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 			childRecord.onlyExternalizeIfSuccessful();
 			final var opCustomizer = updater.customizerForPendingCreation();
-
-			// inherit the sender's autoRenewAccountID if set
-			final var parentId = EntityIdUtils.accountIdFromEvmAddress(frame.getRecipientAddress());
-			final var autoRenewAccount = (EntityId) updater.trackingLedgers().accounts().get(parentId,
-					AccountProperty.AUTO_RENEW_ACCOUNT_ID);
-			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer, autoRenewAccount);
+			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
 			updater.manageInProgressRecord(recordsHistorian, childRecord, syntheticOp);
 		} else {
 			frame.setReturnData(childFrame.getOutputData());

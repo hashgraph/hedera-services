@@ -216,7 +216,7 @@ class AbstractRecordingCreateOperationTest {
 		givenSpawnPrereqs();
 		givenBuilderPrereqs();
 		given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
-		given(syntheticTxnFactory.contractCreation(contractCustomizer, autoRenewId)).willReturn(mockCreation);
+		given(syntheticTxnFactory.contractCreation(contractCustomizer)).willReturn(mockCreation);
 		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
 		given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
 		given(updater.trackingLedgers()).willReturn(ledgers);

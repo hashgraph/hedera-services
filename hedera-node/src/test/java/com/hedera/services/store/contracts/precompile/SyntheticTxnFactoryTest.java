@@ -22,13 +22,13 @@ package com.hedera.services.store.contracts.precompile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -113,19 +113,10 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedContractSkeleton() {
-		final var result = subject.contractCreation(customizer, null);
+		final var result = subject.contractCreation(customizer);
 		verify(customizer).customizeSynthetic(any());
 		assertTrue(result.hasContractCreateInstance());
 		assertFalse(result.getContractCreateInstance().hasAutoRenewAccountId());
-	}
-
-	@Test
-	void createsExpectedContractWithAutoRenewAccount() {
-		final var result = subject.contractCreation(customizer, autoRenewAccountNum.toEntityId());
-		verify(customizer).customizeSynthetic(any());
-		assertTrue(result.hasContractCreateInstance());
-		assertTrue(result.getContractCreateInstance().hasAutoRenewAccountId());
-		assertEquals(autoRenewAccountNum.toGrpcAccountId(), result.getContractCreateInstance().getAutoRenewAccountId());
 	}
 
 	@Test
