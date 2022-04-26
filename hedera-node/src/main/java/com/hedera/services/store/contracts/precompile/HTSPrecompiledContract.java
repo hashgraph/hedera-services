@@ -531,6 +531,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(frame.getRemainingGas().compareTo(gasRequirement) >= 0, INSUFFICIENT_GAS);
 
 			precompile.handleSentHbars(frame);
+			precompile.customizeTrackingLedgers(ledgers);
 			precompile.run(frame);
 
 			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
@@ -627,8 +628,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				OptionValidator validator,
 				TypedTokenStore tokenStore,
 				AccountStore accountStore,
-				DissociationFactory dissociationFactory,
-				Supplier<FCQueue<SystemTask>> systemTasks);
+				DissociationFactory dissociationFactory);
 	}
 
 	@FunctionalInterface
@@ -748,7 +748,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 			/* --- Execute the transaction and capture its results --- */
 			final var dissociateLogic = dissociateLogicFactory.newDissociateLogic(
-					validator, tokenStore, accountStore, dissociationFactory, systemTasks);
+					validator, tokenStore, accountStore, dissociationFactory);
 			dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
 		}
 
@@ -939,6 +939,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
+		public void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
+			worldLedgers.customizeForAutoAssociatingOp(sideEffectsTracker);
+		}
+
+		@Override
 		public void handleSentHbars(final MessageFrame frame) {
 			final var timestampSeconds = frame.getBlockValues().getTimestamp();
 			final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
@@ -1085,6 +1090,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					sideEffectsTracker,
 					dynamicProperties,
 					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+		}
+
+		@Override
+		public void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
+			worldLedgers.customizeForAutoAssociatingOp(sideEffectsTracker);
 		}
 
 		@Override

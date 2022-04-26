@@ -20,7 +20,7 @@ package com.hedera.services.state.expiry.removal;
  * ‍
  */
 
-import com.hedera.services.state.expiry.UniqueTokensListRemoval;
+import com.hedera.services.state.expiry.UniqueTokensListMutation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -78,7 +78,7 @@ public class TreasuryReturnHelper {
 
 	EntityNumPair updateNftReturns(
 			final EntityNumPair nftKey,
-			final UniqueTokensListRemoval uniqueTokensRemoval
+			final UniqueTokensListMutation uniqueTokensRemoval
 	) {
 		final var curTokens = tokens.get();
 		final var tokenNum = nftKey.getHiOrderAsNum();

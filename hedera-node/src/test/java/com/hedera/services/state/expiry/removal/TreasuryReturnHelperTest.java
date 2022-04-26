@@ -21,7 +21,7 @@ package com.hedera.services.state.expiry.removal;
  */
 
 import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.expiry.UniqueTokensListRemoval;
+import com.hedera.services.state.expiry.UniqueTokensListMutation;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -71,7 +71,7 @@ class TreasuryReturnHelperTest {
 	@Test
 	void returnsNullIfMissingEntity() {
 		final var key = EntityNumPair.fromLongs(missingTokenNum.longValue(), 1L);
-		final var removalHelper = mock(UniqueTokensListRemoval.class);
+		final var removalHelper = mock(UniqueTokensListMutation.class);
 		final var token = mock(MerkleToken.class);
 		given(tokens.get(missingTokenNum)).willReturn(null);
 
@@ -93,7 +93,7 @@ class TreasuryReturnHelperTest {
 	void removesNftIfTokenIsDeleted() {
 		final var key = EntityNumPair.fromLongs(missingTokenNum.longValue(), 1L);
 		final var nextKey = EntityNumPair.fromLongs(nonFungibleTokenNum.longValue(), 2L);
-		final var removalHelper = mock(UniqueTokensListRemoval.class);
+		final var removalHelper = mock(UniqueTokensListMutation.class);
 		final var nft  = mock(MerkleUniqueToken.class);
 		final var token = mock(MerkleToken.class);
 
@@ -111,7 +111,7 @@ class TreasuryReturnHelperTest {
 	void changesNftOwnerToTreasuryIfTokenIsNotDeleted() {
 		final var key = EntityNumPair.fromLongs(missingTokenNum.longValue(), 1L);
 		final var nextKey = EntityNumPair.fromLongs(nonFungibleTokenNum.longValue(), 2L);
-		final var removalHelper = mock(UniqueTokensListRemoval.class);
+		final var removalHelper = mock(UniqueTokensListMutation.class);
 		final var nft  = mock(MerkleUniqueToken.class);
 		final var token = mock(MerkleToken.class);
 

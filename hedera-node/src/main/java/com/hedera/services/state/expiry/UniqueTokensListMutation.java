@@ -2,17 +2,17 @@ package com.hedera.services.state.expiry;
 
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.MapValueListRemoval;
+import com.hedera.services.utils.MapValueListMutation;
 import com.swirlds.merkle.map.MerkleMap;
 import org.jetbrains.annotations.Nullable;
 
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
-public class UniqueTokensListRemoval implements MapValueListRemoval<EntityNumPair, MerkleUniqueToken> {
+public class UniqueTokensListMutation implements MapValueListMutation<EntityNumPair, MerkleUniqueToken> {
 
 	final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 
-	public UniqueTokensListRemoval(
+	public UniqueTokensListMutation(
 			final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens
 	) {
 		this.uniqueTokens = uniqueTokens;
@@ -28,6 +28,11 @@ public class UniqueTokensListRemoval implements MapValueListRemoval<EntityNumPai
 	@Override
 	public MerkleUniqueToken getForModify(final EntityNumPair key) {
 		return uniqueTokens.getForModify(key);
+	}
+
+	@Override
+	public void put(final EntityNumPair key, final MerkleUniqueToken value) {
+		uniqueTokens.put(key, value);
 	}
 
 	@Override

@@ -19,6 +19,7 @@ package com.hedera.services.state.merkle;
  * limitations under the License.
  * ‍
  */
+
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.NftNumPair;
 import com.hedera.test.serde.SelfSerializableDataTest;

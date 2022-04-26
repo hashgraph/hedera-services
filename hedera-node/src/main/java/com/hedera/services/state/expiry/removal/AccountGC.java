@@ -26,8 +26,8 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.tasks.DissociateNftRemovals;
-import com.hedera.services.state.expiry.TokenRelsListRemoval;
-import com.hedera.services.state.expiry.UniqueTokensListRemoval;
+import com.hedera.services.state.expiry.TokenRelsListMutation;
+import com.hedera.services.state.expiry.UniqueTokensListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -49,6 +49,22 @@ import java.util.function.Supplier;
 import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
+
+/**
+ * Responsible for "garbage collection" of an expired account whose grace period has ended; such an account
+ * may still own fungible token units or NFTs, and we need to either,
+ * <ol>
+ *     <li>Return these assets to the treasuries of their respective token types; or,</li>
+ *     <li>"Burn" them, if they belong to a token type that has been deleted or removed.</li>
+ * </ol>
+ * Doing a treasury return or burn of fungible units is straightforward. NFTs are a problem, however---we
+ * do not know <i>which serial numbers</i> the expired account owned. The current implementation responds
+ * by simply "stranding" any such NFTs; that is, leaving them in state with an {@code owner} field still
+ * set to the now-missing account.
+ *
+ * <p>The full implementation, with NFT treasury return, will be done through the tasks listed in issue
+ * https://github.com/hashgraph/hedera-services/issues/3174.
+ */
 @Singleton
 public class AccountGC {
 	private final AliasManager aliasManager;
@@ -59,7 +75,7 @@ public class AccountGC {
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
 	private final GlobalDynamicProperties dynamicProperties;
 
-	private RemovalFacilitation removalFacilitation = MapValueListUtils::inPlaceRemoveFromMapValueList;
+	private RemovalFacilitation removalFacilitation = MapValueListUtils::removeFromMapValueList;
 
 	@Inject
 	public AccountGC(
@@ -128,7 +144,7 @@ public class AccountGC {
 			final long headSerialNum,
 			final MerkleMap<EntityNumPair, MerkleUniqueToken> currUniqueTokens
 	) {
-		final var uniqueTokensRemoval = new UniqueTokensListRemoval(currUniqueTokens);
+		final var uniqueTokensRemoval = new UniqueTokensListMutation(currUniqueTokens);
 		var nftKey = EntityNumPair.fromLongs(headNftNum, headSerialNum);
 		var i = Math.min(nftsOwned, dynamicProperties.getMaxReturnedNftsPerTouch());
 		while (nftKey != null && i-- > 0) {
@@ -194,7 +210,7 @@ public class AccountGC {
 			final List<CurrencyAdjustments> returnTransfers,
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> curRels
 	) {
-		final var listRemoval = new TokenRelsListRemoval(expiredAccountNum.longValue(), curRels);
+		final var listRemoval = new TokenRelsListMutation(expiredAccountNum.longValue(), curRels);
 		var i = expectedRels;
 		var relKey = firstRelKey;
 		while (relKey != null && i-- > 0) {
@@ -212,7 +228,7 @@ public class AccountGC {
 
 	@FunctionalInterface
 	interface RemovalFacilitation {
-		EntityNumPair removeNext(EntityNumPair key, EntityNumPair root, TokenRelsListRemoval tokenRelsListRemoval);
+		EntityNumPair removeNext(EntityNumPair key, EntityNumPair root, TokenRelsListMutation listRemoval);
 	}
 
 	@VisibleForTesting

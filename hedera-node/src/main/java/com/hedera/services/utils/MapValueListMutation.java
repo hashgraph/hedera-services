@@ -9,9 +9,9 @@ package com.hedera.services.utils;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,12 +20,10 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.swirlds.common.FastCopyable;
-
 import javax.annotation.Nullable;
 
 /**
- * Facilitates the removal of one or more keys from an implicit map whose values compose a family of
+ * Facilitates the mutation of one or more keys from an implicit map whose values compose a family of
  * doubly-linked lists. The interface could be made more concise by making {@code K} and {@code V} bounded
  * types, but after some consideration this approach seemed to better suit our use cases.
  *
@@ -34,7 +32,7 @@ import javax.annotation.Nullable;
  * @param <V>
  * 		type of value in the linked-values map
  */
-public interface MapValueListRemoval<K, V extends FastCopyable> {
+public interface MapValueListMutation<K, V> {
 	/**
 	 * Gets the value for the specified key.
 	 *
@@ -56,14 +54,6 @@ public interface MapValueListRemoval<K, V extends FastCopyable> {
 	V getForModify(K key);
 
 	/**
-	 * Removes the value for the specified key.
-	 *
-	 * @param key
-	 * 		the key of interest
-	 */
-	void remove(K key);
-
-	/**
 	 * Adds the given mapping.
 	 *
 	 * @param key
@@ -72,6 +62,14 @@ public interface MapValueListRemoval<K, V extends FastCopyable> {
 	 * 		the corresponding value
 	 */
 	void put(K key, V value);
+
+	/**
+	 * Removes the value for the specified key.
+	 *
+	 * @param key
+	 * 		the key of interest
+	 */
+	void remove(K key);
 
 	/**
 	 * Updates the given node as the root of its containing linked list.

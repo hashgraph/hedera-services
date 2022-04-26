@@ -21,7 +21,6 @@ package com.hedera.services.txns.token;
  */
 
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
@@ -36,7 +35,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,23 +73,22 @@ class DissociateLogicTest {
 	private TokenRelationship tokenRelationship;
 	@Mock
 	private OptionValidator validator;
-	@Mock
-	private FCQueue<SystemTask> systemTasks;
 
 	private DissociateLogic subject;
 
 	@BeforeEach
 	private void setup() {
-		subject = new DissociateLogic(validator, tokenStore, accountStore, relsFactory, () -> systemTasks);
+		subject = new DissociateLogic(validator, tokenStore, accountStore, relsFactory);
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void performsExpectedLogic() {
 		given(accessor.getTxn()).willReturn(validDissociateTxn());
 		given(txnCtx.accessor()).willReturn(accessor);
 		given(accountStore.loadAccount(accountId)).willReturn(account);
 		// and:
-		given(relsFactory.loadFrom(tokenStore, account, tokenId, systemTasks)).willReturn(dissociation);
+		given(relsFactory.loadFrom(tokenStore, account, tokenId)).willReturn(dissociation);
 		willAnswer(invocationOnMock -> {
 			((List<TokenRelationship>) invocationOnMock.getArgument(0)).add(tokenRelationship);
 			return null;
@@ -101,7 +98,7 @@ class DissociateLogicTest {
 		subject.dissociate(accountId, txnCtx.accessor().getTxn().getTokenDissociate().getTokensList());
 
 		// then:
-		verify(account).dissociateUsing(List.of(dissociation), tokenStore, validator);
+		verify(account).dissociateUsing(List.of(dissociation), validator);
 		// and:
 		verify(accountStore).commitAccount(account);
 		verify(tokenStore).commitTokenRelationships(List.of(tokenRelationship));

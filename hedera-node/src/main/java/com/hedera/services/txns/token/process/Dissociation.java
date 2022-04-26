@@ -21,16 +21,12 @@ package com.hedera.services.txns.token.process;
  */
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.tasks.DissociateNftRemovals;
-import com.hedera.services.state.tasks.SystemTask;
-import com.hedera.services.state.tasks.SystemTaskType;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.swirlds.fcqueue.FCQueue;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -47,35 +43,32 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
 public class Dissociation {
 	private final TokenRelationship dissociatingAccountRel;
 	private final TokenRelationship dissociatedTokenTreasuryRel;
-	private final FCQueue<SystemTask> systemTasks;
 
 	private boolean modelsAreUpdated = false;
 	private boolean expiredTokenTreasuryReceivedBalance = false;
 
 	public static Dissociation loadFrom(
-			TypedTokenStore tokenStore, Account account, Id tokenId, FCQueue<SystemTask> systemTasks) {
+			TypedTokenStore tokenStore, Account account, Id tokenId) {
 		final var token = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
 		final var dissociatingAccountRel = tokenStore.loadTokenRelationship(token, account);
 		if (token.isBelievedToHaveBeenAutoRemoved()) {
-			return new Dissociation(dissociatingAccountRel, null, systemTasks);
+			return new Dissociation(dissociatingAccountRel, null);
 		} else {
 			final var treasury = token.getTreasury();
 			final var dissociatedTokenTreasuryRel =
 					tokenStore.loadPossiblyMissingTokenRelationship(token, treasury);
-			return new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+			return new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 		}
 	}
 
 	public Dissociation(
 			TokenRelationship dissociatingAccountRel,
-			@Nullable TokenRelationship dissociatedTokenTreasuryRel,
-			FCQueue<SystemTask> systemTasks
+			@Nullable TokenRelationship dissociatedTokenTreasuryRel
 	) {
 		Objects.requireNonNull(dissociatingAccountRel);
 
 		this.dissociatingAccountRel = dissociatingAccountRel;
 		this.dissociatedTokenTreasuryRel = dissociatedTokenTreasuryRel;
-		this.systemTasks = systemTasks;
 	}
 
 	public TokenRelationship dissociatingAccountRel() {
@@ -143,14 +136,6 @@ public class Dissociation {
 			final var account = dissociatingAccountRel.getAccount();
 			final var curOwnedNfts = account.getOwnedNfts();
 			account.setOwnedNfts(curOwnedNfts - disappearingUnits);
-			systemTasks.add(
-					new SystemTask(SystemTaskType.DISSOCIATED_NFT_REMOVALS,
-							new DissociateNftRemovals(
-									account.getId().num(),
-									token.getId().num(),
-									disappearingUnits,
-									account.getHeadNftId(),
-									account.getHeadNftSerialNum())));
 		}
 	}
 

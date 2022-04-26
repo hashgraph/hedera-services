@@ -250,7 +250,7 @@ class DissociatePrecompilesTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
 		given(dissociateLogicFactory.newDissociateLogic(
-				validator, tokenStore, accountStore, dissociationFactory, systemTasksSupplier)).willReturn(dissociateLogic);
+				validator, tokenStore, accountStore, dissociationFactory)).willReturn(dissociateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())
@@ -297,7 +297,7 @@ class DissociatePrecompilesTest {
 		given(tokenStoreFactory.newTokenStore(accountStore, tokens, nfts, tokenRels, sideEffects))
 				.willReturn(tokenStore);
 		given(dissociateLogicFactory.newDissociateLogic(
-				validator, tokenStore, accountStore, dissociationFactory, systemTasksSupplier)).willReturn(dissociateLogic);
+				validator, tokenStore, accountStore, dissociationFactory)).willReturn(dissociateLogic);
 		given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
 				.willReturn(1L);
 		given(mockSynthBodyBuilder.build())

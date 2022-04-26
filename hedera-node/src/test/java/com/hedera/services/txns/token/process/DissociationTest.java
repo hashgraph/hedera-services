@@ -21,7 +21,6 @@ package com.hedera.services.txns.token.process;
  */
 
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
@@ -29,7 +28,6 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -79,8 +77,6 @@ class DissociationTest {
 	private TypedTokenStore tokenStore;
 	@Mock
 	private OptionValidator validator;
-	@Mock
-	private FCQueue<SystemTask> systemTasks;
 
 	@Test
 	void loadsExpectedRelsForExtantToken() {
@@ -88,7 +84,7 @@ class DissociationTest {
 		given(tokenStore.loadTokenRelationship(token, account)).willReturn(dissociatingAccountRel);
 		given(tokenStore.loadPossiblyMissingTokenRelationship(token, treasury)).willReturn(dissociatedTokenTreasuryRel);
 
-		final var subject = Dissociation.loadFrom(tokenStore, account, tokenId, systemTasks);
+		final var subject = Dissociation.loadFrom(tokenStore, account, tokenId);
 
 		assertSame(dissociatingAccountRel, subject.dissociatingAccountRel());
 		assertSame(dissociatedTokenTreasuryRel, subject.dissociatedTokenTreasuryRel());
@@ -102,7 +98,7 @@ class DissociationTest {
 		given(tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId)).willReturn(token);
 		given(tokenStore.loadTokenRelationship(token, account)).willReturn(dissociatingAccountRel);
 
-		final var subject = Dissociation.loadFrom(tokenStore, account, tokenId, systemTasks);
+		final var subject = Dissociation.loadFrom(tokenStore, account, tokenId);
 
 		verify(tokenStore, never()).loadTokenRelationship(token, treasury);
 		assertSame(dissociatingAccountRel, subject.dissociatingAccountRel());
@@ -117,7 +113,7 @@ class DissociationTest {
 		given(tokenStore.loadTokenRelationship(token, account)).willReturn(dissociatingAccountRel);
 		given(tokenStore.loadPossiblyMissingTokenRelationship(token, treasury)).willReturn(null);
 
-		final var subject = Dissociation.loadFrom(tokenStore, account, tokenId, systemTasks);
+		final var subject = Dissociation.loadFrom(tokenStore, account, tokenId);
 
 		assertSame(dissociatingAccountRel, subject.dissociatingAccountRel());
 		assertSame(null, subject.dissociatedTokenTreasuryRel());
@@ -128,14 +124,14 @@ class DissociationTest {
 	@Test
 	void requiresUpdateDoneBeforeRevealingRels() {
 		final var list = new ArrayList<TokenRelationship>();
-		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
 		assertThrows(IllegalStateException.class, () -> subject.addUpdatedModelRelsTo(list));
 	}
 
 	@Test
 	void processesAutoRemovedTokenAsExpected() {
-		final var subject = new Dissociation(dissociatingAccountRel, null, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, null);
 		final List<TokenRelationship> changed = new ArrayList<>();
 		token.markAutoRemoved();
 
@@ -151,7 +147,7 @@ class DissociationTest {
 	void rejectsDissociatingTokenTreasury() {
 		token.setTreasury(account);
 
-		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
 		assertFailsWith(() -> subject.updateModelRelsSubjectTo(validator), ACCOUNT_IS_TREASURY);
 	}
@@ -160,14 +156,14 @@ class DissociationTest {
 	void rejectsDissociatingFrozenAccount() {
 		dissociatingAccountRel.setFrozen(true);
 
-		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
 		assertFailsWith(() -> subject.updateModelRelsSubjectTo(validator), ACCOUNT_FROZEN_FOR_TOKEN);
 	}
 
 	@Test
 	void normalCaseOnlyUpdatesDissociatingRel() {
-		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 		final List<TokenRelationship> accum = new ArrayList<>();
 
 		subject.updateModelRelsSubjectTo(validator);
@@ -184,7 +180,7 @@ class DissociationTest {
 		dissociatingAccountRel.initBalance(balance);
 		given(validator.isAfterConsensusSecond(tokenExpiry)).willReturn(true);
 
-		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
 		assertFailsWith(() -> subject.updateModelRelsSubjectTo(validator), TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
 	}
@@ -195,7 +191,7 @@ class DissociationTest {
 		dissociatingAccountRel.initBalance(balance);
 		token.setType(NON_FUNGIBLE_UNIQUE);
 
-		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
 		assertFailsWith(() -> subject.updateModelRelsSubjectTo(validator), ACCOUNT_STILL_OWNS_NFTS);
 	}
@@ -205,7 +201,7 @@ class DissociationTest {
 		final long balance = 1_234L;
 		dissociatingAccountRel.initBalance(balance);
 		dissociatedTokenTreasuryRel.initBalance(balance);
-		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 		final List<TokenRelationship> accum = new ArrayList<>();
 
 		subject.updateModelRelsSubjectTo(validator);
@@ -226,7 +222,7 @@ class DissociationTest {
 		final long balance = 1_234L;
 		dissociatingAccountRel.initBalance(balance);
 		ancientTokenTreasuryRel.initBalance(balance);
-		final var subject = new Dissociation(dissociatingAccountRel, ancientTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, ancientTokenTreasuryRel);
 		final List<TokenRelationship> accum = new ArrayList<>();
 
 		subject.updateModelRelsSubjectTo(validator);
@@ -248,7 +244,7 @@ class DissociationTest {
 		token.setIsDeleted(true);
 		final List<TokenRelationship> accum = new ArrayList<>();
 
-		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
 		subject.updateModelRelsSubjectTo(validator);
 		subject.addUpdatedModelRelsTo(accum);
@@ -268,7 +264,7 @@ class DissociationTest {
 		token.setType(NON_FUNGIBLE_UNIQUE);
 		final List<TokenRelationship> accum = new ArrayList<>();
 
-		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
 		subject.updateModelRelsSubjectTo(validator);
 		subject.addUpdatedModelRelsTo(accum);
@@ -289,7 +285,7 @@ class DissociationTest {
 		token.setType(FUNGIBLE_COMMON);
 		final List<TokenRelationship> accum = new ArrayList<>();
 
-		final var subject = new Dissociation(dissociatingAccountRel, null, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, null);
 
 		subject.updateModelRelsSubjectTo(validator);
 		subject.addUpdatedModelRelsTo(accum);
@@ -304,7 +300,7 @@ class DissociationTest {
 		final var desired = "Dissociation{dissociatingAccountId=1.2.3, " +
 				"dissociatedTokenId=2.3.4, dissociatedTokenTreasuryId=3.4.5, expiredTokenTreasuryReceivedBalance=false}";
 
-		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel, systemTasks);
+		final var subject = new Dissociation(dissociatingAccountRel, dissociatedTokenTreasuryRel);
 
 		assertEquals(desired, subject.toString());
 	}

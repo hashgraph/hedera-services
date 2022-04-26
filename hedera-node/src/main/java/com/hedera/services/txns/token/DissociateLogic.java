@@ -9,9 +9,9 @@ package com.hedera.services.txns.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ package com.hedera.services.txns.token;
  * ‍
  */
 
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;
@@ -29,13 +28,11 @@ import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.fcqueue.FCQueue;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 @Singleton
 public class DissociateLogic {
@@ -43,37 +40,34 @@ public class DissociateLogic {
 	private final TypedTokenStore tokenStore;
 	private final AccountStore accountStore;
 	private final DissociationFactory dissociationFactory;
-	private final Supplier<FCQueue<SystemTask>> systemTasks;
 
 	@Inject
 	public DissociateLogic(
-			OptionValidator validator,
-			TypedTokenStore tokenStore,
-			AccountStore accountStore,
-			DissociationFactory dissociationFactory,
-			Supplier<FCQueue<SystemTask>> systemTasks
-			) {
+			final OptionValidator validator,
+			final TypedTokenStore tokenStore,
+			final AccountStore accountStore,
+			final DissociationFactory dissociationFactory
+	) {
 		this.validator = validator;
 		this.tokenStore = tokenStore;
 		this.accountStore = accountStore;
 		this.dissociationFactory = dissociationFactory;
-		this.systemTasks = systemTasks;
 	}
 
-	public void dissociate(Id accountId, List<TokenID> tokenIDList) {
-		/* --- Load the model objects --- */
+	public void dissociate(final Id accountId, final List<TokenID> tokenIds) {
+		// --- Load the model objects ---
 		final var account = accountStore.loadAccount(accountId);
 		final List<Dissociation> dissociations = new ArrayList<>();
-		for (var tokenId : tokenIDList) {
-			dissociations.add(dissociationFactory.loadFrom(tokenStore, account, Id.fromGrpcToken(tokenId), systemTasks.get()));
+		for (final var tokenId : tokenIds) {
+			dissociations.add(dissociationFactory.loadFrom(tokenStore, account, Id.fromGrpcToken(tokenId)));
 		}
 
-		/* --- Do the business logic --- */
-		final var touchedRels = account.dissociateUsing(dissociations, tokenStore, validator);
+		// --- Do the business logic ---
+		account.dissociateUsing(dissociations, validator);
 
-		/* --- Persist the updated models --- */
+		// --- Persist the updated models ---
 		accountStore.commitAccount(account);
-		final List<TokenRelationship> allUpdatedRels = new ArrayList<>(touchedRels);
+		final List<TokenRelationship> allUpdatedRels = new ArrayList<>();
 		for (var dissociation : dissociations) {
 			dissociation.addUpdatedModelRelsTo(allUpdatedRels);
 		}

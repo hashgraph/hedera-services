@@ -26,7 +26,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.tasks.DissociateNftRemovals;
-import com.hedera.services.state.expiry.TokenRelsListRemoval;
+import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -72,6 +72,8 @@ class AccountGCTest {
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private AccountGC.RemovalFacilitation removalFacilitation;
+	@Mock
+	private TokenRelsListMutation listRemoval;
 
 	private AccountGC subject;
 
@@ -157,7 +159,7 @@ class AccountGCTest {
 		given(removalFacilitation.removeNext(
 				eq(rootKey),
 				eq(rootKey),
-				any(TokenRelsListRemoval.class))).willReturn(null);
+				any(TokenRelsListMutation.class))).willReturn(null);
 		given(tokenRels.get(rootKey)).willReturn(new MerkleTokenRelStatus(1, false, false, false));
 		given(dynamicProperties.getMaxReturnedNftsPerTouch()).willReturn(10);
 
@@ -182,7 +184,7 @@ class AccountGCTest {
 		given(removalFacilitation.removeNext(
 				eq(rootKey),
 				eq(rootKey),
-				any(TokenRelsListRemoval.class))).willReturn(null);
+				any(TokenRelsListMutation.class))).willReturn(null);
 		given(tokenRels.get(rootKey)).willReturn(new MerkleTokenRelStatus(1, false, false, false));
 		given(dynamicProperties.getMaxReturnedNftsPerTouch()).willReturn(1);
 
@@ -209,11 +211,11 @@ class AccountGCTest {
 		given(removalFacilitation.removeNext(
 				eq(rootKey),
 				eq(rootKey),
-				any(TokenRelsListRemoval.class))).willReturn(nextKey);
+				any(TokenRelsListMutation.class))).willReturn(nextKey);
 		given(removalFacilitation.removeNext(
 				eq(nextKey),
 				eq(nextKey),
-				any(TokenRelsListRemoval.class))).willReturn(unusedKey);
+				any(TokenRelsListMutation.class))).willReturn(unusedKey);
 		given(tokenRels.get(rootKey)).willReturn(new MerkleTokenRelStatus(1, false, false, false));
 		given(tokenRels.get(nextKey)).willReturn(new MerkleTokenRelStatus(0, true, true, true));
 
