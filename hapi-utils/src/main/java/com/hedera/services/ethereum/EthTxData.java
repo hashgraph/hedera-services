@@ -54,7 +54,7 @@ public record EthTxData(
 
 	public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
-	// TODO constants should be in besu-native
+	// Copy of constants from besu-native, remove when next besu-native publishes
 	static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
 	static final int SECP256K1_FLAGS_BIT_COMPRESSION = 1 << 8;
 	static final int SECP256K1_EC_COMPRESSED = (SECP256K1_FLAGS_TYPE_COMPRESSION | SECP256K1_FLAGS_BIT_COMPRESSION);
