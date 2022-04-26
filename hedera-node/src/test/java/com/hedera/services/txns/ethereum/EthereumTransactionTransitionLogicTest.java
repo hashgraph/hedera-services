@@ -342,6 +342,20 @@ class EthereumTransactionTransitionLogicTest {
 		assertEquals(OK, subject.validateSemantics(accessor));
 	}
 
+	@Test
+	void failNonEmptyDataAndCallData() {
+		target = null;
+		callDataFile = IdUtils.asFile("0.0.1234");
+		callData = Hex.decode("fffefdfc");
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(accessor.getExpandedSigStatus()).willReturn(OK);
+
+		// expect:
+		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+	}
+
 //	@Test
 //	void acceptsConsensusDecoded() {
 //		givenValidTxnCtx();
@@ -473,6 +487,15 @@ class EthereumTransactionTransitionLogicTest {
 		assertEquals(INVALID_ACCOUNT_ID, subject.validateSemantics(accessor));
 	}
 
+	@Test
+	void failEmptyEthereumDataAndCallData() {
+		givenEmptyTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+
+		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+	}
+
+
 	private void givenValidTxnCtx() {
 		var unsignedTx = new EthTxData(
 				null,
@@ -499,6 +522,15 @@ class EthereumTransactionTransitionLogicTest {
 		if (callDataFile != null) {
 			ethTxBodyBuilder.setCallData(callDataFile);
 		}
+		var op = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setEthereumTransaction(ethTxBodyBuilder.build());
+		ethTxTxn = op.build();
+	}
+
+	private void givenEmptyTxnCtx() {
+		var ethTxBodyBuilder = EthereumTransactionBody.newBuilder();
+
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setEthereumTransaction(ethTxBodyBuilder.build());
