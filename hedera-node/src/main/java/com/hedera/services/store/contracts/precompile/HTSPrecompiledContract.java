@@ -23,7 +23,6 @@ package com.hedera.services.store.contracts.precompile;
  */
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -50,15 +49,17 @@ import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.Dissociation;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenTransferWrapper;
+import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -115,8 +116,6 @@ import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
 import static com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.services.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.MINT_NFT;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
@@ -153,9 +152,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON = Bytes.of(
 			"Error decoding precompile input".getBytes());
 	private static final List<Long> NO_SERIAL_NOS = Collections.emptyList();
-	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
-
 
 	private final EntityCreator creator;
 	private final DecodingFacade decoder;
@@ -330,12 +327,22 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							AbiConstants.ABI_ID_TRANSFER_TOKEN,
 							AbiConstants.ABI_ID_TRANSFER_NFTS,
 							AbiConstants.ABI_ID_TRANSFER_NFT -> new TransferPrecompile();
-					case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile();
+					case AbiConstants.ABI_ID_MINT_TOKEN -> new MintPrecompile(
+							ledgers, decoder, encoder, updater.aliases(), sigsVerifier, recordsHistorian,
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
 					case AbiConstants.ABI_ID_BURN_TOKEN -> new BurnPrecompile();
-					case AbiConstants.ABI_ID_ASSOCIATE_TOKENS -> new MultiAssociatePrecompile();
-					case AbiConstants.ABI_ID_ASSOCIATE_TOKEN -> new AssociatePrecompile();
-					case AbiConstants.ABI_ID_DISSOCIATE_TOKENS -> new MultiDissociatePrecompile();
-					case AbiConstants.ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile();
+					case AbiConstants.ABI_ID_ASSOCIATE_TOKENS -> new MultiAssociatePrecompile(
+							ledgers, decoder, updater.aliases(), sigsVerifier,
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
+					case AbiConstants.ABI_ID_ASSOCIATE_TOKEN -> new AssociatePrecompile(
+							ledgers, decoder, updater.aliases(), sigsVerifier,
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
+					case AbiConstants.ABI_ID_DISSOCIATE_TOKENS -> new MultiDissociatePrecompile(
+							ledgers, decoder, updater.aliases(), sigsVerifier,
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
+					case AbiConstants.ABI_ID_DISSOCIATE_TOKEN -> new DissociatePrecompile(
+							ledgers, decoder, updater.aliases(), sigsVerifier,
+							sideEffectsTracker, syntheticTxnFactory, infrastructureFactory, precompilePricingUtils);
 					case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
 						final var target = DescriptorUtils.getRedirectTarget(input);
 						final var tokenId = target.tokenId();
@@ -470,157 +477,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getInputData().toArrayUnsafe() :
 							EvmFnResult.EMPTY);
 			childRecord.setContractCallResult(evmFnResult);
-		}
-	}
-
-	/* --- Constructor functional interfaces for mocking --- */
-	private abstract class AbstractAssociatePrecompile implements Precompile {
-		protected Association associateOp;
-
-		@Override
-		public void run(final MessageFrame frame) {
-			Objects.requireNonNull(associateOp);
-
-			/* --- Check required signatures --- */
-			final var accountId = Id.fromGrpcAccount(associateOp.accountId());
-			final var hasRequiredSigs = KeyActivationUtils.validateKey(
-					frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, updater.aliases());
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
-
-			/* --- Build the necessary infrastructure to execute the transaction --- */
-			final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-			final var tokenStore  = infrastructureFactory.newTokenStore(
-					accountStore, sideEffectsTracker, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
-
-			/* --- Execute the transaction and capture its results --- */
-			final var associateLogic = infrastructureFactory.newAssociateLogic(accountStore, tokenStore);
-			associateLogic.associate(accountId, associateOp.tokenIds());
-		}
-
-		@Override
-		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-			return precompilePricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
-		}
-	}
-
-	protected class AssociatePrecompile extends AbstractAssociatePrecompile {
-		@Override
-		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			associateOp = decoder.decodeAssociation(input, aliasResolver);
-			return syntheticTxnFactory.createAssociate(associateOp);
-		}
-	}
-
-	protected class MultiAssociatePrecompile extends AbstractAssociatePrecompile {
-		@Override
-		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			associateOp = decoder.decodeMultipleAssociations(input, aliasResolver);
-			return syntheticTxnFactory.createAssociate(associateOp);
-		}
-	}
-
-	private abstract class AbstractDissociatePrecompile implements Precompile {
-		protected Dissociation dissociateOp;
-
-		@Override
-		public void run(
-				final MessageFrame frame
-		) {
-			Objects.requireNonNull(dissociateOp);
-
-			/* --- Check required signatures --- */
-			final var accountId = Id.fromGrpcAccount(dissociateOp.accountId());
-			final var hasRequiredSigs = KeyActivationUtils.validateKey(
-					frame, accountId.asEvmAddress(), sigsVerifier::hasActiveKey, ledgers, updater.aliases());
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
-
-			/* --- Build the necessary infrastructure to execute the transaction --- */
-			final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-			final var tokenStore = infrastructureFactory.newTokenStore(
-					accountStore, sideEffectsTracker, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
-
-			/* --- Execute the transaction and capture its results --- */
-			final var dissociateLogic = infrastructureFactory.newDissociateLogic(accountStore, tokenStore);
-			dissociateLogic.dissociate(accountId, dissociateOp.tokenIds());
-		}
-
-		@Override
-		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-			return precompilePricingUtils.getMinimumPriceInTinybars(DISSOCIATE, consensusTime);
-		}
-	}
-
-	protected class DissociatePrecompile extends AbstractDissociatePrecompile {
-		@Override
-		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			dissociateOp = decoder.decodeDissociate(input, aliasResolver);
-			return syntheticTxnFactory.createDissociate(dissociateOp);
-		}
-	}
-
-	protected class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
-		@Override
-		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			dissociateOp = decoder.decodeMultipleDissociations(input, aliasResolver);
-			return syntheticTxnFactory.createDissociate(dissociateOp);
-		}
-	}
-
-	protected class MintPrecompile implements Precompile {
-		private MintWrapper mintOp;
-
-		@Override
-		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-			mintOp = decoder.decodeMint(input);
-			return syntheticTxnFactory.createMint(mintOp);
-		}
-
-		@Override
-		public void run(final MessageFrame frame) {
-			Objects.requireNonNull(mintOp);
-
-			/* --- Check required signatures --- */
-			final var tokenId = Id.fromGrpcToken(mintOp.tokenType());
-			final var hasRequiredSigs = KeyActivationUtils.validateKey(
-					frame, tokenId.asEvmAddress(), sigsVerifier::hasActiveSupplyKey, ledgers, updater.aliases());
-			validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
-
-			/* --- Build the necessary infrastructure to execute the transaction --- */
-			final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());
-			final var tokenStore = infrastructureFactory.newTokenStore(
-					accountStore, sideEffectsTracker, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
-			final var mintLogic = infrastructureFactory.newMintLogic(accountStore, tokenStore);
-
-			/* --- Execute the transaction and capture its results --- */
-			if (mintOp.type() == NON_FUNGIBLE_UNIQUE) {
-				final var newMeta = mintOp.metadata();
-				final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
-				mintLogic.mint(tokenId, newMeta.size(), 0, newMeta, creationTime);
-			} else {
-				mintLogic.mint(tokenId, 0, mintOp.amount(), NO_METADATA, Instant.EPOCH);
-			}
-		}
-
-		@Override
-		public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-			Objects.requireNonNull(mintOp);
-
-			return precompilePricingUtils.getMinimumPriceInTinybars(
-					(mintOp.type() == NON_FUNGIBLE_UNIQUE) ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
-		}
-
-		@Override
-		public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-			final var receiptBuilder = childRecord.getReceiptBuilder();
-			validateTrue(receiptBuilder != null, FAIL_INVALID);
-			return encoder.encodeMintSuccess(
-					childRecord.getReceiptBuilder().getNewTotalSupply(),
-					childRecord.getReceiptBuilder().getSerialNumbers());
-		}
-
-		@Override
-		public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-			return encoder.encodeMintFailure(status);
 		}
 	}
 

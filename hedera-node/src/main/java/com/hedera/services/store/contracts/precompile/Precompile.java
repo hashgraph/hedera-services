@@ -75,7 +75,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
  *     {@link Precompile#shouldAddTraceabilityFieldsToRecord()}.</li>
  * </ol>
  */
-interface Precompile {
+public interface Precompile {
 	// Construct the synthetic transaction
 	TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver);
 

@@ -35,6 +35,11 @@ import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.services.store.contracts.precompile.impl.AssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MintPrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MultiAssociatePrecompile;
+import com.hedera.services.store.contracts.precompile.impl.MultiDissociatePrecompile;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
@@ -555,7 +560,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, а -> а);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.MintPrecompile);
+		assertTrue(subject.getPrecompile() instanceof MintPrecompile);
 	}
 
 	@Test
@@ -589,7 +594,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, а -> а);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.MultiAssociatePrecompile);
+		assertTrue(subject.getPrecompile() instanceof MultiAssociatePrecompile);
 	}
 
 	@Test
@@ -604,7 +609,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, а -> а);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.AssociatePrecompile);
+		assertTrue(subject.getPrecompile() instanceof AssociatePrecompile);
 	}
 
 	@Test
@@ -624,7 +629,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, а -> а);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.MultiDissociatePrecompile);
+		assertTrue(subject.getPrecompile() instanceof MultiDissociatePrecompile);
 	}
 
 	@Test
@@ -698,7 +703,7 @@ class HTSPrecompiledContractTest {
 		subject.prepareComputation(input, а -> а);
 
 		// then
-		assertTrue(subject.getPrecompile() instanceof HTSPrecompiledContract.DissociatePrecompile);
+		assertTrue(subject.getPrecompile() instanceof DissociatePrecompile);
 	}
 
 	@Test
