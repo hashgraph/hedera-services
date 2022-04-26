@@ -421,6 +421,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(frame.getRemainingGas().compareTo(gasRequirement) >= 0, INSUFFICIENT_GAS);
 
 			precompile.handleSentHbars(frame);
+			precompile.customizeTrackingLedgers(ledgers);
 			precompile.run(frame);
 
 			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
@@ -592,6 +593,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
+		public void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
+			worldLedgers.customizeForAutoAssociatingOp(sideEffectsTracker);
+		}
+
+		@Override
 		public void handleSentHbars(final MessageFrame frame) {
 			final var timestampSeconds = frame.getBlockValues().getTimestamp();
 			final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
@@ -736,6 +742,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		protected void initializeHederaTokenStore() {
 			hederaTokenStore = infrastructureFactory.newHederaTokenStore(
 					sideEffectsTracker, ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels());
+		}
+
+		@Override
+		public void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
+			worldLedgers.customizeForAutoAssociatingOp(sideEffectsTracker);
 		}
 
 		@Override
