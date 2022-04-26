@@ -140,6 +140,16 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
 		};
 	}
 
+	public static byte[] recoverAddressFromPubKey(byte[] pubKeyBytes) {
+		LibSecp256k1.secp256k1_pubkey pubKey = new LibSecp256k1.secp256k1_pubkey();
+		var parseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(CONTEXT, pubKey, pubKeyBytes, pubKeyBytes.length);
+		if (parseResult == 1) {
+			return recoverAddressFromPubKey(pubKey);
+		} else {
+			return null;
+		}
+	}
+
 	static byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
 		final ByteBuffer recoveredFullKey = ByteBuffer.allocate(65);
 		final LongByReference fullKeySize = new LongByReference(recoveredFullKey.limit());
