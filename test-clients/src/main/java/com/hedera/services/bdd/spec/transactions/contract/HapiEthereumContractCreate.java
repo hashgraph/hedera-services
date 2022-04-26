@@ -220,13 +220,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var filePath = Utils.getResourcePath(bytecodeFile.get(), ".bin");
         final var fileContents = Utils.extractByteCode(filePath);
 
-        byte[] callData = new byte[0];
-        if(fileContents.toByteArray().length < MAX_CALL_DATA_SIZE) {
-            callData = Bytes.fromHexString(new String(fileContents.toByteArray())).toArray();
-        } else {
-            ethFileID = Optional.of(TxnUtils.asFileId(bytecodeFile.get(), spec));
-        }
-
+        final byte[] callData = Bytes.fromHexString(new String(fileContents.toByteArray())).toArray();
         final var value = balance.isEmpty() ? BigInteger.ZERO : WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(balance.get()));
         final var longTuple = TupleType.parse("(int64)");
         final var gasPriceBytes = Bytes.wrap(longTuple.encode(Tuple.of(gasPrice)).array()).toArray();
@@ -237,14 +231,20 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 maxPriorityGasBytes, gasBytes, gas.orElse(0L),
                 new byte[]{}, value, callData, new byte[]{}, 0, null, null, null);
 
-        byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
-        final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
+        final byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
+        var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
 
-        EthereumTransactionBody opBody = spec
+        if(fileContents.toByteArray().length > MAX_CALL_DATA_SIZE) {
+            ethFileID = Optional.of(TxnUtils.asFileId(bytecodeFile.get(), spec));
+            signedEthTxData = signedEthTxData.replaceCallData(new byte[]{});
+        }
+
+        final var ethData = signedEthTxData;
+        final EthereumTransactionBody opBody = spec
                 .txns()
                 .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
                         EthereumTransactionBody.class, builder -> {
-                            builder.setEthereumData(ByteString.copyFrom(signedEthTxData.encodeTx()));
+                            builder.setEthereumData(ByteString.copyFrom(ethData.encodeTx()));
                             ethFileID.ifPresent(builder::setCallData);
                             maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
                         }

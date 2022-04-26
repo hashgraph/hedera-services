@@ -195,15 +195,11 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	@Override
 	public void preFetch(final TxnAccessor accessor) {
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
-
-//		EthereumTransactionBody op = accessor.getTxn().getEthereumTransaction();
-//		ethTxData = maybeUpdateCallData(accessor, ethTxData, op);
+		EthereumTransactionBody op = accessor.getTxn().getEthereumTransaction();
+		ethTxData = maybeUpdateCallData(accessor, ethTxData, op);
 
 		var ethTxSigs = EthTxSigs.extractSignatures(ethTxData);
 		spanMapAccessor.setEthTxSigsMeta(accessor, ethTxSigs);
-
-		EthereumTransactionBody op = accessor.getTxn().getEthereumTransaction();
-		ethTxData = maybeUpdateCallData(accessor, ethTxData, op);
 
 		TransactionBody txBody = createSyntheticTransactionBody(ethTxData);
 
