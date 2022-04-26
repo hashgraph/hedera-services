@@ -33,7 +33,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.token.process.Creation;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.SignedTxnFactory;
 import com.hedera.test.utils.IdUtils;
@@ -110,7 +110,7 @@ class TokenCreateTransitionLogicTest {
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
@@ -138,8 +138,8 @@ class TokenCreateTransitionLogicTest {
 
 		createLogic.setCreationFactory(creationFactory);
 
-		given(txnCtx.accessor()).willReturn(accessor);
 		given(accessor.getTxn()).willReturn(tokenCreateTxn);
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(payer);
 		given(txnCtx.consensusTime()).willReturn(now);
 		given(creationFactory.processFrom(

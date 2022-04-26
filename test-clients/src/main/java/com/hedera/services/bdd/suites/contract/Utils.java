@@ -31,19 +31,31 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.CommonUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.Hash;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.swirlds.common.CommonUtils.unhex;
 import static java.lang.System.arraycopy;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 public class Utils {
+	public static final String RESOURCE_PATH = "src/main/resource/contract/contracts/%1$s/%1$s";
+
 	public static ByteString eventSignatureOf(String event) {
 		return ByteString.copyFrom(Hash.keccak256(
 				Bytes.wrap(event.getBytes())).toArray());
@@ -84,6 +96,63 @@ public class Utils {
 			return ByteString.EMPTY;
 		}
 	}
+
+	/** This method extracts the function ABI by the name of the desired function and the name of the respective contract.
+	 * Depending on the desired function type, it can deliver either a constructor ABI, or function ABI from the contract ABI
+	 * @param type accepts {@link FunctionType} - enum, either CONSTRUCTOR, or FUNCTION
+	 * @param functionName the name of the function. If the desired function is constructor, the function name must be EMPTY ("")
+	 * @param contractName the name of the contract
+	 */
+	public static String getABIFor(final FunctionType type, final String functionName, final String contractName) {
+		final var path = getResourcePath(contractName, ".json");
+		var ABI = EMPTY;
+		try (final var input = new FileInputStream(path)) {
+			final var array = new JSONArray(new JSONTokener(input));
+			ABI = IntStream
+					.range(0, array.length())
+					.mapToObj(array::getJSONObject)
+					.filter(object -> type == CONSTRUCTOR
+							? object.getString("type").equals(type.toString().toLowerCase())
+							: object.getString("type").equals(type.toString().toLowerCase()) && object.getString("name").equals(functionName))
+					.map(JSONObject::toString)
+					.findFirst()
+					.orElseThrow(() -> new IllegalArgumentException("No such function found: " + functionName));
+		} catch (IOException e) {
+			e.getStackTrace();
+		}
+		return ABI;
+	}
+
+	/** Delivers the entire contract ABI by contract name
+	 * @param contractName the name of the contract
+	 */
+	public static String getABIForContract(final String contractName) {
+		final var path = getResourcePath(contractName, ".json");
+		var ABI = EMPTY;
+		try {
+			ABI = FileUtils.readFileToString(new File(path), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return ABI;
+	}
+
+
+	/** Generates a path to a desired contract resource
+	 * @param resourceName the name of the contract
+	 * @param extension the type of the desired contract resource (.bin or .json)
+	 */
+	public static String getResourcePath(String resourceName, final String extension) {
+		resourceName = resourceName.replaceAll("\\d*$", "");
+		final var path = String.format(RESOURCE_PATH + extension, resourceName);
+		final var file = new File(path);
+		if (!file.exists()) {
+			throw new IllegalArgumentException("Invalid argument: " + path.substring(path.lastIndexOf('/') + 1));
+		}
+		return path;
+	}
+
+	public enum FunctionType {CONSTRUCTOR, FUNCTION}
 
 	public static TokenID asToken(String v) {
 		long[] nativeParts = asDotDelimitedLongArray(v);

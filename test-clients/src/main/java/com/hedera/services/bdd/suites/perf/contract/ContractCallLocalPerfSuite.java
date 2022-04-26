@@ -21,7 +21,6 @@ package com.hedera.services.bdd.suites.perf.contract;
  */
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.infrastructure.meta.ContractResources;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import org.apache.logging.log4j.LogManager;
@@ -32,7 +31,7 @@ import java.util.List;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 
 public class ContractCallLocalPerfSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractCallLocalPerfSuite.class);
@@ -58,26 +57,27 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
 
 	HapiApiSpec contractCallLocalPerf() {
 		final int NUM_CALLS = 1_000;
+		final var contract = "BalanceLookup";
 
 		return defaultHapiSpec("ContractCallLocalPerf")
 				.given(
-						fileCreate("bytecode").path(ContractResources.BALANCE_LOOKUP_BYTECODE_PATH),
-						contractCreate("contract").bytecode("bytecode").balance(1_000L)
+						uploadInitCode(contract),
+						contractCreate(contract).balance(1_000L)
 				).when(
 						contractCallLocal(
-								"contract",
-								ContractResources.BALANCE_LOOKUP_ABI,
+								contract,
+								"lookup",
 								spec -> new Object[]{
-										spec.registry().getContractId("contract").getContractNum()
+										spec.registry().getContractId(contract).getContractNum()
 								}).recordNodePaymentAs("cost"),
 						UtilVerbs.startThroughputObs("contractCallLocal")
 				).then(
 						UtilVerbs.inParallel(asOpArray(NUM_CALLS, ignore ->
 								contractCallLocal(
-										"contract",
-										ContractResources.BALANCE_LOOKUP_ABI,
+										contract,
+										"lookup",
 										spec -> new Object[]{
-												spec.registry().getContractId("contract").getContractNum()
+												spec.registry().getContractId(contract).getContractNum()
 										}).nodePayment(spec -> spec.registry().getAmount("cost")))),
 						UtilVerbs.finishThroughputObs("contractCallLocal")
 				);

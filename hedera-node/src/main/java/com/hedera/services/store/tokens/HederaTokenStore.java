@@ -38,7 +38,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -49,13 +48,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -63,11 +56,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
@@ -78,13 +69,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMAT
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
-import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
-import static com.hedera.services.ledger.properties.TokenRelProperty.PREV_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -137,8 +125,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			MerkleTokenRelStatus> tokenRelsLedger;
 	private final BackingStore<TokenID, MerkleToken> backingTokens;
 
-	Map<AccountID, Set<TokenID>> knownTreasuries = new HashMap<>();
-
 	TokenID pendingId = NO_PENDING_ID;
 	MerkleToken pendingCreation;
 
@@ -159,7 +145,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		this.backingTokens = backingTokens;
 		this.tokenRelsLedger = tokenRelsLedger;
 		this.sideEffectsTracker = sideEffectsTracker;
-		/* Known-treasuries view is re-built on restart or reconnect */
 	}
 
 	@Override
@@ -182,33 +167,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 		}
 		return OK;
-	}
-
-	@Override
-	public void rebuildViews() {
-		knownTreasuries.clear();
-		rebuildViewOfKnownTreasuries();
-	}
-
-	private void rebuildViewOfKnownTreasuries() {
-		for (TokenID key : backingTokens.idSet()) {
-			final var token = backingTokens.getImmutableRef(key);
-			/* A deleted token's treasury is no longer bound by ACCOUNT_IS_TREASURY restrictions. */
-			if (!token.isDeleted()) {
-				addKnownTreasury(token.treasury().toGrpcAccountId(), key);
-			}
-		}
-	}
-
-	@Override
-	public List<TokenID> listOfTokensServed(final AccountID treasury) {
-		if (!isKnownTreasury(treasury)) {
-			return Collections.emptyList();
-		} else {
-			return knownTreasuries.get(treasury).stream()
-					.sorted(HederaLedger.TOKEN_ID_COMPARATOR)
-					.toList();
-		}
 	}
 
 	@Override
@@ -246,9 +204,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			if (validity == OK) {
-				long headTokenNum = (long) accountsLedger.get(aId, HEAD_TOKEN_NUM);
-				final var headTokenAssociationKey = Pair.of(aId, STATIC_PROPERTIES.scopedTokenWith(headTokenNum));
-
 				final var relationship = asTokenRel(aId, tId);
 
 				tokenRelsLedger.create(relationship);
@@ -266,25 +221,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 						TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
 						true);
 
-				sideEffectsTracker.trackAutoAssociation(tId, aId);
 				accountsLedger.set(aId, USED_AUTOMATIC_ASSOCIATIONS,
 						alreadyUsedAutomaticAssociations + 1);
 
-				if (headTokenNum == MISSING_ID.num()) {
-					tokenRelsLedger.set(relationship, PREV_KEY, 0L);
-					tokenRelsLedger.set(relationship, NEXT_KEY, 0L);
-				} else {
-					// oldPrevKey should be MISSING_NUM_PAIR
-					final var oldPrev = (long) tokenRelsLedger.get(headTokenAssociationKey, PREV_KEY);
-					final var oldPrevKey = EntityNumPair.fromLongs(aId.getAccountNum(), oldPrev);
-					tokenRelsLedger.set(headTokenAssociationKey, PREV_KEY, tId.getTokenNum());
-					tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey.getLowOrderAsLong());
-					tokenRelsLedger.set(relationship, NEXT_KEY, headTokenNum);
-				}
-
 				numAssociations++;
 				accountsLedger.set(aId, NUM_ASSOCIATIONS, numAssociations);
-				accountsLedger.set(aId, HEAD_TOKEN_NUM, tId.getTokenNum());
 			}
 			return validity;
 		});
@@ -303,7 +244,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	@Override
 	public MerkleToken get(final TokenID id) {
 		throwIfMissing(id);
-
 		return pendingId.equals(id) ? pendingCreation : backingTokens.getImmutableRef(id);
 	}
 
@@ -474,27 +414,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		return get(tId).decimals() == expectedDecimals;
 	}
 
-	@Override
-	public void addKnownTreasury(final AccountID aId, final TokenID tId) {
-		knownTreasuries.computeIfAbsent(aId, ignore -> new HashSet<>()).add(tId);
-	}
-
-	public void removeKnownTreasuryForToken(final AccountID aId, final TokenID tId) {
-		throwIfKnownTreasuryIsMissing(aId);
-		knownTreasuries.get(aId).remove(tId);
-		if (knownTreasuries.get(aId).isEmpty()) {
-			knownTreasuries.remove(aId);
-		}
-	}
-
-	private void throwIfKnownTreasuryIsMissing(final AccountID aId) {
-		if (!knownTreasuries.containsKey(aId)) {
-			throw new IllegalArgumentException(String.format(
-					"Argument 'aId=%s' does not refer to a known treasury!",
-					readableId(aId)));
-		}
-	}
-
 	private ResponseCodeEnum tryAdjustment(final AccountID aId, final TokenID tId, final long adjustment) {
 		final var freezeAndKycValidity = checkRelFrozenAndKycProps(aId, tId);
 		if (!freezeAndKycValidity.equals(OK)) {
@@ -541,10 +460,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	@Override
 	public void commitCreation() {
 		throwIfNoCreationPending();
-
 		backingTokens.put(pendingId, pendingCreation);
-		addKnownTreasury(pendingCreation.treasury().toGrpcAccountId(), pendingId);
-
 		resetPendingCreation();
 	}
 
@@ -620,7 +536,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 			updateTokenSymbolIfAppropriate(token, changes);
 			updateTokenNameIfAppropriate(token, changes);
-			updateTreasuryIfAppropriate(token, changes, tId);
+			updateTreasuryIfAppropriate(token, changes);
 			updateMemoIfAppropriate(token, changes);
 			updateExpiryIfAppropriate(token, changes);
 		});
@@ -702,7 +618,7 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 	}
 
 	private void updateAutoRenewAccountIfAppropriate(final MerkleToken token,
-													 final TokenUpdateTransactionBody changes) {
+			final TokenUpdateTransactionBody changes) {
 		if (changes.hasAutoRenewAccount()) {
 			token.setAutoRenewAccount(fromGrpcAccountId(changes.getAutoRenewAccount()));
 		}
@@ -742,14 +658,10 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 		}
 	}
 
-	private void updateTreasuryIfAppropriate(final MerkleToken token,
-											 final TokenUpdateTransactionBody changes,
-											 final TokenID tId) {
+	private void updateTreasuryIfAppropriate(final MerkleToken token, final TokenUpdateTransactionBody changes) {
 		if (changes.hasTreasury() && !changes.getTreasury().equals(token.treasury().toGrpcAccountId())) {
 			final var treasuryId = fromGrpcAccountId(changes.getTreasury());
-			removeKnownTreasuryForToken(token.treasury().toGrpcAccountId(), tId);
 			token.setTreasury(treasuryId);
-			addKnownTreasury(changes.getTreasury(), tId);
 		}
 	}
 
@@ -814,18 +726,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 					"Argument 'id=%s' does not refer to a known token!",
 					readableId(id)));
 		}
-	}
-
-	public boolean isKnownTreasury(final AccountID aid) {
-		return knownTreasuries.containsKey(aid);
-	}
-
-	@Override
-	public boolean isTreasuryForToken(final AccountID aId, final TokenID tId) {
-		if (!knownTreasuries.containsKey(aId)) {
-			return false;
-		}
-		return knownTreasuries.get(aId).contains(tId);
 	}
 
 	private ResponseCodeEnum manageFlag(
@@ -930,9 +830,5 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 
 	private ResponseCodeEnum checkTokenExistence(final TokenID tId) {
 		return exists(tId) ? OK : INVALID_TOKEN_ID;
-	}
-
-	Map<AccountID, Set<TokenID>> getKnownTreasuries() {
-		return knownTreasuries;
 	}
 }

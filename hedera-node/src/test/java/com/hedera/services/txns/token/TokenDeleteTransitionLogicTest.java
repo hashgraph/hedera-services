@@ -23,10 +23,12 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
@@ -51,9 +53,11 @@ class TokenDeleteTransitionLogicTest {
 	private static final TokenID grpcTokenId = IdUtils.asToken("0.0.12345");
 	private static final Id tokenId = Id.fromGrpcToken(grpcTokenId);
 	private TransactionContext txnCtx;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	private TypedTokenStore typedTokenStore;
+	private AccountStore accountStore;
 	private Token token;
+	private Account treasury = new Account(new Id(0, 0, 1234));
 
 	private TransactionBody tokenDeleteTxn;
 	private SigImpactHistorian sigImpactHistorian;
@@ -62,10 +66,11 @@ class TokenDeleteTransitionLogicTest {
 	@BeforeEach
 	private void setup() {
 		txnCtx = mock(TransactionContext.class);
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		typedTokenStore = mock(TypedTokenStore.class);
+		accountStore = mock(AccountStore.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
-		subject = new TokenDeleteTransitionLogic(txnCtx, typedTokenStore, sigImpactHistorian);
+		subject = new TokenDeleteTransitionLogic(txnCtx, accountStore, typedTokenStore, sigImpactHistorian);
 		token = mock(Token.class);
 	}
 
@@ -76,11 +81,13 @@ class TokenDeleteTransitionLogicTest {
 		given(token.hasAdminKey()).willReturn(true);
 		given(token.isDeleted()).willReturn(false);
 		given(token.isBelievedToHaveBeenAutoRemoved()).willReturn(false);
+		given(token.getTreasury()).willReturn(treasury);
 
 		subject.doStateTransition();
 
 		verify(token).delete();
 		verify(typedTokenStore).commitToken(token);
+		verify(accountStore).commitAccount(treasury);
 		verify(sigImpactHistorian).markEntityChanged(tokenId.num());
 	}
 

@@ -34,8 +34,6 @@ import javax.inject.Inject;
 import java.util.Map;
 import java.util.function.BiPredicate;
 
-import static com.hedera.services.contracts.operation.HederaCallOperation.resolveCanonical;
-
 /**
  * Hedera adapted version of the {@link StaticCallOperation}.
  *
@@ -59,11 +57,6 @@ public class HederaStaticCallOperation extends StaticCallOperation {
 		this.sigsVerifier = sigsVerifier;
 		this.addressValidator = addressValidator;
 		this.precompiledContractMap = precompiledContractMap;
-	}
-
-	@Override
-	protected Address address(final MessageFrame frame) {
-		return resolveCanonical(super.address(frame), frame, precompiledContractMap);
 	}
 
 	@Override

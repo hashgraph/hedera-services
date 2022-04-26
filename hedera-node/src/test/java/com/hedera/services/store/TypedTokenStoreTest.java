@@ -38,7 +38,6 @@ import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
-import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -60,7 +59,6 @@ import java.util.List;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -85,11 +83,6 @@ class TypedTokenStoreTest {
 	private BackingStore<NftId, MerkleUniqueToken> uniqueTokens;
 	@Mock
 	private BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels;
-	@Mock
-	private TokenStore legacyStore;
-
-	@Mock
-	private TokenStore tokenStore;
 
 	private TypedTokenStore subject;
 
@@ -103,8 +96,6 @@ class TypedTokenStoreTest {
 				tokens,
 				uniqueTokens,
 				tokenRels,
-				tokenStore::addKnownTreasury,
-				legacyStore::removeKnownTreasuryForToken,
 				sideEffectsTracker);
 	}
 
@@ -152,19 +143,6 @@ class TypedTokenStoreTest {
 		final var actualTokenRel = subject.loadTokenRelationship(token, miscAccount);
 
 		// then:
-		assertEquals(miscTokenRel, actualTokenRel);
-	}
-
-	@Test
-	void loadsExpectedLatestRelationShipFromAccountsLastAssociatedToken() {
-		givenRelationship(miscTokenRelId, miscTokenMerkleRel);
-		givenToken(merkleTokenId, merkleToken);
-		given(accountStore.loadAccount(autoRenewId)).willReturn(autoRenewAccount);
-		given(accountStore.loadAccount(treasuryId)).willReturn(treasuryAccount);
-		miscAccount.setHeadTokenNum(tokenNum);
-
-		final var actualTokenRel = subject.getLatestTokenRelationship(miscAccount);
-
 		assertEquals(miscTokenRel, actualTokenRel);
 	}
 
@@ -221,10 +199,8 @@ class TypedTokenStoreTest {
 	void persistsNewTokenRelAsExpected() {
 		// setup:
 		final var expectedNewTokenRel = new MerkleTokenRelStatus(balance * 2, false, true, false);
-		expectedNewTokenRel.setKey(miscTokenRelId);
 		// given:
 		final var newTokenRel = new TokenRelationship(token, miscAccount);
-		newTokenRel.setKey(miscTokenRelId);
 		// when:
 		newTokenRel.setKycGranted(true);
 		newTokenRel.setBalance(balance * 2);
@@ -241,6 +217,7 @@ class TypedTokenStoreTest {
 	@Test
 	void persistsDeletedTokenAsExpected() {
 		setupToken();
+		treasuryAccount.incrementNumTreasuryTitles();
 		givenModifiableToken(merkleTokenId, merkleToken);
 
 		token.setIsDeleted(true);
@@ -249,7 +226,7 @@ class TypedTokenStoreTest {
 		subject.commitToken(token);
 
 		assertTrue(merkleToken.isDeleted());
-		verify(legacyStore).removeKnownTreasuryForToken(any(), any());
+		assertEquals(0, treasuryAccount.getNumTreasuryTitles());
 	}
 
 	/* --- Token saving --- */
@@ -323,6 +300,7 @@ class TypedTokenStoreTest {
 		modelToken.setAutoRenewPeriod(autoRenewPeriod);
 		modelToken.setCustomFees(List.of());
 		modelToken.setMemo(memo);
+		autoRenewAccount.incrementNumTreasuryTitles();
 		// and:
 		subject.commitToken(modelToken);
 
@@ -347,6 +325,7 @@ class TypedTokenStoreTest {
 		modelToken.setExpiry(expiry);
 		modelToken.removedUniqueTokens().add(burnedToken);
 		modelToken.setCustomFees(List.of());
+		treasuryAccount.incrementNumTreasuryTitles();
 		// and:
 		subject.commitToken(modelToken);
 
@@ -379,6 +358,7 @@ class TypedTokenStoreTest {
 		subject.persistNew(newToken);
 		verify(tokens).put(any(), any());
 		verify(sideEffectsTracker).trackTokenChanges(newToken);
+		assertEquals(1, treasuryAccount.getNumTreasuryTitles());
 	}
 
 	@Test
@@ -483,9 +463,6 @@ class TypedTokenStoreTest {
 		miscTokenRel.setKycGranted(kycGranted);
 		miscTokenRel.setAutomaticAssociation(automaticAssociation);
 		miscTokenRel.markAsPersisted();
-		miscTokenRel.setKey(miscTokenRelId);
-		miscTokenRel.setPrevKey(MISSING_ID.num());
-		miscTokenRel.setNextKey(MISSING_ID.num());
 	}
 
 	private final long expiry = 1_234_567L;

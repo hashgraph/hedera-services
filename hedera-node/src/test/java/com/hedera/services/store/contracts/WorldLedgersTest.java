@@ -31,6 +31,7 @@ import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingTokens;
+import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -41,11 +42,9 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.fchashmap.FCHashMap;
@@ -57,8 +56,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.nio.charset.StandardCharsets;
-
+import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenProperty.DECIMALS;
@@ -75,7 +73,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -191,7 +191,7 @@ class WorldLedgersTest {
 	void mirrorNoAliasIsCanonicalSourceWithLedgers() {
 		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
 		given(accountsLedger.exists(id)).willReturn(true);
-		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.EMPTY);
+		given(accountsLedger.get(id, ALIAS)).willReturn(ByteString.EMPTY);
 
 		assertSame(sponsor, subject.canonicalAddress(sponsor));
 	}
@@ -221,7 +221,7 @@ class WorldLedgersTest {
 	void mirrorWithAliasUsesAliasAsCanonicalSource() {
 		final var id = EntityIdUtils.accountIdFromEvmAddress(sponsor);
 		given(accountsLedger.exists(id)).willReturn(true);
-		given(accountsLedger.get(id, AccountProperty.ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
+		given(accountsLedger.get(id, ALIAS)).willReturn(ByteString.copyFrom(alias.toArrayUnsafe()));
 		assertEquals(alias, subject.canonicalAddress(sponsor));
 	}
 
@@ -291,15 +291,21 @@ class WorldLedgersTest {
 		final var wrappedUnusable = nullAccounts.wrapped(sideEffectsTracker);
 		assertSame(((StackedContractAliases) wrappedUnusable.aliases()).wrappedAliases(), nullAccounts.aliases());
 		assertFalse(wrappedUnusable.areMutable());
+		assertThrows(IllegalStateException.class, () ->
+				wrappedUnusable.customizeForAutoAssociatingOp(sideEffectsTracker));
 
 		final var wrappedSource = source.wrapped(sideEffectsTracker);
-
 		assertSame(liveTokenRels, wrappedSource.tokenRels().getEntitiesLedger());
 		assertSame(liveAccounts, wrappedSource.accounts().getEntitiesLedger());
 		assertSame(liveNfts, wrappedSource.nfts().getEntitiesLedger());
 		assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
 		final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
 		assertSame(liveAliases, stackedAliases.wrappedAliases());
+
+		wrappedSource.customizeForAutoAssociatingOp(sideEffectsTracker);
+		assertInstanceOf(
+				AutoAssocTokenRelsCommitInterceptor.class,
+				wrappedSource.tokenRels().getCommitInterceptor());
 	}
 
 	@Test
@@ -350,6 +356,27 @@ class WorldLedgersTest {
 		assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
 		final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
 		assertSame(liveAliases, stackedAliases.wrappedAliases());
+	}
+
+	@Test
+	void mutableLedgersCheckForToken() {
+		final var htsProxy = Address.ALTBN128_PAIRING;
+		final var htsId = EntityIdUtils.tokenIdFromEvmAddress(htsProxy);
+
+		given(tokensLedger.contains(htsId)).willReturn(true);
+
+		assertTrue(subject.isTokenAddress(htsProxy));
+	}
+
+	@Test
+	void staticLedgersUseEntityAccessForTokenTest() {
+		final var htsProxy = Address.ALTBN128_PAIRING;
+
+		given(staticEntityAccess.isTokenAccount(htsProxy)).willReturn(true);
+
+		subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
+
+		assertTrue(subject.isTokenAddress(htsProxy));
 	}
 
 	@Test

@@ -139,7 +139,7 @@ public interface StateModule {
 
 	@Provides
 	@Singleton
-	public static VirtualMapFactory provideVirtualMapFactory() {
+	static VirtualMapFactory provideVirtualMapFactory() {
 		return new VirtualMapFactory(JasperDbBuilder::new);
 	}
 

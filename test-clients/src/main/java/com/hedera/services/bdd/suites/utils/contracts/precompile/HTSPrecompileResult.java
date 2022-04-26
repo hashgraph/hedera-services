@@ -33,6 +33,8 @@ public class HTSPrecompileResult implements ContractCallResult {
 	}
 
 	private static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
+	private static final TupleType failedReturnType = TupleType.parse("(int32)");
+	private static final TupleType successReturnType = TupleType.parse("(int32)");
 	private static final TupleType burnReturnType = TupleType.parse("(int32,uint64)");
 	private static final TupleType totalSupplyType = TupleType.parse("(uint256)");
 	private static final TupleType balanceOfType = TupleType.parse("(uint256)");
@@ -46,12 +48,13 @@ public class HTSPrecompileResult implements ContractCallResult {
 	private static final TupleType ercTransferType = TupleType.parse("(bool)");
 	private static final TupleType isApprovedForAllType = TupleType.parse("(bool)");
 
+
 	public static HTSPrecompileResult htsPrecompileResult() {
 		return new HTSPrecompileResult();
 	}
 
 	public enum FunctionType {
-		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, GET_APPROVED, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, ALLOWANCE, IS_APPROVED_FOR_ALL
+		MINT, BURN, TOTAL_SUPPLY, DECIMALS, BALANCE, OWNER, TOKEN_URI, NAME, SYMBOL, ERC_TRANSFER, FAILED, SUCCESS, ALLOWANCE, IS_APPROVED_FOR_ALL, GET_APPROVED
 	}
 
 	private FunctionType functionType;
@@ -83,6 +86,8 @@ public class HTSPrecompileResult implements ContractCallResult {
 			case SYMBOL -> tupleType = symbolType;
 			case TOKEN_URI -> tupleType = tokenUriType;
 			case ERC_TRANSFER -> tupleType = ercTransferType;
+			case FAILED -> tupleType = failedReturnType;
+			case SUCCESS -> tupleType = successReturnType;
 			case ALLOWANCE -> tupleType = allowanceOfType;
 			case IS_APPROVED_FOR_ALL -> tupleType = isApprovedForAllType;
 		}

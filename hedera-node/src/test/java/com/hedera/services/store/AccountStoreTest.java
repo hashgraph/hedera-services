@@ -81,7 +81,6 @@ class AccountStoreTest {
 	}
 
 	/* --- Account loading --- */
-
 	@Test
 	void loadsContractAsExpected() {
 		miscMerkleAccount.setSmartContract(true);
@@ -89,6 +88,15 @@ class AccountStoreTest {
 		Account account = subject.loadContract(miscId);
 
 		assertEquals(Id.fromGrpcAccount(miscMerkleId.toGrpcAccountId()), account.getId());
+	}
+
+	@Test
+	void loadsTreasuryTitles() {
+		miscMerkleAccount.setNumTreasuryTitles(34);
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		Account account = subject.loadAccount(miscId);
+
+		assertEquals(34, account.getNumTreasuryTitles());
 	}
 
 	@Test
@@ -143,11 +151,22 @@ class AccountStoreTest {
 	}
 
 	@Test
+	void commitIncludesTreasuryTitlesCount() {
+		setupWithAccount(miscMerkleId, miscMerkleAccount);
+		setupWithMutableAccount(miscMerkleId, miscMerkleAccount);
+
+		final var model = subject.loadAccount(miscId);
+		model.setNumTreasuryTitles(34);
+		subject.commitAccount(model);
+
+		assertEquals(34, miscMerkleAccount.getNumTreasuryTitles());
+	}
+
+	@Test
 	void persistenceUpdatesTokens() {
 		setupWithAccount(miscMerkleId, miscMerkleAccount);
 		setupWithMutableAccount(miscMerkleId, miscMerkleAccount);
 		miscMerkleAccount.setKey(miscMerkleId);
-		miscMerkleAccount.setHeadTokenId(firstAssocTokenNum);
 		miscMerkleAccount.setNumAssociations(associatedTokensCount);
 		miscMerkleAccount.setNumPositiveBalances(numPositiveBalances);
 		// and:
@@ -163,8 +182,7 @@ class AccountStoreTest {
 				.get();
 		expectedReplacement.setKey(miscMerkleId);
 		expectedReplacement.setNumPositiveBalances(numPositiveBalances);
-		expectedReplacement.setNumAssociations(associatedTokensCount+1);
-		expectedReplacement.setHeadTokenId(aThirdToken.getId().num());
+		expectedReplacement.setNumAssociations(associatedTokensCount + 1);
 
 		// given:
 		final var model = subject.loadAccount(miscId);
@@ -174,10 +192,7 @@ class AccountStoreTest {
 		// and:
 		subject.commitAccount(model);
 
-		// then:
 		assertEquals(expectedReplacement, miscMerkleAccount);
-		// and:
-		assertEquals(thirdRelKey , miscMerkleAccount.getLatestAssociation());
 	}
 
 	@Test
@@ -195,7 +210,8 @@ class AccountStoreTest {
 		miscMerkleAccount.setBalance(0L);
 
 		var ex2 = assertThrows(
-				InvalidTransactionException.class, () -> subject.loadAccountOrFailWith(miscId, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
+				InvalidTransactionException.class,
+				() -> subject.loadAccountOrFailWith(miscId, ACCOUNT_EXPIRED_AND_PENDING_REMOVAL));
 		assertEquals(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL, ex2.getResponseCode());
 	}
 
@@ -229,7 +245,7 @@ class AccountStoreTest {
 		for (int i = 0; i < 11; i++) {
 			model.decrementUsedAutomaticAssociations();
 		}
-		model.incrementUsedAutomaticAssocitions();
+		model.incrementUsedAutomaticAssociations();
 
 		// and:
 		subject.commitAccount(model);
@@ -272,7 +288,6 @@ class AccountStoreTest {
 		secondRel.setKey(secondRelKey);
 		secondRel.setPrev(firstAssocTokenNum);
 		firstRel.setNext(secondAssocTokenNum);
-		miscAccount.setHeadTokenNum(firstAssocTokenNum);
 
 		autoRenewAccount.setExpiry(expiry);
 		autoRenewAccount.initBalance(balance);

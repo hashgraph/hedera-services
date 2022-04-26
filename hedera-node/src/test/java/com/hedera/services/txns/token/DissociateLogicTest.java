@@ -9,9 +9,9 @@ package com.hedera.services.txns.token;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,7 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -56,7 +56,7 @@ class DissociateLogicTest {
 	private final Id tokenId = new Id(2, 3, 4);
 
 	@Mock
-	private TxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 	@Mock
 	private TransactionContext txnCtx;
 	@Mock
@@ -82,6 +82,7 @@ class DissociateLogicTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void performsExpectedLogic() {
 		given(accessor.getTxn()).willReturn(validDissociateTxn());
 		given(txnCtx.accessor()).willReturn(accessor);
@@ -97,7 +98,7 @@ class DissociateLogicTest {
 		subject.dissociate(accountId, txnCtx.accessor().getTxn().getTokenDissociate().getTokensList());
 
 		// then:
-		verify(account).dissociateUsing(List.of(dissociation), tokenStore, validator);
+		verify(account).dissociateUsing(List.of(dissociation), validator);
 		// and:
 		verify(accountStore).commitAccount(account);
 		verify(tokenStore).commitTokenRelationships(List.of(tokenRelationship));

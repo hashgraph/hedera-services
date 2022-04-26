@@ -48,7 +48,9 @@ import static org.mockito.BDDMockito.given;
 class HederaSelfDestructOperationTest {
 	private static final EntityNum beneficiary = EntityNum.fromLong(2_345);
 	private static final String ethAddress = "0xc257274276a4e539741ca11b590b9447b26a8051";
+	private static final String anotherEthAddress = "0xc257274276a4e539741ca11b590b9447b26a8052";
 	private static final Address eip1014Address = Address.fromHexString(ethAddress);
+	private static final Address anotherEip1014Address = Address.fromHexString(anotherEthAddress);
 
 	@Mock
 	private HederaStackedWorldStateUpdater worldUpdater;
@@ -80,7 +82,6 @@ class HederaSelfDestructOperationTest {
 		final var beneficiaryMirror = beneficiary.toEvmAddress();
 		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
 		given(frame.popStackItem()).willReturn(beneficiaryMirror);
-		given(worldUpdater.priorityAddress(beneficiaryMirror)).willReturn(beneficiaryMirror);
 		given(frame.getRecipientAddress()).willReturn(eip1014Address);
 		given(worldUpdater.get(any())).willReturn(account);
 		given(account.getBalance()).willReturn(Wei.ONE);
@@ -97,9 +98,7 @@ class HederaSelfDestructOperationTest {
 	void rejectsSelfDestructToSelf() {
 		givenRubberstampValidator();
 
-		final var beneficiaryMirror = beneficiary.toEvmAddress();
-		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
-		given(worldUpdater.priorityAddress(beneficiaryMirror)).willReturn(eip1014Address);
+		given(frame.getStackItem(0)).willReturn(eip1014Address);
 		given(frame.getRecipientAddress()).willReturn(eip1014Address);
 
 		final var opResult = subject.execute(frame, evm);
@@ -109,12 +108,56 @@ class HederaSelfDestructOperationTest {
 	}
 
 	@Test
+	void rejectsSelfDestructIfTreasury() {
+		givenRubberstampValidator();
+
+		final var beneficiaryMirror = beneficiary.toEvmAddress();
+		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
+		given(frame.getRecipientAddress()).willReturn(eip1014Address);
+		given(worldUpdater.contractIsTokenTreasury(eip1014Address)).willReturn(true);
+
+		final var opResult = subject.execute(frame, evm);
+
+		assertEquals(Optional.of(HederaExceptionalHaltReason.CONTRACT_IS_TREASURY), opResult.getHaltReason());
+		assertEquals(Optional.of(Gas.of(2L)), opResult.getGasCost());
+	}
+
+	@Test
+	void rejectsSelfDestructIfContractHasAnyTokenBalance() {
+		givenRubberstampValidator();
+
+		final var beneficiaryMirror = beneficiary.toEvmAddress();
+		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
+		given(frame.getRecipientAddress()).willReturn(eip1014Address);
+		given(worldUpdater.contractHasAnyBalance(eip1014Address)).willReturn(true);
+
+		final var opResult = subject.execute(frame, evm);
+
+		assertEquals(Optional.of(HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES), opResult.getHaltReason());
+		assertEquals(Optional.of(Gas.of(2L)), opResult.getGasCost());
+	}
+
+	@Test
+	void rejectsSelfDestructIfContractHasAnyNfts() {
+		givenRubberstampValidator();
+
+		final var beneficiaryMirror = beneficiary.toEvmAddress();
+		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
+		given(frame.getRecipientAddress()).willReturn(eip1014Address);
+		given(worldUpdater.contractOwnsNfts(eip1014Address)).willReturn(true);
+
+		final var opResult = subject.execute(frame, evm);
+
+		assertEquals(Optional.of(HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS), opResult.getHaltReason());
+		assertEquals(Optional.of(Gas.of(2L)), opResult.getGasCost());
+	}
+
+	@Test
 	void executeInvalidSolidityAddress() {
 		givenRejectingValidator();
 
 		final var beneficiaryMirror = beneficiary.toEvmAddress();
 		given(frame.getStackItem(0)).willReturn(beneficiaryMirror);
-		given(worldUpdater.priorityAddress(beneficiaryMirror)).willReturn(eip1014Address);
 
 		final var opResult = subject.execute(frame, evm);
 

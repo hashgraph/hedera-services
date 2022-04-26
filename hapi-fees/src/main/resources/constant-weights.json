@@ -5,7 +5,6 @@
   "ScheduleGetInfo": 0.2,
   "CryptoCreate": 0.9,
   "CryptoApproveAllowance": 0.2,
-  "CryptoAdjustAllowance": 0.2,
   "CryptoDeleteAllowance": 0.2,
   "CryptoAccountAutoRenew": 0.2,
   "CryptoUpdate": 0.2,

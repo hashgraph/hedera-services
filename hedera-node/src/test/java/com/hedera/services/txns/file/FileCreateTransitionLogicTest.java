@@ -9,9 +9,9 @@ package com.hedera.services.txns.file;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.PlatformTxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
@@ -59,9 +59,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_W
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -71,7 +71,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
 class FileCreateTransitionLogicTest {
-	enum ValidProperty { KEY, EXPIRY, CONTENTS, MEMO }
+	enum ValidProperty {KEY, EXPIRY, CONTENTS, MEMO}
 
 	String memo = "Originally I thought";
 	long lifetime = 1_234_567L;
@@ -91,7 +91,7 @@ class FileCreateTransitionLogicTest {
 
 	TransactionID txnId;
 	TransactionBody fileCreateTxn;
-	private PlatformTxnAccessor accessor;
+	private SignedTxnAccessor accessor;
 
 	HederaFs hfs;
 	OptionValidator validator;
@@ -105,7 +105,7 @@ class FileCreateTransitionLogicTest {
 		hederaWacl = waclSkeleton.asJKey();
 		attr = new HFileMeta(false, hederaWacl, expiry);
 
-		accessor = mock(PlatformTxnAccessor.class);
+		accessor = mock(SignedTxnAccessor.class);
 		txnCtx = mock(TransactionContext.class);
 		hfs = mock(HederaFs.class);
 		sigImpactHistorian = mock(SigImpactHistorian.class);
@@ -145,8 +145,8 @@ class FileCreateTransitionLogicTest {
 				argThat(bytes -> Arrays.equals(contents, bytes)),
 				argThat(info ->
 						info.getWacl().toString().equals(hederaWacl.toString()) &&
-						info.getExpiry() == expiry &&
-						memo.equals(info.getMemo())),
+								info.getExpiry() == expiry &&
+								memo.equals(info.getMemo())),
 				argThat(genesis::equals));
 		inOrder.verify(txnCtx).setCreated(created);
 		inOrder.verify(txnCtx).setStatus(SUCCESS);

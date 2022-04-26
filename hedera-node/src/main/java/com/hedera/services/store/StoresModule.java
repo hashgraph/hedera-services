@@ -21,17 +21,17 @@ package com.hedera.services.store;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.ledger.AccountsCommitInterceptor;
-import com.hedera.services.ledger.TokenRelsCommitInterceptor;
-import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.backing.BackingNfts;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.BackingTokenRels;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.TokenRelsLinkManager;
+import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -41,22 +41,23 @@ import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.store.contracts.CodeCache;
-import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.schedule.HederaScheduleStore;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;
+import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.swirlds.merkle.map.MerkleMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.inject.Singleton;
+import java.util.function.Supplier;
 
 @Module
 public interface StoresModule {
@@ -67,11 +68,6 @@ public interface StoresModule {
 	@Binds
 	@Singleton
 	BackingStore<NftId, MerkleUniqueToken> bindBackingNfts(BackingNfts backingNfts);
-
-	@Binds
-	@Singleton
-	BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> bindBackingTokenRels(
-			BackingTokenRels backingTokenRels);
 
 	@Binds
 	@Singleton
@@ -99,30 +95,34 @@ public interface StoresModule {
 			final BackingStore<TokenID, MerkleToken> backingTokens,
 			final SideEffectsTracker sideEffectsTracker
 	) {
-		final var tokensLedger = new TransactionalLedger<>(
+		return new TransactionalLedger<>(
 				TokenProperty.class,
 				MerkleToken::new,
 				backingTokens,
 				new ChangeSummaryManager<>());
-		final var tokensCommitInterceptor = new TokensCommitInterceptor(sideEffectsTracker);
-		tokensLedger.setCommitInterceptor(tokensCommitInterceptor);
-		return tokensLedger;
 	}
+
+	@Binds
+	@Singleton
+	BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> bindBackingTokenRels(
+			TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> tokenRelsLedger);
 
 	@Provides
 	@Singleton
 	static TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, MerkleTokenRelStatus> provideTokenRelsLedger(
-			final BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> backingTokenRels,
-			final SideEffectsTracker sideEffectsTracker
+			final TransactionContext txnCtx,
+			final SideEffectsTracker sideEffectsTracker,
+			final TokenRelsLinkManager relsLinkManager,
+			final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> tokenAssociations
 	) {
 		final var tokenRelsLedger = new TransactionalLedger<>(
 				TokenRelProperty.class,
 				MerkleTokenRelStatus::new,
-				backingTokenRels,
+				new BackingTokenRels(tokenAssociations),
 				new ChangeSummaryManager<>());
 		tokenRelsLedger.setKeyToString(BackingTokenRels::readableTokenRel);
-		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor(sideEffectsTracker);
-		tokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
+		final var interceptor = new LinkAwareTokenRelsCommitInterceptor(txnCtx, sideEffectsTracker, relsLinkManager);
+		tokenRelsLedger.setCommitInterceptor(interceptor);
 		return tokenRelsLedger;
 	}
 
@@ -146,14 +146,5 @@ public interface StoresModule {
 	@AreTreasuryWildcardsEnabled
 	static boolean provideAreTreasuryWildcardsEnabled(final @CompositeProps PropertySource properties) {
 		return properties.getBooleanProperty("tokens.nfts.useTreasuryWildcards");
-	}
-
-	@Provides
-	@Singleton
-	static CodeCache provideCodeCache(
-			final NodeLocalProperties properties,
-			final MutableEntityAccess entityAccess
-	) {
-		return new CodeCache(properties, entityAccess);
 	}
 }

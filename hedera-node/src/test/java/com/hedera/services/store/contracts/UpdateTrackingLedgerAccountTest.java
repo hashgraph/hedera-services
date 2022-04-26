@@ -20,12 +20,9 @@ package com.hedera.services.store.contracts;
  * ‍
  */
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -51,36 +48,26 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class UpdateTrackingLedgerAccountTest {
-	private static final long expiry = 1_234_567L;
-	private static final long autoRenewPeriod = 7776000L;
 	private static final long newBalance = 200_000L;
 	private static final long initialBalance = 100_000L;
-	private static final EntityId proxyId = new EntityId(0, 0, 54321);
 	private static final AccountID targetId = IdUtils.asAccount("0.0.12345");
 	private static final Address targetAddress = EntityIdUtils.asTypedEvmAddress(targetId);
 
 	@Mock
-	private EntityIdSource ids;
-	@Mock
 	private EntityAccess entityAccess;
 	@Mock
 	private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> trackingAccounts;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
 
-	private HederaWorldState parentState;
+	private CodeCache codeCache;
 
 	@BeforeEach
 	void setUp() {
-		CodeCache codeCache = new CodeCache(0, entityAccess);
-		parentState = new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties);
+		codeCache = new CodeCache(0, entityAccess);
 	}
 
 	@Test
 	void mirrorsBalanceChangesInNonNullTrackingAccounts() {
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
-
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, trackingAccounts);
 
 		subject.setBalance(Wei.of(newBalance));
@@ -98,7 +85,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void wrappedTokenProxyIsRecognized() {
-		final var tokenProxyAccount = parentState.new WorldStateTokenAccount(targetAddress, proxyId);
+		final var tokenProxyAccount = new WorldStateTokenAccount(targetAddress);
 
 		final var subject = new UpdateTrackingLedgerAccount<>(tokenProxyAccount, null);
 
@@ -107,8 +94,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void justPropagatesBalanceChangeWithNullTrackingAccounts() {
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 
@@ -120,8 +106,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void reusesAddressHashWhenConstructedWithTracker() {
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
 		final var base = new UpdateTrackingLedgerAccount<>(account, null);
 		final var subject= new UpdateTrackingLedgerAccount<>(base, null);
@@ -130,8 +115,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void recognizesUpdatedCode() {
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 
@@ -145,8 +129,7 @@ class UpdateTrackingLedgerAccountTest {
 		final var mockCode = Bytes.minimalBytes(4321L);
 		given(entityAccess.fetchCodeIfPresent(targetId)).willReturn(mockCode);
 
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 
@@ -157,8 +140,7 @@ class UpdateTrackingLedgerAccountTest {
 	void reusesComputedHashOfUpdatedCode() {
 		final var mockCode = Bytes.minimalBytes(4321L);
 
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 		subject.setCode(mockCode);
@@ -173,8 +155,7 @@ class UpdateTrackingLedgerAccountTest {
 	void hasCodeDelegatesToWrappedIfNotUpdated() {
 		given(entityAccess.fetchCodeIfPresent(targetId)).willReturn(Bytes.EMPTY);
 
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 		
 		assertFalse(subject.hasCode());
@@ -191,8 +172,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void doesNotSupportStreamingStorageEntries() {
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 
 		assertThrows(UnsupportedOperationException.class, () ->
@@ -201,8 +181,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void canClearStorage() {
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 
 		subject.setStorageValue(UInt256.ONE, UInt256.ONE);
@@ -214,8 +193,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void setBalanceOkWithNullTrackingAccounts() {
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 
 		subject.setBalance(Wei.of(Long.MAX_VALUE));
@@ -225,8 +203,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void setBalancePropagatesToUsableTrackingAccounts() {
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, trackingAccounts);
 
 		subject.setBalance(Wei.of(Long.MAX_VALUE));
@@ -237,8 +214,7 @@ class UpdateTrackingLedgerAccountTest {
 	@Test
 	void getStorageValueRecognizesUpdatedStorage() {
 		final var mockValue = UInt256.valueOf(1_234_567L);
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, trackingAccounts);
 
 		subject.setStorageValue(UInt256.ONE, mockValue);
@@ -248,8 +224,7 @@ class UpdateTrackingLedgerAccountTest {
 	@Test
 	void getStorageValueRecognizesClearedStorage() {
 		final var mockValue = UInt256.valueOf(1_234_567L);
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, trackingAccounts);
 
 		subject.setStorageValue(UInt256.ONE, mockValue);
@@ -269,8 +244,7 @@ class UpdateTrackingLedgerAccountTest {
 		final var mockValue = UInt256.valueOf(1_234_567L);
 		given(entityAccess.getStorage(targetId, UInt256.ONE)).willReturn(mockValue);
 
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 
 		assertSame(mockValue, subject.getStorageValue(UInt256.ONE));
@@ -281,8 +255,7 @@ class UpdateTrackingLedgerAccountTest {
 		final var mockValue = UInt256.valueOf(1_234_567L);
 		given(entityAccess.getStorage(targetId, UInt256.ONE)).willReturn(mockValue);
 
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 
 		assertSame(mockValue, subject.getOriginalStorageValue(UInt256.ONE));
@@ -290,8 +263,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void clearedTrackingAccountDelegatesToGetOriginalStorage() {
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 		subject.clearStorage();
 
@@ -306,8 +278,7 @@ class UpdateTrackingLedgerAccountTest {
 
 	@Test
 	void getMutableReturnsSelf() {
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 
 		assertSame(subject, subject.getMutable());
@@ -327,8 +298,7 @@ class UpdateTrackingLedgerAccountTest {
 				"{nonce:0, balance:0x00000000000000000000000000000000000000000000000000000000000186a0, " +
 				"code:0x04d2, storage:[cleared] }";
 
-		final var account = parentState.new WorldStateAccount(
-				targetAddress, Wei.of(initialBalance), expiry, autoRenewPeriod, proxyId);
+		final var account = new WorldStateAccount(targetAddress, Wei.of(initialBalance), codeCache, entityAccess);
 		final var subject = new UpdateTrackingLedgerAccount<>(account, null);
 
 		assertEquals(expectedNoUpdatedStorageOrCode, subject.toString());

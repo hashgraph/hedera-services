@@ -20,12 +20,11 @@ package com.hedera.services.txns.span;
  * ‍
  */
 
-import com.hedera.services.usage.crypto.CryptoAdjustAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoCreateMeta;
 import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.services.usage.crypto.CryptoUpdateMeta;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -150,34 +148,13 @@ class ExpandHandleSpanMapAccessorTest {
 		final var secs = Instant.now().getEpochSecond();
 		final var opMeta = CryptoApproveAllowanceMeta.newBuilder()
 				.msgBytesUsed(112)
-				.aggregatedNftAllowancesWithSerials(10)
 				.effectiveNow(secs)
 				.build();
 
 		subject.setCryptoApproveMeta(accessor, opMeta);
-
-		assertEquals(10, subject.getCryptoApproveMeta(accessor).getAggregatedNftAllowancesWithSerials());
+		
 		assertEquals(112, subject.getCryptoApproveMeta(accessor).getMsgBytesUsed());
 		assertEquals(secs, subject.getCryptoApproveMeta(accessor).getEffectiveNow());
-	}
-
-	@Test
-	void testsForCryptoAdjustMetaAsExpected() {
-		final var now = Instant.now().getEpochSecond();
-		final var opMeta = CryptoAdjustAllowanceMeta.newBuilder()
-				.msgBytesUsed(112)
-				.cryptoAllowances(Map.of(2L, 10L))
-				.tokenAllowances((Collections.emptyMap()))
-				.nftAllowances((Collections.emptyMap()))
-				.effectiveNow(now)
-				.build();
-
-		subject.setCryptoAdjustMeta(accessor, opMeta);
-		assertEquals(Map.of(2L, 10L), subject.getCryptoAdjustMeta(accessor).getCryptoAllowances());
-		assertEquals(Collections.emptyMap(), subject.getCryptoAdjustMeta(accessor).getTokenAllowances());
-		assertEquals(Collections.emptyMap(), subject.getCryptoAdjustMeta(accessor).getNftAllowances());
-		assertEquals(112, subject.getCryptoAdjustMeta(accessor).getMsgBytesUsed());
-		assertEquals(now, subject.getCryptoAdjustMeta(accessor).getEffectiveNow());
 	}
 
 	@Test

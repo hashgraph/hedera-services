@@ -38,7 +38,6 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -69,14 +68,15 @@ public class Creation {
 
 	@FunctionalInterface
 	public interface NewRelsListing {
-		List<TokenRelationship> listFrom(Token provisionalToken, TypedTokenStore tokenStore, GlobalDynamicProperties dynamicProperties);
+		List<TokenRelationship> listFrom(Token provisionalToken, TypedTokenStore tokenStore,
+				GlobalDynamicProperties dynamicProperties);
 	}
 
 	private Id provisionalId;
 	private Token provisionalToken;
 	private Account treasury;
 	private Account autoRenew;
-	private List<TokenRelationship> newAndUpdatedRels;
+	private List<TokenRelationship> newRels;
 
 	private final AccountStore accountStore;
 	private final TypedTokenStore tokenStore;
@@ -84,10 +84,10 @@ public class Creation {
 	private final TokenCreateTransactionBody op;
 
 	public Creation(
-			AccountStore accountStore,
-			TypedTokenStore tokenStore,
-			GlobalDynamicProperties dynamicProperties,
-			TokenCreateTransactionBody op
+			final AccountStore accountStore,
+			final TypedTokenStore tokenStore,
+			final GlobalDynamicProperties dynamicProperties,
+			final TokenCreateTransactionBody op
 	) {
 		this.op = op;
 		this.tokenStore = tokenStore;
@@ -96,9 +96,9 @@ public class Creation {
 	}
 
 	public void loadModelsWith(
-			AccountID sponsor,
-			EntityIdSource ids,
-			OptionValidator validator
+			final AccountID sponsor,
+			final EntityIdSource ids,
+			final OptionValidator validator
 	) {
 		final var hasValidOrNoExplicitExpiry = !op.hasExpiry() || validator.isValidExpiry(op.getExpiry());
 		validateTrue(hasValidOrNoExplicitExpiry, INVALID_EXPIRATION_TIME);
@@ -114,41 +114,39 @@ public class Creation {
 		provisionalId = Id.fromGrpcToken(ids.newTokenId(sponsor));
 	}
 
-	public void doProvisionallyWith(long now, TokenModelFactory modelFactory, NewRelsListing listing) {
+	public void doProvisionallyWith(
+			final long now,
+			final TokenModelFactory modelFactory,
+			final NewRelsListing listing
+	) {
 		final var maxCustomFees = dynamicProperties.maxCustomFeesAllowed();
 		validateTrue(op.getCustomFeesCount() <= maxCustomFees, CUSTOM_FEES_LIST_TOO_LONG);
 
 		provisionalToken = modelFactory.createFrom(provisionalId, op, treasury, autoRenew, now);
 		provisionalToken.getCustomFees().forEach(fee ->
 				fee.validateAndFinalizeWith(provisionalToken, accountStore, tokenStore));
-		final var hasExistingAssociations = treasury.getHeadTokenNum() != MISSING_ID.num();
-		newAndUpdatedRels = listing.listFrom(provisionalToken, tokenStore, dynamicProperties);
+		newRels = listing.listFrom(provisionalToken, tokenStore, dynamicProperties);
 		if (op.getInitialSupply() > 0) {
-			// When we created the new relationship for a treasury that already had a last-added relationship,
-			// we had to _first_ update the prev pointer on that relationship; so it will come first in the list of
-			// newAndUpdatedRels --- and the new relationship with this token will come second
-			provisionalToken.mint(
-					hasExistingAssociations ? newAndUpdatedRels.get(1) : newAndUpdatedRels.get(0),
-					op.getInitialSupply(),
-					true);
+			// Treasury relationship is always first
+			provisionalToken.mint(newRels.get(0), op.getInitialSupply(), true);
 		}
 		provisionalToken.getCustomFees().forEach(FcCustomFee::nullOutCollector);
 	}
 
 	public void persist() {
 		tokenStore.persistNew(provisionalToken);
-		tokenStore.commitTokenRelationships(newAndUpdatedRels);
-		newAndUpdatedRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
+		tokenStore.commitTokenRelationships(newRels);
+		// The new token treasury is always included here, so its numTreasuryTitles will be incremented
+		newRels.forEach(rel -> accountStore.commitAccount(rel.getAccount()));
 	}
 
 	public List<FcTokenAssociation> newAssociations() {
-		return newAndUpdatedRels.stream().map(TokenRelationship::asAutoAssociation).toList();
+		return newRels.stream().map(TokenRelationship::asAutoAssociation).toList();
 	}
 
 	public Id newTokenId() {
 		return provisionalId;
 	}
-
 
 	/* --- Only used by unit tests --- */
 	void setProvisionalId(Id provisionalId) {
@@ -167,8 +165,8 @@ public class Creation {
 		this.autoRenew = autoRenew;
 	}
 
-	void setNewAndUpdatedRels(List<TokenRelationship> newAndUpdatedRels) {
-		this.newAndUpdatedRels = newAndUpdatedRels;
+	void setNewRels(List<TokenRelationship> newRels) {
+		this.newRels = newRels;
 	}
 
 	Account getTreasury() {

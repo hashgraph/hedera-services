@@ -22,9 +22,9 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.TokenRelsCommitInterceptor;
+import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -72,6 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -102,6 +103,8 @@ class AbstractLedgerWorldUpdaterTest {
 	private static final long aNonce = 1L;
 
 	@Mock
+	private CodeCache codeCache;
+	@Mock
 	private HederaWorldState worldState;
 	@Mock
 	private RecordsHistorian recordsHistorian;
@@ -112,11 +115,15 @@ class AbstractLedgerWorldUpdaterTest {
 	@Mock
 	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
 	@Mock
-	private TokenRelsCommitInterceptor tokenRelsCommitInterceptor;
+	private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
 	@Mock
 	private ContractCustomizer customizer;
 	@Mock
+	private EntityAccess entityAccess;
+	@Mock
 	private StaticEntityAccess staticEntityAccess;
+	@Mock
+	private WorldLedgers mockLedgers;
 
 	private WorldLedgers ledgers;
 	private MockLedgerWorldUpdater subject;
@@ -168,13 +175,34 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void getDelegatesToWrappedIfNotDeletedAndNotMutable() {
-		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
-		final var wrappedAccount =
-				worldState.new WorldStateAccount(
-						aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID);
+		final var wrappedAccount = new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess);
 		given(worldState.get(aAddress)).willReturn(wrappedAccount);
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
 		final var actual = subject.get(aAddress);
+		assertSame(wrappedAccount, actual);
+	}
+
+	@Test
+	void getReturnsNullWithMirrorUsageInsteadOfCreate2() {
+		subject = new MockLedgerWorldUpdater(worldState, mockLedgers, customizer);
+		given(mockLedgers.canonicalAddress(aAddress)).willReturn(bAddress);
+
+		final var result = subject.get(aAddress);
+		assertNull(result);
+	}
+
+	@Test
+	void getPropagatesToParentUpdaterProperly() {
+		final var worldStateUpdater = new MockLedgerWorldUpdater(worldState, mockLedgers, customizer);
+		final var stackedWorldStateUpdater = new MockStackedLedgerUpdater(worldStateUpdater, mockLedgers, customizer);
+		final var wrappedAccount = new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess);
+		given(worldState.get(aAddress)).willReturn(wrappedAccount);
+		given(mockLedgers.aliases()).willReturn(aliases);
+		given(mockLedgers.canonicalAddress(aAddress)).willReturn(aAddress);
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
+
+		final var actual = stackedWorldStateUpdater.get(aAddress);
 		assertSame(wrappedAccount, actual);
 	}
 
@@ -199,6 +227,11 @@ class AbstractLedgerWorldUpdaterTest {
 		assertNull(subject.getAccount(aAddress));
 		verify(trackingAliases).unlink(aAddress);
 		assertEquals(ByteString.EMPTY, trackingAccounts.get(aAccount, ALIAS));
+	}
+
+	@Test
+	void recognizesNonNullTokenLedgers() {
+		assertNotNull(subject.trackingTokens());
 	}
 
 	@Test
@@ -248,13 +281,13 @@ class AbstractLedgerWorldUpdaterTest {
 
 	@Test
 	void getReusesMutableIfPresent() {
-		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 		final var trackingAccounts = ledgers.accounts();
 		trackingAccounts.create(aAccount);
 		trackingAccounts.set(aAccount, BALANCE, aHbarBalance);
 
-		given(worldState.get(aAddress)).willReturn(worldState.new WorldStateAccount(
-				aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
+		given(worldState.get(aAddress)).willReturn(
+				new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess));
+		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
 
 		final var mutableResponse = subject.getAccount(aAddress);
 		final var getResponse = subject.get(aAddress);
@@ -300,8 +333,6 @@ class AbstractLedgerWorldUpdaterTest {
 	void commitsToWrappedTrackingAccountsAreRespectedAndSyncedWithUpdatedAccounts() {
 		final var mockNftsOwned = 1_234_567L;
 		setupWellKnownAccounts();
-		given(aliases.resolveForEvm(aAddress)).willReturn(aAddress);
-		given(aliases.resolveForEvm(bAddress)).willReturn(bAddress);
 
 		/* Make some pending changes to one of the well-known accounts */
 		subject.getAccount(aAddress).getMutable().setBalance(Wei.of(aHbarBalance + 1));
@@ -501,10 +532,10 @@ class AbstractLedgerWorldUpdaterTest {
 		trackingAccounts.create(bAccount);
 		trackingAccounts.set(bAccount, BALANCE, bHbarBalance);
 
-		given(worldState.get(aAddress)).willReturn(worldState.new WorldStateAccount(
-				aAddress, Wei.of(aHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
-		given(worldState.get(bAddress)).willReturn(worldState.new WorldStateAccount(
-				bAddress, Wei.of(bHbarBalance), 1_234_567L, 7776000L, EntityId.MISSING_ENTITY_ID));
+		given(worldState.get(aAddress)).willReturn(
+				new WorldStateAccount(aAddress, Wei.of(aHbarBalance), codeCache, entityAccess));
+		given(worldState.get(bAddress)).willReturn(
+				new WorldStateAccount(bAddress, Wei.of(bHbarBalance), codeCache, entityAccess));
 	}
 
 	private void setupWellKnownNfts() {
@@ -520,7 +551,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	private void setupWellKnownTokenRels() {
 		final var trackingRels = ledgers.tokenRels();
-		trackingRels.setCommitInterceptor(tokenRelsCommitInterceptor);
+		trackingRels.setCommitInterceptor(autoAssocTokenRelsCommitInterceptor);
 		trackingRels.create(aaRel);
 		trackingRels.set(aaRel, TOKEN_BALANCE, aaBalance);
 		trackingRels.create(abRel);

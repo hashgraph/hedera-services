@@ -82,8 +82,8 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.SignedTxnAccessor;
-import com.hedera.services.utils.TxnAccessor;
+import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -136,7 +136,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOK
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.store.contracts.HederaWorldState.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.services.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.store.contracts.precompile.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hedera.services.store.contracts.precompile.PrecompilePricingUtils.GasCostType.DISSOCIATE;
@@ -181,12 +181,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private static final List<ByteString> NO_METADATA = Collections.emptyList();
 	private static final EntityIdSource ids = NOOP_ID_SOURCE;
 	public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR = "ERC721Metadata: URI query for nonexistent token";
-
-	/* Precompiles cannot change treasury accounts */
-	public static final TypedTokenStore.LegacyTreasuryAdder NOOP_TREASURY_ADDER = (aId, tId) -> {
-	};
-	public static final TypedTokenStore.LegacyTreasuryRemover NOOP_TREASURY_REMOVER = (aId, tId) -> {
-	};
 
 	private CreateLogicFactory createLogicFactory = CreateLogic::new;
 	private MintLogicFactory mintLogicFactory = MintLogic::new;
@@ -564,7 +558,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		return tokenStoreFactory.newTokenStore(
 				accountStore,
 				ledgers.tokens(), ledgers.nfts(), ledgers.tokenRels(),
-				NOOP_TREASURY_ADDER, NOOP_TREASURY_REMOVER,
 				sideEffects);
 	}
 
@@ -586,6 +579,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(frame.getRemainingGas().compareTo(gasRequirement) >= 0, INSUFFICIENT_GAS);
 
 			precompile.handleSentHbars(frame);
+			precompile.customizeTrackingLedgers(ledgers);
 			precompile.run(frame);
 
 			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
@@ -729,8 +723,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				BackingStore<TokenID, MerkleToken> tokens,
 				BackingStore<NftId, MerkleUniqueToken> uniqueTokens,
 				BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> tokenRels,
-				TypedTokenStore.LegacyTreasuryAdder treasuryAdder,
-				TypedTokenStore.LegacyTreasuryRemover treasuryRemover,
 				SideEffectsTracker sideEffectsTracker);
 	}
 
@@ -1010,6 +1002,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
+		public void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
+			worldLedgers.customizeForAutoAssociatingOp(sideEffectsTracker);
+		}
+
+		@Override
 		public void handleSentHbars(final MessageFrame frame) {
 			final var timestampSeconds = frame.getBlockValues().getTimestamp();
 			final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
@@ -1156,6 +1153,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					sideEffectsTracker,
 					dynamicProperties,
 					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+		}
+
+		@Override
+		public void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
+			worldLedgers.customizeForAutoAssociatingOp(sideEffectsTracker);
 		}
 
 		@Override
