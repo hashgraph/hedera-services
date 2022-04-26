@@ -78,9 +78,9 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-//						renewsUsingContractFundsIfNoAutoRenewAccount(),
+						renewsUsingContractFundsIfNoAutoRenewAccount(),
 						renewsUsingAutoRenewAccountIfSet(),
-//						chargesContractFundsWhenAutoRenewAccountHasZeroBalance()
+						chargesContractFundsWhenAutoRenewAccountHasZeroBalance()
 //						storageExpiryWorksAtTheExpectedInterval(),
 				}
 		);
@@ -213,8 +213,8 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 							assertTrue(accountBalance < renewAccountBalance);
 							final var renewalFee = renewAccountBalance - accountBalance;
 							opLog.info("Renewal fees actual {}", renewalFee);
-//							final var canonicalUsdFee = 0.026;
-//							assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
+							final var canonicalUsdFee = 0.026;
+							assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
 						}),
 						overriding("ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod)
 				);

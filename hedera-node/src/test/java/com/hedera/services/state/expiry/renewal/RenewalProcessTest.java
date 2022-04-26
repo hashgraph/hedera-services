@@ -293,7 +293,7 @@ class RenewalProcessTest {
 		given(helper.classify(EntityNum.fromLong(fundedExpiredAccountNum), now)).willReturn(
 				EXPIRED_ACCOUNT_READY_TO_RENEW);
 		given(helper.getLastClassified()).willReturn(mockAccount);
-		given(fees.assessCryptoAutoRenewal(mockAccount, requestedRenewalPeriod, instantNow))
+		given(fees.assessCryptoAutoRenewal(mockAccount, requestedRenewalPeriod, instantNow, mockAccount))
 				.willReturn(new RenewAssessment(fee, actualRenewalPeriod));
 		given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
 		given(helper.resolvePayerForAutoRenew()).willReturn(mockAccount);
@@ -316,7 +316,7 @@ class RenewalProcessTest {
 		given(helper.classify(EntityNum.fromLong(fundedExpiredContractNum), now)).willReturn(
 				EXPIRED_CONTRACT_READY_TO_RENEW);
 		given(helper.getLastClassified()).willReturn(mockContract);
-		given(fees.assessCryptoAutoRenewal(mockContract, requestedRenewalPeriod, instantNow))
+		given(fees.assessCryptoAutoRenewal(mockContract, requestedRenewalPeriod, instantNow, mockContract))
 				.willReturn(new RenewAssessment(fee, actualRenewalPeriod));
 		given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
 		given(helper.resolvePayerForAutoRenew()).willReturn(mockContract);
