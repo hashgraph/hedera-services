@@ -900,10 +900,10 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 						getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
 						childRecordsCheck(FIRST_CREATE_TXN, CONTRACT_REVERT_EXECUTED,
 								TransactionRecordAsserts.recordWith()
-										.status(INVALID_ACCOUNT_ID)
+										.status(INVALID_SIGNATURE)
 										.contractCallResult(
 												ContractFnResultAsserts.resultWith()
-														.error(INVALID_ACCOUNT_ID.name()))),
+														.error(INVALID_SIGNATURE.name()))),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
 	}

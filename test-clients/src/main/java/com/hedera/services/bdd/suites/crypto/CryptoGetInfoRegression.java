@@ -54,6 +54,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -207,9 +208,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 
 	private HapiApiSpec succeedsNormally() {
 		long balance = 1_234_567L;
-		long autoRenew = 5_555_555L;
-		long sendThresh = 1_111L;
-		long receiveThresh = 2_222L;
+		long autoRenew = 6_999_999L + 1L;
 		long expiry = Instant.now().getEpochSecond() + autoRenew;
 		KeyShape misc = listOf(SIMPLE, listOf(2));
 
@@ -221,8 +220,6 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 								.key("misc")
 								.proxy("1.2.3")
 								.balance(balance)
-								.sendThreshold(sendThresh)
-								.receiveThreshold(receiveThresh)
 								.receiverSigRequired(true)
 								.autoRenewSecs(autoRenew)
 				).then(
@@ -233,9 +230,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 										.proxy("1.2.3")
 										.key("misc")
 										.balance(balance)
-										.sendThreshold(sendThresh)
-										.receiveThreshold(receiveThresh)
-										.expiry(expiry, 5L)
+										.expiry(expiry, 15L)
 										.autoRenew(autoRenew)
 								).logged()
 				);
@@ -274,10 +269,15 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 	}
 
 	private HapiApiSpec failsForInsufficientPayment() {
+		long everything = 100_000_000L;
 		return defaultHapiSpec("FailsForInsufficientPayment")
-				.given().when().then(
+				.given(
+						cryptoCreate("normalPayer").balance(everything)
+				).when().then(
 						getAccountInfo(GENESIS)
-							.nodePayment(1L)
+							.payingWith("normalPayer")
+							.nodePayment(0L)
+							.logged()
 							.hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE)
 				);
 	}
@@ -287,7 +287,7 @@ public class CryptoGetInfoRegression extends HapiApiSuite {
 				.given().when().then(
 						getAccountInfo(GENESIS)
 								.useEmptyTxnAsAnswerPayment()
-								.hasAnswerOnlyPrecheck(NOT_SUPPORTED)
+								.hasAnswerOnlyPrecheck(INVALID_TRANSACTION_BODY)
 				);
 	}
 
