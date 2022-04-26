@@ -91,9 +91,6 @@ public class StateInitializationFlow {
 		log.info("  (@ {}) # contract K/V pairs = {}",
 				StateChildIndices.CONTRACT_STORAGE,
 				activeState.contractStorage().size());
-		log.info(" (@ {}) # system tasks = {}",
-				StateChildIndices.SYSTEM_TASKS,
-				activeState.systemTasks().size());
 
 		final var activeHash = activeState.runningHashLeaf().getRunningHash().getHash();
 		recordStreamManager.setInitialHash(activeHash);

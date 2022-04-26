@@ -22,7 +22,6 @@ package com.hedera.services.context;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.ServicesState;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -39,7 +38,6 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.system.AddressBook;
-import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 
@@ -68,7 +66,6 @@ public class ImmutableStateChildren implements StateChildren {
 	private final WeakReference<MerkleSpecialFiles> specialFiles;
 	private final WeakReference<RecordsRunningHashLeaf> runningHashLeaf;
 	private final WeakReference<Map<ByteString, EntityNum>> aliases;
-	private final WeakReference<FCQueue<SystemTask>> systemTasks;
 	private final Instant signedAt;
 
 	public ImmutableStateChildren(ServicesState state) {
@@ -87,7 +84,6 @@ public class ImmutableStateChildren implements StateChildren {
 		uniqueTokens = new WeakReference<>(state.uniqueTokens());
 		runningHashLeaf = new WeakReference<>(state.runningHashLeaf());
 		aliases = new WeakReference<>(state.aliases());
-		systemTasks = new WeakReference<>(state.systemTasks());
 	}
 
 	@Override
@@ -118,11 +114,6 @@ public class ImmutableStateChildren implements StateChildren {
 	@Override
 	public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
 		return Objects.requireNonNull(contractStorage.get());
-	}
-
-	@Override
-	public FCQueue<SystemTask> systemTasks() {
-		return Objects.requireNonNull(systemTasks.get());
 	}
 
 	@Override

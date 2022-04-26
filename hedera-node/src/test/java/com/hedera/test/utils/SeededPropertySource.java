@@ -59,9 +59,6 @@ import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.state.tasks.DissociateNftRemovals;
-import com.hedera.services.state.tasks.SystemTask;
-import com.hedera.services.state.tasks.SystemTaskType;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
@@ -71,9 +68,9 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -522,20 +519,6 @@ public class SeededPropertySource {
 		builder.setTokens(tokenTypes);
 		builder.setNftTokenAdjustments(ownershipChanges);
 		builder.setTokenAdjustments(fungibleAdjustments);
-	}
-
-	public DissociateNftRemovals nextDissociateNftRemovals() {
-		return new DissociateNftRemovals(
-				nextInRangeLong(),
-				nextInRangeLong(),
-				nextLong(),
-				nextInRangeLong(),
-				nextLong());
-	}
-
-	public SystemTask nextSystemTask() {
-		final var task = nextDissociateNftRemovals();
-		return new SystemTask(SystemTaskType.DISSOCIATED_NFT_REMOVALS, task);
 	}
 
 	public NftAdjustments nextOwnershipChanges() {

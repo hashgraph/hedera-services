@@ -37,7 +37,6 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -59,7 +58,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
@@ -77,7 +75,6 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.ABI_ID_DISSOCIATE_TOKEN;
@@ -168,8 +165,6 @@ class DissociatePrecompilesTest {
 	@Mock
 	private DissociationFactory dissociationFactory;
 	@Mock
-	private FCQueue<SystemTask> systemTasks;
-	@Mock
 	private ImpliedTransfersMarshal impliedTransfersMarshal;
 	@Mock
 	private FeeCalculator feeCalculator;
@@ -191,7 +186,6 @@ class DissociatePrecompilesTest {
 	private EntityIdSource entityIdSource;
 
 	private HTSPrecompiledContract subject;
-	private final Supplier<FCQueue<SystemTask>> systemTasksSupplier = () -> systemTasks;
 
 	@BeforeEach
 	void setUp() {
@@ -199,7 +193,7 @@ class DissociatePrecompilesTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
-				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, systemTasksSupplier);
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
 		subject.setMintLogicFactory(mintLogicFactory);
 		subject.setDissociateLogicFactory(dissociateLogicFactory);
 		subject.setTokenStoreFactory(tokenStoreFactory);

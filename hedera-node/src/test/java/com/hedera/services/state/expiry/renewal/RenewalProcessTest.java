@@ -23,15 +23,12 @@ package com.hedera.services.state.expiry.renewal;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.RenewAssessment;
-import com.hedera.services.state.tasks.DissociateNftRemovals;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.expiry.removal.AccountGC;
 import com.hedera.services.state.expiry.removal.ContractGC;
 import com.hedera.services.state.expiry.removal.TreasuryReturns;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.swirlds.fcqueue.FCQueue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.Collections;
 
-import static com.hedera.services.state.tasks.SystemTaskType.DISSOCIATED_NFT_REMOVALS;
 import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
 import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
@@ -54,12 +50,9 @@ import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIR
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_CONTRACT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.OTHER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -96,15 +89,13 @@ class RenewalProcessTest {
 	private RenewalRecordsHelper recordsHelper;
 	@Mock
 	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private FCQueue<SystemTask> systemTasks;
 
 	private RenewalProcess subject;
 
 	@BeforeEach
 	void setUp() {
 		subject = new RenewalProcess(
-				accountGC, contractGC, fees, helper, dynamicProperties, recordsHelper, () -> systemTasks);
+				accountGC, contractGC, fees, helper, dynamicProperties, recordsHelper);
 	}
 
 	@Test
@@ -148,37 +139,6 @@ class RenewalProcessTest {
 		// then:
 		verify(recordsHelper).endRenewalCycle();
 		assertNull(subject.getCycleTime());
-	}
-
-	@Test
-	void removesTasksIfHandled() {
-		final int maxTouched = 10;
-		final var nftRemovalTask = mock(DissociateNftRemovals.class);
-		systemTasks = new FCQueue<>();
-		systemTasks.add(new SystemTask(DISSOCIATED_NFT_REMOVALS, nftRemovalTask));
-
-		given(nftRemovalTask.getSerialsCount()).willReturn(0L);
-		given(dynamicProperties.getMaxReturnedNftsPerTouch()).willReturn(maxTouched);
-		given(accountGC.burnNfts(nftRemovalTask, maxTouched)).willReturn(maxTouched-1);
-
-		subject.garbageCollectNfts();
-
-		assertTrue(systemTasks.isEmpty());
-	}
-
-	@Test
-	void stillHasTasksIfNotFullyHandled() {
-		final int maxTouched = 10;
-		final var nftRemovalTask = new DissociateNftRemovals(1001L, 1002L, 13L, 1003L, 1L);
-		systemTasks = new FCQueue<>();
-		systemTasks.add(new SystemTask(DISSOCIATED_NFT_REMOVALS, nftRemovalTask));
-
-		given(dynamicProperties.getMaxReturnedNftsPerTouch()).willReturn(maxTouched);
-		given(accountGC.burnNfts(nftRemovalTask, maxTouched)).willReturn(maxTouched);
-
-		subject.garbageCollectNfts();
-
-		assertFalse(systemTasks.isEmpty());
 	}
 
 	@Test

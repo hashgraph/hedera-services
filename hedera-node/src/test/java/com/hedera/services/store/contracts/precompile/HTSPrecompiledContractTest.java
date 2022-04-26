@@ -32,7 +32,6 @@ import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -54,7 +53,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.fcqueue.FCQueue;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -173,8 +171,6 @@ class HTSPrecompiledContractTest {
 	private CreateChecks createChecks;
 	@Mock
 	private EntityIdSource entityIdSource;
-	@Mock
-	private FCQueue<SystemTask> systemTasks;
 
 	private HTSPrecompiledContract subject;
 
@@ -196,7 +192,7 @@ class HTSPrecompiledContractTest {
 				validator, dynamicProperties, gasCalculator,
 				sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
 				syntheticTxnFactory, creator, dissociationFactory, impliedTransfers, () -> feeCalculator,
-				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, () -> systemTasks);
+				stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
 	}
 
 	@Test

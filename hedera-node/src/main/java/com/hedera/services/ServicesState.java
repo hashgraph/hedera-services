@@ -24,7 +24,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -62,7 +61,6 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState;
 import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.fchashmap.FCHashMap;
-import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.DualStateImpl;
@@ -80,9 +78,8 @@ import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.state.migration.ReleaseTwentyFiveMigration.initTreasuryTitleCounts;
-import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
-import static com.hedera.services.state.migration.StateChildIndices.NUM_0260_CHILDREN;
 import static com.hedera.services.state.migration.ReleaseTwentySixMigration.grantFreeAutoRenew;
+import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
@@ -138,10 +135,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	@Override
 	public int getMinimumChildCount(int version) {
-		if (version >= MINIMUM_SUPPORTED_VERSION && version < CURRENT_VERSION) {
+		if (version >= MINIMUM_SUPPORTED_VERSION && version <= CURRENT_VERSION) {
 			return NUM_POST_0210_CHILDREN;
-		} else if (version == CURRENT_VERSION) {
-			return NUM_0260_CHILDREN;
 		} else {
 			throw new IllegalArgumentException("Argument 'version='" + version + "' is invalid!");
 		}
@@ -374,10 +369,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		return getChild(StateChildIndices.CONTRACT_STORAGE);
 	}
 
-	public FCQueue<SystemTask> systemTasks() {
-		return getChild(StateChildIndices.SYSTEM_TASKS);
-	}
-
 	private void buildAccountTokenAssociationsLinkedList() {
 		final var accounts = accounts();
 		final var tokenRels = tokenAssociations();
@@ -480,7 +471,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} else {
 			final var maybePostUpgrade = dualState.getFreezeTime() != null;
 			if (maybePostUpgrade && dualState.getFreezeTime().equals(dualState.getLastFrozenTime())) {
-				// This was an upgrade, discard now-obsolete preparation state
+				/* This was an upgrade, discard now-obsolete preparation state */
 				networkCtx().discardPreparedUpgradeMeta();
 				dualState.setFreezeTime(null);
 			}
@@ -522,8 +513,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		setChild(StateChildIndices.SCHEDULE_TXS, new MerkleMap<>());
 		setChild(StateChildIndices.RECORD_STREAM_RUNNING_HASH, genesisRunningHashLeaf());
 		setChild(StateChildIndices.ADDRESS_BOOK, addressBook);
-		setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
-		setChild(StateChildIndices.SYSTEM_TASKS, new FCQueue<>());
 		setChild(StateChildIndices.CONTRACT_STORAGE, virtualMapFactory.newVirtualizedIterableStorage());
 	}
 

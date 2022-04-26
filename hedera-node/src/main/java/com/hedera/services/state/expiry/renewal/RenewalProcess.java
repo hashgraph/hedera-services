@@ -23,20 +23,15 @@ package com.hedera.services.state.expiry.renewal;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.state.tasks.DissociateNftRemovals;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.expiry.EntityProcessResult;
 import com.hedera.services.state.expiry.removal.AccountGC;
 import com.hedera.services.state.expiry.removal.ContractGC;
 import com.hedera.services.utils.EntityNum;
-import com.swirlds.fcqueue.FCQueue;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.time.Instant;
-import java.util.function.Supplier;
 
-import static com.hedera.services.state.tasks.SystemTaskType.DISSOCIATED_NFT_REMOVALS;
 import static com.hedera.services.state.expiry.EntityProcessResult.DONE;
 import static com.hedera.services.state.expiry.EntityProcessResult.NOTHING_TO_DO;
 import static com.hedera.services.state.expiry.EntityProcessResult.STILL_MORE_TO_DO;
@@ -49,7 +44,6 @@ public class RenewalProcess {
 	private final RenewalRecordsHelper recordsHelper;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final RenewableEntityClassifier helper;
-	private final Supplier<FCQueue<SystemTask>> systemTasks;
 
 	private Instant cycleTime = null;
 
@@ -60,8 +54,7 @@ public class RenewalProcess {
 			final FeeCalculator fees,
 			final RenewableEntityClassifier helper,
 			final GlobalDynamicProperties dynamicProperties,
-			final RenewalRecordsHelper recordsHelper,
-			final Supplier<FCQueue<SystemTask>> systemTasks
+			final RenewalRecordsHelper recordsHelper
 	) {
 		this.fees = fees;
 		this.helper = helper;
@@ -69,7 +62,6 @@ public class RenewalProcess {
 		this.contractGC = contractGC;
 		this.recordsHelper = recordsHelper;
 		this.dynamicProperties = dynamicProperties;
-		this.systemTasks = systemTasks;
 	}
 
 	public void beginRenewalCycle(final Instant nextAvailConsTime) {
@@ -97,21 +89,6 @@ public class RenewalProcess {
 			case EXPIRED_CONTRACT_READY_TO_RENEW -> renewIfTargeted(entityNum, true);
 			default -> NOTHING_TO_DO;
 		};
-	}
-
-	public void garbageCollectNfts() {
-		final var tasks = systemTasks.get();
-		var maxTouches = dynamicProperties.getMaxReturnedNftsPerTouch();
-		while (maxTouches > 0 && !tasks.isEmpty()) {
-			var task = tasks.peek();
-			if (task.getTaskType() == DISSOCIATED_NFT_REMOVALS) {
-				var nftRemovalTask = (DissociateNftRemovals) task.getSerializableTask();
-				maxTouches -= accountGC.burnNfts(nftRemovalTask, maxTouches);
-				if (nftRemovalTask.getSerialsCount() == 0) {
-					tasks.remove();
-				}
-			}
-		}
 	}
 
 	private EntityProcessResult renewIfTargeted(final EntityNum entityNum, final boolean isContract) {

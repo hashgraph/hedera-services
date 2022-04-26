@@ -36,11 +36,9 @@ public final class StateChildIndices {
 	public static final int RECORD_STREAM_RUNNING_HASH = 9;
 	public static final int ADDRESS_BOOK = 10;
 	public static final int CONTRACT_STORAGE = 11;
-	public static final int SYSTEM_TASKS = 12;
 
 	public static final int NUM_0210_CHILDREN = 11;
 	public static final int NUM_POST_0210_CHILDREN = 12;
-	public static final int NUM_0260_CHILDREN = 13;
 
 	private StateChildIndices() {
 		throw new UnsupportedOperationException("Utility Class");

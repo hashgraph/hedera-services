@@ -30,7 +30,6 @@ import com.hedera.services.keys.LegacyEd25519KeyReader;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.exports.BalancesExporter;
@@ -78,7 +77,6 @@ import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListene
 import com.swirlds.common.system.AddressBook;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -285,14 +283,6 @@ public interface StateModule {
 			final MutableStateChildren workingState
 	) {
 		return workingState::contractStorage;
-	}
-
-	@Provides
-	@Singleton
-	static Supplier<FCQueue<SystemTask>> provideWorkingSystemTasks(
-			final MutableStateChildren workingState
-	) {
-		return workingState::systemTasks;
 	}
 
 	@Provides

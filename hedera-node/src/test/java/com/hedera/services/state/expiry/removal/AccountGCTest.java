@@ -25,14 +25,12 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.tasks.DissociateNftRemovals;
 import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.NftNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
@@ -45,12 +43,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.List;
 
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -88,52 +84,6 @@ class AccountGCTest {
 				() -> uniqueTokens,
 				dynamicProperties);
 		subject.setRemovalFacilitation(removalFacilitation);
-	}
-
-	@Test
-	void burnNftsWork() {
-		// we want to remove 1003.1 and 1003.2 from the accounts nft list
-		// which is 1003.1 -> 1002.1 -> 1003.2 -> 1002.2
-		final var accountNum = 1001L;
-		final var accountId = EntityNum.fromLong(accountNum).toGrpcAccountId();
-		final var deletedTokenNum = 1003L;
-		final var goodTokenNum = 1002L;
-		final var headSerialNum = 1L;
-		final var nftRemovalTask = new DissociateNftRemovals(
-				accountNum, deletedTokenNum, 2, deletedTokenNum, headSerialNum);
-		final var maxTouches = 10;
-		final var account = mock(MerkleAccount.class);
-		final var nft1 = mock(MerkleUniqueToken.class);
-		final var nft2 = mock(MerkleUniqueToken.class);
-		final var nft3 = mock(MerkleUniqueToken.class);
-		final var nft4 = mock(MerkleUniqueToken.class);
-
-		given(backingAccounts.getRef(accountId)).willReturn(account);
-		given(account.getHeadNftId()).willReturn(deletedTokenNum);
-		given(account.getHeadNftSerialNum()).willReturn(headSerialNum);
-		given(uniqueTokens.get(EntityNumPair.fromLongs(deletedTokenNum, 1L))).willReturn(nft1);
-		given(uniqueTokens.get(EntityNumPair.fromLongs(goodTokenNum, 1L))).willReturn(nft2);
-		given(uniqueTokens.get(EntityNumPair.fromLongs(deletedTokenNum, 2L))).willReturn(nft3);
-//		given(uniqueTokens.get(EntityNumPair.fromLongs(goodTokenNum, 2L))).willReturn(nft4);
-//		given(uniqueTokens.getForModify(EntityNumPair.fromLongs(deletedTokenNum, 1L))).willReturn(nft1);
-		given(uniqueTokens.getForModify(EntityNumPair.fromLongs(goodTokenNum, 1L))).willReturn(nft2);
-//		given(uniqueTokens.getForModify(EntityNumPair.fromLongs(deletedTokenNum, 2L))).willReturn(nft3);
-		given(uniqueTokens.getForModify(EntityNumPair.fromLongs(goodTokenNum, 2L))).willReturn(nft4);
-//		given(nft1.getPrev()).willReturn(MISSING_NFT_NUM_PAIR);
-		given(nft1.getNext()).willReturn(NftNumPair.fromNums(goodTokenNum, 1L));
-//		given(nft2.getPrev()).willReturn(NftNumPair.fromNums(deletedTokenNum, 1L));
-		given(nft2.getNext()).willReturn(NftNumPair.fromNums(deletedTokenNum, 2L));
-		given(nft3.getPrev()).willReturn(NftNumPair.fromNums(goodTokenNum, 1L));
-		given(nft3.getNext()).willReturn(NftNumPair.fromNums(goodTokenNum, 2L));
-//		given(nft4.getPrev()).willReturn(NftNumPair.fromNums(deletedTokenNum, 2L));
-//		given(nft4.getNext()).willReturn(MISSING_NFT_NUM_PAIR);
-
-		assertEquals(2, subject.burnNfts(nftRemovalTask, maxTouches));
-		verify(nft2).setPrev(MISSING_NFT_NUM_PAIR);
-		verify(nft2).setNext(NftNumPair.fromNums(goodTokenNum, 2L));
-		verify(nft4).setPrev(NftNumPair.fromNums(goodTokenNum, 1L));
-		verify(account).setHeadNftSerialNum(1L);
-		verify(account).setHeadNftId(goodTokenNum);
 	}
 
 	@Test

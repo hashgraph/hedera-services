@@ -35,7 +35,6 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -55,12 +54,11 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeObject;
-import com.swirlds.fcqueue.FCQueue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
@@ -180,8 +178,6 @@ class ERC721PrecompilesTest {
     private CreateChecks createChecks;
     @Mock
     private EntityIdSource entityIdSource;
-    @Mock
-    private FCQueue<SystemTask> systemTasks;
 
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
@@ -192,7 +188,7 @@ class ERC721PrecompilesTest {
                 validator, dynamicProperties, gasCalculator,
                 sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
                 syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal, () -> feeCalculator,
-                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, () -> systemTasks);
+                stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);

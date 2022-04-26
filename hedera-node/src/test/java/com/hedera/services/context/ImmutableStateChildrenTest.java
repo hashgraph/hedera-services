@@ -30,7 +30,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.tasks.SystemTask;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -40,7 +39,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.system.AddressBook;
 import com.swirlds.fchashmap.FCHashMap;
-import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,8 +83,6 @@ class ImmutableStateChildrenTest {
 	private RecordsRunningHashLeaf runningHashLeaf;
 	@Mock
 	private FCHashMap<ByteString, EntityNum> aliases;
-	@Mock
-	private FCQueue<SystemTask> systemTasks;
 
 	private ImmutableStateChildren subject;
 
@@ -118,7 +114,6 @@ class ImmutableStateChildrenTest {
 		given(state.uniqueTokens()).willReturn(uniqueTokens);
 		given(state.runningHashLeaf()).willReturn(runningHashLeaf);
 		given(state.aliases()).willReturn(aliases);
-		given(state.systemTasks()).willReturn(systemTasks);
 	}
 
 	private void assertChildrenAreExpectedMocks() {
@@ -135,7 +130,6 @@ class ImmutableStateChildrenTest {
 		assertSame(uniqueTokens, subject.uniqueTokens());
 		assertSame(runningHashLeaf, subject.runningHashLeaf());
 		assertSame(aliases, subject.aliases());
-		assertSame(systemTasks, subject.systemTasks());
 	}
 
 	private static final Instant signedAt = Instant.ofEpochSecond(1_234_567, 890);
