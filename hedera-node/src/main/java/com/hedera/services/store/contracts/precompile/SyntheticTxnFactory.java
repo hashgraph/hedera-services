@@ -23,7 +23,6 @@ package com.hedera.services.store.contracts.precompile;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -60,9 +59,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -115,7 +113,7 @@ public class SyntheticTxnFactory {
 			final EntityId autoRenewAccount) {
 		final var builder = ContractCreateTransactionBody.newBuilder();
 
-		if (autoRenewAccount != null && !MISSING_ID.equals(autoRenewAccount)) {
+		if (autoRenewAccount != null && !MISSING_ENTITY_ID.equals(autoRenewAccount)) {
 			builder.setAutoRenewAccountId(autoRenewAccount.toGrpcAccountId());
 		}
 		customizer.customizeSynthetic(builder);

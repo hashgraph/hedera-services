@@ -205,7 +205,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								.hasTotalSupply(100)
 								.hasEntityMemo(MEMO)
 								.hasTreasury(ACCOUNT)
-								.hasAutoRenewAccount(ACCOUNT)
+								.hasAutoRenewAccount(
+										ACCOUNT) // doesn't inherit if the tokenCreateOp already has autoRenewAccount
 								.hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
 								.hasSupplyType(TokenSupplyType.INFINITE)
 								.searchKeysGlobally()
@@ -366,15 +367,17 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
 
 	private HapiApiSpec inheritsSenderAutoRenewAccountForTokenCreate() {
-		final var createdTokenNum = new AtomicLong();
+		final var createTokenNum = new AtomicLong();
+		final var contractAdminKey = "contractAdminKey";
 		final var ACCOUNT_TO_ASSOCIATE = "account3";
 		final var ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
 		return defaultHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
 				.given(
 						UtilVerbs.overriding("contracts.precompile.htsEnableTokenCreate", "true"),
 						newKeyNamed(ED25519KEY).shape(ED25519),
+						newKeyNamed(ECDSA_KEY).shape(SECP256K1),
 						newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-						newKeyNamed(ECDSA_KEY),
+						newKeyNamed(contractAdminKey),
 						cryptoCreate(ACCOUNT)
 								.balance(ONE_HUNDRED_HBARS)
 								.key(ED25519KEY),
@@ -383,57 +386,52 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 								.key(ED25519KEY),
 						cryptoCreate(ACCOUNT_TO_ASSOCIATE)
 								.key(ACCOUNT_TO_ASSOCIATE_KEY),
-						uploadInitCode(TOKEN_CREATE_CONTRACT)
+						uploadInitCode(TOKEN_CREATE_CONTRACT),
+						contractCreate(TOKEN_CREATE_CONTRACT)
+								.gas(GAS_TO_OFFER)
+								.adminKey(contractAdminKey)
+								.autoRenewAccountId(
+										AUTO_RENEW_ACCOUNT) // inherits if the tokenCreateOp doesn't have
+								// autoRenewAccount
+								.signedBy(contractAdminKey, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
+						getContractInfo(TOKEN_CREATE_CONTRACT)
+								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+								.logged()
 				).when(
 						withOpContext(
 								(spec, opLog) ->
 										allRunFor(
 												spec,
-												contractCreate(TOKEN_CREATE_CONTRACT)
-														.autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+												contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithKeysAndExpiry",
+														asAddress(spec.registry().getAccountID(ACCOUNT)),
+														spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
+														spec.registry().getKey(
+																ECDSA_KEY).getECDSASecp256K1().toByteArray(),
+														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
+														asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
+														new byte[] { }, // set empty autoRenewAccount
+														AUTO_RENEW_PERIOD,
+														asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE)))
+														.via(FIRST_CREATE_TXN)
 														.gas(GAS_TO_OFFER)
+														.sending(DEFAULT_AMOUNT_TO_SEND)
+														.payingWith(ACCOUNT)
+														.alsoSigningWithFullPrefix(ACCOUNT_TO_ASSOCIATE_KEY)
+														.exposingResultTo(result -> {
+															log.info("Explicit create result is {}", result[0]);
+															final var res = (byte[]) result[0];
+															createTokenNum.set(new BigInteger(res).longValueExact());
+														})
 										)
-						),
-						getContractInfo(TOKEN_CREATE_CONTRACT)
-								.has(ContractInfoAsserts.contractWith().autoRenewAccountId(AUTO_RENEW_ACCOUNT))
-								.logged()
+						)
 				).then(
-						withOpContext((spec, ignore) -> {
-							final var subop1 = balanceSnapshot(ACCOUNT_BALANCE, ACCOUNT);
-							final var subop2 = contractCall(TOKEN_CREATE_CONTRACT, "createTokenWithKeysAndExpiry",
-									asAddress(spec.registry().getAccountID(ACCOUNT)),
-									spec.registry().getKey(ED25519KEY).getEd25519().toByteArray(),
-									spec.registry().getKey(ECDSA_KEY).getECDSASecp256K1().toByteArray(),
-									asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
-									asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT)),
-									new byte[] { },
-									AUTO_RENEW_PERIOD,
-									asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE)))
-									.via("fungibleCreateTxn")
-									.gas(5_000_000L)
-									.sending(DEFAULT_AMOUNT_TO_SEND)
-									.payingWith(ACCOUNT)
-									.exposingResultTo(result -> {
-										log.info("Explicit create result is {}", result[0]);
-										final var res = (byte[]) result[0];
-										createdTokenNum.set(new BigInteger(res).longValueExact());
-									})
-									.hasKnownStatus(SUCCESS);
-
-
-							allRunFor(spec, subop1, subop2, childRecordsCheck(FIRST_CREATE_TXN, SUCCESS,
-									TransactionRecordAsserts.recordWith().status(SUCCESS)));
-
-							final var tokenInfo = getTokenInfo(asTokenString(
-									TokenID.newBuilder().setTokenNum(createdTokenNum.get()).build()))
-									.hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
-									.logged();
-
-							allRunFor(spec, tokenInfo);
-						}),
+						sourcing(() -> getTokenInfo(asTokenString(
+								TokenID.newBuilder().setTokenNum(createTokenNum.get()).build()))
+								.logged()
+								.hasAutoRenewAccount(AUTO_RENEW_ACCOUNT)
+								.hasPauseStatus(TokenPauseStatus.Unpaused)),
 						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
 				);
-
 	}
 
 	// TEST-003 & TEST-019
