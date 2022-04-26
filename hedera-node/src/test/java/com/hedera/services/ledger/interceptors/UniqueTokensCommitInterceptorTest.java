@@ -23,7 +23,7 @@ package com.hedera.services.ledger.interceptors;
 import com.hedera.services.context.SideEffectsTracker;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class UniqueTokensCommitInterceptorTest {
 	@Test

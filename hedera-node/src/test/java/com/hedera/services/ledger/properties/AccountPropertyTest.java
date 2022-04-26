@@ -54,6 +54,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
@@ -70,7 +71,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
-import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;

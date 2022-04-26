@@ -26,7 +26,8 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
 import static com.hedera.services.utils.MapValueListUtils.inPlaceInsertAtMapValueListHead;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 class InPlaceHeadInsertionTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
