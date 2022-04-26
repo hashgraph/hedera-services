@@ -38,7 +38,6 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.HederaStore;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -57,11 +56,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
-import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
@@ -72,13 +69,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMAT
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
 import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
-import static com.hedera.services.ledger.properties.TokenRelProperty.NEXT_KEY;
-import static com.hedera.services.ledger.properties.TokenRelProperty.PREV_KEY;
 import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.state.merkle.MerkleToken.UNUSED_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcAccountId;
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -210,9 +204,6 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 			}
 
 			if (validity == OK) {
-				long headTokenNum = (long) accountsLedger.get(aId, HEAD_TOKEN_NUM);
-				final var headTokenAssociationKey = Pair.of(aId, STATIC_PROPERTIES.scopedTokenWith(headTokenNum));
-
 				final var relationship = asTokenRel(aId, tId);
 
 				tokenRelsLedger.create(relationship);
@@ -230,25 +221,11 @@ public class HederaTokenStore extends HederaStore implements TokenStore {
 						TokenRelProperty.IS_AUTOMATIC_ASSOCIATION,
 						true);
 
-				sideEffectsTracker.trackAutoAssociation(tId, aId);
 				accountsLedger.set(aId, USED_AUTOMATIC_ASSOCIATIONS,
 						alreadyUsedAutomaticAssociations + 1);
 
-				if (headTokenNum == MISSING_ID.num()) {
-					tokenRelsLedger.set(relationship, PREV_KEY, 0L);
-					tokenRelsLedger.set(relationship, NEXT_KEY, 0L);
-				} else {
-					// oldPrevKey should be MISSING_NUM_PAIR
-					final var oldPrev = (long) tokenRelsLedger.get(headTokenAssociationKey, PREV_KEY);
-					final var oldPrevKey = EntityNumPair.fromLongs(aId.getAccountNum(), oldPrev);
-					tokenRelsLedger.set(headTokenAssociationKey, PREV_KEY, tId.getTokenNum());
-					tokenRelsLedger.set(relationship, PREV_KEY, oldPrevKey.getLowOrderAsLong());
-					tokenRelsLedger.set(relationship, NEXT_KEY, headTokenNum);
-				}
-
 				numAssociations++;
 				accountsLedger.set(aId, NUM_ASSOCIATIONS, numAssociations);
-				accountsLedger.set(aId, HEAD_TOKEN_NUM, tId.getTokenNum());
 			}
 			return validity;
 		});

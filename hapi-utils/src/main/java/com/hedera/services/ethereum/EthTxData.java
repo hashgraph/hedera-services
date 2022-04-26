@@ -1,4 +1,4 @@
-package com.hedera.services.txns.ethereum;
+package com.hedera.services.ethereum;
 
 /*-
  * ‌
@@ -25,7 +25,6 @@ import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.rlp.RLPItem;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.base.MoreObjects;
-import com.hedera.services.state.submerkle.EvmFnResult;
 import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 
@@ -51,11 +50,11 @@ public record EthTxData(
 		int recId,
 		byte[] v,
 		byte[] r,
-		byte[] s) implements EvmFnResult.EvmFnCallContext {
+		byte[] s) {
 
-	static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+	public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
-	// TODO constants should be in besu-native
+	// Copy of constants from besu-native, remove when next besu-native publishes
 	static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
 	static final int SECP256K1_FLAGS_BIT_COMPRESSION = 1 << 8;
 	static final int SECP256K1_EC_COMPRESSED = (SECP256K1_FLAGS_TYPE_COMPRESSION | SECP256K1_FLAGS_BIT_COMPRESSION);
@@ -152,7 +151,7 @@ public record EthTxData(
 		}
 	}
 
-	EthTxData replaceCallData(byte[] callData) {
+	public EthTxData replaceCallData(byte[] callData) {
 		return new EthTxData(
 				null, type, chainId, nonce, gasPrice, maxPriorityGas, maxGas, gasLimit, to, value, callData, accessList,
 				recId, v, r, s);
@@ -175,12 +174,10 @@ public record EthTxData(
 		};
 	}
 
-	@Override
 	public long getAmount() {
 		return value.divide(WEIBARS_TO_TINYBARS).longValueExact();
 	}
 
-	@Override
 	public byte[] getEthereumHash() {
 		return new Keccak.Digest256().digest(rawTx == null ? encodeTx() : rawTx);
 	}

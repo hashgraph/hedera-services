@@ -20,6 +20,7 @@ package com.hedera.services.context;
  * ‍
  */
 
+import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -168,7 +169,7 @@ class BasicTransactionContextTest {
 	@Mock
 	private EvmFnResult result;
 	@Mock
-	private EvmFnResult.EvmFnCallContext evmFnCallContext;
+	private EthTxData evmFnCallContext;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;

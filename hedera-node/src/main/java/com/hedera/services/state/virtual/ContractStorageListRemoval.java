@@ -20,11 +20,11 @@ package com.hedera.services.state.virtual;
  * ‍
  */
 
-import com.hedera.services.utils.MapValueListRemoval;
+import com.hedera.services.utils.MapValueListMutation;
 import com.swirlds.virtualmap.VirtualMap;
 import org.jetbrains.annotations.Nullable;
 
-public class ContractStorageListRemoval implements MapValueListRemoval<ContractKey, IterableContractValue> {
+public class ContractStorageListRemoval implements MapValueListMutation<ContractKey, IterableContractValue> {
 	final long contractId;
 	final VirtualMap<ContractKey, IterableContractValue> storage;
 
