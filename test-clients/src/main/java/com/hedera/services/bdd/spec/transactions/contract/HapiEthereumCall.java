@@ -22,19 +22,17 @@ package com.hedera.services.bdd.spec.transactions.contract;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.EthTxData;
-import com.hedera.services.bdd.spec.utilops.EthTxSigs;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -276,7 +274,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
             System.arraycopy(dByteArray, dByteArray.length - 32, privateKeyByteArray, 0, 32);
         }
         
-        final var signedEthTxData = signMessage(ethTxData, privateKeyByteArray);
+        final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
 
         final EthereumTransactionBody ethOpBody = spec
                 .txns()
@@ -287,11 +285,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                         }
                 );
         return b -> b.setEthereumTransaction(ethOpBody);
-    }
-
-    private EthTxData signMessage(EthTxData ethTx, byte[] privateKey) {
-        System.out.println(Bytes.wrap(privateKey).toHexString());
-        return EthTxSigs.signMessage(ethTx, privateKey);
     }
 
     @Override

@@ -14,9 +14,9 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
-import com.hedera.services.bdd.spec.utilops.EthTxData;
-import com.hedera.services.bdd.spec.utilops.EthTxSigs;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -342,7 +342,7 @@ public class HapiEthereumContractCreate extends HapiTxnOp<HapiEthereumContractCr
             System.arraycopy(dByteArray, dByteArray.length - 32, privateKeyByteArray, 0, 32);
         }
 
-        final var signedEthTxData = signMessage(ethTxData, privateKeyByteArray);
+        final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
 
         EthereumTransactionBody opBody = spec
                 .txns()
@@ -354,11 +354,6 @@ public class HapiEthereumContractCreate extends HapiTxnOp<HapiEthereumContractCr
                         }
                 );
         return b -> b.setEthereumTransaction(opBody);
-    }
-
-    private EthTxData signMessage(EthTxData ethTx, byte[] privateKey) {
-        System.out.println(Bytes.wrap(privateKey).toHexString());
-        return EthTxSigs.signMessage(ethTx, privateKey);
     }
 
     private void generateAdminKey(HapiApiSpec spec) {
