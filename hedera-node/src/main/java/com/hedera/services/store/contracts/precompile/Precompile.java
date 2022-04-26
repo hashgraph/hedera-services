@@ -9,9 +9,9 @@ package com.hedera.services.store.contracts.precompile;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -80,6 +81,7 @@ interface Precompile {
 
 	// Customize fee charging
 	long getMinimumFeeInTinybars(Timestamp consensusTime);
+
 	default void addImplicitCostsIn(final TxnAccessor accessor) {
 		// Most transaction types can compute their full Hedera fee from just an initial transaction body; but
 		// for a token transfer, we may need to recompute to charge for the extra work implied by custom fees
@@ -87,6 +89,10 @@ interface Precompile {
 
 	// Change the world state through the given frame
 	void run(MessageFrame frame);
+
+	default void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
+		// No-op
+	}
 
 	default void handleSentHbars(MessageFrame frame) {
 		if (!Objects.equals(Wei.ZERO, frame.getValue())) {
@@ -96,15 +102,19 @@ interface Precompile {
 			throw new InvalidTransactionException(INVALID_FEE_SUBMITTED);
 		}
 	}
+
 	default List<FcAssessedCustomFee> getCustomFees() {
 		return Collections.emptyList();
 	}
+
 	default Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
 		return SUCCESS_RESULT;
 	}
+
 	default Bytes getFailureResultFor(final ResponseCodeEnum status) {
 		return EncodingFacade.resultFrom(status);
 	}
+
 	default boolean shouldAddTraceabilityFieldsToRecord() {
 		return true;
 	}
