@@ -4,7 +4,7 @@
 
 	<groupId>com.hedera.hashgraph</groupId>
 	<artifactId>hedera-services</artifactId>
-	<version>0.26.0-eth-tx-interop.1-SNAPSHOT</version>
+	<version>0.26.0-eth-tx-interop.2-SNAPSHOT</version>
 	<description>
 		Hedera Services (crypto, file, contract, consensus) on the Platform
 	</description>
@@ -106,7 +106,7 @@
 		<repository>
 			<id>eth-tx-interop-protobuf</id>
 			<name>Interop Protobufs</name>
-			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1436</url>
+			<url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1439</url>
 		</repository>
 	</repositories>
 	<distributionManagement>
@@ -158,7 +158,7 @@
 		<ethereum-core.version>1.12.0-v0.5.0</ethereum-core.version>
 		<grpc.version>1.39.0</grpc.version>
 		<guava.version>31.1-jre</guava.version>
-		<hapi-proto.version>0.26.0-eth-tx-interop.1</hapi-proto.version>
+		<hapi-proto.version>0.26.0-eth-tx-interop.2</hapi-proto.version>
 		<headlong.version>6.1.1</headlong.version>
 		<javax.annotation-api.version>1.3.2</javax.annotation-api.version>
 		<javax-inject.version>1</javax-inject.version>
