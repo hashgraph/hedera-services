@@ -137,7 +137,7 @@ public class RenewableEntityClassifier {
 		return lastClassified;
 	}
 
-	private boolean isValid(final MerkleAccount payer, final long fee) {
+	boolean isValid(final MerkleAccount payer, final long fee) {
 		return payer != null && !payer.isDeleted() && payer.getBalance() >= fee;
 	}
 

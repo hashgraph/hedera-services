@@ -22,6 +22,7 @@ package com.hedera.services.state.expiry.renewal;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
@@ -43,7 +44,9 @@ import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIR
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.EXPIRED_CONTRACT_READY_TO_RENEW;
 import static com.hedera.services.state.expiry.renewal.RenewableEntityType.OTHER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -186,6 +189,7 @@ class RenewableEntityClassifierTest {
 		verify(accounts, times(2)).getForModify(key);
 		verify(accounts).getForModify(fundingKey);
 		verify(aliasManager, never()).forgetAlias(any());
+		assertEquals(key, subject.getPayerForAutoRenew());
 	}
 
 	@Test
@@ -211,6 +215,7 @@ class RenewableEntityClassifierTest {
 		verify(accounts, times(1)).getForModify(autoRenewAccount);
 		verify(accounts).getForModify(fundingKey);
 		verify(aliasManager, never()).forgetAlias(any());
+		assertEquals(autoRenewAccount, subject.getPayerForAutoRenew());
 	}
 
 
@@ -233,6 +238,23 @@ class RenewableEntityClassifierTest {
 		payer = subject.resolvePayerForAutoRenew(1L);
 		assertEquals(payer, autoRenewMerkleAccount);
 
+	}
+
+	@Test
+	void checksForValidPayer() throws NegativeAccountBalanceException {
+		autoRenewMerkleAccount.setDeleted(true);
+		autoRenewMerkleAccount.setBalance(200L);
+		assertFalse(subject.isValid(autoRenewMerkleAccount, 100l));
+
+		autoRenewMerkleAccount.setDeleted(false);
+		autoRenewMerkleAccount.setBalance(20L);
+		assertFalse(subject.isValid(autoRenewMerkleAccount, 100l));
+
+		assertFalse(subject.isValid(null, 100l));
+
+		autoRenewMerkleAccount.setDeleted(false);
+		autoRenewMerkleAccount.setBalance(200L);
+		assertTrue(subject.isValid(autoRenewMerkleAccount, 100l));
 	}
 
 	@Test

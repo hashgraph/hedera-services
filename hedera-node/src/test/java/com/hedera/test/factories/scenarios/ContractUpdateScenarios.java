@@ -110,4 +110,14 @@ public enum ContractUpdateScenarios implements TxnHandlingScenario {
 			));
 		}
 	},
+	CONTRACT_UPDATE_INVALID_AUTO_RENEW_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(from(
+					newSignedContractUpdate(MISC_CONTRACT_ID)
+							.newAutoRenewAccount(MISSING_ACCOUNT_ID)
+							.newExpiration(DEFAULT_EXPIRY)
+							.get()
+			));
+		}
+	},
 }

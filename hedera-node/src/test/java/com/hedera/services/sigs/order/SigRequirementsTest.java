@@ -118,6 +118,7 @@ import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRA
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_FILE_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_PROXY_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_INVALID_AUTO_RENEW_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_NEW_AUTO_RENEW_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_WITH_NEW_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO;
@@ -377,6 +378,9 @@ class SigRequirementsTest {
 	);
 	private static final SigMetadataLookup NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
 			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE))
+	);
+	private static final SigMetadataLookup INVALID_AUTO_RENEW_ACCOUNT_EXC = EXC_LOOKUP_FN.apply(
+			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT))
 	);
 
 	private HederaFs hfs;
@@ -1335,6 +1339,19 @@ class SigRequirementsTest {
 		// then:
 		assertTrue(summary.hasErrorReport());
 		assertEquals(INVALID_SIGNATURE, summary.getErrorReport());
+	}
+
+	@Test
+	void getInvalidAutoRenewAccountDuringUpdate() throws Throwable {
+		// given:
+		setupForNonStdLookup(CONTRACT_UPDATE_INVALID_AUTO_RENEW_SCENARIO, INVALID_AUTO_RENEW_ACCOUNT_EXC);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(INVALID_AUTORENEW_ACCOUNT, summary.getErrorReport());
 	}
 
 	@Test
