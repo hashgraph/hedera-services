@@ -24,7 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.state.expiry.TokenRelsListRemoval;
+import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
@@ -115,7 +115,7 @@ public class AccountGC {
 			final List<CurrencyAdjustments> returnTransfers,
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> curRels
 	) {
-		final var listRemoval = new TokenRelsListRemoval(expiredAccountNum.longValue(), curRels);
+		final var listRemoval = new TokenRelsListMutation(expiredAccountNum.longValue(), curRels);
 		var i = expectedRels;
 		var relKey = firstRelKey;
 		while (relKey != null && i-- > 0) {
@@ -132,7 +132,7 @@ public class AccountGC {
 
 	@FunctionalInterface
 	interface RemovalFacilitation {
-		EntityNumPair removeNext(EntityNumPair key, EntityNumPair root, TokenRelsListRemoval listRemoval);
+		EntityNumPair removeNext(EntityNumPair key, EntityNumPair root, TokenRelsListMutation listRemoval);
 	}
 
 	@VisibleForTesting

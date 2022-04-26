@@ -27,13 +27,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 
 /**
  * A store that provides efficient access to the mutable representations
@@ -41,11 +39,9 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
  * pairs. This class is <b>not</b> thread-safe, and should never be used
  * by any thread other than the {@code handleTransaction} thread.
  */
-@Singleton
 public class BackingTokenRels implements BackingStore<Pair<AccountID, TokenID>, MerkleTokenRelStatus> {
 	private final Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> delegate;
 
-	@Inject
 	public BackingTokenRels(Supplier<MerkleMap<EntityNumPair, MerkleTokenRelStatus>> delegate) {
 		this.delegate = delegate;
 	}
