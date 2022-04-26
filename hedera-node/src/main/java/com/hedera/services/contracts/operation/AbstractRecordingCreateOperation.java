@@ -210,7 +210,7 @@ public abstract class AbstractRecordingCreateOperation extends AbstractOperation
 					NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
 			childRecord.onlyExternalizeIfSuccessful();
 			final var opCustomizer = updater.customizerForPendingCreation();
-			final var parentId = EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress());
+			final var parentId = EntityIdUtils.accountIdFromEvmAddress(frame.getRecipientAddress());
 			final var autoRenewAccount = (EntityId) updater.trackingLedgers().accounts().get(parentId,
 					AccountProperty.AUTO_RENEW_ACCOUNT_ID);
 			final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer, autoRenewAccount);

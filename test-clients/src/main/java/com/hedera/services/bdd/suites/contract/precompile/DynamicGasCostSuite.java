@@ -371,6 +371,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final var replAdminKey = "replAdminKey";
 		final var entityMemo = "JUST DO IT";
 		final var customAutoRenew = 7776001L;
+		final var autoRenewAccountID = "autoRenewAccount";
 		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
 		final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
 		final AtomicReference<String> expectedMirrorAddress = new AtomicReference<>();
@@ -385,14 +386,17 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						newKeyNamed(replAdminKey),
 						overriding("contracts.throttle.throttleByGas", "false"),
 						uploadInitCode(contract),
+						cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
 						contractCreate(contract)
 								.payingWith(GENESIS)
 								.proxy("0.0.3")
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
+								.autoRenewAccountId(autoRenewAccountID)
 								.via(creation2)
-								.exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num)))
+								.exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
+						getContractInfo(contract).has(contractWith().autoRenewAccountId(autoRenewAccountID)).logged()
 				).when(
 						sourcing(() -> contractCallLocal(
 								contract,
@@ -495,7 +499,10 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
 						// https://github.com/hashgraph/hedera-services/issues/2874
 						sourcing(() -> getContractInfo(expectedCreate2Address.get())
-								.has(contractWith().addressOrAlias(expectedCreate2Address.get()))),
+								.has(contractWith()
+										.addressOrAlias(expectedCreate2Address.get())
+										.autoRenewAccountId(autoRenewAccountID))
+								.logged()),
 						sourcing(() -> contractCallLocalWithFunctionAbi(
 								expectedCreate2Address.get(),
 								getABIFor(FUNCTION, "getBalance", testContract)
