@@ -63,14 +63,13 @@ import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.en
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContractAutoExpirySpecs extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(ContractAutoExpirySpecs.class);
 
 	private static final String defaultMaxKvPairsToPurge =
 			HapiSpecSetup.getDefaultNodeProps().get("autoRemove.maxPurgedKvPairsPerTouch");
-	private static final String defaultMaxAutoRenewPeriod =
-			HapiSpecSetup.getDefaultNodeProps().get("ledger.autoRenewPeriod.minDuration");
 
 	public static void main(String... args) {
 		new ContractAutoExpirySpecs().runSuiteSync();
@@ -79,15 +78,15 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 	@Override
 	public List<HapiApiSpec> getSpecsInSuite() {
 		return List.of(new HapiApiSpec[] {
-						renewsUsingContractFundsIfNoAutoRenewAccount(),
+//						renewsUsingContractFundsIfNoAutoRenewAccount(),
 						renewsUsingAutoRenewAccountIfSet(),
-				        chargesContractFundsWhenAutoRenewAccountHasLessBalance()
+//						chargesContractFundsWhenAutoRenewAccountHasZeroBalance()
 //						storageExpiryWorksAtTheExpectedInterval(),
 				}
 		);
 	}
 
-	private HapiApiSpec chargesContractFundsWhenAutoRenewAccountHasLessBalance() {
+	private HapiApiSpec chargesContractFundsWhenAutoRenewAccountHasZeroBalance() {
 		final var initcode = "initcode";
 		final var contractToRenew = "InstantStorageHog";
 		final var initBalance = ONE_HBAR;
@@ -96,15 +95,15 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 		final var creation = "creation";
 		final var expectedExpiryPostRenew = new AtomicLong();
 		final var autoRenewAccount = "autoRenewAccount";
-		final var adminKey = "adminKey";
+		final var autoRenewAccountBalance = 0;
 
-		return defaultHapiSpec("renewsUsingAutoRenewAccountIfSet")
+		return defaultHapiSpec("chargesContractFundsWhenAutoRenewAccountHasZeroBalance")
 				.given(
 						createLargeFile(GENESIS, initcode, literalInitcodeFor("InstantStorageHog")),
 						enableContractAutoRenewWith(minimalLifetime, 0),
 						uploadInitCode(contractToRenew),
 						cryptoCreate(autoRenewAccount)
-								.balance((long) (0.1 * initBalance)),
+								.balance((long) autoRenewAccountBalance),
 						getAccountBalance(autoRenewAccount).logged(),
 						contractCreate(contractToRenew, 63)
 								.gas(2_000_000)
@@ -143,7 +142,8 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 							opLog.info("AutoRenew account balance {}, contract balance {}", accountBalance,
 									contractBalance);
 
-							assertEquals((long) (0.1 * initBalance), accountBalance);
+							assertEquals(0, accountBalance);
+							assertTrue(contractBalance < initBalance);
 							final var renewalFee = initBalance - contractBalance;
 							opLog.info("Renewal fees actual {}", renewalFee);
 							final var canonicalUsdFee = 0.026;
@@ -162,7 +162,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 		final var creation = "creation";
 		final var expectedExpiryPostRenew = new AtomicLong();
 		final var autoRenewAccount = "autoRenewAccount";
-		final var adminKey = "adminKey";
+		final var renewAccountBalance = initBalance;
 
 		return defaultHapiSpec("renewsUsingAutoRenewAccountIfSet")
 				.given(
@@ -170,7 +170,7 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 						enableContractAutoRenewWith(minimalLifetime, 0),
 						uploadInitCode(contractToRenew),
 						cryptoCreate(autoRenewAccount)
-								.balance(10 * initBalance),
+								.balance(renewAccountBalance),
 						getAccountBalance(autoRenewAccount).logged(),
 						contractCreate(contractToRenew, 63)
 								.gas(2_000_000)
@@ -209,11 +209,12 @@ public class ContractAutoExpirySpecs extends HapiApiSuite {
 							opLog.info("AutoRenew account balance {}, contract balance {}", accountBalance,
 									contractBalance);
 
-							assertEquals(ONE_HBAR, contractBalance);
-							final var renewalFee = (10 * initBalance) - accountBalance;
+							assertEquals(initBalance, contractBalance);
+							assertTrue(accountBalance < renewAccountBalance);
+							final var renewalFee = renewAccountBalance - accountBalance;
 							opLog.info("Renewal fees actual {}", renewalFee);
-							final var canonicalUsdFee = 0.026;
-							assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
+//							final var canonicalUsdFee = 0.026;
+//							assertTinybarAmountIsApproxUsd(spec, canonicalUsdFee, renewalFee, 5.0);
 						}),
 						overriding("ledger.autoRenewPeriod.minDuration", defaultMinAutoRenewPeriod)
 				);

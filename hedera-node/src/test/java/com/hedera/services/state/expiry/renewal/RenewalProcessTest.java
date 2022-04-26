@@ -288,6 +288,7 @@ class RenewalProcessTest {
 		// setup:
 		long fundedExpiredAccountNum = 1004L;
 		var key = EntityNum.fromLong(fundedExpiredAccountNum);
+		mockAccount.setKey(key);
 
 		given(helper.classify(EntityNum.fromLong(fundedExpiredAccountNum), now)).willReturn(
 				EXPIRED_ACCOUNT_READY_TO_RENEW);
@@ -295,7 +296,7 @@ class RenewalProcessTest {
 		given(fees.assessCryptoAutoRenewal(mockAccount, requestedRenewalPeriod, instantNow))
 				.willReturn(new RenewAssessment(fee, actualRenewalPeriod));
 		given(dynamicProperties.shouldAutoRenewAccounts()).willReturn(true);
-		given(helper.getPayerForAutoRenew()).willReturn(key);
+		given(helper.resolvePayerForAutoRenew()).willReturn(mockAccount);
 
 		subject.beginRenewalCycle(instantNow);
 		final var result = subject.process(fundedExpiredAccountNum);
@@ -310,6 +311,7 @@ class RenewalProcessTest {
 		// setup:
 		long fundedExpiredContractNum = 1004L;
 		var key = EntityNum.fromLong(fundedExpiredContractNum);
+		mockContract.setKey(key);
 
 		given(helper.classify(EntityNum.fromLong(fundedExpiredContractNum), now)).willReturn(
 				EXPIRED_CONTRACT_READY_TO_RENEW);
@@ -317,7 +319,7 @@ class RenewalProcessTest {
 		given(fees.assessCryptoAutoRenewal(mockContract, requestedRenewalPeriod, instantNow))
 				.willReturn(new RenewAssessment(fee, actualRenewalPeriod));
 		given(dynamicProperties.shouldAutoRenewContracts()).willReturn(true);
-		given(helper.getPayerForAutoRenew()).willReturn(key);
+		given(helper.resolvePayerForAutoRenew()).willReturn(mockContract);
 
 		subject.beginRenewalCycle(instantNow);
 		final var result = subject.process(fundedExpiredContractNum);

@@ -182,6 +182,7 @@ class RenewableEntityClassifierTest {
 
 		// when:
 		subject.classify(EntityNum.fromLong(fundedExpiredAccountNum), now);
+		subject.resolvePayerForAutoRenew();
 		// and:
 		subject.renewLastClassifiedWith(nonZeroBalance, 3600L);
 
@@ -208,6 +209,7 @@ class RenewableEntityClassifierTest {
 
 		// when:
 		subject.classify(EntityNum.fromLong(nonExpiredAccountNum), now);
+		subject.resolvePayerForAutoRenew();
 		// and:
 		subject.renewLastClassifiedWith(nonZeroBalance, 3600L);
 
@@ -223,38 +225,35 @@ class RenewableEntityClassifierTest {
 	void fallsBackToContractIfAutoRenewAccountIsInvalid() {
 		var key = EntityNum.fromLong(nonExpiredAccountNum);
 		var autoRenewAccount = EntityNum.fromLong(10L);
-
 		givenPresent(nonExpiredAccountNum, nonExpiredAccount, false);
-
-		given(accounts.get(autoRenewAccount)).willReturn(autoRenewMerkleAccount);
+		given(accounts.get(autoRenewAccount)).willReturn(autoRenewMerkleAccountZeroBalance);
 		given(accounts.get(key)).willReturn(nonExpiredAccountWithAutoRenew);
-		given(accounts.get(autoRenewAccount)).willReturn(nonExpiredAccount);
 
 		subject.classify(EntityNum.fromLong(nonExpiredAccountNum), now);
 
-		var payer = subject.resolvePayerForAutoRenew(100L);
+		var payer = subject.resolvePayerForAutoRenew();
 		assertEquals(payer, nonExpiredAccountWithAutoRenew);
 
-		payer = subject.resolvePayerForAutoRenew(1L);
+		given(accounts.get(autoRenewAccount)).willReturn(autoRenewMerkleAccount);
+		payer = subject.resolvePayerForAutoRenew();
 		assertEquals(payer, autoRenewMerkleAccount);
-
 	}
 
 	@Test
 	void checksForValidPayer() throws NegativeAccountBalanceException {
 		autoRenewMerkleAccount.setDeleted(true);
 		autoRenewMerkleAccount.setBalance(200L);
-		assertFalse(subject.isValid(autoRenewMerkleAccount, 100l));
+		assertFalse(subject.isValid(autoRenewMerkleAccount));
 
 		autoRenewMerkleAccount.setDeleted(false);
-		autoRenewMerkleAccount.setBalance(20L);
-		assertFalse(subject.isValid(autoRenewMerkleAccount, 100l));
+		autoRenewMerkleAccount.setBalance(0L);
+		assertFalse(subject.isValid(autoRenewMerkleAccount));
 
-		assertFalse(subject.isValid(null, 100l));
+		assertFalse(subject.isValid(null));
 
 		autoRenewMerkleAccount.setDeleted(false);
 		autoRenewMerkleAccount.setBalance(200L);
-		assertTrue(subject.isValid(autoRenewMerkleAccount, 100l));
+		assertTrue(subject.isValid(autoRenewMerkleAccount));
 	}
 
 	@Test
@@ -270,6 +269,7 @@ class RenewableEntityClassifierTest {
 
 		// when:
 		subject.classify(EntityNum.fromLong(brokeExpiredNum), now);
+		subject.resolvePayerForAutoRenew();
 		// expect:
 		assertThrows(IllegalStateException.class,
 				() -> subject.renewLastClassifiedWith(nonZeroBalance, 3600L));
@@ -306,6 +306,10 @@ class RenewableEntityClassifierTest {
 			.get();
 	private final MerkleAccount autoRenewMerkleAccount = MerkleAccountFactory.newAccount()
 			.balance(10).expirationTime(now + 1)
+			.alias(ByteString.copyFromUtf8("aaaa"))
+			.get();
+	private final MerkleAccount autoRenewMerkleAccountZeroBalance = MerkleAccountFactory.newAccount()
+			.balance(0).expirationTime(now + 1)
 			.alias(ByteString.copyFromUtf8("aaaa"))
 			.get();
 	private final MerkleAccount expiredAccountZeroBalance = MerkleAccountFactory.newAccount()
