@@ -537,7 +537,8 @@ public class StateView {
 				.setStorage(storageSize)
 				.setAutoRenewPeriod(Duration.newBuilder().setSeconds(contract.getAutoRenewSecs()))
 				.setBalance(contract.getBalance())
-				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()));
+				.setExpirationTime(Timestamp.newBuilder().setSeconds(contract.getExpiry()))
+				.setAutoRenewAccountId(contract.getAutoRenewAccount().toGrpcAccountId());
 		if (contract.hasAlias()) {
 			info.setContractAccountID(hex(contract.getAlias().toByteArray()));
 		} else {
