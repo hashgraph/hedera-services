@@ -1603,6 +1603,7 @@ jobs:
       - run:
           name: Save PEM file to keys folder
           command: |
+            mkdir -p /swirlds-platform/regression/keys
             cp ~/.ssh/id_rsa_e7a63e343ed8fe642c7fb657450344ac /swirlds-platform/regression/keys/services-regression.pem
 
       - persist_to_workspace:
