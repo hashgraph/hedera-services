@@ -212,14 +212,13 @@ class AbstractRecordingCreateOperationTest {
 		final var mockCreation = TransactionBody.newBuilder()
 				.setContractCreateInstance(ContractCreateTransactionBody.newBuilder().setAutoRenewAccountId(autoRenewId.toGrpcAccountId()));
 		final var frameCaptor = ArgumentCaptor.forClass(MessageFrame.class);
-		final var autoRenewAccountId = EntityIdUtils.accountIdFromEvmAddress(Address.ALTBN128_PAIRING);
+		final var autoRenewAccountId = EntityIdUtils.accountIdFromEvmAddress(recipient);
 		givenSpawnPrereqs();
 		givenBuilderPrereqs();
 		given(updater.customizerForPendingCreation()).willReturn(contractCustomizer);
 		given(syntheticTxnFactory.contractCreation(contractCustomizer, autoRenewId)).willReturn(mockCreation);
 		given(creator.createSuccessfulSyntheticRecord(any(), any(), any())).willReturn(liveRecord);
 		given(updater.idOfLastNewAddress()).willReturn(lastAllocated);
-		given(frame.getSenderAddress()).willReturn(Address.ALTBN128_PAIRING);
 		given(updater.trackingLedgers()).willReturn(ledgers);
 		given(ledgers.accounts()).willReturn(accountsLedger);
 		given(accountsLedger.get(autoRenewAccountId, AccountProperty.AUTO_RENEW_ACCOUNT_ID)).willReturn(autoRenewId);
