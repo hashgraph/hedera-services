@@ -34,8 +34,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.math.ec.ECCurve;
-import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,8 +56,6 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 	private static final Logger log = LogManager.getLogger(AliasManager.class);
 
 	private static final String NON_TRANSACTIONAL_MSG = "Base alias manager does not buffer changes";
-
-	private static final ECCurve SECP256K1_CURVE = new SecP256K1Curve();
 
 	private final Supplier<Map<ByteString, EntityNum>> aliases;
 
@@ -117,10 +113,9 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 
 	public boolean maybeLinkEvmAddress(final JKey key, final EntityNum num) {
 		if (key != null && key.hasECDSAsecp256k1Key()) {
-			// Only complressed keys are stored at the moment
+			// Only compressed keys are stored at the moment
 			byte[] rawCompressedKey = key.getECDSASecp256k1Key();
 			if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
-//				var evmAddress = calculateEthAddress(rawCompressedKey);
 				var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
 				if (evmAddress != null) {
 					link(ByteString.copyFrom(evmAddress), num);
@@ -190,7 +185,6 @@ public class AliasManager extends AbstractContractAliases implements ContractAli
 				byte[] rawCompressedKey = jKey.getECDSASecp256k1Key();
 				// trust, but verify
 				if (rawCompressedKey.length == JECDSASecp256k1Key.ECDSASECP256_COMPRESSED_BYTE_LENGTH) {
-//					var evmAddress = calculateEthAddress(rawCompressedKey);
 					var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
 					if (evmAddress != null) {
 						curAliases().remove(ByteString.copyFrom(evmAddress));
