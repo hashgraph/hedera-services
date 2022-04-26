@@ -240,7 +240,8 @@ public final class MiscUtils {
 	private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS = EnumSet.of(
 			ContractCallLocal,
 			ContractCall,
-			ContractCreate
+			ContractCreate,
+			EthereumTransaction
 	);
 
 	public static Function<TransactionBody, HederaFunctionality> functionExtractor = trans -> {
