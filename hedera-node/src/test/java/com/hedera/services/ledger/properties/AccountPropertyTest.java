@@ -54,10 +54,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
+import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
@@ -71,7 +71,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.services.ledger.properties.AccountProperty.PROXY;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
-import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -229,7 +228,6 @@ class AccountPropertyTest {
 		FIRST_CONTRACT_STORAGE_KEY.setter().accept(account, explicitNewFirstKey);
 		APPROVE_FOR_ALL_NFTS_ALLOWANCES.setter().accept(account, nftAllowances);
 		NUM_ASSOCIATIONS.setter().accept(account, newAssociationCount);
-		HEAD_TOKEN_NUM.setter().accept(account, newLastAssociatedTokenNum);
 		NUM_POSITIVE_BALANCES.setter().accept(account, newNumPositiveBalances);
 		NUM_TREASURY_TITLES.setter().accept(account, newNumTreasuryTitles);
 		ETHEREUM_NONCE.setter().accept(account, newEthereumNonce);
@@ -254,7 +252,6 @@ class AccountPropertyTest {
 		assertEquals(nftAllowances, APPROVE_FOR_ALL_NFTS_ALLOWANCES.getter().apply(account));
 		assertEquals(newAssociationCount, NUM_ASSOCIATIONS.getter().apply(account));
 		assertEquals(newNumPositiveBalances, NUM_POSITIVE_BALANCES.getter().apply(account));
-		assertEquals(newLastAssociatedTokenNum, HEAD_TOKEN_NUM.getter().apply(account));
 		assertEquals(newNumTreasuryTitles, NUM_TREASURY_TITLES.getter().apply(account));
 		assertEquals(newEthereumNonce, ETHEREUM_NONCE.getter().apply(account));
 	}

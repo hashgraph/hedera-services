@@ -22,14 +22,12 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ledger.AccountsCommitInterceptor;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.TokenRelsCommitInterceptor;
-import com.hedera.services.ledger.TokensCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.UniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.StackedContractAliases;
+import com.hedera.services.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -47,11 +45,13 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
+import static com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor.forKnownAutoAssociatingOp;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
 import static com.hedera.services.ledger.properties.NftProperty.METADATA;
 import static com.hedera.services.ledger.properties.NftProperty.OWNER;
@@ -112,7 +112,7 @@ public class WorldLedgers {
 	}
 
 	public boolean isTokenAddress(final Address address) {
-		if (staticEntityAccess != null)	{
+		if (staticEntityAccess != null) {
 			return staticEntityAccess.isTokenAccount(address);
 		} else {
 			return tokensLedger.contains(tokenIdFromEvmAddress(address));
@@ -196,10 +196,16 @@ public class WorldLedgers {
 			alias = staticEntityAccess.alias(sourceId);
 		}
 		if (!alias.isEmpty()) {
-			return Address.wrap(Bytes.wrap(alias.toByteArray()));
-		} else {
-			return address;
+			if (alias.size() == 20) {
+				return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			} else if (alias.size() == 35 && alias.startsWith(ByteString.copyFrom(new byte[] { 0x3a, 0x21 }))) {
+				byte[] value = EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+				if (value != null) {
+					return Address.wrap(Bytes.wrap(value));
+				}
+			}
 		}
+		return address;
 	}
 
 	public void commit() {
@@ -243,42 +249,39 @@ public class WorldLedgers {
 
 	public boolean areMutable() {
 		return nftsLedger != null &&
-				tokensLedger != null &&
-				accountsLedger != null &&
-				tokenRelsLedger != null;
+			   tokensLedger != null &&
+			   accountsLedger != null &&
+			   tokenRelsLedger != null;
 	}
 
 	public WorldLedgers wrapped() {
-		if (!areMutable()) {
-			return staticLedgersWith(StackedContractAliases.wrapping(aliases), staticEntityAccess);
-		}
-
-		return new WorldLedgers(
-				StackedContractAliases.wrapping(aliases),
-				activeLedgerWrapping(tokenRelsLedger),
-				activeLedgerWrapping(accountsLedger),
-				activeLedgerWrapping(nftsLedger),
-				activeLedgerWrapping(tokensLedger));
+		return wrappedInternal(null);
 	}
 
 	public WorldLedgers wrapped(final SideEffectsTracker sideEffectsTracker) {
+		return wrappedInternal(sideEffectsTracker);
+	}
+
+	public void customizeForAutoAssociatingOp(final SideEffectsTracker sideEffectsTracker) {
+		if (!areMutable()) {
+			throw new IllegalStateException("Static ledgers cannot be customized");
+		}
+		tokenRelsLedger.setCommitInterceptor(forKnownAutoAssociatingOp(sideEffectsTracker));
+	}
+
+	private WorldLedgers wrappedInternal(@Nullable final SideEffectsTracker sideEffectsTracker) {
 		if (!areMutable()) {
 			return staticLedgersWith(StackedContractAliases.wrapping(aliases), staticEntityAccess);
 		}
 
-		final var tokensCommitInterceptor = new TokensCommitInterceptor(sideEffectsTracker);
-		final var tokenRelsCommitInterceptor = new TokenRelsCommitInterceptor(sideEffectsTracker);
-		final var uniqueTokensCommitInterceptor = new UniqueTokensCommitInterceptor(sideEffectsTracker);
-		final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
-
-		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
-		wrappedTokenRelsLedger.setCommitInterceptor(tokenRelsCommitInterceptor);
-		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
-		wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
 		final var wrappedNftsLedger = activeLedgerWrapping(nftsLedger);
-		wrappedNftsLedger.setCommitInterceptor(uniqueTokensCommitInterceptor);
 		final var wrappedTokensLedger = activeLedgerWrapping(tokensLedger);
-		wrappedTokensLedger.setCommitInterceptor(tokensCommitInterceptor);
+		final var wrappedAccountsLedger = activeLedgerWrapping(accountsLedger);
+		if (sideEffectsTracker != null) {
+			final var accountsCommitInterceptor = new AccountsCommitInterceptor(sideEffectsTracker);
+			wrappedAccountsLedger.setCommitInterceptor(accountsCommitInterceptor);
+		}
+		final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
 
 		return new WorldLedgers(
 				StackedContractAliases.wrapping(aliases),
@@ -314,7 +317,7 @@ public class WorldLedgers {
 			final TokenProperty property,
 			final BiFunction<StaticEntityAccess, TokenID, T> staticGetter
 	) {
-		if (staticEntityAccess != null)	{
+		if (staticEntityAccess != null) {
 			return staticGetter.apply(staticEntityAccess, tokenId);
 		} else {
 			return getTokenMeta(tokenId, property);

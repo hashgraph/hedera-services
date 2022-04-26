@@ -30,6 +30,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.AccountStore;
+import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -99,6 +100,8 @@ class ContractCallLocalAnswerTest {
 	@Mock
 	private OptionValidator validator;
 	@Mock
+	private EntityAccess entityAccess;
+	@Mock
 	private GlobalDynamicProperties dynamicProperties;
 	@Mock
 	private CallLocalEvmTxProcessor evmTxProcessor;
@@ -114,7 +117,19 @@ class ContractCallLocalAnswerTest {
 	@BeforeEach
 	private void setup() {
 		subject = new ContractCallLocalAnswer(
-				ids, aliasManager, accountStore, validator, dynamicProperties, nodeLocalProperties, evmTxProcessor);
+				ids, aliasManager, accountStore, validator, entityAccess, dynamicProperties, nodeLocalProperties, evmTxProcessor);
+	}
+
+	@Test
+	void acceptsToken() throws Throwable {
+		given(entityAccess.isTokenAccount(any())).willReturn(true);
+
+		// given:
+		Query query = validQuery(COST_ANSWER, fee);
+		given(dynamicProperties.maxGas()).willReturn(gas);
+
+		// expect:
+		assertEquals(OK, subject.checkValidity(query, view));
 	}
 
 	@Test

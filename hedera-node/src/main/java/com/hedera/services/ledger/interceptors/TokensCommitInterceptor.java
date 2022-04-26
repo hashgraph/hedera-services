@@ -1,4 +1,4 @@
-package com.hedera.services.ledger;
+package com.hedera.services.ledger.interceptors;
 
 /*-
  * ‌
@@ -21,18 +21,18 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.CommitInterceptor;
+import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.TokenID;
 
+/**
+ * Placeholder for upcoming work.
+ */
 public class TokensCommitInterceptor implements CommitInterceptor<TokenID, MerkleToken, TokenProperty> {
-
-	// The tracker this interceptor should use for previewing changes. The interceptor is NOT
-	// responsible for calling reset() on the tracker, as that will be done by the client code.
-//	private SideEffectsTracker sideEffectsTracker;
-
 	public TokensCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
-//		this.sideEffectsTracker = sideEffectsTracker;
+		// No-op
 	}
 
 	/**
@@ -40,6 +40,6 @@ public class TokensCommitInterceptor implements CommitInterceptor<TokenID, Merkl
 	 */
 	@Override
 	public void preview(final EntityChangeSet<TokenID, MerkleToken, TokenProperty> pendingChanges) {
-		// No-op for now
+		// No-op
 	}
 }

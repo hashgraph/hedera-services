@@ -435,9 +435,9 @@ public class RecordCreationSuite extends HapiApiSuite {
 				.given(
 						fileCreate("bytecode").path(ContractResources.PAYABLE_CONTRACT_BYTECODE_PATH)
 				).when(
-						contractCreate("contract").bytecode("bytecode").via("createTxn")
+						contractCreate("PayReceivable").bytecode("bytecode").via("createTxn")
 				).then(
-						contractCall("contract", ContractResources.DEPOSIT_ABI, 1_000L)
+						contractCall("PayReceivable", "deposit", 1_000L)
 								.via("callTxn")
 								.sending(1_000L)
 				);

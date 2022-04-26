@@ -62,6 +62,14 @@
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpkix-jdk15on</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.esaulpaugh</groupId>
+			<artifactId>headlong</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.hyperledger.besu</groupId>
+			<artifactId>secp256k1</artifactId>
+		</dependency>
 	</dependencies>
 
 	<repositories>

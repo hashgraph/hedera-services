@@ -26,7 +26,7 @@ import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 
-import static com.hedera.services.state.virtual.IterableStorageUtils.upsertMapping;
+import static com.hedera.services.state.virtual.IterableStorageUtils.overwritingUpsertMapping;
 
 public class InfrastructureInitializer {
 	private final int initNumContracts;
@@ -53,7 +53,7 @@ public class InfrastructureInitializer {
 				final var evmKey = EvmKeyValueSource.uniqueKey(j);
 				final var vmKey = ContractKey.from(contractId, evmKey);
 				final var vmValue = IterableContractValue.from(evmKey);
-				firstKey = upsertMapping(vmKey, vmValue, firstKey, firstValue, curStorage);
+				firstKey = overwritingUpsertMapping(vmKey, vmValue, firstKey, firstValue, curStorage);
 				firstValue = vmValue;
 			}
 

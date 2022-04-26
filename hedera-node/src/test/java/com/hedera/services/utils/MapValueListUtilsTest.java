@@ -20,11 +20,13 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.state.expiry.TokenRelsListRemoval;
+import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
+import static com.hedera.services.utils.MapValueListUtils.inPlaceRemoveFromMapValueList;
+import static com.hedera.services.utils.MapValueListUtils.overwritingRemoveFromMapValueList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,42 +36,83 @@ class MapValueListUtilsTest {
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
 
 	@Test
-	void sequentialRemovalWorksAsExpected() {
+	void sequentialRemovalWorksAsExpectedOverwriting() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var k1 = MapValueListUtils.removeFromMapValueList(aRelKey, aRelKey, relsListRemoval);
+		final var k1 = overwritingRemoveFromMapValueList(aRelKey, aRelKey, relsListRemoval);
 		assertEquals(bRelKey, k1);
 		assertFalse(tokenRels.containsKey(aRelKey));
 
-		final var k2 = MapValueListUtils.removeFromMapValueList(k1, k1, relsListRemoval);
+		final var k2 = overwritingRemoveFromMapValueList(k1, k1, relsListRemoval);
 		assertEquals(cRelKey, k2);
 		assertFalse(tokenRels.containsKey(bRelKey));
 
-		final var k3 = MapValueListUtils.removeFromMapValueList(k2, k2, relsListRemoval);
+		final var k3 = overwritingRemoveFromMapValueList(k2, k2, relsListRemoval);
 		assertNull(k3);
 		assertTrue(tokenRels.isEmpty());
 	}
 
 	@Test
-	void interiorRemovalWorksAsExpected() {
+	void interiorRemovalWorksAsExpectedOverwriting() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var k1 = MapValueListUtils.removeFromMapValueList(bRelKey, aRelKey, relsListRemoval);
+		final var k1 = overwritingRemoveFromMapValueList(bRelKey, aRelKey, relsListRemoval);
 		assertEquals(aRelKey, k1);
 		assertFalse(tokenRels.containsKey(bRelKey));
 	}
 
 	@Test
-	void tailRemovalWorksAsExpected() {
+	void tailRemovalWorksAsExpectedOverwriting() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var k1 = MapValueListUtils.removeFromMapValueList(cRelKey, aRelKey, relsListRemoval);
+		final var k1 = overwritingRemoveFromMapValueList(cRelKey, aRelKey, relsListRemoval);
+		assertEquals(aRelKey, k1);
+		assertFalse(tokenRels.containsKey(cRelKey));
+	}
+
+	@Test
+	void sequentialRemovalWorksAsExpectedInPlace() {
+		initializeRels();
+
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+
+		final var k1 = inPlaceRemoveFromMapValueList(aRelKey, aRelKey, relsListRemoval);
+		assertEquals(bRelKey, k1);
+		assertFalse(tokenRels.containsKey(aRelKey));
+
+		final var k2 = inPlaceRemoveFromMapValueList(k1, k1, relsListRemoval);
+		assertEquals(cRelKey, k2);
+		assertFalse(tokenRels.containsKey(bRelKey));
+
+		final var k3 = inPlaceRemoveFromMapValueList(k2, k2, relsListRemoval);
+		assertNull(k3);
+		assertTrue(tokenRels.isEmpty());
+	}
+
+	@Test
+	void interiorRemovalWorksAsExpectedInPlace() {
+		initializeRels();
+
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+
+		final var k1 = inPlaceRemoveFromMapValueList(bRelKey, aRelKey, relsListRemoval);
+		assertEquals(aRelKey, k1);
+		assertFalse(tokenRels.containsKey(bRelKey));
+	}
+
+	@Test
+	void tailRemovalWorksAsExpectedInPlace() {
+		initializeRels();
+
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+
+		final var k1 = inPlaceRemoveFromMapValueList(cRelKey, aRelKey, relsListRemoval);
 		assertEquals(aRelKey, k1);
 		assertFalse(tokenRels.containsKey(cRelKey));
 	}

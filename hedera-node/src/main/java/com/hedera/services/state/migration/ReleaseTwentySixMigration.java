@@ -30,21 +30,26 @@ import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.platform.RandomExtended;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
+import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 
 public class ReleaseTwentySixMigration {
 	private static final Logger log = LogManager.getLogger(ReleaseTwentySixMigration.class);
 
 	public static final int THREAD_COUNT = 32;
 	public static final int INSERTIONS_PER_COPY = 100;
+	public static final int SEVEN_DAYS_IN_SECONDS = 604800;
+	private static final RandomExtended random = new RandomExtended(8682588012L);
 
 	public static void makeStorageIterable(
 			final ServicesState initializingState,
@@ -55,7 +60,7 @@ public class ReleaseTwentySixMigration {
 		final var contracts = initializingState.accounts();
 		final VirtualMap<ContractKey, ContractValue> contractStorage = initializingState.getChild(CONTRACT_STORAGE);
 		final var migrator = migratorFactory.from(
-				INSERTIONS_PER_COPY, contracts, IterableStorageUtils::upsertMapping, iterableContractStorage);
+				INSERTIONS_PER_COPY, contracts, IterableStorageUtils::overwritingUpsertMapping, iterableContractStorage);
 		try {
 			log.info("Migrating contract storage into iterable VirtualMap with {} threads", THREAD_COUNT);
 			final var watch = StopWatch.createStarted();
@@ -68,6 +73,35 @@ public class ReleaseTwentySixMigration {
 		}
 		migrator.finish();
 		initializingState.setChild(CONTRACT_STORAGE, migrator.getMigratedStorage());
+	}
+
+	public static void grantFreeAutoRenew(
+			final ServicesState initializingState,
+			final Instant upgradeTime) {
+		final var contracts = initializingState.accounts();
+
+		log.info("Granting free auto renewal for all smart contracts by ~90 days.");
+		final var watch = StopWatch.createStarted();
+		contracts.forEach((id, account) -> {
+			if (account.isSmartContract()) {
+				setNewExpiry(upgradeTime, contracts, id, random);
+			}
+		});
+		log.info("Done in {}ms", watch.getTime(TimeUnit.MILLISECONDS));
+	}
+
+	private static void setNewExpiry(
+			final Instant upgradeTime,
+			final MerkleMap<EntityNum, MerkleAccount> contracts,
+			final EntityNum key,
+			final RandomExtended rand) {
+		final var account = contracts.getForModify(key);
+		final var currentExpiry = account.getExpiry();
+		final var newExpiry = Math.max(currentExpiry,
+				upgradeTime.getEpochSecond()
+						+ THREE_MONTHS_IN_SECONDS
+						+ rand.nextLong(0, SEVEN_DAYS_IN_SECONDS));
+		account.setExpiry(newExpiry);
 	}
 
 	@FunctionalInterface
