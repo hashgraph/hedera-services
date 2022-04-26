@@ -1,4 +1,4 @@
-package com.hedera.services.txns.ethereum;
+package com.hedera.services.ethereum;
 
 /*-
  * ‌
@@ -25,15 +25,15 @@ import org.junit.jupiter.api.Test;
 import java.math.BigInteger;
 import java.util.Arrays;
 
-import static com.hedera.services.txns.ethereum.TestingConstants.CHAINID_TESTNET;
-import static com.hedera.services.txns.ethereum.TestingConstants.TINYBARS_2_IN_WEIBARS;
-import static com.hedera.services.txns.ethereum.TestingConstants.TINYBARS_57_IN_WEIBARS;
-import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_ADDRESS;
-import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
-import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PUBLIC_ECDSA_KEY;
-import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE1_ADDRESS;
-import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE1_PRIVATE_ECDSA_KEY;
-import static com.hedera.services.txns.ethereum.TestingConstants.ZERO_BYTES;
+import static com.hedera.services.ethereum.TestingConstants.CHAINID_TESTNET;
+import static com.hedera.services.ethereum.TestingConstants.TINYBARS_2_IN_WEIBARS;
+import static com.hedera.services.ethereum.TestingConstants.TINYBARS_57_IN_WEIBARS;
+import static com.hedera.services.ethereum.TestingConstants.TRUFFLE0_ADDRESS;
+import static com.hedera.services.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
+import static com.hedera.services.ethereum.TestingConstants.TRUFFLE0_PUBLIC_ECDSA_KEY;
+import static com.hedera.services.ethereum.TestingConstants.TRUFFLE1_ADDRESS;
+import static com.hedera.services.ethereum.TestingConstants.TRUFFLE1_PRIVATE_ECDSA_KEY;
+import static com.hedera.services.ethereum.TestingConstants.ZERO_BYTES;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -90,8 +90,8 @@ class EthTxSigsTest {
 
 		EthTxData signedTx  = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
-		assertNotNull(tx.r());
-		assertNotNull(tx.s());
+		assertNotNull(signedTx.r());
+		assertNotNull(signedTx.s());
 	}
 
 	@Test

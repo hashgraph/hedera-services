@@ -37,17 +37,17 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class TokenRelsListRemovalTest {
+class TokenRelsListMutationTest {
 	private static final long accountNum = 1_234L;
 
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 
-	private TokenRelsListRemoval subject;
+	private TokenRelsListMutation subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new TokenRelsListRemoval(accountNum, tokenRels);
+		subject = new TokenRelsListMutation(accountNum, tokenRels);
 	}
 
 	@Test
