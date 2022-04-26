@@ -20,7 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.state.expiry.TokenRelsListRemoval;
+import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class MapValueListUtilsTest {
 	void sequentialRemovalWorksAsExpected() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
 		final var k1 = MapValueListUtils.removeFromMapValueList(aRelKey, aRelKey, relsListRemoval);
 		assertEquals(bRelKey, k1);
@@ -56,7 +56,7 @@ class MapValueListUtilsTest {
 	void interiorRemovalWorksAsExpected() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
 		final var k1 = MapValueListUtils.removeFromMapValueList(bRelKey, aRelKey, relsListRemoval);
 		assertEquals(aRelKey, k1);
@@ -67,7 +67,7 @@ class MapValueListUtilsTest {
 	void tailRemovalWorksAsExpected() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
 		final var k1 = MapValueListUtils.removeFromMapValueList(cRelKey, aRelKey, relsListRemoval);
 		assertEquals(aRelKey, k1);

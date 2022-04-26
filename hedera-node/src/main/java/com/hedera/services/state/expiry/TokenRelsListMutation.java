@@ -22,19 +22,19 @@ package com.hedera.services.state.expiry;
 
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.MapValueListRemoval;
+import com.hedera.services.utils.MapValueListMutation;
 import com.swirlds.merkle.map.MerkleMap;
 import org.jetbrains.annotations.Nullable;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 
-public class TokenRelsListRemoval implements MapValueListRemoval<EntityNumPair, MerkleTokenRelStatus> {
+public class TokenRelsListMutation implements MapValueListMutation<EntityNumPair, MerkleTokenRelStatus> {
 	private static final long MISSING_KEY = MISSING_NUM.longValue();
 
 	final long accountNum;
 	final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels;
 
-	public TokenRelsListRemoval(
+	public TokenRelsListMutation(
 			final long accountNum,
 			final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels
 	) {
@@ -58,6 +58,14 @@ public class TokenRelsListRemoval implements MapValueListRemoval<EntityNumPair, 
 	@Override
 	public MerkleTokenRelStatus getForModify(final EntityNumPair key) {
 		return tokenRels.getForModify(key);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void put(final EntityNumPair key, final MerkleTokenRelStatus value) {
+		tokenRels.put(key, value);
 	}
 
 	/**

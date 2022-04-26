@@ -1,4 +1,4 @@
-package com.hedera.services.state.submerkle;
+package com.hedera.services.ledger.interceptors;
 
 /*-
  * ‌
@@ -20,17 +20,16 @@ package com.hedera.services.state.submerkle;
  * ‍
  */
 
-import com.hedera.test.serde.SelfSerializableDataTest;
-import com.hedera.test.utils.SeededPropertySource;
+import com.hedera.services.context.SideEffectsTracker;
+import org.junit.jupiter.api.Test;
 
-public class FcTokenAllowanceIdSerdeTest extends SelfSerializableDataTest<FcTokenAllowanceId> {
-	@Override
-	protected Class<FcTokenAllowanceId> getType() {
-		return FcTokenAllowanceId.class;
-	}
+import static org.junit.jupiter.api.Assertions.*;
 
-	@Override
-	protected FcTokenAllowanceId getExpectedObject(final SeededPropertySource propertySource) {
-		return propertySource.nextAllowanceId();
+class UniqueTokensCommitInterceptorTest {
+	@Test
+	void everythingNoopForNow() {
+		final var subject = new UniqueTokensCommitInterceptor(new SideEffectsTracker());
+
+		assertDoesNotThrow(() -> subject.preview(null));
 	}
 }
