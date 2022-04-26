@@ -22,6 +22,7 @@ package com.hedera.services.store.contracts;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -195,10 +196,16 @@ public class WorldLedgers {
 			alias = staticEntityAccess.alias(sourceId);
 		}
 		if (!alias.isEmpty()) {
-			return Address.wrap(Bytes.wrap(alias.toByteArray()));
-		} else {
-			return address;
+			if (alias.size() == 20) {
+				return Address.wrap(Bytes.wrap(alias.toByteArray()));
+			} else if (alias.size() == 35 && alias.startsWith(ByteString.copyFrom(new byte[] { 0x3a, 0x21 }))) {
+				byte[] value = EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+				if (value != null) {
+					return Address.wrap(Bytes.wrap(value));
+				}
+			}
 		}
+		return address;
 	}
 
 	public void commit() {
@@ -242,9 +249,9 @@ public class WorldLedgers {
 
 	public boolean areMutable() {
 		return nftsLedger != null &&
-				tokensLedger != null &&
-				accountsLedger != null &&
-				tokenRelsLedger != null;
+			   tokensLedger != null &&
+			   accountsLedger != null &&
+			   tokenRelsLedger != null;
 	}
 
 	public WorldLedgers wrapped() {
