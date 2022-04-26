@@ -153,6 +153,14 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		return memo;
 	}
 
+	public Optional<Long> getValueSent() {
+		return valueSent;
+	}
+
+	public Optional<Function<Transaction, Transaction>> getFiddler() {
+		return fiddler;
+	}
+
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
 		return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::contractCallMethod;

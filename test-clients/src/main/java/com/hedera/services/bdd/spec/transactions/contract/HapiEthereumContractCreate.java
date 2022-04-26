@@ -221,7 +221,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var fileContents = Utils.extractByteCode(filePath);
 
         final byte[] callData = Bytes.fromHexString(new String(fileContents.toByteArray())).toArray();
-        final var value = balance.isEmpty() ? BigInteger.ZERO : WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(balance.get()));
         final var longTuple = TupleType.parse("(int64)");
         final var gasPriceBytes = Bytes.wrap(longTuple.encode(Tuple.of(gasPrice)).array()).toArray();
         final var maxPriorityGasBytes = Bytes.wrap(longTuple.encode(Tuple.of(maxPriorityGas)).array()).toArray();
@@ -229,7 +228,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
                 maxPriorityGasBytes, gasBytes, gas.orElse(0L),
-                new byte[]{}, value, callData, new byte[]{}, 0, null, null, null);
+                new byte[]{}, BigInteger.valueOf(balance.orElse(0L)), callData, new byte[]{}, 0, null, null, null);
 
         final byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
         var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);

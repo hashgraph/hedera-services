@@ -66,6 +66,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -81,7 +82,6 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.RUNNING;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.hasSpecBeenExecuted;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.markSpecAsBeenExecuted;
@@ -224,21 +224,19 @@ public class HapiApiSpec implements Runnable {
 			return;
 		}
 
-		List<HapiSpecOperation> ops = new ArrayList<>();
-		if(!hasSpecBeenExecuted(name)) {
+		List<HapiSpecOperation> ops;
+
+		if(!suitePrefix.endsWith(ETH_SUFFIX)) {
 			ops = Stream.of(given, when, then)
 					.flatMap(Arrays::stream)
 					.collect(toList());
 		} else {
-			if(!isEthereumAccountCreatedForSpec(name)) {
+			if (!isEthereumAccountCreatedForSpec(this)) {
 				initializeEthereumAccountForSpec(this);
 			}
 
-			ops = Stream.of(given, when, then)
-					.flatMap(Arrays::stream).map(UtilVerbs::convertHapiCallToEthereumCall)
-					.collect(toList());
-
-			suitePrefix = suitePrefix.concat(ETH_SUFFIX);
+			ops = UtilVerbs.convertHapiCallsToEthereumCalls(this, Stream.of(given, when, then)
+					.flatMap(Arrays::stream).collect(Collectors.toList()));
 		}
 
 		exec(ops);
@@ -249,7 +247,7 @@ public class HapiApiSpec implements Runnable {
 			compareWithSnapshot();
 		}
 
-		markSpecAsBeenExecuted(name);
+		markSpecAsBeenExecuted(this);
 		nullOutInfrastructure();
 	}
 
