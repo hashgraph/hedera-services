@@ -68,13 +68,13 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void synthesizesExpectedContractAutoRenew() {
-		final var result = subject.synthContractAutoRenew(contractNum, newExpiry, contractNum.toGrpcAccountId());
+		final var result = subject.synthContractAutoRenew(contractNum, newExpiry, autoRenewAccountNum.toGrpcAccountId());
 		final var synthBody = result.build();
 
 		assertTrue(result.hasContractUpdateInstance());
 		final var op = synthBody.getContractUpdateInstance();
 		assertEquals(contractNum.toGrpcContractID(), op.getContractID());
-		assertEquals(contractNum.toGrpcAccountId(), synthBody.getTransactionID().getAccountID());
+		assertEquals(autoRenewAccountNum.toGrpcAccountId(), synthBody.getTransactionID().getAccountID());
 		assertEquals(newExpiry, op.getExpirationTime().getSeconds());
 	}
 
@@ -116,6 +116,16 @@ class SyntheticTxnFactoryTest {
 		final var result = subject.contractCreation(customizer, EntityId.MISSING_ENTITY_ID);
 		verify(customizer).customizeSynthetic(any());
 		assertTrue(result.hasContractCreateInstance());
+		assertFalse(result.getContractCreateInstance().hasAutoRenewAccountId());
+	}
+
+	@Test
+	void createsExpectedContractWithAutoRenewAccount() {
+		final var result = subject.contractCreation(customizer, autoRenewAccountNum.toEntityId());
+		verify(customizer).customizeSynthetic(any());
+		assertTrue(result.hasContractCreateInstance());
+		assertTrue(result.getContractCreateInstance().hasAutoRenewAccountId());
+		assertEquals(autoRenewAccountNum.toGrpcAccountId(), result.getContractCreateInstance().getAutoRenewAccountId());
 	}
 
 	@Test
@@ -502,6 +512,7 @@ class SyntheticTxnFactoryTest {
 	private static final long newExpiry = 1_234_567L;
 	private final EntityNum contractNum = EntityNum.fromLong(666);
 	private final EntityNum accountNum = EntityNum.fromLong(1234);
+	private final EntityNum autoRenewAccountNum = EntityNum.fromLong(999);
 	private static final AccountID a = IdUtils.asAccount("0.0.2");
 	private static final AccountID b = IdUtils.asAccount("0.0.3");
 	private static final AccountID c = IdUtils.asAccount("0.0.4");
