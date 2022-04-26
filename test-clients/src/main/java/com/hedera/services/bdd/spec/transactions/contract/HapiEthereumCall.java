@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.ethereum.core.CallTransaction;
 
 import java.math.BigInteger;
@@ -61,7 +60,10 @@ import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFu
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 
 public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
@@ -72,14 +74,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
 
     private static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
-    private EthTxData.EthTransactionType type;
+    private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
     private byte[] chainId = Integers.toBytes(298);
     private long nonce;
-    private long gasPrice;
-    private long maxPriorityGas;
-    private long gasLimit;
-    private Optional<Long> maxGasAllowance = Optional.empty();
-    private String privateKeyRef;
+    private long gasPrice = 20L;
+    private long maxPriorityGas = 20_000L;
+    private Optional<Long> maxGasAllowance = Optional.of(2_000_000L);
+    private String privateKeyRef = SECP_256K1_SOURCE_KEY;
 
     private Consumer<Object[]> resultObserver = null;
 
@@ -101,22 +102,21 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.abi = FALLBACK_ABI;
         this.params = new Object[0];
         this.contract = contract;
+        this.payer = Optional.of(RELAYER);
     }
 
     public HapiEthereumCall(final HapiContractCall contractCall) {
         this.abi = contractCall.getAbi();
-        if(contractCall.getParams() != null) {
+//        if(contractCall.getParams() != null) {
             this.params = contractCall.getParams();
-        }
+//        }
         this.contract = contractCall.getContract();
         this.txnName = contractCall.getTxnName();
         this.gas = contractCall.getGas();
         this.expectedStatus = Optional.of(contractCall.getExpectedStatus());
         this.payer = contractCall.getPayer();
         this.otherSigs = contractCall.getOtherSigs();
-        this.payer = contractCall.getPayer();
         this.expectedPrecheck = Optional.of(contractCall.getExpectedPrecheck());
-//        this.memo = contractCall.getMemo();
         shouldRegisterTxn = true;
     }
 
@@ -192,7 +192,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     public HapiEthereumCall gasLimit(long gasLimit) {
-        this.gasLimit = gasLimit;
+        this.gas = Optional.of(gasLimit);
         return this;
     }
 
@@ -256,24 +256,10 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         final var gasBytes = gas.isEmpty() ? new byte[] {} : Bytes.wrap(longTuple.encode(Tuple.of(gas.get())).array()).toArray();
 
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
-                maxPriorityGasBytes, gasBytes, gasLimit,
+                maxPriorityGasBytes, gasBytes, gas.orElse(0L),
                 Utils.asAddress(contractID), value, callData, new byte[]{}, 0, null, null, null);
 
-        var key = spec.registry().getKey(privateKeyRef);
-        final var privateKey = spec.keys().getPrivateKey(com.swirlds.common.utility.CommonUtils.hex(key.getECDSASecp256K1().toByteArray()));
-        
-        byte[] privateKeyByteArray;
-        byte[] dByteArray = ((BCECPrivateKey)privateKey).getD().toByteArray();
-        if (dByteArray.length < 32) {
-            privateKeyByteArray = new byte[32];
-            System.arraycopy(dByteArray, 0, privateKeyByteArray, 32 - dByteArray.length, dByteArray.length);
-        } else if (dByteArray.length == 32) {
-            privateKeyByteArray = dByteArray;
-        } else {
-            privateKeyByteArray = new byte[32];
-            System.arraycopy(dByteArray, dByteArray.length - 32, privateKeyByteArray, 0, 32);
-        }
-        
+        byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
         final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
 
         final EthereumTransactionBody ethOpBody = spec

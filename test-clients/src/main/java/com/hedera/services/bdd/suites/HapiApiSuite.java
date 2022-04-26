@@ -24,6 +24,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import org.apache.logging.log4j.Logger;
@@ -61,6 +62,9 @@ public abstract class HapiApiSuite {
 	public static final long ONE_MILLION_HBARS = 1_000_000L * ONE_HBAR;
 	public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
+	public static final String RELAYER = "RELAYER";
+	public static final KeyShape SECP_256K1_SHAPE = KeyShape.SECP256K1;
+	public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
 	public static final String TOKEN_TREASURY = "treasury";
 	public static final String NONSENSE_KEY = "Jabberwocky!";
 	public static final String ZERO_BYTE_MEMO = "\u0000kkkk";

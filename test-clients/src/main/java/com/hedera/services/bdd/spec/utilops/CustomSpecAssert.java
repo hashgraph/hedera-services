@@ -22,9 +22,6 @@ package com.hedera.services.bdd.spec.utilops;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
-import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
-import com.hedera.services.ethereum.EthTxData;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,13 +30,12 @@ import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.secp256k1SourceKey;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
 
 public class CustomSpecAssert extends UtilOp {
 	static final Logger log = LogManager.getLogger(CustomSpecAssert.class);
 
-	public static void allRunFor(HapiApiSpec spec, List<HapiSpecOperation> ops) {
+	public static void allRunFor(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
 		if(spec.getSuitePrefix().endsWith(ETH_SUFFIX)) {
 			if(!isEthereumAccountCreatedForSpec(spec.getName())) {
 				initializeEthereumAccountForSpec(spec);
@@ -51,34 +47,24 @@ public class CustomSpecAssert extends UtilOp {
 		}
 	}
 
-	private static void executeHederaOps(HapiApiSpec spec, List<HapiSpecOperation> ops) {
-		for (HapiSpecOperation op : ops) {
-			Optional<Throwable>	error = op.execFor(spec);
-			if (error.isPresent()) {
-				log.error("Operation '" + op + "' :: " + error.get().getMessage());
-				throw new IllegalStateException(error.get());
-			}
+	private static void executeHederaOps(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
+		for (final HapiSpecOperation op : ops) {
+			handleExec(spec, op);
 		}
 	}
 
-	private static void executeEthereumOps(HapiApiSpec spec, List<HapiSpecOperation> ops) {
-		for (HapiSpecOperation op : ops) {
-			if (op instanceof HapiContractCall) {
-				op = new HapiEthereumCall(((HapiContractCall) op));
-				((HapiEthereumCall) op).signingWith(secp256k1SourceKey)
-						.type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
-						.gas(5_000_000L)
-						.gasPrice(1000L)
-						.maxGasAllowance(1_000_000L)
-						.maxPriorityGas(2L)
-						.gasLimit(5_000_000L);
-			}
+	private static void executeEthereumOps(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
+		for (final HapiSpecOperation op : ops) {
+			final var convertedOp = UtilVerbs.convertHapiCallToEthereumCall(op);
+			handleExec(spec, convertedOp);
+		}
+	}
 
-			Optional<Throwable>	error = op.execFor(spec);
-			if (error.isPresent()) {
-				log.error("Operation '" + op + "' :: " + error.get().getMessage());
-				throw new IllegalStateException(error.get());
-			}
+	private static void handleExec(final HapiApiSpec spec, final HapiSpecOperation op) {
+		Optional<Throwable>	error = op.execFor(spec);
+		if (error.isPresent()) {
+			log.error("Operation '" + op + "' :: " + error.get().getMessage());
+			throw new IllegalStateException(error.get());
 		}
 	}
 

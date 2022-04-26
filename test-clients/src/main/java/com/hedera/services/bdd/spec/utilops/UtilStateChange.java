@@ -36,10 +36,10 @@ import java.util.Map;
 
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 
 public class UtilStateChange {
 
-	public static final String secp256k1SourceKey = "secp256k1Alias";
 	public static final KeyShape secp256k1Shape = KeyShape.SECP256K1;
 	private static final Map<String, Boolean> specToInitializedEthereumContract = new HashMap<>();
 	private static final Map<String, Boolean> specToBeenExecuted = new HashMap<>();
@@ -71,8 +71,8 @@ public class UtilStateChange {
 	}
 
 	public static void initializeEthereumAccountForSpec(final HapiApiSpec spec) {
-		final var newSpecKey = new NewSpecKey(secp256k1SourceKey).shape(secp256k1Shape);
-		final var cryptoTransfer = new HapiCryptoTransfer(HapiCryptoTransfer.tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS));
+		final var newSpecKey = new NewSpecKey(SECP_256K1_SOURCE_KEY).shape(secp256k1Shape);
+		final var cryptoTransfer = new HapiCryptoTransfer(HapiCryptoTransfer.tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS));
 
 		newSpecKey.execFor(spec);
 		cryptoTransfer.execFor(spec);

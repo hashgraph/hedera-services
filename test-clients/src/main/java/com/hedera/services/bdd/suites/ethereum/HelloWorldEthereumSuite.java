@@ -38,8 +38,6 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
     private static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
     private static final String OC_TOKEN_CONTRACT = "OcToken";
-    private static final String RELAYER = "RELAYER";
-    private static final KeyShape secp256k1Shape = KeyShape.SECP256K1;
 
     public static void main(String... args) {
         new HelloWorldEthereumSuite().runSuiteSync();
@@ -48,7 +46,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return allOf(
-//                ethereumCalls()
+                ethereumCalls(),
                 ethereumCreates()
         );
     }
@@ -68,23 +66,21 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec depositSuccess() {
-        final String secp256k1SourceKey = "secp256k1Alias";
         return defaultHapiSpec("DepositSuccess")
                 .given(
-                        newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS)),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
 
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
                 ).when(
                         ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
                                 .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(secp256k1SourceKey)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
                                 .via("payTxn")
                                 .nonce(0)
-                                .gas(500_000L)
                                 .gasPrice(10L)
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
@@ -93,11 +89,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
                                 .type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
-                                .signingWith(secp256k1SourceKey)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
                                 .via("payTxn")
                                 .nonce(1)
-                                .gas(500_000L)
                                 .gasPrice(10L)
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
@@ -112,22 +107,20 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec smallContractCreate() {
-        final String secp256k1SourceKey = "secp256k1Alias2";
         return defaultHapiSpec("SmallContractCreate")
                 .given(
-                        newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS)),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
 
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT)
                 ).when(
                         ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
                                 .adminKey(THRESHOLD)
                                 .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(secp256k1SourceKey)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
                                 .nonce(0)
-                                .gas(50_000L)
                                 .gasPrice(10L)
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
@@ -138,13 +131,12 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec bigContractCreate() {
-        final String secp256k1SourceKey = "secp256k1Alias3";
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("BigContractCreate")
                 .given(
-                        newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS)),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                         newKeyNamed(contractAdminKey),
 
                         uploadInitCode(TOKEN_CREATE_CONTRACT)
@@ -152,10 +144,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         ethereumContractCreate(TOKEN_CREATE_CONTRACT)
                                 .adminKey(contractAdminKey)
                                 .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(secp256k1SourceKey)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
                                 .nonce(0)
-                                .gas(50_000L)
                                 .gasPrice(10L)
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
@@ -165,13 +156,12 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec contractCreateWithConstructorArgs() {
-        final String secp256k1SourceKey = "secp256k1Alias4";
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("ContractCreateWithConstructorArgs")
                 .given(
-                        newKeyNamed(secp256k1SourceKey).shape(secp256k1Shape),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, secp256k1SourceKey, ONE_HUNDRED_HBARS)),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
                         newKeyNamed(contractAdminKey),
 
                         uploadInitCodeWithConstructorArguments(OC_TOKEN_CONTRACT, getABIFor(CONSTRUCTOR, EMPTY, OC_TOKEN_CONTRACT), 1_000_000L, "OpenCrowd Token", "OCT")
@@ -179,10 +169,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         ethereumContractCreate(OC_TOKEN_CONTRACT)
                                 .adminKey(contractAdminKey)
                                 .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(secp256k1SourceKey)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
                                 .nonce(0)
-                                .gas(50_000L)
                                 .gasPrice(10L)
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)

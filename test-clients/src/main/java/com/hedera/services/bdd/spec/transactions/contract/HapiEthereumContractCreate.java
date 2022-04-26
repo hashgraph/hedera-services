@@ -21,7 +21,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 
 import java.math.BigInteger;
 import java.util.Optional;
@@ -32,6 +31,10 @@ import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
 
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
+import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
+
 public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEthereumContractCreate> {
     private static final int BYTES_PER_KB = 1024;
     private static final int MAX_CALL_DATA_SIZE = 6 * BYTES_PER_KB;
@@ -40,12 +43,11 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     private EthTxData.EthTransactionType type;
     private byte[] chainId = Integers.toBytes(298);
     private long nonce;
-    private long gasPrice;
-    private long maxPriorityGas;
-    private long gasLimit;
+    private long gasPrice = 20L;
+    private long maxPriorityGas = 20_000L;
     private Optional<FileID> ethFileID = Optional.empty();
-    private Optional<Long> maxGasAllowance = Optional.empty();
-    private String privateKeyRef;
+    private Optional<Long> maxGasAllowance = Optional.of(2_000_000L);
+    private String privateKeyRef = SECP_256K1_SOURCE_KEY;
 
     public HapiEthereumContractCreate exposingNumTo(LongConsumer obs) {
         newNumObserver = Optional.of(obs);
@@ -69,10 +71,12 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
     public HapiEthereumContractCreate(String contract) {
        super(contract);
+        this.payer = Optional.of(RELAYER);
     }
 
     public HapiEthereumContractCreate(String contract, String abi, Object... args) {
         super(contract, abi, args);
+        this.payer = Optional.of(RELAYER);
     }
 
     @Override
@@ -197,7 +201,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     public HapiEthereumContractCreate gasLimit(long gasLimit) {
-        this.gasLimit = gasLimit;
+        this.gas = OptionalLong.of(gasLimit);
         return this;
     }
 
@@ -230,24 +234,10 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var gasBytes = gas.isEmpty() ? new byte[] {} : Bytes.wrap(longTuple.encode(Tuple.of(gas.getAsLong())).array()).toArray();
 
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
-                maxPriorityGasBytes, gasBytes, gasLimit,
+                maxPriorityGasBytes, gasBytes, gas.orElse(0L),
                 new byte[]{}, value, callData, new byte[]{}, 0, null, null, null);
 
-        var key = spec.registry().getKey(privateKeyRef);
-        final var privateKey = spec.keys().getPrivateKey(com.swirlds.common.utility.CommonUtils.hex(key.getECDSASecp256K1().toByteArray()));
-
-        byte[] privateKeyByteArray;
-        byte[] dByteArray = ((BCECPrivateKey)privateKey).getD().toByteArray();
-        if (dByteArray.length < 32) {
-            privateKeyByteArray = new byte[32];
-            System.arraycopy(dByteArray, 0, privateKeyByteArray, 32 - dByteArray.length, dByteArray.length);
-        } else if (dByteArray.length == 32) {
-            privateKeyByteArray = dByteArray;
-        } else {
-            privateKeyByteArray = new byte[32];
-            System.arraycopy(dByteArray, dByteArray.length - 32, privateKeyByteArray, 0, 32);
-        }
-
+        byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
         final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
 
         EthereumTransactionBody opBody = spec

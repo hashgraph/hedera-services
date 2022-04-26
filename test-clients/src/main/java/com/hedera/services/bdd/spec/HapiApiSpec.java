@@ -33,9 +33,7 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
-import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
-import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
-import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -87,7 +85,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilStateChange.hasSpecBeenEx
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.markSpecAsBeenExecuted;
-import static com.hedera.services.bdd.spec.utilops.UtilStateChange.secp256k1SourceKey;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -238,7 +235,7 @@ public class HapiApiSpec implements Runnable {
 			}
 
 			ops = Stream.of(given, when, then)
-					.flatMap(Arrays::stream).map(this::convertHapiCall)
+					.flatMap(Arrays::stream).map(UtilVerbs::convertHapiCallToEthereumCall)
 					.collect(toList());
 
 			suitePrefix = suitePrefix.concat(ETH_SUFFIX);
@@ -254,21 +251,6 @@ public class HapiApiSpec implements Runnable {
 
 		markSpecAsBeenExecuted(name);
 		nullOutInfrastructure();
-	}
-
-	private HapiSpecOperation convertHapiCall(HapiSpecOperation op) {
-		if(op instanceof HapiContractCall) {
-			op = new HapiEthereumCall(((HapiContractCall) op));
-			((HapiEthereumCall) op).signingWith(secp256k1SourceKey)
-					.type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
-					.gas(5_000_000L)
-					.gasPrice(1000L)
-					.maxGasAllowance(1_000_000L)
-					.maxPriorityGas(2L)
-					.gasLimit(10_000_000L);
-		}
-
-		return op;
 	}
 
 	public boolean tryReinitializingFees() {
