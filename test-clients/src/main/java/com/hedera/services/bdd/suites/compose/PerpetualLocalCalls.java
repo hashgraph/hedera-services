@@ -42,7 +42,7 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.is
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -81,14 +81,14 @@ public class PerpetualLocalCalls extends HapiApiSuite {
 			@Override
 			public List<HapiSpecOperation> suggestedInitializers() {
 				return List.of(
-						fileCreate("bytecode").path(ContractResources.CHILD_STORAGE_BYTECODE_PATH),
-						contractCreate("childStorage").bytecode("bytecode")
+						uploadInitCode("ChildStorage"),
+						contractCreate("ChildStorage")
 				);
 			}
 
 			@Override
 			public Optional<HapiSpecOperation> get() {
-				var op = contractCallLocal("childStorage", ContractResources.GET_MY_VALUE_ABI)
+				var op = contractCallLocal("ChildStorage", "getMyValue")
 								.noLogging()
 								.has(resultWith().resultThruAbi(
 										ContractResources.GET_MY_VALUE_ABI,

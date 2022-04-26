@@ -49,9 +49,9 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountRecords;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -167,7 +167,7 @@ public class CostOfEverythingSuite extends HapiApiSuite {
 										isLiteralResult(new Object[]{BigInteger.valueOf(256)}))),
 						contractCall(multipurposeContract, "donate", donationArgs)
 								.payingWith("civilian"),
-						contractCallLocal(lookupContract, getABIFor(FUNCTION, "lookup", lookupContract),
+						contractCallLocal(lookupContract, "lookup",
 								spec -> new Object[]{
 										spec.registry().getAccountID("civilian").getAccountNum()
 								}

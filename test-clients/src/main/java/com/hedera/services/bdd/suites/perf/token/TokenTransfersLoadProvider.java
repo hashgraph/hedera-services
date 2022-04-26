@@ -23,12 +23,9 @@ package com.hedera.services.bdd.suites.perf.token;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
-import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -44,9 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.NOISY_RETRY_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -54,14 +49,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
-import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.perf.PerfUtilOps.stdMgmtOf;
-import static com.hedera.services.bdd.suites.perf.PerfUtilOps.tokenOpsEnablement;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FREEZE_ALREADY_SCHEDULED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -97,7 +88,7 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 						getAccountBalance(DEFAULT_PAYER).logged(),
 						stdMgmtOf(duration, unit, maxOpsPerSec),
 						fileUpdate(APP_PROPERTIES)
-								.payingWith(ADDRESS_BOOK_CONTROL)
+								.payingWith(GENESIS)
 								.overridingProps(Map.of("balances.exportPeriodSecs", "300",
 										"balances.exportDir.path", "data/accountBalances/")
 								)
@@ -140,35 +131,6 @@ public class TokenTransfersLoadProvider extends HapiApiSuite {
 				var initialSupply =
 						(sendingAccountsPerToken.get() + receivingAccountsPerToken.get()) * balanceInit.get();
 				List<HapiSpecOperation> initializers = new ArrayList<>();
-				initializers.add(tokenOpsEnablement());
-				/* Temporary, can be removed after the public testnet state used in
-				   restart tests includes a fee schedule with HTS resource prices. */
-				if (spec.setup().defaultNode().equals(asAccount("0.0.3"))) {
-					initializers.add(uploadDefaultFeeSchedules(GENESIS));
-				} else {
-					initializers.add(withOpContext((spec, opLog) -> {
-						log.info("\n\n" + bannerWith("Waiting for a fee schedule with token ops!"));
-						boolean hasKnownHtsFeeSchedules = false;
-						SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
-						while (!hasKnownHtsFeeSchedules) {
-							var query = QueryVerbs.getFileContents(FEE_SCHEDULE)
-									.fee(10_000_000_000L);
-							try {
-								allRunFor(spec, query);
-								var contents = query.getResponse().getFileGetContents().getFileContents().getContents();
-								var schedules = serde.fromRawFile(contents.toByteArray());
-								hasKnownHtsFeeSchedules = schedules.contains("TokenCreate");
-							} catch (Exception e) {
-								var msg = e.toString();
-								msg = msg.substring(msg.indexOf(":") + 2);
-								log.info("Couldn't check for HTS fee schedules---'{}'", msg);
-							}
-							TimeUnit.SECONDS.sleep(3);
-						}
-						log.info("\n\n" + bannerWith("A fee schedule with token ops now available!"));
-						spec.tryReinitializingFees();
-					}));
-				}
 				for (int i = 0; i < tokensPerTxn.get(); i++) {
 					var token = "token" + i;
 					var treasury = "treasury" + i;

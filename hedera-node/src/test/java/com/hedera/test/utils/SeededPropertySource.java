@@ -67,9 +67,9 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -114,7 +114,8 @@ public class SeededPropertySource {
 				nextStateChanges(2, 5),
 				nextUnsignedLong(),
 				nextUnsignedLong(),
-				nextBytes(128));
+				nextBytes(128),
+				nextEntityId());
 	}
 
 	public MerkleTopic nextTopic() {
@@ -411,6 +412,12 @@ public class SeededPropertySource {
 		final var seeded = builder.build();
 		seeded.setSubmittingMember(nextUnsignedLong());
 		seeded.setExpiry(nextUnsignedLong());
+		if (seeded.getContractCallResult() != null && nextBoolean()) {
+			seeded.getContractCallResult().setSenderId(nextEntityId());
+		}
+		if (seeded.getContractCreateResult() != null && nextBoolean()) {
+			seeded.getContractCreateResult().setSenderId(nextEntityId());
+		}
 		return seeded;
 	}
 
@@ -562,7 +569,8 @@ public class SeededPropertySource {
 				nextStateChanges(5, 10),
 				nextUnsignedLong(),
 				nextUnsignedLong(),
-				nextBytes(64));
+				nextBytes(64),
+				null);
 	}
 
 	public List<EvmLog> nextEvmLogs(final int n) {

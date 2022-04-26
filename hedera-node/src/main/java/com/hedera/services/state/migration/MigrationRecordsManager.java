@@ -32,7 +32,6 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;

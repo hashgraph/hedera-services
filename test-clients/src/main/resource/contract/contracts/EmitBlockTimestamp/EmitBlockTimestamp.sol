@@ -8,7 +8,7 @@ contract EmitBlockTimestamp {
     function logNow() public {
         emit Time(block.timestamp);
         uint blockNo = block.number;
-        bytes32 prevHash = blockhash(blockNo);
-        emit Hash(blockNo, prevHash);
+        bytes32 hash = blockhash(blockNo);
+        emit Hash(blockNo, hash);
     }
 }

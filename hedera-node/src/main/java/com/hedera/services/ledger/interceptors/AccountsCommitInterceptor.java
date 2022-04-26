@@ -1,4 +1,4 @@
-package com.hedera.services.ledger;
+package com.hedera.services.ledger.interceptors;
 
 /*-
  * ‌
@@ -21,9 +21,13 @@ package com.hedera.services.ledger;
  */
 
 import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.services.ledger.CommitInterceptor;
+import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
@@ -61,8 +65,8 @@ public class AccountsCommitInterceptor implements CommitInterceptor<AccountID, M
 
 	private void trackBalanceChangeIfAny(
 			final long accountNum,
-			final MerkleAccount merkleAccount,
-			final Map<AccountProperty, Object> accountChanges
+			@Nullable final MerkleAccount merkleAccount,
+			@NotNull final Map<AccountProperty, Object> accountChanges
 	) {
 		if (accountChanges.containsKey(AccountProperty.BALANCE)) {
 			final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);

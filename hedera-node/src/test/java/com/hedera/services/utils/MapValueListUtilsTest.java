@@ -20,7 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
-import com.hedera.services.state.expiry.TokenRelsListRemoval;
+import com.hedera.services.state.expiry.TokenRelsListMutation;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class MapValueListUtilsTest {
 	void sequentialRemovalWorksAsExpectedOverwriting() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
 		final var k1 = overwritingRemoveFromMapValueList(aRelKey, aRelKey, relsListRemoval);
 		assertEquals(bRelKey, k1);
@@ -58,7 +58,7 @@ class MapValueListUtilsTest {
 	void interiorRemovalWorksAsExpectedOverwriting() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
 		final var k1 = overwritingRemoveFromMapValueList(bRelKey, aRelKey, relsListRemoval);
 		assertEquals(aRelKey, k1);
@@ -69,7 +69,7 @@ class MapValueListUtilsTest {
 	void tailRemovalWorksAsExpectedOverwriting() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
 		final var k1 = overwritingRemoveFromMapValueList(cRelKey, aRelKey, relsListRemoval);
 		assertEquals(aRelKey, k1);
@@ -80,7 +80,7 @@ class MapValueListUtilsTest {
 	void sequentialRemovalWorksAsExpectedInPlace() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
 		final var k1 = inPlaceRemoveFromMapValueList(aRelKey, aRelKey, relsListRemoval);
 		assertEquals(bRelKey, k1);
@@ -99,7 +99,7 @@ class MapValueListUtilsTest {
 	void interiorRemovalWorksAsExpectedInPlace() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
 		final var k1 = inPlaceRemoveFromMapValueList(bRelKey, aRelKey, relsListRemoval);
 		assertEquals(aRelKey, k1);
@@ -110,7 +110,7 @@ class MapValueListUtilsTest {
 	void tailRemovalWorksAsExpectedInPlace() {
 		initializeRels();
 
-		final var relsListRemoval = new TokenRelsListRemoval(accountNum.longValue(), tokenRels);
+		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
 		final var k1 = inPlaceRemoveFromMapValueList(cRelKey, aRelKey, relsListRemoval);
 		assertEquals(aRelKey, k1);

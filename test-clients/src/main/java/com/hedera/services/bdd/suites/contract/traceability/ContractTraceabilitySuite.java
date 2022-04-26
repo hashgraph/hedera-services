@@ -43,9 +43,9 @@ import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -130,7 +130,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(0))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
@@ -174,7 +174,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(143))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
@@ -217,7 +217,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(0))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
@@ -251,7 +251,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 										)
 
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
@@ -296,7 +296,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
@@ -339,7 +339,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
@@ -382,7 +382,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(524))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
@@ -415,7 +415,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(524))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
@@ -458,7 +458,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 										)
 
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
@@ -505,7 +505,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(1))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
@@ -546,7 +546,7 @@ public class ContractTraceabilitySuite extends HapiApiSuite {
 														formattedAssertionValue(0))
 										)
 						),
-						UtilVerbs.resetAppPropertiesTo("src/main/resource/bootstrap.properties")
+						UtilVerbs.resetAppPropertiesTo("src/main/resource/default-dynamic.properties")
 				);
 	}
 
