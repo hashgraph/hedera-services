@@ -21,10 +21,12 @@ package com.hedera.services.txns.ethereum;
  */
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.google.protobuf.ByteString;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.hedera.services.txns.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
@@ -43,6 +45,8 @@ class EthTxDataTest {
 	static final String SIGNATURE_PUBKEY = "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d";
 	static final String RAW_TX_TYPE_0 =
 			"f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792";
+	static final String RAW_TX_TYPE_0_TRIMMED_LAST_BYTES =
+			"f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290000";
 	static final String RAW_TX_TYPE_2 =
 			"02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
 
@@ -176,16 +180,60 @@ class EthTxDataTest {
 				oneByte, oneByte, oneByte, oneByte,
 				oneByte, oneByte, oneByte, oneByte,
 				oneByte);
+		var size_1 = List.of(
+				oneByte);
 
 		// legacy TX with too many RLP entries
 		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeAsList(size_13)));
+		// legacy TX with too few RLP entries
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeAsList(size_1)));
 		// type 2 TX with too many RLP entries
 		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 }, size_13)));
+		// type 2 TX with too few RLP entries
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 }, size_1)));
 		// Unsupported Transaciton Type
 		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 127 }, size_13)));
+		// Trimmed End Bytes
+		assertNull(EthTxData.populateEthTxData(Hex.decode(RAW_TX_TYPE_0_TRIMMED_LAST_BYTES)));
 
 		// poorly wrapped typed transaction
 		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 }, oneByte, oneByte)));
+	}
+
+	byte[][] normalRlpData() {
+		var oneByte = new byte[] { 1 };
+		byte[][] rlpArray = new byte[][] {
+				oneByte,oneByte,oneByte,oneByte,
+				oneByte,oneByte,oneByte,oneByte,
+				oneByte,oneByte,oneByte,oneByte
+		};
+		return rlpArray;
+	}
+
+	@Test
+	void parsingErrors() {
+		final var wrongData = Hex.encode(ByteString.copyFromUtf8("wrong").toByteArray());
+
+		// invalid nonce
+		var normalData = normalRlpData();
+		normalData[1] = wrongData;
+		final var invalidNonceData = Arrays.asList(normalData);
+
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidNonceData)));
+
+		// invalid gasLimit
+		normalData = normalRlpData();
+		normalData[4] = wrongData;
+		final var invalidGasLimitData = Arrays.asList(normalData);
+
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidGasLimitData)));
+
+		// invalid recId
+		normalData = normalRlpData();
+		normalData[9] = wrongData;
+		final var invalidRecIdData = Arrays.asList(normalData);
+
+		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidRecIdData)));
 	}
 
 	@Test

@@ -53,6 +53,13 @@ public class ExpirableTxnRecordSerdeTest extends SelfSerializableDataTest<Expira
 		if (version < ExpirableTxnRecord.RELEASE_0260_VERSION) {
 			// Ethereum hash added in release 0.26
 			seeded.setEthereumHash(ExpirableTxnRecord.MISSING_ETHEREUM_HASH);
+			// sender ID add in release 0.26
+			if (seeded.getContractCallResult() != null) {
+				seeded.getContractCallResult().setSenderId(null);
+			}
+			if (seeded.getContractCreateResult() != null) {
+				seeded.getContractCreateResult().setSenderId(null);
+			}
 		}
 		return seeded;
 	}

@@ -113,7 +113,7 @@ class SyntheticTxnFactoryTest {
 
 	@Test
 	void createsExpectedContractSkeleton() {
-		final var result = subject.contractCreation(customizer, EntityId.MISSING_ENTITY_ID);
+		final var result = subject.contractCreation(customizer, null);
 		verify(customizer).customizeSynthetic(any());
 		assertTrue(result.hasContractCreateInstance());
 		assertFalse(result.getContractCreateInstance().hasAutoRenewAccountId());

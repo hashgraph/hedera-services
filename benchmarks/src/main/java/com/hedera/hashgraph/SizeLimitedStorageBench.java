@@ -84,7 +84,7 @@ public class SizeLimitedStorageBench {
     	initializeInfrastructure();
 
         subject = new SizeLimitedStorage(
-				IterableStorageUtils::upsertMapping,
+				IterableStorageUtils::overwritingUpsertMapping,
 				IterableStorageUtils::removeMapping,
                 mockPropertiesWith(maxContractKvPairs, maxAggregateKvPairs),
                 infrastructure.accounts()::get,
