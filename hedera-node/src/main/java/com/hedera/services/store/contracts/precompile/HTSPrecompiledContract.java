@@ -62,8 +62,8 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculator;
+import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
@@ -526,6 +526,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			validateTrue(frame.getRemainingGas().compareTo(gasRequirement) >= 0, INSUFFICIENT_GAS);
 
 			precompile.handleSentHbars(frame);
+			precompile.customizeTrackingLedgers(ledgers);
 			precompile.run(frame);
 
 			// As in HederaLedger.commit(), we must first commit the ledgers before creating our
@@ -580,7 +581,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getRemainingGas().toLong() : 0L,
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getValue().toLong() : 0L,
 					precompile.shouldAddTraceabilityFieldsToRecord() ? messageFrame.getInputData().toArrayUnsafe() :
-							EvmFnResult.EMPTY);
+							EvmFnResult.EMPTY,
+					null);
 			childRecord.setContractCallResult(evmFnResult);
 		}
 	}
@@ -933,6 +935,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
+		public void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
+			worldLedgers.customizeForAutoAssociatingOp(sideEffectsTracker);
+		}
+
+		@Override
 		public void handleSentHbars(final MessageFrame frame) {
 			final var timestampSeconds = frame.getBlockValues().getTimestamp();
 			final var timestamp = Timestamp.newBuilder().setSeconds(timestampSeconds).build();
@@ -1079,6 +1086,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					sideEffectsTracker,
 					dynamicProperties,
 					ledgers.tokenRels(), ledgers.nfts(), ledgers.tokens());
+		}
+
+		@Override
+		public void customizeTrackingLedgers(final WorldLedgers worldLedgers) {
+			worldLedgers.customizeForAutoAssociatingOp(sideEffectsTracker);
 		}
 
 		@Override

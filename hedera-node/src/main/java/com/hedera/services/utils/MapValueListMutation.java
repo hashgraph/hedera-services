@@ -25,7 +25,7 @@ import com.swirlds.common.FastCopyable;
 import javax.annotation.Nullable;
 
 /**
- * Facilitates the removal of one or more keys from an implicit map whose values compose a family of
+ * Facilitates the mutation of one or more keys from an implicit map whose values compose a family of
  * doubly-linked lists. The interface could be made more concise by making {@code K} and {@code V} bounded
  * types, but after some consideration this approach seemed to better suit our use cases.
  *
@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
  * @param <V>
  * 		type of value in the linked-values map
  */
-public interface MapValueListRemoval<K, V extends FastCopyable> {
+public interface MapValueListMutation<K, V extends FastCopyable> {
 	/**
 	 * Gets the value for the specified key.
 	 *
@@ -56,14 +56,6 @@ public interface MapValueListRemoval<K, V extends FastCopyable> {
 	V getForModify(K key);
 
 	/**
-	 * Removes the value for the specified key.
-	 *
-	 * @param key
-	 * 		the key of interest
-	 */
-	void remove(K key);
-
-	/**
 	 * Adds the given mapping.
 	 *
 	 * @param key
@@ -72,6 +64,14 @@ public interface MapValueListRemoval<K, V extends FastCopyable> {
 	 * 		the corresponding value
 	 */
 	void put(K key, V value);
+
+	/**
+	 * Removes the value for the specified key.
+	 *
+	 * @param key
+	 * 		the key of interest
+	 */
+	void remove(K key);
 
 	/**
 	 * Updates the given node as the root of its containing linked list.

@@ -293,8 +293,8 @@ public class BasicTransactionContext implements TransactionContext {
 	}
 
 	@Override
-	public void updateFromEvmCallContext(final EthTxData callContext) {
-		this.evmFnResult.updateFromEvmCallContext(callContext);
+	public void updateForEvmCall(final EthTxData callContext, EntityId senderId) {
+		this.evmFnResult.updateForEvmCall(callContext, senderId);
 		var wrappedRecordConfig = recordConfig;
 		recordConfig = expiringRecord -> {
 			wrappedRecordConfig.accept(expiringRecord);
