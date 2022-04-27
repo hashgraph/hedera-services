@@ -135,7 +135,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
     }
 
     public HapiEthereumContractCreate balance(long initial) {
-        balance = Optional.of(initial);
+        balance = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(initial)).longValueExact());
         return this;
     }
 

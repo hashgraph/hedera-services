@@ -136,6 +136,8 @@ public abstract class HapiApiSuite {
 	}
 
 	public FinalOutcome runSuiteAsync() {
+		runSuite(this::runAsync);
+		getResultsLogger().info(System.lineSeparator());
 		return runSuite(this::runAsync);
 	}
 

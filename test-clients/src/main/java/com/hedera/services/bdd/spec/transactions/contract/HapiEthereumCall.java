@@ -107,9 +107,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     public HapiEthereumCall(final HapiContractCall contractCall) {
         this.abi = contractCall.getAbi();
-//        if(contractCall.getParams() != null) {
-            this.params = contractCall.getParams();
-//        }
+        this.params = contractCall.getParams();
         this.contract = contractCall.getContract();
         this.txnName = contractCall.getTxnName();
         this.gas = contractCall.getGas();
@@ -117,8 +115,18 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.payer = contractCall.getPayer();
         this.otherSigs = contractCall.getOtherSigs();
         this.expectedPrecheck = Optional.of(contractCall.getExpectedPrecheck());
-        this.valueSent = contractCall.getValueSent();
         this.fiddler = contractCall.getFiddler();
+        this.memo = contractCall.getMemo();
+        this.fee = contractCall.getFee();
+        this.submitDelay = contractCall.getSubmitDelay();
+        this.validDurationSecs = contractCall.getValidDurationSeconds();
+        this.customTxnId = contractCall.getCustomTxnId();
+        this.node = contractCall.getNode();
+        this.usdFee = contractCall.getUsdFee();
+        this.retryLimits = contractCall.getRetryLimits();
+        if (contractCall.getValueSent().isPresent()) {
+            this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(contractCall.getValueSent().get())).longValueExact());
+        }
         shouldRegisterTxn = true;
     }
 
@@ -154,7 +162,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     public HapiEthereumCall sending(long amount) {
-        valueSent = Optional.of(amount);
+        valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)).longValueExact());
         return this;
     }
 

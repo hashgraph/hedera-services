@@ -161,6 +161,34 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 		return fiddler;
 	}
 
+	public Optional<Long> getFee() {
+		return fee;
+	}
+
+	public Optional<Long> getSubmitDelay() {
+		return submitDelay;
+	}
+
+	public Optional<Long> getValidDurationSeconds() {
+		return validDurationSecs;
+	}
+
+	public Optional<String> getCustomTxnId() {
+		return customTxnId;
+	}
+
+	public Optional<AccountID> getNode() {
+		return node;
+	}
+
+	public OptionalDouble getUsdFee() {
+		return usdFee;
+	}
+
+	public Optional<Integer> getRetryLimits() {
+		return retryLimits;
+	}
+
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
 		return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::contractCallMethod;

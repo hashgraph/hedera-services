@@ -85,7 +85,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
-                                .sending(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(depositAmount)).longValueExact())
+                                .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
                                 .type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
@@ -97,7 +97,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
-                                .sending(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(depositAmount)).longValueExact())
+                                .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS)
                 ).then(
                         getTxnRecord("payTxn")
