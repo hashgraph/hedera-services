@@ -184,10 +184,10 @@ class UsageBasedFeeCalculatorTest {
 		// setup:
 		final var expected = new RenewAssessment(456L, 123L);
 
-		given(autoRenewCalcs.assessCryptoRenewal(any(), anyLong(), any(), any())).willReturn(expected);
+		given(autoRenewCalcs.assessCryptoRenewal(any(), anyLong(), any(), any(), any())).willReturn(expected);
 
 		// when:
-		var actual = subject.assessCryptoAutoRenewal(new MerkleAccount(), 1L, Instant.ofEpochSecond(2L));
+		var actual = subject.assessCryptoAutoRenewal(new MerkleAccount(), 1L, Instant.ofEpochSecond(2L), new MerkleAccount());
 
 		// then:
 		assertSame(expected, actual);
