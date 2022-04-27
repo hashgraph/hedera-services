@@ -331,6 +331,10 @@ public class TxnVerbs {
 		return new HapiContractCall(abi, contract, params);
 	}
 
+	public static HapiContractCall explicitContractCall(String contract, String abi, Object... params) {
+		return new HapiContractCall(abi, contract, params);
+	}
+
 	/** This method provides for the proper execution of specs, which execute contract calls with a function ABI instead of
 	 * function name
 	 * @param contract the name of the contract
