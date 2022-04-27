@@ -45,7 +45,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
-
 /**
  * Responsible for "garbage collection" of an expired account whose grace period has ended; such an account
  * may still own fungible token units or NFTs, and we need to either,
