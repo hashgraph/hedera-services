@@ -588,7 +588,6 @@ class EthereumTransactionTransitionLogicTest {
 
 	@Test
 	void failNonEmptyDataAndCallData() {
-		target = null;
 		callDataFile = IdUtils.asFile("0.0.1234");
 		callData = Hex.decode("fffefdfc");
 		givenValidTxnCtx();
@@ -676,6 +675,21 @@ class EthereumTransactionTransitionLogicTest {
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
 		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.MISSING_NUM);
+
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, subject.validateSemantics(accessor));
+	}
+
+	@Test
+	void signaturesInvalid() {
+		callDataFile = IdUtils.asFile("0.0.1234");
+		givenValidTxnCtx();
+		given(accessor.getExpandedSigStatus()).willReturn(OK);
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.MISSING_NUM);
+		given(hfs.exists(callDataFile)).willReturn(true);
+		given(hfs.cat(callDataFile)).willReturn(new byte[] {0x30, 0x31, 0x32, 0x33});
 
 		// expect:
 		assertEquals(INVALID_ACCOUNT_ID, subject.validateSemantics(accessor));
