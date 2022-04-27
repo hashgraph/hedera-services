@@ -31,6 +31,7 @@ import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
 
+import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
 import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
@@ -232,6 +233,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
 
         final byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
         var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
+        spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
         if(fileContents.toByteArray().length > MAX_CALL_DATA_SIZE) {
             ethFileID = Optional.of(TxnUtils.asFileId(bytecodeFile.get(), spec));
