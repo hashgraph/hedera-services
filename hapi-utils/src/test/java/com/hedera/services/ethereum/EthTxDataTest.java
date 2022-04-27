@@ -1,4 +1,4 @@
-package com.hedera.services.txns.ethereum;
+package com.hedera.services.ethereum;
 
 /*-
  * ‌
@@ -29,7 +29,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.hedera.services.txns.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
+import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -234,6 +234,9 @@ class EthTxDataTest {
 		final var invalidRecIdData = Arrays.asList(normalData);
 
 		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidRecIdData)));
+		
+		// zero length data
+		assertNull(EthTxData.populateEthTxData(new byte[0]));
 	}
 
 	@Test

@@ -466,4 +466,17 @@ public class MerkleAccount extends AbstractNaryMerkleInternal implements MerkleI
 	public boolean hasAlias() {
 		return !getAlias().isEmpty();
 	}
+
+	public boolean hasAutoRenewAccount() {
+		return !getAutoRenewAccount().equals(EntityId.MISSING_ENTITY_ID);
+	}
+
+	public EntityId getAutoRenewAccount() {
+		return state().getAutoRenewAccount();
+	}
+
+	public void setAutoRenewAccount(final EntityId autoRenewAccount) {
+		throwIfImmutable("Cannot change this account's autoRenewAccount if it's immutable.");
+		state().setAutoRenewAccount(autoRenewAccount);
+	}
 }

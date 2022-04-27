@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
  * @param <V>
  * 		type of value in the linked-values map
  */
-public interface MapValueListMutation<K, V> {
+public interface MapValueListMutation<K, V extends FastCopyable> {
 	/**
 	 * Gets the value for the specified key.
 	 *

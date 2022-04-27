@@ -1424,7 +1424,7 @@ workflows:
             filters:
               branches:
                 ignore:
-                  - block-no-poc
+                  - NONE
             workflow-name: "Continuous-integration"
         - sonar-check:
             context: SonarCloud

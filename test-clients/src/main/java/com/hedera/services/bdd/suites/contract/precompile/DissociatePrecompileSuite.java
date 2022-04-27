@@ -43,10 +43,10 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
@@ -69,7 +69,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 public class DissociatePrecompileSuite extends HapiApiSuite {
 	private static final Logger log = LogManager.getLogger(DissociatePrecompileSuite.class);
 
-	private static final long GAS_TO_OFFER = 4_000_000L;
+	private static final long GAS_TO_OFFER = 2_000_000L;
 
 	private static final long TOTAL_SUPPLY = 1_000;
 	private static final String TOKEN_TREASURY = "treasury";
@@ -279,7 +279,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
 												)
 														.payingWith(ACCOUNT)
 														.via("nestedDissociateTxn")
-														.gas(GAS_TO_OFFER)
+														.gas(3_000_000L)
 														.hasKnownStatus(ResponseCodeEnum.SUCCESS),
 												getTxnRecord("nestedDissociateTxn").andAllChildRecords().logged()
 										)

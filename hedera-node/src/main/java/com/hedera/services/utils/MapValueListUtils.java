@@ -29,9 +29,43 @@ public class MapValueListUtils {
 	/**
 	 * Inserts the given key/value at the front of the linked list in the map represented by the given
 	 * {@link MapValueListMutation}, updating the doubly-linked list to maintain the prev/next keys of
-	 * the "adjacent" value(s) as needed.
+	 * the "adjacent" value(s) as needed. Uses {@link MapValueListMutation#getForModify(Object)}.
 	 *
-	 * <p><b>Does</b> use {@link MapValueListMutation#getForModify(Object)}.
+	 * @param key
+	 * 		the key of the new mapping
+	 * @param value
+	 * 		the value of the new mapping
+	 * @param rootKey
+	 * 		the root of the in-scope linked list
+	 * @param rootValue
+	 * 		the mutable value at the root of the in-scope linked list
+	 * @param listMutation
+	 * 		the facilitator representing the map that contains the linked list
+	 * @param <K> the type of key in the map
+	 * @param <V> the type of value in the map
+	 * @return the new root of the list, for convenience
+	 */
+	public static @Nullable
+	<K, V extends FastCopyable> K inPlaceInsertAtMapValueListHead(
+			@NotNull final K key,
+			@NotNull final V value,
+			@Nullable final K rootKey,
+			@Nullable final V rootValue,
+			@NotNull final MapValueListMutation<K, V> listMutation
+	) {
+		listMutation.put(key, value);
+		if (rootKey != null) {
+			final V nextValue = (rootValue == null) ? listMutation.getForModify(rootKey) : rootValue;
+			listMutation.updateNext(value, rootKey);
+			listMutation.updatePrev(nextValue, key);
+		}
+		return key;
+	}
+
+	/**
+	 * Removes the key/value pair with the given key from its containing linked list in the map represented by the
+	 * given {@link MapValueListMutation}, updating the doubly-linked list to maintain the prev/next keys of the
+	 * "adjacent" value(s) as needed. Uses {@link MapValueListMutation#getForModify(Object)}.
 	 *
 	 * @param key
 	 * 		the key of the new mapping

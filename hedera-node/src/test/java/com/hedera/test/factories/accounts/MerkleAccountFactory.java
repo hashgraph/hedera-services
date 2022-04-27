@@ -56,6 +56,7 @@ public class MerkleAccountFactory {
 	private Optional<String> memo = Optional.empty();
 	private Optional<Boolean> isSmartContract = Optional.empty();
 	private Optional<AccountID> proxy = Optional.empty();
+	private Optional<AccountID> autoRenewAccount = Optional.empty();
 	private Optional<Integer> alreadyUsedAutoAssociations = Optional.empty();
 	private Optional<Integer> maxAutoAssociations = Optional.empty();
 	private Optional<ByteString> alias = Optional.empty();
@@ -92,6 +93,7 @@ public class MerkleAccountFactory {
 		value.setNumAssociations(associatedTokensCount.orElse(0));
 		value.setNumPositiveBalances(numPositiveBalances.orElse(0));
 		value.setHeadTokenId(lastAssociatedToken.orElse(MISSING_ID.num()));
+		autoRenewAccount.ifPresent(p -> value.setAutoRenewAccount(EntityId.fromGrpcAccountId(p)));
 		if (firstUint256Key != null) {
 			value.setFirstUint256StorageKey(firstUint256Key);
 		}
@@ -129,6 +131,11 @@ public class MerkleAccountFactory {
 
 	public MerkleAccountFactory proxy(final AccountID id) {
 		proxy = Optional.of(id);
+		return this;
+	}
+
+	public MerkleAccountFactory autoRenewAccount(final AccountID id) {
+		autoRenewAccount = Optional.of(id);
 		return this;
 	}
 
