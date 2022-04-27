@@ -54,6 +54,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -165,9 +166,9 @@ class EthereumTransactionTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		contractCallTransitionLogic = new ContractCallTransitionLogic(
+		contractCallTransitionLogic = Mockito.spy(new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
+				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess));
 		contractCreateTransitionLogic = Mockito.spy(new ContractCreateTransitionLogic(hfs, txnCtx, accountStore,
 				optionValidator,
 				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian));
@@ -214,6 +215,19 @@ class EthereumTransactionTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
+		final var expectedSyntheticCallBody = ContractCallTransactionBody.newBuilder()
+				.setAmount(1234)
+				.setContractID(ContractID.newBuilder().setContractNum(9999).buildPartial())
+				.setGas(ethTxData.gasLimit())
+				.build();
+		final var expectedTxnBody =
+				TransactionBody.newBuilder().setContractCall(expectedSyntheticCallBody).build();
+		verify(contractCallTransitionLogic).doStateTransitionOperation(
+				expectedTxnBody,
+				senderAccount.getId(),
+				true
+		);
+
 		verify(recordService).externaliseEvmCallTransaction(any());
 		verify(recordService).updateForEvmCall(any(), any());
 		verify(worldState).getCreatedContractIds();
