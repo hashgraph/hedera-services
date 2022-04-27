@@ -42,6 +42,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.ethereum.core.CallTransaction;
 
 import java.math.BigInteger;
@@ -66,6 +67,8 @@ import static com.hedera.services.bdd.suites.HapiApiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
 
 public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
+
+    public static final String ETH_HASH_KEY = "EthHash";
 
     private List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
@@ -274,6 +277,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                             maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
                         }
                 );
+        spec.registry().saveBytes(ETH_HASH_KEY,
+                ByteString.copyFrom(new Keccak.Digest256().digest(signedEthTxData.encodeTx())));
         return b -> b.setEthereumTransaction(ethOpBody);
     }
 

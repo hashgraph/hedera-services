@@ -1,7 +1,7 @@
 package com.hedera.services.bdd.suites.ethereum;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -23,8 +23,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCodeWithConstructorArguments;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -70,8 +73,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD)
                 ).when(
@@ -100,9 +104,16 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS)
                 ).then(
-                        getTxnRecord("payTxn")
-                                .hasPriority(recordWith().contractCallResult(
-                                        resultWith().logs(inOrder())))
+                        withOpContext((spec, opLog) -> allRunFor(spec, getTxnRecord("payTxn")
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .logs(inOrder())
+                                                        .senderId(spec.registry().getAccountID(
+                                                                spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .getAlias().toStringUtf8())))
+                                        .ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))))
                 );
     }
 
