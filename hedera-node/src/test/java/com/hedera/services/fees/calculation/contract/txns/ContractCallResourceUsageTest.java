@@ -39,6 +39,7 @@ class ContractCallResourceUsageTest {
 
 	private TransactionBody nonContractCallTxn;
 	private TransactionBody contractCallTxn;
+	private TransactionBody ethereumTxn;
 
 	@BeforeEach
 	private void setup() throws Throwable {
@@ -68,5 +69,16 @@ class ContractCallResourceUsageTest {
 
 		// then:
 		verify(usageEstimator).getContractCallTxFeeMatrices(contractCallTxn, sigUsage);
+	}
+
+	@Test
+	void delegatesToCorrectEstimateForEthereumCall() throws Exception {
+		// when:
+		ethereumTxn = mock(TransactionBody.class);
+		given(ethereumTxn.hasEthereumTransaction()).willReturn(true);
+		subject.usageGiven(ethereumTxn, sigUsage, null);
+
+		// then:
+		verify(usageEstimator).getContractCallTxFeeMatrices(ethereumTxn, sigUsage);
 	}
 }
