@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import javax.annotation.Nullable;
 import java.time.Instant;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -91,6 +92,7 @@ public class ContractCustomizer {
 				.expiry(expiry)
 				.autoRenewPeriod(op.getAutoRenewPeriod().getSeconds())
 				.autoRenewAccount(autoRenewAccount)
+				.maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
 				.isSmartContract(true);
 		return new ContractCustomizer(key, customizer);
 	}
@@ -119,6 +121,7 @@ public class ContractCustomizer {
 				.proxy((EntityId) ledger.get(sponsor, PROXY))
 				.autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
 				.autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
+				.maxAutomaticAssociations((int)ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
 				.isSmartContract(true);
 		return new ContractCustomizer(key, customizer);
 	}

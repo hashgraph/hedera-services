@@ -23,6 +23,7 @@ package com.hedera.services.txns.contract;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
@@ -85,6 +86,7 @@ class ContractUpdateTransitionLogicTest {
 	private TransactionContext txnCtx;
 	private SignedTxnAccessor accessor;
 	private MerkleMap<EntityNum, MerkleAccount> contracts;
+	private GlobalDynamicProperties dynamicProperties;
 	private ContractUpdateTransitionLogic subject;
 
 	@BeforeEach
@@ -101,9 +103,11 @@ class ContractUpdateTransitionLogicTest {
 		withRubberstampingValidator();
 		sigImpactHistorian = mock(SigImpactHistorian.class);
 		aliasManager = mock(AliasManager.class);
+		dynamicProperties = mock(GlobalDynamicProperties.class);
+
 
 		subject = new ContractUpdateTransitionLogic(
-				ledger, aliasManager, validator, sigImpactHistorian, txnCtx, customizerFactory, () -> contracts);
+				ledger, aliasManager, validator, sigImpactHistorian, txnCtx, customizerFactory, () -> contracts, dynamicProperties);
 	}
 
 	@Test
@@ -201,7 +205,8 @@ class ContractUpdateTransitionLogicTest {
 	void rejectsInvalidCid() {
 		givenValidTxnCtx();
 		// and:
-		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts)).willReturn(CONTRACT_DELETED);
+		given(validator.queryableContractStatus(EntityNum.fromContractId(target), contracts)).willReturn(
+				CONTRACT_DELETED);
 
 		// expect:
 		assertEquals(CONTRACT_DELETED, subject.semanticCheck().apply(contractUpdateTxn));
