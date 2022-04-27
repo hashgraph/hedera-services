@@ -93,12 +93,29 @@ public class HederaStackedWorldStateUpdater
 		return (long) trackingAccounts().get(accountId, NUM_NFTS_OWNED) > 0L;
 	}
 
+	/**
+	 * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros
+	 * if the given address is the mirror address of an account with an EIP-1014 address.
+	 *
+	 * @param evmAddress an EVM address
+	 * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for this account
+	 */
 	public byte[] unaliased(final byte[] evmAddress) {
 		final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
 		if (!addressOrAlias.equals(trackingLedgers().canonicalAddress(addressOrAlias))) {
 			return NON_CANONICAL_REFERENCE;
 		}
 		return aliases().resolveForEvm(addressOrAlias).toArrayUnsafe();
+	}
+
+	/**
+	 * Returns the mirror form of the given EVM address.
+	 *
+	 * @param evmAddress an EVM address
+	 * @return its mirror form
+	 */
+	public byte[] permissivelyUnaliased(final byte[] evmAddress) {
+		return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
 	}
 
 	/**

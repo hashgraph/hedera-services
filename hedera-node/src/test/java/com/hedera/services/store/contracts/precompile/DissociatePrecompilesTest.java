@@ -199,7 +199,7 @@ class DissociatePrecompilesTest {
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
-		given(worldUpdater.unaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
 
 	@Test

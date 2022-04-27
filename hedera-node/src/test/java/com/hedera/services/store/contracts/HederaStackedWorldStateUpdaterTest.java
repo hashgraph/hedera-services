@@ -149,6 +149,15 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
+	void usesAliasesForPermissiveDecodingHelp() {
+		given(aliases.resolveForEvm(alias)).willReturn(sponsor);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+
+		final var resolved = subject.permissivelyUnaliased(alias.toArrayUnsafe());
+		assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
+	}
+
+	@Test
 	void unaliasingFailsWhenNotUsingCanonicalAddress() {
 		given(trackingLedgers.canonicalAddress(alias)).willReturn(alias2);
 

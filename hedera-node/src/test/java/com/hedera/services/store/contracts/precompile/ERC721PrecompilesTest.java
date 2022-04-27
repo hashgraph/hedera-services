@@ -201,7 +201,7 @@ class ERC721PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.accountIdFromEvmAddress(senderAddress)).thenReturn(sender);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
-        given(worldUpdater.unaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
 
     @AfterEach

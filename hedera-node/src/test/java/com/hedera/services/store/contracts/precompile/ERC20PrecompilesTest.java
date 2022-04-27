@@ -235,7 +235,7 @@ class ERC20PrecompilesTest {
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(sender)).thenReturn(senderAddress);
         entityIdUtils.when(() -> EntityIdUtils.asTypedEvmAddress(receiver)).thenReturn(recipientAddress);
         entityIdUtils.when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray())).thenReturn(token);
-        given(worldUpdater.unaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
     }
 
     @AfterEach
