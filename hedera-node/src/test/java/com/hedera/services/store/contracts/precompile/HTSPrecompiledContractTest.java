@@ -844,7 +844,6 @@ class HTSPrecompiledContractTest {
 	@Test
 	void prepareFieldsWithAliasedMessageSender() {
 		givenFrameContext();
-		given(worldUpdater.unaliased(contractAddress.toArray())).willReturn("0x000000000000000123".getBytes());
 		subject.prepareFields(messageFrame);
 
 		verify(messageFrame, times(1)).getSenderAddress();
