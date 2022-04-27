@@ -48,6 +48,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -93,6 +94,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 	Optional<LongConsumer> newNumObserver = Optional.empty();
 	private Optional<String> proxy = Optional.empty();
 	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
+	private Optional<String> autoRenewAccount = Optional.empty();
 
 	public HapiContractCreate exposingNumTo(LongConsumer obs) {
 		newNumObserver = Optional.of(obs);
@@ -215,11 +217,21 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		return this;
 	}
 
+	public HapiContractCreate autoRenewAccountId(String id) {
+		autoRenewAccount = Optional.of(id);
+		return this;
+	}
+
 	@Override
 	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-		return (omitAdminKey || useDeprecatedAdminKey)
-				? super.defaultSigners()
-				: List.of(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> adminKey);
+		if (omitAdminKey || useDeprecatedAdminKey) {
+			return super.defaultSigners();
+		}
+		List<Function<HapiApiSpec, Key>> signers =
+				new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
+		Optional.ofNullable(adminKey).ifPresent(k -> signers.add(ignore -> k));
+		autoRenewAccount.ifPresent(id -> signers.add(spec -> spec.registry().getKey(id)));
+		return signers;
 	}
 
 	@Override
@@ -303,6 +315,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 							gas.ifPresent(b::setGas);
 							proxy.ifPresent(p -> b.setProxyAccountID(asId(p, spec)));
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
+							autoRenewAccount.ifPresent(p -> b.setAutoRenewAccountId(asId(p, spec)));
 						}
 				);
 		return b -> b.setContractCreateInstance(opBody);
@@ -355,6 +368,7 @@ public class HapiContractCreate extends HapiTxnOp<HapiContractCreate> {
 		adminKeyControl.ifPresent(c -> helper.add("customKeyShape", Boolean.TRUE));
 		Optional.ofNullable(lastReceipt)
 				.ifPresent(receipt -> helper.add("created", receipt.getContractID().getContractNum()));
+		autoRenewAccount.ifPresent(p -> helper.add("autoRenewAccount", p));
 		return helper;
 	}
 

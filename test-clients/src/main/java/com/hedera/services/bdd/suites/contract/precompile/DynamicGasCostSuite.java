@@ -70,7 +70,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -371,6 +370,7 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 		final var replAdminKey = "replAdminKey";
 		final var entityMemo = "JUST DO IT";
 		final var customAutoRenew = 7776001L;
+		final var autoRenewAccountID = "autoRenewAccount";
 		final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
 		final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
 		final AtomicReference<String> expectedMirrorAddress = new AtomicReference<>();
@@ -385,14 +385,17 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 						newKeyNamed(replAdminKey),
 						overriding("contracts.throttle.throttleByGas", "false"),
 						uploadInitCode(contract),
+						cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
 						contractCreate(contract)
 								.payingWith(GENESIS)
 								.proxy("0.0.3")
 								.adminKey(adminKey)
 								.entityMemo(entityMemo)
 								.autoRenewSecs(customAutoRenew)
+								.autoRenewAccountId(autoRenewAccountID)
 								.via(creation2)
-								.exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num)))
+								.exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
+						getContractInfo(contract).has(contractWith().autoRenewAccountId(autoRenewAccountID)).logged()
 				).when(
 						sourcing(() -> contractCallLocal(
 								contract,
@@ -494,8 +497,12 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								/* Cannot repeat CREATE2 with same args without destroying the existing contract */
 								.hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
 						// https://github.com/hashgraph/hedera-services/issues/2874
+						// autoRenewAccountID is inherited from the sender
 						sourcing(() -> getContractInfo(expectedCreate2Address.get())
-								.has(contractWith().addressOrAlias(expectedCreate2Address.get()))),
+								.has(contractWith()
+										.addressOrAlias(expectedCreate2Address.get())
+										.autoRenewAccountId(autoRenewAccountID))
+								.logged()),
 						sourcing(() -> contractCallLocalWithFunctionAbi(
 								expectedCreate2Address.get(),
 								getABIFor(FUNCTION, "getBalance", testContract)
@@ -504,10 +511,14 @@ public class DynamicGasCostSuite extends HapiApiSuite {
 								.has(resultWith().resultThruAbi(
 										getABIFor(FUNCTION, "getBalance", testContract),
 										isLiteralResult(new Object[]{BigInteger.valueOf(tcValue)})))),
+						// autoRenewAccountID is inherited from the sender
 						sourcing(() -> getContractInfo(expectedMirrorAddress.get())
 								.has(contractWith()
 										.adminKey(replAdminKey)
-										.addressOrAlias(expectedCreate2Address.get()))),
+										.addressOrAlias(expectedCreate2Address.get())
+										.autoRenewAccountId(autoRenewAccountID)
+								)
+								.logged()),
 						sourcing(() -> contractCallWithFunctionAbi(expectedCreate2Address.get(),
 								getABIFor(FUNCTION, "vacateAddress", testContract))
 								.payingWith(GENESIS)),

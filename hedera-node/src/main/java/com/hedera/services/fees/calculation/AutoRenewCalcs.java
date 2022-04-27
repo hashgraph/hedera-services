@@ -123,9 +123,10 @@ public class AutoRenewCalcs {
 			final MerkleAccount expiredAccountOrContract,
 			final long reqPeriod,
 			final Instant at,
-			final ExchangeRate rate
+			final ExchangeRate rate,
+			final MerkleAccount payer
 	) {
-		final long balance = expiredAccountOrContract.getBalance();
+		final long balance = payer.getBalance();
 		if (balance == 0L) {
 			return NO_RENEWAL_POSSIBLE;
 		}

@@ -149,8 +149,8 @@ public class MigrationRecordsManager {
 				final var newExpiry = account.getExpiry();
 
 				final var syntheticSuccessReceipt = TxnReceipt.newBuilder().setStatus(SUCCESS_LITERAL).build();
-
-				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry);
+				// for 0.26.0 migration we use the contract account's hbar since auto-renew accounts are not set
+				final var synthBody = syntheticTxnFactory.synthContractAutoRenew(contractNum.asNum(), newExpiry, contractNum.toGrpcAccountId());
 				final var memo = String.format(CONTRACT_UPGRADE_MEMO, contractNum.num(), newExpiry);
 				final var synthRecord = ExpirableTxnRecord.newBuilder()
 						.setMemo(memo)
