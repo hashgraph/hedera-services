@@ -9,9 +9,9 @@ package com.hedera.services.state.merkle;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,21 +21,33 @@ package com.hedera.services.state.merkle;
  */
 
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
+import com.hedera.test.extensions.LogCaptor;
+import com.hedera.test.extensions.LogCaptureExtension;
+import com.hedera.test.extensions.LoggingSubject;
+import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.crypto.Hash;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Instant;
 import java.util.SplittableRandom;
 
+import static com.hedera.services.state.merkle.MerkleNetworkContext.NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.UNAVAILABLE_BLOCK_HASH;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(LogCaptureExtension.class)
 class MerkleNetworkContextBlockSyncTest {
 	private static final int m = 64;
 	private static final byte[] unmatchedHash = new byte[32];
 	private static final byte[][] blockHashes = new byte[m][];
 	private static final byte[][] swirldHashes = new byte[m][];
 	private static final long knownBlockNo = 666;
+	private static final Instant then = Instant.ofEpochSecond(1_234_567, 890);
 
 	static {
 		final var r = new SplittableRandom(123456789);
@@ -48,9 +60,15 @@ class MerkleNetworkContextBlockSyncTest {
 		r.nextBytes(unmatchedHash);
 	}
 
-	private static final Instant then = Instant.ofEpochSecond(1_234_567, 890);
+	@LoggingTarget
+	private LogCaptor logCaptor;
+	@LoggingSubject
+	private MerkleNetworkContext subject;
 
-	private final MerkleNetworkContext subject = new MerkleNetworkContext();
+	@BeforeEach
+	void setUp() {
+		subject = new MerkleNetworkContext();
+	}
 
 	@Test
 	void finishingWithoutKnownBlockNumberUsesNegativeBlockNumbers() {
@@ -68,7 +86,12 @@ class MerkleNetworkContextBlockSyncTest {
 	}
 
 	@Test
-	void renumbersAsExpected() {
+	void renumberingWithUnknownValuesIsNoop() {
+		assertDoesNotThrow(() -> subject.renumberBlocksToMatch(KnownBlockValues.MISSING_BLOCK_VALUES));
+	}
+
+	@Test
+	void renumbersAndLogsAsExpected() {
 		finishNBlocks(m);
 		final var blockOffset = m / 4;
 		subject.renumberBlocksToMatch(new KnownBlockValues(blockHashes[blockOffset], knownBlockNo));
@@ -76,9 +99,31 @@ class MerkleNetworkContextBlockSyncTest {
 		for (int i = 0; i < m; i++) {
 			assertArrayEquals(
 					blockHashes[i],
-					subject.getBlockHashByNumber(knownBlockNo - blockOffset + i).toArray());
+					subject.getBlockHashByNumber(knownBlockNo + i - blockOffset).toArray());
 		}
-		assertSame(UNAVAILABLE_BLOCK_HASH, subject.getBlockHashByNumber(knownBlockNo + m - blockOffset + 1));
+		final var newCurNo = knownBlockNo + m - blockOffset;
+		assertSame(UNAVAILABLE_BLOCK_HASH, subject.getBlockHashByNumber(newCurNo));
+		assertEquals(newCurNo, subject.getBlockNo());
+		assertEquals(newCurNo, subject.getManagedBlockNo());
+		// and:
+		assertEquals(NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING, subject.getBlocksToLog());
+		for (int j = 0; j < NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING + 1; j++) {
+			subject.finishBlock(new Hash(swirldHashes[j % swirldHashes.length]), then.plusSeconds(2 * j));
+		}
+		assertThat(logCaptor.infoLogs(), contains(
+				Matchers.startsWith("Renumbered 64 trailing block hashes"),
+				Matchers.startsWith("--- BLOCK UPDATE ---\n  Finished: #" + newCurNo),
+				Matchers.startsWith("--- BLOCK UPDATE ---\n  Finished: #" + (newCurNo + 1)),
+				Matchers.startsWith("--- BLOCK UPDATE ---\n  Finished: #" + (newCurNo + 2)),
+				Matchers.startsWith("--- BLOCK UPDATE ---\n  Finished: #" + (newCurNo + 3)),
+				Matchers.startsWith("--- BLOCK UPDATE ---\n  Finished: #" + (newCurNo + 4))));
+	}
+
+	@Test
+	void unknownBlockValuesHaveExpectedDefaults() {
+		assertSame(Instant.EPOCH, subject.firstConsTimeOfCurrentBlock());
+		assertEquals(0, subject.getBlockNo());
+		assertEquals(Long.MIN_VALUE, subject.getManagedBlockNo());
 	}
 
 	private void finishNBlocks(final int n) {

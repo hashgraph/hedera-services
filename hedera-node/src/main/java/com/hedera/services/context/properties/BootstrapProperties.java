@@ -312,9 +312,7 @@ public final class BootstrapProperties implements PropertySource {
 			"stats.executionTimesToTrack",
 			"stats.hapiOps.speedometerUpdateIntervalMs",
 			"stats.runningAvgHalfLifeSecs",
-			"stats.speedometerHalfLifeSecs",
-			"bootstrap.lastKnownBlockNumber",
-			"bootstrap.lastKnownBlockStartTime"
+			"stats.speedometerHalfLifeSecs"
 	);
 
 	public static final Set<String> BOOTSTRAP_PROP_NAMES = unmodifiableSet(
@@ -458,8 +456,6 @@ public final class BootstrapProperties implements PropertySource {
 			entry("hedera.allowances.maxTransactionLimit", AS_INT),
 			entry("hedera.allowances.maxAccountLimit", AS_INT),
 			entry("hedera.allowances.isEnabled", AS_BOOLEAN),
-			entry("accounts.limitTokenAssociations", AS_BOOLEAN),
-			entry("bootstrap.lastKnownBlockNumber", AS_LONG),
-			entry("bootstrap.lastKnownBlockStartTime", AS_INSTANT)
+			entry("accounts.limitTokenAssociations", AS_BOOLEAN)
 	);
 }

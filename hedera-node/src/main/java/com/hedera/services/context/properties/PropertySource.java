@@ -115,8 +115,8 @@ public interface PropertySource {
 		return getTypedProperty(Long.class, name);
 	}
 
-	default Instant getInstantProperty(String name) {
-		return getTypedProperty(Instant.class, name);
+	default KnownBlockValues getBlockValuesProperty(String name) {
+		return getTypedProperty(KnownBlockValues.class, name);
 	}
 
 	default Profile getProfileProperty(String name) {

@@ -134,6 +134,7 @@ class CallEvmTxProcessorTest {
 		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
 		given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
+		given(merkleNetworkContext.getBlockNo()).willReturn(1234L);
 
 		givenSenderWithBalance(350_000L);
 		var result = callEvmTxProcessor.execute(

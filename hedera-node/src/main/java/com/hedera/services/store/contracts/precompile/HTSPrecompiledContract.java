@@ -366,13 +366,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 		this.sideEffectsTracker = sideEffectsFactory.get();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
-
 		final var unaliasedSenderAddress = updater.unaliased(frame.getSenderAddress().toArray());
-		if (unaliasedSenderAddress != null) {
-			this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
-		} else {
-			this.senderAddress = frame.getSenderAddress();
-		}
+		this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
 	}
 
 	void computeGasRequirement(final long blockTimestamp) {
