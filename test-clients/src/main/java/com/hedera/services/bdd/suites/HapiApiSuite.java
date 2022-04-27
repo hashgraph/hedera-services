@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -55,6 +56,7 @@ public abstract class HapiApiSuite {
 
 	public static final Key EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 
+	public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 	public static final long ADEQUATE_FUNDS = 10_000_000_000L;
 	public static final long ONE_HBAR = 100_000_000L;
 	public static final long THOUSAND_HBAR = 1_000 * ONE_HBAR;

@@ -1,13 +1,13 @@
 package com.hedera.services.bdd.suites.ethereum;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
@@ -85,7 +85,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
-                                .sending(depositAmount)
+                                .sending(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(depositAmount)).longValueExact())
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS),
                         ethereumCall(PAY_RECEIVABLE_CONTRACT, "deposit", depositAmount)
                                 .type(EthTxData.EthTransactionType.LEGACY_ETHEREUM)
@@ -97,7 +97,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
-                                .sending(depositAmount)
+                                .sending(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(depositAmount)).longValueExact())
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS)
                 ).then(
                         getTxnRecord("payTxn")
