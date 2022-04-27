@@ -87,12 +87,13 @@ public class SyntheticTxnFactory {
 				.setCryptoDelete(op);
 	}
 
-	public TransactionBody.Builder synthContractAutoRenew(final EntityNum contractNum, final long newExpiry) {
+	public TransactionBody.Builder synthContractAutoRenew(final EntityNum contractNum, final long newExpiry,
+			final AccountID payerForAutoRenew) {
 		final var op = ContractUpdateTransactionBody.newBuilder()
 				.setContractID(contractNum.toGrpcContractID())
 				.setExpirationTime(MiscUtils.asSecondsTimestamp(newExpiry));
 		return TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder().setAccountID(contractNum.toGrpcAccountId()))
+				.setTransactionID(TransactionID.newBuilder().setAccountID(payerForAutoRenew))
 				.setContractUpdateInstance(op);
 	}
 
@@ -108,7 +109,9 @@ public class SyntheticTxnFactory {
 
 	public TransactionBody.Builder contractCreation(final ContractCustomizer customizer) {
 		final var builder = ContractCreateTransactionBody.newBuilder();
+
 		customizer.customizeSynthetic(builder);
+
 		return TransactionBody.newBuilder().setContractCreateInstance(builder);
 	}
 
@@ -206,7 +209,8 @@ public class SyntheticTxnFactory {
 		txnBodyBuilder.setSymbol(tokenCreateWrapper.getSymbol());
 		txnBodyBuilder.setDecimals(tokenCreateWrapper.getDecimals().intValue());
 		txnBodyBuilder.setTokenType(tokenCreateWrapper.isFungible() ? TokenType.FUNGIBLE_COMMON : NON_FUNGIBLE_UNIQUE);
-		txnBodyBuilder.setSupplyType(tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
+		txnBodyBuilder.setSupplyType(
+				tokenCreateWrapper.isSupplyTypeFinite() ? TokenSupplyType.FINITE : TokenSupplyType.INFINITE);
 		txnBodyBuilder.setMaxSupply(tokenCreateWrapper.getMaxSupply());
 		txnBodyBuilder.setInitialSupply(tokenCreateWrapper.getInitSupply().longValue());
 		if (tokenCreateWrapper.getTreasury() != null)
@@ -218,7 +222,8 @@ public class SyntheticTxnFactory {
 		if (tokenCreateWrapper.getExpiry().autoRenewAccount() != null)
 			txnBodyBuilder.setAutoRenewAccount(tokenCreateWrapper.getExpiry().autoRenewAccount());
 		if (tokenCreateWrapper.getExpiry().autoRenewPeriod() != 0)
-			txnBodyBuilder.setAutoRenewPeriod(Duration.newBuilder().setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
+			txnBodyBuilder.setAutoRenewPeriod(
+					Duration.newBuilder().setSeconds(tokenCreateWrapper.getExpiry().autoRenewPeriod()));
 		tokenCreateWrapper.getTokenKeys().forEach(tokenKeyWrapper -> {
 			final var key = tokenKeyWrapper.key().asGrpc();
 			if (tokenKeyWrapper.isUsedForAdminKey()) txnBodyBuilder.setAdminKey(key);

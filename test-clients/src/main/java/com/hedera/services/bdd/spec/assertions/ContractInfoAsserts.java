@@ -22,6 +22,7 @@ package com.hedera.services.bdd.spec.assertions;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
 import com.hederahashgraph.api.proto.java.Key;
 
 import static com.hederahashgraph.api.proto.java.ContractGetInfoResponse.ContractInfo;
@@ -183,6 +184,14 @@ public class ContractInfoAsserts extends BaseErroringAssertsProvider<ContractInf
 		final long numStorageBytes = expectedKvPairs * 64L;
 		registerProvider((spec, o) -> {
 			assertEquals(numStorageBytes, object2ContractInfo(o).getStorage(), "Bad storage size!");
+		});
+		return this;
+	}
+
+	public ContractInfoAsserts autoRenewAccountId(String id) {
+		registerProvider((spec, o) -> {
+			assertEquals(spec.registry().getAccountID(id)
+					, object2ContractInfo(o).getAutoRenewAccountId(), "Bad autoRenewAccountId !");
 		});
 		return this;
 	}
