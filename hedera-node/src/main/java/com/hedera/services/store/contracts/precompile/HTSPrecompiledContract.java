@@ -63,7 +63,6 @@ import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
-import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectGasCalculator;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
 import com.hedera.services.store.models.Id;
@@ -1466,9 +1465,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				var owner = (EntityId) ledgers.nfts().get(nftId, OWNER);
 				final var deleteAllowanceTxn = syntheticTxnFactory.createDeleteAllowance(approveWrapper, owner);
 				final var deleteAllowanceLogic = deleteAllowanceLogicFactory.newDeleteAllowanceLogic(accountStore, tokenStore);
-				deleteAllowanceLogic.deleteAllowance(deleteAllowanceTxn.getCryptoDeleteAllowance().getCryptoAllowancesList(),
-						deleteAllowanceTxn.getCryptoDeleteAllowance().getTokenAllowancesList(),
-						deleteAllowanceTxn.getCryptoDeleteAllowance().getNftAllowancesList(),
+				deleteAllowanceLogic.deleteAllowance(deleteAllowanceTxn.getCryptoDeleteAllowance().getNftAllowancesList(),
 						EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
 
 				frame.addLog(getLogForNftExchange(precompileAddress));
@@ -1730,9 +1727,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			} else {
 				if (approveOp.spender().getAccountNum() == 0) {
 					final var deleteAllowanceLogic = deleteAllowanceLogicFactory.newDeleteAllowanceLogic(accountStore, tokenStore);
-					deleteAllowanceLogic.deleteAllowance(transactionBody.getCryptoDeleteAllowance().getCryptoAllowancesList(),
-							transactionBody.getCryptoDeleteAllowance().getTokenAllowancesList(),
-							transactionBody.getCryptoDeleteAllowance().getNftAllowancesList(),
+					deleteAllowanceLogic.deleteAllowance(transactionBody.getCryptoDeleteAllowance().getNftAllowancesList(),
 							EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
 				} else {
 					final var checkResponseCode = allowanceChecks.allowancesValidation(transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),

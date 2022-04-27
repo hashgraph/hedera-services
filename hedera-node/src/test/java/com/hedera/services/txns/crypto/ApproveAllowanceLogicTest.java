@@ -334,7 +334,7 @@ class ApproveAllowanceLogicTest {
 		given(tokenStore.loadUniqueToken(tokenId2, serial1)).willReturn(nft1);
 		given(tokenStore.loadUniqueToken(tokenId2, serial2)).willReturn(nft2);
 
-		subject.applyNftAllowances(nftAllowances, ownerAcccount, new HashMap<>(), new HashMap<>());
+		subject.applyNftAllowances(nftAllowances, ownerAcccount);
 
 		assertEquals(1, ownerAcccount.getApprovedForAllNftsAllowances().size());
 	}
