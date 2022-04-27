@@ -24,6 +24,7 @@ import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -229,7 +230,7 @@ public class SigRequirements {
 			final @Nullable LinkedRefs linkedRefs
 	) {
 		if (txn.hasContractCreateInstance()) {
-			return contractCreate(txn.getContractCreateInstance(), factory);
+			return contractCreate(txn.getContractCreateInstance(), factory, linkedRefs);
 		} else if (txn.hasContractUpdateInstance()) {
 			return contractUpdate(txn.getContractUpdateInstance(), factory, linkedRefs);
 		} else if (txn.hasContractDeleteInstance()) {
@@ -418,6 +419,14 @@ public class SigRequirements {
 			required = mutable(required);
 			candidate.ifPresent(required::add);
 		}
+		if (hasAutoRenewId(op)) {
+			var autoRenewAccountResult = sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccountId(), linkedRefs);
+			if (!autoRenewAccountResult.succeeded()) {
+				return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
+			}
+			required = mutable(required);
+			required.add(autoRenewAccountResult.metadata().key());
+		}
 
 		return factory.forValidOrder(required);
 	}
@@ -437,16 +446,38 @@ public class SigRequirements {
 
 	private <T> SigningOrderResult<T> contractCreate(
 			final ContractCreateTransactionBody op,
-			final SigningOrderResultFactory<T> factory
+			final SigningOrderResultFactory<T> factory,
+			final @Nullable LinkedRefs linkedRefs
 	) {
+		List<JKey> required = EMPTY_LIST;
+
 		var key = op.getAdminKey();
-		if (key.hasContractID()) {
-			return SigningOrderResult.noKnownKeys();
+		if (!key.hasContractID()) {
+			var candidate = asUsableFcKey(key);
+			if (candidate.isPresent()) {
+				required = mutable(required);
+				required.add(candidate.get());
+			}
 		}
-		var candidate = asUsableFcKey(key);
-		return candidate.isPresent()
-				? factory.forValidOrder(List.of(candidate.get()))
-				: SigningOrderResult.noKnownKeys();
+		if (hasAutoRenewId(op)) {
+			var autoRenewAccountResult = sigMetaLookup.accountSigningMetaFor(op.getAutoRenewAccountId(), linkedRefs);
+			if (!autoRenewAccountResult.succeeded()) {
+				return accountFailure(INVALID_AUTORENEW_ACCOUNT, factory);
+			}
+			required = mutable(required);
+			required.add(autoRenewAccountResult.metadata().key());
+		}
+		return !required.isEmpty() ? factory.forValidOrder(required) : SigningOrderResult.noKnownKeys();
+	}
+
+	private boolean hasAutoRenewId(final ContractCreateTransactionBody op) {
+		return op.hasAutoRenewAccountId() && !EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()).equals(
+				EntityId.MISSING_ENTITY_ID);
+	}
+
+	private boolean hasAutoRenewId(final ContractUpdateTransactionBody op) {
+		return op.hasAutoRenewAccountId() && !EntityId.fromGrpcAccountId(op.getAutoRenewAccountId()).equals(
+				EntityId.MISSING_ENTITY_ID);
 	}
 
 	private <T> SigningOrderResult<T> fileDelete(

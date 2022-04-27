@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
 
+import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
 import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
@@ -145,6 +146,19 @@ class AccountCustomizerTest {
 				any(EnumMap.class),
 				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(PROXY)::equals),
 				argThat(proxy::equals));
+	}
+
+	@Test
+	void changesExpectedAutoRenewAccountProperty() {
+		setupWithMockChangeManager();
+		final var autoRenewId = new EntityId();
+
+		subject.autoRenewAccount(autoRenewId);
+
+		verify(changeManager).update(
+				any(EnumMap.class),
+				argThat(TestAccountCustomizer.OPTION_PROPERTIES.get(AUTO_RENEW_ACCOUNT_ID)::equals),
+				argThat(autoRenewId::equals));
 	}
 
 	@Test

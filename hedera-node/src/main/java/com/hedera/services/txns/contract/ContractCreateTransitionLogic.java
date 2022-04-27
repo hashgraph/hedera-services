@@ -55,6 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
@@ -116,12 +117,19 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			key = STANDIN_CONTRACT_ID_KEY;
 		}
 
+		if (op.hasAutoRenewAccountId()) {
+			final var autoRenewAccountId = Id.fromGrpcAccount(op.getAutoRenewAccountId());
+			final var autoRenewAccount = accountStore.loadAccountOrFailWith(autoRenewAccountId, INVALID_AUTORENEW_ACCOUNT);
+			validateFalse(autoRenewAccount.isSmartContract(), INVALID_AUTORENEW_ACCOUNT);
+		}
+
 		// --- Load the model objects ---
 		final var sender = accountStore.loadAccount(senderId);
 		final var consensusTime = txnCtx.consensusTime();
 		final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
 		final var expiry = consensusTime.getEpochSecond() + op.getAutoRenewPeriod().getSeconds();
 		final var newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
+
 
 		// --- Do the business logic ---
 		if (incrementCounter) {
