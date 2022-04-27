@@ -20,8 +20,11 @@ package com.hedera.services.sysfiles.domain;
  * ‍
  */
 
+import com.google.common.primitives.Longs;
 import com.hedera.services.sysfiles.ParsingUtils;
 import com.swirlds.common.utility.CommonUtils;
+
+import java.util.Arrays;
 
 public record KnownBlockValues(byte[] hash, long number) {
 	private static final int KECCAK256_HASH_LENGTH = 32;
@@ -45,5 +48,30 @@ public record KnownBlockValues(byte[] hash, long number) {
 
 	public boolean isMissing() {
 		return hash.length == 0;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || KnownBlockValues.class != o.getClass()) {
+			return false;
+		}
+		final var that = (KnownBlockValues) o;
+		return this.number == that.number && Arrays.equals(this.hash, that.hash);
+	}
+
+	@Override
+	public int hashCode() {
+		return 31 * Longs.hashCode(number) + Arrays.hashCode(hash);
+	}
+
+	@Override
+	public String toString() {
+		return "KnownBlockValues{" +
+				"hash=" + CommonUtils.hex(hash) +
+				", number=" + number +
+				'}';
 	}
 }

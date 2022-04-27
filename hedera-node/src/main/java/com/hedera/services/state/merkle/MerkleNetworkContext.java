@@ -183,7 +183,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 		final var matchIndex = matchIndexOf(knownBlockValues.hash());
 		if (matchIndex == -1) {
 			log.info("None of {} trailing block hashes matched '{}'",
-					blockHashes.size(), CommonUtils.hex(knownBlockValues.hash()));
+					blockHashes::size, () -> CommonUtils.hex(knownBlockValues.hash()));
 		} else {
 			final SortedMap<Long, org.hyperledger.besu.datatypes.Hash> renumberedBlockHashes = new TreeMap<>();
 			long nextKey = knownBlockValues.number() - matchIndex;
@@ -193,7 +193,7 @@ public class MerkleNetworkContext extends AbstractMerkleLeaf {
 			blockNo = nextKey;
 			blockHashes = renumberedBlockHashes;
 			log.info("Renumbered {} trailing block hashes given '0x{}@{}'",
-					blockHashes.size(), CommonUtils.hex(knownBlockValues.hash()), knownBlockValues.number());
+					blockHashes::size, () -> CommonUtils.hex(knownBlockValues.hash()), knownBlockValues::number);
 			blocksToLog = NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING;
 		}
 	}
