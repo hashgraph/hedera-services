@@ -42,4 +42,8 @@ public class ParsingUtils {
 		validator.accept(a, b);
 		return finisher.apply(a, b);
 	}
+
+	private ParsingUtils() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 }

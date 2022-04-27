@@ -24,6 +24,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleNetworkContextSerdeTest;
@@ -54,6 +55,13 @@ import com.hedera.services.state.submerkle.FcTokenAssociation;
 import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.state.submerkle.TxnIdSerdeTest;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractKeySerializer;
+import com.hedera.services.state.virtual.ContractKeySupplier;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hedera.test.utils.SerdeUtils;
@@ -174,7 +182,14 @@ public class SerializedForms {
 					entry(RecordsRunningHashLeaf.class, SeededPropertySource::nextRecordsRunningHashLeaf,
 							MIN_TEST_CASES_PER_VERSION),
 					entry(TxnId.class, SeededPropertySource::nextTxnId, TxnIdSerdeTest.NUM_TEST_CASES),
-					entry(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, 2 * MIN_TEST_CASES_PER_VERSION)
+					entry(TxnReceipt.class, TxnReceiptSerdeTest::receiptFactory, 2 * MIN_TEST_CASES_PER_VERSION),
+					entry(MerkleAccountTokens.class, SeededPropertySource::nextMerkleAccountTokens,
+							MIN_TEST_CASES_PER_VERSION),
+					entry(ContractKey.class, SeededPropertySource::nextContractKey, MIN_TEST_CASES_PER_VERSION),
+					entry(ContractValue.class, SeededPropertySource::nextContractValue, MIN_TEST_CASES_PER_VERSION),
+					entry(VirtualBlobKey.class, SeededPropertySource::nextVirtualBlobKey, MIN_TEST_CASES_PER_VERSION),
+					entry(VirtualBlobValue.class, SeededPropertySource::nextVirtualBlobValue,
+							MIN_TEST_CASES_PER_VERSION)
 	);
 
 	private static <T extends SelfSerializable> void saveForCurrentVersion(
