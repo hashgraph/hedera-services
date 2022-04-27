@@ -54,7 +54,6 @@ import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.HEAD_TOKEN_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
@@ -214,7 +213,6 @@ class AccountPropertyTest {
 		FUNGIBLE_TOKEN_ALLOWANCES.setter().accept(account, fungibleAllowances);
 		APPROVE_FOR_ALL_NFTS_ALLOWANCES.setter().accept(account, nftAllowances);
 		NUM_ASSOCIATIONS.setter().accept(account, newAssociationCount);
-		HEAD_TOKEN_NUM.setter().accept(account, newLastAssociatedTokenNum);
 		NUM_POSITIVE_BALANCES.setter().accept(account, newNumPositiveBalances);
 		NUM_TREASURY_TITLES.setter().accept(account, newNumTreasuryTitles);
 
@@ -237,7 +235,6 @@ class AccountPropertyTest {
 		assertEquals(nftAllowances, APPROVE_FOR_ALL_NFTS_ALLOWANCES.getter().apply(account));
 		assertEquals(newAssociationCount, NUM_ASSOCIATIONS.getter().apply(account));
 		assertEquals(newNumPositiveBalances, NUM_POSITIVE_BALANCES.getter().apply(account));
-		assertEquals(newLastAssociatedTokenNum, HEAD_TOKEN_NUM.getter().apply(account));
 		assertEquals(newNumTreasuryTitles, NUM_TREASURY_TITLES.getter().apply(account));
 	}
 
