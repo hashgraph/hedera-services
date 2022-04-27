@@ -290,7 +290,6 @@ class E2EPackageRunner {
 
 	@Tag("contract")
 	@Tag("contract.precompile")
-	@Tag("contract.precompile.part1")
 	@Tag("contract.precompile.part1.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompileEth() {
@@ -320,7 +319,6 @@ class E2EPackageRunner {
 
 	@Tag("contract")
 	@Tag("contract.precompile")
-	@Tag("contract.precompile.part2")
 	@Tag("contract.precompile.part2.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile2Eth() {
@@ -345,7 +343,6 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
-	@Tag("contract.openzeppelin")
 	@Tag("contract.openzeppelin.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractOpenZeppelinEth() {
@@ -367,7 +364,6 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
-	@Tag("contract.records")
 	@Tag("contract.records.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractRecordsEth() {
@@ -398,7 +394,6 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
-	@Tag("contract.opcodes")
 	@Tag("contract.opcodes.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractOpcodesEth() {
@@ -435,7 +430,6 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
-	@Tag("contract.hapi")
 	@Tag("contract.hapi.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractHapiEth() {
@@ -461,7 +455,6 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
-	@Tag("contract.traceability")
 	@Tag("contract.traceability.eth")
 	@TestFactory
 	Collection<DynamicContainer> contractTraceabilityEth() {
