@@ -268,6 +268,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
         byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
         final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
+        spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
         final EthereumTransactionBody ethOpBody = spec
                 .txns()
@@ -277,8 +278,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                             maxGasAllowance.ifPresent(builder::setMaxGasAllowance);
                         }
                 );
-        spec.registry().saveBytes(ETH_HASH_KEY,
-                ByteString.copyFrom(new Keccak.Digest256().digest(signedEthTxData.encodeTx())));
         return b -> b.setEthereumTransaction(ethOpBody);
     }
 

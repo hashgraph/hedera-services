@@ -122,7 +122,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))    .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
+
 
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT)
                 ).when(
@@ -136,8 +138,19 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L).hasKnownStatus(SUCCESS)
+                                .via("payTxn")
                 ).then(
 //                        getAliasedAccountInfo()
+                        withOpContext((spec, opLog) -> allRunFor(spec, getTxnRecord("payTxn")
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCreateResult(
+                                                resultWith()
+                                                        .logs(inOrder())
+                                                        .senderId(spec.registry().getAccountID(
+                                                                spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .getAlias().toStringUtf8())))
+                                        .ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))))
                 );
     }
 
@@ -147,7 +160,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))   .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords(),
                         newKeyNamed(contractAdminKey),
 
                         uploadInitCode(TOKEN_CREATE_CONTRACT)
@@ -162,8 +176,20 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(5L)
                                 .maxPriorityGas(2L)
                                 .gasLimit(1_000_000L)
+                                .via("payTxn")
                                 .hasKnownStatus(SUCCESS)
-                ).then();
+                ).then(
+                        withOpContext((spec, opLog) -> allRunFor(spec, getTxnRecord("payTxn")
+                                .logged()
+                                .hasPriority(recordWith()
+                                        .contractCreateResult(
+                                                resultWith()
+                                                        .logs(inOrder())
+                                                        .senderId(spec.registry().getAccountID(
+                                                                spec.registry().aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                        .getAlias().toStringUtf8())))
+                                        .ethereumHash(ByteString.copyFrom(spec.registry().getBytes(ETH_HASH_KEY))))))
+                );
     }
 
     private HapiApiSpec contractCreateWithConstructorArgs() {
