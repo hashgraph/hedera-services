@@ -106,7 +106,7 @@ public record EntityNumPair(long value) {
 	}
 
 	public NftNumPair asNftNumPair() {
-		return NftNumPair.fromNums(getHiOrderAsLong(), getLowOrderAsLong());
+		return NftNumPair.fromLongs(getHiOrderAsLong(), getLowOrderAsLong());
 	}
 
 	@Override

@@ -422,8 +422,8 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 					var currHeadNftId = EntityNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum);
 					var currHeadNft = nfts.getForModify(currHeadNftId);
 
-					currHeadNft.setPrev(NftNumPair.fromNums(tokenNum, serialNum));
-					nft.setNext(NftNumPair.fromNums(currHeadNftNum, currHeadNftSerialNum));
+					currHeadNft.setPrev(NftNumPair.fromLongs(tokenNum, serialNum));
+					nft.setNext(NftNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum));
 				}
 				merkleAccount.setHeadNftId(tokenNum);
 				merkleAccount.setHeadNftSerialNum(serialNum);

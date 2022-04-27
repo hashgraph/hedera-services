@@ -26,7 +26,7 @@ public record NftNumPair(long tokenNum, long serialNum) {
 		return EntityNumPair.fromLongs(tokenNum, serialNum);
 	}
 
-	public static NftNumPair fromNums(final long tokenNum, final long serialNum) {
+	public static NftNumPair fromLongs(final long tokenNum, final long serialNum) {
 		return new NftNumPair(tokenNum, serialNum);
 	}
 

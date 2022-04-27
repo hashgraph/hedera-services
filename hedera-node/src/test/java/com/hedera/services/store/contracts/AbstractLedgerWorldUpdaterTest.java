@@ -24,7 +24,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
 import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.interceptors.UniqueTokensCommitInterceptor;
+import com.hedera.services.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
@@ -113,7 +113,7 @@ class AbstractLedgerWorldUpdaterTest {
 	@Mock
 	private SideEffectsTracker sideEffectsTracker;
 	@Mock
-	private UniqueTokensCommitInterceptor uniqueTokensCommitInterceptor;
+	private LinkAwareUniqueTokensCommitInterceptor linkAwareUniqueTokensCommitInterceptor;
 	@Mock
 	private AutoAssocTokenRelsCommitInterceptor autoAssocTokenRelsCommitInterceptor;
 	@Mock
@@ -540,7 +540,7 @@ class AbstractLedgerWorldUpdaterTest {
 
 	private void setupWellKnownNfts() {
 		final var trackingNfts = ledgers.nfts();
-		trackingNfts.setCommitInterceptor(uniqueTokensCommitInterceptor);
+		trackingNfts.setCommitInterceptor(linkAwareUniqueTokensCommitInterceptor);
 		trackingNfts.create(aNft);
 		trackingNfts.set(aNft, OWNER, EntityId.fromGrpcAccountId(aAccount));
 		trackingNfts.create(bNft);

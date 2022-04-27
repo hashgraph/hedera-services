@@ -20,19 +20,21 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 
 /**
  * Placeholder for upcoming work.
  */
-public class UniqueTokensCommitInterceptor implements CommitInterceptor<NftId, MerkleUniqueToken, NftProperty> {
-	public UniqueTokensCommitInterceptor(final SideEffectsTracker sideEffectsTracker) {
-		// No-op
+public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor<NftId, MerkleUniqueToken, NftProperty> {
+	private final UniqueTokensLinkManager uniqueTokensLinkManager;
+
+	public LinkAwareUniqueTokensCommitInterceptor(final UniqueTokensLinkManager uniqueTokensLinkManager) {
+		this.uniqueTokensLinkManager = uniqueTokensLinkManager;
 	}
 
 	/**
@@ -40,6 +42,24 @@ public class UniqueTokensCommitInterceptor implements CommitInterceptor<NftId, M
 	 */
 	@Override
 	public void preview(final EntityChangeSet<NftId, MerkleUniqueToken, NftProperty> pendingChanges) {
-		// No-op
+		final var n = pendingChanges.size();
+		if (n == 0) {
+			return;
+		}
+		for (int i = 0; i < n; i++) {
+			final var entity = pendingChanges.entity(i);
+			final var change = pendingChanges.changes(i);
+			if (entity != null && change != null && change.containsKey(NftProperty.OWNER)) {
+				// we are changing the owner of an uniqueToken. we have to update the links
+				final var fromAccount = entity.getOwner();
+				final var toAccount = (EntityId) change.get(NftProperty.OWNER);
+				uniqueTokensLinkManager.updateLinks(
+						fromAccount.asNum(),
+						toAccount.asNum(),
+						entity.getKey(),
+						entity.isTreasuryOwned(),
+						toAccount.equals(EntityId.MISSING_ENTITY_ID));
+			}
+		}
 	}
 }

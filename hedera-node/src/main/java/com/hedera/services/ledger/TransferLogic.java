@@ -50,12 +50,10 @@ import java.util.TreeMap;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.HEAD_NFT_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.HEAD_NFT_SERIAL_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
+import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
@@ -68,9 +66,7 @@ public class TransferLogic {
 			NUM_ASSOCIATIONS,
 			NUM_NFTS_OWNED,
 			USED_AUTOMATIC_ASSOCIATIONS,
-			NUM_TREASURY_TITLES,
-			HEAD_NFT_ID,
-			HEAD_NFT_SERIAL_NUM
+			NUM_TREASURY_TITLES
 	);
 
 	private final TokenStore tokenStore;

@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 class NftNumPairTest {
 	@Test
 	void toStringWorks() {
-		final var subject = NftNumPair.fromNums(1001L, 1L);
+		final var subject = NftNumPair.fromLongs(1001L, 1L);
 		final var expected = "0.0.1001.1";
 
 		assertEquals(expected, subject.toString());
@@ -36,10 +36,10 @@ class NftNumPairTest {
 
 	@Test
 	void equalsWorks() {
-		final var subject = NftNumPair.fromNums(1001L, 1L);
-		final var subject2 = NftNumPair.fromNums(1002L, 1L);
-		final var subject3 = NftNumPair.fromNums(1001L, 2L);
-		final var identical = NftNumPair.fromNums(1001L, 1L);
+		final var subject = NftNumPair.fromLongs(1001L, 1L);
+		final var subject2 = NftNumPair.fromLongs(1002L, 1L);
+		final var subject3 = NftNumPair.fromLongs(1001L, 2L);
+		final var identical = NftNumPair.fromLongs(1001L, 1L);
 
 		assertEquals(subject, identical);
 		assertNotEquals(subject, subject2);

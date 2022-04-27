@@ -190,8 +190,8 @@ public class MerkleUniqueToken extends AbstractMerkleLeaf implements Keyed<Entit
 			spenderCode = in.readInt();
 		}
 		if (version >= RELEASE_0260_VERSION) {
-			prev = NftNumPair.fromNums(in.readLong(), in.readLong());
-			next = NftNumPair.fromNums(in.readLong(), in.readLong());
+			prev = NftNumPair.fromLongs(in.readLong(), in.readLong());
+			next = NftNumPair.fromLongs(in.readLong(), in.readLong());
 		}
 	}
 

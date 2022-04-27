@@ -58,7 +58,7 @@ class UniqueTokenTest {
 		final var owner1 = IdUtils.asModelId("0.0.12346");
 		final var spender1 = IdUtils.asModelId("0.0.12347");
 		final var meta1 = "aa".getBytes(StandardCharsets.UTF_8);
-		final var next = NftNumPair.fromNums(token1.num(), 2);
+		final var next = NftNumPair.fromLongs(token1.num(), 2);
 		final var subject = new UniqueToken(token1, 1L);
 		subject.setOwner(owner1);
 		subject.setSpender(spender1);

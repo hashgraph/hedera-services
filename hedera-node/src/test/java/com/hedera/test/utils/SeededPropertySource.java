@@ -258,8 +258,8 @@ public class SeededPropertySource {
 		final var packedCreationTime = packedTime(nextInRangeLong(), nextInt());
 		final var metadata = nextBytes(10);
 		final var numbers = SEEDED_RANDOM.nextLong(1234);
-		final var prev = NftNumPair.fromNums(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
-		final var next = NftNumPair.fromNums(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
+		final var prev = NftNumPair.fromLongs(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
+		final var next = NftNumPair.fromLongs(SEEDED_RANDOM.nextLong(1234), SEEDED_RANDOM.nextLong(1234));
 
 		final var subject = new MerkleUniqueToken(ownerCode, metadata, packedCreationTime, numbers);
 		subject.setSpender(new EntityId(0,0, spenderCode));

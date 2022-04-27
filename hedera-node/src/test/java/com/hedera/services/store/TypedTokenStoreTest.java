@@ -401,15 +401,15 @@ class TypedTokenStoreTest {
 		final int nanos = 890;
 		final var packedTime = BitPackUtils.packedTime(seconds, nanos);
 		final var nftId1 = NftId.withDefaultShardRealm(tokenNum, 1L);
-		final var nft1NumPair = NftNumPair.fromNums(tokenNum, 1L);
+		final var nft1NumPair = NftNumPair.fromLongs(tokenNum, 1L);
 		final var nftId2 = NftId.withDefaultShardRealm(tokenNum, 2L);
-		final var nft2NumPair = NftNumPair.fromNums(tokenNum, 2L);
+		final var nft2NumPair = NftNumPair.fromLongs(tokenNum, 2L);
 		final var nftId3 = NftId.withDefaultShardRealm(tokenNum, 3L);
-		final var nft3NumPair = NftNumPair.fromNums(tokenNum, 3L);
+		final var nft3NumPair = NftNumPair.fromLongs(tokenNum, 3L);
 		final var nftId4 = NftId.withDefaultShardRealm(tokenNum, 4L);
-		final var nft4NumPair = NftNumPair.fromNums(tokenNum, 4L);
+		final var nft4NumPair = NftNumPair.fromLongs(tokenNum, 4L);
 		final var nftId5 = NftId.withDefaultShardRealm(tokenNum, 5L);
-		final var nft5NumPair = NftNumPair.fromNums(tokenNum, 5L);
+		final var nft5NumPair = NftNumPair.fromLongs(tokenNum, 5L);
 		final var nft1 = new MerkleUniqueToken(
 				miscId.asEntityId().identityCode(),
 				"aa".getBytes(StandardCharsets.UTF_8),

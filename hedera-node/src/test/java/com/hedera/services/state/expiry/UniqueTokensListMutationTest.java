@@ -124,9 +124,9 @@ class UniqueTokensListMutationTest {
 	private final long targetNum = 4L;
 	private final long seconds = 1_234_567L;
 	private final int nanos = 890;
-	private final NftNumPair rootPair = NftNumPair.fromNums(tokenNum, rootNum);
-	private final NftNumPair nextPair = NftNumPair.fromNums(tokenNum, nextNum);
-	private final NftNumPair targetPair = NftNumPair.fromNums(tokenNum, targetNum);
+	private final NftNumPair rootPair = NftNumPair.fromLongs(tokenNum, rootNum);
+	private final NftNumPair nextPair = NftNumPair.fromLongs(tokenNum, nextNum);
+	private final NftNumPair targetPair = NftNumPair.fromLongs(tokenNum, targetNum);
 	private final long packedTime = BitPackUtils.packedTime(seconds, nanos);
 	private final EntityNumPair rootNftKey = EntityNumPair.fromLongs(tokenNum, rootNum);
 	private final EntityNumPair nextNftKey = EntityNumPair.fromLongs(tokenNum, nextNum);

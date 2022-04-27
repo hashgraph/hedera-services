@@ -26,8 +26,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static com.hedera.services.ledger.properties.AccountProperty.HEAD_NFT_ID;
-import static com.hedera.services.ledger.properties.AccountProperty.HEAD_NFT_SERIAL_NUM;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
 import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
@@ -121,7 +119,7 @@ class HederaLedgerTokensTest extends BaseHederaLedgerTestHelper {
 		verify(nftsLedger).rollback();
 		verify(accountsLedger).undoChangesOfType(
 				List.of(NUM_POSITIVE_BALANCES, NUM_ASSOCIATIONS,
-						NUM_NFTS_OWNED, USED_AUTOMATIC_ASSOCIATIONS, NUM_TREASURY_TITLES, HEAD_NFT_ID, HEAD_NFT_SERIAL_NUM));
+						NUM_NFTS_OWNED, USED_AUTOMATIC_ASSOCIATIONS, NUM_TREASURY_TITLES));
 		verify(sideEffectsTracker).resetTrackedTokenChanges();
 	}
 
