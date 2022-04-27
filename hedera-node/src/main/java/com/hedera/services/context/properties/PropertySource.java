@@ -22,6 +22,7 @@ package com.hedera.services.context.properties;
 
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,6 +56,7 @@ public interface PropertySource {
 			.map(HederaFunctionality::valueOf)
 			.collect(toSet());
 	Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
+	Function<String, Object> AS_KNOWN_BLOCK_VALUES = KnownBlockValues::from;
 	Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
 	Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
 	Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
