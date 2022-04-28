@@ -36,13 +36,16 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
@@ -136,6 +139,10 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private HederaWorldState worldState;
 	@Mock
+	private EntityCreator entityCreator;
+	@Mock
+	private RecordsHistorian recordsHistorian;
+	@Mock
 	private TransactionRecordService recordService;
 	@Mock
 	private CallEvmTxProcessor evmTxProcessor;
@@ -147,6 +154,8 @@ class EthereumTransactionTransitionLogicTest {
 	private CodeCache codeCache;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private AliasManager aliasManager;
 	@Mock
@@ -168,9 +177,10 @@ class EthereumTransactionTransitionLogicTest {
 		contractCallTransitionLogic = new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
 				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
-		contractCreateTransitionLogic = Mockito.spy(new ContractCreateTransitionLogic(hfs, txnCtx, accountStore,
-				optionValidator,
-				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian));
+		contractCreateTransitionLogic = Mockito.spy(
+				new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator, worldState, entityCreator,
+						recordsHistorian, recordService, createEvmTxProcessor, globalDynamicProperties,
+						sigImpactHistorian, syntheticTxnFactory));
 		given(globalDynamicProperties.getChainId()).willReturn(0x128);
 		subject = new EthereumTransitionLogic(txnCtx, spanMapAccessor, contractCallTransitionLogic,
 				contractCreateTransitionLogic, recordService,
@@ -275,6 +285,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
 				expectedTxnBody,
 				senderAccount.getId(),
+				true,
 				true
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
@@ -336,6 +347,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
 				expectedTxnBody,
 				senderAccount.getId(),
+				true,
 				true
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
@@ -397,6 +409,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
 				expectedTxnBody,
 				senderAccount.getId(),
+				true,
 				true
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
@@ -708,6 +721,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic, never()).doStateTransitionOperation(
 				any(),
 				any(),
+				anyBoolean(),
 				anyBoolean()
 		);
 		verify(recordService, never()).updateForEvmCall(any(), any());
