@@ -21,12 +21,14 @@ package com.hedera.services.ledger.interceptors;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
 import com.swirlds.merkle.map.MerkleMap;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.function.Supplier;
@@ -35,33 +37,35 @@ import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 public class UniqueTokensLinkManager {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
+	private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
 
 	@Inject
 	public UniqueTokensLinkManager(
 			final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts,
+			final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens,
 			final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens
 	) {
 		this.accounts = accounts;
+		this.tokens = tokens;
 		this.uniqueTokens = uniqueTokens;
 	}
 
-	void updateLinks(
-			final EntityNum from,
-			final EntityNum to,
-			final EntityNumPair nftId,
-			final boolean fromTreasury,
-			final boolean toTreasury
+	public void updateLinks(
+			@Nonnull final EntityNum from,
+			@Nullable final EntityNum to,
+			@Nonnull final EntityNumPair nftId
 	) {
 		final var curAccounts = accounts.get();
+		final var curTokens = tokens.get();
 		final var curUniqueTokens = uniqueTokens.get();
 
-		final var fromAccount = curAccounts.getForModify(from);
-		final var toAccount = curAccounts.getForModify(to);
 		final var nft = curUniqueTokens.get(nftId);
+		final var token = curTokens.get(nftId.getHiOrderAsNum());
 
 		// Update `from` Account
-		if (!fromTreasury) {
+		if (!from.equals(token.treasuryNum())) {
+			final var fromAccount = curAccounts.getForModify(from);
 			var rootKey = rootKeyOf(fromAccount);
 
 			if (nftId.equals(rootKey)) {
@@ -87,7 +91,8 @@ public class UniqueTokensLinkManager {
 
 
 		// update `to` Account
-		if (!toTreasury) {
+		if (to != null && !to.equals(token.treasuryNum())) {
+			final var toAccount = curAccounts.getForModify(to);
 			final var nftNumPair = nftId.asNftNumPair();
 			final var currHeadNftNumTo = toAccount.getHeadNftId();
 			final var currHeadNftSerialNumTo = toAccount.getHeadNftSerialNum();

@@ -356,7 +356,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.numPositiveBalances == that.numPositiveBalances &&
 				this.headTokenId == that.headTokenId &&
 				this.numTreasuryTitles == that.numTreasuryTitles &&
-				Objects.equals(this.autoRenewAccount, that.autoRenewAccount);
+				Objects.equals(this.autoRenewAccount, that.autoRenewAccount) &&
 				this.headNftId == that.headNftId &&
 				this.headNftSerialNum == that.headNftSerialNum;
 	}

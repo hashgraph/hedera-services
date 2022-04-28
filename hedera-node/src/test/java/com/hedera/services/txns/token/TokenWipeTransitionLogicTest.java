@@ -23,12 +23,12 @@ package com.hedera.services.txns.token;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -83,6 +83,7 @@ class TokenWipeTransitionLogicTest {
 	private TypedTokenStore typedTokenStore;
 	private AccountStore accountStore;
 	private OptionValidator validator;
+	private UniqueTokensLinkManager uniqueTokensLinkManager;
 	private GlobalDynamicProperties dynamicProperties;
 	private Account account;
 
@@ -99,7 +100,8 @@ class TokenWipeTransitionLogicTest {
 		accountStore = mock(AccountStore.class);
 		validator = mock(ContextOptionValidator.class);
 		dynamicProperties = mock(GlobalDynamicProperties.class);
-		subject = new TokenWipeTransitionLogic(validator, typedTokenStore, accountStore, txnCtx, dynamicProperties);
+		uniqueTokensLinkManager = mock(UniqueTokensLinkManager.class);
+		subject = new TokenWipeTransitionLogic(validator, typedTokenStore, accountStore, txnCtx, dynamicProperties, uniqueTokensLinkManager);
 		given(txnCtx.accessor()).willReturn(accessor);
 	}
 
@@ -155,8 +157,7 @@ class TokenWipeTransitionLogicTest {
 		subject.doStateTransition();
 
 		// then:
-		verify(token).wipe(any(OwnershipTracker.class), any(TokenRelationship.class), anyList());
-		verify(typedTokenStore).updateNftLinkedList(any(Account.class), any(Id.class), anyList());
+		verify(token).wipe(any(OwnershipTracker.class), any(TokenRelationship.class), anyList(), any(UniqueTokensLinkManager.class));
 	}
 
 	@Test

@@ -21,6 +21,7 @@ package com.hedera.services.ledger.interceptors;
  */
 
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
@@ -34,14 +35,15 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class UniqueTokensLinkManagerTest {
-	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
-	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens = new MerkleMap<>();
+	private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+	private final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens = new MerkleMap<>();
 
 	private UniqueTokensLinkManager subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new UniqueTokensLinkManager(() -> accounts, () -> uniqueTokens);
+		subject = new UniqueTokensLinkManager(() -> accounts, () -> tokens, () -> uniqueTokens);
 	}
 
 	@Test
@@ -52,7 +54,7 @@ class UniqueTokensLinkManagerTest {
 		assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftId());
 		assertEquals(serialNum1, accounts.get(oldOwner).getHeadNftSerialNum());
 
-		subject.updateLinks(oldOwner, newOwner, nftKey1, false, false);
+		subject.updateLinks(oldOwner, newOwner, nftKey1);
 
 		assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftKey2).getPrev());
 		assertEquals(MISSING_NFT_NUM_PAIR, uniqueTokens.get(nftKey1).getNext());
@@ -70,7 +72,7 @@ class UniqueTokensLinkManagerTest {
 		assertEquals(tokenNum, accounts.get(oldOwner).getHeadNftId());
 		assertEquals(serialNum1, accounts.get(oldOwner).getHeadNftSerialNum());
 
-		subject.updateLinks(oldOwner, newOwner, nftKey2, false, false);
+		subject.updateLinks(oldOwner, newOwner, nftKey2);
 
 		assertEquals(nftNumPair1, uniqueTokens.get(nftKey3).getPrev());
 		assertEquals(nftNumPair3, uniqueTokens.get(nftKey1).getNext());
@@ -84,13 +86,14 @@ class UniqueTokensLinkManagerTest {
 	void fromTreasuryDoesntUpdateTreasuryAccountLinks() {
 		newOwnerAccount.setHeadNftId(tokenNum);
 		newOwnerAccount.setHeadNftSerialNum(2L);
+		nftToken.setTreasury(treasury.toEntityId());
 		nft1.setNext(MISSING_NFT_NUM_PAIR);
 		nft1.setPrev(MISSING_NFT_NUM_PAIR);
 		nft2.setNext(MISSING_NFT_NUM_PAIR);
 		nft2.setPrev(MISSING_NFT_NUM_PAIR);
 		setUpMaps();
 
-		assertDoesNotThrow(() -> subject.updateLinks(treasury, newOwner, nftKey1, true, false));
+		assertDoesNotThrow(() -> subject.updateLinks(treasury, newOwner, nftKey1));
 
 		assertEquals(tokenNum, accounts.get(newOwner).getHeadNftId());
 		assertEquals(serialNum1, accounts.get(newOwner).getHeadNftSerialNum());
@@ -103,7 +106,7 @@ class UniqueTokensLinkManagerTest {
 		setUpEntities();
 		setUpMaps();
 
-		assertDoesNotThrow(() -> subject.updateLinks(oldOwner, treasury, nftKey2, false, true));
+		assertDoesNotThrow(() -> subject.updateLinks(oldOwner, treasury, nftKey2));
 
 		assertEquals(nftNumPair1, uniqueTokens.get(nftKey3).getPrev());
 		assertEquals(nftNumPair3, uniqueTokens.get(nftKey1).getNext());
@@ -114,6 +117,7 @@ class UniqueTokensLinkManagerTest {
 	void setUpEntities() {
 		oldOwnerAccount.setHeadNftId(tokenNum);
 		oldOwnerAccount.setHeadNftSerialNum(serialNum1);
+		nftToken.setTreasury(treasury.toEntityId());
 		nft1.setPrev(MISSING_NFT_NUM_PAIR);
 		nft1.setNext(nftNumPair2);
 		nft2.setPrev(nftNumPair1);
@@ -125,6 +129,7 @@ class UniqueTokensLinkManagerTest {
 	void setUpMaps() {
 		accounts.put(oldOwner, oldOwnerAccount);
 		accounts.put(newOwner, newOwnerAccount);
+		tokens.put(token, nftToken);
 		uniqueTokens.put(nftKey1, nft1);
 		uniqueTokens.put(nftKey2, nft2);
 		uniqueTokens.put(nftKey3, nft3);
@@ -140,6 +145,7 @@ class UniqueTokensLinkManagerTest {
 	final EntityNum oldOwner = EntityNum.fromLong(oldOwnerNum);
 	final EntityNum newOwner = EntityNum.fromLong(newOwnerNum);
 	final EntityNum treasury = EntityNum.fromLong(treasuryNum);
+	final EntityNum token = EntityNum.fromLong(tokenNum);
 	final EntityNumPair nftKey1 = EntityNumPair.fromLongs(tokenNum, serialNum1);
 	final EntityNumPair nftKey2 = EntityNumPair.fromLongs(tokenNum, serialNum2);
 	final EntityNumPair nftKey3 = EntityNumPair.fromLongs(tokenNum, serialNum3);
@@ -148,6 +154,7 @@ class UniqueTokensLinkManagerTest {
 	final NftNumPair nftNumPair3 = nftKey3.asNftNumPair();
 	private MerkleAccount oldOwnerAccount = new MerkleAccount();
 	private MerkleAccount newOwnerAccount = new MerkleAccount();
+	private MerkleToken nftToken = new MerkleToken();
 	private MerkleUniqueToken nft1 = new MerkleUniqueToken();
 	private MerkleUniqueToken nft2 = new MerkleUniqueToken();
 	private MerkleUniqueToken nft3 = new MerkleUniqueToken();

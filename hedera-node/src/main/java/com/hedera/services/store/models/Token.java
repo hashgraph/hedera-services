@@ -22,11 +22,14 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.TokenTypesMapper;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -297,7 +300,11 @@ public class Token {
 	 * @param serialNumbers
 	 * 		- a list of serial numbers, representing the tokens to be wiped
 	 */
-	public void wipe(OwnershipTracker ownershipTracker, TokenRelationship accountRel, List<Long> serialNumbers) {
+	public void wipe(
+			final OwnershipTracker ownershipTracker,
+			final TokenRelationship accountRel,
+			final List<Long> serialNumbers,
+			final UniqueTokensLinkManager uniqueTokensLinkManager) {
 		validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
 		validateFalse(serialNumbers.isEmpty(), FAIL_INVALID);
 
@@ -314,6 +321,10 @@ public class Token {
 		final var account = accountRel.getAccount();
 		for (long serialNum : serialNumbers) {
 			ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
+			uniqueTokensLinkManager.updateLinks(
+					EntityNum.fromModel(account.getId()),
+					null,
+					EntityNumPair.fromLongs(id.num(), serialNum));
 			removedUniqueTokens.add(new UniqueToken(id, serialNum, account.getId()));
 		}
 

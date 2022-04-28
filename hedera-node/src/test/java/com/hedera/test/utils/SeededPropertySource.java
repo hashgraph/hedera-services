@@ -65,7 +65,6 @@ import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
-import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
@@ -74,8 +73,6 @@ import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -328,7 +325,7 @@ public class SeededPropertySource {
 		final var usedAutoAssoc = SEEDED_RANDOM.nextInt(maxAutoAssoc + 1);
 		final var numAssociations = SEEDED_RANDOM.nextInt(12345);
 		final var numPositiveBalanceAssociations = SEEDED_RANDOM.nextInt(numAssociations);
-		return new MerkleAccountState(
+		final var misorderedState = new MerkleAccountState(
 				nextKey(),
 				nextUnsignedLong(),
 				nextUnsignedLong(),
@@ -352,11 +349,14 @@ public class SeededPropertySource {
 				numAssociations,
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
-				nextUnsignedInt(),
+				0,
 				0,
 				null,
 				0,
 				0);
+		misorderedState.setNftsOwned(nextUnsignedLong());
+		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
+		return misorderedState;
 	}
 
 	public MerkleAccountState next0260AccountState() {
@@ -387,7 +387,7 @@ public class SeededPropertySource {
 				nextApprovedForAllAllowances(10),
 				firstContractKey,
 				firstKeyBytes,
-				nextUnsignedInt(),
+				nextUnsignedLong(),
 				numAssociations,
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),

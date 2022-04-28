@@ -56,9 +56,7 @@ public class LinkAwareUniqueTokensCommitInterceptor implements CommitInterceptor
 				uniqueTokensLinkManager.updateLinks(
 						fromAccount.asNum(),
 						toAccount.asNum(),
-						entity.getKey(),
-						entity.isTreasuryOwned(),
-						toAccount.equals(EntityId.MISSING_ENTITY_ID));
+						entity.getKey());
 			}
 		}
 	}

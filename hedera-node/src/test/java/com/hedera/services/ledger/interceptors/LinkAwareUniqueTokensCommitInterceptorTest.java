@@ -97,12 +97,11 @@ class LinkAwareUniqueTokensCommitInterceptorTest {
 		given(change.containsKey(NftProperty.OWNER)).willReturn(true);
 		given(change.get(NftProperty.OWNER)).willReturn(newOwner.toEntityId());
 		given(nft.getOwner()).willReturn(owner.toEntityId());
-		given(nft.isTreasuryOwned()).willReturn(false);
 		given(nft.getKey()).willReturn(nftKey);
 
 
 		subject.preview(changes);
 
-		verify(uniqueTokensLinkManager).updateLinks(owner, newOwner, nftKey, false , false);
+		verify(uniqueTokensLinkManager).updateLinks(owner, newOwner, nftKey);
 	}
 }

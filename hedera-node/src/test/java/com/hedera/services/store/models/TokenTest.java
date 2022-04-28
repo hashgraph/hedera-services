@@ -22,6 +22,7 @@ package com.hedera.services.store.models;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.ledger.interceptors.UniqueTokensLinkManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
@@ -83,6 +84,7 @@ class TokenTest {
 	private final Account nonTreasuryAccount = new Account(nonTreasuryId);
 	private final EntityNumPair treasuryAssociationKey = EntityNumPair.fromLongs(treasuryId.num(), tokenId.num());
 	private final EntityNumPair nonTreasuryAssociationKey = EntityNumPair.fromLongs(nonTreasuryId.num(), tokenId.num());
+	private UniqueTokensLinkManager uniqueTokensLinkManager = mock(UniqueTokensLinkManager.class);
 
 	private Token subject;
 	private TokenRelationship treasuryRel;
@@ -470,7 +472,7 @@ class TokenTest {
 		nonTreasuryRel.setBalance(100);
 
 		final var ownershipTracker = mock(OwnershipTracker.class);
-		subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L));
+		subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L), uniqueTokensLinkManager);
 		assertEquals(initialSupply - 1, subject.getTotalSupply());
 		assertEquals(99, nonTreasuryRel.getBalanceChange());
 		assertEquals(99, nonTreasuryRel.getBalance());
@@ -483,7 +485,7 @@ class TokenTest {
 
 		nonTreasuryRel.setBalance(2);
 
-		subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L, 2L));
+		subject.wipe(ownershipTracker, nonTreasuryRel, List.of(1L, 2L), uniqueTokensLinkManager);
 
 		assertEquals(initialSupply - 3, subject.getTotalSupply());
 		assertEquals(0, nonTreasuryRel.getBalanceChange());
@@ -507,19 +509,19 @@ class TokenTest {
 		final var singleSerialNumber = List.of(1L);
 
 		/* Invalid to wipe serial numbers for a FUNGIBLE_COMMON token */
-		assertFailsWith(() -> subject.wipe(ownershipTracker, nonTreasuryRel, singleSerialNumber), FAIL_INVALID);
+		assertFailsWith(() -> subject.wipe(ownershipTracker, nonTreasuryRel, singleSerialNumber, uniqueTokensLinkManager), FAIL_INVALID);
 
 		subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
 		/* Must have a wipe key */
 		assertFailsWith(
-				() -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber),
+				() -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber, uniqueTokensLinkManager),
 				TOKEN_HAS_NO_WIPE_KEY);
 
 		/* Not allowed to wipe treasury */
 		subject.setWipeKey(someKey);
 		assertFailsWith(
-				() -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber),
+				() -> subject.wipe(ownershipTracker, treasuryRel, singleSerialNumber, uniqueTokensLinkManager),
 				CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT);
 	}
 

@@ -20,6 +20,7 @@ package com.hedera.services.utils;
  * ‍
  */
 
+import com.swirlds.common.FastCopyable;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
