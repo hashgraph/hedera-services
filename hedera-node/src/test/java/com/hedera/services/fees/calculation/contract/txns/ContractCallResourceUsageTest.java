@@ -92,6 +92,6 @@ class ContractCallResourceUsageTest {
 		subject.usageGiven(null, sigUsage, null);
 
 		// then:
-		given(usageEstimator.getContractCallTxFeeMatrices(ethereumTxn, sigUsage)).willThrow(InvalidTxBodyException.class);
+		verify(usageEstimator).getContractCallTxFeeMatrices(null, sigUsage);
 	}
 }
