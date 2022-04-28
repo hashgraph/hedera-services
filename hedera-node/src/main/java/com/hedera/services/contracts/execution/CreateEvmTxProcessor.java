@@ -105,8 +105,8 @@ public class CreateEvmTxProcessor extends EvmTxProcessor {
 	protected MessageFrame buildInitialFrame(
 			final MessageFrame.Builder commonInitialFrame,
 			final Address to,
-			final Bytes payload
-	) {
+			final Bytes payload,
+			final long value) {
 		codeCache.invalidate(to);
 
 		return commonInitialFrame

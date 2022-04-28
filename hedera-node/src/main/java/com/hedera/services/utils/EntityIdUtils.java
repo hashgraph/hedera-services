@@ -192,7 +192,11 @@ public final class EntityIdUtils {
 	}
 
 	public static byte[] asEvmAddress(final ContractID id) {
-		return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+		if (id.getEvmAddress().size() == 20) {
+			return id.getEvmAddress().toByteArray();
+		} else {
+			return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+		}
 	}
 
 	public static byte[] asEvmAddress(final AccountID id) {

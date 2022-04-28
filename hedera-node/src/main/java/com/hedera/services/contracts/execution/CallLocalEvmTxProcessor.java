@@ -113,8 +113,8 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
 	protected MessageFrame buildInitialFrame(
 			final MessageFrame.Builder baseInitialFrame,
 			final Address to,
-			final Bytes payload
-	) {
+			final Bytes payload,
+			final long value) {
 		final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 		/* It's possible we are racing the handleTransaction() thread, and the target contract's
 		 * _account_ has been created, but not yet its _bytecode_. So if `code` is null here,

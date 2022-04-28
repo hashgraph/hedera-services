@@ -325,7 +325,7 @@ class CallEvmTxProcessorTest {
 						.blockHashLookup(h -> null);
 		//when:
 		MessageFrame buildMessageFrame = callEvmTxProcessor.buildInitialFrame(commonInitialFrame,
-				(Address) transaction.getTo().get(), Bytes.EMPTY);
+				(Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
 
 		//expect:
 		assertEquals(transaction.getSender(), buildMessageFrame.getSenderAddress());
