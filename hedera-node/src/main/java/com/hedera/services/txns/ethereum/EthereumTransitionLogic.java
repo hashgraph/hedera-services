@@ -153,6 +153,11 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	@Override
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
+		if (ethTxData == null) {
+			// TODO: Figure out better response code
+			return ResponseCodeEnum.FAIL_INVALID;
+		}
+
 		var txBody = getOrCreateTransactionBody(accessor);
 
 		if (ethTxData.chainId().length == 0 || Arrays.compare(chainId, ethTxData.chainId()) != 0) {
