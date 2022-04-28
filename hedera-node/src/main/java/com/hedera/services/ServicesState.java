@@ -83,7 +83,6 @@ import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_025X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0260_VERSION;
-import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
 /**
@@ -358,40 +357,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 
 	public VirtualMap<ContractKey, IterableContractValue> contractStorage() {
 		return getChild(StateChildIndices.CONTRACT_STORAGE);
-	}
-
-	private void buildAccountTokenAssociationsLinkedList() {
-		final var accounts = accounts();
-		final var tokenRels = tokenAssociations();
-
-		for (final var accountId : accounts.keySet()) {
-			var merkleAccount = accounts.getForModify(accountId);
-			int numAssociations = 0;
-			int numPositiveBalances = 0;
-			long headTokenNum = MISSING_ID.num();
-			MerkleTokenRelStatus prevAssociation = null;
-			for (var tokenId : merkleAccount.tokens().asTokenIds()) {
-				var newListRootKey = EntityNumPair.fromLongs(accountId.longValue(), tokenId.getTokenNum());
-				var association = tokenRels.getForModify(newListRootKey);
-				association.setNext(headTokenNum);
-
-				if (prevAssociation != null) {
-					prevAssociation.setPrev(tokenId.getTokenNum());
-				}
-
-				if (association.getBalance() > 0) {
-					numPositiveBalances++;
-				}
-				numAssociations++;
-
-				prevAssociation = association;
-				headTokenNum = tokenId.getTokenNum();
-			}
-			merkleAccount.setNumAssociations(numAssociations);
-			merkleAccount.setNumPositiveBalances(numPositiveBalances);
-			merkleAccount.setHeadTokenId(headTokenNum);
-			merkleAccount.forgetAssociatedTokens();
-		}
 	}
 
 	private void internalInit(
