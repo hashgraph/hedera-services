@@ -616,6 +616,15 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void missingEthDataPrecheck() {
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(null);
+
+		// expect:
+		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+	}
+
+	@Test
 	void wrongChainId() {
 		chainId = new byte[] { 1, 42 };
 		givenValidTxnCtx();
