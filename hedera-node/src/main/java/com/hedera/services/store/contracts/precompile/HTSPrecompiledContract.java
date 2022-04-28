@@ -246,11 +246,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	//createFungibleToken(HederaToken memory token, uint initialTotalSupply, uint decimals)
 	protected static final int ABI_ID_CREATE_FUNGIBLE_TOKEN = 0x7812a04b;
-	//createFungibleTokenWithCustomFees(HederaToken memory token, uint initialTotalSupply, uint decimals, FixedFee[] memory fixedFees, FractionalFee[] memory fractionalFees)
+	//createFungibleTokenWithCustomFees(HederaToken memory token, uint initialTotalSupply, uint decimals, FixedFee[]
+	// memory fixedFees, FractionalFee[] memory fractionalFees)
 	protected static final int ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES = 0x4c381ae7;
 	//createNonFungibleToken(HederaToken memory token)
 	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN = 0x9dc711e0;
-	//createNonFungibleTokenWithCustomFees(HederaToken memory token, FixedFee[] memory fixedFees, RoyaltyFee[] memory royaltyFees)
+	//createNonFungibleTokenWithCustomFees(HederaToken memory token, FixedFee[] memory fixedFees, RoyaltyFee[] memory
+	// royaltyFees)
 	protected static final int ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES = 0x5bc7c0e6;
 
 	//Transfer(address indexed from, address indexed to, uint256 indexed tokenId)
@@ -362,13 +364,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 		this.sideEffectsTracker = sideEffectsFactory.get();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
-
-		final var unaliasedSenderAddress = updater.unaliased(frame.getSenderAddress().toArray());
-		if (unaliasedSenderAddress != null) {
-			this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
-		} else {
-			this.senderAddress = frame.getSenderAddress();
-		}
+		final var unaliasedSenderAddress = updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
+		this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
 	}
 
 	void computeGasRequirement(final long blockTimestamp) {
@@ -392,7 +389,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
 	void computeViewFunctionGasRequirement(final long blockTimestamp) {
 		final var now = Timestamp.newBuilder().setSeconds(blockTimestamp).build();
-		gasRequirement =  computeViewFunctionGas(now, precompile.getMinimumFeeInTinybars(now));
+		gasRequirement = computeViewFunctionGas(now, precompile.getMinimumFeeInTinybars(now));
 	}
 
 	Gas computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
@@ -481,11 +478,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 					case ABI_ID_CREATE_FUNGIBLE_TOKEN,
 							ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES,
 							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN,
-							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES
-							->
-							(dynamicProperties.isHTSPrecompileCreateEnabled())
-									? new TokenCreatePrecompile()
-									: null;
+							ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> (dynamicProperties.isHTSPrecompileCreateEnabled())
+							? new TokenCreatePrecompile()
+							: null;
 					default -> null;
 				};
 		if (precompile != null) {
@@ -599,7 +594,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				TypedTokenStore tokenStore,
 				GlobalDynamicProperties dynamicProperties,
 				SigImpactHistorian sigImpactHistorian,
-				SideEffectsTracker sideEffectsTracker,
 				EntityIdSource entityIdSource,
 				OptionValidator validator);
 	}
@@ -697,7 +691,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final var tokenStore = createTokenStore(accountStore, sideEffectsTracker);
 
 			/* --- Execute the transaction and capture its results --- */
-			final var associateLogic = associateLogicFactory.newAssociateLogic(tokenStore, accountStore, dynamicProperties);
+			final var associateLogic = associateLogicFactory.newAssociateLogic(tokenStore, accountStore,
+					dynamicProperties);
 			associateLogic.associate(accountId, associateOp.tokenIds());
 		}
 
@@ -836,7 +831,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 *     		<ul>
 	 *     		 	<li><b>result</b> - the {@link DecodingFacade} throws an exception and null is returned
 	 *     		 	from the {@link HTSPrecompiledContract}, setting the message frame's revert reason to the
-	 *     			{@code ERROR_DECODING_INPUT_REVERT_REASON} constant
+	 *                {@code ERROR_DECODING_INPUT_REVERT_REASON} constant
 	 *     		 	</li>
 	 *     		 	<li><b>gas cost</b> - the current value returned from {@code dynamicProperties.htsDefaultGasCost()}
 	 *     		 	<li><b>hbar cost</b> - all sent HBars are refunded to the frame sender
@@ -847,9 +842,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	 *     valid token create {@link TransactionBody}. This comes from <b>difference in the design of the Solidity
 	 *     function interface and the HAPI (protobufs)</b>
 	 *     		<ul>
-  	 *     		 	<li><b>result</b> - {@link MessageFrame}'s revertReason is set to the
-	 *     		 	{@code ERROR_DECODING_INPUT_REVERT_REASON} constant and null is returned from the
-	 *     		 	{@link HTSPrecompiledContract}</li>
+	 *     		 	<li><b>result</b> - {@link MessageFrame}'s revertReason is set to the
+	 *                {@code ERROR_DECODING_INPUT_REVERT_REASON} constant and null is returned from the
+	 *                {@link HTSPrecompiledContract}</li>
 	 * 	    		<li><b>gas cost</b> - the current value returned from {@code dynamicProperties.htsDefaultGasCost()}
 	 * 	    		<li><b>hbar cost</b> - all sent HBars are refunded to the frame sender
 	 *     		</ul>
@@ -888,11 +883,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public TransactionBody.Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
 			tokenCreateOp = switch (functionId) {
 				case ABI_ID_CREATE_FUNGIBLE_TOKEN -> decoder.decodeFungibleCreate(input, aliasResolver);
-				case ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES ->
-						decoder.decodeFungibleCreateWithFees(input, aliasResolver);
+				case ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES -> decoder.decodeFungibleCreateWithFees(input,
+						aliasResolver);
 				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN -> decoder.decodeNonFungibleCreate(input, aliasResolver);
-				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES ->
-						decoder.decodeNonFungibleCreateWithFees(input, aliasResolver);
+				case ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES -> decoder.decodeNonFungibleCreateWithFees(input,
+						aliasResolver);
 				default -> null;
 			};
 
@@ -908,7 +903,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		}
 
 		@Override
-		public void run(final MessageFrame frame)  {
+		public void run(final MessageFrame frame) {
 			Objects.requireNonNull(tokenCreateOp);
 
 			/* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
@@ -925,8 +920,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var scopedAccountStore = createAccountStore();
 			final var scopedTokenStore = createTokenStore(scopedAccountStore, sideEffectsTracker);
-			final var tokenCreateLogic = createLogicFactory.newTokenCreateLogic(scopedAccountStore, scopedTokenStore,
-					dynamicProperties, sigImpactHistorian, sideEffectsTracker, entityIdSource, validator);
+			final var tokenCreateLogic = createLogicFactory.newTokenCreateLogic(
+					scopedAccountStore, scopedTokenStore,
+					dynamicProperties, sigImpactHistorian, entityIdSource, validator);
 
 			/* --- Execute the transaction and capture its results --- */
 			tokenCreateLogic.create(creationTime.getEpochSecond(), EntityIdUtils.accountIdFromEvmAddress(senderAddress),
@@ -1004,7 +1000,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			 * useCurrentTokenForPayment. Exactly one of the values of the struct should be set.
 			 */
 			if (!tokenCreateOp.getFixedFees().isEmpty()) {
-				for (final var fixedFee: tokenCreateOp.getFixedFees()) {
+				for (final var fixedFee : tokenCreateOp.getFixedFees()) {
 					validateTrue(fixedFee.getFixedFeePayment() != INVALID_PAYMENT, INVALID_TRANSACTION_BODY);
 				}
 			}
@@ -1014,7 +1010,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			 * the fallback fixed fee is valid.
 			 */
 			if (!tokenCreateOp.getRoyaltyFees().isEmpty()) {
-				for (final var royaltyFee: tokenCreateOp.getRoyaltyFees()) {
+				for (final var royaltyFee : tokenCreateOp.getRoyaltyFees()) {
 					if (royaltyFee.fallbackFixedFee() != null) {
 						validateTrue(royaltyFee.fallbackFixedFee().getFixedFeePayment() != INVALID_PAYMENT,
 								INVALID_TRANSACTION_BODY);
@@ -1036,13 +1032,13 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			return switch (key.getKeyValueType()) {
 				case INHERIT_ACCOUNT_KEY -> validateKey(frame, senderAddress, sigsVerifier::hasActiveKey);
 				case CONTRACT_ID -> validateKey(frame, asTypedEvmAddress(key.getContractID()),
-								sigsVerifier::hasActiveKey);
+						sigsVerifier::hasActiveKey);
 				case DELEGATABLE_CONTRACT_ID -> validateKey(frame, asTypedEvmAddress(key.getDelegatableContractID()),
-								sigsVerifier::hasActiveKey);
+						sigsVerifier::hasActiveKey);
 				case ED25519 -> validateCryptoKey(new JEd25519Key(key.getEd25519Key()),
-								sigsVerifier::cryptoKeyIsActive);
+						sigsVerifier::cryptoKeyIsActive);
 				case ECDSA_SECPK256K1 -> validateCryptoKey(new JECDSASecp256k1Key(key.getEcdsaSecp256k1()),
-								sigsVerifier::cryptoKeyIsActive);
+						sigsVerifier::cryptoKeyIsActive);
 				default -> false;
 			};
 		}
