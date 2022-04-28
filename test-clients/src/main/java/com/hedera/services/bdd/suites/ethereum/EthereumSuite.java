@@ -17,7 +17,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContrac
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 
 public class EthereumSuite extends HapiApiSuite {
 
@@ -57,7 +57,7 @@ public class EthereumSuite extends HapiApiSuite {
 								.maxGasAllowance(5L)
 								.maxPriorityGas(2L)
 								.invalidateEthereumData()
-								.gasLimit(1_000_000L).hasPrecheck(FAIL_INVALID)
+								.gasLimit(1_000_000L).hasPrecheck(INVALID_ETHEREUM_TRANSACTION)
 								.via("payTxn")
 				).then();
 	}

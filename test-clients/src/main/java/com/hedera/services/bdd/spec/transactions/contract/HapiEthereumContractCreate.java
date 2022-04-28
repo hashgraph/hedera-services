@@ -251,7 +251,9 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 .txns()
                 .<EthereumTransactionBody, EthereumTransactionBody.Builder>body(
                         EthereumTransactionBody.class, builder -> {
-                            if (!invalidateEthData) {
+                            if (invalidateEthData) {
+                                builder.setEthereumData(ByteString.EMPTY);
+                            } else {
                                 builder.setEthereumData(ByteString.copyFrom(ethData.encodeTx()));
                             }
                             ethFileID.ifPresent(builder::setCallData);
