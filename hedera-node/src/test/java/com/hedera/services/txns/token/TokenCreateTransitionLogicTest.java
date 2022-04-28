@@ -147,7 +147,6 @@ class TokenCreateTransitionLogicTest {
 				tokenStore,
 				dynamicProperties,
 				tokenCreateTxn.getTokenCreation())).willReturn(creation);
-		given(creation.newAssociations()).willReturn(mockAssociations);
 		given(creation.newTokenId()).willReturn(createdId);
 
 		subject.doStateTransition();
