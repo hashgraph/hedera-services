@@ -44,9 +44,6 @@ public final class ScheduleEqualityVirtualKey implements VirtualLongKey {
 		this(-1);
 	}
 
-	/**
-	 * @param value the long value of an {@link EntityNum}
-	 */
 	public ScheduleEqualityVirtualKey(final long value) {
 		this.value = value;
 	}
