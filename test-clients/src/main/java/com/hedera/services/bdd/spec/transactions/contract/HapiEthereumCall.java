@@ -83,6 +83,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private long gasPrice = 1L;
     private long maxPriorityGas = 1_000L;
     private Optional<Long> maxGasAllowance = Optional.of(2_000_000L);
+    private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
     private String privateKeyRef = SECP_256K1_SOURCE_KEY;
 
     private Consumer<Object[]> resultObserver = null;
@@ -115,8 +116,8 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.txnName = contractCall.getTxnName();
         this.gas = contractCall.getGas();
         this.expectedStatus = Optional.of(contractCall.getExpectedStatus());
-        this.payer = contractCall.getPayer();
         this.otherSigs = contractCall.getOtherSigs();
+        this.payer = contractCall.getPayer();
         this.expectedPrecheck = Optional.of(contractCall.getExpectedPrecheck());
         this.fiddler = contractCall.getFiddler();
         this.memo = contractCall.getMemo();
@@ -128,7 +129,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.usdFee = contractCall.getUsdFee();
         this.retryLimits = contractCall.getRetryLimits();
         if (contractCall.getValueSent().isPresent()) {
-            this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(contractCall.getValueSent().get())).longValueExact());
+            this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(contractCall.getValueSent().get())));
         }
         shouldRegisterTxn = true;
     }
@@ -165,7 +166,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     public HapiEthereumCall sending(long amount) {
-        valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)).longValueExact());
+        valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
         return this;
     }
 
@@ -272,7 +273,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
         final var ethTxData = new EthTxData(null, type, chainId, nonce, gasPriceBytes,
                 maxPriorityGasBytes, gasBytes, gas.orElse(100_000L),
-                Utils.asAddress(contractID), BigInteger.valueOf(valueSent.orElse(0L)), callData, new byte[]{}, 0, null, null, null);
+                Utils.asAddress(contractID), valueSent.orElse(BigInteger.ZERO), callData, new byte[]{}, 0, null, null, null);
 
         byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
         final var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);

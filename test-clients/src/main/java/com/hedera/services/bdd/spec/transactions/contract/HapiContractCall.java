@@ -47,6 +47,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 	private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
 	private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
 	private Optional<Supplier<String>> explicitHexedParams = Optional.empty();
+	private Optional<Long> valueSent = Optional.of(0L);
 
 	private Consumer<Object[]> resultObserver = null;
 
