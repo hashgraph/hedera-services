@@ -32,7 +32,7 @@ public class UniqueTokensListRemoval implements MapValueListMutation<EntityNumPa
 
 	@Override
 	public void put(final EntityNumPair key, final MerkleUniqueToken value) {
-		uniqueTokens.put(key, value);
+		//NoOp, this is never used for uniqueTokens.
 	}
 
 	@Override
