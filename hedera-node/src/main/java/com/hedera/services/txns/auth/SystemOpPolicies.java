@@ -95,7 +95,7 @@ public class SystemOpPolicies {
 	}
 
 	private SystemOpAuthorization checkEthereumTransaction(final TransactionBody txn) {
-		//TODO: apply more fine-tuned logic
+		//Apply more fine-tuned logic
 		return AUTHORIZED;
 	}
 
