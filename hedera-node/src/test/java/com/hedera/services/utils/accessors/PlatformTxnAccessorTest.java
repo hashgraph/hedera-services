@@ -331,8 +331,10 @@ class PlatformTxnAccessorTest {
 		SwirldTransaction platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 		final var aliasManager = mock(AliasManager.class);
 
+		var signedAccessor = SignedTxnAccessor.from(platformTxn.getContentsDirect());
+
 		// when:
-		PlatformTxnAccessor subject = new PlatformTxnAccessor(SignedTxnAccessor.from(platformTxn.getContentsDirect()), platformTxn);
+		PlatformTxnAccessor subject = new PlatformTxnAccessor(signedAccessor, platformTxn);
 		final var delegate = subject.getDelegate();
 
 		// then:
@@ -399,6 +401,11 @@ class PlatformTxnAccessorTest {
 		assertEquals(delegate, subject.castToSpecialized());
 
 		subject.countAutoCreationsWith(aliasManager);
+
+		signedAccessor.markCongestionExempt();
+		signedAccessor.markThrottleExempt();
+		assertTrue(subject.congestionExempt());
+		assertTrue(subject.throttleExempt());
 
 	}
 

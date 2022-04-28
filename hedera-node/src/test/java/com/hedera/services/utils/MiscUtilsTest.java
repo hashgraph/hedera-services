@@ -187,7 +187,6 @@ import static com.hedera.services.utils.MiscUtils.perm64;
 import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
 import static com.hedera.services.utils.MiscUtils.readableProperty;
 import static com.hedera.services.utils.MiscUtils.readableTransferList;
-import static com.hedera.services.utils.MiscUtils.scheduledFunctionOf;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -766,27 +765,6 @@ class MiscUtilsTest {
 	}
 
 	@Test
-	void getsExpectedScheduledTxnFunctionality() {
-		final Map<HederaFunctionality, BodySetter<? extends GeneratedMessageV3, SchedulableTransactionBody.Builder>>
-				setters = new HashMap<>() {{
-			put(CryptoTransfer, new BodySetter<>(CryptoTransferTransactionBody.class));
-			put(TokenMint, new BodySetter<>(TokenMintTransactionBody.class));
-			put(TokenBurn, new BodySetter<>(TokenBurnTransactionBody.class));
-			put(ConsensusSubmitMessage, new BodySetter<>(ConsensusSubmitMessageTransactionBody.class));
-			put(CryptoApproveAllowance, new BodySetter<>(CryptoApproveAllowanceTransactionBody.class));
-			put(CryptoDeleteAllowance, new BodySetter<>(CryptoDeleteAllowanceTransactionBody.class));
-		}};
-
-		setters.forEach((function, setter) -> {
-			final var txn = SchedulableTransactionBody.newBuilder();
-			setter.setDefaultInstanceFor(txn);
-			assertEquals(function, scheduledFunctionOf(txn.build()));
-		});
-
-		assertEquals(NONE, scheduledFunctionOf(SchedulableTransactionBody.getDefaultInstance()));
-	}
-
-	@Test
 	void hashCorrectly() throws IllegalArgumentException {
 		final var testBytes = "test bytes".getBytes();
 		final var expectedHash = com.swirlds.common.utility.CommonUtils.unhex(
@@ -855,6 +833,31 @@ class MiscUtilsTest {
 	@Test
 	void contractCreateIsConsensusThrottled() {
 		assertTrue(isGasThrottled(ContractCreate));
+	}
+
+	@Test
+	void getGasLimitWorksForCreate() throws UnknownHederaFunctionality {
+		final var op = ContractCreateTransactionBody.newBuilder()
+				.setGas(123456789L)
+				.build();
+		final var txn = TransactionBody.newBuilder()
+				.setContractCreateInstance(op)
+				.build();
+
+		assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn)));
+	}
+
+	@Test
+	void getGasLimitWorksForCall() throws UnknownHederaFunctionality {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.setGas(123456789L)
+				.build();
+		final var txn = TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build();
+
+
+		assertEquals(123456789L, MiscUtils.getGasLimitForContractTx(txn, MiscUtils.functionOf(txn)));
 	}
 
 	@SuppressWarnings("unchecked")

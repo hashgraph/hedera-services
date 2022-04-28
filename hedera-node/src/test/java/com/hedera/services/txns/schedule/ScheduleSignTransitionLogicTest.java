@@ -23,10 +23,12 @@ package com.hedera.services.txns.schedule;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
@@ -40,6 +42,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,7 +88,9 @@ class ScheduleSignTransitionLogicTest {
 
 	private ScheduleSignTransitionLogic subject;
 	private ScheduleID scheduleId = IdUtils.asSchedule("1.2.3");
-	private MerkleSchedule schedule;
+	private ScheduleVirtualValue schedule;
+	private GlobalDynamicProperties properties;
+	private ScheduleProcessing scheduleProcessing;
 
 	@BeforeEach
 	private void setup() throws InvalidProtocolBufferException {
@@ -95,14 +101,17 @@ class ScheduleSignTransitionLogicTest {
 		txnCtx = mock(TransactionContext.class);
 		replSigningWitness = mock(SignatoryUtils.ScheduledSigningsWitness.class);
 		classifier = mock(SigMapScheduleClassifier.class);
-		schedule = mock(MerkleSchedule.class);
+		schedule = mock(ScheduleVirtualValue.class);
+		properties = mock(GlobalDynamicProperties.class);
+		scheduleProcessing = mock(ScheduleProcessing.class);
 		given(txnCtx.activePayerKey()).willReturn(payerKey);
 
 		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
 				.willReturn(Pair.of(OK, true));
-		given(executor.processExecution(scheduleId, store, txnCtx)).willReturn(OK);
+		given(executor.processImmediateExecution(scheduleId, store, txnCtx)).willReturn(OK);
 
-		subject = new ScheduleSignTransitionLogic(store, txnCtx, activationHelper, executor);
+		subject = new ScheduleSignTransitionLogic(properties, store, txnCtx, activationHelper, executor,
+				scheduleProcessing);
 
 		subject.replSigningsWitness = replSigningWitness;
 		subject.classifier = classifier;
@@ -120,7 +129,7 @@ class ScheduleSignTransitionLogicTest {
 	void setsFailInvalidIfUnhandledException() {
 		givenValidTxnCtx();
 		// and:
-		given(replSigningWitness.observeInScope(scheduleId, store, validScheduleKeys, activationHelper))
+		given(properties.schedulingLongTermEnabled())
 				.willThrow(IllegalArgumentException.class);
 
 		// when:
@@ -131,10 +140,34 @@ class ScheduleSignTransitionLogicTest {
 	}
 
 	@Test
-	void failsOnInvalidScheduleId() {
+	void validateFailsOnInvalidScheduleId() {
 		givenCtx(true);
 		// expect:
 		assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
+	}
+
+	@Test
+	void validateFailsOnMissingSchedule() {
+		givenValidTxnCtx();
+		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		// expect:
+		assertEquals(INVALID_SCHEDULE_ID, subject.validate(scheduleSignTxn));
+	}
+
+	@Test
+	void validateHappyPath() {
+		givenValidTxnCtx();
+		// expect:
+		assertEquals(OK, subject.validate(scheduleSignTxn));
+	}
+
+	@Test
+	void validateHappyPathLongTermEnabled() {
+		givenValidTxnCtx();
+		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		given(store.getNoError(scheduleId)).willReturn(schedule);
+		// expect:
+		assertEquals(OK, subject.validate(scheduleSignTxn));
 	}
 
 	@Test
@@ -157,7 +190,7 @@ class ScheduleSignTransitionLogicTest {
 		// and:
 		verifyNoInteractions(classifier);
 		verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
-		verify(executor, never()).processExecution(scheduleId, store, txnCtx);
+		verify(executor, never()).processImmediateExecution(scheduleId, store, txnCtx);
 		verify(txnCtx).setStatus(SCHEDULE_ALREADY_EXECUTED);
 	}
 
@@ -173,8 +206,65 @@ class ScheduleSignTransitionLogicTest {
 		// and:
 		verifyNoInteractions(classifier);
 		verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
-		verify(executor, never()).processExecution(scheduleId, store, txnCtx);
+		verify(executor, never()).processImmediateExecution(scheduleId, store, txnCtx);
 		verify(txnCtx).setStatus(SCHEDULE_ALREADY_DELETED);
+	}
+
+	@Test
+	void abortsImmediatelyIfAfterExpiration() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.getNoError(scheduleId)).willReturn(schedule);
+		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		given(txnCtx.consensusTime()).willReturn(Instant.EPOCH);
+		given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH.plusNanos(1)));
+
+		// when:
+		subject.doStateTransition();
+
+		// and:
+		verifyNoInteractions(classifier);
+		verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
+		verify(executor, never()).processImmediateExecution(scheduleId, store, txnCtx);
+		verify(txnCtx).setStatus(SCHEDULE_PENDING_EXPIRATION);
+	}
+
+	@Test
+	void followsHappyPathIfLongTermEnabled() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.get(scheduleId)).willReturn(schedule);
+		given(store.getNoError(scheduleId)).willReturn(schedule);
+		given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		given(txnCtx.consensusTime()).willReturn(Instant.EPOCH);
+		given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH));
+
+		// when:
+		subject.doStateTransition();
+
+		// and:
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+		verify(executor).processImmediateExecution(scheduleId, store, txnCtx);
+		verify(txnCtx).setStatus(SUCCESS);
+	}
+
+	@Test
+	void doesNotProcessIfWaitForExpiry() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.get(scheduleId)).willReturn(schedule);
+		given(store.getNoError(scheduleId)).willReturn(schedule);
+		given(schedule.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(schedule.isWaitForExpiry()).willReturn(true);
+		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		given(txnCtx.consensusTime()).willReturn(Instant.EPOCH);
+		given(schedule.calculatedExpirationTime()).willReturn(RichInstant.fromJava(Instant.EPOCH));
+
+		// when:
+		subject.doStateTransition();
+
+		// and:
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+		verify(executor, never()).processImmediateExecution(scheduleId, store, txnCtx);
+		verify(txnCtx).setStatus(SUCCESS);
 	}
 
 	@Test
@@ -188,7 +278,7 @@ class ScheduleSignTransitionLogicTest {
 
 		// and:
 		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
-		verify(executor).processExecution(scheduleId, store, txnCtx);
+		verify(executor).processImmediateExecution(scheduleId, store, txnCtx);
 		verify(txnCtx).setStatus(SUCCESS);
 	}
 
@@ -206,7 +296,7 @@ class ScheduleSignTransitionLogicTest {
 		// and:
 		verify(txnCtx).setStatus(SUCCESS);
 		// and:
-		verify(executor, never()).processExecution(scheduleId, store, txnCtx);
+		verify(executor, never()).processImmediateExecution(scheduleId, store, txnCtx);
 	}
 
 	@Test
@@ -222,7 +312,7 @@ class ScheduleSignTransitionLogicTest {
 		// and:
 		verify(txnCtx).setStatus(SOME_SIGNATURES_WERE_INVALID);
 		// and:
-		verify(executor, never()).processExecution(scheduleId, store, txnCtx);
+		verify(executor, never()).processImmediateExecution(scheduleId, store, txnCtx);
 	}
 
 	@Test

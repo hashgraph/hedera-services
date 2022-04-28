@@ -20,9 +20,13 @@ package com.hedera.services.state.migration;
  * ‍
  */
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -36,6 +40,7 @@ import com.hedera.services.state.virtual.temporal.SecondSinceEpocVirtualKey;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
@@ -53,14 +58,37 @@ public class LongTermScheduledTransactionsMigration {
 	public static void migrateScheduledTransactions(
 			final ServicesState initializingState
 	) {
+		migrateScheduledTransactions(initializingState, (e, s) -> s.equalityCheckKey());
+	}
+
+	static void migrateScheduledTransactions(
+			final ServicesState initializingState,
+			final BiFunction<EntityNum, ScheduleVirtualValue, Long> getEqualityCheckKey
+	) {
 		log.info("Migrating long term scheduled transactions");
+
+		if (!(initializingState.getChild(StateChildIndices.SCHEDULE_TXS) instanceof MerkleMap)) {
+			log.warn("Scheduled Transactions appear to already be migrated!");
+			return;
+		}
 
 		final MerkleMap<EntityNum, MerkleSchedule> legacySchedules = initializingState.getChild(StateChildIndices.SCHEDULE_TXS);
 
 		final var newScheduledTxns = new MerkleScheduledTransactions();
 
-		final Map<Character, AtomicInteger> counts = new HashMap<>();
+		// all legacy schedules have their expiration date generated from the consensus time so if we order
+		// by expiry, it will order by consensus time (to the second, we can't get the nanos)
+		TreeMap<Long, List<Pair<EntityNum, MerkleSchedule>>> legacyOrdered = new TreeMap<>();
 		forEach(legacySchedules, (key, schedule) -> {
+			var list = legacyOrdered.computeIfAbsent(
+					schedule.expiry(), (k) -> new ArrayList<>());
+			list.add(Pair.of(key, schedule));
+		});
+
+		final Map<Character, AtomicInteger> counts = new HashMap<>();
+		legacyOrdered.values().forEach(list -> list.forEach(value -> {
+			var key = value.getKey();
+			var schedule = value.getValue();
 
 			var newScheduleKey = new EntityNumVirtualKey(key.longValue());
 			var newSchedule = new ScheduleVirtualValue(schedule);
@@ -79,7 +107,7 @@ public class LongTermScheduledTransactionsMigration {
 
 			bySecond.add(newSchedule.calculatedExpirationTime(), new LongArrayList(newScheduleKey.getKeyAsLong()));
 
-			var equalityKey = new ScheduleEqualityVirtualKey(newSchedule.equalityCheckKey());
+			var equalityKey = new ScheduleEqualityVirtualKey(getEqualityCheckKey.apply(key, newSchedule));
 
 			var byEquality = newScheduledTxns.byEquality().getForModify(equalityKey);
 
@@ -96,7 +124,7 @@ public class LongTermScheduledTransactionsMigration {
 			}
 
 			counts.computeIfAbsent('t', ignore -> new AtomicInteger()).getAndIncrement();
-		});
+		}));
 
 		initializingState.setChild(StateChildIndices.SCHEDULE_TXS, newScheduledTxns);
 

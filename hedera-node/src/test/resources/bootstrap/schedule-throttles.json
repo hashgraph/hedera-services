@@ -1,0 +1,44 @@
+{
+    "buckets": [
+        {
+            "name": "A",
+            "burstPeriod": 2,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "ScheduleCreate",
+                        "CryptoTransfer",
+                        "ConsensusSubmitMessage"
+                    ],
+                    "opsPerSec": 10000
+                },
+                {
+                    "operations": [
+                        "CryptoCreate",
+                        "ConsensusSubmitMessage"
+                    ],
+                    "opsPerSec": 10000
+                }
+            ]
+        },
+        {
+            "name": "C",
+            "burstPeriod": 3,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "CryptoCreate"
+                    ],
+                    "opsPerSec": 2
+                },
+                {
+                    "operations": [
+                        "ScheduleCreate",
+                        "ScheduleSign"
+                    ],
+                    "opsPerSec": 100
+                }
+            ]
+        }
+    ]
+}

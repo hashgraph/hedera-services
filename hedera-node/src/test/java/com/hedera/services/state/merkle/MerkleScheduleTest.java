@@ -331,30 +331,6 @@ public class MerkleScheduleTest {
 		assertTrue(subject.isImmutable());
 	}
 
-	@Test
-	void cavWorks() {
-		subject.markDeleted(resolutionTime);
-		subject.markExecuted(resolutionTime);
-		subject.witnessValidSignature(tpk);
-		final var cavSubject = subject.toContentAddressableView();
-
-		assertFalse(cavSubject.isDeleted());
-		assertFalse(cavSubject.isExecuted());
-		assertFalse(cavSubject.hasValidSignatureFor(tpk));
-
-		assertNotEquals(subject.toString(), cavSubject.toString());
-		assertTrue(cavSubject.signatories().isEmpty());
-
-		assertNull(cavSubject.payer());
-		assertEquals(0L, cavSubject.expiry());
-		assertNull(cavSubject.schedulingAccount());
-		assertEquals(entityMemo, cavSubject.memo().get());
-		assertEquals(TxnHandlingScenario.TOKEN_ADMIN_KT.asKey(), cavSubject.grpcAdminKey());
-		assertNull(cavSubject.schedulingTXValidStart());
-		assertEquals(scheduledTxn, cavSubject.scheduledTxn());
-		assertNull(cavSubject.bodyBytes());
-	}
-
 	private String signatoriesToString() {
 		return signatories.stream().map(CommonUtils::hex).collect(Collectors.joining(", "));
 	}
@@ -403,24 +379,4 @@ public class MerkleScheduleTest {
 				.build();
 	}
 
-	public static TransactionBody scheduleCreateTxnWith(
-			final Key scheduleAdminKey,
-			final String scheduleMemo,
-			final AccountID payer,
-			final AccountID scheduler,
-			final Timestamp validStart
-	) {
-		final var creation = ScheduleCreateTransactionBody.newBuilder()
-				.setAdminKey(scheduleAdminKey)
-				.setPayerAccountID(payer)
-				.setMemo(scheduleMemo)
-				.setScheduledTransactionBody(scheduledTxn);
-		return TransactionBody.newBuilder()
-				.setTransactionID(TransactionID.newBuilder()
-						.setTransactionValidStart(validStart)
-						.setAccountID(scheduler)
-						.build())
-				.setScheduleCreate(creation)
-				.build();
-	}
 }

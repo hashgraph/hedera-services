@@ -49,7 +49,6 @@ public class TriggeredTransition implements Runnable {
 	private final NetworkUtilization networkUtilization;
 	private final SigImpactHistorian sigImpactHistorian;
 	private final ScheduleStore scheduleStore;
-	private final SigsAndPayerKeyScreen sigsAndPayerKeyScreen;
 
 	@Inject
 	public TriggeredTransition(
@@ -61,8 +60,7 @@ public class TriggeredTransition implements Runnable {
 			final NetworkCtxManager networkCtxManager,
 			final RequestedTransition requestedTransition,
 			final ScheduleStore scheduleStore,
-			final NetworkUtilization networkUtilization,
-			SigsAndPayerKeyScreen sigsAndPayerKeyScreen) {
+			final NetworkUtilization networkUtilization) {
 		this.currentView = currentView;
 		this.fees = fees;
 		this.chargingPolicy = chargingPolicy;
@@ -72,7 +70,6 @@ public class TriggeredTransition implements Runnable {
 		this.scheduleStore = scheduleStore;
 		this.requestedTransition = requestedTransition;
 		this.sigImpactHistorian = sigImpactHistorian;
-		this.sigsAndPayerKeyScreen = sigsAndPayerKeyScreen;
 	}
 
 	@Override
@@ -81,11 +78,6 @@ public class TriggeredTransition implements Runnable {
 		final var now = txnCtx.consensusTime();
 
 		networkCtxManager.advanceConsensusClockTo(now);
-
-		// todo: is this missing? It fills in several fields on accessor around payer, but filling sigmap would cause error
-//		sigsAndPayerKeyScreen.applyTo(accessor);
-
-		networkUtilization.trackUserTxn(accessor, now);
 
 		if (accessor.isTriggeredTxn() && accessor.getScheduleRef() != null) {
 			var markExecutedOutcome = scheduleStore.markAsExecuted(accessor.getScheduleRef(), now);
@@ -96,6 +88,8 @@ public class TriggeredTransition implements Runnable {
 			}
 			sigImpactHistorian.markEntityChanged(fromScheduleId(accessor.getScheduleRef()).longValue());
 		}
+
+		networkUtilization.trackUserTxn(accessor, now);
 
 		//todo payer calculation valid? is activePayerKey correct? it doesnt seem like payerSigIsKnownActive would ever be called
 		final var fee = fees.computeFee(accessor, txnCtx.activePayerKey(), currentView, now);

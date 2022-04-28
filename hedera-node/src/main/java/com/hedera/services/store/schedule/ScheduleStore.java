@@ -55,12 +55,14 @@ public interface ScheduleStore extends Store<ScheduleID, ScheduleVirtualValue> {
 		return exists(id) ? id : MISSING_SCHEDULE;
 	}
 
+	ScheduleVirtualValue getNoError(ScheduleID id);
+
 	boolean advanceCurrentMinSecond(Instant consensusTime);
 	List<ScheduleID> nextSchedulesToExpire(Instant consensusTime);
 
-    @Nullable
+	@Nullable
 	ScheduleID nextScheduleToEvaluate(Instant consensusTime);
 
-    @Nullable
+	@Nullable
 	ScheduleSecondVirtualValue getBySecond(long second);
 }

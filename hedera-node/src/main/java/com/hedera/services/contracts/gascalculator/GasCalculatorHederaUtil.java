@@ -28,12 +28,9 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.fee.FeeBuilder;
 import org.hyperledger.besu.evm.Gas;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 
 /**
  * Utility methods used by Hedera adapted {@link org.hyperledger.besu.evm.gascalculator.GasCalculator}

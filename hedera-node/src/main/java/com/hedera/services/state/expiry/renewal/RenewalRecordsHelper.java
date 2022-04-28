@@ -150,6 +150,10 @@ public class RenewalRecordsHelper {
 				.setConsensusTime(at);
 	}
 
+	boolean isInCycle() {
+		return inCycle;
+	}
+
 	private void assertInCycle() {
 		if (inCycle == false) {
 			throw new IllegalStateException("Cannot stream records if not in a renewal cycle!");

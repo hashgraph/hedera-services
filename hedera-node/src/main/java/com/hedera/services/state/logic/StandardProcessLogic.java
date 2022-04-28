@@ -102,7 +102,9 @@ public class StandardProcessLogic implements ProcessLogic {
 			sigImpactHistorian.purge();
 			recordStreaming.resetBlockNo();
 
-			doProcess(submittingMember, consensusTimeTracker.firstTransactionTime(), accessor);
+			doProcess(submittingMember, consensusTimeTracker.isFirstUsed()
+					? consensusTimeTracker.nextTransactionTime(true)
+					: consensusTimeTracker.firstTransactionTime(), accessor);
 
 			processScheduledTransactions(consensusTime, submittingMember);
 
@@ -122,6 +124,8 @@ public class StandardProcessLogic implements ProcessLogic {
 			triggeredAccessor = scheduleProcessing.triggerNextTransactionExpiringAsNeeded(consensusTime, triggeredAccessor);
 			if (triggeredAccessor != null) {
 				doProcess(submittingMember, consensusTimeTracker.nextTransactionTime(false), triggeredAccessor);
+			} else {
+				break;
 			}
 		}
 	}

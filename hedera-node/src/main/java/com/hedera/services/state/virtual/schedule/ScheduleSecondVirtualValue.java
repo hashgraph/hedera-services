@@ -24,6 +24,7 @@ import java.beans.Transient;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -45,12 +46,16 @@ public class ScheduleSecondVirtualValue implements VirtualValue {
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1d2377926e3a85fcL;
 
-	private TreeMap<RichInstant, ImmutableLongList> ids = new TreeMap<>();
+	private final TreeMap<RichInstant, ImmutableLongList> ids = new TreeMap<>();
 
 	private transient boolean immutable;
 
 
 	public ScheduleSecondVirtualValue() {
+	}
+
+	public ScheduleSecondVirtualValue(Map<RichInstant, ? extends LongList> ids) {
+		ids.forEach((k, v) -> this.ids.put(k, v.toImmutable()));
 	}
 
 

@@ -216,8 +216,44 @@ class DeterministicThrottleTest {
 		final int mtps = 333;
 		final int burstPeriod = 6;
 		final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
-		subject.allow(2);
+		subject.allow(1);
+		subject.allow(1);
+		subject.allow(1);
 
+		subject.reclaimLastAllowedUse();
+
+		assertEquals(0, subject.delegate().bucket().capacityUsed());
+	}
+
+	@Test
+	void resetsReclaimAsExpected() {
+		final int mtps = 333;
+		final int burstPeriod = 6;
+		final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+		subject.allow(1);
+		subject.allow(1);
+		subject.allow(1);
+
+		var capacityUsedAfter = subject.delegate().bucket().capacityUsed();
+
+		assertTrue(capacityUsedAfter > 0);
+
+		subject.resetLastAllowedUse();
+		subject.reclaimLastAllowedUse();
+
+		assertEquals(capacityUsedAfter, subject.delegate().bucket().capacityUsed());
+	}
+
+	@Test
+	void resetsUsageAsExpected() {
+		final int mtps = 333;
+		final int burstPeriod = 6;
+		final var subject = DeterministicThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod);
+		subject.allow(1);
+		subject.allow(1);
+		subject.allow(1);
+
+		subject.resetUsage();
 		subject.reclaimLastAllowedUse();
 
 		assertEquals(0, subject.delegate().bucket().capacityUsed());

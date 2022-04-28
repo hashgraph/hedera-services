@@ -48,6 +48,10 @@ public class MerkleScheduledTransactionsState extends AbstractMerkleLeaf {
 		this.currentMinSecond = toCopy.currentMinSecond;
 	}
 
+	public MerkleScheduledTransactionsState(final long currentMinSecond) {
+		this.currentMinSecond = currentMinSecond;
+	}
+
 	/* --- MerkleLeaf --- */
 	@Override
 	public long getClassId() {

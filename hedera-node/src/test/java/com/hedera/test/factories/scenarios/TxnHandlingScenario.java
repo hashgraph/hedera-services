@@ -26,14 +26,13 @@ import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleSchedule;
-import com.hedera.services.state.merkle.MerkleScheduleTest;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.utils.EntityNum;
@@ -67,6 +66,7 @@ import java.util.TreeSet;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.services.state.virtual.schedule.ScheduleVirtualValueTest.scheduleCreateTxnWith;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newAccount;
 import static com.hedera.test.factories.accounts.MerkleAccountFactory.newContract;
 import static com.hedera.test.factories.accounts.MockMMapFactory.newAccounts;
@@ -344,7 +344,7 @@ public interface TxnHandlingScenario {
 	}
 
 	default byte[] extantSchedulingBodyBytes() throws Throwable {
-		return MerkleScheduleTest.scheduleCreateTxnWith(
+		return scheduleCreateTxnWith(
 						Key.getDefaultInstance(),
 						"",
 						MISC_ACCOUNT,
@@ -360,7 +360,7 @@ public interface TxnHandlingScenario {
 				.willReturn(KNOWN_SCHEDULE_IMMUTABLE);
 		given(scheduleStore.get(KNOWN_SCHEDULE_IMMUTABLE))
 				.willAnswer(inv -> {
-					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
+					var entity = ScheduleVirtualValue.from(extantSchedulingBodyBytes(), 1801L);
 					entity.setPayer(null);
 					return entity;
 				});
@@ -370,7 +370,7 @@ public interface TxnHandlingScenario {
 		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_ADMIN))
 				.willAnswer(inv -> {
 					var adminKey = SCHEDULE_ADMIN_KT.asJKeyUnchecked();
-					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
+					var entity = ScheduleVirtualValue.from(extantSchedulingBodyBytes(), 1801L);
 					entity.setPayer(null);
 					entity.setAdminKey(adminKey);
 					return entity;
@@ -380,7 +380,7 @@ public interface TxnHandlingScenario {
 				.willReturn(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER);
 		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER))
 				.willAnswer(inv -> {
-					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
+					var entity = ScheduleVirtualValue.from(extantSchedulingBodyBytes(), 1801L);
 					entity.setPayer(EntityId.fromGrpcAccountId(DILIGENT_SIGNING_PAYER));
 					return entity;
 				});
@@ -389,7 +389,7 @@ public interface TxnHandlingScenario {
 				.willReturn(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER);
 		given(scheduleStore.get(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER))
 				.willAnswer(inv -> {
-					var entity = MerkleSchedule.from(extantSchedulingBodyBytes(), 1801L);
+					var entity = ScheduleVirtualValue.from(extantSchedulingBodyBytes(), 1801L);
 					entity.setPayer(EntityId.fromGrpcAccountId(MISSING_ACCOUNT));
 					return entity;
 				});

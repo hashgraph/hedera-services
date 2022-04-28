@@ -51,7 +51,6 @@ public class SigsAndPayerKeyScreen {
 	public SigsAndPayerKeyScreen(
 			Rationalization rationalization,
 			PayerSigValidity payerSigValidity,
-			TransactionContext txnCtx,
 			MiscSpeedometers speedometers,
 			BiPredicate<JKey, TransactionSignature> validityTest
 	) {

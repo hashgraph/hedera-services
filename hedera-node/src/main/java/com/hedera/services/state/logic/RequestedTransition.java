@@ -57,7 +57,7 @@ public class RequestedTransition {
 			return;
 		}
 		if (transitionRunner.tryTransition(accessor)) {
-			networkCtxManager.finishIncorporating(accessor);
+			networkCtxManager.finishIncorporating(accessor.getFunction());
 		}
 	}
 }

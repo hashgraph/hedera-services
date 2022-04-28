@@ -35,10 +35,12 @@ import org.jetbrains.annotations.NotNull;
 public class RichInstant implements Comparable<RichInstant> {
 	public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
 
-	private int nanos;
-	private long seconds;
+	private final int nanos;
+	private final long seconds;
 
 	public RichInstant() {
+		nanos = 0;
+		seconds = 0;
 	}
 
 	public RichInstant(long seconds, int nanos) {

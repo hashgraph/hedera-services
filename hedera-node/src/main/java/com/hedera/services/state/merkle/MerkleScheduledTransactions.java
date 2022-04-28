@@ -54,7 +54,7 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 		private static final int BY_ID = 1;
 		private static final int BY_EXPIRATION_SECOND = 2;
 		private static final int BY_EQUALITY = 3;
-		static final int NUM_0250_CHILDREN = 4;
+		static final int NUM_0260_CHILDREN = 4;
 
 		private ChildIndices() {
 			throw new UnsupportedOperationException("Utility Class");
@@ -68,7 +68,7 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 	}
 
 	public MerkleScheduledTransactions(final List<MerkleNode> children) {
-		super(ChildIndices.NUM_0250_CHILDREN);
+		super(ChildIndices.NUM_0260_CHILDREN);
 		addDeserializedChildren(children, CURRENT_VERSION);
 	}
 
@@ -94,7 +94,7 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 
 	@Override
 	public int getMinimumChildCount(final int version) {
-		return ChildIndices.NUM_0250_CHILDREN;
+		return ChildIndices.NUM_0260_CHILDREN;
 	}
 
 	/* --- FastCopyable --- */
@@ -140,27 +140,13 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 	public VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId() {
 		return getChild(ChildIndices.BY_ID);
 	}
-	public void setById(final VirtualMap<EntityNumVirtualKey, ScheduleVirtualValue> byId) {
-		throwIfImmutable("Cannot change this MerkleScheduledTransactions' byId if it's immutable.");
-		setChild(ChildIndices.BY_ID, byId);
-	}
 
 	public VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond() {
 		return getChild(ChildIndices.BY_EXPIRATION_SECOND);
 	}
 
-	public void setByExpirationSecond(final VirtualMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> byExpirationSecond) {
-		throwIfImmutable("Cannot change this MerkleScheduledTransactions' byExpirationSecond if it's immutable.");
-		setChild(ChildIndices.BY_EXPIRATION_SECOND, byExpirationSecond);
-	}
-
 	public VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byEquality() {
 		return getChild(ChildIndices.BY_EQUALITY);
-	}
-
-	public void setByEquality(final VirtualMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> byExpirationSecond) {
-		throwIfImmutable("Cannot change this MerkleScheduledTransactions' byEquality if it's immutable.");
-		setChild(ChildIndices.BY_EQUALITY, byExpirationSecond);
 	}
 
 	public long getCurrentMinSecond() {

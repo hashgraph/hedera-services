@@ -175,9 +175,7 @@ public class NetworkCtxManager {
 	 *
 	 * @param accessor the transaction just handled
 	 */
-	public void finishIncorporating(@Nonnull TxnAccessor accessor) {
-		HederaFunctionality op = accessor.getFunction();
-
+	public void finishIncorporating(@Nonnull HederaFunctionality op) {
 		opCounters.countHandled(op);
 		if (consensusSecondJustChanged) {
 			runningAvgs.recordGasPerConsSec(gasUsedThisConsSec);
@@ -189,7 +187,7 @@ public class NetworkCtxManager {
 			gasUsedThisConsSec += gasUsed;
 			if (dynamicProperties.shouldThrottleByGas()) {
 				final var excessAmount = txnCtx.accessor().getGasLimitForContractTx() - gasUsed;
-				handleThrottling.leakUnusedGasPreviouslyReserved(accessor, excessAmount);
+				handleThrottling.leakUnusedGasPreviouslyReserved(txnCtx.accessor(), excessAmount);
 			}
 		}
 

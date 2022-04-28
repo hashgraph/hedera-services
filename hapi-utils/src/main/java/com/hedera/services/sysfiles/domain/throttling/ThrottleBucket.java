@@ -27,7 +27,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -213,9 +212,9 @@ public final class ThrottleBucket {
 			final var opsReq = (int) (mtps / group.impliedMilliOpsPerSec());
 			minCapacityUnitsPostSplit = Math.max(minCapacityUnitsPostSplit, capacityRequiredFor(opsReq));
 		}
-		final var minCapacityUnits = BigInteger.valueOf(minCapacityUnitsPostSplit).multiply(BigInteger.valueOf(capacitySplit));
+		final var minCapacityUnits = minCapacityUnitsPostSplit * capacitySplit;
 		final var capacityUnitsPerMs = BucketThrottle.capacityUnitsPerMs(mtps);
-		final var minBurstPeriodMs = quotientRoundedUp(minCapacityUnits, BigInteger.valueOf(capacityUnitsPerMs));
+		final var minBurstPeriodMs = quotientRoundedUp(minCapacityUnits, capacityUnitsPerMs);
 		final var reqBurstPeriodMs = impliedBurstPeriodMs();
 		if (minBurstPeriodMs > reqBurstPeriodMs) {
 			log.info(
@@ -227,11 +226,6 @@ public final class ThrottleBucket {
 
 	public static long quotientRoundedUp(final long a, final long b) {
 		return a / b + (a % b == 0 ? 0 : 1);
-	}
-
-	public static long quotientRoundedUp(final BigInteger a, final BigInteger b) {
-		final var div = a.divideAndRemainder(b);
-		return div[0].longValue() + (div[1].longValue() == 0 ? 0 : 1);
 	}
 
 	private void assertMinimalOpsPerSec() {

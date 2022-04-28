@@ -94,7 +94,12 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 			ScheduleSignTransactionBody op
 	) throws InvalidProtocolBufferException {
 		var scheduleId = op.getScheduleID();
-		var origSchedule = store.get(scheduleId);
+		var origSchedule = properties.schedulingLongTermEnabled()
+				? store.getNoError(scheduleId) : store.get(scheduleId);
+		if (origSchedule == null) {
+			txnCtx.setStatus(INVALID_SCHEDULE_ID);
+			return;
+		}
 		if (origSchedule.isExecuted()) {
 			txnCtx.setStatus(SCHEDULE_ALREADY_EXECUTED);
 			return;
@@ -151,10 +156,10 @@ public class ScheduleSignTransitionLogic implements TransitionLogic {
 		}
 
 		// If long term scheduled transactions are enabled, the schedule must exist at the HAPI level to allow deep throttle checks
-		if (properties.schedulingLongTermEnabled() && store.get(op.getScheduleID()) == null) {
+		if (properties.schedulingLongTermEnabled() && store.getNoError(op.getScheduleID()) == null) {
 			return INVALID_SCHEDULE_ID;
 		}
 
-		return (op.hasScheduleID()) ? OK : INVALID_SCHEDULE_ID;
+		return OK;
 	}
 }

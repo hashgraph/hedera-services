@@ -20,6 +20,11 @@ package com.hedera.services.state.virtual.schedule;
  * ‍
  */
 
+import com.google.common.base.MoreObjects;
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.virtualmap.VirtualValue;
+
 import java.beans.Transient;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,20 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.Objects;
-import java.util.TreeMap;
-
-import com.google.common.base.MoreObjects;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualValue;
-
-import org.eclipse.collections.api.list.primitive.ImmutableLongList;
-import org.eclipse.collections.api.list.primitive.LongList;
-import org.eclipse.collections.api.list.primitive.MutableLongList;
-import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
 public class ScheduleEqualityVirtualValue implements VirtualValue {
 
@@ -48,12 +40,17 @@ public class ScheduleEqualityVirtualValue implements VirtualValue {
 
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0x1fe377366e3282f2L;
 
-	private HashMap<String, Long> ids = new HashMap<>();
+	private final HashMap<String, Long> ids;
 
 	private transient boolean immutable;
 
 
 	public ScheduleEqualityVirtualValue() {
+		ids = new HashMap<>();
+	}
+
+	public ScheduleEqualityVirtualValue(Map<String, Long> ids) {
+		this.ids = new HashMap<>(ids);
 	}
 
 

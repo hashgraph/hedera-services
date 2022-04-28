@@ -96,8 +96,8 @@ public class ScheduleVirtualValue implements VirtualValue {
 	private TransactionBody ordinaryScheduledTxn;
 	private SchedulableTransactionBody scheduledTxn;
 
-	private List<byte[]> signatories = new ArrayList<>();
-	private Set<ByteString> notary = ConcurrentHashMap.newKeySet();
+	private final List<byte[]> signatories = new ArrayList<>();
+	private final Set<ByteString> notary = ConcurrentHashMap.newKeySet();
 
 	public ScheduleVirtualValue() {
 		/* RuntimeConstructable */
@@ -144,6 +144,15 @@ public class ScheduleVirtualValue implements VirtualValue {
 	public static ScheduleVirtualValue from(byte[] bodyBytes, long consensusExpiry) {
 		var to = new ScheduleVirtualValue();
 		to.calculatedExpirationTime = new RichInstant(consensusExpiry, 0);
+		to.bodyBytes = bodyBytes;
+		to.initFromBodyBytes();
+
+		return to;
+	}
+
+	public static ScheduleVirtualValue from(byte[] bodyBytes, RichInstant consensusExpiry) {
+		var to = new ScheduleVirtualValue();
+		to.calculatedExpirationTime = consensusExpiry;
 		to.bodyBytes = bodyBytes;
 		to.initFromBodyBytes();
 
@@ -245,7 +254,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 	private HashCode equalityHash() {
 		// if this changes at all, the equality database for scheduled transactions will need to be re-built
 		return buildEqualityHash(
-				memo.getBytes(StandardCharsets.UTF_8),
+				memo != null ? memo.getBytes(StandardCharsets.UTF_8): new byte[] {},
 				grpcAdminKey != null ? grpcAdminKey.toByteArray() : new byte[] {},
 				scheduledTxn.toByteArray(),
 				expirationTimeProvided != null ? expirationTimeProvided.toGrpc().toByteArray() : new byte[] {},
@@ -280,25 +289,59 @@ public class ScheduleVirtualValue implements VirtualValue {
 	@Override
 	public void deserialize(SerializableDataInputStream in, int version) throws IOException {
 		bodyBytes = in.readByteArray(Integer.MAX_VALUE);
-		calculatedExpirationTime = RichInstant.from(in);
-		executed = in.readBoolean();
-		deleted = in.readBoolean();
-		resolutionTime = RichInstant.from(in);
+		if (in.readByte() == 1) {
+			calculatedExpirationTime = new RichInstant(in.readLong(), in.readInt());
+		} else {
+			calculatedExpirationTime = null;
+		}
+		executed = in.readByte() == 1;
+		deleted = in.readByte() == 1;
+		if (in.readByte() == 1) {
+			resolutionTime = new RichInstant(in.readLong(), in.readInt());
+		} else {
+			resolutionTime = null;
+		}
 		int numSignatories = in.readInt();
 		while (numSignatories-- > 0) {
-			witnessValidSignature(in.readByteArray(MAX_NUM_PUBKEY_BYTES));
+			int n = in.readInt();
+			byte[] bytes = in.readByteArray(n);
+			witnessValidSignature(bytes);
 		}
 
 		initFromBodyBytes();
 	}
 
 	@Override
+	public void serialize(SerializableDataOutputStream out) throws IOException {
+		out.writeByteArray(bodyBytes);
+		if (calculatedExpirationTime == null) {
+			out.writeByte((byte) 0);
+		} else {
+			out.writeByte((byte) 1);
+			out.writeLong(calculatedExpirationTime.getSeconds());
+			out.writeInt(calculatedExpirationTime.getNanos());
+		}
+		out.writeByte((byte) (executed ? 1 : 0));
+		out.writeByte((byte) (deleted ? 1 : 0));
+		if (resolutionTime == null) {
+			out.writeByte((byte) 0);
+		} else {
+			out.writeByte((byte) 1);
+			out.writeLong(resolutionTime.getSeconds());
+			out.writeInt(resolutionTime.getNanos());
+		}
+		out.writeInt(signatories.size());
+		for (byte[] key : signatories) {
+			out.writeInt(key.length);
+			out.writeByteArray(key);
+		}
+	}
+
+	@Override
 	public void deserialize(ByteBuffer in, int version) throws IOException {
 		var n = in.getInt();
-		bodyBytes = n < 0 ? null : new byte[n];
-		if (bodyBytes != null) {
-			in.get(bodyBytes);
-		}
+		bodyBytes = new byte[n];
+		in.get(bodyBytes);
 		if (in.get() == 1) {
 			calculatedExpirationTime = new RichInstant(in.getLong(), in.getInt());
 		} else {
@@ -323,24 +366,9 @@ public class ScheduleVirtualValue implements VirtualValue {
 	}
 
 	@Override
-	public void serialize(SerializableDataOutputStream out) throws IOException {
-		out.writeByteArray(bodyBytes);
-		calculatedExpirationTime.serialize(out);
-		out.writeBoolean(executed);
-		out.writeBoolean(deleted);
-		resolutionTime.serialize(out);
-		out.writeInt(signatories.size());
-		for (byte[] key : signatories) {
-			out.writeByteArray(key);
-		}
-	}
-
-	@Override
 	public void serialize(ByteBuffer out) throws IOException {
-		out.putInt(bodyBytes == null ? -1 : bodyBytes.length);
-		if (bodyBytes != null) {
-			out.put(bodyBytes);
-		}
+		out.putInt(bodyBytes.length);
+		out.put(bodyBytes);
 		if (calculatedExpirationTime == null) {
 			out.put((byte) 0);
 		} else {
@@ -526,7 +554,7 @@ public class ScheduleVirtualValue implements VirtualValue {
 					grpcAdminKey = creationOp.getAdminKey();
 				}
 			}
-			scheduledTxn = parentTxn.getScheduleCreate().getScheduledTransactionBody();
+			scheduledTxn = creationOp.getScheduledTransactionBody();
 			schedulingAccount = EntityId.fromGrpcAccountId(parentTxn.getTransactionID().getAccountID());
 			ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn);
 			schedulingTXValidStart = RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());

@@ -47,7 +47,7 @@ public class LivePricesSource {
 			final HbarCentExchange exchange,
 			final UsagePricesProvider usagePrices,
 			final FeeMultiplierSource feeMultiplierSource,
-			TransactionContext txnCtx) {
+			final TransactionContext txnCtx) {
 		this.exchange = exchange;
 		this.usagePrices = usagePrices;
 		this.feeMultiplierSource = feeMultiplierSource;

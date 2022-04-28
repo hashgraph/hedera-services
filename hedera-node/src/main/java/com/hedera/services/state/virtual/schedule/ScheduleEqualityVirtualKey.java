@@ -32,10 +32,10 @@ import com.swirlds.virtualmap.VirtualLongKey;
  * A {@link com.swirlds.virtualmap.VirtualKey} for a {@link ScheduleVirtualValue#equalityCheckKey()}.
  */
 public final class ScheduleEqualityVirtualKey implements VirtualLongKey {
-	private static final long CLASS_ID = 0xcd76f4fba3967595L;
+	static final long CLASS_ID = 0xcd76f4fba3967595L;
 	static final int BYTES_IN_SERIALIZED_FORM = 8;
 
-	private static final class ClassVersion {
+	static final class ClassVersion {
 		public static final int ORIGINAL = 1;
 	}
 

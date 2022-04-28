@@ -33,10 +33,10 @@ import com.swirlds.virtualmap.VirtualLongKey;
  * A {@link com.swirlds.virtualmap.VirtualKey} for an {@link EntityNum}.
  */
 public final class EntityNumVirtualKey implements VirtualLongKey {
-	private static final long CLASS_ID = 0xec76f9ebae262595L;
+	static final long CLASS_ID = 0xec76f9ebae262595L;
 	static final int BYTES_IN_SERIALIZED_FORM = 8;
 
-	private static final class ClassVersion {
+	static final class ClassVersion {
 		public static final int ORIGINAL = 1;
 	}
 

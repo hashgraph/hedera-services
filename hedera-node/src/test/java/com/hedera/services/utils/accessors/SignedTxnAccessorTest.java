@@ -651,6 +651,36 @@ class SignedTxnAccessorTest {
 	}
 
 	@Test
+	void markThrottleExemptWorks() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertFalse(subject.throttleExempt());
+		subject.markThrottleExempt();
+		assertTrue(subject.throttleExempt());
+	}
+
+	@Test
+	void markCongestionExemptWorks() {
+		final var op = ContractCallTransactionBody.newBuilder()
+				.build();
+		final var txn = buildTransactionFrom(TransactionBody.newBuilder()
+				.setContractCall(op)
+				.build());
+
+		final var subject = SignedTxnAccessor.uncheckedFrom(txn);
+
+		assertFalse(subject.congestionExempt());
+		subject.markCongestionExempt();
+		assertTrue(subject.congestionExempt());
+	}
+
+	@Test
 	void toLoggableStringWorks() throws InvalidProtocolBufferException {
 		TransactionBody someTxn = TransactionBody.newBuilder()
 				.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))

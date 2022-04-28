@@ -24,7 +24,7 @@ import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleSchedule;
+import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -69,7 +69,7 @@ class SignatoryUtilsTest {
 	@Mock
 	private ScheduleStore store;
 	@Mock
-	private MerkleSchedule schedule;
+	private ScheduleVirtualValue schedule;
 	@Mock
 	private InHandleActivationHelper activationHelper;
 
@@ -131,7 +131,7 @@ class SignatoryUtilsTest {
 		// and:
 		given(schedule.witnessValidSignature(goodEd25519Key.getEd25519())).willReturn(false);
 		willAnswer(inv -> {
-			Consumer<MerkleSchedule> action = inv.getArgument(1);
+			Consumer<ScheduleVirtualValue> action = inv.getArgument(1);
 			action.accept(schedule);
 			return null;
 		}).given(store).apply(eq(id), any());
@@ -151,7 +151,7 @@ class SignatoryUtilsTest {
 		// and:
 		given(schedule.witnessValidSignature(goodEd25519Key.getEd25519())).willReturn(false);
 		willAnswer(inv -> {
-			Consumer<MerkleSchedule> action = inv.getArgument(1);
+			Consumer<ScheduleVirtualValue> action = inv.getArgument(1);
 			action.accept(schedule);
 			return null;
 		}).given(store).apply(eq(id), any());
@@ -171,7 +171,7 @@ class SignatoryUtilsTest {
 		// and:
 		given(schedule.witnessValidSignature(goodEd25519Key.getEd25519())).willReturn(true);
 		willAnswer(inv -> {
-			Consumer<MerkleSchedule> action = inv.getArgument(1);
+			Consumer<ScheduleVirtualValue> action = inv.getArgument(1);
 			action.accept(schedule);
 			return null;
 		}).given(store).apply(eq(id), any());
@@ -191,7 +191,7 @@ class SignatoryUtilsTest {
 		// and:
 		given(schedule.witnessValidSignature(goodSecp256k1Key.getECDSASecp256k1Key())).willReturn(true);
 		willAnswer(inv -> {
-			Consumer<MerkleSchedule> action = inv.getArgument(1);
+			Consumer<ScheduleVirtualValue> action = inv.getArgument(1);
 			action.accept(schedule);
 			return null;
 		}).given(store).apply(eq(id), any());
@@ -211,7 +211,7 @@ class SignatoryUtilsTest {
 		// and:
 		given(schedule.witnessValidSignature(goodEd25519Key.getEd25519())).willReturn(true);
 		willAnswer(inv -> {
-			Consumer<MerkleSchedule> action = inv.getArgument(1);
+			Consumer<ScheduleVirtualValue> action = inv.getArgument(1);
 			action.accept(schedule);
 			return null;
 		}).given(store).apply(eq(id), any());

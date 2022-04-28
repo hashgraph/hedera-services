@@ -76,6 +76,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 	private List<DeterministicThrottle> activeThrottles = Collections.emptyList();
 	private EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs = new EnumMap<>(HederaFunctionality.class);
+	private ThrottleDefinitions activeDefs = null;
 
 	private DeterministicThrottlingMode mode;
 	private boolean lastTxnWasGasThrottled;
@@ -168,16 +169,11 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		switch (mode) {
 			case SCHEDULE:
-				var scheduleThrottles = calculateScheduleThrottles(defs);
-				functionReqs = scheduleThrottles.getRight();
-				activeThrottles = scheduleThrottles.getLeft();
+				calculateScheduleThrottles(defs);
 
 				break;
 			default:
-				var throttles = calculateThrottles(defs, capacitySplitSource.getAsInt());
-
-				functionReqs = throttles.getRight();
-				activeThrottles = throttles.getLeft();
+				calculateThrottles(defs, capacitySplitSource.getAsInt());
 
 				break;
 		}
@@ -241,7 +237,9 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 	public void resetUsage() {
 		lastTxnWasGasThrottled = false;
 		activeThrottles.forEach(DeterministicThrottle::resetUsage);
-		gasThrottle.resetUsage();
+		if (gasThrottle != null) {
+			gasThrottle.resetUsage();
+		}
 	}
 
 	private void logResolvedDefinitions() {
@@ -389,7 +387,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 
 		final var scheduledId = txn.getScheduleSign().getScheduleID();
 
-		var scheduleValue = scheduleStore.get(scheduledId);
+		var scheduleValue = scheduleStore.getNoError(scheduledId);
 		if (scheduleValue == null) {
 			log.error("Tried to throttle a ScheduleSign at the HAPI level that does not exist! We should not get here.");
 			return true;
@@ -400,7 +398,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			return false;
 		}
 
-		final var normalTxn = MiscUtils.asOrdinary(scheduleValue.scheduledTxn());
+		final var normalTxn = scheduleValue.ordinaryViewOfScheduledTxn();
 
 		HederaFunctionality scheduledFunction;
 		try {
@@ -442,7 +440,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 				(gasThrottle == null || !gasThrottle.allow(now, MiscUtils.getGasLimitForContractTx(txn, function)));
 	}
 
-	public void reclaimLastAllowedUse() {
+	private void reclaimLastAllowedUse() {
 		activeThrottles.forEach(DeterministicThrottle::reclaimLastAllowedUse);
 		if (gasThrottle != null) {
 			gasThrottle.reclaimLastAllowedUse();
@@ -456,8 +454,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		}
 	}
 
-	private static Pair<List<DeterministicThrottle>, EnumMap<HederaFunctionality, ThrottleReqsManager>> calculateThrottles(
-			ThrottleDefinitions defs, long capacitySplit) {
+	private void calculateThrottles(ThrottleDefinitions defs, long capacitySplit) {
 		List<DeterministicThrottle> newActiveThrottles = new ArrayList<>();
 		EnumMap<HederaFunctionality, List<Pair<DeterministicThrottle, Integer>>> reqLists
 				= new EnumMap<>(HederaFunctionality.class);
@@ -479,12 +476,13 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		EnumMap<HederaFunctionality, ThrottleReqsManager> newFunctionReqs = new EnumMap<>(HederaFunctionality.class);
 		reqLists.forEach((function, reqs) -> newFunctionReqs.put(function, new ThrottleReqsManager(reqs)));
 
-		return Pair.of(newActiveThrottles, newFunctionReqs);
+		functionReqs = newFunctionReqs;
+		activeThrottles = newActiveThrottles;
+		activeDefs = defs;
 	}
 
 	@NotNull
-	private Pair<List<DeterministicThrottle>, EnumMap<HederaFunctionality, ThrottleReqsManager>> calculateScheduleThrottles(
-			final ThrottleDefinitions defs) {
+	private void calculateScheduleThrottles(final ThrottleDefinitions defs) {
 
 		// copy the throttles
 		var defsCopy = ThrottleDefinitions.fromProto(defs.toProto());
@@ -576,12 +574,16 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 			throw new IllegalStateException("Could not scale throttles!");
 		}
 
-		return calculateThrottles(defsCopy, capacitySplitSource.getAsInt());
+		calculateThrottles(defsCopy, capacitySplitSource.getAsInt());
 	}
 
 	/* --- Only used by unit tests --- */
 	void setMode(DeterministicThrottlingMode mode) {
 		this.mode = mode;
+	}
+
+	ThrottleDefinitions getActiveDefs() {
+		return this.activeDefs;
 	}
 
 	void setFunctionReqs(EnumMap<HederaFunctionality, ThrottleReqsManager> functionReqs) {

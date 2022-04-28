@@ -24,12 +24,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.BiPredicate;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.keys.CharacteristicsFactory;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -40,7 +40,6 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.throttling.TimedFunctionalityThrottling;
 import com.hedera.services.throttling.annotations.ScheduleThrottle;
 import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.services.keys.InHandleActivationHelper;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -57,6 +56,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTURE_THROTTLE_EXCEEDED;
 
+/**
+ * Class that encapsulates some of the more complex processing of scheduled transactions.
+ */
 @Singleton
 public class ScheduleProcessing {
 	private static final Logger log = LogManager.getLogger(ScheduleProcessing.class);
@@ -71,6 +73,7 @@ public class ScheduleProcessing {
 
 	SigMapScheduleClassifier classifier = new SigMapScheduleClassifier();
 	SignatoryUtils.ScheduledSigningsWitness signingsWitness = SignatoryUtils::witnessScoped;
+	BiPredicate<ScheduleVirtualValue, InHandleActivationHelper> isReady = SignatoryUtils::isReady;
 
 	@Inject
 	public ScheduleProcessing(final SigImpactHistorian sigImpactHistorian, final ScheduleStore store,
@@ -86,6 +89,9 @@ public class ScheduleProcessing {
 		this.scheduleThrottling = scheduleThrottling;
 	}
 
+	/**
+	 * Expires all scheduled transactions, that are in a final state, having an expiry before consensusTime.
+	 */
 	public void expire(Instant consensusTime) {
 
 		while (true) {
@@ -104,6 +110,13 @@ public class ScheduleProcessing {
 
 	}
 
+	/**
+	 * Gets the next scheduled transaction that is available to execute. Scheduled transactions may be expired
+	 * as needed during this call.
+	 * @param consensusTime the current consensus time
+	 * @param previous the previous accessor returned from this method, if available.
+	 * @return the TxnAccessor of the next scheduled transaction to execute, or null if there are none.
+	 */
 	@Nullable
 	public TxnAccessor triggerNextTransactionExpiringAsNeeded(Instant consensusTime, @Nullable TxnAccessor previous) {
 
@@ -139,13 +152,14 @@ public class ScheduleProcessing {
 				var parentSignedTxn = schedule.parentAsSignedTxn();
 
 				var accessor = PlatformTxnAccessor.from(
-						SignedTxnAccessor.uncheckedFrom(parentSignedTxn), new SwirldTransaction(parentSignedTxn.toByteArray()));
+						SignedTxnAccessor.from(parentSignedTxn.toByteArray()),
+						new SwirldTransaction(parentSignedTxn.toByteArray()));
 
 				sigsAndPayerKeyScreen.applyTo(accessor, Optional.empty());
 
 				var inHandleActivationHelper = new InHandleActivationHelper(characteristics, () -> accessor);
 
-				if (!SignatoryUtils.isReady(schedule, inHandleActivationHelper)) {
+				if (!isReady.test(schedule, inHandleActivationHelper)) {
 
 					// expire transactions that are not ready to execute
 					store.expire(next);
@@ -156,7 +170,8 @@ public class ScheduleProcessing {
 					var triggerResult = scheduleExecutor.getTriggeredTxnAccessor(next, store, false);
 
 					if (triggerResult.getLeft() != OK) {
-						log.error("Scheduled transaction was not trigger-able even though it should be! Expiring it. {}", next);
+						log.error("Scheduled transaction was not trigger-able even though it should be! Expiring it. {}",
+								next);
 						store.expire(next);
 						sigImpactHistorian.markEntityChanged(fromScheduleId(next).longValue());
 					} else {
@@ -165,7 +180,8 @@ public class ScheduleProcessing {
 
 				}
 			} catch (Exception e) {
-				log.error("SCHEDULED TRANSACTION SKIPPED!! Failed to triggered transaction due unexpected error! {}", next, e);
+				log.error("SCHEDULED TRANSACTION SKIPPED!! Failed to triggered transaction due unexpected error! {}",
+						next, e);
 
 				// Immediately expire malfunctioning transactions, if we get here then there is a bug.
 				// We can't leave it in the db, it will prevent other scheduled transactions from processing.
@@ -177,6 +193,10 @@ public class ScheduleProcessing {
 
 	}
 
+	/**
+	 * @param schedule a schedule to check the "future throttles" for.
+	 * @return an error code if there was an error, OK otherwise
+	 */
 	public ResponseCodeEnum checkFutureThrottlesForCreate(final ScheduleVirtualValue schedule) {
 
 		if (dynamicProperties.schedulingLongTermEnabled()) {
@@ -184,15 +204,26 @@ public class ScheduleProcessing {
 
 			final TreeMap<RichInstant, List<TxnAccessor>> transactions = new TreeMap<>();
 
-			var bySecond = store.getBySecond(schedule.calculatedExpirationTime().getSeconds());
+			var curSecond = schedule.calculatedExpirationTime().getSeconds();
+
+			var bySecond = store.getBySecond(curSecond);
 
 			if (bySecond != null) {
 				bySecond.getIds().values().forEach(ids -> ids.forEach(id -> {
-					var existing = store.get(EntityNum.fromLong(id).toGrpcScheduleId());
+					var existing = store.getNoError(EntityNum.fromLong(id).toGrpcScheduleId());
 
 					if (existing != null) {
-						var list = transactions.computeIfAbsent(existing.calculatedExpirationTime(), k -> new ArrayList<>());
-						list.add(SignedTxnAccessor.uncheckedFrom(existing.asSignedTxn()));
+						if (existing.calculatedExpirationTime().getSeconds() != curSecond) {
+							log.error("bySecond contained a schedule in the wrong spot! Ignoring it! spot={}, id={}, schedule={}",
+									curSecond, id, existing);
+						} else {
+							var list = transactions.computeIfAbsent(existing.calculatedExpirationTime(),
+									k -> new ArrayList<>());
+							list.add(SignedTxnAccessor.uncheckedFrom(existing.asSignedTxn()));
+						}
+					} else {
+						log.error("bySecond contained a schedule that does not exist! Ignoring it! second={}, id={}",
+								curSecond, id);
 					}
 				}));
 			}

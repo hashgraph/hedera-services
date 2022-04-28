@@ -99,6 +99,11 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 	}
 
 	@Override
+	public ScheduleVirtualValue getNoError(final ScheduleID id) {
+		return pendingId.equals(id) ? pendingCreation : schedules.get().byId().get(new EntityNumVirtualKey(fromScheduleId(id)));
+	}
+
+	@Override
 	public boolean exists(ScheduleID id) {
 		return (isCreationPending() && pendingId.equals(id)) || schedules.get().byId().containsKey(
 				new EntityNumVirtualKey(fromScheduleId(id)));
@@ -247,11 +252,17 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
 		var equalityKey = new ScheduleEqualityVirtualKey(schedule.equalityCheckKey());
 		var byEquality = schedules.get().byEquality().get(equalityKey);
-		var existingId = byEquality.getIds().get(schedule.equalityCheckValue());
+		if (byEquality != null) {
+			var existingId = byEquality.getIds().get(schedule.equalityCheckValue());
 
-		if (existingId != null) {
-			final var extantId = EntityNum.fromLong(existingId).toGrpcScheduleId();
-			return Pair.of(extantId, get(extantId));
+			if (existingId != null) {
+
+				final var extantId = EntityNum.fromLong(existingId).toGrpcScheduleId();
+
+				if (exists(extantId)) {
+					return Pair.of(extantId, get(extantId));
+				}
+			}
 		}
 
 		return Pair.of(null, schedule);
@@ -283,6 +294,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 					"Argument 'id=%s' refers to a pending creation!",
 					readableId(id)));
 		}
+
+		throwIfMissing(id);
 
 
 		var idToDelete = new EntityNumVirtualKey(fromScheduleId(id));
@@ -349,20 +362,35 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 			return list;
 		}
 
-		var bySecond = schedules.get().byExpirationSecond().get(
-				new SecondSinceEpocVirtualKey(curSecond));
+		var bySecondKey = new SecondSinceEpocVirtualKey(curSecond);
+
+		var bySecond = schedules.get().byExpirationSecond().get(bySecondKey);
+
+		List<Pair<RichInstant, Long>> toRemove = new ArrayList<>();
 
 		if (bySecond != null) {
-			outer: for (var ids : bySecond.getIds().values()) {
+			outer: for (var entry : bySecond.getIds().entrySet()) {
+				var instant = entry.getKey();
+				var ids = entry.getValue();
 				for (int i = 0; i < ids.size(); ++i) {
-					var scheduleId = EntityNum.fromLong(ids.get(i)).toGrpcScheduleId();
+					var id = ids.get(i);
+					var scheduleId = EntityNum.fromLong(id).toGrpcScheduleId();
 
-					var schedule = get(scheduleId);
+					var schedule = getNoError(scheduleId);
+
+					if (schedule == null) {
+						log.error("bySecond contained a schedule that does not exist! Removing it! second={}, id={}",
+								curSecond, scheduleId);
+						toRemove.add(Pair.of(instant, id));
+						continue;
+					}
 
 					if (schedule.calculatedExpirationTime().getSeconds() != curSecond) {
-						log.error("bySecond contained a schedule in the wrong spot! spot={}, id={}, schedule={}", curSecond,
-								scheduleId, schedule);
-						throw new IllegalStateException("bySecond contained a schedule in the wrong spot!");
+						log.error("bySecond contained a schedule in the wrong spot! Removing and Expiring it! spot={}, id={}, schedule={}",
+								curSecond, scheduleId, schedule);
+						toRemove.add(Pair.of(instant, id));
+						list.add(scheduleId);
+						continue;
 					}
 
 					if (schedule.isDeleted() || schedule.isExecuted()) {
@@ -374,11 +402,25 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 			}
 		}
 
+		if ((toRemove.size() > 0) || ((bySecond != null) && (bySecond.getIds().size() <= 0))) {
+			bySecond = schedules.get().byExpirationSecond().getForModify(bySecondKey);
+			if (bySecond != null) {
+				for (var p : toRemove) {
+					bySecond.removeId(p.getKey(), p.getValue());
+				}
+
+				if (bySecond.getIds().size() <= 0) {
+					log.error("bySecond was unexpectedly empty! Removing it! second={}", curSecond);
+					schedules.get().byExpirationSecond().remove(bySecondKey);
+				}
+			}
+		}
+
 		return list;
 	}
 
 	@Override
-    @Nullable
+	@Nullable
 	public ScheduleID nextScheduleToEvaluate(Instant consensusTime) {
 
 		long curSecond = schedules.get().getCurrentMinSecond();
@@ -395,12 +437,18 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 				if (ids.size() > 0) {
 					var scheduleId = EntityNum.fromLong(ids.get(0)).toGrpcScheduleId();
 
-					var schedule = get(scheduleId);
+					var schedule = getNoError(scheduleId);
+
+					if (schedule == null) {
+						log.error("bySecond contained a schedule that does not exist! Not evaluating it! second={}, id={}",
+								curSecond, scheduleId);
+						return null;
+					}
 
 					if (schedule.calculatedExpirationTime().getSeconds() != curSecond) {
-						log.error("bySecond contained a schedule in the wrong spot! spot={}, id={}, schedule={}", curSecond,
-								scheduleId, schedule);
-						throw new IllegalStateException("bySecond contained a schedule in the wrong spot!");
+						log.error("bySecond contained a schedule in the wrong spot! Not evaluating it! spot={}, id={}, schedule={}",
+								curSecond, scheduleId, schedule);
+						return null;
 					}
 
 					if (schedule.isDeleted() || schedule.isExecuted()) {

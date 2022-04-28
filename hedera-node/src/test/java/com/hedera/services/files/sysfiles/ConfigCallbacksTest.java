@@ -49,7 +49,8 @@ class ConfigCallbacksTest {
 
 	@BeforeEach
 	void setUp() {
-		subject = new ConfigCallbacks(hapiOpPermissions, dynamicProps, propertySources, functionalityThrottling, functionalityThrottling);
+		subject = new ConfigCallbacks(hapiOpPermissions, dynamicProps, propertySources, functionalityThrottling,
+				functionalityThrottling, functionalityThrottling);
 	}
 
 	@Test
@@ -62,7 +63,7 @@ class ConfigCallbacksTest {
 		// then:
 		verify(propertySources).reloadFrom(config);
 		verify(dynamicProps).reload();
-		verify(functionalityThrottling, times(2)).applyGasConfig();
+		verify(functionalityThrottling, times(3)).applyGasConfig();
 	}
 
 	@Test
