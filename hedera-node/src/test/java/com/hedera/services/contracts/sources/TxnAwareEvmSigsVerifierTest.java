@@ -361,6 +361,7 @@ class TxnAwareEvmSigsVerifierTest {
 	@Test
 	void testsWhenReceiverSigIsRequiredFromPayerForEthTx() {
 		givenAccessorInCtx();
+		given(txnCtx.accessor()).willReturn(accessor);
 		given(sigReqAccount.isReceiverSigRequired()).willReturn(true);
 		given(sigReqAccount.getAccountKey()).willReturn(failingKey);
 		given(ledgers.accounts()).willReturn(accountsLedger);
@@ -473,7 +474,6 @@ class TxnAwareEvmSigsVerifierTest {
 	}
 
 	private void givenAccessorInCtx() {
-		given(txnCtx.accessor()).willReturn(accessor);
 		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 		given(txnCtx.activePayer()).willReturn(payer);
 	}
