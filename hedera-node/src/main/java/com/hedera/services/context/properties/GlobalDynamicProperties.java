@@ -23,6 +23,7 @@ package com.hedera.services.context.properties;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -113,6 +114,7 @@ public class GlobalDynamicProperties {
 	private boolean limitTokenAssociations;
 	private boolean enableHTSPrecompileCreate;
 	private int maxPurgedKvPairsPerTouch;
+	private KnownBlockValues knownBlockValues;
 
 	@Inject
 	public GlobalDynamicProperties(
@@ -206,6 +208,7 @@ public class GlobalDynamicProperties {
 		limitTokenAssociations = properties.getBooleanProperty("accounts.limitTokenAssociations");
 		enableHTSPrecompileCreate = properties.getBooleanProperty("contracts.precompile.htsEnableTokenCreate");
 		maxPurgedKvPairsPerTouch = properties.getIntProperty("autoRemove.maxPurgedKvPairsPerTouch");
+		knownBlockValues = properties.getBlockValuesProperty("contracts.knownBlockHash");
 	}
 
 	public int maxTokensPerAccount() {
@@ -490,8 +493,8 @@ public class GlobalDynamicProperties {
 
 	public boolean shouldAutoRenewAccounts() {
 		return expireAccounts;
-        }
-        
+	}
+
 	public boolean areTokenAssociationsLimited() {
 		return limitTokenAssociations;
 	}
@@ -502,5 +505,9 @@ public class GlobalDynamicProperties {
 
 	public int getMaxPurgedKvPairsPerTouch() {
 		return maxPurgedKvPairsPerTouch;
-        }
+	}
+
+	public KnownBlockValues knownBlockValues() {
+		return knownBlockValues;
+	}
 }

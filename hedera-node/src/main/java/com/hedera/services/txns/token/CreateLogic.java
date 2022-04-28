@@ -21,7 +21,6 @@ package com.hedera.services.txns.token;
  */
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.ids.EntityIdSource;
@@ -47,7 +46,6 @@ public class CreateLogic {
 	private final TypedTokenStore tokenStore;
 	private final GlobalDynamicProperties dynamicProperties;
 	private final SigImpactHistorian sigImpactHistorian;
-	private final SideEffectsTracker sideEffectsTracker;
 	private final EntityIdSource ids;
 	private final OptionValidator validator;
 
@@ -57,7 +55,6 @@ public class CreateLogic {
 			final TypedTokenStore tokenStore,
 			final GlobalDynamicProperties dynamicProperties,
 			final SigImpactHistorian sigImpactHistorian,
-			final SideEffectsTracker sideEffectsTracker,
 			final EntityIdSource entityIdSource,
 			final OptionValidator validator
 	) {
@@ -65,7 +62,6 @@ public class CreateLogic {
 		this.tokenStore = tokenStore;
 		this.dynamicProperties = dynamicProperties;
 		this.sigImpactHistorian = sigImpactHistorian;
-		this.sideEffectsTracker = sideEffectsTracker;
 		this.ids = entityIdSource;
 		this.validator = validator;
 	}
@@ -81,7 +77,6 @@ public class CreateLogic {
 
 		// --- Persist the created model ---
 		creation.persist();
-		creation.newAssociations().forEach(sideEffectsTracker::trackExplicitAutoAssociation);
 
 		// --- Externalize side-effects ---
 		sigImpactHistorian.markEntityChanged(creation.newTokenId().num());

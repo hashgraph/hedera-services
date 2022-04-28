@@ -9,9 +9,9 @@ package com.hedera.services.state.logic;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,8 +25,10 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
+import com.swirlds.common.utility.Units;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -45,9 +47,7 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 public class BlockManager {
 	private static final Logger log = LogManager.getLogger(BlockManager.class);
 
-	public static final long BLOCK_PERIOD_MS = 2_000L;
-
-	private final BootstrapProperties bootstrapProperties;
+	private final long blockPeriodMs;
 	private final Supplier<MerkleNetworkContext> networkCtx;
 	private final Supplier<RecordsRunningHashLeaf> runningHashLeaf;
 
@@ -59,14 +59,17 @@ public class BlockManager {
 	) {
 		this.networkCtx = networkCtx;
 		this.runningHashLeaf = runningHashLeaf;
-		this.bootstrapProperties = bootstrapProperties;
+
+		blockPeriodMs = bootstrapProperties.getLongProperty("hedera.recordStream.logPeriod")
+				* Units.SECONDS_TO_MILLISECONDS;
 	}
 
 	/**
 	 * Accepts the {@link RunningHash} that, <b>if</b> the corresponding user transaction is the last in this
 	 * 2-second period, will be the "block hash" for the current block.
 	 *
-	 * @param runningHash the latest candidate for the current block hash
+	 * @param runningHash
+	 * 		the latest candidate for the current block hash
 	 */
 	public void updateCurrentBlockHash(final RunningHash runningHash) {
 		runningHashLeaf.get().setRunningHash(runningHash);
@@ -78,41 +81,29 @@ public class BlockManager {
 	 * @return the current block number
 	 */
 	public long getCurrentBlockNumber() {
-		return networkCtx.get().getBlockNo();
+		return networkCtx.get().getManagedBlockNo();
 	}
 
 	/**
 	 * Given the consensus timestamp of a user transaction, manages the block-related fields in the
 	 * {@link MerkleNetworkContext}, finishing the current block if appropriate.
 	 *
-	 * @param now the latest consensus timestamp of a user transaction
+	 * @param now
+	 * 		the latest consensus timestamp of a user transaction
 	 * @return the new block number, taking this timestamp into account
 	 */
-	public long getManagedBlockNumberAt(final Instant now) {
+	public long getManagedBlockNumberAt(@NotNull final Instant now) {
 		final var curNetworkCtx = networkCtx.get();
 		final var firstBlockTime = curNetworkCtx.firstConsTimeOfCurrentBlock();
-		// Only possible when handling the first transaction after the 0.26 upgrade; from then
-		// on there will always be a current block with a first consensus time
-		if (firstBlockTime == null) {
-			final var lastKnownBlockNo =
-					bootstrapProperties.getLongProperty("bootstrap.lastKnownBlockNumber");
-			final var lastKnownBlockStartTime =
-					bootstrapProperties.getInstantProperty("bootstrap.lastKnownBlockStartTime");
-			final var elapsedPeriodsSinceLastKnownBlock =
-					getPeriod(now, BLOCK_PERIOD_MS) - getPeriod(lastKnownBlockStartTime, BLOCK_PERIOD_MS);
-			final var currentBlockNo = lastKnownBlockNo + elapsedPeriodsSinceLastKnownBlock;
-			curNetworkCtx.setBlockNo(currentBlockNo);
-			curNetworkCtx.setFirstConsTimeOfCurrentBlock(now);
-			log.info("First conceptualized block {} is starting @ {}", currentBlockNo, now);
-			return currentBlockNo;
+		if (firstBlockTime != null && inSamePeriod(firstBlockTime, now)) {
+			return curNetworkCtx.getManagedBlockNo();
 		} else {
-			final var inSamePeriod = getPeriod(now, BLOCK_PERIOD_MS) == getPeriod(firstBlockTime, BLOCK_PERIOD_MS);
-			if (inSamePeriod) {
-				return curNetworkCtx.getBlockNo();
-			} else {
-				return updatedBlockNumberAt(now, curNetworkCtx);
-			}
+			return updatedBlockNumberAt(now, curNetworkCtx);
 		}
+	}
+
+	private boolean inSamePeriod(@NotNull final Instant then, @NotNull final Instant now) {
+		return getPeriod(now, blockPeriodMs) == getPeriod(then, blockPeriodMs);
 	}
 
 	private long updatedBlockNumberAt(final Instant now, final MerkleNetworkContext curNetworkCtx) {
@@ -120,14 +111,14 @@ public class BlockManager {
 		try {
 			computedHash = runningHashLeaf.get().getLatestBlockHash();
 		} catch (final InterruptedException e) {
-			final var curBlockNo = curNetworkCtx.getBlockNo();
+			final var curBlockNo = curNetworkCtx.getManagedBlockNo();
 			// This is almost certainly fatal, hence the ERROR log level
 			log.error("Interrupted when computing hash for block #{}", curBlockNo);
 			Thread.currentThread().interrupt();
 			return curBlockNo;
 		}
 		log.debug("Finishing block {} (started @ {}), starting new block @ {}",
-				curNetworkCtx.getBlockNo(), curNetworkCtx.firstConsTimeOfCurrentBlock(), now);
+				curNetworkCtx.getManagedBlockNo(), curNetworkCtx.firstConsTimeOfCurrentBlock(), now);
 		return curNetworkCtx.finishBlock(computedHash, now);
 	}
 }
