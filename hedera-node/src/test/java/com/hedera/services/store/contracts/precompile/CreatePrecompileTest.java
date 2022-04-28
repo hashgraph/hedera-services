@@ -224,6 +224,7 @@ class CreatePrecompileTest {
 		subject.setTokenStoreFactory(tokenStoreFactory);
 		subject.setAccountStoreFactory(accountStoreFactory);
 		subject.setSideEffectsFactory(() -> sideEffects);
+		given(worldUpdater.permissivelyUnaliased(any())).willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 	}
 
 	@Test
@@ -757,7 +758,6 @@ class CreatePrecompileTest {
 				typedTokenStore,
 				dynamicProperties,
 				sigImpactHistorian,
-				sideEffects,
 				entityIdSource,
 				validator
 		)).willReturn(createLogic);
