@@ -29,10 +29,8 @@ import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Gas;
@@ -151,10 +149,19 @@ class HederaStackedWorldStateUpdaterTest {
 	}
 
 	@Test
+	void usesAliasesForPermissiveDecodingHelp() {
+		given(aliases.resolveForEvm(alias)).willReturn(sponsor);
+		given(trackingLedgers.aliases()).willReturn(aliases);
+
+		final var resolved = subject.permissivelyUnaliased(alias.toArrayUnsafe());
+		assertArrayEquals(sponsor.toArrayUnsafe(), resolved);
+	}
+
+	@Test
 	void unaliasingFailsWhenNotUsingCanonicalAddress() {
 		given(trackingLedgers.canonicalAddress(alias)).willReturn(alias2);
 
-		TxnUtils.assertFailsWith(() -> subject.unaliased(alias.toArrayUnsafe()), ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS);
+		assertArrayEquals(new byte[20], subject.unaliased(alias.toArrayUnsafe()));
 	}
 
 	@Test

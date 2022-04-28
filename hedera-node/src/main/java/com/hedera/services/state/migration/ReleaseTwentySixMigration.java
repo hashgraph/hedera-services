@@ -22,12 +22,16 @@ package com.hedera.services.state.migration;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.ContractValue;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.IterableStorageUtils;
 import com.hedera.services.store.contracts.SizeLimitedStorage;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.RandomExtended;
@@ -41,6 +45,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static com.hedera.services.state.migration.StateChildIndices.CONTRACT_STORAGE;
+import static com.hedera.services.store.models.Id.MISSING_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 
 public class ReleaseTwentySixMigration {
@@ -73,6 +78,35 @@ public class ReleaseTwentySixMigration {
 		}
 		migrator.finish();
 		initializingState.setChild(CONTRACT_STORAGE, migrator.getMigratedStorage());
+	}
+
+	public static void buildAccountNftsOwnedLinkedList(
+			final MerkleMap<EntityNum, MerkleAccount> accounts,
+			final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens
+	) {
+
+		for (final var nftId : uniqueTokens.keySet()) {
+			var nft = uniqueTokens.getForModify(nftId);
+			final var owner = nft.getOwner();
+			final var tokenNum = nftId.getHiOrderAsLong();
+			final var serialNum = nftId.getLowOrderAsLong();
+
+			if (!owner.equals(EntityId.MISSING_ENTITY_ID)) {
+				var merkleAccount = accounts.getForModify(owner.asNum());
+
+				if (merkleAccount.getHeadNftId() != MISSING_ID.num()) {
+					var currHeadNftNum = merkleAccount.getHeadNftId();
+					var currHeadNftSerialNum = merkleAccount.getHeadNftSerialNum();
+					var currHeadNftId = EntityNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum);
+					var currHeadNft = uniqueTokens.getForModify(currHeadNftId);
+
+					currHeadNft.setPrev(NftNumPair.fromLongs(tokenNum, serialNum));
+					nft.setNext(NftNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum));
+				}
+				merkleAccount.setHeadNftId(tokenNum);
+				merkleAccount.setHeadNftSerialNum(serialNum);
+			}
+		}
 	}
 
 	public static void grantFreeAutoRenew(

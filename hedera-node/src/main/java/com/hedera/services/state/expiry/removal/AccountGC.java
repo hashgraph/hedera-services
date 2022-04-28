@@ -26,7 +26,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.expiry.TokenRelsListMutation;
-import com.hedera.services.state.expiry.UniqueTokensListMutation;
+import com.hedera.services.state.expiry.UniqueTokensListRemoval;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
@@ -70,7 +70,7 @@ public class AccountGC {
 	private final Supplier<MerkleMap<EntityNumPair, MerkleUniqueToken>> uniqueTokens;
 	private final GlobalDynamicProperties dynamicProperties;
 
-	private RemovalFacilitation removalFacilitation = MapValueListUtils::removeFromMapValueList;
+	private RemovalFacilitation removalFacilitation = MapValueListUtils::overwritingRemoveFromMapValueList;
 
 	@Inject
 	public AccountGC(
@@ -139,7 +139,7 @@ public class AccountGC {
 			final long headSerialNum,
 			final MerkleMap<EntityNumPair, MerkleUniqueToken> currUniqueTokens
 	) {
-		final var uniqueTokensRemoval = new UniqueTokensListMutation(currUniqueTokens);
+		final var uniqueTokensRemoval = new UniqueTokensListRemoval(currUniqueTokens);
 		var nftKey = EntityNumPair.fromLongs(headNftNum, headSerialNum);
 		var i = Math.min(nftsOwned, dynamicProperties.getMaxReturnedNftsPerTouch());
 		while (nftKey != null && i-- > 0) {

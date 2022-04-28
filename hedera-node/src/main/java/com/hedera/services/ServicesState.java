@@ -33,10 +33,10 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.KvPairIterationMigrator;
-import com.hedera.services.state.migration.ReleaseTwentyFourMigration;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
+import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.org.StateMetadata;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.virtual.ContractKey;
@@ -44,10 +44,10 @@ import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.VirtualMapFactory;
+import com.hedera.services.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
@@ -74,16 +74,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.state.migration.ReleaseTwentyFiveMigration.initTreasuryTitleCounts;
-import static com.hedera.services.state.migration.ReleaseTwentySixMigration.grantFreeAutoRenew;
-import static com.hedera.services.state.migration.ReleaseTwentySixMigration.makeStorageIterable;
 import static com.hedera.services.state.migration.StateChildIndices.NUM_POST_0210_CHILDREN;
 import static com.hedera.services.state.migration.StateVersions.CURRENT_VERSION;
 import static com.hedera.services.state.migration.StateVersions.MINIMUM_SUPPORTED_VERSION;
-import static com.hedera.services.state.migration.StateVersions.RELEASE_024X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_025X_VERSION;
 import static com.hedera.services.state.migration.StateVersions.RELEASE_0260_VERSION;
 import static com.hedera.services.store.models.Id.MISSING_ID;
@@ -161,25 +158,19 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	@Override
 	public void migrate() {
 		int deserializedVersionFromState = getDeserializedVersion();
-		if (deserializedVersionFromState < RELEASE_024X_VERSION) {
-			stakeFundingMigrator.accept(this);
-		}
 		if (deserializedVersionFromState < RELEASE_025X_VERSION) {
-			// add the links to the doubly linked list of MerkleTokenRelStatus map and
-			// update each account's last associated token entityNumPair
-			buildAccountTokenAssociationsLinkedList();
-			initTreasuryTitleCounts(this);
+			tokenRelsLinkMigrator.buildAccountTokenAssociationsLinkedList(accounts(), tokenAssociations());
+			titleCountsMigrator.accept(this);
 		}
 		if (deserializedVersionFromState < RELEASE_0260_VERSION) {
-			makeStorageIterable(
+			iterableStorageMigrator.makeStorageIterable(
 					this,
 					KvPairIterationMigrator::new,
 					VirtualMapMigration::extractVirtualMapData,
-					new VirtualMapFactory(JasperDbBuilder::new).newVirtualizedIterableStorage());
-			buildAccountNftsOwnedLinkedList();
-
-			// grant free auto-renew of ~90 days for all contracts once the contract expiration is enabled
-			grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+					vmFactory.apply(JasperDbBuilder::new).newVirtualizedIterableStorage());
+			// Grant all contracts one free ~90 day auto-renewal upon enabling contract expiry
+			autoRenewalMigrator.grantFreeAutoRenew(this, getTimeOfLastHandledTxn());
+			ownedNftsLinkMigrator.buildAccountNftsOwnedLinkedList(accounts(), uniqueTokens());
 		}
 	}
 
@@ -403,34 +394,6 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		}
 	}
 
-	private void buildAccountNftsOwnedLinkedList() {
-		final var nfts = uniqueTokens();
-		final var accounts = accounts();
-
-		for (final var nftId : nfts.keySet()) {
-			var nft = nfts.getForModify(nftId);
-			final var owner = nft.getOwner();
-			final var tokenNum = nftId.getHiOrderAsLong();
-			final var serialNum = nftId.getLowOrderAsLong();
-
-			if (!owner.equals(EntityId.MISSING_ENTITY_ID)) {
-				var merkleAccount = accounts.getForModify(owner.asNum());
-
-				if (merkleAccount.getHeadNftId() != MISSING_ID.num()) {
-					var currHeadNftNum = merkleAccount.getHeadNftId();
-					var currHeadNftSerialNum = merkleAccount.getHeadNftSerialNum();
-					var currHeadNftId = EntityNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum);
-					var currHeadNft = nfts.getForModify(currHeadNftId);
-
-					currHeadNft.setPrev(NftNumPair.fromLongs(tokenNum, serialNum));
-					nft.setNext(NftNumPair.fromLongs(currHeadNftNum, currHeadNftSerialNum));
-				}
-				merkleAccount.setHeadNftId(tokenNum);
-				merkleAccount.setHeadNftSerialNum(serialNum);
-			}
-		}
-	}
-
 	private void internalInit(
 			final Platform platform,
 			final BootstrapProperties bootstrapProps,
@@ -471,7 +434,7 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 		} else {
 			final var maybePostUpgrade = dualState.getFreezeTime() != null;
 			if (maybePostUpgrade && dualState.getFreezeTime().equals(dualState.getLastFrozenTime())) {
-				/* This was an upgrade, discard now-obsolete preparation state */
+				// This was an upgrade, discard now-obsolete preparation state
 				networkCtx().discardPreparedUpgradeMeta();
 				dualState.setFreezeTime(null);
 			}
@@ -530,18 +493,60 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 				new ExchangeRates());
 	}
 
-	private static Consumer<ServicesState> stakeFundingMigrator = ReleaseTwentyFourMigration::ensureStakingFundAccounts;
+	private static TokenRelsLinkMigrator tokenRelsLinkMigrator = ReleaseTwentyFiveMigration::buildAccountTokenAssociationsLinkedList;
+	private static OwnedNftsLinkMigrator ownedNftsLinkMigrator = ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList;
+	private static IterableStorageMigrator iterableStorageMigrator = ReleaseTwentySixMigration::makeStorageIterable;
+	private static Consumer<ServicesState> titleCountsMigrator = ReleaseTwentyFiveMigration::initTreasuryTitleCounts;
+	private static ContractAutoRenewalMigrator autoRenewalMigrator = ReleaseTwentySixMigration::grantFreeAutoRenew;
+	private static Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory = VirtualMapFactory::new;
 	private static Supplier<ServicesApp.Builder> appBuilder = DaggerServicesApp::builder;
 
-	/* --- Only used by unit tests --- */
+	@FunctionalInterface
+	interface TokenRelsLinkMigrator {
+		void buildAccountTokenAssociationsLinkedList(
+				MerkleMap<EntityNum, MerkleAccount> accounts,
+				MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations);
+	}
+
+	@FunctionalInterface
+	interface OwnedNftsLinkMigrator {
+		void buildAccountNftsOwnedLinkedList(
+				MerkleMap<EntityNum, MerkleAccount> accounts,
+				MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens
+		);
+	}
+
+	@FunctionalInterface
+	interface ContractAutoRenewalMigrator {
+		void grantFreeAutoRenew(ServicesState initializingState, Instant lastConsensusTime);
+	}
+
+	@FunctionalInterface
+	interface IterableStorageMigrator {
+		void makeStorageIterable(
+				ServicesState initializingState,
+				ReleaseTwentySixMigration.MigratorFactory migratorFactory,
+				ReleaseTwentySixMigration.MigrationUtility migrationUtility,
+				VirtualMap<ContractKey, IterableContractValue> iterableContractStorage);
+	}
+
+	@FunctionalInterface
+	interface IterableStorageFactory {
+		Supplier<VirtualMap<ContractKey, IterableContractValue>> newFactory(
+				JasperDbBuilderFactory jdbBuilder);
+	}
+
+	@VisibleForTesting
 	StateMetadata getMetadata() {
 		return metadata;
 	}
 
+	@VisibleForTesting
 	void setMetadata(final StateMetadata metadata) {
 		this.metadata = metadata;
 	}
 
+	@VisibleForTesting
 	void setDeserializedVersion(final int deserializedVersion) {
 		this.deserializedVersion = deserializedVersion;
 	}
@@ -552,7 +557,32 @@ public class ServicesState extends AbstractNaryMerkleInternal implements SwirldS
 	}
 
 	@VisibleForTesting
-	static void setStakeFundingMigrator(final Consumer<ServicesState> stakeFundingMigrator) {
-		ServicesState.stakeFundingMigrator = stakeFundingMigrator;
+	static void setTokenRelsLinkMigrator(TokenRelsLinkMigrator tokenRelsLinkMigrator) {
+		ServicesState.tokenRelsLinkMigrator = tokenRelsLinkMigrator;
+	}
+
+	@VisibleForTesting
+	static void setOwnedNftsLinkMigrator(OwnedNftsLinkMigrator ownedNftsLinkMigrator) {
+		ServicesState.ownedNftsLinkMigrator = ownedNftsLinkMigrator;
+	}
+
+	@VisibleForTesting
+	static void setIterableStorageMigrator(final IterableStorageMigrator iterableStorageMigrator) {
+		ServicesState.iterableStorageMigrator = iterableStorageMigrator;
+	}
+
+	@VisibleForTesting
+	static void setTitleCountsMigrator(final Consumer<ServicesState> titleCountsMigrator) {
+		ServicesState.titleCountsMigrator = titleCountsMigrator;
+	}
+
+	@VisibleForTesting
+	static void setAutoRenewalMigrator(final ContractAutoRenewalMigrator autoRenewalMigrator) {
+		ServicesState.autoRenewalMigrator = autoRenewalMigrator;
+	}
+
+	@VisibleForTesting
+	static void setVmFactory(final Function<JasperDbBuilderFactory, VirtualMapFactory> vmFactory) {
+		ServicesState.vmFactory = vmFactory;
 	}
 }

@@ -42,19 +42,24 @@ public class MapValueListUtils {
 	 * 		the mutable value at the root of the in-scope linked list
 	 * @param listMutation
 	 * 		the facilitator representing the map that contains the linked list
+	 * @param insertIntoMap
+	 * 		Adds the new `key` -> `value` pair to the merkleMap.
 	 * @param <K> the type of key in the map
 	 * @param <V> the type of value in the map
 	 * @return the new root of the list, for convenience
 	 */
-	public static @Nullable
-	<K, V extends FastCopyable> K inPlaceInsertAtMapValueListHead(
+	@NotNull
+	public static <K, V extends FastCopyable> K inPlaceInsertAtMapValueListHead(
 			@NotNull final K key,
 			@NotNull final V value,
 			@Nullable final K rootKey,
 			@Nullable final V rootValue,
-			@NotNull final MapValueListMutation<K, V> listMutation
+			@NotNull final MapValueListMutation<K, V> listMutation,
+			final boolean insertIntoMap
 	) {
-		listMutation.put(key, value);
+		if (insertIntoMap) {
+			listMutation.put(key, value);
+		}
 		if (rootKey != null) {
 			final V nextValue = (rootValue == null) ? listMutation.getForModify(rootKey) : rootValue;
 			listMutation.updateNext(value, rootKey);
@@ -67,42 +72,28 @@ public class MapValueListUtils {
 	 * Removes the key/value pair with the given key from its containing linked list in the map represented by the
 	 * given {@link MapValueListMutation}, updating the doubly-linked list to maintain the prev/next keys of the
 	 * "adjacent" value(s) as needed. Uses {@link MapValueListMutation#getForModify(Object)}.
-	 *
+         *
 	 * @param key
-	 * 		the key of the new mapping
-	 * @param value
-	 * 		the value of the new mapping
-	 * @param rootKey
-	 * 		the root of the in-scope linked list
-	 * @param rootValue
-	 * 		the mutable value at the root of the in-scope linked list
-	 * @param listMutation
-	 * 		the facilitator representing the map that contains the linked list
-	 * @param <K> the type of key in the map
-	 * @param <V> the type of value in the map
-	 * @return the new root of the list, for convenience
+	 * 		the key of the mapping to remove
+	 * @param root
+	 * 		the key of the root mapping in the affected node's list
+	 * @param listRemoval
+	 * 		the facilitator representing the underlying map
+	 * @return the new root key, for convenience
 	 */
 	public static @Nullable
-	<K, V> K inPlaceInsertAtMapValueListHead(
+	<K, V extends FastCopyable> K inPlaceRemoveFromMapValueList(
 			@NotNull final K key,
-			@NotNull final V value,
-			@Nullable final K rootKey,
-			@Nullable final V rootValue,
-			@NotNull final MapValueListMutation<K, V> listMutation
+			@NotNull final K root,
+			@NotNull final MapValueListMutation<K, V> listRemoval
 	) {
-		listMutation.put(key, value);
-		if (rootKey != null) {
-			final V nextValue = (rootValue == null) ? listMutation.getForModify(rootKey) : rootValue;
-			listMutation.updateNext(value, rootKey);
-			listMutation.updatePrev(nextValue, key);
-		}
-		return key;
+		return internalMutateFromMapValueList(key, root, listRemoval, true, true);
 	}
 
 	/**
 	 * Removes the key/value pair with the given key from its containing linked list in the map represented by the
 	 * given {@link MapValueListMutation}, updating the doubly-linked list to maintain the prev/next keys of the
-	 * "adjacent" value(s) as needed.
+	 * "adjacent" value(s) as needed. Does <i>not</i> use {@link MapValueListMutation#getForModify(Object)}.
 	 *
 	 * @param key
 	 * 		the key of the mapping to remove
@@ -113,33 +104,71 @@ public class MapValueListUtils {
 	 * @return the new root key, for convenience
 	 */
 	public static @Nullable
-	<K, V> K removeFromMapValueList(
+	<K, V extends FastCopyable> K overwritingRemoveFromMapValueList(
 			@NotNull final K key,
 			@NotNull final K root,
 			@NotNull final MapValueListMutation<K, V> listRemoval
 	) {
-		final var value = listRemoval.get(key);
-		Objects.requireNonNull(value, "The removed mapping had no value for key " + key);
-		listRemoval.remove(key);
+		return internalMutateFromMapValueList(key, root, listRemoval, false, true);
+	}
+
+	public static @Nullable
+	<K, V extends FastCopyable> K unlinkFromMapValueLink(
+			@NotNull final K key,
+			@NotNull final K root,
+			@NotNull final MapValueListMutation<K, V> listRemoval
+	) {
+		return internalMutateFromMapValueList(key, root, listRemoval, true, false);
+	}
+
+	private static @Nullable
+	<K, V extends FastCopyable> K internalMutateFromMapValueList(
+			@NotNull final K key,
+			@NotNull final K root,
+			@NotNull final MapValueListMutation<K, V> listRemoval,
+			final boolean useGetForModify,
+			final boolean removeFromMap
+	) {
+		final var value = Objects.requireNonNull(listRemoval.get(key), () -> "Missing key " + key);
+		if (removeFromMap) {
+			listRemoval.remove(key);
+		}
 
 		final var nextKey = listRemoval.next(value);
 		final var prevKey = listRemoval.prev(value);
+
+		// reset the next and prev pointers on the node that we are unlinking.
+		listRemoval.markAsTail(value);
+		listRemoval.markAsHead(value);
+
 		if (nextKey != null) {
-			final var nextValue = listRemoval.getForModify(nextKey);
-			Objects.requireNonNull(nextValue, "The next mapping had no value for key " + nextKey);
+			final var nextValue = useGetForModify
+					? Objects.requireNonNull(listRemoval.getForModify(nextKey), () -> "Missing next key " + nextKey)
+					// It is ONLY safe to call copy() here---making the map's value immutable!---because
+					// we immediately put() the mutable value back into the map below
+					: Objects.requireNonNull(listRemoval.get(nextKey), () -> "Missing next key " + nextKey).<V>copy();
 			if (prevKey == null) {
 				listRemoval.markAsHead(nextValue);
 			} else {
 				listRemoval.updatePrev(nextValue, prevKey);
 			}
+			if (!useGetForModify) {
+				listRemoval.put(nextKey, nextValue);
+			}
 		}
 		if (prevKey != null) {
-			final var prevValue = listRemoval.getForModify(prevKey);
-			Objects.requireNonNull(prevValue, "The previous mapping had no value for key " + prevKey);
+			final var prevValue = useGetForModify
+					? Objects.requireNonNull(listRemoval.getForModify(prevKey), () -> "Missing prev key " + prevKey)
+					// Note it is ONLY safe to call copy() here---making the map's value
+					// immutable!---because we immediately put() the mutable value below
+					: Objects.requireNonNull(listRemoval.get(prevKey), () -> "Missing prev key " + prevKey).<V>copy();
 			if (nextKey == null) {
 				listRemoval.markAsTail(prevValue);
 			} else {
 				listRemoval.updateNext(prevValue, nextKey);
+			}
+			if (!useGetForModify) {
+				listRemoval.put(prevKey, prevValue);
 			}
 		}
 		return key.equals(root) ? nextKey : root;

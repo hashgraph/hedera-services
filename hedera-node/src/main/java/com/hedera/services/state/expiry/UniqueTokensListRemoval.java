@@ -8,11 +8,11 @@ import org.jetbrains.annotations.Nullable;
 
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
-public class UniqueTokensListMutation implements MapValueListMutation<EntityNumPair, MerkleUniqueToken> {
+public class UniqueTokensListRemoval implements MapValueListMutation<EntityNumPair, MerkleUniqueToken> {
 
 	final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 
-	public UniqueTokensListMutation(
+	public UniqueTokensListRemoval(
 			final MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens
 	) {
 		this.uniqueTokens = uniqueTokens;
@@ -43,7 +43,6 @@ public class UniqueTokensListMutation implements MapValueListMutation<EntityNumP
 	@Override
 	public void markAsHead(final MerkleUniqueToken node) {
 		node.setPrev(MISSING_NFT_NUM_PAIR);
-		// TODO : also update pointers on the account -- head nft id and head serial num ??
 	}
 
 	@Override

@@ -205,11 +205,8 @@ public class HederaLedger {
 	}
 
 	public void commit() {
-		// The interceptor on the accounts ledger tracks and validates any hbar side effects of this txn;
-		// so we must commit here _before_ saving a record derived from the singleton SideEffectsTracker
+		// The ledger interceptors track side effects, hence must be committed before saving a record
 		accountsLedger.commit();
-		historian.saveExpirableTransactionRecords();
-		historian.noteNewExpirationEvents();
 		mutableEntityAccess.commit();
 		if (tokenRelsLedger != null && tokenRelsLedger.isInTransaction()) {
 			tokenRelsLedger.commit();
@@ -217,6 +214,8 @@ public class HederaLedger {
 		if (nftsLedger != null && nftsLedger.isInTransaction()) {
 			nftsLedger.commit();
 		}
+		historian.saveExpirableTransactionRecords();
+		historian.noteNewExpirationEvents();
 	}
 
 	public String currentChangeSet() {

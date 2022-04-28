@@ -32,16 +32,21 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.ReleaseTwentyFiveMigration;
+import com.hedera.services.state.migration.ReleaseTwentySixMigration;
 import com.hedera.services.state.migration.StateChildIndices;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.state.org.StateMetadata;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.services.state.virtual.VirtualMapFactory;
 import com.hedera.services.txns.ProcessLogic;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.SystemExits;
+import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -56,6 +61,7 @@ import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.transaction.SwirldTransaction;
 import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.virtualmap.VirtualMap;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -69,6 +75,7 @@ import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.AppsManager.APPS;
@@ -83,7 +90,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -140,19 +150,95 @@ class ServicesStateTest {
 	@Mock
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	@Mock
-	private Consumer<ServicesState> mockMigrator;
+	private MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenAssociations;
+	@Mock
+	private VirtualMapFactory virtualMapFactory;
+	@Mock
+	private VirtualMap<ContractKey, IterableContractValue> iterableStorage;
+	@Mock
+	private ServicesState.TokenRelsLinkMigrator tokenRelsLinkMigrator;
+	@Mock
+	private ServicesState.OwnedNftsLinkMigrator ownedNftsLinkMigrator;
+	@Mock
+	private ServicesState.IterableStorageMigrator iterableStorageMigrator;
+	@Mock
+	private Consumer<ServicesState> titleCountsMigrator;
+	@Mock
+	private ServicesState.ContractAutoRenewalMigrator autoRenewalMigrator;
+	@Mock
+	private Function<VirtualMapFactory.JasperDbBuilderFactory, VirtualMapFactory> vmf;
 
 	@LoggingTarget
 	private LogCaptor logCaptor;
 	@LoggingSubject
 	private ServicesState subject = new ServicesState();
 
-
 	@AfterEach
 	void cleanup() {
 		if (APPS.includes(selfId.getId())) {
 			APPS.clear(selfId.getId());
 		}
+	}
+
+	@Test
+	void doesNoMigrationsFromCurrentVersion() {
+		mockMigrators();
+
+		subject = mock(ServicesState.class);
+
+		doCallRealMethod().when(subject).migrate();
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_0260_VERSION);
+		subject.migrate();
+
+		verifyNoInteractions(
+				autoRenewalMigrator, titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator);
+
+		unmockMigrators();
+	}
+
+	@Test
+	void doesAllMigrationsFromRelease024Version() {
+		mockMigrators();
+		final var inOrder = inOrder(
+				autoRenewalMigrator, titleCountsMigrator, iterableStorageMigrator, tokenRelsLinkMigrator, vmf);
+
+		subject = mock(ServicesState.class);
+
+		doCallRealMethod().when(subject).migrate();
+		given(subject.accounts()).willReturn(accounts);
+		given(subject.tokenAssociations()).willReturn(tokenAssociations);
+		given(subject.getDeserializedVersion()).willReturn(StateVersions.RELEASE_024X_VERSION);
+		given(virtualMapFactory.newVirtualizedIterableStorage()).willReturn(iterableStorage);
+		given(vmf.apply(any())).willReturn(virtualMapFactory);
+		given(subject.getTimeOfLastHandledTxn()).willReturn(consensusTime);
+
+		subject.migrate();
+
+		inOrder.verify(tokenRelsLinkMigrator).buildAccountTokenAssociationsLinkedList(accounts, tokenAssociations);
+		inOrder.verify(titleCountsMigrator).accept(subject);
+		inOrder.verify(iterableStorageMigrator).makeStorageIterable(
+				eq(subject), any(), any(), eq(iterableStorage));
+		inOrder.verify(autoRenewalMigrator).grantFreeAutoRenew(subject, consensusTime);
+
+		unmockMigrators();
+	}
+
+	private void mockMigrators() {
+		ServicesState.setAutoRenewalMigrator(autoRenewalMigrator);
+		ServicesState.setTitleCountsMigrator(titleCountsMigrator);
+		ServicesState.setIterableStorageMigrator(iterableStorageMigrator);
+		ServicesState.setTokenRelsLinkMigrator(tokenRelsLinkMigrator);
+		ServicesState.setOwnedNftsLinkMigrator(ownedNftsLinkMigrator);
+		ServicesState.setVmFactory(vmf);
+	}
+
+	private void unmockMigrators() {
+		ServicesState.setAutoRenewalMigrator(ReleaseTwentySixMigration::grantFreeAutoRenew);
+		ServicesState.setTitleCountsMigrator(ReleaseTwentyFiveMigration::initTreasuryTitleCounts);
+		ServicesState.setIterableStorageMigrator(ReleaseTwentySixMigration::makeStorageIterable);
+		ServicesState.setTokenRelsLinkMigrator(ReleaseTwentyFiveMigration::buildAccountTokenAssociationsLinkedList);
+		ServicesState.setOwnedNftsLinkMigrator(ReleaseTwentySixMigration::buildAccountNftsOwnedLinkedList);
+		ServicesState.setVmFactory(VirtualMapFactory::new);
 	}
 
 	@Test

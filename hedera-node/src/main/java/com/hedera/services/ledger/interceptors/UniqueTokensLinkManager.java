@@ -20,12 +20,12 @@ package com.hedera.services.ledger.interceptors;
  * ‍
  */
 
+import com.hedera.services.state.expiry.UniqueTokensListRemoval;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.NftNumPair;
 import com.swirlds.merkle.map.MerkleMap;
 
 import javax.annotation.Nonnull;
@@ -33,7 +33,8 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.function.Supplier;
 
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static com.hedera.services.utils.MapValueListUtils.inPlaceInsertAtMapValueListHead;
+import static com.hedera.services.utils.MapValueListUtils.unlinkFromMapValueLink;
 
 public class UniqueTokensLinkManager {
 	private final Supplier<MerkleMap<EntityNum, MerkleAccount>> accounts;
@@ -62,31 +63,19 @@ public class UniqueTokensLinkManager {
 
 		final var nft = curUniqueTokens.get(nftId);
 		final var token = curTokens.get(nftId.getHiOrderAsNum());
+		final var listMutation = new UniqueTokensListRemoval(curUniqueTokens);
 
 		// Update `from` Account
 		if (!from.equals(token.treasuryNum())) {
 			final var fromAccount = curAccounts.getForModify(from);
 			var rootKey = rootKeyOf(fromAccount);
 
-			if (nftId.equals(rootKey)) {
-				// make head point to next
-				final var nextNftId = nft.getNext();
-				if (!nextNftId.equals(MISSING_NFT_NUM_PAIR)) {
-					final var nextNft = curUniqueTokens.getForModify(nextNftId.asEntityNumPair());
-					nextNft.setPrev(MISSING_NFT_NUM_PAIR);
-				}
-				fromAccount.setHeadNftId(nextNftId.tokenNum());
-				fromAccount.setHeadNftSerialNum(nextNftId.serialNum());
-			} else {
-				final var nextNftId = nft.getNext();
-				final var prevNftId = nft.getPrev();
-				final var prevNft = curUniqueTokens.getForModify(prevNftId.asEntityNumPair());
-				prevNft.setNext(nextNftId);
-				if (!nextNftId.equals(MISSING_NFT_NUM_PAIR)) {
-					final var nextNft = curUniqueTokens.getForModify(nextNftId.asEntityNumPair());
-					nextNft.setPrev(prevNftId);
-				}
+			if (rootKey != null) {
+				rootKey = unlinkFromMapValueLink(nftId, rootKey, listMutation);
 			}
+
+			fromAccount.setHeadNftId((rootKey == null) ? 0 : rootKey.getHiOrderAsLong());
+			fromAccount.setHeadNftSerialNum((rootKey == null) ? 0 : rootKey.getLowOrderAsLong());
 		}
 
 
@@ -94,15 +83,10 @@ public class UniqueTokensLinkManager {
 		if (to != null && !to.equals(token.treasuryNum())) {
 			final var toAccount = curAccounts.getForModify(to);
 			final var nftNumPair = nftId.asNftNumPair();
-			final var currHeadNftNumTo = toAccount.getHeadNftId();
-			final var currHeadNftSerialNumTo = toAccount.getHeadNftSerialNum();
-			final var currHeadNftIdTo = NftNumPair.fromLongs(currHeadNftNumTo, currHeadNftSerialNumTo);
+			final var rootKey = rootKeyOf(toAccount);
 
-			nft.setNext(currHeadNftIdTo);
-			if (!currHeadNftIdTo.equals(MISSING_NFT_NUM_PAIR)) {
-				final var currHead = curUniqueTokens.getForModify(currHeadNftIdTo.asEntityNumPair());
-				currHead.setPrev(nftNumPair);
-			}
+			inPlaceInsertAtMapValueListHead(
+					nftId, nft, rootKey, null, listMutation, false);
 			toAccount.setHeadNftId(nftNumPair.tokenNum());
 			toAccount.setHeadNftSerialNum(nftNumPair.serialNum());
 		}

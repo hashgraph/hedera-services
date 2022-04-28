@@ -21,15 +21,15 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class UniqueTokensListMutationTest {
+class UniqueTokensListRemovalTest {
 	@Mock
 	private MerkleMap<EntityNumPair, MerkleUniqueToken> uniqueTokens;
 
-	private UniqueTokensListMutation subject;
+	private UniqueTokensListRemoval subject;
 
 	@BeforeEach
 	void setUp() {
-		subject = new UniqueTokensListMutation(uniqueTokens);
+		subject = new UniqueTokensListRemoval(uniqueTokens);
 	}
 
 	@Test
