@@ -105,7 +105,8 @@ public abstract class HapiApiSuite {
 		simpleName =  !simpleName.endsWith("Suite")
 				? simpleName
 				: simpleName.substring(0, simpleName.length() - "Suite".length());
-		return suiteRunnerCounter == 2 ? simpleName.concat(ETH_SUFFIX) : simpleName;
+//		return suiteRunnerCounter == 2 ? simpleName.concat(ETH_SUFFIX) : simpleName;
+		return simpleName;
 	}
 
 	public List<HapiApiSpec> getFinalSpecs() {
@@ -136,14 +137,14 @@ public abstract class HapiApiSuite {
 	}
 
 	public FinalOutcome runSuiteAsync() {
-		runSuite(this::runAsync);
-		getResultsLogger().info(System.lineSeparator());
+//		runSuite(this::runAsync);
+//		getResultsLogger().info(System.lineSeparator());
 		return runSuite(this::runAsync);
 	}
 
 	public FinalOutcome runSuiteSync() {
-		runSuite(this::runSync);
-		getResultsLogger().info(System.lineSeparator());
+//		runSuite(this::runSync);
+//		getResultsLogger().info(System.lineSeparator());
 		return runSuite(this::runSync);
 	}
 
