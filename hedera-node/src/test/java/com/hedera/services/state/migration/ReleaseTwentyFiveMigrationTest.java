@@ -22,16 +22,25 @@ package com.hedera.services.state.migration;
 
 import com.hedera.services.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Set;
 
 import static com.hedera.services.state.migration.ReleaseTwentyFiveMigration.initTreasuryTitleCounts;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,13 +48,32 @@ import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ReleaseTwentyFiveMigrationTest {
-	private MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
-	private MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+	private final MerkleMap<EntityNum, MerkleAccount> accounts = new MerkleMap<>();
+	private final MerkleMap<EntityNumPair, MerkleTokenRelStatus> tokenRels = new MerkleMap<>();
+
 	@Mock
 	private ServicesState state;
 
 	@Test
-	void migratesAsExpected() throws ConstructableRegistryException {
+	void initsLinksAsExpected() {
+		final var legacyTokens = new MerkleAccountTokens();
+		legacyTokens.associateAll(Set.of(bNum.toGrpcTokenId(), cNum.toGrpcTokenId(), dNum.toGrpcTokenId()));
+		final var legacyAccount = new MerkleAccount(List.of(
+				new MerkleAccountState(), new FCQueue<ExpirableTxnRecord>(), legacyTokens));
+		accounts.put(aNum, legacyAccount);
+		List.of(bNum, cNum, dNum).forEach(num -> tokenRels.put(
+				EntityNumPair.fromNums(aNum, num), new MerkleTokenRelStatus(1L, true, false, true)));
+
+		ReleaseTwentyFiveMigration.updateLinks(accounts, tokenRels);
+
+		assertEquals(3, legacyAccount.getNumAssociations());
+		assertEquals(3, legacyAccount.getNumPositiveBalances());
+		assertEquals(dNum.longValue(), legacyAccount.getHeadTokenId());
+	}
+
+	@Test
+	void initsTitleCountsAsExpected() throws ConstructableRegistryException {
 		ConstructableRegistry.registerConstructable(
 				new ClassConstructorPair(MerkleToken.class, MerkleToken::new));
 		ConstructableRegistry.registerConstructable(
@@ -56,46 +84,46 @@ class ReleaseTwentyFiveMigrationTest {
 		tokens.put(deletedNum, deletedToken);
 		tokens.put(firstBNum, bFirstToken);
 		tokens.put(problemNum, theProblemToken);
-		accounts.put(aAccountNum, a);
-		accounts.put(bAccountNum, b);
-		accounts.put(cAccountNum, c);
+		accounts.put(aNum, a);
+		accounts.put(bNum, b);
+		accounts.put(cNum, c);
 
 		given(state.tokens()).willReturn(tokens);
 		given(state.accounts()).willReturn(accounts);
 
 		initTreasuryTitleCounts(state);
 
-		final var updatedA = accounts.get(aAccountNum);
-		final var updatedB = accounts.get(bAccountNum);
-		final var updatedC = accounts.get(cAccountNum);
+		final var updatedA = accounts.get(aNum);
+		final var updatedB = accounts.get(bNum);
+		final var updatedC = accounts.get(cNum);
 		assertEquals(2, updatedA.getNumTreasuryTitles());
 		assertEquals(1, updatedB.getNumTreasuryTitles());
 		assertEquals(0, updatedC.getNumTreasuryTitles());
 	}
 
-	private final EntityNum aAccountNum = EntityNum.fromLong(1234);
-	private final EntityNum bAccountNum = EntityNum.fromLong(2345);
-	private final EntityNum cAccountNum = EntityNum.fromLong(3456);
-	private final EntityNum dAccountNum = EntityNum.fromLong(4567);
+	private final EntityNum aNum = EntityNum.fromLong(1234);
+	private final EntityNum bNum = EntityNum.fromLong(2345);
+	private final EntityNum cNum = EntityNum.fromLong(3456);
+	private final EntityNum dNum = EntityNum.fromLong(4567);
 	private final EntityNum deletedNum = EntityNum.fromLong(666);
 	private final EntityNum firstANum = EntityNum.fromLong(777);
 	private final EntityNum firstBNum = EntityNum.fromLong(888);
 	private final EntityNum secondANum = EntityNum.fromLong(999);
 	private final EntityNum problemNum = EntityNum.fromLong(1000);
-	private MerkleAccount a = new MerkleAccount();
-	private MerkleAccount b = new MerkleAccount();
-	private MerkleAccount c = new MerkleAccount();
-	private MerkleToken deletedToken = new MerkleToken();
-	private MerkleToken aFirstToken = new MerkleToken();
-	private MerkleToken bFirstToken = new MerkleToken();
-	private MerkleToken aSecondToken = new MerkleToken();
-	private MerkleToken theProblemToken = new MerkleToken();
+	private final MerkleAccount a = new MerkleAccount();
+	private final MerkleAccount b = new MerkleAccount();
+	private final MerkleAccount c = new MerkleAccount();
+	private final MerkleToken deletedToken = new MerkleToken();
+	private final MerkleToken aFirstToken = new MerkleToken();
+	private final MerkleToken bFirstToken = new MerkleToken();
+	private final MerkleToken aSecondToken = new MerkleToken();
+	private final MerkleToken theProblemToken = new MerkleToken();
 	{
 		deletedToken.setDeleted(true);
-		deletedToken.setTreasury(bAccountNum.toEntityId());
-		aFirstToken.setTreasury(aAccountNum.toEntityId());
-		aSecondToken.setTreasury(aAccountNum.toEntityId());
-		bFirstToken.setTreasury(bAccountNum.toEntityId());
-		theProblemToken.setTreasury(dAccountNum.toEntityId());
+		deletedToken.setTreasury(bNum.toEntityId());
+		aFirstToken.setTreasury(aNum.toEntityId());
+		aSecondToken.setTreasury(aNum.toEntityId());
+		bFirstToken.setTreasury(bNum.toEntityId());
+		theProblemToken.setTreasury(dNum.toEntityId());
 	}
 }

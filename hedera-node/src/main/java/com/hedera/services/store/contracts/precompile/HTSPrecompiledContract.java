@@ -366,7 +366,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 		this.sideEffectsTracker = sideEffectsFactory.get();
 		this.ledgers = updater.wrappedTrackingLedgers(sideEffectsTracker);
-		this.senderAddress = frame.getSenderAddress();
+		final var unaliasedSenderAddress = updater.permissivelyUnaliased(frame.getSenderAddress().toArray());
+		this.senderAddress = Address.wrap(Bytes.of(unaliasedSenderAddress));
 	}
 
 	void computeGasRequirement(final long blockTimestamp) {
@@ -596,7 +597,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 				TypedTokenStore tokenStore,
 				GlobalDynamicProperties dynamicProperties,
 				SigImpactHistorian sigImpactHistorian,
-				SideEffectsTracker sideEffectsTracker,
 				EntityIdSource entityIdSource,
 				OptionValidator validator);
 	}
@@ -923,8 +923,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			/* --- Build the necessary infrastructure to execute the transaction --- */
 			final var scopedAccountStore = createAccountStore();
 			final var scopedTokenStore = createTokenStore(scopedAccountStore, sideEffectsTracker);
-			final var tokenCreateLogic = createLogicFactory.newTokenCreateLogic(scopedAccountStore, scopedTokenStore,
-					dynamicProperties, sigImpactHistorian, sideEffectsTracker, entityIdSource, validator);
+			final var tokenCreateLogic = createLogicFactory.newTokenCreateLogic(
+					scopedAccountStore, scopedTokenStore,
+					dynamicProperties, sigImpactHistorian, entityIdSource, validator);
 
 			/* --- Execute the transaction and capture its results --- */
 			tokenCreateLogic.create(creationTime.getEpochSecond(), EntityIdUtils.accountIdFromEvmAddress(senderAddress),
