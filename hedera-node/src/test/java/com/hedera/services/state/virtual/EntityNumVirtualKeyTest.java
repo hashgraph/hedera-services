@@ -77,6 +77,9 @@ class EntityNumVirtualKeyTest {
 		assertNotEquals(one, four);
 		assertNotNull(one);
 
+		assertNotEquals(one, null);
+		assertNotEquals(one, new Object());
+
 		final var forcedEqualsCheck = one.equals(longKey);
 		assertFalse(forcedEqualsCheck, "forcing equals on two different class types.");
 	}
@@ -98,14 +101,14 @@ class EntityNumVirtualKeyTest {
 
 		EntityNumVirtualKey key = new EntityNumVirtualKey();
 
-		key.deserialize(buffer, EntityNumVirtualKey.ClassVersion.ORIGINAL);
+		key.deserialize(buffer, EntityNumVirtualKey.CURRENT_VERSION);
 
 		assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
 	}
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(EntityNumVirtualKey.ClassVersion.ORIGINAL, subject.getVersion());
+		assertEquals(EntityNumVirtualKey.CURRENT_VERSION, subject.getVersion());
 		assertEquals(EntityNumVirtualKey.CLASS_ID, subject.getClassId());
 	}
 
@@ -122,7 +125,7 @@ class EntityNumVirtualKeyTest {
 
 		EntityNumVirtualKey key = new EntityNumVirtualKey();
 
-		key.deserialize(fin, EntityNumVirtualKey.ClassVersion.ORIGINAL);
+		key.deserialize(fin, EntityNumVirtualKey.CURRENT_VERSION);
 
 		assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
 	}

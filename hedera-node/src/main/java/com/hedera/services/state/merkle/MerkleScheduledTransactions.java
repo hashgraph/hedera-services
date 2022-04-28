@@ -56,7 +56,7 @@ public class MerkleScheduledTransactions extends AbstractNaryMerkleInternal {
 		private static final int BY_EQUALITY = 3;
 		static final int NUM_0260_CHILDREN = 4;
 
-		private ChildIndices() {
+		ChildIndices() {
 			throw new UnsupportedOperationException("Utility Class");
 		}
 	}

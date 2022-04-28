@@ -68,7 +68,6 @@ public class ScheduleVirtualValue implements VirtualValue {
 
 	static final int CURRENT_VERSION = 4;
 	static final long RUNTIME_CONSTRUCTABLE_ID = 0xadfd7f9e613385fcL;
-	static final int MAX_NUM_PUBKEY_BYTES = 33;
 
 
 	private transient boolean immutable;
@@ -275,10 +274,8 @@ public class ScheduleVirtualValue implements VirtualValue {
 				.add("schedulingAccount", schedulingAccount)
 				.add("schedulingTXValidStart", schedulingTXValidStart)
 				.add("signatories", signatories.stream().map(CommonUtils::hex).toList())
-				.add("adminKey", describe(adminKey));
-		if (resolutionTime != null) {
-			helper.add("resolutionTime", resolutionTime);
-		}
+				.add("adminKey", describe(adminKey))
+				.add("resolutionTime", resolutionTime);
 		return helper.toString();
 	}
 
@@ -430,11 +427,6 @@ public class ScheduleVirtualValue implements VirtualValue {
 		this.payer = payer;
 	}
 
-	@VisibleForTesting
-	public void setBodyBytes(final byte[] bodyBytes) {
-		this.bodyBytes = bodyBytes;
-	}
-
 	public EntityId payer() {
 		return payer;
 	}
@@ -449,6 +441,11 @@ public class ScheduleVirtualValue implements VirtualValue {
 
 	public EntityId schedulingAccount() {
 		return schedulingAccount;
+	}
+
+	@VisibleForTesting
+	void setSchedulingAccount(EntityId schedulingAccount) {
+		this.schedulingAccount = schedulingAccount;
 	}
 
 	public RichInstant schedulingTXValidStart() {

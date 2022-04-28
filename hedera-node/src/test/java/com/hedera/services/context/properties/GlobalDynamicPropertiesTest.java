@@ -219,6 +219,7 @@ class GlobalDynamicPropertiesTest {
 		assertTrue(subject.shouldAutoRenewSomeEntityType());
 		assertTrue(subject.areTokenAssociationsLimited());
 		assertFalse(subject.isHTSPrecompileCreateEnabled());
+		assertTrue(subject.schedulingLongTermEnabled());
 	}
 
 	@Test
@@ -289,6 +290,9 @@ class GlobalDynamicPropertiesTest {
 		assertEquals(50L, subject.frontendThrottleGasLimit());
 		assertEquals(51L, subject.consensusThrottleGasLimit());
 		assertEquals(54L, subject.htsDefaultGasCost());
+		assertEquals(65L, subject.schedulingMaxTxnPerSecond());
+		assertEquals(66L, subject.scheduleThrottleMaxGasLimit());
+		assertEquals(67L, subject.schedulingMaxExpirationFutureSeconds());
 	}
 
 	@Test

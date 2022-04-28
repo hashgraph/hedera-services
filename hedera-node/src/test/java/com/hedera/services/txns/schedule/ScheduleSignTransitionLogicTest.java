@@ -195,6 +195,23 @@ class ScheduleSignTransitionLogicTest {
 	}
 
 	@Test
+	void abortsImmediatelyIfScheduleIsNull() throws InvalidProtocolBufferException {
+		givenValidTxnCtx();
+		given(store.getNoError(scheduleId)).willReturn(null);
+		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		given(schedule.isExecuted()).willReturn(true);
+
+		// when:
+		subject.doStateTransition();
+
+		// and:
+		verifyNoInteractions(classifier);
+		verify(txnCtx, never()).setScheduledTxnId(scheduledTxnId);
+		verify(executor, never()).processImmediateExecution(scheduleId, store, txnCtx);
+		verify(txnCtx).setStatus(INVALID_SCHEDULE_ID);
+	}
+
+	@Test
 	void abortsImmediatelyIfScheduleIsDeleted() throws InvalidProtocolBufferException {
 		givenValidTxnCtx();
 		given(store.get(scheduleId)).willReturn(schedule);

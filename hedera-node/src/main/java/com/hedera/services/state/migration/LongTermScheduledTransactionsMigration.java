@@ -141,7 +141,7 @@ public class LongTermScheduledTransactionsMigration {
 	}
 
 
-	private LongTermScheduledTransactionsMigration() {
+	LongTermScheduledTransactionsMigration() {
 		throw new UnsupportedOperationException("Utility class");
 	}
 }

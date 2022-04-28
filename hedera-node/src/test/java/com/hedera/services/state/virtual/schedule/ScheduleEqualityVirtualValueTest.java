@@ -77,6 +77,8 @@ class ScheduleEqualityVirtualValueTest {
 		assertEquals(one.hashCode(), three.hashCode());
 		assertEquals(one.hashCode(), four.hashCode());
 		assertDoesNotThrow(subject::release);
+		assertNotEquals(one, null);
+		assertNotEquals(one, new Object());
 
 		final var forcedEqualsCheck = one.equals(ids);
 		assertFalse(forcedEqualsCheck, "forcing equals on two different class types.");
@@ -203,6 +205,7 @@ class ScheduleEqualityVirtualValueTest {
 		assertThrows(IllegalStateException.class, () -> subject.remove("rain", 6L));
 		assertThrows(IllegalStateException.class, () -> subject.remove("foo", 6L));
 
+		subject.remove("lolz", 5L);
 		subject.remove("rain", 5L);
 		subject.remove("foo", 1L);
 

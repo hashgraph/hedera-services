@@ -44,10 +44,14 @@ import static com.hedera.services.state.migration.LongTermScheduledTransactionsM
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -246,5 +250,18 @@ class LongTermScheduledTransactionsMigrationTest {
 			return true;
 		}));
 
+	}
+	@Test
+	void migrateSkippedIfAlreadyDone() {
+		given(state.getChild(StateChildIndices.SCHEDULE_TXS)).willReturn(new MerkleScheduledTransactions());
+
+		migrateScheduledTransactions(state);
+
+		verify(state, never()).setChild(anyInt(), any());
+	}
+
+	@Test
+	void constructorThrows() {
+		assertThrows(UnsupportedOperationException.class, () -> new LongTermScheduledTransactionsMigration());
 	}
 }

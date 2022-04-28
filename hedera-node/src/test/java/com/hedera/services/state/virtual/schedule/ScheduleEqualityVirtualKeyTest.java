@@ -77,6 +77,9 @@ class ScheduleEqualityVirtualKeyTest {
 		assertNotEquals(one, four);
 		assertNotNull(one);
 
+		assertNotEquals(one, null);
+		assertNotEquals(one, new Object());
+
 		final var forcedEqualsCheck = one.equals(longKey);
 		assertFalse(forcedEqualsCheck, "forcing equals on two different class types.");
 	}
@@ -98,14 +101,14 @@ class ScheduleEqualityVirtualKeyTest {
 
 		ScheduleEqualityVirtualKey key = new ScheduleEqualityVirtualKey();
 
-		key.deserialize(buffer, ScheduleEqualityVirtualKey.ClassVersion.ORIGINAL);
+		key.deserialize(buffer, ScheduleEqualityVirtualKey.CURRENT_VERSION);
 
 		assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
 	}
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(ScheduleEqualityVirtualKey.ClassVersion.ORIGINAL, subject.getVersion());
+		assertEquals(ScheduleEqualityVirtualKey.CURRENT_VERSION, subject.getVersion());
 		assertEquals(ScheduleEqualityVirtualKey.CLASS_ID, subject.getClassId());
 	}
 
@@ -122,7 +125,7 @@ class ScheduleEqualityVirtualKeyTest {
 
 		ScheduleEqualityVirtualKey key = new ScheduleEqualityVirtualKey();
 
-		key.deserialize(fin, ScheduleEqualityVirtualKey.ClassVersion.ORIGINAL);
+		key.deserialize(fin, ScheduleEqualityVirtualKey.CURRENT_VERSION);
 
 		assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
 	}

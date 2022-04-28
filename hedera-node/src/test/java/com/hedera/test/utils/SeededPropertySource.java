@@ -59,7 +59,6 @@ import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.submerkle.TxnId;
-import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
@@ -235,22 +234,6 @@ public class SeededPropertySource {
 	public TokenSupplyType nextTokenSupplyType(final int range) {
 		final var choices = TokenSupplyType.class.getEnumConstants();
 		return choices[SEEDED_RANDOM.nextInt(range)];
-	}
-
-	public ScheduleVirtualValue nextSchedule() {
-		final var seeded = new ScheduleVirtualValue();
-		seeded.setCalculatedExpirationTime(new RichInstant(nextUnsignedLong(), nextInt()));
-		seeded.setBodyBytes(nextSerializedTransactionBody());
-		if (nextBoolean()) {
-			seeded.markDeleted(nextInstant());
-		} else if (nextBoolean()) {
-			seeded.markExecuted(nextInstant());
-		}
-		final var numSignatures = SEEDED_RANDOM.nextInt(10);
-		for (int i = 0; i < numSignatures; i++) {
-			seeded.witnessValidSignature(nextBytes(nextBoolean() ? 32 : 33));
-		}
-		return seeded;
 	}
 
 	public byte[] nextSerializedLegacyScheduleCreateTransactionBody() {

@@ -329,8 +329,9 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		HederaFunctionality scheduledFunction;
 		try {
 			scheduledFunction = MiscUtils.functionOf(normalTxn);
-		} catch (UnknownHederaFunctionality ignore) {
-			scheduledFunction = NONE;
+		} catch (UnknownHederaFunctionality ex) {
+			log.error("ScheduleCreate was associated with an invalid txn.", ex);
+			return true;
 		}
 
 		var manager = functionReqs.get(ScheduleCreate);
@@ -403,8 +404,9 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
 		HederaFunctionality scheduledFunction;
 		try {
 			scheduledFunction = MiscUtils.functionOf(normalTxn);
-		} catch (UnknownHederaFunctionality ignore) {
-			scheduledFunction = NONE;
+		} catch (UnknownHederaFunctionality ex) {
+			log.error("ScheduleSign was associated with an invalid txn.", ex);
+			return true;
 		}
 
 		return shouldThrottleTxn(true, accessor, normalTxn, scheduledFunction, now);

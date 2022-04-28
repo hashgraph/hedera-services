@@ -230,6 +230,28 @@ class ScheduleCreateTransitionLogicTest {
 	}
 
 	@Test
+	void followsHappyPathIfLongTermEnabledNotWaitForExpiry() throws InvalidProtocolBufferException {
+		given(properties.schedulingLongTermEnabled()).willReturn(true);
+		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);
+		given(scheduleValue.calculatedExpirationTime()).willReturn(RichInstant.fromJava(now));
+		given(scheduleProcessing.checkFutureThrottlesForCreate(scheduleValue)).willReturn(OK);
+		givenValidTxnCtx();
+		given(scheduleValue.adminKey()).willReturn(jAdminKey);
+
+		subject.doStateTransition();
+
+		verify(store).lookupSchedule(bodyBytes);
+		verify(store).createProvisionally(scheduleValue, RichInstant.fromJava(now));
+		verify(replSigningWitness).observeInScope(schedule, store, validScheduleKeys, activationHelper);
+		verify(store).commitCreation();
+		verify(txnCtx, never()).addExpiringEntities(any());
+		verify(txnCtx).setStatus(SUCCESS);
+		verify(txnCtx).setScheduledTxnId(scheduledTxnId);
+		verify(sigImpactHistorian).markEntityChanged(schedule.getScheduleNum());
+		verify(executor).processImmediateExecution(schedule, store, txnCtx);
+	}
+
+	@Test
 	void rejectsRecreationOfExistingSchedule() {
 		givenValidTxnCtx();
 		given(scheduleValue.scheduledTransactionId()).willReturn(scheduledTxnId);

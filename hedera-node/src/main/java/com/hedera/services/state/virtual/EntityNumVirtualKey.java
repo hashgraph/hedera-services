@@ -36,9 +36,7 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
 	static final long CLASS_ID = 0xec76f9ebae262595L;
 	static final int BYTES_IN_SERIALIZED_FORM = 8;
 
-	static final class ClassVersion {
-		public static final int ORIGINAL = 1;
-	}
+	public static final int CURRENT_VERSION = 1;
 
 	private long value;
 
@@ -92,7 +90,7 @@ public final class EntityNumVirtualKey implements VirtualLongKey {
 	 */
 	@Override
 	public int getVersion() {
-		return ClassVersion.ORIGINAL;
+		return CURRENT_VERSION;
 	}
 
 	/**

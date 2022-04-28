@@ -22,6 +22,18 @@
             ]
         },
         {
+            "name": "B",
+            "burstPeriod": 1,
+            "throttleGroups": [
+                {
+                    "operations": [
+                        "CryptoCreate"
+                    ],
+                    "opsPerSec": 1000000
+                }
+            ]
+        },
+        {
             "name": "C",
             "burstPeriod": 3,
             "throttleGroups": [

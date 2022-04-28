@@ -162,9 +162,11 @@ class DeterministicThrottlingTest {
 	}
 
 	@ParameterizedTest
-	@CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+	@CsvSource({"HAPI,true,true", "HAPI,false,true", "CONSENSUS,true,true", "CONSENSUS,false,true",
+				"HAPI,true,false", "HAPI,false,false", "CONSENSUS,true,false", "CONSENSUS,false,false"})
 	void usesScheduleCreateThrottleForSubmitMessage(
-			final DeterministicThrottlingMode mode, final boolean longTermEnabled) throws IOException {
+			final DeterministicThrottlingMode mode, final boolean longTermEnabled,
+			final boolean waitForExpiry) throws IOException {
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
 		subject.setMode(mode);
 		final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
@@ -173,7 +175,7 @@ class DeterministicThrottlingTest {
 		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
 		subject.rebuildFor(defs);
 
-		final var accessor = scheduleCreate(scheduledSubmit);
+		final var accessor = scheduleCreate(scheduledSubmit, waitForExpiry);
 		final var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
 		boolean subsequentAns = false;
 		for (int i = 1; i <= 150; i++) {
@@ -187,7 +189,34 @@ class DeterministicThrottlingTest {
 		assertTrue(subsequentAns);
 		assertEquals(149999992500000L, aNow.used());
 
-		assertEquals(longTermEnabled && mode == HAPI ? 149999255000000L : 0,
+		assertEquals(longTermEnabled && mode == HAPI && (!waitForExpiry) ? 149999255000000L : 0,
+				subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+	}
+
+	@ParameterizedTest
+	@CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
+	void scheduleCreateAlwaysThrottledWhenNoBody(
+			final DeterministicThrottlingMode mode, final boolean longTermEnabled) throws IOException {
+		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
+		subject.setMode(mode);
+		final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+				.build();
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduleCreate(scheduledSubmit);
+		final var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		for (int i = 1; i <= 150; i++) {
+			assertTrue(subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i)));
+		}
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
+		final var aNow = throttlesNow.get(0);
+
+		assertTrue(firstAns);
+		assertEquals(0, aNow.used());
+
+		assertEquals(0,
 				subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
 	}
 
@@ -366,8 +395,11 @@ class DeterministicThrottlingTest {
 	}
 
 	@ParameterizedTest
-	@CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
-	void usesScheduleSignThrottle(final DeterministicThrottlingMode mode, final boolean longTermEnabled) throws IOException {
+	@CsvSource({"HAPI,true,true", "HAPI,false,true", "CONSENSUS,true,true", "CONSENSUS,false,true",
+				"HAPI,true,false", "HAPI,false,false", "CONSENSUS,true,false", "CONSENSUS,false,false"})
+	void usesScheduleSignThrottle(
+			final DeterministicThrottlingMode mode, final boolean longTermEnabled,
+			final boolean waitForExpiry) throws IOException {
 		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(longTermEnabled);
 		subject.setMode(mode);
 
@@ -376,7 +408,7 @@ class DeterministicThrottlingTest {
 					.setConsensusSubmitMessage(ConsensusSubmitMessageTransactionBody.getDefaultInstance())
 					.build();
 
-			final var accessor = scheduleCreate(scheduledSubmit);
+			final var accessor = scheduleCreate(scheduledSubmit, waitForExpiry);
 
 			given(scheduleStore.getNoError(scheduleID)).willReturn(
 					ScheduleVirtualValue.from(accessor.getTxnBytes(), 0));
@@ -399,8 +431,62 @@ class DeterministicThrottlingTest {
 		assertTrue(subsequentAns);
 		assertEquals(149999992500000L, aNow.used());
 
-		assertEquals(longTermEnabled && mode == HAPI ? 149999255000000L : 0,
+		assertEquals(longTermEnabled && mode == HAPI && (!waitForExpiry) ? 149999255000000L : 0,
 				subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+	}
+
+	@Test
+	void scheduleSignAlwaysThrottledWhenNoBody() throws IOException {
+		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
+		subject.setMode(HAPI);
+
+		final var scheduledSubmit = SchedulableTransactionBody.newBuilder()
+				.build();
+
+		final var createAccessor = scheduleCreate(scheduledSubmit);
+
+		given(scheduleStore.getNoError(scheduleID)).willReturn(
+				ScheduleVirtualValue.from(createAccessor.getTxnBytes(), 0));
+
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduleSign(scheduleID);
+		final var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		for (int i = 1; i <= 150; i++) {
+			assertTrue(subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i)));
+		}
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleSign);
+		final var aNow = throttlesNow.get(0);
+
+		assertTrue(firstAns);
+		assertEquals(0L, aNow.used());
+
+		assertEquals(0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
+	}
+
+	@Test
+	void scheduleSignAlwaysThrottledWhenNotExisting() throws IOException {
+		given(dynamicProperties.schedulingLongTermEnabled()).willReturn(true);
+		subject.setMode(HAPI);
+
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+		subject.rebuildFor(defs);
+
+		final var accessor = scheduleSign(scheduleID);
+		final var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		for (int i = 1; i <= 150; i++) {
+			assertTrue(subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i)));
+		}
+
+		final var throttlesNow = subject.activeThrottlesFor(ScheduleSign);
+		final var aNow = throttlesNow.get(0);
+
+		assertTrue(firstAns);
+		assertEquals(0L, aNow.used());
+
+		assertEquals(0, subject.activeThrottlesFor(ConsensusSubmitMessage).get(0).used());
 	}
 
 	@ParameterizedTest
@@ -583,6 +669,32 @@ class DeterministicThrottlingTest {
 		assertTrue(subsequentAns);
 		assertEquals(24999999820000000L, aNow.used());
 		assertEquals(9999999940000L, bNow.used());
+	}
+
+	@Test
+	void handlesThrottleExemption() throws IOException {
+		// setup:
+		var defs = SerdeUtils.pojoDefs("bootstrap/throttles.json");
+
+		givenFunction(ContractCall);
+		given(accessor.throttleExempt()).willReturn(true);
+
+		// when:
+		subject.rebuildFor(defs);
+		// and:
+		var firstAns = subject.shouldThrottleTxn(accessor, consensusNow);
+		for (int i = 1; i <= 12; i++) {
+			assertFalse(subject.shouldThrottleTxn(accessor, consensusNow.plusNanos(i)));
+		}
+		var throttlesNow = subject.activeThrottlesFor(ContractCall);
+		// and:
+		var aNow = throttlesNow.get(0);
+		var bNow = throttlesNow.get(1);
+
+		// then:
+		assertFalse(firstAns);
+		assertEquals(0, aNow.used());
+		assertEquals(0, bNow.used());
 	}
 
 	@Test
@@ -1093,15 +1205,24 @@ class DeterministicThrottlingTest {
 	void verifyLeakUnusedGas() throws IOException {
 		Instant now = Instant.now();
 		given(dynamicProperties.shouldThrottleByGas()).willReturn(true);
-		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(10L);
-		given(query.getContractCallLocal()).willReturn(callLocalQuery);
-		given(callLocalQuery.getGas()).willReturn(100L);
+		given(dynamicProperties.consensusThrottleGasLimit()).willReturn(150L);
 
 		subject.applyGasConfig();
 
+		assertTrue(subject.gasLimitThrottle().allow(now, 100));
+		assertFalse(subject.gasLimitThrottle().allow(now, 100));
+
 		subject.leakUnusedGasPreviouslyReserved(accessor, 100L);
 
-		assertTrue(subject.shouldThrottleQuery(ContractCallLocal, now, query));
+		assertTrue(subject.gasLimitThrottle().allow(now, 100));
+		assertFalse(subject.gasLimitThrottle().allow(now, 100));
+
+		given(accessor.throttleExempt()).willReturn(true);
+
+		subject.leakUnusedGasPreviouslyReserved(accessor, 100L);
+
+		assertFalse(subject.gasLimitThrottle().allow(now, 100));
+		assertFalse(subject.gasLimitThrottle().allow(now, 100));
 	}
 
 	@Test
@@ -1199,6 +1320,19 @@ class DeterministicThrottlingTest {
 
 	}
 
+	@Test
+	void scheduleThrottlesErrorOnNotPossible() throws IOException {
+		subject = new DeterministicThrottling(() -> 1, aliasManager, dynamicProperties,
+				CONSENSUS, scheduleStore);
+
+		given(dynamicProperties.schedulingMaxTxnPerSecond()).willReturn(1L);
+		subject.setMode(SCHEDULE);
+
+		var defs = SerdeUtils.pojoDefs("bootstrap/schedule-throttles.json");
+
+		assertThrows(IllegalStateException.class, () -> subject.rebuildFor(defs));
+	}
+
 	private void givenFunction(HederaFunctionality functionality) {
 		given(accessor.getFunction()).willReturn(functionality);
 	}
@@ -1229,7 +1363,11 @@ class DeterministicThrottlingTest {
 	}
 
 	private SignedTxnAccessor scheduleCreate(final SchedulableTransactionBody inner) {
+		return scheduleCreate(inner, false);
+	}
+	private SignedTxnAccessor scheduleCreate(final SchedulableTransactionBody inner, boolean waitForExpiry) {
 		final var schedule = ScheduleCreateTransactionBody.newBuilder()
+				.setWaitForExpiry(waitForExpiry)
 				.setScheduledTransactionBody(inner);
 		final var body = TransactionBody.newBuilder()
 				.setScheduleCreate(schedule)

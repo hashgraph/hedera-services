@@ -77,6 +77,8 @@ class ScheduleSecondVirtualValueTest {
 		assertEquals(one.hashCode(), three.hashCode());
 		assertEquals(one.hashCode(), four.hashCode());
 		assertDoesNotThrow(subject::release);
+		assertNotEquals(one, null);
+		assertNotEquals(one, new Object());
 
 		final var forcedEqualsCheck = one.equals(ids);
 		assertFalse(forcedEqualsCheck, "forcing equals on two different class types.");
@@ -204,6 +206,7 @@ class ScheduleSecondVirtualValueTest {
 
 		assertEquals(subject.getIds().size(), 5);
 
+		subject.removeId(new RichInstant(10L, 15), 9020L);
 		subject.removeId(new RichInstant(10L, 21), 9020L);
 		subject.removeId(new RichInstant(10L, 20), 9120L);
 		subject.removeId(new RichInstant(10L, 20), 50L);

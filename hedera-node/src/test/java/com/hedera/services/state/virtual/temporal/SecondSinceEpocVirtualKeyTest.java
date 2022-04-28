@@ -77,6 +77,9 @@ class SecondSinceEpocVirtualKeyTest {
 		assertNotEquals(one, four);
 		assertNotNull(one);
 
+		assertNotEquals(one, null);
+		assertNotEquals(one, new Object());
+
 		final var forcedEqualsCheck = one.equals(longKey);
 		assertFalse(forcedEqualsCheck, "forcing equals on two different class types.");
 	}
@@ -98,14 +101,14 @@ class SecondSinceEpocVirtualKeyTest {
 
 		SecondSinceEpocVirtualKey key = new SecondSinceEpocVirtualKey();
 
-		key.deserialize(buffer, SecondSinceEpocVirtualKey.ClassVersion.ORIGINAL);
+		key.deserialize(buffer, SecondSinceEpocVirtualKey.CURRENT_VERSION);
 
 		assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
 	}
 
 	@Test
 	void merkleMethodsWork() {
-		assertEquals(SecondSinceEpocVirtualKey.ClassVersion.ORIGINAL, subject.getVersion());
+		assertEquals(SecondSinceEpocVirtualKey.CURRENT_VERSION, subject.getVersion());
 		assertEquals(SecondSinceEpocVirtualKey.CLASS_ID, subject.getClassId());
 	}
 
@@ -122,7 +125,7 @@ class SecondSinceEpocVirtualKeyTest {
 
 		SecondSinceEpocVirtualKey key = new SecondSinceEpocVirtualKey();
 
-		key.deserialize(fin, SecondSinceEpocVirtualKey.ClassVersion.ORIGINAL);
+		key.deserialize(fin, SecondSinceEpocVirtualKey.CURRENT_VERSION);
 
 		assertEquals(subject.getKeyAsLong(), key.getKeyAsLong());
 	}

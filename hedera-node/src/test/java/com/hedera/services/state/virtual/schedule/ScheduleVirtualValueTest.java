@@ -20,6 +20,7 @@ package com.hedera.services.state.virtual.schedule;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -205,6 +206,7 @@ public class ScheduleVirtualValueTest {
 		assertEquals(scheduledTxn, subject.scheduledTxn());
 		assertEquals(ordinaryVersionOfScheduledTxn, subject.ordinaryViewOfScheduledTxn());
 		assertEquals(expectedSignedTxn(), subject.asSignedTxn());
+		assertEquals(expectedParentSignedTxn(), subject.parentAsSignedTxn());
 		assertArrayEquals(bodyBytes, subject.bodyBytes());
 		assertEquals(HederaFunctionality.CryptoDelete, subject.scheduledFunction());
 	}
@@ -220,6 +222,10 @@ public class ScheduleVirtualValueTest {
 	@Test
 	void translatesInvariantFailure() {
 		subject = new ScheduleVirtualValue();
+
+		assertThrows(IllegalStateException.class, subject::scheduledTransactionId);
+
+		subject.setSchedulingAccount(schedulingAccount);
 
 		assertThrows(IllegalStateException.class, subject::scheduledTransactionId);
 	}
@@ -329,6 +335,19 @@ public class ScheduleVirtualValueTest {
 	}
 
 	@Test
+	void differentMemosNotIdenticalViaNull() {
+		final var bodyBytesDiffMemo = parentTxn.toBuilder()
+				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder().clearMemo())
+				.build().toByteArray();
+		final var other = ScheduleVirtualValue.from(bodyBytesDiffMemo, expiry);
+
+		assertNotEquals(subject, other);
+		assertNotEquals(subject.hashCode(), other.hashCode());
+		assertNotEquals(subject.equalityCheckKey(), other.equalityCheckKey());
+		assertNotEquals(subject.equalityCheckValue(), other.equalityCheckValue());
+	}
+
+	@Test
 	void differentScheduledTxnNotIdentical() {
 		final var bodyBytesDiffScheduledTxn = parentTxn.toBuilder()
 				.setScheduleCreate(parentTxn.getScheduleCreate().toBuilder()
@@ -401,6 +420,8 @@ public class ScheduleVirtualValueTest {
 		assertEquals(subject, subject);
 		assertNotEquals(null, subject);
 		assertNotEquals(new Object(), subject);
+		assertNotEquals(subject, new Object());
+		assertNotEquals(subject, null);
 	}
 
 	@Test
@@ -433,11 +454,13 @@ public class ScheduleVirtualValueTest {
 		assertEquals(schedulingAccount, copySubject.schedulingAccount());
 		assertEquals(entityMemo, copySubject.memo().get());
 		assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
+		assertEquals(MiscUtils.asKeyUnchecked(adminKey), copySubject.grpcAdminKey());
 		assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
 		assertEquals(scheduledTxn, copySubject.scheduledTxn());
 		assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
 		assertArrayEquals(bodyBytes, copySubject.bodyBytes());
 		assertTrue(subject.isImmutable());
+		assertTrue(subject.hasAdminKey());
 	}
 
 	private String signatoriesToString() {
@@ -487,6 +510,16 @@ public class ScheduleVirtualValueTest {
 												.setTransactionID(expectedId)
 												.build().toByteString())
 								.build().toByteString())
+				.build();
+	}
+
+	private static Transaction expectedParentSignedTxn() {
+		return Transaction.newBuilder()
+				.setSignedTransactionBytes(
+						SignedTransaction.newBuilder()
+								.setBodyBytes(ByteString.copyFrom(bodyBytes))
+								.build()
+								.toByteString())
 				.build();
 	}
 

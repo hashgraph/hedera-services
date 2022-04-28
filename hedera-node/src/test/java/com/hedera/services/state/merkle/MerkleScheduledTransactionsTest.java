@@ -177,6 +177,11 @@ class MerkleScheduledTransactionsTest {
 	}
 
 	@Test
+	void childIndicesConstructorThrows() {
+		assertThrows(UnsupportedOperationException.class, () -> new MerkleScheduledTransactions.ChildIndices());
+	}
+
+	@Test
 	void delegatesDelete() {
 		subject.release();
 

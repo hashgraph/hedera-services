@@ -400,18 +400,18 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 					}
 				}
 			}
-		}
 
-		if ((toRemove.size() > 0) || ((bySecond != null) && (bySecond.getIds().size() <= 0))) {
-			bySecond = schedules.get().byExpirationSecond().getForModify(bySecondKey);
-			if (bySecond != null) {
-				for (var p : toRemove) {
-					bySecond.removeId(p.getKey(), p.getValue());
-				}
+			if ((toRemove.size() > 0) || (bySecond.getIds().size() <= 0)) {
+				bySecond = schedules.get().byExpirationSecond().getForModify(bySecondKey);
+				if (bySecond != null) {
+					for (var p : toRemove) {
+						bySecond.removeId(p.getKey(), p.getValue());
+					}
 
-				if (bySecond.getIds().size() <= 0) {
-					log.error("bySecond was unexpectedly empty! Removing it! second={}", curSecond);
-					schedules.get().byExpirationSecond().remove(bySecondKey);
+					if (bySecond.getIds().size() <= 0) {
+						log.error("bySecond was unexpectedly empty! Removing it! second={}", curSecond);
+						schedules.get().byExpirationSecond().remove(bySecondKey);
+					}
 				}
 			}
 		}

@@ -226,6 +226,33 @@ class HederaScheduleStoreTest {
 	}
 
 	@Test
+	void commitAddsToMaps() {
+		subject.pendingId = created;
+		subject.pendingCreation = schedule;
+
+		var secValue = mock(ScheduleSecondVirtualValue.class);
+		var eqValue = mock(ScheduleEqualityVirtualValue.class);
+
+		given(byExpirationSecond.getForModify(new SecondSinceEpocVirtualKey(expectedExpiry))).willReturn(secValue);
+		given(byEquality.getForModify(new ScheduleEqualityVirtualKey(equalityKey))).willReturn(eqValue);
+		given(schedules.getCurrentMinSecond()).willReturn(Long.MIN_VALUE);
+
+		subject.commitCreation();
+
+		verify(byId).put(new EntityNumVirtualKey(fromScheduleId(created)), schedule);
+
+		verify(schedules, never()).setCurrentMinSecond(anyLong());
+
+		verify(secValue).add(new RichInstant(expectedExpiry, 0),
+				LongLists.immutable.of(fromScheduleId(created).longValue()));
+
+		verify(eqValue).add(equalityValue, fromScheduleId(created).longValue());
+
+		assertSame(HederaScheduleStore.NO_PENDING_ID, subject.pendingId);
+		assertNull(subject.pendingCreation);
+	}
+
+	@Test
 	void rollbackReclaimsIdAndClears() {
 		subject.pendingId = created;
 		subject.pendingCreation = schedule;
@@ -253,6 +280,13 @@ class HederaScheduleStoreTest {
 		given(byId.containsKey(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(false);
 
 		assertThrows(IllegalArgumentException.class, () -> subject.get(created));
+	}
+
+	@Test
+	void getNoErrorReturnsNullOnMissing() {
+		given(byId.get(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(null);
+
+		assertNull(subject.getNoError(created));
 	}
 
 	@Test
@@ -417,6 +451,22 @@ class HederaScheduleStoreTest {
 	}
 
 	@Test
+	void getNoErrorCanReturnPending() {
+		subject.pendingId = created;
+		subject.pendingCreation = schedule;
+
+		assertSame(schedule, subject.getNoError(created));
+	}
+
+	@Test
+	void existsCanHandlePending() {
+		subject.pendingId = created;
+		subject.pendingCreation = schedule;
+
+		assertTrue(subject.exists(created));
+	}
+
+	@Test
 	void existenceCheckUnderstandsPendingIdOnlyAppliesIfCreationPending() {
 		assertFalse(subject.exists(HederaScheduleStore.NO_PENDING_ID));
 	}
@@ -471,6 +521,33 @@ class HederaScheduleStoreTest {
 		final var scheduleIdPair = subject.lookupSchedule(parentTxn.toByteArray());
 
 		assertEquals(Pair.of(created, schedule), scheduleIdPair);
+	}
+
+	@Test
+	void understandsMissingButExistsInEqMap() {
+		final var expected = ScheduleVirtualValue.from(parentTxn.toByteArray(), expectedExpiry);
+		final var eqValue = new ScheduleEqualityVirtualValue();
+
+		given(byEquality.get(new ScheduleEqualityVirtualKey(expected.equalityCheckKey()))).willReturn(eqValue);
+
+		final var scheduleIdPair = subject.lookupSchedule(parentTxn.toByteArray());
+
+		assertNull(scheduleIdPair.getLeft());
+		assertEquals(expected, scheduleIdPair.getRight());
+	}
+
+	@Test
+	void understandsMissingExistsInEqMapButNoExists() {
+		final var expected = ScheduleVirtualValue.from(parentTxn.toByteArray(), expectedExpiry);
+		final var eqValue = new ScheduleEqualityVirtualValue();
+		eqValue.add(expected.equalityCheckValue(), fromScheduleId(IdUtils.asSchedule("0.0.123333")).longValue());
+
+		given(byEquality.get(new ScheduleEqualityVirtualKey(expected.equalityCheckKey()))).willReturn(eqValue);
+
+		final var scheduleIdPair = subject.lookupSchedule(parentTxn.toByteArray());
+
+		assertNull(scheduleIdPair.getLeft());
+		assertEquals(expected, scheduleIdPair.getRight());
 	}
 
 	@Test
@@ -533,6 +610,19 @@ class HederaScheduleStoreTest {
 	void allowsDeletionExpirationPassedLongTermTxnDisabled() {
 		given(globalDynamicProperties.schedulingLongTermEnabled()).willReturn(false);
 		final var now = Instant.ofEpochSecond(expectedExpiry - 1);
+		given(byId.getForModify(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
+
+		final var outcome = subject.deleteAt(created, now);
+
+		verify(byId, never()).remove(any());
+		verify(schedule).markDeleted(now);
+		assertEquals(OK, outcome);
+	}
+
+	@Test
+	void allowsDeletionExpirationPassedLongTermTxnEnabled() {
+		given(globalDynamicProperties.schedulingLongTermEnabled()).willReturn(true);
+		final var now = Instant.ofEpochSecond(expectedExpiry + 1);
 		given(byId.getForModify(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(schedule);
 
 		final var outcome = subject.deleteAt(created, now);
@@ -706,6 +796,38 @@ class HederaScheduleStoreTest {
 	}
 
 	@Test
+	void expiresHandlesNotExistingInIds() {
+		var entityKey = new EntityNumVirtualKey(fromScheduleId(created));
+		given(byId.remove(entityKey)).willReturn(null);
+
+		subject.expire(created);
+
+		verify(byId).remove(new EntityNumVirtualKey(fromScheduleId(created)));
+
+		verify(byExpirationSecond, never()).getForModify(any());
+		verify(byExpirationSecond, never()).remove(any());
+
+		verify(byEquality, never()).getForModify(any());
+		verify(byEquality, never()).remove(any());
+	}
+
+	@Test
+	void expiresHandlesNotExistingMaps() {
+		var entityKey = new EntityNumVirtualKey(fromScheduleId(created));
+		given(byId.remove(entityKey)).willReturn(schedule);
+
+		subject.expire(created);
+
+		verify(byId).remove(new EntityNumVirtualKey(fromScheduleId(created)));
+
+		verify(byExpirationSecond).getForModify(new SecondSinceEpocVirtualKey(expectedExpiry));
+		verify(byExpirationSecond, never()).remove(any());
+
+		verify(byEquality).getForModify(new ScheduleEqualityVirtualKey(schedule.equalityCheckKey()));
+		verify(byEquality, never()).remove(any());
+	}
+
+	@Test
 	void throwsOnExpiringMissingSchedule() {
 		given(byId.containsKey(new EntityNumVirtualKey(fromScheduleId(created)))).willReturn(false);
 
@@ -777,7 +899,7 @@ class HederaScheduleStoreTest {
 		deleted.setCalculatedExpirationTime(new RichInstant(expectedExpiry, 1));
 		deleted.markDeleted(deleted.calculatedExpirationTime().toJava());
 
-		ScheduleID extraId = IdUtils.asSchedule("0.0.311233");
+		ScheduleID extraId = IdUtils.asSchedule("0.0.311231");
 		final var extra = ScheduleVirtualValue.from(parentTxn.toByteArray(), 0L);
 		extra.setCalculatedExpirationTime(new RichInstant(expectedExpiry, 1));
 		extra.markExecuted(extra.calculatedExpirationTime().toJava());
@@ -807,6 +929,26 @@ class HederaScheduleStoreTest {
 		var toExpire = subject.nextSchedulesToExpire(Instant.ofEpochSecond(expectedExpiry + 1));
 
 		assertEquals(toExpire, ImmutableList.of(created, deletedId));
+	}
+
+	@Test
+	void nextSchedulesToExpireHandlesEmptyBySecond() {
+		given(schedules.getCurrentMinSecond()).willReturn(expectedExpiry);
+		given(schedule.isExecuted()).willReturn(true);
+
+		var bySecondValue = mock(ScheduleSecondVirtualValue.class);
+		given(byExpirationSecond.get(new SecondSinceEpocVirtualKey(expectedExpiry)))
+				.willReturn(bySecondValue);
+		given(byExpirationSecond.getForModify(new SecondSinceEpocVirtualKey(expectedExpiry)))
+				.willReturn(bySecondValue);
+
+		given(bySecondValue.getIds()).willReturn(new TreeMap<>());
+
+		var toExpire = subject.nextSchedulesToExpire(Instant.ofEpochSecond(expectedExpiry + 1));
+
+		assertEquals(toExpire, ImmutableList.of());
+
+		verify(byExpirationSecond).remove(new SecondSinceEpocVirtualKey(expectedExpiry));
 	}
 
 	@Test
@@ -862,12 +1004,6 @@ class HederaScheduleStoreTest {
 							LongLists.immutable.of(fromScheduleId(notExistingId).longValue())
 				)));
 
-		doAnswer(i -> {
-			given(bySecondValue.getIds()).willReturn(Collections.emptyNavigableMap());
-			return null;
-		}).when(bySecondValue).removeId(
-				new RichInstant(expectedExpiry, 1), fromScheduleId(notExistingId).longValue());
-
 		var toExpire = subject.nextSchedulesToExpire(Instant.ofEpochSecond(expectedExpiry + 1));
 
 		assertEquals(toExpire, ImmutableList.of(created, badExpirationId));
@@ -876,7 +1012,8 @@ class HederaScheduleStoreTest {
 				new RichInstant(expectedExpiry, 1), fromScheduleId(notExistingId).longValue());
 		verify(bySecondValue).removeId(
 				new RichInstant(expectedExpiry, 0), fromScheduleId(badExpirationId).longValue());
-		verify(byExpirationSecond).remove(new SecondSinceEpocVirtualKey(expectedExpiry));
+		verify(byExpirationSecond, never()).remove(any());
+
 	}
 
 	@Test
@@ -891,7 +1028,7 @@ class HederaScheduleStoreTest {
 		deleted.setCalculatedExpirationTime(new RichInstant(expectedExpiry, 1));
 		deleted.markDeleted(deleted.calculatedExpirationTime().toJava());
 
-		ScheduleID extraId = IdUtils.asSchedule("0.0.311233");
+		ScheduleID extraId = IdUtils.asSchedule("0.0.311231");
 		final var extra = ScheduleVirtualValue.from(parentTxn.toByteArray(), 0L);
 		extra.setCalculatedExpirationTime(new RichInstant(expectedExpiry, 1));
 		extra.markExecuted(extra.calculatedExpirationTime().toJava());
@@ -915,7 +1052,9 @@ class HederaScheduleStoreTest {
 							LongLists.immutable.of(
 									fromScheduleId(notExecutedId).longValue(),
 									fromScheduleId(deletedId).longValue(),
-									fromScheduleId(extraId).longValue())
+									fromScheduleId(extraId).longValue()),
+						new RichInstant(expectedExpiry, 5),
+							LongLists.immutable.of()
 				)));
 
 		var toEvaluate = subject.nextScheduleToEvaluate(Instant.ofEpochSecond(expectedExpiry + 1));
@@ -947,6 +1086,12 @@ class HederaScheduleStoreTest {
 		toEvaluate = subject.nextScheduleToEvaluate(Instant.ofEpochSecond(expectedExpiry + 1));
 
 		assertNull(toEvaluate);
+
+		toEvaluate = subject.nextScheduleToEvaluate(Instant.ofEpochSecond(expectedExpiry + 1));
+
+		assertNull(toEvaluate);
+
+		given(bySecondValue.getIds()).willReturn(new TreeMap<>());
 
 		toEvaluate = subject.nextScheduleToEvaluate(Instant.ofEpochSecond(expectedExpiry + 1));
 
