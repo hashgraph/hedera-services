@@ -81,7 +81,6 @@ public class CreateLogic {
 
 		// --- Persist the created model ---
 		creation.persist();
-		creation.newAssociations().forEach(sideEffectsTracker::trackExplicitAutoAssociation);
 
 		// --- Externalize side-effects ---
 		sigImpactHistorian.markEntityChanged(creation.newTokenId().num());

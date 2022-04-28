@@ -155,7 +155,6 @@ class TokenCreateTransitionLogicTest {
 		verify(creation).loadModelsWith(payer, ids, validator);
 		verify(creation).doProvisionallyWith(now.getEpochSecond(), MODEL_FACTORY, RELS_LISTING);
 		verify(creation).persist();
-		verify(sideEffectsTracker).trackExplicitAutoAssociation(mockAssociations.get(0));
 		verify(sigImpactHistorian).markEntityChanged(createdId.num());
 	}
 

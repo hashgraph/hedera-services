@@ -25,6 +25,7 @@ import com.hedera.services.exceptions.MissingAccountException;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -255,6 +256,9 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	public void commit() {
 		throwIfNotInTxn();
 
+		if (propertyType.equals(TokenRelProperty.class)) {
+			System.out.println(changeSetSoFar());
+		}
 		try {
 			if (commitInterceptor != null) {
 				computePendingChanges();
@@ -289,7 +293,6 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A> impl
 	}
 
 	// --- Ledger implementation ---
-
 	/**
 	 * {@inheritDoc}
 	 */
