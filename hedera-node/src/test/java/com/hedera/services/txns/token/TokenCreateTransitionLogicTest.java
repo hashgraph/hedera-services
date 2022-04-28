@@ -21,7 +21,6 @@ package com.hedera.services.txns.token;
  */
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -96,8 +95,6 @@ class TokenCreateTransitionLogicTest {
 	private TransactionBody tokenCreateTxn;
 
 	@Mock
-	private SideEffectsTracker sideEffectsTracker;
-	@Mock
 	private Creation creation;
 	@Mock
 	private AccountStore accountStore;
@@ -124,8 +121,7 @@ class TokenCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		createLogic = new CreateLogic(accountStore, tokenStore, dynamicProperties, sigImpactHistorian,
-				sideEffectsTracker, ids, validator);
+		createLogic = new CreateLogic(accountStore, tokenStore, dynamicProperties, sigImpactHistorian, ids, validator);
 		createChecks = new CreateChecks(dynamicProperties, validator);
 		subject = new TokenCreateTransitionLogic(txnCtx, createLogic,  createChecks);
 	}
