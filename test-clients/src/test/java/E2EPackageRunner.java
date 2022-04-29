@@ -213,6 +213,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
@@ -289,6 +290,30 @@ class E2EPackageRunner {
 
 	@Tag("contract")
 	@Tag("contract.precompile")
+	@Tag("contract.precompile.part1.eth")
+	@TestFactory
+	Collection<DynamicContainer> contractPrecompileEth() {
+		return List.of(
+				extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new)
+		);
+	}
+
+	@Tag("contract")
+	@Tag("contract.precompile")
+	@Tag("contract.precompile.part1.eth.failing")
+	@TestFactory
+	Collection<DynamicContainer> contractPrecompileEthFailing() {
+		return List.of(
+				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
+				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
+				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
+				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
+				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
+		);
+	}
+
+	@Tag("contract")
+	@Tag("contract.precompile")
 	@Tag("contract.precompile.part2")
 	@TestFactory
 	Collection<DynamicContainer> contractPrecompile2() {
@@ -298,6 +323,29 @@ class E2EPackageRunner {
 				extractSpecsFromSuite(DissociatePrecompileSuite::new),
 				extractSpecsFromSuite(DynamicGasCostSuite::new),
 				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
+		);
+	}
+
+	@Tag("contract")
+	@Tag("contract.precompile")
+	@Tag("contract.precompile.part2.eth")
+	@TestFactory
+	Collection<DynamicContainer> contractPrecompile2Eth() {
+		return List.of(
+				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new)
+		);
+	}
+
+	@Tag("contract")
+	@Tag("contract.precompile")
+	@Tag("contract.precompile.part2.eth.failing")
+	@TestFactory
+	Collection<DynamicContainer> contractPrecompile2EthFailing() {
+		return List.of(
+				extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
+				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new),
+				extractSpecsFromSuiteForEth(DynamicGasCostSuite::new),
+				extractSpecsFromSuiteForEth(MixedHTSPrecompileTestsSuite::new)
 		);
 	}
 
@@ -313,12 +361,33 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
+	@Tag("contract.openzeppelin.eth.failing")
+	@TestFactory
+	Collection<DynamicContainer> contractOpenZeppelinEthFailing() {
+		return List.of(
+				extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
+				extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),
+				extractSpecsFromSuiteForEth(ERC1155ContractInteractions::new)
+		);
+	}
+
+	@Tag("contract")
 	@Tag("contract.records")
 	@TestFactory
 	Collection<DynamicContainer> contractRecords() {
 		return List.of(
 				extractSpecsFromSuite(LogsSuite::new),
 				extractSpecsFromSuite(RecordsSuite::new)
+		);
+	}
+
+	@Tag("contract")
+	@Tag("contract.records.eth")
+	@TestFactory
+	Collection<DynamicContainer> contractRecordsEth() {
+		return List.of(
+				extractSpecsFromSuiteForEth(LogsSuite::new),
+				extractSpecsFromSuiteForEth(RecordsSuite::new)
 		);
 	}
 
@@ -343,6 +412,34 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
+	@Tag("contract.opcodes.eth")
+	@TestFactory
+	Collection<DynamicContainer> contractOpcodesEth() {
+		return List.of(
+				extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
+				extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
+				extractSpecsFromSuiteForEth(CallOperationSuite::new),
+				extractSpecsFromSuiteForEth(CreateOperationSuite::new),
+				extractSpecsFromSuiteForEth(DelegateCallOperationSuite::new),
+				extractSpecsFromSuiteForEth(ExtCodeCopyOperationSuite::new),
+				extractSpecsFromSuiteForEth(ExtCodeHashOperationSuite::new),
+				extractSpecsFromSuiteForEth(ExtCodeSizeOperationSuite::new),
+				extractSpecsFromSuiteForEth(GlobalPropertiesSuite::new),
+				extractSpecsFromSuiteForEth(StaticCallOperationSuite::new)
+		);
+	}
+
+	@Tag("contract")
+	@Tag("contract.opcodes.eth.failing")
+	@TestFactory
+	Collection<DynamicContainer> contractOpcodesEthFailing() {
+		return List.of(
+				extractSpecsFromSuiteForEth(SelfDestructSuite::new),
+				extractSpecsFromSuiteForEth(SStoreSuite::new)
+		);
+	}
+
+	@Tag("contract")
 	@Tag("contract.hapi")
 	@TestFactory
 	Collection<DynamicContainer> contractHapi() {
@@ -359,11 +456,44 @@ class E2EPackageRunner {
 	}
 
 	@Tag("contract")
+	@Tag("contract.hapi.eth")
+	@TestFactory
+	Collection<DynamicContainer> contractHapiEth() {
+		return List.of(
+				extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
+				extractSpecsFromSuiteForEth(ContractGetBytecodeSuite::new),
+				extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
+				extractSpecsFromSuiteForEth(ContractUpdateSuite::new)
+		);
+	}
+
+	@Tag("contract")
+	@Tag("contract.hapi.eth.failing")
+	@TestFactory
+	Collection<DynamicContainer> contractHapiEthFailing() {
+		return List.of(
+				extractSpecsFromSuiteForEth(ContractCallSuite::new),
+				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
+				extractSpecsFromSuiteForEth(ContractDeleteSuite::new),
+				extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new)
+		);
+	}
+
+	@Tag("contract")
 	@Tag("contract.traceability")
 	@TestFactory
 	Collection<DynamicContainer> contractTraceability() {
 		return List.of(
 				extractSpecsFromSuite(ContractTraceabilitySuite::new)
+		);
+	}
+
+	@Tag("contract")
+	@Tag("contract.traceability.eth")
+	@TestFactory
+	Collection<DynamicContainer> contractTraceabilityEth() {
+		return List.of(
+				extractSpecsFromSuiteForEth(ContractTraceabilitySuite::new)
 		);
 	}
 
@@ -680,6 +810,22 @@ class E2EPackageRunner {
 									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + "}, while " +
 											"executing " +
 											"SPEC {" + s.getName() + "}");
+						}
+				));
+		return dynamicContainer(suite.getClass().getSimpleName(), tests);
+	}
+
+	private DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiApiSuite> suiteSupplier) {
+		final var suite = suiteSupplier.get();
+		final var tests = suite.getSpecsInSuite()
+				.stream()
+				.map(s -> dynamicTest(s.getName() + ETH_SUFFIX, () -> {
+							s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
+							s.run();
+							assertEquals(s.getExpectedFinalStatus(), s.getStatus(),
+									"\n\t\t\tFailure in SUITE {" + suite.getClass().getSimpleName() + ETH_SUFFIX + "}, while " +
+											"executing " +
+											"SPEC {" + s.getName() + ETH_SUFFIX + "}");
 						}
 				));
 		return dynamicContainer(suite.getClass().getSimpleName(), tests);

@@ -49,6 +49,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 	private final ActivationTest activationTest;
 	private final TransactionContext txnCtx;
 	private final BiPredicate<JKey, TransactionSignature> cryptoValidity;
+	private boolean isEthTxn;
 
 	@Inject
 	public TxnAwareEvmSigsVerifier(
@@ -76,7 +77,17 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 		}
 
 		final var accountKey = (JKey) worldLedgers.accounts().get(accountId, AccountProperty.KEY);
-		return accountKey != null && isActiveInFrame(accountKey, isDelegateCall,
+		if (accountKey != null && isActiveInFrame(accountKey, isDelegateCall,
+				activeContract,
+				worldLedgers.aliases())) {
+			return true;
+		}
+
+		final var payerKey = txnCtx.activePayerKey();
+		if(txnCtx.accessor() != null && txnCtx.accessor().getTxn() != null) {
+			this.isEthTxn = txnCtx.accessor().getTxn().hasEthereumTransaction();
+		}
+		return this.isEthTxn && payerKey != null && isActiveInFrame(payerKey, isDelegateCall,
 				activeContract,
 				worldLedgers.aliases());
 	}
@@ -94,7 +105,15 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 		final var supplyKey = (JKey) worldLedgers.tokens().get(tokenId, TokenProperty.SUPPLY_KEY);
 		validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
 
-		return isActiveInFrame(supplyKey, isDelegateCall, activeContract, worldLedgers.aliases());
+		if(isActiveInFrame(supplyKey, isDelegateCall, activeContract, worldLedgers.aliases())) {
+			return true;
+		}
+
+		final var payerKey = txnCtx.activePayerKey();
+		if(txnCtx.accessor() != null && txnCtx.accessor().getTxn() != null) {
+			this.isEthTxn = txnCtx.accessor().getTxn().hasEthereumTransaction();
+		}
+		return isEthTxn && isActiveInFrame(payerKey, isDelegateCall, activeContract, worldLedgers.aliases());
 	}
 
 	@Override
@@ -109,8 +128,16 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
 			return true;
 		}
 		final var requiredKey = receiverSigKeyIfAnyOf(accountId, worldLedgers);
-		return requiredKey.map(key ->
-				isActiveInFrame(key, isDelegateCall, activeContract, worldLedgers.aliases())).orElse(true);
+		if(requiredKey.map(key ->
+				isActiveInFrame(key, isDelegateCall, activeContract, worldLedgers.aliases())).orElse(true)) {
+			return true;
+		}
+
+		final var payerKey = txnCtx.activePayerKey();
+		if(txnCtx.accessor() != null && txnCtx.accessor().getTxn() != null) {
+			this.isEthTxn = txnCtx.accessor().getTxn().hasEthereumTransaction();
+		}
+		return isEthTxn && payerKey != null && isActiveInFrame(payerKey, isDelegateCall, activeContract, worldLedgers.aliases());
 	}
 
 	@Override
