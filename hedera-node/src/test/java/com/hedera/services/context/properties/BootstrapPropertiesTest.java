@@ -37,7 +37,6 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hedera.services.context.properties.EntityType.CONTRACT;
 import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -158,7 +157,7 @@ class BootstrapPropertiesTest {
 			entry("autoCreation.enabled", true),
 			entry("autoRemove.maxPurgedKvPairsPerTouch", 10),
 			entry("autoRemove.maxReturnedNftsPerTouch", 10),
-			entry("autoRenew.targetTypes", EnumSet.of(CONTRACT)),
+			entry("autoRenew.targetTypes", EnumSet.noneOf(EntityType.class)),
 			entry("autorenew.numberOfEntitiesToScan", 100),
 			entry("autorenew.maxNumberOfEntitiesToRenewOrDelete", 2),
 			entry("autorenew.gracePeriod", 604800L),
