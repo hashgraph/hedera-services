@@ -1540,7 +1540,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														1)
 														.payingWith(GENESIS)
 														.via(ownerNotAssignedToTokenTxn)
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+														.hasKnownStatus(SUCCESS),
 												tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
 												tokenAssociate(RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
 												cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1, 2).
@@ -1573,7 +1573,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														1)
 														.payingWith(GENESIS)
 														.via(transferWithZeroAddressesTxn)
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+														.hasKnownStatus(SUCCESS),
 												contractCall(ERC_721_CONTRACT, "transferFrom",
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(AccountID.parseFrom(new byte[]{})),
@@ -1581,7 +1581,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														1)
 														.payingWith(GENESIS)
 														.via(transferWithOwnerWithZeroAddressTxn)
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+														.hasKnownStatus(SUCCESS),
 												contractCall(ERC_721_CONTRACT, "transferFrom",
 														asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN)),
 														asAddress(spec.registry().getAccountID(OWNER)),
@@ -1589,7 +1589,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 														1)
 														.payingWith(OWNER)
 														.via(transferWithRecipientWithZeroAddressTxn)
-														.hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+														.hasKnownStatus(SUCCESS)
 										)
 
 						)

@@ -29,6 +29,7 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -223,6 +224,8 @@ class ERC721PrecompilesTest {
     @Mock
     private ApproveAllowanceChecks allowanceChecks;
     @Mock
+    private PureTransferSemanticChecks transferSemanticChecks;
+    @Mock
     private AccountStore accountStore;
     @Mock
     private CryptoTransferTransactionBody cryptoTransferTransactionBody;
@@ -249,7 +252,7 @@ class ERC721PrecompilesTest {
                 validator, dynamicProperties, gasCalculator,
                 sigImpactHistorian, recordsHistorian, sigsVerifier, decoder, encoder,
                 syntheticTxnFactory, creator, dissociationFactory, impliedTransfersMarshal,
-                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks);
+                () -> feeCalculator, stateView, precompilePricingUtils, resourceCosts, createChecks, entityIdSource, allowanceChecks, transferSemanticChecks);
         subject.setTransferLogicFactory(transferLogicFactory);
         subject.setTokenStoreFactory(tokenStoreFactory);
         subject.setHederaTokenStoreFactory(hederaTokenStoreFactory);
@@ -355,6 +358,7 @@ class ERC721PrecompilesTest {
         given(encoder.encodeIsApprovedForAll(true)).willReturn(successResult);
         given(decoder.decodeIsApprovedForAll(eq(nestedPretendArguments), any())).willReturn(
                 IS_APPROVE_FOR_ALL_WRAPPER);
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(accounts.get(any(), any())).willReturn(allowances);
 
         // when:
@@ -400,6 +404,7 @@ class ERC721PrecompilesTest {
         given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
         given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), stateView))
                 .willReturn(OK);
@@ -451,6 +456,7 @@ class ERC721PrecompilesTest {
         given(accountStoreFactory.newAccountStore(validator, dynamicProperties, accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
         given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
         given(allowanceChecks.allowancesValidation(cryptoAllowances, tokenAllowances, nftAllowances, new Account(accountId), stateView))
                 .willReturn(OK);

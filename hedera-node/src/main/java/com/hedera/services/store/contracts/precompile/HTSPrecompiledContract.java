@@ -34,6 +34,7 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.BalanceChange;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -154,6 +155,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -300,6 +302,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 	private HederaStackedWorldStateUpdater updater;
 	private boolean isTokenReadOnlyTransaction = false;
 	private ApproveAllowanceChecks allowanceChecks;
+	private PureTransferSemanticChecks transferSemanticChecks;
 
 	@Inject
 	public HTSPrecompiledContract(
@@ -321,7 +324,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 			final UsagePricesProvider resourceCosts,
 			final CreateChecks tokenCreateChecks,
 			final EntityIdSource entityIdSource,
-			final ApproveAllowanceChecks allowanceChecks
+			final ApproveAllowanceChecks allowanceChecks,
+			final PureTransferSemanticChecks transferSemanticChecks
 	) {
 		super("HTS", gasCalculator);
 		this.sigImpactHistorian = sigImpactHistorian;
@@ -342,6 +346,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		this.tokenCreateChecks = tokenCreateChecks;
 		this.entityIdSource = entityIdSource;
 		this.allowanceChecks = allowanceChecks;
+		this.transferSemanticChecks = transferSemanticChecks;
 	}
 
 	public Pair<Gas, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
@@ -511,18 +516,36 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 							}
 							nestedPrecompile = new ERCTransferPrecompile(tokenId, this.senderAddress, isFungibleToken);
 						} else if (ABI_ID_ERC_TRANSFER_FROM == nestedFunctionSelector) {
+							if(!dynamicProperties.areAllowancesEnabled()) {
+								throw new InvalidTransactionException(NOT_SUPPORTED);
+							}
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = new ERCTransferPrecompile(tokenId, this.senderAddress, isFungibleToken);
 						} else if (ABI_ID_ALLOWANCE == nestedFunctionSelector) {
+							if(!dynamicProperties.areAllowancesEnabled()) {
+								throw new InvalidTransactionException(NOT_SUPPORTED);
+							}
 							nestedPrecompile = new AllowancePrecompile(tokenId);
 						} else if (ABI_ID_APPROVE == nestedFunctionSelector) {
+							if(!dynamicProperties.areAllowancesEnabled()) {
+								throw new InvalidTransactionException(NOT_SUPPORTED);
+							}
 							this.isTokenReadOnlyTransaction = false;
 							nestedPrecompile = new ApprovePrecompile(tokenId, isFungibleToken);
 						} else if (ABI_ID_SET_APPROVAL_FOR_ALL == nestedFunctionSelector) {
+							if(!dynamicProperties.areAllowancesEnabled()) {
+								throw new InvalidTransactionException(NOT_SUPPORTED);
+							}
 							nestedPrecompile = new SetApprovalForAllPrecompile(tokenId);
 						} else if (ABI_ID_GET_APPROVED == nestedFunctionSelector) {
+							if(!dynamicProperties.areAllowancesEnabled()) {
+								throw new InvalidTransactionException(NOT_SUPPORTED);
+							}
 							nestedPrecompile = new GetApprovedPrecompile(tokenId);
 						} else if (ABI_ID_IS_APPROVED_FOR_ALL == nestedFunctionSelector) {
+							if(!dynamicProperties.areAllowancesEnabled()) {
+								throw new InvalidTransactionException(NOT_SUPPORTED);
+							}
 							nestedPrecompile = new IsApprovedForAllPrecompile(tokenId);
 						} else {
 							this.isTokenReadOnlyTransaction = false;
@@ -1187,6 +1210,9 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 		public void run(
 				final MessageFrame frame
 		) {
+			transferSemanticChecks.fullPureValidation(transactionBody.getCryptoTransfer().getTransfers(),
+					transactionBody.getCryptoTransfer().getTokenTransfersList(),
+					impliedTransfersMarshal.currentProps());
 			if (impliedValidity == null) {
 				extrapolateDetailsFromSyntheticTxn();
 			}
