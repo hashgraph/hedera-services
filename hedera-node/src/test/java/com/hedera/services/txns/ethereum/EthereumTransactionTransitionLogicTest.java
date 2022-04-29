@@ -92,6 +92,7 @@ import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVAT
 import static com.hedera.services.txns.ethereum.TestingConstants.WEIBARS_IN_TINYBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -621,7 +622,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(null);
 
 		// expect:
-		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
 	}
 
 	@Test
