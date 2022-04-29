@@ -111,6 +111,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 	private Map<FcTokenAllowanceId, Long> fungibleTokenAllowances = Collections.emptyMap();
 	private Set<FcTokenAllowanceId> approveForAllNfts = Collections.emptySet();
 
+	private EntityId autoRenewAccount;
+
 	public MerkleAccountState() {
 		// RuntimeConstructable
 	}
@@ -141,6 +143,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.headTokenId = that.headTokenId;
 		this.numTreasuryTitles = that.numTreasuryTitles;
 		this.ethereumNonce = that.ethereumNonce;
+		this.autoRenewAccount = that.autoRenewAccount;
 	}
 
 	public MerkleAccountState(
@@ -168,7 +171,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 			final int numPositiveBalances,
 			final long headTokenId,
 			final int numTreasuryTitles,
-			final long ethereumNonce
+			final long ethereumNonce,
+			final EntityId autoRenewAccount
 	) {
 		this.key = key;
 		this.expiry = expiry;
@@ -195,6 +199,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		this.headTokenId = headTokenId;
 		this.numTreasuryTitles = numTreasuryTitles;
 		this.ethereumNonce = ethereumNonce;
+		this.autoRenewAccount = autoRenewAccount;
 	}
 
 	/* --- MerkleLeaf --- */
@@ -264,6 +269,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 							firstUint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
 				}
 			}
+			autoRenewAccount = readNullableSerializable(in);
 		}
 	}
 
@@ -295,6 +301,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		if (smartContract) {
 			serializePossiblyMissingKey(firstUint256Key, firstUint256KeyNonZeroBytes, out);
 		}
+		writeNullableSerializable(autoRenewAccount, out);
 	}
 
 	/* --- Copyable --- */
@@ -337,7 +344,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				this.numAssociations == that.numAssociations &&
 				this.numPositiveBalances == that.numPositiveBalances &&
 				this.headTokenId == that.headTokenId &&
-				this.numTreasuryTitles == that.numTreasuryTitles;
+				this.numTreasuryTitles == that.numTreasuryTitles &&
+				Objects.equals(this.autoRenewAccount, that.autoRenewAccount);
 	}
 
 	@Override
@@ -365,7 +373,8 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				numPositiveBalances,
 				headTokenId,
 				numTreasuryTitles,
-				ethereumNonce);
+				ethereumNonce,
+				autoRenewAccount);
 	}
 
 	/* --- Bean --- */
@@ -396,6 +405,7 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 				.add("headTokenId", headTokenId)
 				.add("numTreasuryTitles", numTreasuryTitles)
 				.add("ethereumNonce", ethereumNonce)
+				.add("autoRenewAccount", autoRenewAccount)
 				.toString();
 	}
 
@@ -646,6 +656,14 @@ public class MerkleAccountState extends AbstractMerkleLeaf {
 		} else {
 			firstUint256KeyNonZeroBytes = 0;
 		}
+	}
+
+	public EntityId getAutoRenewAccount() {
+		return autoRenewAccount;
+	}
+
+	public void setAutoRenewAccount(final EntityId autoRenewAccount) {
+		this.autoRenewAccount = autoRenewAccount;
 	}
 
 	private void assertMutable(String proximalField) {

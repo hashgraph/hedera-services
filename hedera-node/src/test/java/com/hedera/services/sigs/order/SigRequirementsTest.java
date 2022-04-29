@@ -105,6 +105,7 @@ import static com.hedera.test.factories.scenarios.ConsensusUpdateTopicScenarios.
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_NO_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_WITH_ADMIN_KEY;
+import static com.hedera.test.factories.scenarios.ContractCreateScenarios.CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_IMMUTABLE_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_MISSING_ACCOUNT_BENEFICIARY_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractDeleteScenarios.CONTRACT_DELETE_MISSING_CONTRACT_BENEFICIARY_SCENARIO;
@@ -117,6 +118,8 @@ import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRA
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_FILE_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_MEMO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_EXPIRATION_PLUS_NEW_PROXY_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_INVALID_AUTO_RENEW_SCENARIO;
+import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_NEW_AUTO_RENEW_SCENARIO;
 import static com.hedera.test.factories.scenarios.ContractUpdateScenarios.CONTRACT_UPDATE_WITH_NEW_ADMIN_KEY;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_NO_OWNER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoAllowanceScenarios.CRYPTO_APPROVE_ALLOWANCE_SCENARIO;
@@ -375,6 +378,9 @@ class SigRequirementsTest {
 	);
 	private static final SigMetadataLookup NONSENSE_CONTRACT_DELETE_THROWING_LOOKUP = EXC_LOOKUP_FN.apply(
 			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE))
+	);
+	private static final SigMetadataLookup INVALID_AUTO_RENEW_ACCOUNT_EXC = EXC_LOOKUP_FN.apply(
+			ContractAdapter.withSafe(id -> SafeLookupResult.failure(KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT))
 	);
 
 	private HederaFs hfs;
@@ -1336,6 +1342,19 @@ class SigRequirementsTest {
 	}
 
 	@Test
+	void getInvalidAutoRenewAccountDuringUpdate() throws Throwable {
+		// given:
+		setupForNonStdLookup(CONTRACT_UPDATE_INVALID_AUTO_RENEW_SCENARIO, INVALID_AUTO_RENEW_ACCOUNT_EXC);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertTrue(summary.hasErrorReport());
+		assertEquals(INVALID_AUTORENEW_ACCOUNT, summary.getErrorReport());
+	}
+
+	@Test
 	void getsContractCreateDeprecatedAdminKey() throws Throwable {
 		// given:
 		setupFor(CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY);
@@ -1357,6 +1376,18 @@ class SigRequirementsTest {
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(DEFAULT_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	void getsContractCreateWithAutoRenew() throws Throwable {
+		// given:
+		setupFor(CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey()));
 	}
 
 	@Test
@@ -1457,6 +1488,18 @@ class SigRequirementsTest {
 
 		// then:
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ADMIN_KT.asKey()));
+	}
+
+	@Test
+	void getsContractUpdateNewAutoRenewAccount() throws Throwable {
+		// given:
+		setupFor(CONTRACT_UPDATE_NEW_AUTO_RENEW_SCENARIO);
+
+		// when:
+		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+
+		// then:
+		assertThat(sanityRestored(summary.getOrderedKeys()), contains(MISC_ACCOUNT_KT.asKey()));
 	}
 
 	@Test

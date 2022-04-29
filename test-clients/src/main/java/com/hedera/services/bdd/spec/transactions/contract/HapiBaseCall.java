@@ -29,7 +29,6 @@ public abstract class HapiBaseCall<T extends HapiTxnOp<T>> extends HapiTxnOp<T> 
     protected String abi;
     protected String contract;
     protected Optional<Long> gas = Optional.empty();
-    protected Optional<Long> valueSent = Optional.of(0L);
 
     protected byte[] encodeParametersWithTuple(final Object[] params) throws Throwable {
         byte[] callData = new byte[] { };

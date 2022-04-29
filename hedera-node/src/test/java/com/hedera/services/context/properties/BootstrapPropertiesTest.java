@@ -33,12 +33,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hedera.services.context.properties.EntityType.CONTRACT;
+import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
@@ -104,6 +103,7 @@ class BootstrapPropertiesTest {
 			entry("contracts.chainId", 1),
 			entry("contracts.enableTraceability", true),
 			entry("contracts.throttle.throttleByGas", true),
+			entry("contracts.knownBlockHash", MISSING_BLOCK_VALUES),
 			entry("contracts.maxRefundPercentOfGasLimit", 20),
 			entry("contracts.frontendThrottleMaxGasLimit", 5000000L),
 			entry("contracts.consensusThrottleMaxGasLimit", 15000000L),
@@ -217,9 +217,7 @@ class BootstrapPropertiesTest {
 			entry("hedera.allowances.maxTransactionLimit", 20),
 			entry("hedera.allowances.maxAccountLimit", 100),
 			entry("hedera.allowances.isEnabled", true),
-			entry("accounts.limitTokenAssociations", false),
-			entry("bootstrap.lastKnownBlockStartTime", Instant.parse("2022-04-01T00:00:00Z")),
-			entry("bootstrap.lastKnownBlockNumber", 1L)
+			entry("accounts.limitTokenAssociations", false)
 	);
 
 	@Test

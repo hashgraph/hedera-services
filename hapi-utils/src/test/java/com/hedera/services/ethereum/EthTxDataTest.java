@@ -234,6 +234,9 @@ class EthTxDataTest {
 		final var invalidRecIdData = Arrays.asList(normalData);
 
 		assertNull(EthTxData.populateEthTxData(RLPEncoder.encodeSequentially(new byte[] { 2 },	invalidRecIdData)));
+		
+		// zero length data
+		assertNull(EthTxData.populateEthTxData(new byte[0]));
 	}
 
 	@Test

@@ -25,12 +25,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -44,10 +40,9 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.utility.CommonUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.ethereum.core.CallTransaction;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -75,6 +70,8 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 	public HapiContractCreate(String contract, String abi, Object... args) {
 		super(contract, abi, args);
 	}
+
+	private Optional<String> autoRenewAccount = Optional.empty();
 
 	public HapiContractCreate exposingNumTo(LongConsumer obs) {
 		newNumObserver = Optional.of(obs);
@@ -177,6 +174,10 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 		return this;
 	}
 
+	public HapiContractCreate autoRenewAccountId(String id) {
+		autoRenewAccount = Optional.of(id);
+		return this;
+	}
 
 	@Override
 	public HederaFunctionality type() {
@@ -186,6 +187,58 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 	@Override
 	protected HapiContractCreate self() {
 		return this;
+	}
+
+	@Override
+	protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+		if (omitAdminKey || useDeprecatedAdminKey) {
+			return super.defaultSigners();
+		}
+		List<Function<HapiApiSpec, Key>> signers =
+				new ArrayList<>(List.of(spec -> spec.registry().getKey(effectivePayer(spec))));
+		Optional.ofNullable(adminKey).ifPresent(k -> signers.add(ignore -> k));
+		autoRenewAccount.ifPresent(id -> signers.add(spec -> spec.registry().getKey(id)));
+		return signers;
+	}
+
+	@Override
+	protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+		if (actualStatus != SUCCESS) {
+			if (gasObserver.isPresent()) {
+				doGasLookup(gas -> gasObserver.get().accept(actualStatus, gas), spec, txnSubmitted, true);
+			}
+			return;
+		}
+		final var newId = lastReceipt.getContractID();
+		newNumObserver.ifPresent(obs -> obs.accept(newId.getContractNum()));
+		if (shouldAlsoRegisterAsAccount) {
+			spec.registry().saveAccountId(contract, equivAccount(lastReceipt.getContractID()));
+		}
+		spec.registry().saveKey(contract, (omitAdminKey || useDeprecatedAdminKey) ? MISSING_ADMIN_KEY : adminKey);
+		spec.registry().saveContractId(contract, newId);
+		final var otherInfoBuilder = ContractGetInfoResponse.ContractInfo.newBuilder()
+				.setContractAccountID(solidityIdFrom(lastReceipt.getContractID()))
+				.setMemo(memo.orElse(spec.setup().defaultMemo()))
+				.setAutoRenewPeriod(
+						Duration.newBuilder().setSeconds(
+								autoRenewPeriodSecs.orElse(spec.setup().defaultAutoRenewPeriod().getSeconds())).build());
+		if (!omitAdminKey && !useDeprecatedAdminKey) {
+			otherInfoBuilder.setAdminKey(adminKey);
+		}
+		final var otherInfo = otherInfoBuilder.build();
+		spec.registry().saveContractInfo(contract, otherInfo);
+		successCb.ifPresent(cb -> cb.accept(spec.registry()));
+		if (advertiseCreation) {
+			String banner = "\n\n" + bannerWith(
+					String.format(
+							"Created contract '%s' with id '0.0.%d'.",
+							contract,
+							lastReceipt.getContractID().getContractNum()));
+			log.info(banner);
+		}
+		if (gasObserver.isPresent()) {
+			doGasLookup(gas -> gasObserver.get().accept(SUCCESS, gas), spec, txnSubmitted, true);
+		}
 	}
 
 	@Override
@@ -229,6 +282,7 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 							gas.ifPresent(b::setGas);
 							proxy.ifPresent(p -> b.setProxyAccountID(asId(p, spec)));
 							params.ifPresent(bytes -> b.setConstructorParameters(ByteString.copyFrom(bytes)));
+							autoRenewAccount.ifPresent(p -> b.setAutoRenewAccountId(asId(p, spec)));
 						}
 				);
 		return b -> b.setContractCreateInstance(opBody);
@@ -244,6 +298,20 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
 	@Override
 	protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
 		return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
+	}
+
+	@Override
+	protected MoreObjects.ToStringHelper toStringHelper() {
+		MoreObjects.ToStringHelper helper = super.toStringHelper()
+				.add("contract", contract);
+		bytecodeFile.ifPresent(f -> helper.add("bytecode", f));
+		memo.ifPresent(m -> helper.add("memo", m));
+		autoRenewPeriodSecs.ifPresent(p -> helper.add("autoRenewPeriod", p));
+		adminKeyControl.ifPresent(c -> helper.add("customKeyShape", Boolean.TRUE));
+		Optional.ofNullable(lastReceipt)
+				.ifPresent(receipt -> helper.add("created", receipt.getContractID().getContractNum()));
+		autoRenewAccount.ifPresent(p -> helper.add("autoRenewAccount", p));
+		return helper;
 	}
 
 	public long numOfCreatedContract() {

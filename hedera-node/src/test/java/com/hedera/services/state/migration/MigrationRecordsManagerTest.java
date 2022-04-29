@@ -137,8 +137,8 @@ class MigrationRecordsManagerTest {
 		final ArgumentCaptor<TransactionBody.Builder> bodyCaptor = forClass(TransactionBody.Builder.class);
 		final ArgumentCaptor<ExpirableTxnRecord.Builder> recordCaptor = forClass(ExpirableTxnRecord.Builder.class);
 
-		final var contractUpdateSynthBody1 = factory.synthContractAutoRenew(contract1Id.asNum(), contract1Expiry).build();
-		final var contractUpdateSynthBody2 = factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry).build();
+		final var contractUpdateSynthBody1 = factory.synthContractAutoRenew(contract1Id.asNum(), contract1Expiry, contract1Id.toGrpcAccountId()).build();
+		final var contractUpdateSynthBody2 = factory.synthContractAutoRenew(contract2Id.asNum(), contract2Expiry, contract2Id.toGrpcAccountId()).build();
 
 		given(networkCtx.consensusTimeOfLastHandledTxn()).willReturn(now);
 		given(merkleAccount.isSmartContract()).willReturn(true);

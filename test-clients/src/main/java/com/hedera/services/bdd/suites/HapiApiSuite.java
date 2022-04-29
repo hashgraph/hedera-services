@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import org.apache.logging.log4j.Logger;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -55,6 +56,7 @@ public abstract class HapiApiSuite {
 
 	public static final Key EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
 
+	public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 	public static final long ADEQUATE_FUNDS = 10_000_000_000L;
 	public static final long ONE_HBAR = 100_000_000L;
 	public static final long THOUSAND_HBAR = 1_000 * ONE_HBAR;
@@ -103,7 +105,8 @@ public abstract class HapiApiSuite {
 		simpleName =  !simpleName.endsWith("Suite")
 				? simpleName
 				: simpleName.substring(0, simpleName.length() - "Suite".length());
-		return suiteRunnerCounter == 2 ? simpleName.concat(ETH_SUFFIX) : simpleName;
+//		return suiteRunnerCounter == 2 ? simpleName.concat(ETH_SUFFIX) : simpleName;
+		return simpleName;
 	}
 
 	public List<HapiApiSpec> getFinalSpecs() {
@@ -134,12 +137,14 @@ public abstract class HapiApiSuite {
 	}
 
 	public FinalOutcome runSuiteAsync() {
+//		runSuite(this::runAsync);
+//		getResultsLogger().info(System.lineSeparator());
 		return runSuite(this::runAsync);
 	}
 
 	public FinalOutcome runSuiteSync() {
-		runSuite(this::runSync);
-		getResultsLogger().info(System.lineSeparator());
+//		runSuite(this::runSync);
+//		getResultsLogger().info(System.lineSeparator());
 		return runSuite(this::runSync);
 	}
 

@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEthereumAccountForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.convertHapiCallsToEthereumCalls;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
 
 public class CustomSpecAssert extends UtilOp {
@@ -37,7 +38,7 @@ public class CustomSpecAssert extends UtilOp {
 
 	public static void allRunFor(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
 		if(spec.getSuitePrefix().endsWith(ETH_SUFFIX)) {
-			if(!isEthereumAccountCreatedForSpec(spec.getName())) {
+			if(!isEthereumAccountCreatedForSpec(spec)) {
 				initializeEthereumAccountForSpec(spec);
 			}
 
@@ -54,9 +55,10 @@ public class CustomSpecAssert extends UtilOp {
 	}
 
 	private static void executeEthereumOps(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
-		for (final HapiSpecOperation op : ops) {
-			final var convertedOp = UtilVerbs.convertHapiCallToEthereumCall(op);
-			handleExec(spec, convertedOp);
+		final var convertedOps = convertHapiCallsToEthereumCalls(spec, ops);
+
+		for (final HapiSpecOperation op : convertedOps) {
+			handleExec(spec, op);
 		}
 	}
 

@@ -36,13 +36,16 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
@@ -93,6 +96,7 @@ import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVAT
 import static com.hedera.services.txns.ethereum.TestingConstants.WEIBARS_IN_TINYBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -137,6 +141,10 @@ class EthereumTransactionTransitionLogicTest {
 	@Mock
 	private HederaWorldState worldState;
 	@Mock
+	private EntityCreator entityCreator;
+	@Mock
+	private RecordsHistorian recordsHistorian;
+	@Mock
 	private TransactionRecordService recordService;
 	@Mock
 	private CallEvmTxProcessor evmTxProcessor;
@@ -148,6 +156,8 @@ class EthereumTransactionTransitionLogicTest {
 	private CodeCache codeCache;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	private SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private AliasManager aliasManager;
 	@Mock
@@ -168,10 +178,11 @@ class EthereumTransactionTransitionLogicTest {
 	private void setup() {
 		contractCallTransitionLogic = Mockito.spy(new ContractCallTransitionLogic(
 				txnCtx, accountStore, worldState, recordService,
-				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess));
-		contractCreateTransitionLogic = Mockito.spy(new ContractCreateTransitionLogic(hfs, txnCtx, accountStore,
-				optionValidator,
-				worldState, recordService, createEvmTxProcessor, globalDynamicProperties, sigImpactHistorian));
+				evmTxProcessor, globalDynamicProperties, codeCache, sigImpactHistorian, aliasManager, entityAccess);
+		contractCreateTransitionLogic = Mockito.spy(
+				new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, optionValidator, worldState, entityCreator,
+						recordsHistorian, recordService, createEvmTxProcessor, globalDynamicProperties,
+						sigImpactHistorian, syntheticTxnFactory));
 		given(globalDynamicProperties.getChainId()).willReturn(0x128);
 		subject = new EthereumTransitionLogic(txnCtx, spanMapAccessor, contractCallTransitionLogic,
 				contractCreateTransitionLogic, recordService,
@@ -289,6 +300,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
 				expectedTxnBody,
 				senderAccount.getId(),
+				true,
 				true
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
@@ -350,6 +362,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
 				expectedTxnBody,
 				senderAccount.getId(),
+				true,
 				true
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
@@ -411,6 +424,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic).doStateTransitionOperation(
 				expectedTxnBody,
 				senderAccount.getId(),
+				true,
 				true
 		);
 		verify(spanMapAccessor).setEthTxBodyMeta(accessor, expectedTxnBody);
@@ -630,6 +644,15 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void missingEthDataPrecheck() {
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(null);
+
+		// expect:
+		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
+	}
+
+	@Test
 	void wrongChainId() {
 		chainId = new byte[] { 1, 42 };
 		givenValidTxnCtx();
@@ -722,6 +745,7 @@ class EthereumTransactionTransitionLogicTest {
 		verify(contractCreateTransitionLogic, never()).doStateTransitionOperation(
 				any(),
 				any(),
+				anyBoolean(),
 				anyBoolean()
 		);
 		verify(recordService, never()).updateForEvmCall(any(), any());

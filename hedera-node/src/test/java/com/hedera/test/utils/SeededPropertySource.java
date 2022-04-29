@@ -33,6 +33,7 @@ import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleAccountTokens;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSchedule;
@@ -42,6 +43,7 @@ import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.services.state.merkle.internals.CopyOnWriteIds;
 import com.hedera.services.state.merkle.internals.FilePart;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -59,6 +61,11 @@ import com.hedera.services.state.submerkle.NftAdjustments;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.services.state.virtual.ContractValue;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
@@ -66,6 +73,8 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -326,7 +335,8 @@ public class SeededPropertySource {
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
 				0,
-				0);
+				0,
+				null);
 		misorderedState.setNftsOwned(nextUnsignedLong());
 		misorderedState.setNumTreasuryTitles(nextUnsignedInt());
 		return misorderedState;
@@ -365,7 +375,8 @@ public class SeededPropertySource {
 				numPositiveBalanceAssociations,
 				nextInRangeLong(),
 				nextUnsignedInt(),
-				nextUnsignedLong());
+				nextUnsignedLong(),
+				nextEntityId());
 	}
 
 	public ExpirableTxnRecord nextRecord() {
@@ -971,5 +982,31 @@ public class SeededPropertySource {
 		seeded.setPrev(nextUnsignedLong());
 		seeded.setNext(nextUnsignedLong());
 		return seeded;
+	}
+
+	public MerkleAccountTokens nextMerkleAccountTokens() {
+		return new MerkleAccountTokens(
+				new CopyOnWriteIds(nextInRangeLongs(3 * nextNonZeroInt(10)))
+		);
+	}
+
+	public ContractKey nextContractKey() {
+		return new ContractKey(nextUnsignedLong(), nextBytes(32));
+	}
+
+	public ContractValue nextContractValue() {
+		return new ContractValue(nextBytes(32));
+	}
+
+	public VirtualBlobKey.Type nextVirtualBlobKeyType() {
+		return VirtualBlobKey.Type.values()[nextNonZeroInt(VirtualBlobKey.Type.values().length) - 1];
+	}
+
+	public VirtualBlobKey nextVirtualBlobKey() {
+		return new VirtualBlobKey(nextVirtualBlobKeyType(), nextUnsignedInt());
+	}
+
+	public VirtualBlobValue nextVirtualBlobValue() {
+		return new VirtualBlobValue(nextBytes(nextNonZeroInt(100)));
 	}
 }
