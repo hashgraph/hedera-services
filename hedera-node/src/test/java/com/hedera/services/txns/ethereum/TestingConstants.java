@@ -27,7 +27,7 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 public class TestingConstants {
 	static final byte[] ZERO_BYTES = new byte[0];
 	
-	static final byte[] TRUFFLE0_PRIVATE_ECDSA_KEY = unhex(
+	public static final byte[] TRUFFLE0_PRIVATE_ECDSA_KEY = unhex(
 			"c87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3");
 	static final byte[] TRUFFLE0_PUBLIC_ECDSA_KEY = unhex(
 			"03af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
