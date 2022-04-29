@@ -165,8 +165,14 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		}
 
 		if (accessor.getExpandedSigStatus() == ResponseCodeEnum.OK) {
+			var op = accessor.getTxn().getEthereumTransaction();
+
+			if (ethTxData.callData() != null && ethTxData.callData().length > 0 && op.hasCallData()) {
+				return ResponseCodeEnum.FAIL_INVALID;
+			}
+
 			// this is not precheck, so do more involved checks
-			maybeUpdateCallData(accessor, ethTxData, accessor.getTxn().getEthereumTransaction());
+			maybeUpdateCallData(accessor, ethTxData, op);
 			var ethTxSigs = getOrCreateEthSigs(txnCtx.accessor(), ethTxData);
 			var callingAccount = aliasManager.lookupIdBy(ByteString.copyFrom(ethTxSigs.address()));
 			if (callingAccount == MISSING_NUM) {

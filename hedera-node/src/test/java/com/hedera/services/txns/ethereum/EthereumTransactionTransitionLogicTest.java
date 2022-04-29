@@ -613,6 +613,20 @@ class EthereumTransactionTransitionLogicTest {
 		assertEquals(OK, subject.validateSemantics(accessor));
 	}
 
+
+	@Test
+	void failNonEmptyDataAndCallData() {
+		callDataFile = IdUtils.asFile("0.0.1234");
+		callData = Hex.decode("fffefdfc");
+		givenValidTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(accessor.getExpandedSigStatus()).willReturn(OK);
+
+		// expect:
+		assertEquals(FAIL_INVALID, subject.validateSemantics(accessor));
+	}
+
 	@Test
 	void rejectWrongTransactionBody() {
 		givenValidTxnCtx();
@@ -704,6 +718,29 @@ class EthereumTransactionTransitionLogicTest {
 	}
 
 	@Test
+	void signaturesInvalid() {
+		callDataFile = IdUtils.asFile("0.0.1234");
+		givenValidTxnCtx();
+		given(accessor.getExpandedSigStatus()).willReturn(OK);
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(accessor.getTxn()).willReturn(ethTxTxn);
+		given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.MISSING_NUM);
+		given(hfs.exists(callDataFile)).willReturn(true);
+		given(hfs.cat(callDataFile)).willReturn(new byte[] {0x30, 0x31, 0x32, 0x33});
+
+		// expect:
+		assertEquals(INVALID_ACCOUNT_ID, subject.validateSemantics(accessor));
+	}
+
+	@Test
+	void failEmptyEthereumDataAndCallData() {
+		givenEmptyTxnCtx();
+		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+
+		assertEquals(INVALID_ETHEREUM_TRANSACTION, subject.validateSemantics(accessor));
+	}
+
+	@Test
 	void invalidSenderJKeyOnContractCreateThrows() {
 		// setup:
 		target = null;
@@ -778,6 +815,15 @@ class EthereumTransactionTransitionLogicTest {
 		if (callDataFile != null) {
 			ethTxBodyBuilder.setCallData(callDataFile);
 		}
+		var op = TransactionBody.newBuilder()
+				.setTransactionID(ourTxnId())
+				.setEthereumTransaction(ethTxBodyBuilder.build());
+		ethTxTxn = op.build();
+	}
+
+	private void givenEmptyTxnCtx() {
+		var ethTxBodyBuilder = EthereumTransactionBody.newBuilder();
+
 		var op = TransactionBody.newBuilder()
 				.setTransactionID(ourTxnId())
 				.setEthereumTransaction(ethTxBodyBuilder.build());
