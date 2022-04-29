@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.function.Supplier;
 
+import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MapValueListUtils.inPlaceInsertAtMapValueListHead;
 import static com.hedera.services.utils.MapValueListUtils.unlinkFromMapValueLink;
 
@@ -93,7 +94,7 @@ public class UniqueTokensLinkManager {
 	}
 
 	private boolean isValidAndNotTreasury(EntityNum accountNum, MerkleToken token) {
-		return accountNum!= null && !accountNum.equals(token.treasuryNum());
+		return accountNum!= null && accountNum != MISSING_NUM && !accountNum.equals(token.treasuryNum());
 	}
 
 	@Nullable
