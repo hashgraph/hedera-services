@@ -34,8 +34,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 
-import static com.hedera.services.state.logic.BlockManager.BLOCK_PERIOD_MS;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -44,6 +42,8 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class BlockManagerTest {
+	private static final long blockPeriodSecs = 2L;
+
 	@Mock
 	private BootstrapProperties bootstrapProperties;
 	@Mock
@@ -55,34 +55,13 @@ class BlockManagerTest {
 
 	@BeforeEach
 	void setUp() {
+		given(bootstrapProperties.getLongProperty("hedera.recordStream.logPeriod")).willReturn(blockPeriodSecs);
 		subject = new BlockManager(bootstrapProperties, () -> networkContext, () -> runningHashLeaf);
 	}
 
 	@Test
-	void initializesBlockConceptAsExpected() {
-		final var lastKnownNo = 1234L;
-		final var knownStartTime = Instant.parse("2022-04-01T00:00:00Z");
-		final var effCurBlockStart = Instant.parse("2022-04-18T12:27:58Z");
-		given(bootstrapProperties.getInstantProperty("bootstrap.lastKnownBlockStartTime"))
-				.willReturn(knownStartTime);
-		given(bootstrapProperties.getLongProperty("bootstrap.lastKnownBlockNumber"))
-				.willReturn(lastKnownNo);
-
-		final var periodOfKnownBlock = getPeriod(knownStartTime, BLOCK_PERIOD_MS);
-		final var periodOfCurrentBlock = getPeriod(effCurBlockStart, BLOCK_PERIOD_MS);
-		final var blockNoDelta = periodOfCurrentBlock - periodOfKnownBlock;
-		final var expectedCurBlockNo = lastKnownNo + blockNoDelta;
-
-		final var newBlockNo = subject.getManagedBlockNumberAt(effCurBlockStart);
-
-		verify(networkContext).setBlockNo(expectedCurBlockNo);
-		verify(networkContext).setFirstConsTimeOfCurrentBlock(effCurBlockStart);
-		assertEquals(expectedCurBlockNo, newBlockNo);
-	}
-
-	@Test
 	void delegatesCurrentBlockNumberToContext() {
-		given(networkContext.getBlockNo()).willReturn(someBlockNo);
+		given(networkContext.getManagedBlockNo()).willReturn(someBlockNo);
 
 		assertEquals(someBlockNo, subject.getCurrentBlockNumber());
 	}
@@ -90,13 +69,23 @@ class BlockManagerTest {
 	@Test
 	void continuesWithCurrentBlockIfInSamePeriod() {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
-		given(networkContext.getBlockNo()).willReturn(someBlockNo);
+		given(networkContext.getManagedBlockNo()).willReturn(someBlockNo);
 
 		final var newBlockNo = subject.getManagedBlockNumberAt(someTime);
 
 		assertEquals(someBlockNo, newBlockNo);
 		verify(networkContext, never()).setFirstConsTimeOfCurrentBlock(any());
 		verify(networkContext, never()).finishBlock(any(), any());
+	}
+
+	@Test
+	void finishesBlockIfUnknownFirstConsTime() throws InterruptedException {
+		given(networkContext.finishBlock(aFullBlockHash, anotherTime)).willReturn(someBlockNo);
+		given(runningHashLeaf.getLatestBlockHash()).willReturn(aFullBlockHash);
+
+		final var newBlockNo = subject.getManagedBlockNumberAt(anotherTime);
+
+		assertEquals(someBlockNo, newBlockNo);
 	}
 
 	@Test
@@ -114,7 +103,7 @@ class BlockManagerTest {
 	void returnsCurrentBlockNoIfSomehowInterrupted() throws InterruptedException {
 		given(networkContext.firstConsTimeOfCurrentBlock()).willReturn(aTime);
 		given(runningHashLeaf.getLatestBlockHash()).willThrow(InterruptedException.class);
-		given(networkContext.getBlockNo()).willReturn(someBlockNo);
+		given(networkContext.getManagedBlockNo()).willReturn(someBlockNo);
 
 		final var newBlockNo = subject.getManagedBlockNumberAt(anotherTime);
 

@@ -20,6 +20,7 @@ package com.hedera.services.bdd.spec.assertions;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -250,6 +251,11 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 
 	public TransactionRecordAsserts autoAssociated(ErroringAssertsProvider<List<TokenAssociation>> provider) {
 		registerTypedProvider("automaticTokenAssociationsList", provider);
+		return this;
+	}
+
+	public TransactionRecordAsserts ethereumHash(ByteString hash) {
+		registerTypedProvider("ethereumHash", shouldBe(hash));
 		return this;
 	}
 

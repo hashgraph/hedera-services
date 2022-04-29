@@ -29,9 +29,12 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -106,6 +109,10 @@ class ContractCreateTransitionLogicTest {
 	@Mock
 	private HederaWorldState worldState;
 	@Mock
+	private EntityCreator entityCreator;
+	@Mock
+	private RecordsHistorian recordsHistorian;
+	@Mock
 	private TransactionRecordService recordServices;
 	@Mock
 	private CreateEvmTxProcessor evmTxProcessor;
@@ -115,6 +122,8 @@ class ContractCreateTransitionLogicTest {
 	private GlobalDynamicProperties properties;
 	@Mock
 	private SigImpactHistorian sigImpactHistorian;
+	@Mock
+	SyntheticTxnFactory syntheticTxnFactory;
 	@Mock
 	private Account autoRenewModel;
 
@@ -127,11 +136,8 @@ class ContractCreateTransitionLogicTest {
 
 	@BeforeEach
 	private void setup() {
-		subject = new ContractCreateTransitionLogic(
-				hfs,
-				txnCtx, accountStore, validator,
-				worldState, recordServices, evmTxProcessor,
-				properties, sigImpactHistorian);
+		subject = new ContractCreateTransitionLogic(hfs, txnCtx, accountStore, validator, worldState, entityCreator,
+				recordsHistorian, recordServices, evmTxProcessor, properties, sigImpactHistorian, syntheticTxnFactory);
 	}
 
 	@Test

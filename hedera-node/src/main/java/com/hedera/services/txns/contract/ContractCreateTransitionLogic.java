@@ -20,6 +20,7 @@ package com.hedera.services.txns.contract;
  * ‍
  */
 
+import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
@@ -27,19 +28,25 @@ import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
+import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -49,6 +56,8 @@ import java.util.function.Predicate;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.accounts.ContractCustomizer.fromHapiCreation;
+import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -69,11 +78,14 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 	private final AccountStore accountStore;
 	private final OptionValidator validator;
 	private final TransactionContext txnCtx;
+	private final EntityCreator entityCreator;
+	private final RecordsHistorian recordsHistorian;
 	private final HederaMutableWorldState worldState;
 	private final TransactionRecordService recordService;
 	private final CreateEvmTxProcessor evmTxProcessor;
 	private final GlobalDynamicProperties properties;
 	private final SigImpactHistorian sigImpactHistorian;
+	private final SyntheticTxnFactory syntheticTxnFactory;
 
 	@Inject
 	public ContractCreateTransitionLogic(
@@ -82,18 +94,24 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			final AccountStore accountStore,
 			final OptionValidator validator,
 			final HederaWorldState worldState,
+			final EntityCreator entityCreator,
+			final RecordsHistorian recordsHistorian,
 			final TransactionRecordService recordService,
 			final CreateEvmTxProcessor evmTxProcessor,
 			final GlobalDynamicProperties properties,
-			final SigImpactHistorian sigImpactHistorian
+			final SigImpactHistorian sigImpactHistorian,
+			final SyntheticTxnFactory syntheticTxnFactory
 	) {
 		this.hfs = hfs;
 		this.txnCtx = txnCtx;
 		this.validator = validator;
 		this.worldState = worldState;
 		this.accountStore = accountStore;
+		this.entityCreator = entityCreator;
+		this.recordsHistorian = recordsHistorian;
 		this.recordService = recordService;
 		this.sigImpactHistorian = sigImpactHistorian;
+		this.syntheticTxnFactory = syntheticTxnFactory;
 		this.evmTxProcessor = evmTxProcessor;
 		this.properties = properties;
 	}
@@ -103,10 +121,11 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		// --- Translate from gRPC types ---
 		var contractCreateTxn = txnCtx.accessor().getTxn();
 		final var senderId = Id.fromGrpcAccount(contractCreateTxn.getTransactionID().getAccountID());
-		doStateTransitionOperation(contractCreateTxn, senderId, false);
+		doStateTransitionOperation(contractCreateTxn, senderId, false, false);
 	}
 
-	public void doStateTransitionOperation(final TransactionBody contractCreateTxn, final Id senderId, boolean incrementCounter) {
+	public void doStateTransitionOperation(final TransactionBody contractCreateTxn, final Id senderId,
+			boolean incrementCounter, boolean createSyntheticRecord) {
 		// --- Translate from gRPC types ---
 		var op = contractCreateTxn.getContractCreateInstance();
 		var key = op.hasAdminKey()
@@ -137,7 +156,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 			accountStore.commitAccount(sender);
 		}
 
-		worldState.setHapiSenderCustomizer(fromHapiCreation(key, consensusTime, op));
+		ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
+		worldState.setHapiSenderCustomizer(hapiSenderCustomizer);
 		TransactionProcessingResult result;
 		try {
 			result = evmTxProcessor.execute(
@@ -167,6 +187,9 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 		if (result.isSuccessful()) {
 			final var newEvmAddress = newContractAddress.toArrayUnsafe();
 			final var newContractId = contractIdFromEvmAddress(newEvmAddress);
+			if (createSyntheticRecord) {
+				recordSyntheticOperation(newContractId, newEvmAddress, hapiSenderCustomizer);
+			}
 			sigImpactHistorian.markEntityChanged(newContractId.getContractNum());
 			txnCtx.setTargetedContract(newContractId);
 			recordService.externalizeSuccessfulEvmCreate(result, newEvmAddress);
@@ -226,5 +249,19 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
 				throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
 			}
 		}
+	}
+
+	private void recordSyntheticOperation(ContractID newContractId, byte[] newContractAddress,
+			final ContractCustomizer opCustomizer) {
+		var childRecordId = recordsHistorian.nextChildRecordSourceId();
+
+		final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
+
+		final var sideEffects = new SideEffectsTracker();
+		sideEffects.trackNewContract(newContractId, Address.wrap(Bytes.wrap(newContractAddress)));
+		final var childRecord = entityCreator.createSuccessfulSyntheticRecord(
+				NO_CUSTOM_FEES, sideEffects, EMPTY_MEMO);
+
+		recordsHistorian.trackFollowingChildRecord(childRecordId, syntheticOp, childRecord);
 	}
 }

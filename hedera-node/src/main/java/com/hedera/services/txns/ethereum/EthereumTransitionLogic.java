@@ -118,11 +118,12 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 		if (syntheticTxBody.hasContractCall()) {
 			contractCallTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
 		} else if (syntheticTxBody.hasContractCreateInstance()) {
-			final var synthOp =
-					addInheritablePropertiesToContractCreate(syntheticTxBody.getContractCreateInstance(), callingAccount.toGrpcAccountId());
+			final var synthOp = addInheritablePropertiesToContractCreate(syntheticTxBody.getContractCreateInstance(),
+					callingAccount.toGrpcAccountId());
 			syntheticTxBody = TransactionBody.newBuilder().setContractCreateInstance(synthOp).build();
 			spanMapAccessor.setEthTxBodyMeta(txnCtx.accessor(), syntheticTxBody);
-			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true);
+			contractCreateTransitionLogic.doStateTransitionOperation(syntheticTxBody, callingAccount.toId(), true,
+					true);
 		}
 		recordService.updateForEvmCall(ethTxData, callingAccount.toEntityId());
 	}
@@ -154,7 +155,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
 	public ResponseCodeEnum validateSemantics(TxnAccessor accessor) {
 		var ethTxData = spanMapAccessor.getEthTxDataMeta(accessor);
 		if (ethTxData == null) {
-			return ResponseCodeEnum.FAIL_INVALID;
+			return ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 		}
 
 		var txBody = getOrCreateTransactionBody(accessor);
