@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.utility.CommonUtils;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -124,20 +125,25 @@ class EntityIdUtilsTest {
 				(byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
 				(byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
 		};
+		final var create2AddressBytes = Hex.decode("0102030405060708090a0b0c0d0e0f1011121314");
 		final var equivAccount = asAccount(String.format("%d.%d.%d", shard, realm, num));
 		final var equivContract = asContract(String.format("%d.%d.%d", shard, realm, num));
 		final var equivToken = asToken(String.format("%d.%d.%d", shard, realm, num));
+		final var create2Contract = ContractID.newBuilder().setEvmAddress(
+				ByteString.copyFrom(create2AddressBytes)).build();
 
 		final var actual = asEvmAddress(shard, realm, num);
 		final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
 		final var typedToken = EntityIdUtils.asTypedEvmAddress(equivToken);
 		final var anotherActual = EntityIdUtils.asEvmAddress(equivContract);
+		final var create2Actual = EntityIdUtils.asEvmAddress(create2Contract);
 		final var actualHex = EntityIdUtils.asHexedEvmAddress(equivAccount);
 
 		assertArrayEquals(expected, actual);
 		assertArrayEquals(expected, anotherActual);
 		assertArrayEquals(expected, typedActual.toArray());
 		assertArrayEquals(expected, typedToken.toArray());
+		assertArrayEquals(create2AddressBytes, create2Actual);
 		assertEquals(CommonUtils.hex(expected), actualHex);
 		assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
 		assertEquals(equivContract, contractIdFromEvmAddress(actual));
