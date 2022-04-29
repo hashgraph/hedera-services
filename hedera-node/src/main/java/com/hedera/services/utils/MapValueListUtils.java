@@ -87,7 +87,7 @@ public class MapValueListUtils {
 			@NotNull final K root,
 			@NotNull final MapValueListMutation<K, V> listRemoval
 	) {
-		return internalMutateFromMapValueList(key, root, listRemoval, true, true);
+		return internalMutateFromMapValueList(key, root, listRemoval, true, true, false);
 	}
 
 	/**
@@ -109,16 +109,30 @@ public class MapValueListUtils {
 			@NotNull final K root,
 			@NotNull final MapValueListMutation<K, V> listRemoval
 	) {
-		return internalMutateFromMapValueList(key, root, listRemoval, false, true);
+		return internalMutateFromMapValueList(key, root, listRemoval, false, true, false);
 	}
 
+	/**
+	 * Unlinks the value of the given key from its containing linked list in the map represented by the
+	 * given {@link MapValueListMutation}, updating the doubly-linked list to maintain the prev/next keys of the
+	 * "adjacent" value(s) as needed and resets the next and prev pointers of this value.
+	 * Does <i>not</i> use {@link MapValueListMutation#getForModify(Object)}.
+	 *
+	 * @param key
+	 * 		the key of the mapping to unlink
+	 * @param root
+	 * 		the key of the root mapping in the affected node's list
+	 * @param listRemoval
+	 * 		the facilitator representing the underlying map
+	 * @return the new root key, for convenience
+	 */
 	public static @Nullable
 	<K, V extends FastCopyable> K unlinkFromMapValueLink(
 			@NotNull final K key,
 			@NotNull final K root,
 			@NotNull final MapValueListMutation<K, V> listRemoval
 	) {
-		return internalMutateFromMapValueList(key, root, listRemoval, true, false);
+		return internalMutateFromMapValueList(key, root, listRemoval, true, false, true);
 	}
 
 	private static @Nullable
@@ -127,7 +141,8 @@ public class MapValueListUtils {
 			@NotNull final K root,
 			@NotNull final MapValueListMutation<K, V> listRemoval,
 			final boolean useGetForModify,
-			final boolean removeFromMap
+			final boolean removeFromMap,
+			final boolean resetPointers
 	) {
 		final var value = Objects.requireNonNull(listRemoval.get(key), () -> "Missing key " + key);
 		if (removeFromMap) {
@@ -137,9 +152,13 @@ public class MapValueListUtils {
 		final var nextKey = listRemoval.next(value);
 		final var prevKey = listRemoval.prev(value);
 
-		// reset the next and prev pointers on the node that we are unlinking.
-		listRemoval.markAsTail(value);
-		listRemoval.markAsHead(value);
+		if (resetPointers) {
+			// reset the next and prev pointers on the node that we are unlinking.
+			V valueCopy = value.copy();
+			listRemoval.markAsTail(valueCopy);
+			listRemoval.markAsHead(valueCopy);
+			listRemoval.put(key, valueCopy);
+		}
 
 		if (nextKey != null) {
 			final var nextValue = useGetForModify
