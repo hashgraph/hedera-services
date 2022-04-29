@@ -58,6 +58,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Optional;
@@ -67,6 +68,7 @@ import java.util.function.Supplier;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -105,6 +107,8 @@ class CallEvmTxProcessorTest {
 	private Supplier<MerkleNetworkContext> merkleNetworkContextSupplier;
 	@Mock
 	private MerkleNetworkContext merkleNetworkContext;
+	@Mock
+	private BlockValues blockValues;
 
 	private final Account sender = new Account(new Id(0, 0, 1002));
 	private final Account receiver = new Account(new Id(0, 0, 1006));
@@ -144,26 +148,32 @@ class CallEvmTxProcessorTest {
 	}
 
 	@Test
-	void throwsWhenCodeCacheFailsLoading() {
-		given(merkleNetworkContextSupplier.get()).willReturn(merkleNetworkContext);
-		given(worldState.updater()).willReturn(updater);
-		given(worldState.updater().updater()).willReturn(updater);
-		given(storageExpiry.hapiCallOracle()).willReturn(oracle);
-		given(globalDynamicProperties.fundingAccount()).willReturn(new Id(0, 0, 1010).asGrpcAccount());
-
-		var evmAccount = mock(EvmAccount.class);
-
-		given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(Gas.ZERO);
-
-		given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress())).willReturn(evmAccount);
-		given(worldState.updater()).willReturn(updater);
-
-		givenSenderWithBalance(350_000L);
+	void nonCodeTxRequiresValue() {
 		assertFailsWith(() ->
-						callEvmTxProcessor.execute(
-								sender, receiver.getId().asEvmAddress(),
-								33_333L, 1234L, Bytes.EMPTY, consensusTime),
-				FAIL_INVALID);
+						callEvmTxProcessor.buildInitialFrame(MessageFrame.builder(), receiverAddress, Bytes.EMPTY, 0L),
+				INVALID_ETHEREUM_TRANSACTION);
+	}
+
+	@Test
+	void missingCodeBecomesEmptyInInitialFrame() {
+		MessageFrame.Builder protoFrame = MessageFrame.builder()
+				.messageFrameStack(new ArrayDeque<>())
+				.worldUpdater(updater)
+				.initialGas(Gas.of(1))
+				.originator(sender.canonicalAddress())
+				.gasPrice(Wei.ZERO)
+				.sender(sender.canonicalAddress())
+				.value(Wei.ONE)
+				.apparentValue(Wei.ONE)
+				.blockValues(blockValues)
+				.depth(1)
+				.completer(frame -> {})
+				.miningBeneficiary(Address.ZERO)
+				.blockHashLookup(hash -> null);
+
+		var messageFrame = callEvmTxProcessor.buildInitialFrame(protoFrame, receiverAddress, Bytes.EMPTY, 33L);
+
+		assertEquals(Code.EMPTY, messageFrame.getCode());
 	}
 
 	@Test

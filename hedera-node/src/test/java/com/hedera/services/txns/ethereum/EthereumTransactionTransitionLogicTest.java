@@ -105,6 +105,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -123,6 +124,8 @@ class EthereumTransactionTransitionLogicTest {
 	ContractCreateTransitionLogic contractCreateTransitionLogic;
 	EthereumTransitionLogic subject;
 	private ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
+	private byte[] targetAddressBytes = EntityIdUtils.asEvmAddress(target);
+	private Address targetAddress = Address.wrap(Bytes.wrap(targetAddressBytes));
 	private int gas = 1_234;
 	private long sent = 1_234L;
 	private byte[] chainId= CHAINID_TESTNET;
@@ -206,7 +209,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(txnCtx.consensusTime()).willReturn(consensusTime);
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+		given(accountStore.loadAccount(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
@@ -218,6 +221,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(worldState.getCreatedContractIds()).willReturn(List.of());
 
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
 		// when:
@@ -432,7 +436,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(txnCtx.accessor()).willReturn(accessor);
 		// and:
 		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(accountStore.loadContract(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
+		given(accountStore.loadAccount(new Id(target.getShardNum(), target.getRealmNum(), target.getContractNum())))
 				.willReturn(contractAccount);
 		// and:
 		var results = TransactionProcessingResult.successful(
@@ -444,6 +448,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(worldState.getCreatedContractIds()).willReturn(List.of(target));
 
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
 		// when:
@@ -463,11 +468,10 @@ class EthereumTransactionTransitionLogicTest {
 		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(txnCtx.accessor()).willReturn(accessor);
 		// and:
-		given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
-		given(entityAccess.isTokenAccount(any())).willReturn(false);
-		given(accountStore.loadContract(any())).willThrow(InvalidTransactionException.class);
+		given(accountStore.loadAccount(any())).willThrow(InvalidTransactionException.class);
 		// and:
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
 
@@ -502,6 +506,7 @@ class EthereumTransactionTransitionLogicTest {
 		given(worldState.getCreatedContractIds()).willReturn(List.of());
 
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 		given(aliasManager.lookupIdBy(ByteString.copyFrom(TRUFFLE0_ADDRESS))).willReturn(
 				senderAccount.getId().asEntityNum());
 		// when:
@@ -517,6 +522,7 @@ class EthereumTransactionTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 
 		subject.preFetch(accessor);
 
@@ -530,9 +536,9 @@ class EthereumTransactionTransitionLogicTest {
 		givenValidTxnCtx();
 		given(accessor.getTxn()).willReturn(ethTxTxn);
 		given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
+		given(aliasManager.isMirror(targetAddressBytes)).willReturn(true);
 
 		given(codeCache.getIfPresent(any(Address.class))).willThrow(new RuntimeException("oh no"));
-
 
 		// when:
 		assertDoesNotThrow(() -> subject.preFetch(accessor));
